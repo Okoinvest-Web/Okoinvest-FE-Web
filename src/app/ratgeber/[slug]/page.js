@@ -1,7 +1,6 @@
 // src/app/ratgeber/[slug]/page.js
 //
 // Rendert alle inhaltsgetriebenen Ratgeber-Artikel aus src/content/ratgeber.
-// Die drei handgebauten Artikel haben eigene Ordner und haben Vorrang.
 
 import { notFound } from "next/navigation";
 import { BookOpen } from "lucide-react";
@@ -10,8 +9,9 @@ import ArtikelLayout from "@/components/Ratgeber/ArtikelLayout";
 import ArtikelInhalt from "@/components/Ratgeber/ArtikelInhalt";
 import { klartext } from "@/components/Ratgeber/InlineText";
 import { INHALTS_ARTIKEL, artikelPfad } from "@/lib/ratgeber";
+import { SITE, abs } from "@/data/site";
 
-const BASE_URL = "https://www.oekovolt.de";
+const BASE_URL = SITE.url;
 
 export const dynamicParams = false;
 
@@ -25,9 +25,10 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const a = finde(slug);
   if (!a) return {};
-  const url = `${BASE_URL}${artikelPfad(a.slug)}`;
+  const url = abs(artikelPfad(a.slug));
+  const bild = abs(a.bild);
   return {
-    title: a.seoTitle || `${a.title} | Ökovolt`,
+    title: a.seoTitle || `${a.kurzTitel || a.title} | ÖkoInvest`,
     description: a.description,
     keywords: a.keywords,
     alternates: { canonical: url },
@@ -35,18 +36,16 @@ export async function generateMetadata({ params }) {
     openGraph: {
       type: "article",
       url,
-      siteName: "Ökovolt Deutschland",
+      siteName: "ÖkoInvest",
       locale: "de_DE",
       title: a.title,
       description: a.description,
       publishedTime: a.veroeffentlicht,
       modifiedTime: a.aktualisiert,
       section: a.kategorie,
-      images: [{ url: `${BASE_URL}/og/ratgeber/${a.slug}.jpg`, width: 1200, height: 630, alt: a.bildAlt }],
+      images: [{ url: bild, alt: a.bildAlt }],
     },
-    twitter: { card: "summary_large_image", title: a.title, description: a.description, images: [`${BASE_URL}/og/ratgeber/${a.slug}.jpg`] },
-    // Autorenzeile bei Link-Vorschauen in Mastodon, Verknüpfung zum Fediverse-Beitrag
-    other: { "fediverse:creator": "@ratgeber@oekovolt.de" },
+    twitter: { card: "summary_large_image", title: a.title, description: a.description, images: [bild] },
   };
 }
 
@@ -55,7 +54,7 @@ export default async function RatgeberArtikelPage({ params }) {
   const a = finde(slug);
   if (!a) notFound();
 
-  const url = `${BASE_URL}${artikelPfad(a.slug)}`;
+  const url = abs(artikelPfad(a.slug));
 
   const toc = [
     ...(a.kurzFazit?.length ? [{ id: "kurz", label: "Das Wichtigste in Kürze" }] : []),
@@ -72,10 +71,10 @@ export default async function RatgeberArtikelPage({ params }) {
       inLanguage: "de-DE",
       datePublished: a.veroeffentlicht,
       dateModified: a.aktualisiert,
-      author: { "@type": "Organization", name: "Ökovolt-Redaktion", "@id": `${BASE_URL}/#organization` },
+      author: { "@type": "Organization", name: "Projektteam ÖkoInvest", "@id": `${BASE_URL}/#organization` },
       publisher: { "@id": `${BASE_URL}/#organization` },
       mainEntityOfPage: { "@type": "WebPage", "@id": url },
-      image: [`${BASE_URL}${a.bild}`, `${BASE_URL}/og/ratgeber/${a.slug}.jpg`],
+      image: [abs(a.bild)],
       articleSection: a.kategorie,
       keywords: (a.keywords || []).join(", "),
       wordCount: a.woerter,
@@ -97,7 +96,7 @@ export default async function RatgeberArtikelPage({ params }) {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": graph }) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": graph }).replace(/</g, "\\u003c") }} />
       <ArtikelLayout
         artikel={a}
         toc={toc}

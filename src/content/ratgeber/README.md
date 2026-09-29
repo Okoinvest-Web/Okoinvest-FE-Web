@@ -2,7 +2,7 @@
 
 Jede Datei in diesem Ordner ist ein Artikel unter `/ratgeber/<slug>`. Die Seite rendert `src/app/ratgeber/[slug]/page.js`. Übersicht, Sitemap, „Weiterlesen“, Inhaltsverzeichnis, Lesezeit und JSON-LD (Article, FAQPage, HowTo, BreadcrumbList) entstehen automatisch.
 
-**Referenz:** `photovoltaik-lohnt-sich.js`
+**Referenz:** `solarpark-pacht-pro-hektar.js`
 
 ## Neuen Artikel anlegen
 
@@ -15,23 +15,24 @@ Dateien, die mit `_` beginnen, werden ignoriert (Entwürfe).
 ## Aufbau
 
 ```js
-import { ANNAHMEN } from "@/data/solarrechner";   // optional: zentrale Zahlen verwenden
+import { PACHT, STAND } from "@/lib/invest/markt"; // zentrale Marktzahlen verwenden
+import { fmt } from "@/lib/rechner/annahmen";      // deutsche Zahlenformatierung
 
 const artikel = {
-  slug: "stromspeicher-kosten",                    // = Dateiname, nur a–z, 0–9, Bindestrich
-  title: "Stromspeicher Kosten 2026: Preise pro kWh im Überblick",   // H1, 50–70 Zeichen
-  seoTitle: "Stromspeicher Kosten 2026: Preise pro kWh | Ökovolt",   // <title>, max. 60 Zeichen
-  kurzTitel: "Stromspeicher Kosten",               // Breadcrumb, Karten
+  slug: "solarpark-pacht-pro-hektar",              // = Dateiname, nur a–z, 0–9, Bindestrich
+  title: "…",                                      // H1, 50–70 Zeichen
+  seoTitle: "… | ÖkoInvest",                       // <title>, max. 60 Zeichen
+  kurzTitel: "…",                                  // Breadcrumb, Karten
   description: "…",                                // 140–160 Zeichen, Hauptkeyword vorn, Nutzen + Anreiz
   excerpt: "…",                                    // 1–2 Sätze für Karten und Hero
-  hauptKeyword: "stromspeicher kosten",
+  hauptKeyword: "solarpark pacht pro hektar",
   keywords: ["…", "…"],                            // 5–8 Varianten und Nebenkeywords
   veroeffentlicht: "2026-09-13",
   aktualisiert: "2026-09-13",
-  kategorie: "Speicher & Eigenverbrauch",          // exakt einer der 5 Werte unten
-  bild: "/Images/…",                                // aus /public
+  kategorie: "Fläche & Pacht",                     // exakt einer der 5 Werte unten
+  bild: "/img/…",                                   // nur aus /public/img
   bildAlt: "Beschreibung des Bildinhalts",
-  badge: { wert: "~450 €", text: "je kWh, gemeinsam installiert" },  // optional, schwebende Kennzahl im Hero
+  badge: { wert: "…", text: "…" },                 // optional, schwebende Kennzahl im Hero
 
   kurzFazit: ["3–5 zitierfähige Kernaussagen mit Zahlen"],
 
@@ -44,7 +45,7 @@ const artikel = {
   passend: [{ href: "/…", titel: "…", text: "…" }],                   // 2–4 interne Verweise
   quellen: [{ titel: "Institution – Titel", url: "https://…", stand: "09/2026" }],  // 3–8 belastbare Quellen
   seitenCta: { titel: "…", text: "…", href: "/rechner/…", label: "…" },
-  cta: { title: "…", text: "…", primary: { label: "Angebot anfragen", href: "/angebot" }, secondary: { label: "…", href: "/…" } },
+  cta: { title: "…", text: "…", primary: { label: "Fläche prüfen lassen", href: "/flaechencheck" }, secondary: { label: "…", href: "/…" } },
 };
 
 export default artikel;
@@ -52,11 +53,11 @@ export default artikel;
 
 ### Kategorien (feste Werte)
 
-- `Kosten & Wirtschaftlichkeit`
-- `Technik & Planung`
-- `Speicher & Eigenverbrauch`
-- `Wärmepumpe & E-Mobilität`
-- `Förderung, Steuern & Recht`
+- `Fläche & Pacht`
+- `Agri-PV & Landwirtschaft`
+- `Investieren & Projektbörse`
+- `Recht & Genehmigung`
+- `Strom, Markt & Gemeinschaft`
 
 ### Blocktypen
 
@@ -79,12 +80,10 @@ export default artikel;
 
 - **Sie-Form**, sachlich, verständlich, ohne Werbesprech. Stand-Datum nennen, wenn Zahlen sich ändern.
 - **Fakten:** Jede Zahl muss belegbar sein; Quellen in `quellen`. Wo Zahlen der Website existieren, **diese importieren** statt abzutippen:
-  - `@/data/solarrechner`: `ANNAHMEN`, `preisProKwp`
-  - `@/data/einspeiseverguetung`: `VERGUETUNG`, `ct`, `satzFuer`
-  - `@/data/wallbox`: `WALLBOX`, `spanne`
-  - `@/lib/solarrechner`: `berechne`
-  - `@/lib/rechner/*`: Speicher, Wärmepumpe, Wallbox, dynamischer Tarif
-- **Keine Aussagen über Ökovolt**, die nicht belegt sind (Garantien, Preise, Auszeichnungen). Belegt sind: Fachbetrieb in Türkheim, über 15 Jahre Erfahrung, Planung/Montage/Anmeldung aus einer Hand, Partner von Sigenergy, Fronius, Huawei, Solis, meteocontrol und BYD (Freigabe für deren Marketing- und Produktfotos; Bildquellen in `public/Images/Ratgeber/QUELLEN.md` dokumentieren).
-- **Interne Links:** mindestens 5 im Fließtext, zu passenden Ratgebern, Produkt-/Serviceseiten, Rechnern, Lexikon (`/wissen/lexikon#<id>`, IDs siehe `src/data/lexikon.js`, z. B. `#lfp`, `#paragraf-14a-enwg`), Förder-Check.
+  - `@/lib/invest/markt`: `REGIONEN`, `BAUART`, `FREIFLAECHE`, `ERLOESE`, `FINANZIERUNG`, `PACHT`, `AGRI`, `CARPORT`, `SPEICHER`, `STROM`, `KOMMUNE`, `PHASEN`, `PROVISION`, `GEMEINSCHAFTEN`, `npv`, `irr`, `annuitaet`, `STAND`
+  - `@/lib/rechner/annahmen`: `fmt`, `fmtEur`, `fmtMio`, `fmtPct`, `fmtCt`
+- **Keine Aussagen über ÖkoInvest**, die nicht belegt sind (Referenzprojekte, Kunden, Garantien, Auszeichnungen, Kennzahlen). Belegt ist nur, was in `docs/BRIEFING.md` unter „Unternehmen“ steht (u. a. Sitz Ostermiething, Teil der ÖKOVOLT Gruppe, eigene Solarparks der Gruppe seit 2012, rund 50 MWp Neuentwicklung pro Jahr, Verkäuferprovision 1,5–3 % nur bei Abschluss).
+- **Bilder** nur aus `/public/img` (Liste in `docs/BRIEFING.md`), Alt-Text muss zum Bild passen.
+- **Interne Links:** mindestens 5 im Fließtext, zu passenden Ratgebern, Leistungs- und Zielgruppenseiten, Rechnern (`/rechner/...`), Flächencheck, Projektbörse und Lexikon (`/wissen/lexikon#<id>`, IDs siehe `src/data/lexikon.js`, z. B. `#aufstellungsbeschluss`, `#rtb`). Nur Routen aus der Seitenlandkarte im BRIEFING.
 - **Umfang:** 1.500–3.000 Wörter Inhalt. Tiefe vor Länge – nichts aufblähen.
 - **Aufbau:** Suchintention zuerst beantworten (Kurzfazit + erster Abschnitt), dann Details, Tabellen, Praxisbeispiele, Fehler/Grenzen, Vorgehen, FAQ.

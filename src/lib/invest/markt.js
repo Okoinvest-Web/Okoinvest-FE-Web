@@ -55,16 +55,24 @@ export const FREIFLAECHE = {
   haProMwp: 1.1,
   /** Sinnvolle Mindestgröße einer Fläche in ha (darunter selten wirtschaftlich) */
   mindestHa: 3,
-  /** Schlüsselfertige Errichtung (EPC) ohne Netzanschluss, €/kWp – Spanne */
-  capexProKwp: { min: 450, mittel: 530, max: 650 },
+  /**
+   * Schlüsselfertige Errichtung (EPC) ohne Netzanschluss, €/kWp – Spanne.
+   * Große Parks (> 10 MWp) liegen 2025/26 bei stark gefallenen Modulpreisen
+   * eher am unteren Ende, kleine und schwierige Standorte am oberen.
+   */
+  capexProKwp: { min: 400, mittel: 470, max: 600 },
   /** Netzanschluss: Kabeltrasse Mittelspannung je Meter (inkl. Tiefbau) */
   kabelProMeter: 120,
   /** Übergabestation / Trafo je MWp */
-  netzanschlussFixProMwp: 45000,
+  netzanschlussFixProMwp: 35000,
   /** Entwicklungskosten bis Baureife (Planung, Gutachten, B-Plan) €/kWp */
   entwicklungProKwp: { min: 40, max: 90 },
-  /** Betriebskosten ohne Pacht: Wartung, Versicherung, Direktvermarktung, Überwachung, Verwaltung, €/kWp und Jahr */
-  opexProKwp: 12,
+  /**
+   * Betriebskosten ohne Pacht, €/kWp und Jahr: technische und kaufmännische
+   * Betriebsführung, Wartung/Grünpflege, Versicherung, Direktvermarktung,
+   * Überwachung/Sicherheit. Größere Parks eher 7–9, kleine 10–12.
+   */
+  opexProKwp: 9,
   /** Rückbau-Rücklage €/kWp einmalig (bis Laufzeitende angespart) */
   rueckbauProKwp: 25,
   /** Jährliche Degradation */
@@ -86,12 +94,35 @@ export const ERLOESE = {
    * 5,2 ct/kWh (Bundesnetzagentur). Anzulegender Wert gilt 20 Jahre.
    */
   eegFreiflaecheCt: 4.8,
-  /** Besondere Solaranlagen (Agri-PV, Moor, Parkplatz) – eigenes Segment, zuletzt deutlich höher */
-  eegBesondereCt: 6.5,
-  /** PPA Solar pay-as-produced, 10 Jahre, DE – Spanne */
-  ppaCt: { min: 4.2, mittel: 5.0, max: 6.0 },
+  /**
+   * Agri-PV in der Ausschreibung: Ein eigenes Untersegment mit höherem Höchstwert
+   * ist im EEG vorgesehen, war aber zum Stand noch nicht beihilferechtlich
+   * freigegeben. Agri-PV bietet daher im ersten Segment mit, hoch aufgeständerte
+   * Anlagen erhalten einen Bonus von 0,5 ct/kWh → Zuschlag Freifläche + Bonus.
+   */
+  eegBesondereCt: 5.3,
+  /**
+   * PPA Solar pay-as-produced, 10 Jahre, DE – Spanne. Reine Erzeuger-PPA
+   * notieren wegen Kannibalisierung eher bei 3,5–4,5 ct (dena/Pexapark),
+   * Liefer-PPA an Unternehmen mit Strukturierung darüber.
+   */
+  ppaCt: { min: 3.8, mittel: 4.5, max: 5.5 },
   /** Durchschnittlicher Marktwert Solar (Capture Price) nach Förderende, konservativ */
   merchantCt: 4.0,
+  /**
+   * Jährliche Steigerung des Solar-Marktwerts (nominal) für Merchant-Phasen.
+   * Eigene vorsichtige Annahme: unter der allgemeinen Inflation, weil mit
+   * wachsendem PV-Zubau die Mittagspreise sinken (Kannibalisierung).
+   */
+  merchantSteigerung: 0.01,
+  /** Gebotstermine 2025 (Bundesnetzagentur, erstes Segment, mengengewichteter Durchschnitt) */
+  zuschlagsHistorie: [
+    { termin: "1. März 2025", ct: 4.66 },
+    { termin: "1. Juli 2025", ct: 4.84 },
+    { termin: "1. Dezember 2025", ct: 5.0 },
+  ],
+  /** Fraunhofer ISE, Studie Stromgestehungskosten (Juli 2024): neue PV-Freiflächenanlagen in DE, ct/kWh */
+  lcoeIseCt: { min: 4.1, max: 6.9 },
 };
 
 /* ------------------------------------------------------------------ */
@@ -106,6 +137,12 @@ export const FINANZIERUNG = {
   diskont: 0.065,
   /** Steuersatz vereinfacht (Körperschaft + Gewerbe, DE) */
   steuer: 0.3,
+  /**
+   * Mindest-Schuldendienstdeckungsgrad (DSCR), auf den Banken das Darlehen
+   * bemessen – bei EEG-Projekten meist um 1,10–1,20, bei PPA/Merchant höher
+   * (marktübliche Spanne, eigene Einschätzung).
+   */
+  dscrZiel: 1.15,
 };
 
 /* ------------------------------------------------------------------ */
@@ -153,6 +190,22 @@ export const AGRI = {
   opexProKwp: 14,
   /** Privilegierung Außenbereich § 35 Abs. 1 Nr. 9 BauGB: Grundfläche bis 2,5 ha, Hofbezug */
   privilegierungHa: 2.5,
+  /**
+   * Kulturen für den Agri-PV-Rechner – GROBE Orientierung, stark betriebs- und
+   * jahresabhängig (im Rechner überschreibbar):
+   *  db      Deckungsbeitrag ohne Anlage in €/ha und Jahr (Größenordnung KTBL-Standarddeckungsbeiträge)
+   *  ertrag  landwirtschaftlicher Ertrag unter dem System relativ zur Referenz, inkl. Flächenverlust
+   *          (Bandbreiten aus Fraunhofer ISE, Agri-PV-Leitfaden; DIN SPEC 91434 verlangt ≥ 66 %)
+   *          null = System für diese Kultur unüblich
+   */
+  kulturen: [
+    { id: "acker", label: "Ackerbau", sub: "Getreide, Raps, Mais", db: 450, ertrag: { vertikal: 0.9, hoch: 0.85 } },
+    { id: "gruenland", label: "Grünland", sub: "Mahd, Futterbau", db: 300, ertrag: { vertikal: 0.92, hoch: 0.9 } },
+    { id: "weide", label: "Weide", sub: "Schafe, Rinder, Geflügel", db: 250, ertrag: { vertikal: 0.95, hoch: 0.95 } },
+    { id: "sonder", label: "Obst & Beeren", sub: "Sonderkultur", db: 3500, ertrag: { vertikal: null, hoch: 0.95 } },
+  ],
+  /** Anteil an der Anlage, den ein Landwirt über Genossenschaft/Beteiligung halten kann (Rechner-Spanne) */
+  beteiligungAnteil: { min: 0.05, standard: 0.2, max: 0.49 },
 };
 
 /* ------------------------------------------------------------------ */
@@ -171,6 +224,13 @@ export const CARPORT = {
   /** Ladepunkt DC 50–150 kW inkl. Installation (ohne Netzausbau) */
   ladepunktDc: 45000,
   opexProKwp: 15,
+  /** Betrachtungszeitraum Wirtschaftlichkeit (Jahre) – Stahlbau hält deutlich länger, Wechselrichter-Tausch in Opex */
+  laufzeit: 25,
+  /** Contracting: Vertragslaufzeit (Jahre) und Aufschlag des Contractors auf die Vollkosten (eigene Annahme) */
+  contractingJahre: 20,
+  contractingMarge: 0.1,
+  /** Stellplatzfläche brutto inkl. anteiliger Fahrgasse, m² (Orientierung) */
+  stellplatzM2: 25,
 };
 
 /* ------------------------------------------------------------------ */
@@ -235,6 +295,15 @@ export const KOMMUNE = {
   /** Hebesatz Durchschnitt DE */
   hebesatz: 4.0,
   messzahl: 0.035,
+  /** Betrachtungszeitraum für Kommunen (Jahre, entspricht der EEG-Förderdauer) */
+  betrachtungJahre: 20,
+  /** Nutzungsdauer PV nach AfA-Tabelle (lineare Abschreibung) */
+  afaJahre: 20,
+  /** § 8 Nr. 1 GewStG: 25 % der Entgelte für Schulden werden hinzugerechnet, soweit die Summe 200.000 € übersteigt */
+  hinzurechnungZinsen: 0.25,
+  hinzurechnungFreibetrag: 200000,
+  /** Reglerspanne Hebesatz (gesetzliches Minimum 200 %, § 16 Abs. 4 GewStG) */
+  hebesatzSpanne: { min: 2.0, max: 6.0 },
 };
 
 /* ------------------------------------------------------------------ */

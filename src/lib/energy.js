@@ -23,7 +23,7 @@ export const TARIF_ANNAHMEN = {
 async function holeJson(url, revalidate) {
   const res = await fetch(url, {
     next: { revalidate },
-    headers: { Accept: "application/json", "User-Agent": "oekovolt.de energy widget" },
+    headers: { Accept: "application/json", "User-Agent": "oekoinvest energy widget" },
   });
   if (!res.ok) throw new Error(`${url} -> ${res.status}`);
   return res.json();

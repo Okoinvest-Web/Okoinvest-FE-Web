@@ -1,19 +1,23 @@
 import Link from "next/link";
-import { FileText, Mail, Phone } from "lucide-react";
+import { ArrowRight, FileText, Mail, Phone } from "lucide-react";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import { Eyebrow } from "@/components/ui/SectionHeading";
+import { KONTAKT } from "@/data/site";
 
 const RECHTLICHES = [
   { name: "Impressum", href: "/impressum" },
   { name: "Datenschutz", href: "/datenschutz" },
-  { name: "AGB", href: "/agb" },
+  { name: "Nutzungsbedingungen", href: "/nutzungsbedingungen" },
   { name: "Barrierefreiheit", href: "/barrierefreiheit" },
 ];
 
 /**
  * Rahmen für Rechtstexte: kompakter dunkler Kopf, lesbare Spalte, Seitenleiste
- * mit Navigation zwischen den Rechtstexten und Kontakt. Der Rechtstext selbst
- * bleibt unverändert – `.ov-legal` vereinheitlicht nur seine Typografie.
+ * mit Navigation zwischen den Rechtstexten und Kontakt. `.ov-legal`
+ * vereinheitlicht die Typografie des Rechtstextes.
+ *
+ * Kontaktbox: Telefon und E-Mail erscheinen nur, wenn sie in
+ * src/data/site.js (KONTAKT) freigegeben sind – sonst Verweis auf /kontakt.
  */
 export default function LegalShell({ titel, pfad, lead, children }) {
   return (
@@ -55,12 +59,22 @@ export default function LegalShell({ titel, pfad, lead, children }) {
             </nav>
             <div className="mt-4 rounded-3xl bg-navy-950 p-6 text-white">
               <p className="font-display text-[17px] font-bold">Fragen zu diesem Text?</p>
-              <a href="tel:+498245967880" className="mt-4 flex items-center gap-2.5 text-[14.5px] text-white/85 hover:text-white">
-                <Phone aria-hidden="true" className="h-4 w-4 text-ov-300" /> +49 8245 96 788 0
-              </a>
-              <a href="mailto:office@oekovolt.de" className="mt-2 flex items-center gap-2.5 text-[14.5px] text-white/85 hover:text-white">
-                <Mail aria-hidden="true" className="h-4 w-4 text-ov-300" /> office@oekovolt.de
-              </a>
+              {KONTAKT.telefon && (
+                <a href={KONTAKT.telefonHref || `tel:${KONTAKT.telefon.replace(/[^+\d]/g, "")}`} className="mt-4 flex items-center gap-2.5 text-[14.5px] text-white/85 hover:text-white">
+                  <Phone aria-hidden="true" className="h-4 w-4 text-ov-300" /> {KONTAKT.telefon}
+                </a>
+              )}
+              {KONTAKT.email && (
+                <a href={`mailto:${KONTAKT.email}`} className="mt-2 flex items-center gap-2.5 break-all text-[14.5px] text-white/85 hover:text-white">
+                  <Mail aria-hidden="true" className="h-4 w-4 shrink-0 text-ov-300" /> {KONTAKT.email}
+                </a>
+              )}
+              {!KONTAKT.telefon && !KONTAKT.email && (
+                <p className="mt-2 text-[14px] leading-relaxed text-white/65">Schreiben Sie uns über das Kontaktformular – wir antworten schriftlich.</p>
+              )}
+              <Link href="/kontakt" className="mt-4 inline-flex items-center gap-2 text-[14.5px] font-semibold text-ov-300 hover:text-white">
+                Zum Kontaktformular <ArrowRight aria-hidden="true" className="h-4 w-4" />
+              </Link>
             </div>
           </aside>
         </div>

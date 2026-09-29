@@ -238,14 +238,14 @@ export function ArtikelMeta({ artikel }) {
     <div className="ov-hero-in mt-9 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-ink-200 pt-7" style={{ "--ov-delay": "300ms" }}>
       <div className="flex items-center gap-3">
         <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-navy-950 font-display text-[14px] font-extrabold text-white ring-2 ring-white">
-          ÖV
+          ÖI
           <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-ov-500 ring-2 ring-white">
             <BadgeCheck aria-hidden="true" className="h-2.5 w-2.5" />
           </span>
         </span>
         <div className="leading-tight">
-          <p className="text-[14.5px] font-semibold text-ink-900">Ökovolt-Redaktion</p>
-          <p className="text-[12.5px] text-ink-500">Fachbetrieb für Photovoltaik</p>
+          <p className="text-[14.5px] font-semibold text-ink-900">Projektteam ÖkoInvest</p>
+          <p className="text-[12.5px] text-ink-500">Projektentwicklung Freiflächen- und Agri-PV</p>
         </div>
       </div>
       <p className="flex items-center gap-2 text-[14px] text-ink-600">
@@ -264,19 +264,19 @@ export function ArtikelMeta({ artikel }) {
 export function Autorenbox({ artikel }) {
   return (
     <div className="mt-16 flex flex-col gap-5 rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60 sm:flex-row sm:items-start md:p-8">
-      <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-navy-950 font-display text-[20px] font-extrabold text-white">ÖV</span>
+      <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-navy-950 font-display text-[20px] font-extrabold text-white">ÖI</span>
       <div>
-        <p className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ov-700">Über die Redaktion</p>
-        <p className="mt-1.5 font-display text-[19px] font-extrabold text-ink-900">Ökovolt-Redaktion</p>
+        <p className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ov-700">Über die Autoren</p>
+        <p className="mt-1.5 font-display text-[19px] font-extrabold text-ink-900">Projektteam ÖkoInvest</p>
         <p className="mt-2 text-[15px] leading-relaxed text-ink-600">
-          Geschrieben von unseren Fachleuten aus Planung und Montage – dem Fachbetrieb für Photovoltaik aus Türkheim mit über 15 Jahren Erfahrung.
-          Zahlen und Rechtsstand prüfen wir regelmäßig; zuletzt am <time dateTime={artikel.aktualisiert}>{datumLang(artikel.aktualisiert)}</time>.
-          Die Inhalte ersetzen keine Steuer- oder Rechtsberatung.
+          Geschrieben vom Projektteam der ÖkoInvest GmbH – Projektentwicklung für Freiflächen-PV, Agri-PV, Solarcarports und Großspeicher,
+          Teil der ÖKOVOLT Gruppe, die seit 2012 eigene Solarparks betreibt. Zahlen und Rechtsstand prüfen wir regelmäßig; zuletzt am{" "}
+          <time dateTime={artikel.aktualisiert}>{datumLang(artikel.aktualisiert)}</time>. Die Inhalte ersetzen keine Rechts-, Steuer- oder Anlageberatung.
         </p>
         <p className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[14px]">
-          <Link href="/uber-uns/team" className="font-semibold text-ov-700 hover:underline">Unser Team</Link>
-          <Link href="/wissen/lexikon" className="font-semibold text-ov-700 hover:underline">Photovoltaik-Lexikon</Link>
-          <a href="mailto:office@oekovolt.de" className="font-semibold text-ov-700 hover:underline">Fehler gefunden? Schreiben Sie uns</a>
+          <Link href="/unternehmen" className="font-semibold text-ov-700 hover:underline">Über ÖkoInvest</Link>
+          <Link href="/wissen/lexikon" className="font-semibold text-ov-700 hover:underline">Lexikon</Link>
+          <Link href="/kontakt" className="font-semibold text-ov-700 hover:underline">Fehler gefunden? Schreiben Sie uns</Link>
         </p>
       </div>
     </div>

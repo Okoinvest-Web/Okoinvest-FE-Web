@@ -21,7 +21,7 @@ const norm = (s) =>
     .trim();
 
 /**
- * Photovoltaik-Lexikon mit Live-Suche, Themenfilter und klebender A–Z-Leiste.
+ * Fachlexikon mit Live-Suche, Themenfilter und klebender A–Z-Leiste.
  * Alle Begriffe werden serverseitig vollständig gerendert (SEO, Anker-IDs);
  * Filter blenden nur aus.
  *
@@ -120,7 +120,7 @@ export default function LexikonExplorer({ gruppen, kategorien, namen }) {
               type="search"
               value={suche}
               onChange={(e) => setSuche(e.target.value)}
-              placeholder="Begriff suchen, z. B. Autarkie"
+              placeholder="Begriff suchen, z. B. Pacht"
               autoComplete="off"
               className="h-12 w-full rounded-full bg-white pl-11 pr-11 text-[15px] text-ink-900 ring-1 ring-ink-200 placeholder:text-ink-500 focus:outline-none focus:ring-2 focus:ring-ov-500 lg:bg-ink-50 [&::-webkit-search-cancel-button]:hidden"
             />
@@ -189,12 +189,12 @@ export default function LexikonExplorer({ gruppen, kategorien, namen }) {
             Versuchen Sie ein anderes Stichwort – oder fragen Sie uns direkt. Wir ergänzen das Lexikon laufend.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link href="/faqs" className="inline-flex h-11 items-center rounded-full bg-ink-900 px-5 text-[14px] font-semibold text-white hover:bg-ink-800">
+            <Link href="/faq" className="inline-flex h-11 items-center rounded-full bg-ink-900 px-5 text-[14px] font-semibold text-white hover:bg-ink-800">
               Häufige Fragen
             </Link>
-            <a href="tel:+498245967880" className="inline-flex h-11 items-center rounded-full px-5 text-[14px] font-semibold text-ink-800 ring-1 ring-ink-200 hover:bg-ink-50">
-              08245 96 788 0
-            </a>
+            <Link href="/kontakt" className="inline-flex h-11 items-center rounded-full px-5 text-[14px] font-semibold text-ink-800 ring-1 ring-ink-200 hover:bg-ink-50">
+              Frage stellen
+            </Link>
           </div>
         </div>
       ) : (

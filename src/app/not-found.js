@@ -1,16 +1,17 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Calculator, Home, Sun } from "lucide-react";
+import { ArrowRight, BookOpen, Calculator, Home, LayoutGrid, MapPinned } from "lucide-react";
 import Button from "@/components/ui/Button";
 
 export const metadata = {
-  title: "Seite nicht gefunden | Ökovolt",
+  title: "Seite nicht gefunden | ÖkoInvest",
   robots: { index: false, follow: true },
 };
 
 const ZIELE = [
-  { titel: "Photovoltaikanlage", text: "Komplettanlage vom Fachbetrieb", href: "/produkte/photovoltaikanlage", icon: Sun },
-  { titel: "Solarrechner", text: "Ertrag & Ersparnis berechnen", href: "/solarrechner", icon: Calculator },
-  { titel: "Ratgeber", text: "Kosten, Förderung, Technik", href: "/ratgeber", icon: BookOpen },
+  { titel: "Flächencheck", text: "Eignung Ihrer Fläche prüfen", href: "/flaechencheck", icon: MapPinned },
+  { titel: "Projektbörse", text: "PV-Projekte in allen Phasen", href: "/projektboerse", icon: LayoutGrid },
+  { titel: "Rechner", text: "Pacht, Agri-PV, Solarpark, Reststrom", href: "/rechner", icon: Calculator },
+  { titel: "Ratgeber", text: "Pacht, Genehmigung, Investment", href: "/ratgeber", icon: BookOpen },
 ];
 
 export default function NotFound() {
@@ -20,15 +21,15 @@ export default function NotFound() {
       <div aria-hidden="true" className="absolute left-1/2 top-1/3 -z-10 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-ov-500/25 blur-[140px]" />
       <div className="ov-container flex min-h-[70vh] flex-col items-center justify-center py-20 text-center">
         <p aria-hidden="true" className="ov-hero-in select-none font-display text-[clamp(7rem,5rem+10vw,14rem)] font-extrabold leading-none tracking-tighter">
-          <span className="ov-text-gradient-light">4</span>
-          <span className="inline-block animate-ov-float text-sun-400">☀</span>
-          <span className="ov-text-gradient-light">4</span>
+          <span className="ov-text-gradient-light">404</span>
         </p>
-        <h1 className="ov-h2 ov-hero-in mt-4" style={{ "--ov-delay": "100ms" }}>Diese Seite hat heute keine Sonne abbekommen.</h1>
+        <h1 className="ov-h2 ov-hero-in mt-4" style={{ "--ov-delay": "100ms" }}>
+          Diese Fläche ist noch nicht erschlossen.
+        </h1>
         <p className="ov-lead ov-hero-in mx-auto mt-5 max-w-xl text-white/65" style={{ "--ov-delay": "180ms" }}>
-          Die gesuchte Seite existiert nicht oder wurde verschoben. Diese Wege führen garantiert ans Ziel:
+          Die gesuchte Seite existiert nicht oder wurde verschoben. Diese Wege führen weiter:
         </p>
-        <ul className="ov-hero-in mt-10 grid w-full max-w-3xl gap-3 sm:grid-cols-3" style={{ "--ov-delay": "260ms" }}>
+        <ul className="ov-hero-in mt-10 grid w-full max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-4" style={{ "--ov-delay": "260ms" }}>
           {ZIELE.map((z) => (
             <li key={z.href}>
               <Link href={z.href} className="group ov-glass flex h-full flex-col items-start rounded-3xl p-5 text-left transition-colors hover:bg-white/15">
@@ -41,7 +42,9 @@ export default function NotFound() {
           ))}
         </ul>
         <div className="ov-hero-in mt-10" style={{ "--ov-delay": "320ms" }}>
-          <Button href="/" size="lg" icon={Home}>Zur Startseite</Button>
+          <Button href="/" size="lg" icon={Home}>
+            Zur Startseite
+          </Button>
         </div>
       </div>
     </section>

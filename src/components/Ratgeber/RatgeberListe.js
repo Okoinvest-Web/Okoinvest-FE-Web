@@ -60,7 +60,7 @@ export default function RatgeberListe({ artikel, kategorien }) {
             type="search"
             value={suche}
             onChange={(e) => setSuche(e.target.value)}
-            placeholder="Thema suchen, z. B. Speicher"
+            placeholder="Thema suchen, z. B. Pacht"
             className="h-11 w-full rounded-full border-2 border-ink-200 bg-white pl-11 pr-10 text-[15px] text-ink-900 outline-none placeholder:text-ink-500 focus:border-ov-500"
           />
           {suche && (
@@ -87,7 +87,7 @@ export default function RatgeberListe({ artikel, kategorien }) {
         <div className="mt-6 rounded-3xl bg-white p-8 text-center ring-1 ring-ink-200/70">
           <p className="font-display text-[18px] font-bold text-ink-900">Kein Artikel gefunden.</p>
           <p className="mt-2 text-[15px] text-ink-600">
-            Versuchen Sie einen anderen Begriff – oder schauen Sie ins <Link href="/wissen/lexikon" className="font-semibold text-ov-700 underline">Photovoltaik-Lexikon</Link>.
+            Versuchen Sie einen anderen Begriff – oder schauen Sie ins <Link href="/wissen/lexikon" className="font-semibold text-ov-700 underline">Lexikon</Link>.
           </p>
         </div>
       )}

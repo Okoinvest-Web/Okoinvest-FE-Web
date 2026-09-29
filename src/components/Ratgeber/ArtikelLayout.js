@@ -9,10 +9,9 @@ import ReadingProgress from "./ReadingProgress";
 import TableOfContents from "./TableOfContents";
 import Teilen from "@/components/ui/Teilen";
 import { artikelPfad } from "@/lib/ratgeber";
+import { abs } from "@/data/site";
 import { ArtikelMeta, Autorenbox, WeitereArtikel } from "./Bausteine";
-import KiZusammenfassen from "./KiZusammenfassen";
 
-const BASE_URL = "https://www.oekovolt.de";
 const TEILEN_NETZE = ["whatsapp", "linkedin", "facebook", "xing", "x", "telegram"];
 
 /**
@@ -29,7 +28,7 @@ const TEILEN_NETZE = ["whatsapp", "linkedin", "facebook", "xing", "x", "telegram
  *  cta       Props für <CtaBand/>
  */
 export default function ArtikelLayout({ artikel, toc, titel, badge, seitenCta, cta = {}, children }) {
-  const url = `${BASE_URL}${artikelPfad(artikel.slug)}`;
+  const url = abs(artikelPfad(artikel.slug));
   const teilenText = artikel.excerpt || artikel.description;
 
   return (
@@ -52,7 +51,6 @@ export default function ArtikelLayout({ artikel, toc, titel, badge, seitenCta, c
           <article className="min-w-0">
             <TableOfContents items={toc} variant="mobile" />
             <div className="max-w-[52rem]">
-              <KiZusammenfassen url={url} titel={artikel.title} className="mb-10 rounded-2xl bg-sand-50 px-4 py-3.5 ring-1 ring-ink-200/60 md:px-5" />
               {children}
               <div className="mt-14 flex flex-col gap-3 rounded-3xl border border-ink-200 p-5 sm:flex-row sm:items-center sm:justify-between md:p-6">
                 <p className="font-display text-[17px] font-bold text-ink-900">Hilfreich? Teilen Sie den Artikel.</p>

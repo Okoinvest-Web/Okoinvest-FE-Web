@@ -230,7 +230,7 @@ export default function CookieBanner({ forceShow = false, onClose }) {
             <div>
               <h2 ref={kompaktTitel} tabIndex={-1} className="font-display text-[16.5px] font-bold text-ink-900 focus:outline-none">Ihre Privatsphäre zählt</h2>
               <p className="mt-1 text-[13.5px] leading-relaxed text-ink-600">
-                Mit Ihrer Zustimmung nutzen wir Google Analytics für Besucherstatistiken und laden Karten von Google Maps.
+                Mit Ihrer Zustimmung nutzen wir Google Analytics für Besucherstatistiken.
                 Ohne Zustimmung werden keine Daten an Google übertragen.
               </p>
             </div>
@@ -264,8 +264,8 @@ export default function CookieBanner({ forceShow = false, onClose }) {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-60 backdrop-blur-sm" />
-      <div className={`fixed inset-0 flex items-center justify-center z-60 pointer-events-none`}>
+      <div className="fixed inset-0 bg-black/50 z-[9700] backdrop-blur-sm" />
+      <div className={`fixed inset-0 flex items-center justify-center z-[9701] pointer-events-none`}>
         <div
           ref={detailDialog}
           role="dialog"
@@ -281,7 +281,7 @@ export default function CookieBanner({ forceShow = false, onClose }) {
             <div className="w-[100%] flex-1 md:w-[60%]">
               <p className="text-gray-600 text-sm">
                 Wir verwenden Cookies und ähnliche Technologien auf unserer Website und verarbeiten personenbezogene
-                Daten über Sie, wie Ihre IP-Adresse. Nur mit Ihrer Einwilligung werden Google Analytics und Inhalte von Drittanbietern (Google Maps) geladen. Die Datenverarbeitung kann
+                Daten über Sie, wie Ihre IP-Adresse. Nur mit Ihrer Einwilligung wird Google Analytics geladen. Die Datenverarbeitung kann
                 mit Ihrer Einwilligung oder auf der Grundlage eines berechtigten Interesses erfolgen, dem Sie
                 widersprechen können. Sie haben das Recht, nur in essenzielle Services einzuwilligen und Ihre
                 Einwilligung zu einem späteren Zeitpunkt in der Datenschutzerklärung zu ändern oder zu widerrufen.
@@ -312,7 +312,7 @@ export default function CookieBanner({ forceShow = false, onClose }) {
             </div>
           </div>
           <p className="text-gray-600 mt-1 p-6 pb-2 text-xs">
-            Google Analytics und Google Maps können personenbezogene Daten in Drittländern (u. a. USA) verarbeiten. Indem Sie in die Nutzung
+            Google Analytics kann personenbezogene Daten in Drittländern (u. a. USA) verarbeiten. Indem Sie in die Nutzung
             dieser Services einwilligen, erklären Sie sich auch mit der Verarbeitung Ihrer Daten in diesen unsicheren
             Drittländern gemäß Art. 49 Abs. 1 lit. a DSGVO einverstanden. Dies birgt das Risiko, dass Ihre Daten von
             Behörden zu Kontroll- und Überwachungszwecken verarbeitet werden, möglicherweise ohne die Möglichkeit eines
@@ -352,74 +352,7 @@ export default function CookieBanner({ forceShow = false, onClose }) {
               </p>
             </div>
 
-            {/* Funktionale Cookies */}
-            <div className="space-y-4 border border-[var(--secondary)]/20 p-6">
-              <div className="flex items-center justify-start gap-2 ">
-                <div className="flex items-center space-x-3">
-                  <label htmlFor="functional-cookies" className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      id="functional-cookies"
-                      checked={consent.functional}
-                      onChange={() => toggleConsent("functional")}
-                      className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                    />
-                    <span className="font-medium text-gray-900">Funktional (1)</span>
-                  </label>
-                </div>
-              </div>
-              <div className="flex items-center justify-start gap-2">
-                <p className="text-sm text-gray-500 ml-8">
-                  Funktionale Dienste sind notwendig, um Funktionen über die grundlegende Funktionalität hinaus
-                  bereitzustellen, wie schönere Schriftarten, Videowiedergabe oder interaktive Web 2.0-Funktionen.
-                  Inhalte von z.B. Videoplattformen und Social-Media-Plattformen sind standardmäßig blockiert und können
-                  zugestimmt werden. Wenn dem Dienst zugestimmt wird, werden diese Inhalte automatisch ohne weitere
-                  manuelle Zustimmung geladen.&nbsp;&nbsp;
-                  <button
-                    type="button"
-                    onClick={() => toggleCategoryDetails("functional")}
-                    aria-expanded={expandedSections.functional}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer bg-transparent border-0 p-0"
-                  >
-                    {expandedSections.functional ? "Details ausblenden" : "Details anzeigen"}
-                  </button>
-                </p>
-              </div>
-              {expandedSections.functional && (
-                <>
-                  {/* Google Maps */}
-                  <div className="ml-8 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <label htmlFor="google-maps" className="flex items-center space-x-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            id="google-maps"
-                            checked={consent.googleMaps}
-                            onChange={() => toggleConsent("googleMaps")}
-                            className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                          />
-                          <span className="font-medium text-black">{cookieServices.functional.googleMaps.title}</span>
-                        </label>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-500 ml-8">
-                      {cookieServices.functional.googleMaps.description}&nbsp;&nbsp;
-                      <button
-                        type="button"
-                        onClick={() => toggleServiceDetails("googleMaps")}
-                        aria-expanded={expandedServices.googleMaps}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer bg-transparent border-0 p-0"
-                      >
-                        {expandedServices.googleMaps ? "Details ausblenden" : "Details anzeigen"}
-                      </button>
-                    </p>
-                    {expandedServices.googleMaps && <CookieDetails service={cookieServices.functional.googleMaps} />}
-                  </div>
-
-                </>
-              )}
-            </div>
+            {/* Funktionale Dienste von Drittanbietern (z. B. Karten) nutzt ÖkoInvest nicht – Kategorie entfällt */}
 
             {/* Statistik */}
             <div className="space-y-4 border border-[var(--secondary)]/20 p-6">

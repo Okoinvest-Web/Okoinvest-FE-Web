@@ -48,3 +48,4 @@ next-env.d.ts
 
 # Demo-Datenbank des Portals (lokal)
 /.data/
+.next-verify/

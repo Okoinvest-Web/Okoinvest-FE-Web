@@ -1,141 +1,44 @@
-<p align="center">
-  <img src="./public/Logo_ov_4cDeutschland-removebg-preview.png" alt="Oekovolt Solartechnik GmbH" width="300" />
-</p>
+# ÖkoInvest – Website & Plattform
 
+Website und Plattform der **ÖkoInvest GmbH** (Projektgesellschaft der ÖKOVOLT Gruppe): Projektentwicklung für Freiflächen-PV, Agri-PV, Solarcarports und Großspeicher im DACH-Raum – mit Projektbörse, Portalen für alle Beteiligten, Rechnern und dem Reststrom-Pool für den Mittelstand.
 
-☀️ Oekovolt Solartechnik GmbH – Main Branch
+Technisch und gestalterisch basiert das Projekt auf der Website von Ökovolt Deutschland (gleiches Design-System, gleiche Bausteine).
 
-Welcome to the main production branch of the official website developed by IT Engineers for Oekovolt Solartechnik GmbH.
+## Schnellstart
 
-This branch serves as the production version of the platform. All features here are stable, tested, and ready for live usage. Contributions should be thoroughly reviewed and tested in the develop branch before being merged here.
-
-📌 Project Overview
-
-This project is a modern solar company platform with an optimized and scalable architecture, integrating a high-performance frontend with a robust PvOne backend system.
-
-Frontend: Next.js (App Router, JavaScript, Tailwind CSS)
-
-Backend: PvOne
-
-🛠️ Tech Stack
-
-Frontend
-
-Framework: Next.js – App Router
-
-Language: JavaScript
-
-Styling: Tailwind CSS
-
-Folder Structure:
-
-src/
-  ├── app/              → Application routing and pages
-  ├── components/       → Reusable UI and logic components
-public/                 → Static assets and SVGs
-
-Backend
-
-PvOne
-
-PvOne Framework
-
-🚀 Getting Started (Frontend)
-
-✅ Prerequisites
-
-Node.js v18+
-
-npm or Yarn
-
-📦 Installation
-
-Clone the repository:
-
-git clone http://ead19aa6fcd8624eb9a0dd4a4209cfad8451adb7@46.99.162.142:3000/Oekovolt-Website/Oekovolt-DE-Website.git
-
-cd Oekovolt-DE-Website
-
-Install dependencies:
-
+```bash
 npm install
-# or
-yarn install
+npm run dev          # http://localhost:3100
+```
 
-npm run dev
-# or
-yarn dev
+Ohne weitere Konfiguration läuft die Plattform im **Demo-Backend** (lokale JSON-Datei unter `.data/`, mit Demo-Konten – siehe `docs/PLATTFORM.md`).
 
-Access the frontend:
+## Struktur
 
-Open your browser and visit: http://localhost:3000
+| Pfad | Inhalt |
+|---|---|
+| `src/app/` | Seiten (App Router) und API-Routen |
+| `src/components/ui/` | Design-System-Bausteine (Hero, Section, Button, FAQ, CtaBand, Logo …) |
+| `src/components/Rechner/` | Rechner-Bausteine, Seitenrahmen, Tool-Register |
+| `src/components/Plattform`, `Portal`, `Boerse` | Formulare, Portal, Projektbörse |
+| `src/lib/invest/markt.js` | **Alle Marktannahmen** (Kosten, Erträge, Pacht, Strompreise, Phasen) – eine Quelle für alle Rechner und Texte |
+| `src/lib/rechner/` | Rechenlogik der Tools (rein, testbar) |
+| `src/lib/plattform/` | Backend-Adapter (Frappe / Demo), Sessions, Rechte, Prozesse |
+| `src/data/site.js` | Stammdaten: Domain, Gesellschaft, Kontakt |
+| `src/data/navigation.js` | Seitenstruktur für Menü, Footer, Sitemap |
+| `src/content/ratgeber/` | Ratgeber-Artikel (inhaltsgetrieben) |
+| `docs/` | Briefing, Plattform-Betrieb, API-Vertrag zur Frappe-App |
 
-🧱 Getting Started (Backend – PvOne)
+## Vor dem Livegang
 
-The backend uses the PvOne Framework with customizations under the PvOne application.
+- `src/data/site.js`: Produktivdomain (`NEXT_PUBLIC_SITE_URL`), Telefon, E-Mail, UID eintragen.
+- Umgebungsvariablen setzen (`SESSION_SECRET`, `PLATTFORM_BACKEND=frappe`, `SERVER`, `API_KEY`, `API_SECRET`, optional `NEXT_PUBLIC_GA_ID`) – siehe `docs/PLATTFORM.md`.
+- Rechtstexte (Impressum, Datenschutz, Nutzungsbedingungen) anwaltlich prüfen lassen.
+- Logo: `src/components/ui/Logo.js` durch freigegebene Logodatei ersetzen, falls vorhanden.
+- `npm audit` ohne hohe Funde.
 
-📌 Backend Prerequisites
+## Build prüfen, ohne den Dev-Server zu stören
 
-Python 3.10+
-
-Node.js & Yarn
-
-Redis
-
-MariaDB 10.6+
-
-wkhtmltopdf (with patched Qt)
-
-PvOne Framework Bench CLI
-
-📅 Backend Setup
-
-ℹ️ We have created a custom shell script that automatically installs and configures PvOne Framework for you.
-
-To start the backend server:
-
-Connect to the server using PuTTY or terminal.
-
-Navigate to the bench directory:
-
-cd /path/to/oekovolt-backend
-
-Start the server:
-
-bench start
-
-Access the PvOne backend:http://ip-address:8000
-
-💼 Directory Highlights
-
-src/app/ – All route-based pages (/agb, /kontakt, /referenzen, etc.)
-
-src/components/ – Modular components by feature (e.g., Navbar, Jobs, Project, etc.)
-
-public/ – Static assets such as logos and SVG icons
-
-globals.css – Global Tailwind and custom styles
-
-layout.js – Root layout wrapper
-
-page.js – Homepage route
-
-🔀 Development Workflow
-
-Work on a new branch from develop.
-
-Implement and test your features.
-
-Commit with meaningful messages.
-
-Push to the remote develop branch.
-
-📄 License
-
-This platform is proprietary software, developed exclusively by IT Engineers for Oekovolt Solartechnik GmbH. Unauthorized use or distribution is strictly prohibited.
-
-📢 Contact
-
-IT Engineers LLC 📧 Email: office@it-bedarf.com 🌐 Website: https://www.itengineers.at
-
-© 2025 IT Engineers – All Rights Reserved
+```bash
+NEXT_DIST_DIR=.next-verify npx next build
+```

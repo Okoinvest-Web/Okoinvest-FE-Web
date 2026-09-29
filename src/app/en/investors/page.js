@@ -1,0 +1,335 @@
+import Link from "next/link";
+import { BadgePercent, BatteryCharging, Building2, FileSignature, FolderLock, Handshake, Layers, LineChart, Scale, Search, ShieldCheck, Sprout, UserPlus, Users, Zap } from "lucide-react";
+
+import PageHero from "@/components/ui/PageHero";
+import Section from "@/components/ui/Section";
+import SectionHeading from "@/components/ui/SectionHeading";
+import FeatureGrid from "@/components/ui/FeatureGrid";
+import Steps from "@/components/ui/Steps";
+import Faq from "@/components/ui/Faq";
+import Button from "@/components/ui/Button";
+import Reveal from "@/components/ui/Reveal";
+import Querverweise from "@/components/Reusable/Querverweise";
+import EnCta from "@/components/En/EnCta";
+import PhaseModel, { PHASE_EN } from "@/components/En/PhaseModel";
+import DdList from "@/components/En/DdList";
+import ContactForm from "@/components/En/ContactForm";
+import { datumEn, enMetadata, fmtEn, fmtEurEn } from "@/components/En/sprachpaare";
+import { KENNZAHLEN, SITE, abs } from "@/data/site";
+import { ERLOESE, PHASEN, PROVISION, STAND } from "@/lib/invest/markt";
+
+const PFAD = "/en/investors";
+const BESCHREIBUNG =
+  "Buy solar project rights, RTB solar parks and operating assets in Germany, Austria and Switzerland: phase model with prices, due diligence, data room – free.";
+
+export const metadata = enMetadata({
+  pfad: PFAD,
+  title: "Buy solar projects in DACH: rights & RTB | ÖkoInvest",
+  description: BESCHREIBUNG,
+  keywords: ["buy solar park Germany", "solar project rights", "RTB solar project", "PV projects Austria investor", "co-development solar", "operating solar assets DACH"],
+  bild: { src: "/img/investoren-vor-ort.jpg", alt: "Investors visiting a solar park" },
+});
+
+const rtb = PHASEN.find((p) => p.id === "rtb");
+const BEISPIEL = { mwp: 20, preis: Math.round((rtb.preisProKwp.min + rtb.preisProKwp.max) / 2) };
+const beispielKaufpreis = BEISPIEL.mwp * 1000 * BEISPIEL.preis;
+const SPANNE = `${fmtEn(PROVISION.verkaeufer.min * 100, 1)}–${fmtEn(PROVISION.verkaeufer.max * 100)}%`;
+
+const FAQ = [
+  {
+    q: "What does the platform cost me as an investor?",
+    a: `Nothing. Search profile, teasers, NDA and data room are free of charge for buyers. The platform is financed by a success fee paid by the seller – ${SPANNE} of the purchase price, only on successful closing.`,
+  },
+  {
+    q: "Which projects do you offer?",
+    a: "Projects from the ÖKOVOLT Group's own development and projects from third-party developers listed on the project exchange: ground-mounted PV, agri-PV, car park PV and battery storage in Germany, Austria and Switzerland – from secured land to operating assets. Every listing is checked for completeness of the core documents before publication.",
+  },
+  {
+    q: "How much ready-to-build capacity is available?",
+    a: `Honestly: the ÖKOVOLT Group brings around ${KENNZAHLEN.entwicklungMwProJahr} MWp of new capacity into development every year. Reaching RTB typically takes two to three years, and some projects fail on grid or planning. RTB capacity therefore becomes available with a time lag. Entering earlier – e.g. from grid connection commitment or zoning resolution – means more choice and a lower price, but more risk.`,
+  },
+  {
+    q: "How does access to confidential documents work?",
+    a: "In public you see an anonymous teaser with region, size, phase and key data. After registration and a digital non-disclosure agreement (NDA) you get access to the data room with lease agreements, planning documents, grid connection commitment and expert reports – every access is logged.",
+  },
+  {
+    q: "Do you offer co-development?",
+    a: "Yes. You participate early in a project or a pipeline and co-fund the development costs; we develop to RTB. Milestone payments and a right of first refusal or acquisition right at RTB are common. Terms are agreed per project.",
+  },
+  {
+    q: "What revenues do buyers currently expect?",
+    a: `In Germany, the award from the EEG tender (recent volume-weighted averages ${ERLOESE.zuschlagsHistorie.map((z) => fmtEn(z.ct, 2)).join(", ")} ct/kWh for the 2025 bid dates), PPA prices roughly between ${fmtEn(ERLOESE.ppaCt.min, 1)} and ${fmtEn(ERLOESE.ppaCt.max, 1)} ct/kWh, or combinations. In Austria via the EAG market premium or investment grants, in Switzerland via the one-off remuneration.`,
+  },
+  {
+    q: "Are the portal and documents available in English?",
+    a: "The portal interface is currently in German. Teasers can be read with the key figures alone, and you are welcome to contact us in English. The language of data room documents depends on the project – German-language permits and contracts are the norm in the DACH region.",
+  },
+];
+
+export default function EnInvestors() {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: "Brokerage and sale of solar projects to investors",
+    serviceType: "Project rights, ready-to-build projects and operating assets (photovoltaics, storage)",
+    provider: { "@id": `${SITE.url}/#organization` },
+    areaServed: ["DE", "AT", "CH"],
+    audience: { "@type": "BusinessAudience", audienceType: "Investors, funds, utilities, family offices" },
+    url: abs(PFAD),
+    description: BESCHREIBUNG,
+    inLanguage: "en",
+    offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", description: "Free of charge for investors (search profile, NDA, data room)" },
+  };
+
+  return (
+    <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+
+      <PageHero
+        variant="immersive"
+        eyebrow="For investors"
+        title={
+          <>
+            Buy solar projects – <span className="ov-text-gradient-light">at the stage that suits you.</span>
+          </>
+        }
+        lead="Project rights from secured land onwards, ready-to-build solar parks, operating assets and co-development in the DACH region. Vetted documents, a digital data room – and free of charge for buyers."
+        image={{ src: "/img/investoren-vor-ort.jpg", alt: "Investors visiting a solar park" }}
+        actions={[
+          { label: "Register as investor", href: "/registrieren?rolle=investor" },
+          { label: "Project exchange", href: "/en/project-exchange", icon: Search },
+        ]}
+        stats={[
+          { value: KENNZAHLEN.entwicklungMwProJahr, prefix: "~", suffix: " MWp", label: "enter development every year" },
+          { value: 15, suffix: "+", label: `years of solar experience (group, since ${KENNZAHLEN.erfahrungSeit})` },
+          { value: 0, prefix: "€", label: "cost for buyers" },
+        ]}
+      />
+
+      {/* ---------------- Offer ---------------- */}
+      <Section tone="white" space="lg">
+        <SectionHeading
+          eyebrow="What we offer"
+          title="From the first lease agreement to the operating plant."
+          lead="You decide how much development risk you want to take. The earlier you enter, the lower the price per kWp – and the more important a partner who takes the project all the way to grid connection."
+          className="mb-12"
+        />
+        <FeatureGrid
+          cols={3}
+          items={[
+            { icon: Layers, title: "Project rights at any stage", text: "From secured land through grid connection commitment and zoning resolution to an adopted zoning plan – with a transparent status and open items." },
+            { icon: FileSignature, title: "Ready-to-build (RTB)", text: "Building rights, grid connection, land and reports in place. EPC from within the group on request – including our own pile-driving." },
+            { icon: Building2, title: "Operating assets & secondary", text: "Solar parks in operation with yield history, feed-in support or PPA – for investors seeking cash flow rather than development risk." },
+            { icon: Handshake, title: "Co-development", text: "Enter early, co-fund development, secure a right of first refusal at RTB – with milestone payments and clear governance." },
+            { icon: BatteryCharging, title: "Storage & co-location", text: "Battery storage at the same grid connection as the solar park, or as a stand-alone project at grid nodes." },
+            { icon: Users, title: "Citizen participation", text: "Smaller tickets? Local citizens and farmers can invest via the energy cooperative (German-language offer).", href: "/genossenschaft" },
+          ]}
+        />
+      </Section>
+
+      {/* ---------------- Pipeline ---------------- */}
+      <Section tone="sand" space="lg">
+        <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:gap-16">
+          <SectionHeading
+            eyebrow="Pipeline – explained honestly"
+            title={`Around ${KENNZAHLEN.entwicklungMwProJahr} MWp enter development every year.`}
+            lead="This is capacity entering project development each year – not capacity that is ready to build tomorrow. From land security to RTB typically takes two to three years."
+          />
+          <ul className="grid gap-3">
+            {[
+              "Early stages: wide choice, low price per kWp, higher risk.",
+              "From adoption of the zoning plan: predictable, less choice, higher price.",
+              "Projects from other developers join via the exchange – with the same review.",
+            ].map((t, i) => (
+              <Reveal as="li" key={t} delay={i * 60} className="flex gap-3 rounded-2xl bg-white p-5 text-[15.5px] leading-relaxed text-ink-700 ring-1 ring-ink-200/70">
+                <span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ov-500" />
+                {t}
+              </Reveal>
+            ))}
+          </ul>
+        </div>
+      </Section>
+
+      {/* ---------------- Phase model ---------------- */}
+      <Section tone="white" space="lg" id="phases" className="scroll-mt-24">
+        <SectionHeading
+          eyebrow="Phase model"
+          title="Risk and price by development stage."
+          lead="Market ranges for project rights in €/kWp – as orientation for your search profile and your valuation."
+          className="mb-12"
+        />
+        <PhaseModel />
+      </Section>
+
+      {/* ---------------- Due diligence ---------------- */}
+      <Section tone="sand" space="lg" id="due-diligence" className="scroll-mt-24">
+        <SectionHeading
+          eyebrow="Due diligence"
+          title="The checklist we apply to every project."
+          lead="Before a project goes live on the exchange, we check the core documents for completeness. The full due diligence remains yours – this list helps structure it."
+          className="mb-10"
+        />
+        <DdList />
+        <p className="mt-6 text-[13px] leading-relaxed text-ink-500">
+          Orientation only, not legal or tax advice. For transactions we recommend technical, legal and tax advisers – the data room provides all documents they need.
+        </p>
+      </Section>
+
+      {/* ---------------- Process ---------------- */}
+      <Section tone="navy" space="lg">
+        <SectionHeading dark eyebrow="Process on the platform" title="From search profile to closing – digital and traceable." align="center" className="mb-14" />
+        <Steps
+          tone="dark"
+          cols={3}
+          items={[
+            { icon: UserPlus, title: "Search profile", text: "Define ticket size, stages, countries and technologies – register once, adjust any time." },
+            { icon: Zap, title: "Matching", text: "Matching projects are notified to you, often before they appear publicly on the exchange." },
+            { icon: ShieldCheck, title: "NDA", text: "Digital non-disclosure agreement in one click – the prerequisite for details and data room access." },
+            { icon: FolderLock, title: "Data room", text: "Leases, planning, grid, reports and Q&A in one place; every access is logged." },
+            { icon: FileSignature, title: "LOI", text: "Letter of intent with price, payment schedule and exclusivity – the start of in-depth due diligence." },
+            { icon: Handshake, title: "SPA & closing", text: "Share or asset purchase agreement, transfer of the project company (SPV), support through to construction." },
+          ]}
+        />
+      </Section>
+
+      {/* ---------------- Co-development ---------------- */}
+      <Section tone="white" space="lg" id="co-development" className="scroll-mt-24">
+        <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+          <SectionHeading
+            eyebrow="Co-development"
+            title="Enter before RTB – with milestones, not blind trust."
+            lead="You co-fund development costs of a project or a pipeline; we develop to RTB. Payments are tied to milestones such as grid connection commitment, zoning resolution and adoption of the zoning plan."
+          />
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {["flaeche", "netz", "aufstellung", "satzung"].map((id, i) => {
+              const p = PHASEN.find((x) => x.id === id);
+              return (
+                <Reveal as="li" key={id} delay={i * 60} className="rounded-2xl bg-sand-50 p-5 ring-1 ring-ink-200/70">
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-ov-700">Milestone {i + 1}</p>
+                  <p className="mt-1 font-display text-[16.5px] font-bold text-ink-900">{PHASE_EN[id].label}</p>
+                  <p className="ov-num mt-1 text-[14px] text-ink-600">
+                    €{fmtEn(p.preisProKwp.min)}–{fmtEn(p.preisProKwp.max)}/kWp · ≈ {p.monateBisRtb} months to RTB
+                  </p>
+                </Reveal>
+              );
+            })}
+          </ul>
+        </div>
+      </Section>
+
+      {/* ---------------- Commission ---------------- */}
+      <Section tone="sand" space="lg">
+        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+          <SectionHeading
+            eyebrow="Commission model – transparent"
+            title="Free of charge for investors. Full stop."
+            lead="We only earn when a project changes hands – and then the seller pays. That keeps our interest clear: suitable projects that actually get built."
+          />
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              { icon: LineChart, titel: "Investors", wert: "€0", text: "Search profile, NDA and data room free of charge" },
+              { icon: BadgePercent, titel: "Sellers", wert: SPANNE, text: "of the purchase price, only on successful closing" },
+              { icon: Sprout, titel: "Landowners", wert: "€0", text: "always free of charge for landowners" },
+            ].map((k, i) => (
+              <Reveal key={k.titel} delay={i * 70} className={i === 0 ? "rounded-3xl bg-ov-600 p-6 text-white" : "rounded-3xl bg-white p-6 ring-1 ring-ink-200/70"}>
+                <k.icon aria-hidden="true" className={i === 0 ? "h-6 w-6 text-white" : "h-6 w-6 text-ov-600"} />
+                <p className={i === 0 ? "mt-4 text-[13px] font-semibold text-white/85" : "mt-4 text-[13px] font-semibold text-ink-500"}>{k.titel}</p>
+                <p className="ov-num mt-1 font-display text-[30px] font-extrabold tracking-tight">{k.wert}</p>
+                <p className={i === 0 ? "mt-2 text-[14px] leading-relaxed text-white/85" : "mt-2 text-[14px] leading-relaxed text-ink-600"}>{k.text}</p>
+              </Reveal>
+            ))}
+            <p className="text-[13.5px] leading-relaxed text-ink-600 sm:col-span-3">
+              Example: {BEISPIEL.mwp} MWp ready-to-build at €{fmtEn(BEISPIEL.preis)}/kWp = {fmtEurEn(beispielKaufpreis)} purchase price. The success fee of {fmtEurEn(beispielKaufpreis * PROVISION.verkaeufer.min)} to{" "}
+              {fmtEurEn(beispielKaufpreis * PROVISION.verkaeufer.max)} is borne by the seller, only on closing.
+            </p>
+          </div>
+        </div>
+      </Section>
+
+      {/* ---------------- Tools ---------------- */}
+      <Section tone="green" space="md">
+        <div className="grid gap-4 md:grid-cols-2">
+          {[
+            { href: "/rechner/solarpark", icon: LineChart, titel: "Solar park return calculator", text: "Project and equity IRR, LCOE, DSCR and 30-year cash flow – interface in German." },
+            { href: "/rechner/projektbewertung", icon: Scale, titel: "Project valuation", text: "Purchase price range per kWp by stage, grid connection, size and offtake – interface in German." },
+          ].map((t) => (
+            <Link key={t.href} href={t.href} hrefLang="de" className="group ov-card-hover flex items-start gap-5 rounded-3xl bg-white p-6 ring-1 ring-ov-100 md:p-8">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-ov-50 text-ov-600 transition-colors group-hover:bg-ov-500 group-hover:text-white">
+                <t.icon aria-hidden="true" className="h-6 w-6" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-display text-[20px] font-bold text-ink-900">{t.titel}</span>
+                <span className="mt-2 block text-[15px] leading-relaxed text-ink-600">{t.text}</span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </Section>
+
+      {/* ---------------- Search profile / form ---------------- */}
+      <Section tone="navy" space="lg" id="search-profile" className="scroll-mt-24">
+        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+          <div>
+            <SectionHeading
+              dark
+              eyebrow="Search profile"
+              title="Tell us what you are looking for."
+              lead="Send a short profile – we will come back with matching projects. Or create an account right away to see matches, NDAs and data rooms in the portal."
+            />
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
+              <Button href="/registrieren?rolle=investor" variant="white" pfeil>
+                Register as investor
+              </Button>
+              <Button href="/login" variant="outlineLight">
+                Already registered? Log in
+              </Button>
+            </div>
+            <ul className="mt-10 space-y-3 border-t border-white/10 pt-8 text-[14.5px] text-white/75">
+              {["Free of charge and non-binding", "Confidential: details only after NDA", "Portal interface currently in German", `Market data as of ${datumEn(STAND)}`].map((t) => (
+                <li key={t} className="flex items-center gap-2.5">
+                  <ShieldCheck aria-hidden="true" className="h-4 w-4 shrink-0 text-ov-300" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-[2rem] bg-white/[0.04] p-6 ring-1 ring-white/10 md:p-8">
+            <ContactForm
+              dunkel
+              typ="investor"
+              daten={{ quelle: "en/investors" }}
+              titel="Investor enquiry"
+              text="Ticket size, preferred stages, countries and technologies – a few lines are enough."
+              button="Send search profile"
+            />
+          </div>
+        </div>
+      </Section>
+
+      {/* ---------------- FAQ ---------------- */}
+      <Section tone="sand" space="lg">
+        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+          <SectionHeading eyebrow="FAQ" title="Good to know for investors" lead="Further questions? We are happy to answer them personally." />
+          <Faq items={FAQ} />
+        </div>
+      </Section>
+
+      <Querverweise
+        ueberschrift="Continue reading"
+        items={[
+          { href: "/en/project-exchange", titel: "Project exchange", text: "Listings across the DACH region – anonymous teaser in public, details after NDA." },
+          { href: "/en/sell-your-project", titel: "Sell your project", text: "For developers: confidential marketing, success fee only on closing." },
+          { href: "/en/contact", titel: "Contact", text: "Enquiries in English to the team in Ostermiething." },
+        ]}
+      />
+
+      <EnCta
+        eyebrow="Free of charge for investors"
+        title="The right projects, before everyone sees them."
+        text="Set up your search profile. We match it against new projects from our own development and from the exchange – with vetted documents and one fixed contact person."
+        primary={{ label: "Register as investor", href: "/registrieren?rolle=investor" }}
+        secondary={{ label: "Project exchange", href: "/en/project-exchange" }}
+      />
+    </div>
+  );
+}

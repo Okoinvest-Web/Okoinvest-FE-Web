@@ -1,4 +1,4 @@
-import { Car, Factory, HandCoins, Landmark, LineChart, MapPinned, Scale, Sprout } from "lucide-react";
+import { BatteryCharging, Cable, Car, Factory, FileSearch, HandCoins, Handshake, Landmark, LineChart, MapPinned, Scale, Share2, Sprout, Users } from "lucide-react";
 
 /** Alle Rechner & Tools – eine Quelle für Hub, Querverweise und Schema. */
 export const TOOLS = [
@@ -10,4 +10,10 @@ export const TOOLS = [
   { id: "reststrom", href: "/rechner/reststrom", titel: "Reststrom-Rechner", kurz: "Ersparnis durch den Strompool", text: "Jahresverbrauch und heutiger Preis – was der Pool aus Bündelung, Solar-PPA und Flexibilität bei Ihrem Reststrom einsparen kann.", icon: Factory, zielgruppe: "Unternehmen" },
   { id: "solarcarport", href: "/rechner/solarcarport", titel: "Carport-Rechner", kurz: "Parkplatz-PV mit Ladepunkten", text: "Stellplätze eingeben – Leistung, Ertrag, Investition, Eigenverbrauch und Amortisation eines Solarcarports mit Ladeinfrastruktur.", icon: Car, zielgruppe: "Unternehmen" },
   { id: "kommune", href: "/rechner/kommune", titel: "Kommunal-Rechner", kurz: "Einnahmen der Gemeinde aus dem Solarpark", text: "§ 6 EEG-Beteiligung, Gewerbesteuer und Pacht auf Gemeindeflächen – was ein Solarpark der Standortgemeinde über 20 Jahre bringt.", icon: Landmark, zielgruppe: "Kommunen" },
+  { id: "pachtangebot-check", href: "/rechner/pachtangebot-check", titel: "Pachtangebot prüfen", kurz: "Klausel-Check mit Ampel und Barwert", text: "Angebot eines Projektierers eingeben – Summe, Barwert, Marktvergleich, Ampel für jede Klausel und die Fragen, die Sie stellen sollten. Mit Druckansicht.", icon: FileSearch, zielgruppe: "Eigentümer", tag: "Neu" },
+  { id: "netzanschluss", href: "/rechner/netzanschluss", titel: "Netzanschluss-Check", kurz: "Kosten, Zeitrahmen und Risiken", text: "Größe, Entfernung, Spannungsebene und Kapazität – grobe Kosten für Trasse, Stationen und Umspannwerk, mit Überbauung, Speicher und Tipps zu § 8 EEG.", icon: Cable, zielgruppe: "Eigentümer" },
+  { id: "ppa", href: "/rechner/ppa", titel: "PPA-Rechner", kurz: "Solarstrom zum Festpreis für Unternehmen", text: "Verbrauch, Lastprofil und PPA-Angebot – Ersparnis und Risiko in drei Börsenpreis-Szenarien, Preisabsicherung und CO₂.", icon: Handshake, zielgruppe: "Unternehmen" },
+  { id: "grossspeicher", href: "/rechner/grossspeicher", titel: "Großspeicher-Rechner", kurz: "BESS-Rendite mit Erlösmix", text: "Arbitrage, aFRR und FCR, Co-Location oder Stand-alone, Baukostenzuschuss und Netzentgelte – IRR, Amortisation und Cashflow.", icon: BatteryCharging, zielgruppe: "Investoren", tag: "Profi" },
+  { id: "beteiligung", href: "/rechner/beteiligung", titel: "Beteiligungsrechner", kurz: "Genossenschaft: Ausschüttung in drei Szenarien", text: "Wie aus dem Cashflow eines Solarparks eine Ausschüttung entstehen kann – vorsichtig gerechnet, Risiken offen, keine Anlageberatung.", icon: Users, zielgruppe: "Bürger" },
+  { id: "energy-sharing", href: "/rechner/energy-sharing", titel: "Energy-Sharing-Rechner", kurz: "Energiegemeinschaft in DE, AT und CH", text: "Anlage und Teilnehmende eingeben – geteilter Strom, Netzentgelt-Abschlag, Vorteil je Teilnehmer und Erlös für den Erzeuger.", icon: Share2, zielgruppe: "Kommunen" },
 ];

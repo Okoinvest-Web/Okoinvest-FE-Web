@@ -89,6 +89,7 @@ export const NAVIGATION = [
         items: [
           { name: "Energiegemeinschaften", href: "/energiegemeinschaften", icon: "Share2", text: "Energy Sharing in DE, EEG in AT, LEG in CH" },
           { name: "Genossenschaft", href: "/genossenschaft", icon: "Users", text: "Bürger und Landwirte als Miteigentümer" },
+          { name: "Energy-Sharing-Rechner", href: "/rechner/energy-sharing", icon: "Share2", text: "Vorteil je Teilnehmer" },
         ],
       },
     ],
@@ -105,6 +106,8 @@ export const NAVIGATION = [
           { name: "Flächencheck", href: "/flaechencheck", icon: "MapPinned", text: "Eignung und Pachtspanne Ihrer Fläche" },
           { name: "Pachtrechner", href: "/rechner/pacht", icon: "HandCoins", text: "Pacht über 30 Jahre vs. Ackerbau" },
           { name: "Agri-PV-Rechner", href: "/rechner/agri-pv", icon: "Sprout", text: "Verpachten, investieren oder beteiligen" },
+          { name: "Pachtangebot prüfen", href: "/rechner/pachtangebot-check", icon: "FileSearch", text: "Klausel-Check mit Ampel und Barwert" },
+          { name: "Netzanschluss-Check", href: "/rechner/netzanschluss", icon: "Cable", text: "Kosten, Zeitrahmen, Risiken" },
         ],
       },
       {
@@ -115,6 +118,8 @@ export const NAVIGATION = [
           { name: "Reststrom-Rechner", href: "/rechner/reststrom", icon: "Factory", text: "Ersparnis durch den Strompool" },
           { name: "Carport-Rechner", href: "/rechner/solarcarport", icon: "Car", text: "Parkplatz-PV mit Ladepunkten" },
           { name: "Kommunal-Rechner", href: "/rechner/kommune", icon: "Landmark", text: "Einnahmen der Gemeinde aus dem Solarpark" },
+          { name: "PPA-Rechner", href: "/rechner/ppa", icon: "Handshake", text: "Solarstrom zum Festpreis" },
+          { name: "Großspeicher-Rechner", href: "/rechner/grossspeicher", icon: "BatteryCharging", text: "BESS-Rendite mit Erlösmix" },
         ],
       },
     ],
@@ -144,6 +149,8 @@ export const NAVIGATION = [
         label: "Unternehmen",
         items: [
           { name: "Über ÖkoInvest", href: "/unternehmen", icon: "Building2", text: "Gruppe, Gesellschaften, Pipeline" },
+          { name: "Referenzen", href: "/referenzen", icon: "BadgeCheck", text: "Seit 2012 eigene Solarparks – belegt" },
+          { name: "English", href: "/en", icon: "Globe", text: "For international investors" },
           { name: "Kontakt", href: "/kontakt", icon: "MessageCircle", text: "Anfrage an das Projektteam" },
           { name: "Login", href: "/login", icon: "LogIn", text: "Portal für Partner und Kunden" },
         ],

@@ -81,6 +81,41 @@ export const FREIFLAECHE = {
   inflation: 0.02,
   /** Laufzeit Betrachtung (Jahre) */
   laufzeit: 30,
+  /**
+   * Netzanschluss-Check (/rechner/netzanschluss) – grobe Kostenbausteine,
+   * eigene Einschätzung aus Projektpraxis und öffentlichen Angaben von
+   * Netzbetreibern; Einzelfall kann deutlich abweichen.
+   *  msSystemMw         übertragbare Leistung je 20-kV-Kabelsystem über typische Trassenlängen
+   *  zusatzSystemFaktor jedes weitere System in derselben Trasse (Tiefbau geteilt), Anteil der Kosten je Meter
+   *  uwFeld             Schaltfeld an der MS-Sammelschiene eines Umspannwerks, €
+   *  einschleifen       Einschleifen in eine bestehende MS-Leitung (Schaltanlage, Schutz), €
+   *  hsKabelProKm       110-kV-Kabeltrasse inkl. Tiefbau, €/km
+   *  kundenUwFix/ProMva eigenes Umspannwerk 110/20 kV (Kundenumspannwerk): Grundkosten + je MVA
+   *  grenzeMsMw         bis zu dieser Anschlussleistung ist ein Anschluss an eine MS-Leitung in der Regel möglich
+   *  grenzeUwMw         bis hierhin meist Anschluss an der MS-Sammelschiene eines Umspannwerks, darüber 110 kV
+   *  abregelung         Energieverlust bei Anschlussleistung/Modulleistung (Süd, fest, DE) – Näherung
+   */
+  netz: {
+    msSystemMw: 12,
+    zusatzSystemFaktor: 0.6,
+    uwFeld: { min: 150000, mittel: 250000, max: 400000 },
+    einschleifen: 80000,
+    hsKabelProKm: { min: 900000, mittel: 1300000, max: 2000000 },
+    kundenUwFix: 2000000,
+    kundenUwProMva: 40000,
+    grenzeMsMw: 12,
+    grenzeUwMw: 35,
+    abregelung: [
+      [1.0, 0],
+      [0.9, 0.005],
+      [0.8, 0.015],
+      [0.7, 0.04],
+      [0.6, 0.08],
+      [0.5, 0.15],
+    ],
+    /** § 8 Abs. 6 EEG: Netzverträglichkeitsprüfung mit Kostenvoranschlag spätestens nach acht Wochen */
+    pruefWochen: 8,
+  },
 };
 
 /* ------------------------------------------------------------------ */
@@ -168,6 +203,20 @@ export const PACHT = {
   indexierung: 0.015,
   /** Einmalige Bereitstellungs-/Reservierungsprämie je ha (bis Baubeginn) */
   reservierungProHa: { min: 100, max: 300 },
+  /**
+   * Pachtangebot-Check (/rechner/pachtangebot-check) – eigene Einschätzung
+   * marktüblicher Vertragspunkte (DACH, 2025/26), keine Rechtsberatung:
+   *  diskontEigentuemer   Kalkulationszins für den Barwert aus Sicht des Eigentümers
+   *  reservierungJahre    übliche Dauer der Reservierungs-/Optionsphase bis Baubeginn (Jahre)
+   *  festlaufzeitMax      Festlaufzeit, ab der eine Bindung unüblich lang wird (Jahre)
+   *  verlaengerungMax     übliche Summe der Verlängerungsoptionen des Pächters (Jahre)
+   *  anwaltskosten        übliche Kostenübernahme für die anwaltliche Prüfung des Vertrags, €
+   */
+  diskontEigentuemer: 0.03,
+  reservierungJahre: { ueblich: 3, max: 5 },
+  festlaufzeitMax: 30,
+  verlaengerungMax: 10,
+  anwaltskosten: { min: 1000, max: 3000 },
 };
 
 /* ------------------------------------------------------------------ */
@@ -208,6 +257,13 @@ export const AGRI = {
   ],
   /** Anteil an der Anlage, den ein Landwirt über Genossenschaft/Beteiligung halten kann (Rechner-Spanne) */
   beteiligungAnteil: { min: 0.05, standard: 0.2, max: 0.49 },
+  /**
+   * Österreich, § 33 EAG: Abschlag auf den Zuschlagswert der Marktprämie für PV auf
+   * landwirtschaftlich genutzten Flächen oder im Grünland; entfällt u. a. für
+   * Agri-PV, bei der die landwirtschaftliche Hauptnutzung erhalten bleibt
+   * (RIS, EAG § 33, Stand 09/2026; genutzt auf den Regionalseiten /regionen).
+   */
+  eagAbschlagAt: 0.25,
 };
 
 /* ------------------------------------------------------------------ */
@@ -246,6 +302,45 @@ export const SPEICHER = {
   erloesProMwJahr: { min: 90000, mittel: 130000, max: 180000 },
   zyklenProJahr: 330,
   wirkungsgrad: 0.87,
+  /**
+   * ISEA Battery Revenue Index (RWTH Aachen/enspired, battery-charts.de) 2025,
+   * 2-h-System, marktübergreifend, THEORETISCH mit perfekter Voraussicht, €/MW·a
+   * (pv magazine, 23.01.2026). Einzelmärkte sind nicht addierbar. Real erzielte
+   * Erlöse liegen erfahrungsgemäß deutlich darunter (eigene Einschätzung ~50–60 %).
+   */
+  indexErloes2025: { gesamt2h: 259000, gesamt1h: 151000, fcr: 106000, afrrLeistung: 146000, afrrArbeit: 76500, dayAhead: 91000 },
+  /** Aufteilung realistischer Erlöse (2-h-System, 2026) – eigene Einschätzung auf Basis des Index: aFRR ist Hauptanker, FCR verliert */
+  erloesMix: { arbitrage: 0.4, afrr: 0.5, fcr: 0.1 },
+  /** Erlös je MW relativ zum 2-h-System nach Speicherdauer (Index 2025: 1 h ≈ 58 % von 2 h; längere Dauer mit abnehmendem Grenznutzen) */
+  dauerFaktor: { 1: 0.6, 2: 1.0, 3: 1.2, 4: 1.35 },
+  /** Kapazitätsverlust je Jahr (LFP, ~1 Vollzyklus/Tag) */
+  degradation: 0.02,
+  /** Erlöstrend je Jahr (mehr Speicher im Markt drückt Spreads und Regelenergiepreise) – eigene vorsichtige Annahme */
+  erloesTrend: -0.02,
+  /** Betriebskosten (Wartung, Versicherung, Pacht, Betriebsführung) in % der Investition p. a. */
+  opexAnteilCapex: 0.015,
+  /** Entgelt des Vermarkters/Optimierers in % der Erlöse */
+  vermarktungAnteil: 0.07,
+  /** Betrachtungsdauer (Jahre) */
+  lebensdauer: 15,
+  /** Diskontsatz Barwert (merchant-lastiges Risiko, eigene Annahme) */
+  diskont: 0.08,
+  /**
+   * Baukostenzuschuss (BKZ) nach Leistungspreismodell, €/kW – Beispiel Bayernwerk Netz 2025
+   * (Mittelspannung 125,31 €/kW, Hochspannung 97,26 €/kW). Zulässig auch für Speicher
+   * (BGH, Beschluss vom 15.07.2025, EnVR 1/24). Netzdienliche Fahrweise: einzelne
+   * Netzbetreiber gewähren Abschläge (z. B. Bayernwerk: 30 % des Leistungspreises).
+   */
+  bkzProKw: { ms: 125, hs: 97 },
+  bkzNetzdienlichFaktor: 0.3,
+  /** Netzanschluss/Umspannung/Schaltanlage je kW, eigene Einschätzung (Co-Location nutzt den Anschluss des Solarparks) */
+  netzanschlussProKw: { coLocation: 20, ms: 60, hs: 110 },
+  /** Co-Location: Erlösabschlag wegen gemeinsam genutzter Anschlussleistung und Ladebeschränkungen (eigene Annahme) */
+  coLocationErloesFaktor: 0.85,
+  /** Netzentgelt auf Ladestrom ohne Befreiung, ct/kWh – grobe Näherung (Reform der Netzentgelte offen) */
+  netzentgeltCt: 1.5,
+  /** § 118 Abs. 6 EnWG: Befreiung von Netzentgelten für Speicher mit Inbetriebnahme bis 4. August 2029, 20 Jahre */
+  netzentgeltBefreiungBis: "4. August 2029",
 };
 
 /* ------------------------------------------------------------------ */
@@ -283,6 +378,27 @@ export const STROM = {
   ],
   /** Anteil der Tagesstunden-Last, die typischerweise aus Solar-PPA gedeckt werden kann */
   ppaDeckungsanteil: { min: 0.2, max: 0.4 },
+  /**
+   * PPA-Rechner für Unternehmen (/rechner/ppa):
+   *  baseTerminCt     Terminmarkt Strom DE Cal-27 Base, Ende August 2026 rund 110–115 €/MWh (EEX, lt. enerchase WeeklyTrading KW 36/2026)
+   *  captureRate      Solar-Marktwert relativ zum Base-Preis im Jahresmittel – 2025 in Mai/Juni nur 0,31–0,33 (dena PPA-Marktanalyse 2025, Pexapark), Jahresmittel eigene Einschätzung
+   *  pppCt            Liefer-PPA Solar pay-as-produced an Unternehmen, 10 Jahre, ct/kWh – dena 2025: Erzeuger-PPA 35–45 €/MWh; seit dem Anstieg am Terminmarkt 2026 höher (eigene Einschätzung)
+   *  strukturierungCt Aufschlag für Umwandlung in ein Baseload-/Lastprofil (Profil-, Mengen-, Ausgleichsenergierisiko), eigene Einschätzung
+   *  bilanzierungCt   Bilanzkreis/Ausgleichsenergie bei pay-as-produced, eigene Einschätzung
+   *  residualAufschlag  Reststrom außerhalb der Solarstunden ist teurer als Base (Abend/Winter)
+   *  vermarktungsAbschlag  Abschlag beim Weiterverkauf von Überschüssen
+   *  negativAnteilSolar  Anteil Solarerzeugung in Stunden mit negativen Preisen 2025: 24,1 % (dena/Pexapark)
+   */
+  ppa: {
+    baseTerminCt: 11.0,
+    captureRate: 0.6,
+    pppCt: { min: 5.0, mittel: 6.0, max: 7.5 },
+    strukturierungCt: { min: 1.0, mittel: 1.8, max: 3.0 },
+    bilanzierungCt: 0.3,
+    residualAufschlag: 0.05,
+    vermarktungsAbschlag: 0.1,
+    negativAnteilSolar: 0.241,
+  },
 };
 
 /* ------------------------------------------------------------------ */
@@ -352,6 +468,63 @@ export const GEMEINSCHAFTEN = {
     titel: "ZEV, vZEV und lokale Elektrizitätsgemeinschaft (LEG)",
     text: "Seit 2026 können Verbraucher innerhalb einer Gemeinde über das Verteilnetz Strom teilen (LEG) – mit reduziertem Netznutzungsentgelt.",
   },
+  /**
+   * Energy-Sharing-Rechner (/rechner/energy-sharing) – Standardwerte je Land.
+   * Preise netto je kWh in Landeswährung (DE/AT ct, CH Rp.). Orientierung, im Rechner änderbar.
+   *  energiepreis   Energieanteil des heutigen Arbeitspreises (Beschaffung + Vertrieb) beim Lieferanten
+   *  netzAp         Arbeitspreis Netznutzung auf der Endkundenebene
+   *                 AT NE7 Beispiele 2026: Vorarlberg 4,96, Wien 6,98, NÖ 8,79 ct/kWh (Stromliste.at)
+   *  rabatte        Abschlag auf den Netz-Arbeitspreis für geteilten Strom
+   *                 AT: lokal 57 %, regional 28 % (SNE-VO; Stromliste.at, Regeln ab 1.10.2026)
+   *                 CH: LEG 40 % gleiche Netzebene, 20 % über mehrere Ebenen (StromVV Art. 19h)
+   *                 DE: nach aktuellem Stand kein Netzentgeltvorteil (§ 42c EnWG)
+   *  abgabenCt      Entfall von Abgaben auf geteilten Strom – AT: Elektrizitätsabgabe 2026 0,82 ct/kWh (ab 2027 1,5 ct)
+   *  ueberschussCt  Vergütung für nicht geteilten Überschuss (Marktwert/Einspeisevergütung, grobe Annahme)
+   *  gemeinschaftCt Preis für geteilten Strom innerhalb der Gemeinschaft (Vorschlag)
+   *  verwaltung     Mess-/Abrechnungs-/Verwaltungskosten je Teilnehmer und Jahr
+   */
+  rechner: {
+    de: { waehrung: "€", ct: "ct", energiepreis: 14, netzAp: 9, rabatte: [{ id: "keiner", label: "Energy Sharing", sub: "§ 42c EnWG", anteil: 0 }], abgabenCt: 0, ueberschussCt: 6, gemeinschaftCt: 11, verwaltung: 30 },
+    at: {
+      waehrung: "€",
+      ct: "ct",
+      energiepreis: 12,
+      netzAp: 7,
+      rabatte: [
+        { id: "lokal", label: "EEG lokal", sub: "−57 % Netz-AP", anteil: 0.57 },
+        { id: "regional", label: "EEG regional", sub: "−28 % Netz-AP", anteil: 0.28 },
+        { id: "beg", label: "BEG", sub: "ohne Abschlag", anteil: 0 },
+      ],
+      abgabenCt: 0.82,
+      ueberschussCt: 5,
+      gemeinschaftCt: 10,
+      verwaltung: 20,
+    },
+    ch: {
+      waehrung: "CHF",
+      ct: "Rp.",
+      energiepreis: 14,
+      netzAp: 10,
+      rabatte: [
+        { id: "leg40", label: "LEG, eine Ebene", sub: "−40 % Netznutzung", anteil: 0.4 },
+        { id: "leg20", label: "LEG, mehrere Ebenen", sub: "−20 % Netznutzung", anteil: 0.2 },
+      ],
+      abgabenCt: 0,
+      ueberschussCt: 6,
+      gemeinschaftCt: 13,
+      verwaltung: 40,
+    },
+  },
+  /**
+   * Beteiligungsrechner Genossenschaft (/rechner/beteiligung) – BEISPIELWERTE, die
+   * Genossenschaft ist im Aufbau, Anteilshöhe und Kosten stehen noch nicht fest:
+   *  anteilEur           Beispiel-Nennwert eines Anteils
+   *  verwaltungAnteil    laufende Kosten der eG p. a. in % des Mitgliederkapitals (Prüfungsverband, Buchhaltung,
+   *                      Generalversammlung; verteilt auf mehrere Beteiligungen) – eigene Einschätzung
+   *  ruecklageAnteil     Zuführung zur gesetzlichen/satzungsmäßigen Rücklage (Anteil am Überschuss)
+   *  kapitalertragsteuer DE: 25 % + Solidaritätszuschlag (ohne Kirchensteuer)
+   */
+  beteiligung: { anteilEur: 250, verwaltungAnteil: 0.01, ruecklageAnteil: 0.1, kapitalertragsteuer: 0.26375 },
 };
 
 /* ------------------------------------------------------------------ */
@@ -411,3 +584,140 @@ export function annuitaet(betrag, zins, jahre) {
   if (zins === 0) return betrag / jahre;
   return (betrag * zins) / (1 - Math.pow(1 + zins, -jahre));
 }
+
+/* ------------------------------------------------------------------ */
+/* Dach-PV: Dachpacht auf Gewerbe-, Hallen-, Agrar- und Logistikdächern */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Orientierungswerte für die Verpachtung großer Dachflächen (ab ca. 1.000 m²)
+ * an einen PV-Betreiber. Stand September 2026, DE-Schwerpunkt.
+ *
+ * Quellen/Herleitung:
+ *  - Pachtspannen: Marktübersichten von Dachvermittlern und Ratgebern nennen
+ *    meist 2–5 €/m² bzw. 20–30 €/kWp pro Jahr (Werbewerte, oft für ideale
+ *    Dächer). Wir setzen die Spanne bewusst vorsichtiger an, weil die Pacht
+ *    bei heutigen Zuschlagswerten rund 5–10 % der Stromerlöse nicht dauerhaft
+ *    übersteigen kann (eigene Plausibilisierung über Ertrag × Zuschlag).
+ *  - Zuschläge Dach (Ausschreibung zweites Segment, Gebäude/Lärmschutz):
+ *    Bundesnetzagentur, Gebotstermine 1.2./1.6./1.10.2025.
+ *  - Stromgestehungskosten: Fraunhofer ISE, Studie Stromgestehungskosten (Juli 2024).
+ *  - Investition, Betriebskosten, Dachsanierung: eigene Marktbeobachtung der
+ *    ÖKOVOLT Gruppe (baut Gewerbedächer), Spannen ohne Netzausbau.
+ */
+export const DACH = {
+  /** Sinnvolle Mindestgröße für Dachpacht (darunter lohnt sich ein Fremdbetrieb selten) */
+  mindestM2: 1000,
+  /**
+   * Dacharten: Dachfläche brutto je kWp (inkl. Randabstände, Brandschutz-
+   * streifen, Dachaufbauten), Ertragsfaktor relativ zur optimalen
+   * Freiflächenanlage (REGIONEN) bei Süd bzw. Ost/West-Aufständerung.
+   */
+  dacharten: [
+    { id: "trapez", label: "Trapezblech", sub: "geneigt, Aufdach", m2ProKwp: 6, ertragFaktor: 0.95, belegbar: true, lastKgM2: "ca. 12–15 kg/m²" },
+    { id: "sandwich", label: "Sandwichpaneel", sub: "Halle, gedämmt", m2ProKwp: 6, ertragFaktor: 0.95, belegbar: true, lastKgM2: "ca. 12–15 kg/m²" },
+    { id: "flach", label: "Flachdach", sub: "Folie/Bitumen, Ost/West", m2ProKwp: 7, ertragFaktor: 0.9, belegbar: true, lastKgM2: "ca. 15–25 kg/m² mit Ballast" },
+    { id: "faserzement", label: "Faserzement", sub: "Wellplatten", m2ProKwp: null, ertragFaktor: null, belegbar: false, lastKgM2: "–" },
+  ],
+  /** Ausrichtung geneigter Dächer (Flachdächer werden Ost/West aufgeständert) */
+  ausrichtung: [
+    { id: "sued", label: "Süd", faktor: 1.0 },
+    { id: "suedOstWest", label: "Südost/-west", faktor: 0.97 },
+    { id: "ostWest", label: "Ost/West", faktor: 0.9 },
+    { id: "nord", label: "Nord, flach geneigt", faktor: 0.78 },
+  ],
+  /** Dachpacht fest in € je m² Dachfläche und Jahr */
+  pachtProM2: { min: 1.0, mittel: 1.5, max: 3.0 },
+  /** Dachpacht in € je installiertem kWp und Jahr */
+  pachtProKwp: { min: 6, mittel: 10, max: 18 },
+  /** Umsatzbeteiligung in % der Stromerlöse */
+  umsatzbeteiligung: { min: 0.04, max: 0.08 },
+  /** Übliche Laufzeit Dachnutzungsvertrag (Jahre) und Option */
+  laufzeit: 20,
+  verlaengerung: "1–2 × 5 Jahre Option",
+  /** Diskontsatz, mit dem Betreiber eine Einmalzahlung aus der Jahrespacht ableiten (eigene Annahme) */
+  einmalDiskont: 0.05,
+  /** Investition Gewerbedach 300 kWp – 2 MWp schlüsselfertig ohne Dachsanierung, €/kWp */
+  capexProKwp: { min: 600, mittel: 750, max: 950 },
+  /** Betriebskosten ohne Pacht €/kWp·a (Wartung, Versicherung, Monitoring, Rücklage Wechselrichter) */
+  opexProKwp: 14,
+  /** Zuschläge Ausschreibung Dach (zweites Segment, Pflicht in der Regel ab 1 MWp), ct/kWh */
+  zuschlagsHistorie: [
+    { termin: "1. Februar 2025", ct: 9.1 },
+    { termin: "1. Juni 2025", ct: 9.22 },
+    { termin: "1. Oktober 2025", ct: 9.66 },
+  ],
+  /** Rechenwert Volleinspeisung Dach (Mittel der Zuschläge 2025, gerundet) */
+  eegDachCt: 9.3,
+  /**
+   * Erlös für Überschuss bei Eigenverbrauch (anzulegender Wert Teileinspeisung
+   * bzw. Marktwert) – grobe eigene Annahme, sinkt mit der EEG-Degression.
+   */
+  ueberschussCt: 6.5,
+  /** Preis Stromlieferung vom Dach an Nutzer/Eigentümer (On-Site-PPA), ct/kWh netto – eigene Marktbeobachtung */
+  ppaVorOrtCt: { min: 10, mittel: 13, max: 16 },
+  /** Anteil der Pacht, der bei zusätzlicher Stromlieferung (PPA) üblich bleibt – eigene Annahme */
+  ppaPachtAnteil: 0.5,
+  /** Eigenverbrauchsanteil Gewerbe (Tageslast, ohne Speicher) */
+  eigenverbrauch: { min: 0.3, standard: 0.4, max: 0.8 },
+  /** Mindest-Restnutzungsdauer des Dachs vor Belegung (Jahre) */
+  restnutzungMinJahre: 25,
+  /** Dachsanierung (Neueindeckung Trapez/Sandwich inkl. Rückbau) €/m² – grobe Spanne */
+  sanierungProM2: { min: 45, mittel: 65, max: 95 },
+  /** Stromgestehungskosten große Dachanlagen DE, Fraunhofer ISE (Juli 2024), ct/kWh */
+  lcoeIseCt: { min: 5.0, max: 10.4 },
+  quellen: [
+    { titel: "Bundesnetzagentur – Ausschreibungen Solaranlagen zweites Segment", url: "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/Ausschreibungen/Solaranlagen2/artikel.html" },
+    { titel: "Fraunhofer ISE – Stromgestehungskosten erneuerbarer Energien", url: "https://www.ise.fraunhofer.de/de/veroeffentlichungen/studien/studie-stromgestehungskosten-erneuerbare-energien.html" },
+    { titel: "Bund der Steuerzahler – Gewerbliche Infizierung bei Photovoltaikanlagen", url: "https://steuerzahler.de/aktuelles/detail/gewerbliche-infizierung-von-vermietungseinkuenften-beim-betreiben-von-photovoltaikanlagen/" },
+  ],
+};
+
+/* ------------------------------------------------------------------ */
+/* Bestandsanlagen (Zweitmarkt)                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Bewertung laufender PV-Anlagen. Eigene Annahmen auf Basis üblicher
+ * Transaktionspraxis (Ertragswert/DCF), Stand September 2026. Preisspanne je
+ * kWp für jüngere Anlagen siehe PHASEN (id "cod").
+ */
+export const BESTAND = {
+  /** Bewertungsjahr (erstes Jahr im Cashflow) */
+  bewertungsjahr: 2027,
+  /** Technische Nutzungsdauer ab Inbetriebnahme (Jahre), 30–35 bei guter Wartung */
+  nutzungsdauer: 30,
+  nutzungsdauerSpanne: { min: 25, max: 40 },
+  /** Förderdauer ab Inbetriebnahme: EEG DE 20 Jahre plus Rest des IBN-Jahres; AT/CH laut Bescheid */
+  foerderJahre: 20,
+  /** Degradation älterer Module p. a. */
+  degradation: 0.005,
+  /** Betriebskosten ohne Pacht €/kWp·a (Bestand, inkl. Direktvermarktung, Versicherung) */
+  opexProKwp: 13,
+  /** Wechselrichtertausch €/kWp inkl. Montage und Inbetriebnahme – eigene Marktbeobachtung */
+  wechselrichterProKwp: { min: 40, mittel: 60, max: 90 },
+  /** Übliche Lebensdauer Wechselrichter (Jahre) */
+  wechselrichterJahre: { min: 12, max: 15 },
+  /** Diskontsatz (Ertragswert, unverschuldet) – Spanne für Bestandsanlagen */
+  diskont: { min: 0.045, standard: 0.06, max: 0.09 },
+  /** Direktvermarktungskosten nach Förderende ct/kWh */
+  direktvermarktungCt: 0.3,
+  /**
+   * Grobe Richtwerte der Vergütung nach Inbetriebnahmejahr (Freifläche bzw.
+   * größere Dachanlagen, DE) – NUR zur Vorbelegung, tatsächlichen Wert aus
+   * Abrechnung/Zuschlag übernehmen. Eigene Zusammenfassung der EEG-Sätze
+   * bzw. Ausschreibungsergebnisse (Bundesnetzagentur).
+   */
+  verguetungRichtwerte: [
+    { bis: 2009, ct: 32 },
+    { bis: 2010, ct: 27 },
+    { bis: 2011, ct: 22 },
+    { bis: 2012, ct: 16 },
+    { bis: 2014, ct: 11 },
+    { bis: 2017, ct: 8 },
+    { bis: 2022, ct: 5.2 },
+    { bis: 2030, ct: 5 },
+  ],
+  /** Abweichung Ist-Ertrag zu Prognose, ab der eine technische Prüfung dringend ist */
+  minderertragWarnung: 0.9,
+};

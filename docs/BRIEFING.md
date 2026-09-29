@@ -50,3 +50,13 @@ MSYS_NO_PATHCONV=1 node shot.mjs /pfad 1440 1 name   # Desktop, ganze Seite
 MSYS_NO_PATHCONV=1 node shot.mjs /pfad 390 1 name    # Mobil
 ```
 Bild liegt dann unter `shots/<name>_<breite>.png` (mit dem Read-Werkzeug ansehen). Ausgabe zeigt HTTP-Status und Konsolen-/Laufzeitfehler. **Jede Seite muss mit Status 200, ohne Laufzeitfehler, in beiden Breiten sauber aussehen**, bevor sie als fertig gilt. Sehr lange Seiten ggf. zusätzlich mit `0` (nur sichtbarer Bereich) prüfen.
+
+## Ausbaustufe 2 – Ergänzungen
+
+- Stand: Alle Seiten der Stufe 1 existieren (siehe `src/app/`). Vor dem Verlinken prüfen, dass die Route existiert.
+- Gemeinsame Dateien `src/data/navigation.js`, `src/components/Rechner/tools.js`, `src/app/sitemap.js`, `src/components/Reusable/footer.js` pflegt der Koordinator. Neue Routen/Tools im Abschlussbericht melden (mit Titel, Kurztext, Icon-Vorschlag aus lucide-react).
+- Metadaten für Nicht-Rechner-Seiten: `rechnerMetadata` aus `@/components/Rechner/RechnerSeite` funktioniert allgemein.
+- Rechner-Layout mit fixierter Ergebnisspalte: `@/components/Rechner/InvestTeile` (RechnerRahmen, Hinweise, Legende).
+- Formular mit Chips davor: `@/components/Carport/AuswahlAnfrage`.
+- Qualitäts-Audit (alle Sitemap-Routen: Status, Laufzeitfehler, Überlauf 390 px, tote Links): `MSYS_NO_PATHCONV=1 node audit.mjs` im Scratchpad-Ordner `pw`. Eigene Skripte dort mit eigenem Präfix benennen, fremde nicht überschreiben.
+- Dev-Server kann durch parallele Arbeit langsam sein (bis 30 s je Erstaufruf) – Timeouts großzügig setzen, nicht neu starten.

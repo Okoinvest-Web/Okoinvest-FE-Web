@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, Sigma, TrendingDown } from "lucide-react";
 import useLiveDaten, { useBreite } from "./useLiveDaten";
 import { preisTage, zeitfenster, achse, ct, uhr, spanne, tagLang, stundenmittel, zahl } from "./berechnung";
-import { dynamischBrutto } from "@/lib/energy";
 import KeineDaten from "./KeineDaten";
 
 // Farben (nur im Diagramm): Preislinie Markenblau, Negativpreise Markengrün
@@ -301,7 +300,7 @@ export default function PreisChart({ initial }) {
                 <span className="text-[12.5px] text-white/70">ct/kWh Börse</span>
               </p>
               <p className="mt-1 text-[12px] text-white/60">
-                ≈ <span className="ov-num text-white">{zahl(Math.max(dynamischBrutto(hp.eurMwh), 0))} ct</span> brutto mit dyn. Tarif*
+                = <span className="ov-num text-white">{zahl(hp.eurMwh, 2)} €/MWh</span> Day-Ahead, netto
               </p>
               {hp.eurMwh < 0 && <p className="mt-1 text-[12px] font-semibold text-ov-300">Negativer Börsenpreis</p>}
             </div>
@@ -363,8 +362,8 @@ export default function PreisChart({ initial }) {
       </details>
 
       <p className="border-t border-ink-100 px-5 py-4 text-[12.5px] leading-relaxed text-ink-500 md:px-8">
-        Börsenpreise netto ohne Netzentgelte, Umlagen und Steuern. *Orientierung für dynamische Tarife: Börsenpreis plus ca. 19,5 ct/kWh
-        Netzentgelt, Abgaben und Marge, zzgl. 19 % MwSt. Quelle: {tage.quelle || "Energy-Charts (Fraunhofer ISE)"}.
+        Börsenpreise netto ohne Netzentgelte, Umlagen, Steuern und Beschaffungsaufschläge (1 €/MWh = 0,1 ct/kWh). Quelle:{" "}
+        {tage.quelle || "Energy-Charts (Fraunhofer ISE)"}.
       </p>
     </div>
   );

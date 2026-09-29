@@ -13,23 +13,25 @@ import PreisChart from "@/components/EnergieLive/PreisChart";
 import ErzeugungChart from "@/components/EnergieLive/ErzeugungChart";
 import Empfehlungen from "@/components/EnergieLive/Empfehlungen";
 import MeritOrder from "@/components/EnergieLive/MeritOrder";
+import CaptureRate from "@/components/EnergieLive/CaptureRate";
+import { abs } from "@/data/site";
 import { getEnergySnapshot } from "@/lib/energy";
 import { preisTage, zeitfenster, ct, gw, uhr, spanne, tagLang } from "@/components/EnergieLive/berechnung";
 
 export const revalidate = 900;
 
-const PAGE_URL = "https://www.oekovolt.de/energie-live";
-const OG_BILD = "https://www.oekovolt.de/og-image.jpg";
+const PAGE_URL = abs("/energie-live");
+const OG_BILD = abs("/img/solarpark-himmel.jpg");
 
 export async function generateMetadata() {
-  const title = "Strompreis Börse aktuell: Day-Ahead heute live | Ökovolt";
+  const title = "Strompreis Börse live: Day-Ahead & Capture-Rate | ÖkoInvest";
   let description =
-    "Börsenstrompreis aktuell: Day-Ahead-Preis heute und morgen in 15-Minuten-Werten, günstigste Stunden und Stromerzeugung nach Quelle – live und kostenlos.";
+    "Börsenstrompreis live: Day-Ahead-Preis in 15-Minuten-Werten, Solar-Capture-Rate, negative Preise und Strommix – eingeordnet für Unternehmen und Investoren.";
   try {
     const s = await getEnergySnapshot();
     const a = s.preis.aktuell;
     if (a) {
-      description = `Börsenstrompreis jetzt ${ct(a.eurMwh)} ct/kWh. Day-Ahead-Preis heute in 15-Minuten-Werten, günstigste Stunden und Strommix live – kostenlos & aktuell.`;
+      description = `Börsenstrompreis jetzt ${ct(a.eurMwh)} ct/kWh. Day-Ahead in 15-Minuten-Werten, Solar-Capture-Rate, negative Preise und Strommix für Unternehmen und Investoren.`;
     }
   } catch {
     // statische Beschreibung genügt
@@ -44,7 +46,8 @@ export async function generateMetadata() {
       "Strompreis live",
       "negative Strompreise",
       "EPEX Spot Preis",
-      "dynamischer Stromtarif",
+      "Solar Capture Rate",
+      "Capture Price Solar",
       "Strommix Deutschland",
     ],
     alternates: { canonical: PAGE_URL },
@@ -53,10 +56,10 @@ export async function generateMetadata() {
       type: "website",
       locale: "de_DE",
       url: PAGE_URL,
-      siteName: "Ökovolt Deutschland",
+      siteName: "ÖkoInvest",
       title: "Strommarkt Deutschland live – Börsenstrompreis & Strommix",
       description,
-      images: [{ url: OG_BILD, width: 1200, height: 630, alt: "Ökovolt – Strommarkt live" }],
+      images: [{ url: OG_BILD, width: 1280, height: 852, alt: "ÖkoInvest – Strommarkt live" }],
     },
     twitter: { card: "summary_large_image", title, description, images: [OG_BILD] },
   };
@@ -68,29 +71,36 @@ const FAQ = [
     a: "Der Day-Ahead-Preis ist der Großhandelspreis für Strom, der am Vortag in einer Auktion an der Strombörse (EPEX Spot) für jede Viertelstunde des Folgetages ermittelt wird. Die Ergebnisse für Deutschland und Luxemburg (Gebotszone DE-LU) werden gegen 13 Uhr veröffentlicht. Seit Oktober 2025 wird der Day-Ahead-Markt in 15-Minuten-Produkten gehandelt.",
   },
   {
-    q: "Zahle ich als Haushalt den Börsenstrompreis?",
-    a: "Nicht direkt. Der Börsenpreis ist ein Nettopreis. Auf Ihrer Rechnung kommen Netzentgelte, Umlagen, Stromsteuer, Konzessionsabgabe, die Marge des Anbieters und 19 % Mehrwertsteuer hinzu – zusammen oft rund 20 ct/kWh netto. Mit einem Festpreistarif merken Sie von den Schwankungen nichts. Nur dynamische Stromtarife geben den Börsenpreis zeitgenau an Sie weiter.",
+    q: "Was zahlt ein Unternehmen im Vergleich zum Börsenpreis?",
+    a: "Der Börsenpreis ist nur ein Teil des Gewerbestrompreises. Hinzu kommen Strukturierungs- und Vertriebskosten des Lieferanten, Netzentgelte, Umlagen, Konzessionsabgabe und Stromsteuer. Die meisten Betriebe haben einen Festpreis, der Monate im Voraus am Terminmarkt beschafft wurde – die Schwankungen der Day-Ahead-Preise kommen dann nur indirekt über den nächsten Vertrag an.",
+  },
+  {
+    q: "Was ist die Solar-Capture-Rate?",
+    a: "Die Capture-Rate setzt den durchschnittlichen Börsenerlös von Solarstrom (Capture-Preis, gewichtet mit der Einspeisung) ins Verhältnis zum Tagesdurchschnitt aller Viertelstunden (Base). Weil viele Solaranlagen gleichzeitig einspeisen, liegt der Capture-Preis im Sommer oft deutlich unter dem Base-Preis. Für ungeförderte Solarparks ist sie eine der wichtigsten Kennzahlen.",
   },
   {
     q: "Warum gibt es negative Strompreise?",
-    a: "Negative Preise entstehen, wenn mehr Strom angeboten als nachgefragt wird – typischerweise an sonnigen, windigen Feiertagen oder Wochenenden zur Mittagszeit. Konventionelle Kraftwerke lassen sich nicht beliebig schnell herunterfahren, und viele ältere Solaranlagen speisen ungesteuert ein. Erzeuger zahlen dann dafür, dass jemand den Strom abnimmt. Für Endkunden sinkt der Preis dadurch selten unter null, weil Abgaben und Netzentgelte weiter anfallen.",
+    a: "Negative Preise entstehen, wenn mehr Strom angeboten als nachgefragt wird – typischerweise an sonnigen, windigen Feiertagen oder Wochenenden zur Mittagszeit. Konventionelle Kraftwerke lassen sich nicht beliebig schnell herunterfahren, und viele ältere Solaranlagen speisen ungesteuert ein. Erzeuger zahlen dann dafür, dass jemand den Strom abnimmt.",
   },
   {
-    q: "Wann ist Strom am günstigsten?",
-    a: "Im Frühjahr und Sommer meist mittags zwischen etwa 11 und 16 Uhr, wenn Photovoltaikanlagen am meisten liefern. An windigen Tagen ist Strom oft auch nachts günstig. Am teuersten ist er in der Regel am frühen Abend zwischen 18 und 21 Uhr, wenn die Sonne weg ist und viele Haushalte gleichzeitig kochen, waschen und heizen. Die günstigsten Stunden des Tages zeigt das Diagramm oben.",
+    q: "Was bedeuten negative Preise für einen Solarpark?",
+    a: "Für Anlagen, die seit dem 25. Februar 2025 (Solarspitzengesetz) in Betrieb gehen, entfällt die Marktprämie in Zeiträumen mit negativen Börsenpreisen; diese Zeiten werden am Ende des Förderzeitraums angehängt. Direktvermarktete Parks werden in solchen Viertelstunden in der Regel abgeregelt. Speicher, PPAs und flexible Abnehmer machen Parks unabhängiger davon.",
   },
   {
-    q: "Was bedeutet ein Anteil Erneuerbarer von über 100 %?",
-    a: "Der angezeigte Anteil bezieht die Erzeugung aus Wind, Sonne, Biomasse und Wasserkraft auf den aktuellen Stromverbrauch (Last). Liegt er über 100 %, erzeugen Erneuerbare in diesem Moment mehr Strom, als in Deutschland verbraucht wird. Der Überschuss wird exportiert, in Pumpspeicher und Batterien geladen oder abgeregelt.",
-  },
-  {
-    q: "Was bedeuten negative Preise für meine Photovoltaikanlage?",
-    a: "Für Anlagen, die seit dem 25. Februar 2025 (Solarspitzengesetz) in Betrieb gehen, entfällt die Einspeisevergütung in Zeiträumen mit negativen Börsenpreisen; diese Zeiten werden am Ende des 20-jährigen Förderzeitraums angehängt. Bestandsanlagen sind davon nicht betroffen. Umso wichtiger ist ein hoher Eigenverbrauch – etwa mit Stromspeicher, Wallbox oder Wärmepumpe.",
+    q: "Warum zählen Speicher und Flexibilität?",
+    a: "Die Preisspanne zwischen Mittag und Abend wächst mit jedem zusätzlichen Gigawatt Solar. Speicher verschieben Strom in die teuren Stunden, flexible Verbraucher ziehen Last in die günstigen. Beides stabilisiert die Erlöse von Solarparks und senkt die Beschaffungskosten von Unternehmen – das ist der Kern eines virtuellen Kraftwerks.",
   },
   {
     q: "Woher stammen die Daten und wie aktuell sind sie?",
     a: "Börsenpreise und Stromerzeugung stammen von Energy-Charts des Fraunhofer-Instituts für Solare Energiesysteme ISE (Lizenz CC BY 4.0). Fällt diese Quelle aus, nutzen wir für die Preise ersatzweise die stündlichen Day-Ahead-Werte von aWATTar. Die Seite aktualisiert sich alle fünf Minuten; Erzeugungsdaten laufen mit etwas Verzögerung ein. Alle Angaben ohne Gewähr.",
   },
+];
+
+const QUERVERWEISE = [
+  { href: "/virtuelles-kraftwerk", titel: "Virtuelles Kraftwerk", text: "Wie Parks, Speicher und Unternehmen die Preisspanne gemeinsam nutzen." },
+  { href: "/reststrom", titel: "Reststrom-Pool Mittelstand", text: "Gebündelt und strukturiert beschaffen statt zum Stichtag." },
+  { href: "/grossspeicher", titel: "Großspeicher", text: "Batteriespeicher am Netzknoten und im Park – Erlösquellen und Planung." },
+  { href: "/rechner/solarpark", titel: "Solarpark-Renditerechner", text: "IRR und Cashflow mit EEG, PPA oder Marktwert." },
 ];
 
 export default async function EnergieLivePage() {
@@ -114,6 +124,7 @@ export default async function EnergieLivePage() {
     },
   };
   const nurErzeugung = { stand: s.stand, preis: null, erzeugung: s.erzeugung };
+  const solarReihe = { zeiten: s.erzeugung.zeiten || [], werte: s.erzeugung.serien?.solar || [] };
 
   // Zitierfähiger Antwortsatz (auch ohne JavaScript im HTML)
   const antwort = tage.heute
@@ -132,7 +143,7 @@ export default async function EnergieLivePage() {
     isAccessibleForFree: true,
     license: "https://creativecommons.org/licenses/by/4.0/",
     creator: { "@type": "Organization", name: "Fraunhofer-Institut für Solare Energiesysteme ISE – Energy-Charts", url: "https://www.energy-charts.info" },
-    publisher: { "@id": "https://www.oekovolt.de/#organization" },
+    publisher: { "@id": `${abs("/")}/#organization` },
     spatialCoverage: { "@type": "Place", name: "Deutschland" },
     temporalCoverage: tage.heute ? new Date(tage.heute.start).toISOString().slice(0, 10) : undefined,
     dateModified: s.stand,
@@ -143,7 +154,7 @@ export default async function EnergieLivePage() {
       { "@type": "PropertyValue", name: "Anteil erneuerbarer Energien an der Last", unitText: "Prozent" },
     ],
     distribution: [
-      { "@type": "DataDownload", encodingFormat: "application/json", contentUrl: "https://www.oekovolt.de/api/energie/live?voll=1" },
+      { "@type": "DataDownload", encodingFormat: "application/json", contentUrl: abs("/api/energie/live?voll=1") },
     ],
   };
 
@@ -154,7 +165,7 @@ export default async function EnergieLivePage() {
     url: PAGE_URL,
     name: "Strommarkt Deutschland live – Börsenstrompreis aktuell & Day-Ahead-Preis heute",
     description: antwort,
-    isPartOf: { "@id": "https://www.oekovolt.de/#website" },
+    isPartOf: { "@id": `${abs("/")}/#website` },
     about: { "@id": `${PAGE_URL}/#dataset` },
     dateModified: s.stand,
   };
@@ -173,7 +184,7 @@ export default async function EnergieLivePage() {
             Strommarkt Deutschland <span className="ov-text-gradient-light">live</span>
           </>
         }
-        lead="Börsenstrompreis, Strommix und Anteil erneuerbarer Energien – viertelstündlich aus offenen Daten des Fraunhofer ISE. Und was das für Ihren Stromverbrauch heute bedeutet."
+        lead="Börsenstrompreis, Strommix und Solar-Capture-Rate – viertelstündlich aus offenen Daten des Fraunhofer ISE. Eingeordnet für Unternehmen, die Strom beschaffen, und Investoren, die Solarparks und Speicher bewerten."
       >
         <LiveKennzahlen initial={kompakt} />
       </PageHero>
@@ -199,14 +210,14 @@ export default async function EnergieLivePage() {
       <Section tone="sand" space="lg">
         <SectionHeading
           eyebrow="Was bedeutet das für Sie?"
-          title="Aus Börsendaten werden Alltagstipps"
-          lead="Wer Verbrauch in günstige Stunden verschiebt, spart mit einem dynamischen Tarif bares Geld – und nutzt Strom dann, wenn besonders viel Wind- und Solarstrom im Netz ist."
+          title="Aus Börsendaten werden Entscheidungen"
+          lead="Für Unternehmen zählt, wann Strom günstig ist und wie viel Flexibilität wert ist. Für Investoren zählt, welche Preisspanne ein Speicher heben kann – und was Solarstrom mittags tatsächlich erlöst."
           className="mb-10 md:mb-12"
         />
         <Empfehlungen initial={kompakt} />
         <p className="mt-6 text-[13px] leading-relaxed text-ink-500">
-          Orientierung, keine Beratung: Berechnet aus den veröffentlichten Day-Ahead-Preisen. Ob sich ein dynamischer Tarif für Sie lohnt, hängt von
-          Verbrauch, Flexibilität und Tarifaufbau ab.
+          Orientierung, keine Beratung: Berechnet aus den veröffentlichten Day-Ahead-Preisen, netto und ohne Netzentgelte, Umlagen und Steuern. Was sich
+          davon im eigenen Betrieb oder Projekt heben lässt, hängt von Vertrag, Messung und Flexibilität ab.
         </p>
       </Section>
 
@@ -229,6 +240,21 @@ export default async function EnergieLivePage() {
         <Reveal dir="scale">
           <ErzeugungChart initial={nurErzeugung} />
         </Reveal>
+      </Section>
+
+      {/* Solar-Capture-Rate */}
+      <Section tone="sand" space="lg" id="capture-rate" className="scroll-mt-24">
+        <SectionHeading
+          eyebrow="Für Investoren"
+          title={
+            <>
+              Was Solarstrom heute <span className="ov-text-gradient">wirklich erlöst</span>
+            </>
+          }
+          lead="Die Capture-Rate zeigt, wie viel ein Solarpark im Vergleich zum Tagesdurchschnitt an der Börse verdient. Sie sinkt, je mehr Solar gleichzeitig einspeist – und ist der Grund, warum Speicher, PPAs und flexible Abnehmer an Wert gewinnen."
+          className="mb-10 md:mb-12"
+        />
+        <CaptureRate initial={kompakt} initialSolar={solarReihe} />
       </Section>
 
       {/* Merit-Order & negative Preise */}
@@ -257,8 +283,8 @@ export default async function EnergieLivePage() {
                 },
                 {
                   icon: Sun,
-                  titel: "Was das für PV-Besitzer heißt",
-                  text: "Mittags ist Solarstrom an der Börse wenig wert, abends ist Strom teuer. Wer seinen Solarstrom selbst nutzt und speichert, macht sich von beidem unabhängig.",
+                  titel: "Was das für Parks und Unternehmen heißt",
+                  text: "Mittags ist Solarstrom an der Börse wenig wert, abends ist Strom teuer. Speicher, PPAs und flexible Verbraucher verbinden beide Seiten – genau das leistet ein virtuelles Kraftwerk.",
                 },
               ].map((p, i) => (
                 <Reveal as="li" key={p.titel} delay={i * 80} className="flex gap-4">
@@ -286,7 +312,7 @@ export default async function EnergieLivePage() {
             <SectionHeading
               eyebrow="Häufige Fragen"
               title="Börsenstrompreis verständlich erklärt"
-              lead="Day-Ahead, negative Preise, dynamische Tarife – die wichtigsten Antworten, Stand 2026."
+              lead="Day-Ahead, Capture-Rate, negative Preise – die wichtigsten Antworten, Stand 2026."
             />
             <Reveal className="mt-10 rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60 md:p-7">
               <h3 className="flex items-center gap-2 font-display text-[17px] font-bold text-ink-900">
@@ -326,13 +352,13 @@ export default async function EnergieLivePage() {
         </div>
       </Section>
 
-      <Querverweise pfad="/energie-live" />
+      <Querverweise items={QUERVERWEISE} />
       <CtaBand
-        eyebrow="Unabhängig vom Börsenpreis"
-        title="Machen Sie sich Ihren Strompreis selbst."
-        text="Mit einer Photovoltaikanlage und Speicher nutzen Sie eigenen Solarstrom – egal, was die Börse gerade macht. Wir planen Ihre Anlage ehrlich durchgerechnet, vom Fachbetrieb aus Türkheim."
-        primary={{ label: "Angebot in 2 Minuten anfragen", href: "/angebot" }}
-        secondary={{ label: "Dynamischen Tarif berechnen", href: "/rechner/dynamischer-stromtarif" }}
+        eyebrow="Vom Marktsignal zum Vorteil"
+        title="Nutzen Sie die Preisspanne – als Unternehmen oder Investor."
+        text="Unternehmen senken im Reststrom-Pool ihre Beschaffungskosten. Investoren finden auf der Projektbörse Solarparks und Speicherprojekte in allen Phasen."
+        primary={{ label: "Reststrom-Ersparnis berechnen", href: "/rechner/reststrom" }}
+        secondary={{ label: "Zur Projektbörse", href: "/projektboerse" }}
       />
     </div>
   );

@@ -2,24 +2,24 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { ArrowRight, BatteryCharging, CarFront, ReceiptEuro, WashingMachine } from "lucide-react";
+import { ArrowRight, BatteryCharging, Factory, LineChart, Timer } from "lucide-react";
 import useLiveDaten from "./useLiveDaten";
 import { preisTage, zeitfenster, ct, zahl, uhr, berlinTag, stundenmittel, STUNDE } from "./berechnung";
-import { dynamischBrutto, TARIF_ANNAHMEN } from "@/lib/energy";
 
 /**
- * „Was bedeutet das für Sie?" – aus den veröffentlichten Börsenpreisen abgeleitete,
- * alltagstaugliche Hinweise. Bewusst als Orientierung formuliert.
+ * „Was bedeutet das für Sie?" – aus den veröffentlichten Börsenpreisen abgeleitete
+ * Hinweise für Unternehmen (Lastverschiebung, Speicher) und Investoren.
+ * Bewusst als Orientierung formuliert.
  */
 export default function Empfehlungen({ initial }) {
   const { daten, jetzt } = useLiveDaten(initial);
   const tage = useMemo(() => preisTage(daten.preis, jetzt), [daten.preis, jetzt]);
 
   const horizont = tage.zukunft;
-  const wasch = useMemo(() => bestesFenster(tage, horizont, 120), [tage, horizont]);
-  const auto = useMemo(() => bestesFenster(tage, horizont, 240), [tage, horizont]);
+  const speicher = useMemo(() => bestesFenster(tage, horizont, 120), [tage, horizont]);
+  const last = useMemo(() => bestesFenster(tage, horizont, 240), [tage, horizont]);
   const heute = tage.heute;
-  const guenstig3h = useMemo(() => (heute ? zeitfenster(heute.punkte, 180, tage.schrittMs).guenstig : null), [heute, tage.schrittMs]);
+  const guenstig3h = useMemo(() => (heute ? zeitfenster(heute.punkte, 180, tage.schrittMs) : null), [heute, tage.schrittMs]);
 
   const heuteStr = berlinTag(jetzt);
   const tagWort = (t) => (berlinTag(t) === heuteStr ? "Heute" : "Morgen");
@@ -27,52 +27,47 @@ export default function Empfehlungen({ initial }) {
   return (
     <div className="grid gap-4 md:gap-5 lg:grid-cols-2">
       <FensterKarte
-        icon={WashingMachine}
-        eyebrow="Waschmaschine & Geschirrspüler · 2 Stunden"
-        fenster={wasch}
+        icon={Timer}
+        eyebrow="Flexible Last im Betrieb · 4 Stunden"
+        fenster={last}
         tagWort={tagWort}
         schrittMs={tage.schrittMs}
         jetzt={jetzt}
         text={(f) =>
-          `Im Schnitt ${ct(f.guenstig.avg)} ct/kWh an der Börse – ${ct(f.teuer.avg - f.guenstig.avg)} ct weniger als im teuersten 2-Stunden-Fenster (${uhr(f.teuer.start)}–${uhr(f.teuer.ende)} Uhr).`
+          `Im Schnitt ${ct(f.guenstig.avg)} ct/kWh an der Börse. Jede verschobene Megawattstunde – etwa Kühlung, Druckluft oder Chargenprozesse – kostet hier rund ${zahl(Math.max(f.teuer.avg - f.guenstig.avg, 0), 0)} € weniger als im teuersten 4-Stunden-Fenster.`
         }
       />
       <FensterKarte
-        icon={CarFront}
-        eyebrow="E-Auto laden · 4 Stunden"
-        fenster={auto}
+        icon={BatteryCharging}
+        eyebrow="Speicher laden · 2 Stunden"
+        fenster={speicher}
         tagWort={tagWort}
         schrittMs={tage.schrittMs}
         jetzt={jetzt}
-        text={(f) => {
-          const euro = ((f.teuer.avg - f.guenstig.avg) / 10) * 40 * (1 + TARIF_ANNAHMEN.mwst) / 100;
-          return `Im Schnitt ${ct(f.guenstig.avg)} ct/kWh. Mit dynamischem Tarif kostet eine 40-kWh-Ladung hier rund ${zahl(Math.max(euro, 0), 2)} € weniger als zur teuersten Zeit.`;
-        }}
+        text={(f) =>
+          `Im Schnitt ${ct(f.guenstig.avg)} ct/kWh – ${ct(f.teuer.avg - f.guenstig.avg)} ct weniger als im teuersten 2-Stunden-Fenster (${uhr(f.teuer.start)}–${uhr(f.teuer.ende)} Uhr). Diese Spanne ist der Rohertrag, den ein Speicher aus einem Zyklus ziehen kann, vor Wirkungsgradverlusten.`
+        }
       />
 
       <LinkKarte
-        icon={ReceiptEuro}
-        eyebrow="Dynamischer Stromtarif"
-        titel={
-          guenstig3h
-            ? `Günstigste 3 h heute: ca. ${zahl(dynamischBrutto(guenstig3h.avg), 0)} ct/kWh brutto`
-            : "Börsenpreis direkt nutzen"
-        }
-        text={`${heute ? `Im Tagesmittel wären es rund ${zahl(dynamischBrutto(heute.avg), 0)} ct/kWh, Festpreistarife liegen bei etwa ${TARIF_ANNAHMEN.festpreisCt} ct/kWh. ` : ""}Dynamische Tarife geben den Börsenpreis viertelstündlich weiter – lohnend vor allem, wenn Sie Verbrauch verschieben können, etwa mit E-Auto, Wärmepumpe oder Speicher. Voraussetzung ist ein intelligentes Messsystem.`}
+        icon={Factory}
+        eyebrow="Unternehmen · Reststrom-Pool"
+        titel={guenstig3h ? `Günstigste 3 h heute: ${ct(guenstig3h.guenstig.avg)} ct/kWh netto` : "Börsenpreis gezielt nutzen"}
+        text={`${heute ? `Das Tagesmittel liegt bei ${ct(heute.avg)} ct/kWh. ` : ""}Ein Festpreisvertrag gibt Ihnen davon nichts weiter. Im Reststrom-Pool wird gebündelt und in Tranchen beschafft, Solarstrom aus den Parks deckt Tagesstunden – und wer Last verschieben kann, profitiert zusätzlich von günstigen Viertelstunden.`}
         links={[
-          { href: "/rechner/dynamischer-stromtarif", label: "Ersparnis berechnen", primaer: true },
-          { href: "/service/stromtarif", label: "Ökovolt-Stromtarif" },
+          { href: "/rechner/reststrom", label: "Ersparnis berechnen", primaer: true },
+          { href: "/reststrom", label: "Zum Reststrom-Pool" },
         ]}
       />
       <LinkKarte
         dunkel
-        icon={BatteryCharging}
-        eyebrow="Photovoltaik & Stromspeicher"
-        titel={heute ? `Preisspanne heute: ${ct(heute.max.eurMwh - heute.min.eurMwh)} ct/kWh` : "Günstigen Strom selbst erzeugen"}
-        text="Mittags ist Strom meist reichlich und billig, abends knapp und teuer. Eine PV-Anlage mit Speicher verschiebt Ihren eigenen Solarstrom genau in diese teuren Abendstunden – unabhängig davon, was die Börse gerade macht."
+        icon={LineChart}
+        eyebrow="Investoren · Speicher & Solarparks"
+        titel={heute ? `Preisspanne heute: ${ct(heute.max.eurMwh - heute.min.eurMwh)} ct/kWh` : "Flexibilität wird zum Erlös"}
+        text="Mittags drückt Solarstrom den Preis, abends ist Strom knapp. Genau diese Spanne verdienen Großspeicher – und sie entscheidet, ob ein ungeförderter Solarpark mit Speicher oder PPA wirtschaftlicher ist als ohne."
         links={[
-          { href: "/produkte/stromspeicher", label: "Stromspeicher ansehen", primaer: true },
-          { href: "/solarrechner", label: "Solarertrag berechnen" },
+          { href: "/grossspeicher", label: "Großspeicher", primaer: true },
+          { href: "/investoren", label: "Für Investoren" },
         ]}
       />
     </div>

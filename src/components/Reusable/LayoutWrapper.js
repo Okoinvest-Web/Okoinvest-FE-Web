@@ -9,7 +9,7 @@ import RevealObserver from "@/components/ui/RevealObserver";
 import MobileCta from "@/components/Reusable/MobileCta";
 
 // const GoogleTagManager = dynamic(
-//   () => import("@next/third-parties/google").then((m) => m.GoogleTagManager),
+//   (entfernt)
 //   { ssr: false }
 // );
 

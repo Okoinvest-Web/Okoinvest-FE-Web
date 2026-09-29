@@ -1,0 +1,687 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { AlertTriangle, Banknote, CalendarClock, Gauge, Landmark, Percent, Scale, TableProperties } from "lucide-react";
+import Button from "@/components/ui/Button";
+import { cn } from "@/components/ui/cn";
+import { Auswahl, Gruppe, Kennzahl, Regler, Schalter, Tooltip, Zahl, useBreite } from "./bausteine";
+import { Ansicht, ErgebnisKopf, Hinweis, Legende, MobilKurz, RechnerRahmen } from "./InvestTeile";
+import { ERLOESMODELLE, STANDARD, rechneSolarpark, sensitivitaet } from "@/lib/rechner/solarpark";
+import { REGIONEN, BAUART, FREIFLAECHE, ERLOESE, PACHT, FINANZIERUNG, AGRI } from "@/lib/invest/markt";
+import { fmt, fmtEur, fmtMio } from "@/lib/rechner/annahmen";
+
+const FARBE = { erloes: "#669933", kosten: "#c4cad5", dienst: "#1f5aa1", cf: "#151a24", ek: "#669933", projekt: "#1f5aa1", raster: "#eef0f4" };
+const pct = (v, s = 1) => (v == null || !Number.isFinite(v) ? "–" : `${fmt(v * 100, s)} %`);
+const tsd = (v) => `${fmt(v / 1000)} T€`;
+
+export default function SolarparkRechner() {
+  const [mwp, setMwp] = useState(STANDARD.mwp);
+  const [regionId, setRegionId] = useState(STANDARD.regionId);
+  const [bauart, setBauart] = useState(STANDARD.bauart);
+  const [capexKwp, setCapex] = useState(STANDARD.capexKwp);
+  const [entwicklungKwp, setEntwicklung] = useState(STANDARD.entwicklungKwp);
+  const [netzKm, setNetzKm] = useState(STANDARD.netzKm);
+  const [modell, setModellRoh] = useState(STANDARD.modell);
+  const [preisCt, setPreisCt] = useState(STANDARD.preisCt);
+  const [vertragJahre, setVertragJahre] = useState(STANDARD.vertragJahre);
+  const [merchantCt, setMerchantCt] = useState(STANDARD.merchantCt);
+  const [pachtHa, setPachtHa] = useState(STANDARD.pachtHa);
+  const [opexKwp, setOpex] = useState(STANDARD.opexKwp);
+  const [degradation, setDegradation] = useState(STANDARD.degradation);
+  const [fkQuote, setFkQuote] = useState(STANDARD.fkQuote);
+  const [zins, setZins] = useState(STANDARD.zins);
+  const [tilgungJahre, setTilgung] = useState(STANDARD.tilgungJahre);
+  const [laufzeit, setLaufzeit] = useState(STANDARD.laufzeit);
+  const [dscrBegrenzen, setDscrBegrenzen] = useState(true);
+  const [ansicht, setAnsicht] = useState("jahr");
+  const [matrixWert, setMatrixWert] = useState("projekt");
+
+  const setModell = (m) => {
+    setModellRoh(m);
+    setPreisCt(m === "merchant" ? merchantCt : ERLOESMODELLE[m].preisCt);
+    if (m !== "merchant") setVertragJahre(ERLOESMODELLE[m].vertragJahre);
+  };
+  const setBauartMitCapex = (b) => {
+    setBauart(b);
+    // Richtwerte übernehmen, wenn die Bauart die Kosten deutlich ändert
+    if (b === "agriVertikal") setCapex(AGRI.capexProKwp.vertikal.mittel);
+    else if (b === "agriHoch") setCapex(AGRI.capexProKwp.hoch.mittel);
+    else if (bauart.startsWith("agri")) setCapex(FREIFLAECHE.capexProKwp.mittel);
+  };
+
+  const eingabe = {
+    mwp,
+    regionId,
+    bauart,
+    capexKwp,
+    entwicklungKwp,
+    netzKm,
+    modell,
+    preisCt: modell === "merchant" ? merchantCt : preisCt,
+    vertragJahre,
+    merchantCt,
+    pachtHa,
+    opexKwp,
+    degradation,
+    fkQuote,
+    zins,
+    tilgungJahre,
+    laufzeit,
+    dscrBegrenzen,
+  };
+  const r = useMemo(() => rechneSolarpark(eingabe), [JSON.stringify(eingabe)]); // eslint-disable-line react-hooks/exhaustive-deps
+  const matrix = useMemo(() => sensitivitaet(eingabe), [JSON.stringify(eingabe)]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const zielEk = FINANZIERUNG.diskont;
+
+  return (
+    <RechnerRahmen
+      mitlaufend
+      unten={
+        <div className="space-y-6">
+          <div className="rounded-3xl ring-1 ring-ink-200/70">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 md:px-6">
+              <h3 className="font-display text-[17px] font-bold text-ink-900">Cashflow über {laufzeit} Jahre</h3>
+              <Ansicht
+                name="cf-ansicht"
+                label="Diagrammansicht"
+                wert={ansicht}
+                onChange={setAnsicht}
+                optionen={[
+                  { id: "jahr", label: "Je Jahr" },
+                  { id: "kumuliert", label: "Kumuliert" },
+                ]}
+              />
+            </div>
+            {ansicht === "jahr" ? <CashflowJahre r={r} /> : <CashflowKumuliert r={r} />}
+          </div>
+
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div className="rounded-3xl ring-1 ring-ink-200/70">
+              <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 md:px-6">
+                <div>
+                  <h3 className="font-display text-[17px] font-bold text-ink-900">Sensitivität</h3>
+                  <p className="text-[12.5px] text-ink-500">Investition (Zeilen) gegen Strompreis (Spalten, wirkt auf Vertrags- und Marktpreis)</p>
+                </div>
+                <Ansicht
+                  name="matrix-wert"
+                  label="Kennzahl der Matrix"
+                  wert={matrixWert}
+                  onChange={setMatrixWert}
+                  optionen={[
+                    { id: "projekt", label: "Projekt-IRR" },
+                    { id: "ek", label: "EK-IRR" },
+                  ]}
+                />
+              </div>
+              <Matrix matrix={matrix} wert={matrixWert} ziel={matrixWert === "ek" ? zielEk : r.wacc} capexKwp={capexKwp} />
+            </div>
+
+            <Jahrestabelle r={r} />
+          </div>
+        </div>
+      }
+      eingaben={
+        <>
+          <MobilKurz
+            werte={[
+              ["Projekt-IRR", pct(r.projektIrr)],
+              ["EK-IRR", pct(r.ekIrr)],
+              ["LCOE", `${fmt(r.lcoeCt, 2)} ct`],
+            ]}
+          />
+          <div className="space-y-8">
+            <Gruppe titel="Anlage & Standort">
+              <Regler
+                label="Leistung"
+                wert={mwp}
+                min={1}
+                max={100}
+                step={1}
+                einheit="MWp"
+                onChange={setMwp}
+                hinweis={`≈ ${fmt(r.flaecheHa, 1)} ha Fläche · ${fmt(r.ertragJahr1 / 1e6, 1)} GWh im ersten Jahr`}
+              />
+              <Auswahl
+                legende="Region"
+                wert={regionId}
+                onChange={setRegionId}
+                spalten={2}
+                klein
+                optionen={REGIONEN.map((x) => ({ id: x.id, label: x.label.replace("West- & Mitteldeutschland", "West & Mitte"), sub: `${fmt(x.ertrag)} kWh/kWp` }))}
+              />
+              <Auswahl
+                legende="Bauart"
+                wert={bauart}
+                onChange={setBauartMitCapex}
+                spalten={2}
+                klein
+                optionen={Object.entries(BAUART).map(([id, b]) => ({ id, label: b.label, sub: `${b.faktor >= 1 ? "+" : "−"}${fmt(Math.abs(b.faktor - 1) * 100)} % Ertrag` }))}
+              />
+            </Gruppe>
+
+            <Gruppe titel="Investition">
+              <Regler
+                label="Anlage (EPC)"
+                wert={capexKwp}
+                min={400}
+                max={1400}
+                step={10}
+                format={(v) => `${fmt(v)} €/kWp`}
+                onChange={setCapex}
+                hinweis={`Richtwert Freifläche ${fmt(FREIFLAECHE.capexProKwp.min)}–${fmt(FREIFLAECHE.capexProKwp.max)} €/kWp ohne Netzanschluss; Agri-PV deutlich höher.`}
+              />
+              <Regler
+                label="Projektrechte / Entwicklung"
+                wert={entwicklungKwp}
+                min={0}
+                max={150}
+                step={5}
+                format={(v) => `${fmt(v)} €/kWp`}
+                onChange={setEntwicklung}
+                hinweis="Eigene Entwicklungskosten oder Kaufpreis der Projektrechte (RTB meist 60–130 €/kWp)."
+              />
+              <Regler
+                label="Entfernung zum Netzanschluss"
+                wert={netzKm}
+                min={0}
+                max={15}
+                step={0.5}
+                stellen={1}
+                format={(v) => `${fmt(v, 1)} km`}
+                onChange={setNetzKm}
+                hinweis={`Netzanschluss gesamt ≈ ${fmtEur(r.investition.netz)} (Kabel ${fmt(FREIFLAECHE.kabelProMeter)} €/m + Übergabestation)`}
+              />
+            </Gruppe>
+
+            <Gruppe titel="Erlöse">
+              <Auswahl
+                legende="Erlösmodell"
+                wert={modell}
+                onChange={setModell}
+                optionen={[
+                  { id: "eeg", label: "EEG", sub: "Zuschlag" },
+                  { id: "ppa", label: "PPA", sub: "fester Preis" },
+                  { id: "merchant", label: "Merchant", sub: "Marktpreis" },
+                ]}
+              />
+              {modell !== "merchant" && (
+                <Regler
+                  label={modell === "eeg" ? "Zuschlagswert" : "PPA-Preis"}
+                  wert={preisCt}
+                  min={3}
+                  max={9}
+                  step={0.05}
+                  format={(v) => `${fmt(v, 2)} ct/kWh`}
+                  onChange={setPreisCt}
+                  hinweis={
+                    modell === "eeg"
+                      ? `Zuletzt ${ERLOESE.zuschlagsHistorie.map((z) => fmt(z.ct, 2)).join(" · ")} ct/kWh (Bundesnetzagentur 2025). Wirkt als Untergrenze – ein höherer Marktwert bleibt Ihnen.`
+                      : `Solar-PPA (pay-as-produced) grob ${fmt(ERLOESE.ppaCt.min, 1)}–${fmt(ERLOESE.ppaCt.max, 1)} ct/kWh.`
+                  }
+                />
+              )}
+              {modell === "ppa" && <Regler label="PPA-Laufzeit" wert={vertragJahre} min={3} max={20} step={1} einheit="Jahre" onChange={setVertragJahre} />}
+              <Regler
+                label={modell === "merchant" ? "Marktwert Solar (heute)" : `Marktwert nach Jahr ${modell === "eeg" ? 20 : vertragJahre}`}
+                wert={merchantCt}
+                min={2}
+                max={8}
+                step={0.1}
+                format={(v) => `${fmt(v, 1)} ct/kWh`}
+                onChange={setMerchantCt}
+                hinweis={`Heutiger Wert, fortgeschrieben mit ${fmt(ERLOESE.merchantSteigerung * 100, 1)} % p. a. – bewusst unter der Inflation (Kannibalisierung).`}
+              />
+            </Gruppe>
+
+            <Gruppe titel="Betrieb">
+              <Regler
+                label="Pacht"
+                wert={pachtHa}
+                min={800}
+                max={6000}
+                step={100}
+                format={(v) => `${fmt(v)} €/ha`}
+                onChange={setPachtHa}
+                hinweis={`${fmt(r.flaecheHa, 1)} ha × ${fmt(pachtHa)} € = ${fmtEur(r.flaecheHa * pachtHa)} im Jahr, indexiert ${fmt(PACHT.indexierung * 100, 1)} % p. a.`}
+              />
+              <Regler
+                label="Betriebskosten ohne Pacht"
+                wert={opexKwp}
+                min={6}
+                max={22}
+                step={0.5}
+                stellen={1}
+                format={(v) => `${fmt(v, 1)} €/kWp·a`}
+                onChange={setOpex}
+                hinweis="Wartung, Versicherung, Direktvermarktung, Überwachung, Verwaltung – steigt mit der Inflation."
+              />
+              <Regler label="Degradation" wert={degradation} min={0.002} max={0.008} step={0.0005} format={(v) => `${fmt(v * 100, 2)} % p. a.`} onChange={setDegradation} />
+            </Gruppe>
+
+            <Gruppe titel="Finanzierung">
+              <Regler label="Fremdkapitalquote (Wunsch)" wert={fkQuote} min={0} max={0.9} step={0.05} format={(v) => `${fmt(v * 100)} %`} onChange={setFkQuote} />
+              <Regler label="Zins" wert={zins} min={0.02} max={0.08} step={0.0025} format={(v) => `${fmt(v * 100, 2)} %`} onChange={setZins} />
+              <Regler label="Darlehenslaufzeit" wert={tilgungJahre} min={8} max={25} step={1} einheit="Jahre" onChange={setTilgung} />
+              <Regler label="Betrachtungsdauer" wert={laufzeit} min={20} max={40} step={1} einheit="Jahre" onChange={setLaufzeit} hinweis="Pacht üblich 30 Jahre plus Verlängerungsoptionen." />
+              <Schalter
+                icon={Landmark}
+                label={`Darlehen auf DSCR ${fmt(FINANZIERUNG.dscrZiel, 2)} begrenzen`}
+                beschreibung="Wie Banken rechnen: Kredithöhe folgt dem Cashflow"
+                an={dscrBegrenzen}
+                onChange={setDscrBegrenzen}
+              />
+            </Gruppe>
+          </div>
+        </>
+      }
+      ergebnis={
+        <>
+          <p className="sr-only" aria-live="polite">
+            {`Projektrendite ${pct(r.projektIrr)}, Eigenkapitalrendite ${pct(r.ekIrr)}, Stromgestehungskosten ${fmt(r.lcoeCt, 2)} Cent je Kilowattstunde`}
+          </p>
+          <ErgebnisKopf plakette={`${laufzeit} Jahre · vor Steuern`} />
+
+          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-3">
+            <Kennzahl ton="navy" icon={Percent} label="Projekt-IRR" zusatz={`ohne Finanzierung · WACC ${pct(r.wacc)}`}>
+              {r.projektIrr == null ? "–" : <Zahl wert={r.projektIrr * 100} stellen={1} suffix=" %" />}
+            </Kennzahl>
+            <Kennzahl ton="gruen" icon={Banknote} label="Eigenkapital-IRR" zusatz={`EK ${fmtMio(r.ek)} · FK ${pct(r.fkQuoteEff, 0)}`}>
+              {r.ekIrr == null ? "–" : <Zahl wert={r.ekIrr * 100} stellen={1} suffix=" %" />}
+            </Kennzahl>
+            <Kennzahl icon={Gauge} label="LCOE" zusatz={`Fraunhofer ISE 2024: ${fmt(ERLOESE.lcoeIseCt.min, 1)}–${fmt(ERLOESE.lcoeIseCt.max, 1)} ct`}>
+              <Zahl wert={r.lcoeCt} stellen={2} suffix=" ct" />
+            </Kennzahl>
+            <Kennzahl icon={Scale} label="Kapitalwert (NPV)" zusatz={`Projekt, abgezinst mit ${pct(r.wacc)}`}>
+              <span className={r.kapitalwert < 0 ? "text-sun-500" : undefined}>
+                <Zahl wert={r.kapitalwert / 1e6} stellen={2} suffix=" Mio. €" />
+              </span>
+            </Kennzahl>
+            <Kennzahl icon={CalendarClock} label="Amortisation" zusatz="Projekt, kumuliert">
+              {r.amortisation ? <Zahl wert={r.amortisation} stellen={1} suffix=" Jahre" /> : "> Laufzeit"}
+            </Kennzahl>
+            <Kennzahl icon={Landmark} label="DSCR min." zusatz={r.dscrMittel ? `Ø ${fmt(r.dscrMittel, 2)} über ${tilgungJahre} Jahre` : "ohne Fremdkapital"}>
+              {r.dscrMin == null ? (
+                "–"
+              ) : (
+                <span className={r.dscrMin < 1.1 ? "text-sun-500" : undefined}>
+                  <Zahl wert={r.dscrMin} stellen={2} />
+                </span>
+              )}
+            </Kennzahl>
+          </div>
+
+          <div className="mt-4 space-y-2.5">
+            {r.fkBegrenzt && (
+              <Hinweis ton="warnung" icon={AlertTriangle}>
+                Bei DSCR {fmt(FINANZIERUNG.dscrZiel, 2)} trägt der Cashflow nur {pct(r.fkQuoteEff, 0)} Fremdkapital statt {pct(fkQuote, 0)} – den Rest ({fmtMio(r.fk ? r.fkWunsch - r.fk : 0)}) müsste
+                Eigenkapital decken.
+              </Hinweis>
+            )}
+            {r.ekIrr != null && r.projektIrr != null && r.ekIrr < r.projektIrr && r.fk > 0 && (
+              <Hinweis ton="neutral" icon={AlertTriangle}>
+                Negativer Hebel: Der Zins ({pct(zins, 2)}) liegt über der Projektrendite – Fremdkapital senkt hier die Eigenkapitalrendite.
+              </Hinweis>
+            )}
+            <InvestZeile r={r} />
+          </div>
+
+          <div className="mt-7 flex flex-col gap-3 border-t border-ink-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="max-w-md text-[13px] leading-relaxed text-ink-500">
+              Modellrechnung vor Steuern, ohne Gewähr – ersetzt kein Ertragsgutachten und keine Bankrechnung. Wir rechnen gern mit Ihren Projektdaten.
+            </p>
+            <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+              <Button href="/projektboerse" size="lg" pfeil>
+                Projekte ansehen
+              </Button>
+            </div>
+          </div>
+        </>
+      }
+    />
+  );
+}
+
+function InvestZeile({ r }) {
+  const teile = [
+    ["Anlage", r.investition.anlage, "#669933"],
+    ["Netzanschluss", r.investition.netz, "#1f5aa1"],
+    ["Projektrechte", r.investition.entwicklung, "#ffc53d"],
+  ].filter(([, v]) => v > 0);
+  return (
+    <div className="rounded-2xl bg-ink-50 p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 text-[13.5px]">
+        <span className="font-semibold text-ink-800">Investition {fmtMio(r.investition.summe, 2)}</span>
+        <span className="ov-num text-ink-600">{fmt(r.investProKwp)} €/kWp gesamt</span>
+      </div>
+      <div className="mt-2.5 flex h-2.5 overflow-hidden rounded-full bg-ink-100" role="img" aria-label={teile.map(([k, v]) => `${k} ${fmtEur(v)}`).join(", ")}>
+        {teile.map(([k, v, f]) => (
+          <div key={k} style={{ width: `${(v / r.investition.summe) * 100}%`, background: f }} className="motion-safe:transition-[width] motion-safe:duration-500" />
+        ))}
+      </div>
+      <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-ink-600">
+        {teile.map(([k, v, f]) => (
+          <li key={k} className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full" style={{ background: f }} aria-hidden="true" />
+            {k} <span className="ov-num">{fmtMio(v, 2)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Cashflow je Jahr: Erlös nach oben, Kosten + Schuldendienst nach unten */
+/* ------------------------------------------------------------------ */
+
+function CashflowJahre({ r }) {
+  const [ref, W] = useBreite(720);
+  const [hover, setHover] = useState(null);
+  const schmal = W < 520;
+  const H = schmal ? 260 : 310;
+  const P = { l: 56, r: 12, t: 18, b: 30 };
+  const jahre = r.jahre;
+  const maxOben = Math.max(...jahre.map((j) => j.erloes)) * 1.08;
+  const maxUnten = Math.max(...jahre.map((j) => j.kosten + j.schuldendienst)) * 1.08;
+  const innenH = H - P.t - P.b;
+  const nullY = P.t + (maxOben / (maxOben + maxUnten)) * innenH;
+  const skala = innenH / (maxOben + maxUnten);
+  const n = jahre.length;
+  const band = (W - P.l - P.r) / n;
+  const bw = Math.max(2, band * 0.68);
+  const x = (i) => Math.round((P.l + i * band + (band - bw) / 2) * 10) / 10;
+  const yv = (v) => Math.round((nullY - v * skala) * 10) / 10;
+  const schritt = maxOben > 5e6 ? 2e6 : maxOben > 2e6 ? 1e6 : maxOben > 8e5 ? 5e5 : maxOben > 3e5 ? 2e5 : 1e5;
+  const ticks = [];
+  for (let v = -Math.floor(maxUnten / schritt) * schritt; v <= maxOben; v += schritt) ticks.push(v);
+  const aktiv = hover != null ? jahre[hover] : null;
+  const vertragEnde = r.vertragJahre;
+
+  const ausZeiger = (e) => {
+    const box = e.currentTarget.getBoundingClientRect();
+    const px = ((e.clientX - box.left) / box.width) * W;
+    return Math.max(0, Math.min(n - 1, Math.floor((px - P.l) / band)));
+  };
+
+  return (
+    <div ref={ref} className="relative px-2 pb-4 pt-2 md:px-3">
+      <svg
+        width="100%"
+        height={H}
+        viewBox={`0 0 ${W} ${H}`}
+        className="block touch-pan-y select-none"
+        role="img"
+        aria-label={`Balkendiagramm: jährliche Erlöse, Kosten und Schuldendienst über ${n} Jahre. Freier Cashflow im ersten Jahr ${fmtEur(jahre[0].cfEk)}.`}
+      >
+        {ticks.map((v) => (
+          <g key={v}>
+            <line x1={P.l} x2={W - P.r} y1={yv(v)} y2={yv(v)} stroke={v === 0 ? "#97a0b0" : FARBE.raster} />
+            <text x={P.l - 6} y={yv(v) + 4} textAnchor="end" className="fill-ink-500 text-[10.5px]">
+              {v === 0 ? "0" : `${v < 0 ? "−" : ""}${fmt(Math.abs(v) / 1e6, schritt < 1e6 ? 1 : 0)} Mio.`}
+            </text>
+          </g>
+        ))}
+        {vertragEnde > 0 && vertragEnde < n && (
+          <g>
+            <line x1={P.l + vertragEnde * band} x2={P.l + vertragEnde * band} y1={P.t - 4} y2={H - P.b} stroke="#f5a70f" strokeDasharray="3 4" />
+            <text x={P.l + vertragEnde * band + 4} y={P.t + 6} className="fill-sun-500 text-[10.5px] font-semibold">
+              {schmal ? "Markt" : "ab hier Marktpreis"}
+            </text>
+          </g>
+        )}
+        {jahre.map((j, i) => (
+          <g key={j.jahr} opacity={hover == null || hover === i ? 1 : 0.55}>
+            <rect x={x(i)} y={yv(j.erloes)} width={bw} height={Math.max(0, nullY - yv(j.erloes))} rx={Math.min(3, bw / 3)} fill={FARBE.erloes} />
+            <rect x={x(i)} y={nullY} width={bw} height={j.kosten * skala} fill={FARBE.kosten} />
+            <rect x={x(i)} y={nullY + j.kosten * skala} width={bw} height={j.schuldendienst * skala} fill={FARBE.dienst} />
+          </g>
+        ))}
+        <path d={jahre.map((j, i) => `${i ? "L" : "M"}${(x(i) + bw / 2).toFixed(1)},${yv(j.cfEk).toFixed(1)}`).join(" ")} fill="none" stroke={FARBE.cf} strokeWidth="2" strokeLinejoin="round" />
+        {jahre.map((j, i) =>
+          j.jahr === 1 || j.jahr % 5 === 0 ? (
+            <text key={j.jahr} x={x(i) + bw / 2} y={H - P.b + 18} textAnchor="middle" className="fill-ink-500 text-[10.5px]">
+              {j.jahr}
+            </text>
+          ) : null,
+        )}
+        <rect x={0} y={0} width={W} height={H} fill="transparent" onPointerMove={(e) => setHover(ausZeiger(e))} onPointerLeave={() => setHover(null)} onClick={(e) => setHover(ausZeiger(e))} />
+      </svg>
+      {aktiv && (
+        <Tooltip x={x(hover) + bw / 2} y={Math.max(yv(aktiv.erloes) - 20, 0)} breite={W}>
+          <p className="font-semibold">
+            Jahr {aktiv.jahr} · {fmt(aktiv.preisCt, 2)} ct/kWh{aktiv.imVertrag ? "" : " (Markt)"}
+          </p>
+          <p className="text-white/70">
+            Erlös <span className="ov-num font-semibold text-white">{tsd(aktiv.erloes)}</span>
+          </p>
+          <p className="text-white/70">
+            Betrieb & Pacht <span className="ov-num font-semibold text-white">−{tsd(aktiv.kosten)}</span>
+          </p>
+          {aktiv.schuldendienst > 0 && (
+            <p className="text-white/70">
+              Schuldendienst <span className="ov-num font-semibold text-white">−{tsd(aktiv.schuldendienst)}</span>
+            </p>
+          )}
+          <p className="text-white/70">
+            Frei für EK <span className={cn("ov-num font-semibold", aktiv.cfEk >= 0 ? "text-ov-300" : "text-sun-300")}>{tsd(aktiv.cfEk)}</span>
+          </p>
+          {aktiv.dscr != null && (
+            <p className="text-white/70">
+              DSCR <span className="ov-num font-semibold text-white">{fmt(aktiv.dscr, 2)}</span>
+            </p>
+          )}
+        </Tooltip>
+      )}
+      <div className="mt-1 px-3">
+        <Legende
+          items={[
+            { label: "Stromerlös", farbe: FARBE.erloes },
+            { label: "Betrieb, Pacht, Rückbau", farbe: FARBE.kosten },
+            { label: "Zins & Tilgung", farbe: FARBE.dienst },
+            { label: "Frei für Eigenkapital", farbe: FARBE.cf, linie: true },
+          ]}
+        />
+      </div>
+    </div>
+  );
+}
+
+function CashflowKumuliert({ r }) {
+  const [ref, W] = useBreite(720);
+  const [hover, setHover] = useState(null);
+  const schmal = W < 520;
+  const H = schmal ? 260 : 310;
+  const P = { l: 56, r: 14, t: 18, b: 30 };
+  const reihe = (start, key) => {
+    let k = start;
+    return [start, ...r.jahre.map((j) => (k += j[key]))];
+  };
+  const projekt = reihe(-r.investition.summe, "cfProjekt");
+  const ek = reihe(-r.ek, "cfEk");
+  const alle = [...projekt, ...ek];
+  const min = Math.min(...alle, 0) * 1.08;
+  const max = Math.max(...alle, 0) * 1.08;
+  const n = projekt.length - 1;
+  const x = (i) => Math.round((P.l + (i / n) * (W - P.l - P.r)) * 10) / 10;
+  const y = (v) => Math.round((P.t + ((max - v) / (max - min || 1)) * (H - P.t - P.b)) * 10) / 10;
+  const pfad = (arr) => arr.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ");
+  const spanne = max - min;
+  const schritt = spanne > 3e7 ? 1e7 : spanne > 1.2e7 ? 5e6 : spanne > 6e6 ? 2e6 : spanne > 2.5e6 ? 1e6 : 5e5;
+  const ticks = [];
+  for (let v = Math.ceil(min / schritt) * schritt; v <= max; v += schritt) ticks.push(v);
+
+  const ausZeiger = (e) => {
+    const box = e.currentTarget.getBoundingClientRect();
+    const px = ((e.clientX - box.left) / box.width) * W;
+    return Math.max(0, Math.min(n, Math.round(((px - P.l) / (W - P.l - P.r)) * n)));
+  };
+
+  return (
+    <div ref={ref} className="relative px-2 pb-4 pt-2 md:px-3">
+      <svg
+        width="100%"
+        height={H}
+        viewBox={`0 0 ${W} ${H}`}
+        className="block touch-pan-y select-none"
+        role="img"
+        aria-label={`Kumulierter Cashflow: Projekt nach ${n} Jahren ${fmtMio(projekt[n])}, Eigenkapital ${fmtMio(ek[n])}.`}
+      >
+        {ticks.map((v) => (
+          <g key={v}>
+            <line x1={P.l} x2={W - P.r} y1={y(v)} y2={y(v)} stroke={Math.abs(v) < 1 ? "#97a0b0" : FARBE.raster} />
+            <text x={P.l - 6} y={y(v) + 4} textAnchor="end" className="fill-ink-500 text-[10.5px]">
+              {Math.abs(v) < 1 ? "0" : `${v < 0 ? "−" : ""}${fmt(Math.abs(v) / 1e6, schritt < 1e6 ? 1 : 0)} Mio.`}
+            </text>
+          </g>
+        ))}
+        {[0, 5, 10, 15, 20, 25, 30, 35, 40]
+          .filter((t) => t <= n)
+          .map((t) => (
+            <text key={t} x={x(t)} y={H - P.b + 18} textAnchor="middle" className="fill-ink-500 text-[10.5px]">
+              {t}
+            </text>
+          ))}
+        <path d={pfad(projekt)} fill="none" stroke={FARBE.projekt} strokeWidth="2.25" strokeLinejoin="round" />
+        <path d={pfad(ek)} fill="none" stroke={FARBE.ek} strokeWidth="2.75" strokeLinejoin="round" />
+        {r.amortisation && r.amortisation <= n && (
+          <g>
+            <circle cx={x(r.amortisation)} cy={y(0)} r="5.5" fill="#fff" stroke={FARBE.projekt} strokeWidth="2.5" />
+            <text x={x(r.amortisation)} y={y(0) - 10} textAnchor="middle" className="fill-navy-500 text-[10.5px] font-semibold">
+              {fmt(r.amortisation, 1)} J.
+            </text>
+          </g>
+        )}
+        {hover != null && (
+          <g pointerEvents="none">
+            <line x1={x(hover)} x2={x(hover)} y1={P.t} y2={H - P.b} stroke="#97a0b0" strokeDasharray="2 3" />
+            <circle cx={x(hover)} cy={y(projekt[hover])} r="4" fill="#fff" stroke={FARBE.projekt} strokeWidth="2" />
+            <circle cx={x(hover)} cy={y(ek[hover])} r="4" fill="#fff" stroke={FARBE.ek} strokeWidth="2" />
+          </g>
+        )}
+        <rect x={0} y={0} width={W} height={H} fill="transparent" onPointerMove={(e) => setHover(ausZeiger(e))} onPointerLeave={() => setHover(null)} onClick={(e) => setHover(ausZeiger(e))} />
+      </svg>
+      {hover != null && (
+        <Tooltip x={x(hover)} y={Math.max(Math.min(y(projekt[hover]), y(ek[hover])) - 60, 0)} breite={W}>
+          <p className="font-semibold">{hover === 0 ? "Investition (Jahr 0)" : `Nach Jahr ${hover}`}</p>
+          <p className="text-white/70">
+            Projekt <span className="ov-num font-semibold text-white">{fmtMio(projekt[hover], 2)}</span>
+          </p>
+          <p className="text-white/70">
+            Eigenkapital <span className="ov-num font-semibold text-white">{fmtMio(ek[hover], 2)}</span>
+          </p>
+        </Tooltip>
+      )}
+      <div className="mt-1 px-3">
+        <Legende
+          items={[
+            { label: "Projekt (ohne Finanzierung)", farbe: FARBE.projekt, linie: true },
+            { label: "Eigenkapital (nach Schuldendienst)", farbe: FARBE.ek, linie: true },
+          ]}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Sensitivitätsmatrix                                                 */
+/* ------------------------------------------------------------------ */
+
+function Matrix({ matrix, wert, ziel, capexKwp }) {
+  const sp = matrix[0].zellen.map((z) => z.preis);
+  const vz = (d) => (d === 0 ? "±0 %" : `${d > 0 ? "+" : "−"}${fmt(Math.abs(d) * 100)} %`);
+  return (
+    <div className="px-3 pb-5 pt-4 md:px-4">
+      <div tabIndex={0} role="region" aria-label="Sensitivitätsmatrix" className="overflow-x-auto">
+        <table className="w-full min-w-[440px] border-separate border-spacing-1 text-center text-[13px]">
+          <caption className="sr-only">{wert === "ek" ? "Eigenkapitalrendite" : "Projektrendite"} bei veränderter Investition und verändertem Strompreis</caption>
+          <thead>
+            <tr>
+              <th scope="col" className="px-2 py-1.5 text-left text-[11.5px] font-semibold text-ink-500">
+                Capex ↓ · Preis →
+              </th>
+              {sp.map((p) => (
+                <th key={p} scope="col" className={cn("px-2 py-1.5 text-[12px] font-semibold", p === 0 ? "text-ink-900" : "text-ink-500")}>
+                  {vz(p)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {matrix.map((z) => (
+              <tr key={z.capex}>
+                <th scope="row" className={cn("whitespace-nowrap px-2 py-1.5 text-left text-[12px] font-semibold", z.capex === 0 ? "text-ink-900" : "text-ink-500")}>
+                  {vz(z.capex)} <span className="font-normal text-ink-400">· {fmt(z.capexKwp)} €</span>
+                </th>
+                {z.zellen.map((c) => {
+                  const v = wert === "ek" ? c.ekIrr : c.projektIrr;
+                  const mitte = z.capex === 0 && c.preis === 0;
+                  const gut = v != null && v >= ziel;
+                  const knapp = v != null && !gut && v >= ziel - 0.015;
+                  return (
+                    <td
+                      key={c.preis}
+                      className={cn(
+                        "ov-num rounded-lg px-2 py-2 font-semibold",
+                        gut ? "bg-ov-500 text-white" : knapp ? "bg-ov-100 text-ov-800" : "bg-ink-100 text-ink-600",
+                        mitte && "ring-2 ring-ink-900",
+                      )}
+                    >
+                      {pct(v)}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 px-1 text-[12.5px] leading-relaxed text-ink-500">
+        Grün: erreicht {wert === "ek" ? `die EK-Renditeerwartung von ${pct(ziel)}` : `die Kapitalkosten (WACC ${pct(ziel)})`}; hellgrün: bis 1,5 Prozentpunkte darunter. Umrandet: Ihre Eingabe (
+        {fmt(capexKwp)} €/kWp).
+      </p>
+    </div>
+  );
+}
+
+function Jahrestabelle({ r }) {
+  return (
+    <details className="group self-start rounded-3xl ring-1 ring-ink-200/70">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 md:px-6 [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center gap-2.5 font-display text-[17px] font-bold text-ink-900">
+          <TableProperties aria-hidden="true" className="h-5 w-5 text-ov-600" /> Jahrestabelle
+        </span>
+        <span className="text-[13px] font-semibold text-ov-700 group-open:hidden">Aufklappen</span>
+        <span className="hidden text-[13px] font-semibold text-ov-700 group-open:inline">Zuklappen</span>
+      </summary>
+      <div tabIndex={0} role="region" aria-label="Jahrestabelle Cashflow" className="max-h-[420px] overflow-auto border-t border-ink-100">
+        <table className="w-full min-w-[640px] text-right text-[12.5px]">
+          <thead className="sticky top-0 bg-sand-50 text-[11.5px] uppercase tracking-[0.08em] text-ink-500">
+            <tr>
+              {["Jahr", "MWh", "ct/kWh", "Erlös", "Kosten", "Zins + Tilgung", "Frei für EK", "DSCR"].map((h) => (
+                <th key={h} scope="col" className="px-3 py-2.5 font-semibold first:text-left">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="ov-num divide-y divide-ink-100 text-ink-700">
+            {r.jahre.map((j) => (
+              <tr key={j.jahr} className={j.imVertrag ? "" : "bg-sun-300/10"}>
+                <td className="px-3 py-1.5 text-left font-semibold text-ink-900">{j.jahr}</td>
+                <td className="px-3 py-1.5">{fmt(j.erzeugung / 1000)}</td>
+                <td className="px-3 py-1.5">{fmt(j.preisCt, 2)}</td>
+                <td className="px-3 py-1.5">{tsd(j.erloes)}</td>
+                <td className="px-3 py-1.5">{tsd(j.kosten)}</td>
+                <td className="px-3 py-1.5">{j.schuldendienst ? tsd(j.schuldendienst) : "–"}</td>
+                <td className={cn("px-3 py-1.5 font-semibold", j.cfEk < 0 ? "text-sun-500" : "text-ink-900")}>{tsd(j.cfEk)}</td>
+                <td className="px-3 py-1.5">{j.dscr != null ? fmt(j.dscr, 2) : "–"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  );
+}

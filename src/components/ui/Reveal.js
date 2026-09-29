@@ -10,6 +10,9 @@ import { cn } from "./cn";
 export default function Reveal({ as: Tag = "div", delay = 0, dir, className, style, children, ...rest }) {
   return (
     <Tag
+      // RevealObserver ergänzt `is-visible` am Client – auch in Bereichen, die
+      // beim Streaming noch nicht hydriert sind. Diese Abweichung ist gewollt.
+      suppressHydrationWarning
       className={cn("ov-reveal", className)}
       data-dir={dir}
       style={delay ? { "--ov-delay": `${delay}ms`, ...style } : style}

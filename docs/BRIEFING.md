@@ -60,3 +60,13 @@ Bild liegt dann unter `shots/<name>_<breite>.png` (mit dem Read-Werkzeug ansehen
 - Formular mit Chips davor: `@/components/Carport/AuswahlAnfrage`.
 - Qualitäts-Audit (alle Sitemap-Routen: Status, Laufzeitfehler, Überlauf 390 px, tote Links): `MSYS_NO_PATHCONV=1 node audit.mjs` im Scratchpad-Ordner `pw`. Eigene Skripte dort mit eigenem Präfix benennen, fremde nicht überschreiben.
 - Dev-Server kann durch parallele Arbeit langsam sein (bis 30 s je Erstaufruf) – Timeouts großzügig setzen, nicht neu starten.
+
+## Plattform-Teams (Ausbaustufe 3) – Spielregeln
+
+Mehrere Teams arbeiten GLEICHZEITIG an der Plattform im selben Arbeitsverzeichnis.
+- **Neue Funktionen in NEUE Dateien:** Demo-Logik unter `src/lib/plattform/backend/demo/<thema>.js`, Frappe-Adapter-Teil unter `src/lib/plattform/backend/frappe/<thema>.js` (oder klar abgegrenzter Block), API-Routen unter `src/app/api/<bereich>/<thema>/…`, Seiten unter `src/app/portal/<thema>/…`, Komponenten unter `src/components/Portal/<Thema>/…`, Frappe unter `Import-Frappe/oekoinvest_app/oekoinvest_app/plattform/api/<thema>.py` + eigene DocTypes.
+- **Gemeinsame Dateien** (`backend/index.js`, `backend/demo.js`, `backend/frappe.js`, `prozesse.js`, `konstanten.js`, `server/route.js`, `sitzung.js`, `src/app/portal/layout.js`, `PortalRahmen.js`, `docs/API.md`, `docs/PLATTFORM.md`, `scripts/plattform-test.mjs`, `Import-Frappe/.../hooks.py`): nur kleine, gezielte Einfügungen (Registrierung, Import, Menüpunkt, Abschnitt). **Direkt vor jeder Änderung neu lesen**, nie ganze Dateien neu schreiben, nichts Fremdes umformatieren oder entfernen.
+- Tests: eigene Prüfungen als eigene Datei `scripts/plattform-test-<thema>.mjs` (gleiches Muster wie `plattform-test.mjs`); die Haupttests müssen grün bleiben.
+- Demo-Daten: eigene Seed-Ergänzungen in eigener Datei, im Seed nur registrieren. `.data/` nicht löschen, solange andere testen – eigene Testkonten mit eigenem Präfix anlegen.
+- Sicherheit: jede neue API prüft Rolle UND Eigentum; Mutationen nur per JSON + Origin-Prüfung (bestehender `route()`-Helfer); keine Geheimnisse im Code; keine neuen npm-Pakete.
+- Bedienung: „einfach zu bedienen, aber brutal mächtig“ – klare Standardwege, Profi-Funktionen per Tastatur, Filter, Massenaktionen; mobil voll nutzbar; Design-System wie überall.

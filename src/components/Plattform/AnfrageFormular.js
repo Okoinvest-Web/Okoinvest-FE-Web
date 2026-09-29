@@ -175,7 +175,7 @@ export default function AnfrageFormular({
         <button
           type="submit"
           disabled={status === "sendet"}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 px-7 text-[15px] font-semibold text-white shadow-[0_8px_24px_-8px_rgba(102,153,51,0.65)] transition-colors hover:bg-ov-700 disabled:opacity-60"
+          className="inline-flex h-12 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-ov-600 px-7 text-[15px] font-semibold text-white shadow-[0_8px_24px_-8px_rgba(102,153,51,0.65)] transition-colors hover:bg-ov-700 disabled:opacity-60"
         >
           {status === "sendet" ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : null}
           {button}

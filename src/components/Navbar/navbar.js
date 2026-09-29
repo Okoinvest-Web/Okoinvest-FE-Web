@@ -21,8 +21,26 @@ import useFokusFalle from "@/components/ui/useFokusFalle";
  *    Escape schließt und gibt den Fokus an den Auslöser zurück
  *  - Mobil: Vollbild-Menü mit Akkordeons und fester Aktionsleiste
  */
+/** Angemeldet? Einmal je Seitenaufruf abfragen – steuert „Login“ vs. „Portal“. */
+function useAngemeldet(pfad) {
+  const [angemeldet, setAngemeldet] = useState(false);
+  useEffect(() => {
+    let aktiv = true;
+    fetch("/api/auth/ich", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => aktiv && setAngemeldet(Boolean(d?.nutzer)))
+      .catch(() => {});
+    return () => {
+      aktiv = false;
+    };
+  }, [pfad]);
+  return angemeldet;
+}
+
 export default function Navbar() {
   const pfad = usePathname();
+  const angemeldet = useAngemeldet(pfad);
+  const konto = angemeldet ? { href: "/portal", label: "Portal" } : { href: "/login", label: "Login" };
   const [offen, setOffen] = useState(null); // Titel des offenen Mega-Menüs
   const [mobil, setMobil] = useState(false);
   const [mobilGruppe, setMobilGruppe] = useState(null);
@@ -133,9 +151,9 @@ export default function Navbar() {
                 {KONTAKT.telefon}
               </a>
             )}
-            <Link href="/login" className="flex items-center gap-1.5 font-medium text-white transition-colors hover:text-ov-300">
+            <Link href={konto.href} className="flex items-center gap-1.5 font-medium text-white transition-colors hover:text-ov-300">
               <UserRound aria-hidden="true" className="h-3.5 w-3.5" />
-              Login
+              {konto.label}
             </Link>
           </div>
         </div>
@@ -191,8 +209,8 @@ export default function Navbar() {
 
           <div className="flex shrink-0 items-center gap-2">
             <Link
-              href="/login"
-              aria-label="Login zum Portal"
+              href={konto.href}
+              aria-label={angemeldet ? "Zum Portal" : "Login zum Portal"}
               className="flex h-11 w-11 items-center justify-center rounded-full text-ink-700 ring-1 ring-inset ring-ink-200 transition-colors hover:bg-ink-50 hover:text-ov-700 md:hidden"
             >
               <UserRound aria-hidden="true" className="h-[18px] w-[18px]" />
@@ -250,6 +268,7 @@ export default function Navbar() {
         setGruppe={setMobilGruppe}
         pfad={pfad}
         rueckgabeRef={menueKnopf}
+        konto={konto}
       />
     </header>
   );
@@ -344,7 +363,7 @@ function LivePreis() {
   );
 }
 
-function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef }) {
+function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, konto }) {
   const dialog = useRef(null);
   const schliessKnopf = useRef(null);
   useFokusFalle(offen, dialog, { beiEscape: schliessen, startRef: schliessKnopf, rueckgabeRef });
@@ -423,9 +442,9 @@ function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef }
       </div>
 
       <div className="grid grid-cols-2 gap-2 border-t border-ink-100 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <Link href="/login" onClick={schliessen} className="flex h-12 items-center justify-center gap-2 rounded-full text-[15px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200">
+        <Link href={konto.href} onClick={schliessen} className="flex h-12 items-center justify-center gap-2 rounded-full text-[15px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200">
           <UserRound aria-hidden="true" className="h-4 w-4" />
-          Login
+          {konto.label}
         </Link>
         <Link href="/flaechencheck" onClick={schliessen} className="flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 text-[15px] font-semibold text-white">
           Fläche prüfen

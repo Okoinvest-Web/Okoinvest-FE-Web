@@ -18,6 +18,7 @@ const nextConfig = {
       { source: "/:path*", headers: sicherheit },
       // Portal und Login nie in Suchmaschinen, nie zwischenspeichern
       { source: "/portal/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "no-store" }] },
+      ...["/login", "/registrieren", "/passwort-vergessen"].map((source) => ({ source, headers: [{ key: "X-Robots-Tag", value: "noindex, follow" }] })),
     ];
   },
 };

@@ -68,5 +68,11 @@ export const KENNZAHLEN = {
 
 export const SOCIAL = [];
 
+/** hreflang-Paar für Seiten mit englischem Gegenstück (siehe src/components/En/sprachpaare.js) */
+export const sprachAlternates = (dePfad, enPfad) => ({
+  canonical: abs(dePfad),
+  languages: { de: abs(dePfad), en: abs(enPfad), "x-default": abs(dePfad) },
+});
+
 /** Absolute URL zu einem Pfad */
 export const abs = (pfad = "/") => `${SITE.url}${pfad === "/" ? "" : pfad}`;

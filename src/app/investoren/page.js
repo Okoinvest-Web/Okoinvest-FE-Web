@@ -15,7 +15,7 @@ import Phasenmodell from "@/components/Investoren/Phasenmodell";
 import PipelineGrafik from "@/components/Investoren/PipelineGrafik";
 import DdCheckliste from "@/components/Investoren/DdCheckliste";
 import InvestorAnfrage from "@/components/Investoren/InvestorAnfrage";
-import { abs, KENNZAHLEN, SITE } from "@/data/site";
+import { abs, KENNZAHLEN, SITE, sprachAlternates } from "@/data/site";
 import { PHASEN, PROVISION, ERLOESE, STAND } from "@/lib/invest/markt";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
 
@@ -28,7 +28,7 @@ export const metadata = {
   title: TITEL,
   description: BESCHREIBUNG,
   keywords: ["Solarpark kaufen", "Projektrechte Photovoltaik", "RTB Solarpark", "Solarprojekte Investor", "Bestandsanlage PV kaufen", "Co-Development Solar"],
-  alternates: { canonical: abs(PFAD) },
+  alternates: sprachAlternates("/investoren", "/en/investors"),
   openGraph: {
     type: "website",
     url: abs(PFAD),

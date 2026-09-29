@@ -8,7 +8,7 @@ import CtaBand from "@/components/ui/CtaBand";
 import Button from "@/components/ui/Button";
 import Reveal from "@/components/ui/Reveal";
 import BoerseListe from "@/components/Boerse/BoerseListe";
-import { abs, SITE } from "@/data/site";
+import { abs, SITE, sprachAlternates } from "@/data/site";
 import { PROVISION, PHASEN } from "@/lib/invest/markt";
 import { backend, istDemo } from "@/lib/plattform/backend";
 import { PlattformFehler } from "@/lib/plattform/fehler";
@@ -23,7 +23,7 @@ const BESCHREIBUNG =
 export const metadata = {
   title: TITEL,
   description: BESCHREIBUNG,
-  alternates: { canonical: abs(PFAD) },
+  alternates: sprachAlternates("/projektboerse", "/en/project-exchange"),
   openGraph: {
     type: "website",
     url: abs(PFAD),

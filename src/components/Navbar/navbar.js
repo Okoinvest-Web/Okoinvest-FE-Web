@@ -11,6 +11,7 @@ import { iconFor } from "@/components/ui/icons";
 import LiveTicker, { LiveDot } from "@/components/ui/LiveTicker";
 import useEnergyLive, { fmtCt } from "@/components/ui/useEnergyLive";
 import useFokusFalle from "@/components/ui/useFokusFalle";
+import Sprachwahl from "@/components/En/Sprachwahl";
 
 /**
  * Seitenkopf 2026
@@ -151,6 +152,7 @@ export default function Navbar() {
                 {KONTAKT.telefon}
               </a>
             )}
+            <Sprachwahl variante="dunkel" kompakt />
             <Link href={konto.href} className="flex items-center gap-1.5 font-medium text-white transition-colors hover:text-ov-300">
               <UserRound aria-hidden="true" className="h-3.5 w-3.5" />
               {konto.label}
@@ -391,6 +393,9 @@ function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, 
       <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-6 pt-3">
         <div className="mb-3 rounded-2xl bg-navy-950 px-4 py-3">
           <LiveTicker />
+        </div>
+        <div className="mb-2 flex justify-end">
+          <Sprachwahl />
         </div>
         <ul>
           {NAVIGATION.map((item) => {

@@ -9,7 +9,7 @@ import CtaBand from "@/components/ui/CtaBand";
 import Button from "@/components/ui/Button";
 import Reveal from "@/components/ui/Reveal";
 import Querverweise from "@/components/Reusable/Querverweise";
-import { abs } from "@/data/site";
+import { abs, sprachAlternates } from "@/data/site";
 import { PHASEN, PROVISION } from "@/lib/invest/markt";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
 
@@ -21,7 +21,7 @@ const BESCHREIBUNG = `Solarpark oder Projektrechte verkaufen: anonymes Exposé, 
 export const metadata = {
   title: TITEL,
   description: BESCHREIBUNG,
-  alternates: { canonical: abs(PFAD) },
+  alternates: sprachAlternates("/projektboerse/anbieten", "/en/sell-your-project"),
   openGraph: {
     type: "website",
     url: abs(PFAD),

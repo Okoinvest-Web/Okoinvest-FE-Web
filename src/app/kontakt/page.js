@@ -1,3 +1,4 @@
+import { sprachAlternates } from "@/data/site";
 import Link from "next/link";
 import { ArrowRight, Clock, LayoutDashboard, MapPin, MessageSquare, Phone } from "lucide-react";
 import PageHero from "@/components/ui/PageHero";
@@ -15,13 +16,16 @@ import { GESELLSCHAFT, KONTAKT, SITE, abs } from "@/data/site";
 
 const PFAD = "/kontakt";
 
-export const metadata = rechnerMetadata({
+export const metadata = {
+  ...rechnerMetadata({
   pfad: PFAD,
   title: "Kontakt: Anfrage an das Projektteam | ÖkoInvest",
   description:
     "Fläche, Agri-PV, Investment, Projekt, Reststrom oder Genossenschaft: Wählen Sie Ihr Anliegen und schreiben Sie dem ÖkoInvest-Projektteam in Ostermiething.",
   keywords: ["ÖkoInvest Kontakt", "Solarpark Anfrage", "Fläche verpachten Anfrage", "Projektentwickler Kontakt", "Ostermiething"],
-});
+  }),
+  alternates: sprachAlternates("/kontakt", "/en/contact"),
+};
 
 const TAGE = { "Mo – Do": ["Monday", "Tuesday", "Wednesday", "Thursday"], Fr: ["Friday"] };
 

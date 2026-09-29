@@ -20,7 +20,7 @@ import Werttreppe from "@/components/Home/Werttreppe";
 import Kreislauf from "@/components/Home/Kreislauf";
 import HomeBoerse from "@/components/Home/HomeBoerse";
 import { TOOLS } from "@/components/Rechner/tools";
-import { KENNZAHLEN, SITE, abs } from "@/data/site";
+import { KENNZAHLEN, SITE, abs, sprachAlternates } from "@/data/site";
 import { FREIFLAECHE, PACHT, PROVISION, STROM } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 
@@ -33,7 +33,7 @@ const META = {
 export const metadata = {
   title: META.title,
   description: META.description,
-  alternates: { canonical: abs("/") },
+  alternates: sprachAlternates("/", "/en"),
   openGraph: {
     type: "website",
     locale: "de_DE",

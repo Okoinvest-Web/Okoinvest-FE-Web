@@ -18,6 +18,7 @@ import CtaBand from "@/components/ui/CtaBand";
 import ZielgruppenWahl from "@/components/Home/ZielgruppenWahl";
 import Werttreppe from "@/components/Home/Werttreppe";
 import Kreislauf from "@/components/Home/Kreislauf";
+import HomeBoerse from "@/components/Home/HomeBoerse";
 import { TOOLS } from "@/components/Rechner/tools";
 import { KENNZAHLEN, SITE, abs } from "@/data/site";
 import { FREIFLAECHE, PACHT, PROVISION, STROM } from "@/lib/invest/markt";
@@ -290,6 +291,7 @@ export default function HomePage() {
             <Werttreppe />
           </Reveal>
         </div>
+        <HomeBoerse />
       </Section>
 
       {/* ================= RESTSTROM-POOL ================= */}

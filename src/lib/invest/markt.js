@@ -153,7 +153,8 @@ export const PACHT = {
   /** Übliche Pacht für Freiflächen-PV in €/ha und Jahr (DACH, 2025/26) */
   freiflaecheProHa: { min: 1500, mittel: 2800, max: 4500 },
   /** Agri-PV: höhere Nutzung bleibt beim Landwirt, Pacht meist niedriger */
-  agriProHa: { min: 800, mittel: 1600, max: 2500 },
+  /** Agri-PV: Bewirtschaftung bleibt beim Landwirt, Projekte sind knapp kalkuliert → Pacht deutlich unter Freifläche */
+  agriProHa: { min: 600, mittel: 1200, max: 2000 },
   /** Alternativ: Umsatzbeteiligung in % der Stromerlöse */
   umsatzbeteiligung: { min: 0.04, max: 0.08 },
   /** Durchschnittliche landwirtschaftliche Pacht Ackerland DE (Destatis, Landwirtschaftszählung) */
@@ -184,10 +185,11 @@ export const AGRI = {
   /** Einkommensgrundstützung + Umverteilung DE grob €/ha (2025/26) */
   direktzahlungProHa: 250,
   capexProKwp: {
-    vertikal: { min: 600, mittel: 700, max: 850 },
-    hoch: { min: 900, mittel: 1100, max: 1400 },
+    vertikal: { min: 550, mittel: 640, max: 800 },
+    hoch: { min: 850, mittel: 1000, max: 1300 },
   },
-  opexProKwp: 14,
+  /** Betriebskosten ohne Pacht €/kWp·a – etwas über Freifläche (Bewirtschaftung zwischen den Reihen, mehr Unterkonstruktion) */
+  opexProKwp: 10,
   /** Privilegierung Außenbereich § 35 Abs. 1 Nr. 9 BauGB: Grundfläche bis 2,5 ha, Hofbezug */
   privilegierungHa: 2.5,
   /**

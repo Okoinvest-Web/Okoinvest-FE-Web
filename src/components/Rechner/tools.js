@@ -1,0 +1,13 @@
+import { Car, Factory, HandCoins, Landmark, LineChart, MapPinned, Scale, Sprout } from "lucide-react";
+
+/** Alle Rechner & Tools – eine Quelle für Hub, Querverweise und Schema. */
+export const TOOLS = [
+  { id: "flaechencheck", href: "/flaechencheck", titel: "Flächencheck", kurz: "Eignung und Pachtspanne Ihrer Fläche", text: "Lage, Größe, Nutzung und Netzentfernung eingeben – Sie erhalten eine Ampel-Einschätzung, mögliche Anlagengröße und Pachtspanne.", icon: MapPinned, zielgruppe: "Flächeneigentümer", tag: "Beliebt" },
+  { id: "pacht", href: "/rechner/pacht", titel: "Pachtrechner", kurz: "Solarpacht über 30 Jahre vs. Ackerbau", text: "Was bringt Ihre Fläche über die gesamte Laufzeit – fest, indexiert oder mit Umsatzbeteiligung? Im Vergleich zu Ackerpacht und Deckungsbeitrag.", icon: HandCoins, zielgruppe: "Flächeneigentümer" },
+  { id: "agri-pv", href: "/rechner/agri-pv", titel: "Agri-PV-Rechner", kurz: "Verpachten, selbst investieren oder beteiligen", text: "Drei Wege für Landwirte im direkten Vergleich: Pacht, Eigeninvestition und Beteiligung über die Genossenschaft – inklusive GAP-Direktzahlungen.", icon: Sprout, zielgruppe: "Landwirte", tag: "Neu" },
+  { id: "solarpark", href: "/rechner/solarpark", titel: "Solarpark-Renditerechner", kurz: "IRR, LCOE und Cashflow über 30 Jahre", text: "Investition, Finanzierung, EEG oder PPA: Projekt- und Eigenkapitalrendite, Stromgestehungskosten und Cashflow-Verlauf eines Solarparks.", icon: LineChart, zielgruppe: "Investoren", tag: "Profi" },
+  { id: "projektbewertung", href: "/rechner/projektbewertung", titel: "Projektbewertung", kurz: "Was ist ein Projekt in welcher Phase wert?", text: "Kaufpreisspanne je kWp nach Entwicklungsstand, Netzanschluss und Größe – für Verkäufer und Käufer von Projektrechten.", icon: Scale, zielgruppe: "Investoren & Entwickler" },
+  { id: "reststrom", href: "/rechner/reststrom", titel: "Reststrom-Rechner", kurz: "Ersparnis durch den Strompool", text: "Jahresverbrauch und heutiger Preis – was der Pool aus Bündelung, Solar-PPA und Flexibilität bei Ihrem Reststrom einsparen kann.", icon: Factory, zielgruppe: "Unternehmen" },
+  { id: "solarcarport", href: "/rechner/solarcarport", titel: "Carport-Rechner", kurz: "Parkplatz-PV mit Ladepunkten", text: "Stellplätze eingeben – Leistung, Ertrag, Investition, Eigenverbrauch und Amortisation eines Solarcarports mit Ladeinfrastruktur.", icon: Car, zielgruppe: "Unternehmen & Kommunen" },
+  { id: "kommune", href: "/rechner/kommune", titel: "Kommunal-Rechner", kurz: "Einnahmen der Gemeinde aus dem Solarpark", text: "§ 6 EEG-Beteiligung, Gewerbesteuer und Pacht auf Gemeindeflächen – was ein Solarpark der Standortgemeinde über 20 Jahre bringt.", icon: Landmark, zielgruppe: "Kommunen" },
+];

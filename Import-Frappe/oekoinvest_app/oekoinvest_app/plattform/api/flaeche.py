@@ -1,0 +1,125 @@
+# Copyright (c) 2026, ÖkoInvest GmbH
+# Flächen: eigene bzw. alle (Backoffice), anlegen, ändern (Eigentümer nur in entwurf/eingegangen).
+
+import frappe
+
+from oekoinvest_app.plattform import validierung as v
+from oekoinvest_app.plattform.ablauf import uebergang_anwenden
+from oekoinvest_app.plattform.ausgabe import flaeche_ausgabe
+from oekoinvest_app.plattform.kern import (
+	admin_noetig,
+	ist_admin,
+	konflikt,
+	nicht_gefunden,
+	nutzer,
+	protokoll,
+	rolle_noetig,
+	verboten,
+	verlauf,
+)
+from oekoinvest_app.plattform.konstanten import BUNDESLAENDER, EIGENTUM, FLAECHE_NUTZUNG, LAENDER
+from oekoinvest_app.plattform.prozesse import PROZESSE, pruefe_uebergang
+
+MAX_LISTE = 1000
+
+
+def flaeche_daten(daten, basis=None):
+	"""Positivliste der änderbaren Felder (snake_case) – wie flaecheDaten im Demo-Backend."""
+	d = daten if isinstance(daten, dict) else {}
+	basis = basis or {}
+	land = v.auswahl(d.get("land"), LAENDER, basis.get("land") or "DE")
+	if isinstance(d.get("flurstuecke"), list):
+		flurstuecke = []
+		for x in d["flurstuecke"][:50]:
+			x = x if isinstance(x, dict) else {}
+			fs = {"gemarkung": v.text(x.get("gemarkung"), 80), "flur": v.text(x.get("flur"), 20), "nummer": v.text(x.get("nummer"), 30)}
+			if fs["nummer"] or fs["gemarkung"]:
+				flurstuecke.append(fs)
+	else:
+		flurstuecke = basis.get("flurstuecke") or []
+	ha = v.zahl(d.get("ha"), min=0.01, max=100000, stellen=2)
+	return {
+		"bezeichnung": v.text(d.get("bezeichnung"), 120),
+		"land": land,
+		"bundesland": v.auswahl(d.get("bundesland"), BUNDESLAENDER[land], ""),
+		"plz": v.plz(d.get("plz")),
+		"ort": v.text(d.get("ort"), 80),
+		"gemarkung": v.text(d.get("gemarkung"), 80),
+		"flurstuecke": flurstuecke,
+		"ha": ha or 0,
+		"nutzung": v.auswahl(d.get("nutzung"), FLAECHE_NUTZUNG, "acker"),
+		"agri": 1 if v.wahr(d.get("agri")) else 0,
+		"eigentum": v.auswahl(d.get("eigentum"), EIGENTUM, "eigentum"),
+		"hinweise": v.mehrzeilig(d.get("hinweise"), 3000),
+	}
+
+
+def _anwenden(f, werte):
+	for feld, wert in werte.items():
+		if feld == "flurstuecke":
+			f.set("flurstuecke", [dict(x) for x in wert])
+		else:
+			f.set(feld, wert)
+
+
+@frappe.whitelist(methods=["POST"])
+def liste(alle=None, status=None, als_benutzer=None):
+	n = nutzer(als_benutzer)
+	alle = v.wahr(alle)
+	if alle:
+		admin_noetig(n)
+	filters = {} if alle else {"nutzer_id": n.id}
+	st = v.auswahl(status, PROZESSE["flaeche"]["status"])
+	if st:
+		filters["status"] = st
+	namen = frappe.get_all("Plattform Flaeche", filters=filters, pluck="name", order_by="modified desc", limit_page_length=MAX_LISTE)
+	return [flaeche_ausgabe(frappe.get_doc("Plattform Flaeche", x), n) for x in namen]
+
+
+def _laden(n, kennung):
+	k = v.kennung(kennung)
+	if not k or not frappe.db.exists("Plattform Flaeche", k):
+		nicht_gefunden("Fläche nicht gefunden.")
+	f = frappe.get_doc("Plattform Flaeche", k)
+	if not ist_admin(n) and f.nutzer_id != n.id:
+		verboten()
+	return f
+
+
+@frappe.whitelist(methods=["POST"])
+def holen(id=None, als_benutzer=None):  # noqa: A002
+	n = nutzer(als_benutzer)
+	return flaeche_ausgabe(_laden(n, id), n)
+
+
+@frappe.whitelist(methods=["POST"])
+def anlegen(daten=None, ip=None, als_benutzer=None):
+	n = nutzer(als_benutzer)
+	rolle_noetig(n, ["flaeche", "landwirt"], "Flächen können Flächeneigentümer und Landwirte anlegen.")
+	werte = flaeche_daten(daten)
+	v.pflicht(werte["bezeichnung"], "Bitte geben Sie eine Bezeichnung an.")
+	f = frappe.get_doc({"doctype": "Plattform Flaeche", "nutzer_id": n.id, "status": "entwurf"})
+	_anwenden(f, werte)
+	verlauf(f, "entwurf", n, "eigentuemer", "")
+	f.insert(ignore_permissions=True)
+	protokoll(n, "anlegen", "flaeche", f.name, f"Fläche „{f.bezeichnung}“ angelegt", ip)
+	if v.wahr((daten or {}).get("einreichen") if isinstance(daten, dict) else None):
+		pruefe_uebergang("flaeche", f.status, "eingegangen", "eigentuemer", {}, objekt=f)
+		uebergang_anwenden(n, "flaeche", f, "eingegangen", "eigentuemer", {}, ip)
+	return flaeche_ausgabe(f, n)
+
+
+@frappe.whitelist(methods=["POST"])
+def aendern(id=None, daten=None, als_benutzer=None):  # noqa: A002
+	n = nutzer(als_benutzer)
+	f = _laden(n, id)
+	admin = ist_admin(n)
+	if not admin and f.status not in ("entwurf", "eingegangen"):
+		konflikt("Die Fläche ist bereits in Bearbeitung – Änderungen bitte per Nachricht mitteilen.")
+	basis = {"land": f.land, "flurstuecke": [{"gemarkung": x.gemarkung, "flur": x.flur, "nummer": x.nummer} for x in f.get("flurstuecke") or []]}
+	werte = flaeche_daten(daten, basis)
+	v.pflicht(werte["bezeichnung"], "Bitte geben Sie eine Bezeichnung an.")
+	_anwenden(f, werte)
+	f.save(ignore_permissions=True)
+	protokoll(n, "aendern", "flaeche", f.name, "Fläche bearbeitet")
+	return flaeche_ausgabe(f, n)

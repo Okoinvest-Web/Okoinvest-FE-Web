@@ -1,0 +1,192 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-29 08:00:00.000000",
+ "description": "Anfrage aus einem Formular der Website (Automat „vorgang“).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sec_vorgang",
+  "typ",
+  "status",
+  "email",
+  "cb_vorgang",
+  "nutzer_id",
+  "zustaendig_id",
+  "flaeche_id",
+  "sec_daten",
+  "kontakt",
+  "daten",
+  "description",
+  "ablehn_grund",
+  "sec_nachweis",
+  "einwilligung",
+  "herkunft",
+  "ip",
+  "sec_verlauf",
+  "status_verlauf"
+ ],
+ "fields": [
+  {
+   "fieldname": "sec_vorgang",
+   "fieldtype": "Section Break",
+   "label": "Anfrage"
+  },
+  {
+   "fieldname": "typ",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Anfragetyp",
+   "options": "flaeche\nagri\ninvestor\nprojekt\nreststrom\nenergiegemeinschaft\ngenossenschaft\nkommune\ncarport\nspeicher\nkontakt",
+   "reqd": 1
+  },
+  {
+   "default": "eingegangen",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "eingegangen\nin_pruefung\nqualifiziert\nangebot\nabgeschlossen\nabgelehnt\nzurueckgezogen",
+   "reqd": 1
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Kontakt-E-Mail",
+   "options": "Email",
+   "search_index": 1
+  },
+  {
+   "fieldname": "cb_vorgang",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "nutzer_id",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Konto",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "zustaendig_id",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Zuständig (Backoffice)",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "flaeche_id",
+   "fieldtype": "Link",
+   "label": "Fläche",
+   "options": "Plattform Flaeche"
+  },
+  {
+   "fieldname": "sec_daten",
+   "fieldtype": "Section Break",
+   "label": "Angaben"
+  },
+  {
+   "fieldname": "kontakt",
+   "fieldtype": "JSON",
+   "label": "Kontaktdaten"
+  },
+  {
+   "fieldname": "daten",
+   "fieldtype": "JSON",
+   "label": "Zusatzdaten"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Interne Notiz"
+  },
+  {
+   "fieldname": "ablehn_grund",
+   "fieldtype": "Small Text",
+   "label": "Begründung (Ablehnung)",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sec_nachweis",
+   "fieldtype": "Section Break",
+   "label": "Nachweise (nur Backoffice)"
+  },
+  {
+   "fieldname": "einwilligung",
+   "fieldtype": "JSON",
+   "label": "Einwilligung",
+   "read_only": 1
+  },
+  {
+   "fieldname": "herkunft",
+   "fieldtype": "JSON",
+   "label": "Herkunft (Kampagne)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "label": "IP-Adresse",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sec_verlauf",
+   "fieldtype": "Section Break",
+   "label": "Statusverlauf"
+  },
+  {
+   "fieldname": "status_verlauf",
+   "fieldtype": "Table",
+   "label": "Statusverlauf",
+   "options": "Plattform Statusverlauf",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-29 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Vorgang",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "search_fields": "typ,status,email",
+ "show_title_field_in_link": 0,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "email",
+ "track_changes": 1
+}

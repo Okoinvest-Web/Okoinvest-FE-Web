@@ -1,0 +1,159 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-29 08:00:00.000000",
+ "description": "Nachricht im Thread eines Objekts (Vorgang, Fläche, Projekt, Interesse) oder im allgemeinen Nutzer-Thread.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sec_nachricht",
+  "bezug_art",
+  "bezug_doctype",
+  "bezug_id",
+  "cb_nachricht",
+  "am",
+  "von_id",
+  "von_admin",
+  "system",
+  "sec_text",
+  "text",
+  "sec_gelesen",
+  "gelesen_nutzer",
+  "gelesen_admin"
+ ],
+ "fields": [
+  {
+   "fieldname": "sec_nachricht",
+   "fieldtype": "Section Break",
+   "label": "Nachricht"
+  },
+  {
+   "fieldname": "bezug_art",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Bezug",
+   "options": "vorgang\nflaeche\nprojekt\ninteresse\nnutzer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bezug_doctype",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Bezug (DocType)",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bezug_id",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Bezug-ID",
+   "options": "bezug_doctype",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "cb_nachricht",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Zeitpunkt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "label": "Von (Konto)",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "von_admin",
+   "fieldtype": "Check",
+   "label": "Vom Backoffice",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "system",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Systemnachricht",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_text",
+   "fieldtype": "Section Break",
+   "label": "Text"
+  },
+  {
+   "fieldname": "text",
+   "fieldtype": "Text",
+   "label": "Text",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "sec_gelesen",
+   "fieldtype": "Section Break",
+   "label": "Gelesen"
+  },
+  {
+   "default": "0",
+   "fieldname": "gelesen_nutzer",
+   "fieldtype": "Check",
+   "label": "Gelesen (Nutzer)"
+  },
+  {
+   "default": "0",
+   "fieldname": "gelesen_admin",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Gelesen (Backoffice)"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-29 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Nachricht",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "am",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

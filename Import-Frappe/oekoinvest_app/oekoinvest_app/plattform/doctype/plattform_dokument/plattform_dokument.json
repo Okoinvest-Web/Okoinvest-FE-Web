@@ -1,0 +1,167 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-29 08:00:00.000000",
+ "description": "Hochgeladenes Dokument (privates File, PDF/JPG/PNG ≤ 10 MB). Datenraum-Dokumente nur für Projekte.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sec_dokument",
+  "bezug_art",
+  "bezug_doctype",
+  "bezug_id",
+  "kategorie",
+  "cb_dokument",
+  "dateiname",
+  "mime",
+  "groesse",
+  "hochgeladen_von",
+  "am",
+  "sec_datei",
+  "datei",
+  "datei_id",
+  "sha256"
+ ],
+ "fields": [
+  {
+   "fieldname": "sec_dokument",
+   "fieldtype": "Section Break",
+   "label": "Dokument"
+  },
+  {
+   "fieldname": "bezug_art",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Bezug",
+   "options": "vorgang\nflaeche\nprojekt\ninteresse\nnutzer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bezug_doctype",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Bezug (DocType)",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bezug_id",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Bezug-ID",
+   "options": "bezug_doctype",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "allgemein",
+   "fieldname": "kategorie",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Kategorie",
+   "options": "allgemein\ndatenraum\nvertrag\nplan"
+  },
+  {
+   "fieldname": "cb_dokument",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dateiname",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Dateiname",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mime",
+   "fieldtype": "Select",
+   "label": "Typ",
+   "options": "application/pdf\nimage/jpeg\nimage/png",
+   "read_only": 1
+  },
+  {
+   "fieldname": "groesse",
+   "fieldtype": "Int",
+   "label": "Größe (Byte)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "hochgeladen_von",
+   "fieldtype": "Link",
+   "label": "Hochgeladen von",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "label": "Hochgeladen am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_datei",
+   "fieldtype": "Section Break",
+   "label": "Datei (privat)"
+  },
+  {
+   "fieldname": "datei",
+   "fieldtype": "Attach",
+   "label": "Datei",
+   "read_only": 1
+  },
+  {
+   "fieldname": "datei_id",
+   "fieldtype": "Link",
+   "label": "Datei (File)",
+   "options": "File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sha256",
+   "fieldtype": "Data",
+   "label": "SHA-256",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-29 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Dokument",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "am",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

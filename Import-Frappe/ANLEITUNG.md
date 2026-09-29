@@ -1,0 +1,178 @@
+# Import-Frappe – Plattform-Backend `oekoinvest_app`
+
+Frappe-v15-App für Portal, Projektbörse und Backoffice der ÖkoInvest-Website.
+Die Website (Next.js) spricht die App ausschließlich serverseitig über `src/lib/plattform/backend/frappe.js` an.
+Verbindlicher Vertrag: `docs/API.md` (Methoden, Rollen, Automaten), Betrieb der Website: `docs/PLATTFORM.md`.
+
+> Vorher: **Backup** der Site: `bench --site <site> backup --with-files`.
+> Tests (`run-tests`) nur auf einer **Test-Site**, nie auf der Produktiv-Site.
+
+## Inhalt
+
+```
+Import-Frappe/
+  ANLEITUNG.md                      ← diese Datei
+  oekoinvest_app/                   ← App-Repository (bench get-app)
+    pyproject.toml, README.md
+    oekoinvest_app/
+      __init__.py (__version__), hooks.py, modules.txt (Plattform), patches.txt
+      fixtures/role.json            ← 9 Rollen (s. u.)
+      templates/emails/*.html       ← E-Mails (Bestätigung, Passwort, Hinweis)
+      translations/de.csv
+      plattform/
+        konstanten.py, prozesse.py (Zustandsautomaten 1:1 aus prozesse.js), validierung.py,
+        oeffentlich.py (Positivliste), matching.py, kern.py (Aufrufer/Rechte/Protokoll),
+        ausgabe.py (JSON), ablauf.py (Statuswechsel + Nebenwirkungen), mail.py,
+        installation.py, aufgaben.py, basis.py (Controller-Basis)
+        api/  auth · konto · anfrage · vorgang · flaeche · projekt · boerse · interesse · prozess · nachricht · dokument · admin
+        doctype/  14 DocTypes (s. u.)
+        tests/    test_prozesse · test_rechte · test_provision · test_aktivitaet
+```
+
+| DocType | Inhalt |
+|---|---|
+| Plattform Konto (+ Kindtabelle Plattform Konto Rolle) | Portal-Konto, 1:1 zum Frappe-User; Rollen, Sitzungsversion, Sperre, Suchprofil |
+| Plattform Rolle | Stammdaten: Website-Rolle ↔ Frappe-Rolle (wird automatisch gepflegt) |
+| Plattform Vorgang | Anfragen aus allen Formularen |
+| Plattform Flaeche (+ Plattform Flurstueck) | Flächen der Eigentümer/Landwirte |
+| Plattform Projekt | Projekte der Börse (öffentlich nur über die Positivliste) |
+| Plattform Interesse | Merkliste, Klick-NDA, LOI – genau eines je Projekt und Investor |
+| Plattform Provision | entsteht automatisch beim Verkauf |
+| Plattform Nachricht | Threads je Objekt bzw. je Nutzer |
+| Plattform Dokument | Metadaten; Datei als **privates** Frappe-File |
+| Plattform Aktivitaet | Protokoll, **append-only** |
+| Plattform Token | Einmal-Token (nur SHA-256-Hash) |
+| Plattform Statusverlauf | Kindtabelle Statusverlauf |
+
+Kennungen: `U-26-XXXXXX`, `V-…`, `F-…`, `P-…`, `I-…`, `PV-…`, `D-…`, `M-…`, `A-…` (zufällig, nicht fortlaufend).
+
+---
+
+## Schritt 1 – App installieren
+
+Den Ordner `Import-Frappe/oekoinvest_app` auf den Server kopieren (oder als eigenes Git-Repository bereitstellen), dann im `frappe-bench`-Ordner:
+
+```bash
+bench get-app /home/frappe/Import-Frappe/oekoinvest_app     # bzw. bench get-app <git-url>
+bench --site <site> install-app oekoinvest_app
+bench --site <site> migrate
+bench restart
+```
+
+`install-app`/`migrate` legen an: alle DocTypes, die Rollen aus `fixtures/role.json` und die Stammdaten „Plattform Rolle“.
+
+| Rolle | Desk | Wer bekommt sie |
+|---|---|---|
+| ÖkoInvest API | nein | **nur** der technische API-Benutzer der Website (Schritt 3) |
+| ÖkoInvest Admin | ja (2FA an) | Mitarbeitende, die Plattform-Daten im Desk lesen/korrigieren |
+| Plattform Flächeneigentümer, Landwirt, Investor, Anbieter, Unternehmen, Mitglied, Backoffice | nein | werden **automatisch** aus dem Plattform Konto gesetzt – nicht von Hand vergeben |
+
+Rechte-Prinzip: Die fachlichen Rollen und `ÖkoInvest API` haben **keine** DocType-Rechte. Alles läuft über die whitelisted Methoden, die Rolle **und** Eigentum selbst prüfen. `/api/resource/...` liefert dem API-Benutzer nichts.
+
+## Schritt 2 – Site-Konfiguration
+
+Werte stehen danach in `sites/<site>/site_config.json` – **nie** ins Git-Repository.
+
+```bash
+# Pflicht: Basis für alle Links in E-Mails (gleicher Wert wie PLATTFORM_BASIS_URL der Website).
+# Wird NIE aus dem Request-Host übernommen.
+bench --site <site> set-config plattform_basis_url "https://www.oekoinvest.com"
+
+# Optional: Sammeladresse des Backoffice für Hinweise auf neue Anfragen/Nachrichten
+# (sonst nur das jeweils zuständige Admin-Konto)
+bench --site <site> set-config plattform_backoffice_email "<adresse-des-backoffice>"
+
+bench restart
+```
+
+Außerdem prüfen:
+
+- **E-Mail-Konto (ausgehend)** im Desk eingerichtet und als Standard markiert – sonst keine Bestätigungs-/Passwort-Mails. Mails laufen über die Email Queue (**Scheduler und Worker** müssen laufen: `bench doctor`).
+- **System Settings → Max File Size** ≥ 10 MB (Frappe-Standard 25 MB) und, falls Dateiendungen eingeschränkt sind, `pdf, jpg, jpeg, png` erlauben.
+- **nginx** `client_max_body_size` ≥ 20m (Frappe-Standard 50m): Ein Upload von 10 MB kommt als Base64 im JSON (~13,4 MB).
+- Rate-Limits: Die Website begrenzt Login/Registrierung/Uploads je IP. Da alle Aufrufe vom Website-Server kommen, bringt ein IP-Limit in Frappe nichts; zusätzlich am Proxy der **Website** begrenzen (siehe `docs/PLATTFORM.md`).
+
+## Schritt 3 – API-Benutzer für die Website
+
+Desk → **User** → Neu:
+
+- E-Mail z. B. `plattform-web@<ihre-domain>`, Vorname „Plattform Website“, **Benutzertyp: Website User**
+- Rollen: **nur** `ÖkoInvest API` (keine weiteren Rollen, kein System Manager)
+- Speichern → Abschnitt „API Access“ → **Generate Keys** → API Key und API Secret notieren (das Secret wird nur einmal angezeigt)
+
+Alternativ in der Konsole (`bench --site <site> console`):
+
+```python
+from frappe.core.doctype.user.user import generate_keys
+generate_keys("plattform-web@<ihre-domain>")   # → {'api_secret': '…'}; API Key steht im User (api_key)
+```
+
+Schlüssel regelmäßig rotieren (neu generieren → Website-Umgebung aktualisieren).
+
+## Schritt 4 – Erstes Backoffice-Konto (Rolle „admin“ im Portal)
+
+```bash
+bench --site <site> execute oekoinvest_app.plattform.installation.admin_konto_anlegen \
+  --kwargs "{'email': '<vorname.nachname@ihre-domain>', 'vorname': '<Vorname>', 'nachname': '<Nachname>'}"
+```
+
+Das Konto bekommt kein Passwort; es geht ein Link „Neues Passwort festlegen“ (24 h) an die Adresse. Weitere Backoffice-Rechte vergibt danach ein Admin im Portal (`/portal/admin/nutzer`) oder im Desk am **Plattform Konto** (Tabelle „Rollen“, Wert `admin`).
+
+Hinweis: Frappe-Benutzer mit `System Manager` oder `ÖkoInvest API` können **nicht** als Portal-Konto verwendet werden (Schutz vor Rechteausweitung) – für das Portal eigene Konten anlegen.
+
+## Schritt 5 – Website-Umgebung (Hosting der Next.js-Website, nicht Frappe)
+
+```
+PLATTFORM_BACKEND=frappe
+SERVER=https://<frappe-host>            # ohne abschließenden Schrägstrich
+API_KEY=<API Key aus Schritt 3>
+API_SECRET=<API Secret aus Schritt 3>
+PLATTFORM_BASIS_URL=https://www.oekoinvest.com   # gleicher Wert wie plattform_basis_url
+SESSION_SECRET=<zufällig, ≥ 32 Zeichen: openssl rand -base64 48>
+```
+
+Danach neu deployen. Ohne `PLATTFORM_BACKEND=frappe` antwortet die Plattform in Produktion mit 503 (keine stillen Demo-Daten).
+
+## Schritt 6 – Test
+
+**Automatische Tests (nur Test-Site):**
+
+```bash
+bench --site <test-site> set-config allow_tests true
+bench --site <test-site> run-tests --app oekoinvest_app
+```
+
+Geprüft: Zustandsautomaten (Tabelle, 409/403/Pflicht/Bedingung, Durchsetzung im Controller), Rechte (fremde Fläche → PermissionError, Admin-Methoden, Sperre wirkt sofort, admin nie selbst wählbar, öffentliche Positivliste, Datenraum erst nach NDA-Freigabe, Upload-Typprüfung), Provision (Pflicht vor Einreichung, Satz 1,5–3 %, automatische Provision und Interessen beim Verkauf, Provision unveränderlich), Aktivität append-only.
+
+**Nach der Installation (Produktion), mit den Schlüsseln aus Schritt 3:**
+
+```bash
+# Muss 403 liefern (API-Benutzer hat keine DocType-Rechte):
+curl -s -o /dev/null -w "%{http_code}\n" "https://<frappe-host>/api/resource/Plattform%20Projekt" -H "Authorization: token KEY:SECRET"
+
+# Ohne Schlüssel: 403
+curl -s -o /dev/null -w "%{http_code}\n" -X POST "https://<frappe-host>/api/method/oekoinvest_app.plattform.api.boerse.liste" -H "Content-Type: application/json" -d '{}'
+
+# Öffentliche Börse: 200 und {"message": {"projekte": [...], "kennzahlen": {...}, "demo": false}}
+curl -s -X POST "https://<frappe-host>/api/method/oekoinvest_app.plattform.api.boerse.liste" \
+  -H "Authorization: token KEY:SECRET" -H "Content-Type: application/json" -d '{}'
+```
+
+Danach auf der Website durchklicken: Anfrage stellen → Registrieren (Bestätigungs-Mail kommt) → Login → Fläche anlegen und einreichen → im Backoffice Status weiterschalten (Nutzer bekommt Nachricht + Hinweis-Mail) → Projekt anlegen, Provision akzeptieren, einreichen → im Backoffice veröffentlichen → als Investor NDA → Datenraum-Freigabe → LOI → Verkauf (Provision erscheint unter `/portal/admin/deals`) → Passwort vergessen.
+Optional das End-to-End-Skript der Website gegen einen Server mit `PLATTFORM_BACKEND=frappe` und **Test-Site** laufen lassen: `node scripts/plattform-test.mjs`.
+
+## Betrieb
+
+- **Statuswechsel** bitte im Portal-Backoffice auslösen. Im Desk erlaubt der Controller nur Admin-Schritte ohne Pflichtangaben (z. B. „Prüfung beginnen“); Ablehnungen (Begründung), Pachtangebote, Veröffentlichung (Provisionssatz) und Verkauf (Käufer, Kaufpreis) gehen nur über das Portal, weil dort Nachricht, Provision und Protokoll entstehen.
+- **Sperren** eines Kontos (Portal oder Desk: „Aktiv“ aus) beendet alle Website-Sitzungen sofort und deaktiviert den Frappe-User.
+- **Tokens** (E-Mail/Passwort) werden täglich aufgeräumt (`aufgaben.tokens_aufraeumen`).
+- **Dateien** liegen privat unter `sites/<site>/private/files`; Download im Portal nur für Berechtigte, jeder Zugriff wird protokolliert.
+
+## Offene Punkte vor dem Livegang
+
+- [ ] Auf einer **Test-Bench** installieren und `run-tests` grün laufen lassen (hier ohne Bench nur statisch geprüft: `py_compile`, `json.tool`, pyflakes, Logik-Smoke-Test der Automaten/Validierung/Matching).
+- [ ] `plattform_basis_url`, ausgehendes E-Mail-Konto, ggf. `plattform_backoffice_email` setzen; Texte der E-Mails (templates/emails) fachlich/juristisch freigeben.
+- [ ] **Löschkonzept**: Aktivitätsprotokoll ist append-only (auch für Administratoren) – Aufbewahrungsfrist festlegen und ggf. eine kontrollierte Archivierung per Patch ergänzen; Anfragen ohne Konto, Email Queue (enthält Links) regelmäßig bereinigen.
+- [ ] 2FA für `ÖkoInvest Admin` (Rolle ist mit „Two Factor Auth“ angelegt – System Settings → „Enable Two Factor Auth“ aktivieren).
+- [ ] Kontaktadresse/Absender der E-Mails festlegen (noch nicht freigegeben – das Standard-E-Mail-Konto von Frappe wird verwendet).
+- [ ] Monitoring: Error Log (Titel „ÖkoInvest: …“) beobachten – dort landen fehlgeschlagene E-Mails ohne Inhalte.

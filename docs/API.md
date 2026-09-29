@@ -15,10 +15,11 @@ Dieses Dokument beschreibt
 
 - `POST {SERVER}/api/method/oekoinvest_app.plattform.api.<modul>.<funktion>`
 - Header `Authorization: token {API_KEY}:{API_SECRET}` (wie `src/lib/apiBaseUrl.js`), `Content-Type: application/json`.
-- Der API-Nutzer hat in Frappe **nur** die Rolle `Plattform API`. Jede Methode prüft zuerst `"Plattform API" in frappe.get_roles()`.
-- **Handeln im Namen eines Nutzers:** Alle Methoden außer den mit „öffentlich“ markierten bekommen `als_benutzer` (Frappe-`User.name`, bei uns die E-Mail-Adresse). Die Methode führt dann `frappe.set_user(als_benutzer)` aus (nur erlaubt, wenn der Aufrufer `Plattform API` hat) und prüft **selbst** Rolle und Eigentum. Die Website prüft vorab ebenfalls – Frappe ist die maßgebliche Instanz.
-- Argumente und Antworten in **camelCase-JSON**, identisch zu den Objekten unten. Frappe-DocType-Felder sind snake_case; Umrechnung in der App (`zu_json()`/`von_json()`).
-- Antwort: `{"message": <Ergebnis>}`.
+- Der API-Nutzer hat in Frappe **nur** die Rolle `ÖkoInvest API`. Jede Methode prüft zuerst `"ÖkoInvest API" in frappe.get_roles()`. Keine Methode ist `allow_guest` – auch die „öffentlichen“ (ohne `als_benutzer`) ruft ausschließlich der API-Nutzer der Website auf. Nur `POST`.
+- **Handeln im Namen eines Nutzers:** Alle Methoden außer den mit „öffentlich“ markierten bekommen `als_benutzer` = **Konto-ID** (`nutzer.id`, z. B. `U-26-7KQ2XM`; so sendet es `frappe.js`). Frappe löst daraus das `Plattform Konto` und dessen Frappe-User (`User.name` = E-Mail) auf – aus Robustheit wird auch die E-Mail-Adresse akzeptiert. Die Methode führt dann `frappe.set_user(<User des Kontos>)` aus (nur nach bestandener Prüfung der API-Rolle; unbekannte oder gesperrte Konten → 401; Konten mit `System Manager`/`ÖkoInvest API` werden nie über die Website gesteuert → 403) und prüft **selbst** Rolle und Eigentum. Die Website prüft vorab ebenfalls – Frappe ist die maßgebliche Instanz.
+- Die fachlichen Rollen und `ÖkoInvest API` haben **keine** DocType-Rechte: `/api/resource/...` liefert dem API-Nutzer nichts; gelesen und geschrieben wird nur innerhalb der Methoden nach eigener Prüfung.
+- Argumente und Antworten in **camelCase-JSON**, identisch zu den Objekten unten. Frappe-DocType-Felder sind snake_case; Umrechnung in der App (`plattform/ausgabe.py`, Positivlisten in den Methoden).
+- Antwort: `{"message": <Ergebnis>}`. Ist das Ergebnis `None` (z. B. `auth.anmelden` mit falschen Daten, `interesse.merken` mit `an: false` ohne bestehendes Interesse), lässt Frappe `message` weg – der Adapter liefert dann `null`.
 - Fehler: `frappe.throw(msg, exc)` mit
   - `frappe.PermissionError` → HTTP 403 (Website zeigt `msg`)
   - `frappe.DoesNotExistError` → 404
@@ -27,7 +28,7 @@ Dieses Dokument beschreibt
   - `frappe.AuthenticationError` → 401
   Meldungen sind **deutsch, für Endnutzer**, ohne Interna. Tracebacks bleiben im Frappe-Log.
 - Zeiten ISO 8601 in UTC (`2026-09-29T05:57:00.000Z`). Geldbeträge in EUR als Zahl. Prozentsätze als Dezimalbruch (`0.02` = 2 %).
-- Kennungen: `U-26-XXXXXX` Nutzer, `V-` Vorgang, `F-` Fläche, `P-` Projekt, `I-` Interesse, `PV-` Provision, `D-` Dokument, `M-` Nachricht, `A-` Aktivität. Frappe kann eigene Naming-Series nutzen, solange das Format `^[A-Z]{1,3}-[0-9A-Z-]{4,40}$` erfüllt ist (die Website validiert Kennungen so).
+- Kennungen: `U-26-XXXXXX` Nutzer, `V-` Vorgang, `F-` Fläche, `P-` Projekt, `I-` Interesse, `PV-` Provision, `D-` Dokument, `M-` Nachricht, `A-` Aktivität. Frappe kann eigene Naming-Series nutzen, solange das Format `^[A-Z]{1,3}-[0-9A-Z-]{4,40}$` erfüllt ist (die Website validiert Kennungen so). Umsetzung in `oekoinvest_app`: Schema `PRÄFIX-JJ-XXXXXX` mit 6 zufälligen Zeichen (per Controller, nicht fortlaufend – Kennungen sind nicht aufzählbar).
 
 ## 2. Rollen
 
@@ -43,14 +44,24 @@ Dieses Dokument beschreibt
 
 Ein Konto kann mehrere Rollen haben. `admin` darf alles lesen und alle Admin-Übergänge auslösen; Eigentümer-Übergänge (z. B. Pachtangebot annehmen) bleiben dem Eigentümer vorbehalten.
 
+Maßgeblich sind die Rollen am `Plattform Konto` (Tabelle `rollen`, Stammdaten `Plattform Rolle`); die Frappe-Rollen des Users werden daraus automatisch gesetzt (alle ohne Desk-Zugang).
+
+Technische Rollen (nicht auf der Website):
+
+| Frappe-Rolle | Wer | Desk |
+|---|---|---|
+| `ÖkoInvest API` | nur der technische API-Benutzer der Website | nein |
+| `ÖkoInvest Admin` | Pflege/Lesen der Plattform-DocTypes im Frappe-Desk (keine Anlage/Löschung; Statuswechsel mit Pflichtangaben nur über das Portal) | ja |
+
 **Eigentum**
 - Vorgang: `nutzerId` · Fläche: `nutzerId` · Projekt: `anbieterId` · Interesse: `investorId` · Provision: `anbieterId` (lesen nur Admin) · Thread „nutzer“: der Nutzer selbst.
 
 ## 3. Datenmodell (DocTypes)
 
 Alle DocTypes mit `track_changes = 1`. Felder in camelCase (JSON) → snake_case (DocType).
+DocType-Namen ohne Umlaute (`Plattform Flaeche`, `Plattform Aktivitaet`; Anzeige über Übersetzung). `statusVerlauf` = Kindtabelle `Plattform Statusverlauf`, `flurstuecke` = Kindtabelle `Plattform Flurstueck`, `rollen` = Table MultiSelect `Plattform Konto Rolle` → `Plattform Rolle`. Bezüge von Nachricht/Dokument als `bezug_art` + Dynamic Link (`bezug_doctype`, `bezug_id`). Interne Felder, die die App nie ausgibt: Projekt `kaeuferInteresseId`/`kaufpreis` (Grundlage der Provision), `description` (interne Notiz).
 
-### Plattform Konto (Erweiterung von `User` oder eigener DocType mit Link auf `User`)
+### Plattform Konto (eigener DocType, 1:1-Link auf `User`)
 | Feld | Typ | Hinweis |
 |---|---|---|
 | id | Data | Kennung |
@@ -160,7 +171,7 @@ Quelle der Wahrheit: `PROZESSE` in `src/lib/plattform/prozesse.js`. Frappe über
 
 ## 5. Frappe-Methoden
 
-`n` = Nutzer aus `als_benutzer`. „Recht“ = zusätzlich zu `Plattform API`.
+`n` = Nutzer aus `als_benutzer`. „Recht“ = zusätzlich zu `ÖkoInvest API`.
 
 ### auth
 | Methode | Argumente | Ergebnis | Recht |
@@ -172,7 +183,8 @@ Quelle der Wahrheit: `PROZESSE` in `src/lib/plattform/prozesse.js`. Frappe über
 | `auth.passwort_vergessen` | `email, basisUrl, ip` | `{ok: true}` immer | öffentlich; nur bei aktivem Konto Mail mit `{basisUrl}/passwort-vergessen?token=…` (1 h) |
 | `auth.passwort_setzen` | `token, passwort, ip` | Konto | öffentlich; `sitzungVersion + 1`, `emailBestaetigt = 1`, Verknüpfung wie oben |
 
-`basisUrl` kommt in Produktion aus `PLATTFORM_BASIS_URL` (nie aus dem Host-Header).
+`basisUrl` kommt in Produktion aus `PLATTFORM_BASIS_URL` (nie aus dem Host-Header). **Frappe baut die Links in E-Mails ausschließlich mit `plattform_basis_url` aus der `site_config.json`**; das Argument `basisUrl` wird nur bei `developer_mode` als Ersatz genutzt (Test-Bench). Fehlt der Schlüssel in Produktion, wird keine Mail versendet (Eintrag im Error Log) – das Konto entsteht trotzdem.
+Benachrichtigungs-E-Mails (ohne Inhalte, nur Hinweis + Link ins Portal): an den Eigentümer bei jeder für ihn ungelesenen Nachricht/Statusänderung; an das Backoffice (zuständiges Admin-Konto, sonst `plattform_backoffice_email`) bei neuen Anfragen und bei Nachrichten/Statusänderungen von Nutzern.
 
 ### konto
 | `konto.passwort_aendern` | `alt, neu` | Konto | eigenes Konto; `sitzungVersion + 1` |
@@ -204,22 +216,24 @@ Quelle der Wahrheit: `PROZESSE` in `src/lib/plattform/prozesse.js`. Frappe über
 | `boerse.detail` | `schluessel` (slug oder id), `zaehlen` | `{projekt, zugriff: oeffentlich|nda|eigentuemer|admin, interesse, vertraulich|null, dokumente[]}` | öffentlich; nicht sichtbare Status → 404 (außer Anbieter/admin). `vertraulich` + Datenraum-Dokumente nur bei `zugriff ≠ oeffentlich`; `nda` sieht nur Kategorie `datenraum`. `zaehlen` erhöht `aufrufe` (nicht für Anbieter/admin). |
 
 ### interesse
-| `interesse.merken` | `projektId, an` | Interesse | Rolle investor; Projekt sichtbar |
+| `interesse.merken` | `projektId, an` | Interesse bzw. `null` (`an: false` ohne bestehendes Interesse) | Rolle investor; Projekt sichtbar |
 | `interesse.nda_anfragen` | `projektId, akzeptiert, ip, userAgent` | Interesse | Rolle investor, nicht eigenes Projekt; idempotent (bereits angefragt → unverändert); `akzeptiert` Pflicht; speichert `nda {version, am, ip, userAgent}` |
 | `interesse.liste` | `alle?, status? (String oder Liste), projektId?` | Interessen | eigene (investor); `alle` nur admin |
+
+Interesse-Objekte (auch in `merken`, `nda_anfragen` und `boerse.detail.interesse`) enthalten für Nicht-Admins **nie** `nda.ip`/`nda.userAgent` – der Nachweis ist nur für das Backoffice (das Demo-Backend liefert in `merken`/`nda_anfragen`/`boerse.detail` noch das Rohobjekt).
 
 ### prozess
 | `prozess.status_wechsel` | `art, id, nach, als (admin|eigentuemer), extra {…}, ip` | Objekt | `als = admin` → Rolle admin; `als = eigentuemer` → Eigentum. Prüfung nach Abschnitt 4. `interesse → nda_angefragt` hier verboten (nur `nda_anfragen`). |
 
 ### nachricht
-| `nachricht.threads` | – | `[{bezugArt, bezugId, titel, link, gegenueber, anzahl, ungelesen, letzte {text, am, vonAdmin, system}}]` | eigene Threads; admin alle. `ungelesen` aus Sicht des Aufrufers (admin: `gelesenAdmin`, sonst `gelesenNutzer`). |
+| `nachricht.threads` | `nurUngelesen?` | `[{bezugArt, bezugId, titel, link, gegenueber, anzahl, ungelesen, letzte {text, am, vonAdmin, system}}]` | eigene Threads; admin alle (max. 500 neueste). `ungelesen` aus Sicht des Aufrufers (admin: `gelesenAdmin`, sonst `gelesenNutzer`). |
 | `nachricht.liste` | `bezugArt, bezugId, markieren` | `{titel, link, gegenueber, bezugArt, bezugId, nachrichten [{id, text, am, system, vonAdmin, eigene, vonName, neu}]}` | Eigentümer des Bezugs oder admin; markiert gelesen |
 | `nachricht.senden` | `bezugArt, bezugId, text` | `{id, am}` | Eigentümer des Bezugs oder admin (dann `vonAdmin = 1`); 2–5000 Zeichen |
 
 ### dokument
 | `dokument.liste` | `bezugArt?, bezugId?` | Metadaten (+ `bezugTitel`, `bezugLink`) | ohne Bezug: Dokumente an eigenen Objekten bzw. eigene Uploads; admin alle |
 | `dokument.lesen` | `id` | `{meta, inhaltBase64}` | admin; Uploader; Eigentümer des Bezugs; bei Projekt + Kategorie `datenraum`: Investor mit Interesse in `nda_freigegeben, loi_abgegeben, loi_angenommen, abgeschlossen`. Jeder Zugriff → Aktivität „Download“. |
-| `dokument.speichern` | `bezugArt, bezugId, name, mime, kategorie, inhaltBase64` | Metadaten | Eigentümer des Bezugs oder admin; Typ/Größe prüfen; `datenraum` nur für Projekte |
+| `dokument.speichern` | `bezugArt, bezugId, name, mime, kategorie, inhaltBase64` | Metadaten | Eigentümer des Bezugs oder admin; Typ (erste Bytes müssen zu `mime` passen) und Größe prüfen; `datenraum` nur für Projekte. Der JSON-Body ist bei 10 MB Datei ≈ 13,4 MB groß (Base64) – Proxy/Frappe müssen das zulassen (siehe ANLEITUNG). |
 | `dokument.loeschen` | `id` | `{ok}` | Uploader oder admin |
 
 ### admin (alle nur Rolle admin)
@@ -232,6 +246,8 @@ Quelle der Wahrheit: `PROZESSE` in `src/lib/plattform/prozesse.js`. Frappe über
 | `admin.uebersicht` | – | Kennzahlen (siehe `adminUebersicht` in demo.js): `vorgaenge {gesamt, neu7, offen, ohneZustaendig, status{}, typ{}, trichter[]}`, `flaechen {gesamt, ha, status{}, trichter[]}`, `projekte {gesamt, inPruefung, mwpBoerse, status{}}`, `interessen {status{}, ndaOffen, loiOffen, trichter[]}`, `provisionen {anzahl, offen, bezahlt}`, `nutzer {gesamt, rollen{}}`, `nachrichten {ungelesen}` | |
 
 `demoLinks` gibt es nur im Demo-Backend (im Frappe-Adapter liefert es `[]`).
+
+Umsetzung: Frappe-App `oekoinvest_app` unter `Import-Frappe/oekoinvest_app` (Installation: `Import-Frappe/ANLEITUNG.md`). Zustandsautomaten zusätzlich im Controller erzwungen: Statusänderungen außerhalb der API (z. B. im Desk) sind nur als Admin-Schritt ohne Pflichtangaben möglich; die Provision entsteht beim Übergang Projekt → `verkauft` im Controller; `Plattform Aktivitaet` ist append-only (Ändern/Löschen/Umbenennen verboten).
 
 ## 6. HTTP-APIs der Website
 

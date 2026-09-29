@@ -1,0 +1,92 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:rolle_id",
+ "creation": "2026-09-29 08:00:00.000000",
+ "description": "Rollen der Plattform (Website-Kennung ↔ Frappe-Rolle). Wird bei Installation/Migration automatisch gepflegt.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "rolle_id",
+  "bezeichnung",
+  "frappe_rolle",
+  "selbst_waehlbar",
+  "description"
+ ],
+ "fields": [
+  {
+   "description": "Kennung wie im Website-Code (flaeche, investor, … admin)",
+   "fieldname": "rolle_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Rollen-ID (Website)",
+   "read_only": 1,
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "bezeichnung",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Bezeichnung"
+  },
+  {
+   "fieldname": "frappe_rolle",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Frappe-Rolle",
+   "options": "Role"
+  },
+  {
+   "default": "0",
+   "fieldname": "selbst_waehlbar",
+   "fieldtype": "Check",
+   "label": "Bei Registrierung wählbar"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Beschreibung"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-29 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Rolle",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "show_title_field_in_link": 0,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "bezeichnung",
+ "track_changes": 1
+}

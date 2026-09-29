@@ -1,0 +1,250 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-29 08:00:00.000000",
+ "description": "Fläche eines Eigentümers bzw. Landwirts (Automat „flaeche“).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sec_flaeche",
+  "bezeichnung",
+  "status",
+  "agri",
+  "cb_flaeche",
+  "nutzer_id",
+  "vorgang_id",
+  "zustaendig_id",
+  "sec_lage",
+  "land",
+  "bundesland",
+  "plz",
+  "ort",
+  "cb_lage",
+  "gemarkung",
+  "flurstuecke",
+  "sec_eigenschaften",
+  "ha",
+  "nutzung",
+  "eigentum",
+  "cb_eigenschaften",
+  "hinweise",
+  "description",
+  "sec_angebot",
+  "pachtangebot",
+  "ablehn_grund",
+  "sec_verlauf",
+  "status_verlauf"
+ ],
+ "fields": [
+  {
+   "fieldname": "sec_flaeche",
+   "fieldtype": "Section Break",
+   "label": "Fläche"
+  },
+  {
+   "fieldname": "bezeichnung",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Bezeichnung",
+   "reqd": 1
+  },
+  {
+   "default": "entwurf",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "entwurf\neingegangen\nvorpruefung\nstandortanalyse\npachtangebot\nvertrag\nplanung\nbau\nbetrieb\nabgelehnt",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "agri",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Agri-PV"
+  },
+  {
+   "fieldname": "cb_flaeche",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "nutzer_id",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Eigentümer (Konto)",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "vorgang_id",
+   "fieldtype": "Link",
+   "label": "Anfrage",
+   "options": "Plattform Vorgang"
+  },
+  {
+   "fieldname": "zustaendig_id",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Zuständig (Backoffice)",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "sec_lage",
+   "fieldtype": "Section Break",
+   "label": "Lage"
+  },
+  {
+   "default": "DE",
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Land",
+   "options": "DE\nAT\nCH"
+  },
+  {
+   "fieldname": "bundesland",
+   "fieldtype": "Data",
+   "label": "Bundesland / Kanton"
+  },
+  {
+   "fieldname": "plz",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "PLZ"
+  },
+  {
+   "fieldname": "ort",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Ort / Gemeinde"
+  },
+  {
+   "fieldname": "cb_lage",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gemarkung",
+   "fieldtype": "Data",
+   "label": "Gemarkung"
+  },
+  {
+   "fieldname": "flurstuecke",
+   "fieldtype": "Table",
+   "label": "Flurstücke",
+   "options": "Plattform Flurstueck"
+  },
+  {
+   "fieldname": "sec_eigenschaften",
+   "fieldtype": "Section Break",
+   "label": "Eigenschaften"
+  },
+  {
+   "fieldname": "ha",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Größe (ha)",
+   "precision": "2"
+  },
+  {
+   "default": "acker",
+   "fieldname": "nutzung",
+   "fieldtype": "Select",
+   "label": "Nutzung",
+   "options": "acker\ngruenland\nkonversion\ngewerbe\nsonstige"
+  },
+  {
+   "default": "eigentum",
+   "fieldname": "eigentum",
+   "fieldtype": "Select",
+   "label": "Eigentumsverhältnis",
+   "options": "eigentum\nmiteigentum\nverwaltung"
+  },
+  {
+   "fieldname": "cb_eigenschaften",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "hinweise",
+   "fieldtype": "Text",
+   "label": "Hinweise"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Interne Notiz"
+  },
+  {
+   "fieldname": "sec_angebot",
+   "fieldtype": "Section Break",
+   "label": "Pachtangebot"
+  },
+  {
+   "fieldname": "pachtangebot",
+   "fieldtype": "JSON",
+   "label": "Pachtangebot",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ablehn_grund",
+   "fieldtype": "Small Text",
+   "label": "Begründung (Ablehnung)",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sec_verlauf",
+   "fieldtype": "Section Break",
+   "label": "Statusverlauf"
+  },
+  {
+   "fieldname": "status_verlauf",
+   "fieldtype": "Table",
+   "label": "Statusverlauf",
+   "options": "Plattform Statusverlauf",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-29 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Flaeche",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "search_fields": "bezeichnung,plz,ort,status",
+ "show_title_field_in_link": 0,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "bezeichnung",
+ "track_changes": 1
+}

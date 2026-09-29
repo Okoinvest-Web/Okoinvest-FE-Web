@@ -4,11 +4,14 @@
 // Vertrag (Methoden, Felder, Rechte, Fehler): docs/API.md.
 //
 //  - Server-zu-Server mit API-Key/Secret (SERVER, API_KEY, API_SECRET wie src/lib/apiBaseUrl.js).
-//    Der API-Nutzer hat in Frappe nur die Rolle „Plattform API“.
+//    Der API-Nutzer hat in Frappe nur die Rolle „ÖkoInvest API“.
 //  - Aktionen im Namen des eingeloggten Nutzers: jedes Argument-Objekt enthält `als_benutzer`
-//    (Frappe-User-Name). Die Frappe-App wechselt damit per frappe.set_user() in den Nutzer und
-//    prüft Rolle UND Eigentum selbst – die Next.js-Seite ist nur die erste Verteidigungslinie.
+//    (Konto-ID `nutzer.id`, z. B. U-26-7KQ2XM). Die Frappe-App löst daraus den Frappe-User auf,
+//    wechselt per frappe.set_user() in den Nutzer und prüft Rolle UND Eigentum selbst –
+//    die Next.js-Seite ist nur die erste Verteidigungslinie.
 //  - Argumente und Antworten in camelCase-JSON, identisch zum Demo-Backend.
+//  - Liefert eine Methode `None` (z. B. anmelden mit falschen Daten), fehlt `message` in der
+//    Frappe-Antwort – der Adapter gibt dann `null` zurück (wie das Demo-Backend).
 
 import { API_BASE_URL, getApiHeaders, isApiConfigured } from "@/lib/apiBaseUrl";
 import { PlattformFehler } from "../fehler";
@@ -95,7 +98,7 @@ async function aufruf(op, args = {}, nutzer = null) {
   }
   if (res.ok) {
     const j = await res.json().catch(() => ({}));
-    return j.message;
+    return j.message ?? null;
   }
   const roh = await res.text().catch(() => "");
   let daten = {};

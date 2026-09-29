@@ -1,0 +1,68 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-29 08:00:00.000000",
+ "description": "Eintrag im Statusverlauf (Vorgang, Fläche, Projekt, Interesse, Provision).",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "am",
+  "von_id",
+  "von_rolle",
+  "kommentar"
+ ],
+ "fields": [
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Zeitpunkt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Von (Konto)",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "von_rolle",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Rolle",
+   "options": "admin\neigentuemer\nsystem",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kommentar",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Kommentar / Begründung",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-29 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Statusverlauf",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

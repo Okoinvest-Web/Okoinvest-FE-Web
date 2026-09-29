@@ -44,7 +44,7 @@ APIs: siehe `docs/API.md`, Abschnitt 6.
 | `SESSION_SECRET` | **Produktion** | Schlüssel für Sitzungstoken, mindestens 32 Zeichen, zufällig (`openssl rand -base64 48`). Ohne: Middleware und APIs verweigern jede Sitzung. In Entwicklung fester, unsicherer Fallback mit Warnung im Log. Wechsel = alle abgemeldet. |
 | `PLATTFORM_BACKEND` | Produktion | `frappe` für den Betrieb. Sonst Demo-Backend. |
 | `PLATTFORM_DEMO` | – | `1` erlaubt das Demo-Backend auch im Production-Build (Vorführserver). Ohne `PLATTFORM_BACKEND=frappe` und ohne `PLATTFORM_DEMO=1` antwortet die Plattform in Produktion mit 503 „nicht konfiguriert“ – keine stillen Demo-Daten. |
-| `SERVER`, `API_KEY`, `API_SECRET` | bei Frappe | wie `src/lib/apiBaseUrl.js`; API-Nutzer mit Rolle `Plattform API` |
+| `SERVER`, `API_KEY`, `API_SECRET` | bei Frappe | wie `src/lib/apiBaseUrl.js`; API-Nutzer mit Rolle `ÖkoInvest API` (Einrichtung: `Import-Frappe/ANLEITUNG.md`) |
 | `PLATTFORM_BASIS_URL` | empfohlen | Basis für Links in E-Mails (Bestätigung, Passwort). Standard in Produktion: `NEXT_PUBLIC_SITE_URL` bzw. `https://www.oekoinvest.com`. Nie aus dem Host-Header. |
 | `PLATTFORM_ORIGINS` | – | zusätzliche erlaubte Origins für Mutationen, kommagetrennt (z. B. Staging-Domain) |
 | `PLATTFORM_DEMO_PASSWORT` | – | Passwort der Demo-Konten (Standard `Demo-2026!`), wirkt beim Neuanlegen der Demo-Datenbank |

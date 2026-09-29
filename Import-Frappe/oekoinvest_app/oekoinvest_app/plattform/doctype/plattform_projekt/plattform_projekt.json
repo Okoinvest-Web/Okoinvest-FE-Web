@@ -1,0 +1,348 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-29 08:00:00.000000",
+ "description": "Projekt der Projektbörse (Automat „projekt“). Öffentliche Ausgabe nur über die Positivliste in plattform/oeffentlich.py.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sec_projekt",
+  "titel",
+  "status",
+  "slug",
+  "demo",
+  "cb_projekt",
+  "anbieter_id",
+  "zustaendig_id",
+  "veroeffentlicht_am",
+  "aufrufe",
+  "sec_eckdaten",
+  "typ",
+  "land",
+  "bundesland",
+  "region",
+  "phase",
+  "cb_eckdaten",
+  "mwp",
+  "mwh_speicher",
+  "flaeche_ha",
+  "netzanschluss",
+  "cod_geplant",
+  "sec_preis",
+  "preis_modus",
+  "cb_preis",
+  "preis",
+  "preis_pro_kwp",
+  "sec_text",
+  "beschreibung",
+  "highlights",
+  "sec_vertraulich",
+  "vertraulich",
+  "sec_provision",
+  "provision_akzeptiert",
+  "provision_satz",
+  "cb_provision",
+  "kaeufer_interesse_id",
+  "kaufpreis",
+  "ablehn_grund",
+  "description",
+  "sec_verlauf",
+  "status_verlauf"
+ ],
+ "fields": [
+  {
+   "fieldname": "sec_projekt",
+   "fieldtype": "Section Break",
+   "label": "Projekt"
+  },
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Titel (anonym)",
+   "reqd": 1
+  },
+  {
+   "default": "entwurf",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "entwurf\npruefung\nveroeffentlicht\nreserviert\nverkauft\nabgelehnt",
+   "reqd": 1
+  },
+  {
+   "fieldname": "slug",
+   "fieldtype": "Data",
+   "label": "Slug",
+   "read_only": 1,
+   "search_index": 1,
+   "unique": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "demo",
+   "fieldtype": "Check",
+   "label": "Demo-Projekt"
+  },
+  {
+   "fieldname": "cb_projekt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "anbieter_id",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Anbieter (Konto)",
+   "options": "Plattform Konto",
+   "reqd": 1
+  },
+  {
+   "fieldname": "zustaendig_id",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Zuständig (Backoffice)",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "veroeffentlicht_am",
+   "fieldtype": "Datetime",
+   "label": "Veröffentlicht am",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "aufrufe",
+   "fieldtype": "Int",
+   "label": "Aufrufe",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_eckdaten",
+   "fieldtype": "Section Break",
+   "label": "Eckdaten (öffentlich)"
+  },
+  {
+   "fieldname": "typ",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Projekttyp",
+   "options": "\nfreiflaeche\nagri\ncarport\nspeicher\nhybrid"
+  },
+  {
+   "default": "DE",
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Land",
+   "options": "DE\nAT\nCH"
+  },
+  {
+   "fieldname": "bundesland",
+   "fieldtype": "Data",
+   "label": "Bundesland / Kanton"
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region (grob)"
+  },
+  {
+   "fieldname": "phase",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Entwicklungsphase",
+   "options": "\nflaeche\nnetz\naufstellung\nsatzung\nrtb\ncod"
+  },
+  {
+   "fieldname": "cb_eckdaten",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mwp",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Leistung (MWp)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "mwh_speicher",
+   "fieldtype": "Float",
+   "label": "Speicher (MWh)",
+   "precision": "1"
+  },
+  {
+   "fieldname": "flaeche_ha",
+   "fieldtype": "Float",
+   "label": "Fläche (ha)",
+   "precision": "1"
+  },
+  {
+   "default": "offen",
+   "fieldname": "netzanschluss",
+   "fieldtype": "Select",
+   "label": "Netzanschluss",
+   "options": "offen\nangefragt\nzusage\nreserviert\nvorhanden"
+  },
+  {
+   "fieldname": "cod_geplant",
+   "fieldtype": "Data",
+   "label": "Inbetriebnahme geplant (JJJJ oder JJJJ-MM)"
+  },
+  {
+   "fieldname": "sec_preis",
+   "fieldtype": "Section Break",
+   "label": "Preis (öffentlich)"
+  },
+  {
+   "default": "anfrage",
+   "fieldname": "preis_modus",
+   "fieldtype": "Select",
+   "label": "Preisangabe",
+   "options": "gesamt\nproKwp\nanfrage"
+  },
+  {
+   "fieldname": "cb_preis",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "preis",
+   "fieldtype": "Currency",
+   "label": "Kaufpreis gesamt (EUR)"
+  },
+  {
+   "fieldname": "preis_pro_kwp",
+   "fieldtype": "Currency",
+   "label": "Preis je kWp (EUR)"
+  },
+  {
+   "fieldname": "sec_text",
+   "fieldtype": "Section Break",
+   "label": "Beschreibung (öffentlich)"
+  },
+  {
+   "fieldname": "beschreibung",
+   "fieldtype": "Text",
+   "label": "Beschreibung"
+  },
+  {
+   "fieldname": "highlights",
+   "fieldtype": "JSON",
+   "label": "Highlights (Liste)"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sec_vertraulich",
+   "fieldtype": "Section Break",
+   "label": "Vertraulich (nur Anbieter, Backoffice und Investoren mit NDA)"
+  },
+  {
+   "fieldname": "vertraulich",
+   "fieldtype": "JSON",
+   "label": "Vertrauliche Angaben"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sec_provision",
+   "fieldtype": "Section Break",
+   "label": "Provision & Abschluss (nie öffentlich)"
+  },
+  {
+   "fieldname": "provision_akzeptiert",
+   "fieldtype": "JSON",
+   "label": "Provisionsvereinbarung akzeptiert",
+   "read_only": 1
+  },
+  {
+   "fieldname": "provision_satz",
+   "fieldtype": "Float",
+   "label": "Provisionssatz (Dezimalbruch, 0.02 = 2 %)",
+   "precision": "4"
+  },
+  {
+   "fieldname": "cb_provision",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "kaeufer_interesse_id",
+   "fieldtype": "Link",
+   "label": "Käufer (Interesse)",
+   "options": "Plattform Interesse",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kaufpreis",
+   "fieldtype": "Currency",
+   "label": "Kaufpreis (Abschluss)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ablehn_grund",
+   "fieldtype": "Small Text",
+   "label": "Begründung (Ablehnung)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Interne Notiz"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sec_verlauf",
+   "fieldtype": "Section Break",
+   "label": "Statusverlauf"
+  },
+  {
+   "fieldname": "status_verlauf",
+   "fieldtype": "Table",
+   "label": "Statusverlauf",
+   "options": "Plattform Statusverlauf",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-29 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Projekt",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "search_fields": "titel,status,typ,land",
+ "show_title_field_in_link": 0,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "titel",
+ "track_changes": 1
+}

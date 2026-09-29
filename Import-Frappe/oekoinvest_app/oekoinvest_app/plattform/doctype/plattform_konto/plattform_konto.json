@@ -1,0 +1,190 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-29 08:00:00.000000",
+ "description": "Konto eines Portal-Nutzers (Erweiterung zu User). Passwort liegt ausschließlich im Frappe-User.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sec_konto",
+  "email",
+  "user",
+  "vorname",
+  "nachname",
+  "cb_konto",
+  "firma",
+  "telefon",
+  "description",
+  "sec_rollen",
+  "rollen",
+  "sec_status",
+  "aktiv",
+  "email_bestaetigt",
+  "cb_status",
+  "sitzung_version",
+  "letzter_login",
+  "sec_suche",
+  "suchprofil"
+ ],
+ "fields": [
+  {
+   "fieldname": "sec_konto",
+   "fieldtype": "Section Break",
+   "label": "Konto"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "E-Mail",
+   "options": "Email",
+   "reqd": 1,
+   "search_index": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "Frappe-Benutzer",
+   "options": "User",
+   "reqd": 1,
+   "set_only_once": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "vorname",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Vorname"
+  },
+  {
+   "fieldname": "nachname",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nachname"
+  },
+  {
+   "fieldname": "cb_konto",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "firma",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Firma"
+  },
+  {
+   "fieldname": "telefon",
+   "fieldtype": "Data",
+   "label": "Telefon"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Interne Notiz"
+  },
+  {
+   "fieldname": "sec_rollen",
+   "fieldtype": "Section Break",
+   "label": "Rollen"
+  },
+  {
+   "description": "Rollen im Portal. „admin“ = Backoffice (nie selbst wählbar). Änderung wird auf die Frappe-Rollen des Benutzers übertragen.",
+   "fieldname": "rollen",
+   "fieldtype": "Table MultiSelect",
+   "label": "Rollen",
+   "options": "Plattform Konto Rolle"
+  },
+  {
+   "fieldname": "sec_status",
+   "fieldtype": "Section Break",
+   "label": "Zugang"
+  },
+  {
+   "default": "1",
+   "description": "Sperren erhöht die Sitzungsversion – alle Website-Sitzungen enden sofort.",
+   "fieldname": "aktiv",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Aktiv"
+  },
+  {
+   "default": "0",
+   "fieldname": "email_bestaetigt",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "E-Mail bestätigt"
+  },
+  {
+   "fieldname": "cb_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "sitzung_version",
+   "fieldtype": "Int",
+   "label": "Sitzungsversion",
+   "read_only": 1
+  },
+  {
+   "fieldname": "letzter_login",
+   "fieldtype": "Datetime",
+   "label": "Letzte Anmeldung",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sec_suche",
+   "fieldtype": "Section Break",
+   "label": "Suchprofil (Investor)"
+  },
+  {
+   "fieldname": "suchprofil",
+   "fieldtype": "JSON",
+   "label": "Suchprofil"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-29 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Konto",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "search_fields": "vorname,nachname,firma",
+ "show_title_field_in_link": 0,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "email",
+ "track_changes": 1
+}

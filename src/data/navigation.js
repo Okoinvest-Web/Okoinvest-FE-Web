@@ -135,6 +135,7 @@ export const NAVIGATION = [
         items: [
           { name: "Ratgeber", href: "/ratgeber", icon: "BookOpen", text: "Fachartikel für Eigentümer und Investoren" },
           { name: "Lexikon", href: "/wissen/lexikon", icon: "Library", text: "Von Aufstellungsbeschluss bis Zuschlagswert" },
+          { name: "Marktdaten Solar", href: "/marktdaten", icon: "LineChart", text: "EEG-Zuschläge, Marktwert, Capture Rate, Zubau" },
           { name: "FAQ", href: "/faq", icon: "HelpCircle", text: "Die häufigsten Fragen – kurz beantwortet" },
         ],
       },

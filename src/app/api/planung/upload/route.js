@@ -16,7 +16,12 @@ export const POST = route({ upload: true }, async ({ nutzer, request }) => {
   const laenge = Number(request.headers.get("content-length") || 0);
   if (laenge > MAX_UPLOAD_BYTES + 64 * 1024) throw new PlattformFehler(413, "Die Datei ist zu groß (höchstens 30 MB).");
   if (!(request.headers.get("content-type") || "").startsWith("multipart/form-data")) throw new PlattformFehler(415, "Erwartet wird ein Datei-Upload.");
-  const fd = await request.formData();
+  let fd; // kaputter multipart-Body → 400 statt 500
+  try {
+    fd = await request.formData();
+  } catch {
+    throw new PlattformFehler(400, "Die Datei konnte nicht gelesen werden. Bitte versuchen Sie es erneut.");
+  }
   const datei = fd.get("datei");
   if (!datei || typeof datei === "string") throw new PlattformFehler(422, "Bitte wählen Sie eine Datei.");
   if (datei.size > MAX_UPLOAD_BYTES) throw new PlattformFehler(413, "Die Datei ist zu groß (höchstens 30 MB).");

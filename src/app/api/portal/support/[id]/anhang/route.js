@@ -15,7 +15,12 @@ export const POST = route({ upload: true }, async ({ nutzer, params, request }) 
   rateLimit(`upload:${nutzer.id}`, ...grenze("upload"));
   if (Number(request.headers.get("content-length") || 0) > 10 * 1024 * 1024 + 64 * 1024) throw new PlattformFehler(413, "Die Datei ist größer als 10 MB.");
   if (!(request.headers.get("content-type") || "").startsWith("multipart/form-data")) throw new PlattformFehler(415, "Erwartet wird ein Datei-Upload.");
-  const fd = await request.formData();
+  let fd; // kaputter multipart-Body → 400 statt 500
+  try {
+    fd = await request.formData();
+  } catch {
+    throw new PlattformFehler(400, "Die Datei konnte nicht gelesen werden. Bitte versuchen Sie es erneut.");
+  }
   const datei = fd.get("datei");
   if (!datei || typeof datei === "string") throw new PlattformFehler(422, "Bitte wählen Sie eine Datei.");
   const daten = Buffer.from(await datei.arrayBuffer());

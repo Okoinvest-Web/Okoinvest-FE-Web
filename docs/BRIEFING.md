@@ -70,3 +70,9 @@ Mehrere Teams arbeiten GLEICHZEITIG an der Plattform im selben Arbeitsverzeichni
 - Demo-Daten: eigene Seed-Ergänzungen in eigener Datei, im Seed nur registrieren. `.data/` nicht löschen, solange andere testen – eigene Testkonten mit eigenem Präfix anlegen.
 - Sicherheit: jede neue API prüft Rolle UND Eigentum; Mutationen nur per JSON + Origin-Prüfung (bestehender `route()`-Helfer); keine Geheimnisse im Code; keine neuen npm-Pakete.
 - Bedienung: „einfach zu bedienen, aber brutal mächtig“ – klare Standardwege, Profi-Funktionen per Tastatur, Filter, Massenaktionen; mobil voll nutzbar; Design-System wie überall.
+
+## Ressourcen (WICHTIG – der Rechner hat nur 7,6 GB RAM, neun Teams teilen sich einen Dev-Server)
+1. Den großen `scripts/plattform-test.mjs` NICHT mehr selbst laufen lassen – der Koordinator fährt ihn zentral. Nur die eigenen Testdateien, und nie zwei Testläufe gleichzeitig.
+2. Höchstens EIN Playwright-Browser gleichzeitig pro Team, nach jedem Skript `browser.close()` (auch im Fehlerfall: try/finally). Keine Parallel-Screenshots.
+3. Visuelle Prüfungen bündeln (wenige, gezielte Aufnahmen statt Serien). Wenn der Server langsam ist (> 60 s): 5 Minuten warten statt erneut feuern.
+4. Timeouts großzügig (180 s), `waitUntil: "load"` statt `networkidle`.

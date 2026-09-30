@@ -1,0 +1,64 @@
+import Link from "next/link";
+import { ArrowRight, Coins, Gauge, Sprout, Sun } from "lucide-react";
+
+import Reveal from "@/components/ui/Reveal";
+import { STAND } from "@/lib/invest/markt";
+import { fmt } from "@/lib/rechner/annahmen";
+import { BEISPIEL_HA, TENDENZ_TEXT } from "./rechnung";
+
+const tsd = (v) => `${fmt(Math.round(v / 1000))} Tsd. €`;
+
+/** Kennzahlen-Leiste einer Regionalseite: Ertrag, Pacht, Beispiel 10 ha, Agri-PV */
+export default function RegionKennzahlen({ region, k }) {
+  const kacheln = [
+    {
+      icon: Sun,
+      titel: "Spezifischer Ertrag",
+      wert: `${fmt(k.ertrag)} kWh/kWp`,
+      text: `im Jahr, ${region.ertrag?.ort ? `PVGIS-Punkt ${region.ertrag.ort}` : "Orientierungswert"}${region.ertrag?.spanne ? `; in der Region ${region.ertrag.spanne}` : ""}.`,
+    },
+    {
+      icon: Coins,
+      titel: "Mögliche Pacht",
+      wert: `${fmt(k.spanne.min)}–${fmt(k.spanne.max)} €`,
+      text: `je Hektar und Jahr für Freiflächen-PV – ${TENDENZ_TEXT[region.pacht?.tendenz || "mitte"]}.`,
+    },
+    {
+      icon: Gauge,
+      titel: `Beispiel ${BEISPIEL_HA} ha Freifläche`,
+      wert: `${fmt(k.mwp, 1)} MWp · ${fmt(k.gwh, 1)} GWh`,
+      text: `Strom pro Jahr für rund ${fmt(Math.round(k.haushalte / 100) * 100)} Haushalte; Pacht ${tsd(k.pachtJahr.min)}–${tsd(k.pachtJahr.max)} im Jahr.`,
+    },
+    {
+      icon: Sprout,
+      titel: `Beispiel ${BEISPIEL_HA} ha Agri-PV`,
+      wert: `${fmt(k.agriMwp, 1)} MWp · ${fmt(k.agriGwh, 1)} GWh`,
+      text: "vertikal-bifazial, die Fläche bleibt überwiegend landwirtschaftlich nutzbar.",
+    },
+  ];
+
+  return (
+    <div>
+      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {kacheln.map((c, i) => (
+          <Reveal key={c.titel} delay={i * 60} className="flex flex-col rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60">
+            <dt className="flex items-center gap-2 text-[12.5px] font-semibold uppercase tracking-[0.12em] text-ov-700">
+              <c.icon aria-hidden="true" className="h-4 w-4" />
+              {c.titel}
+            </dt>
+            <dd className="ov-num mt-3 font-display text-[24px] font-extrabold leading-tight tracking-tight text-ink-900">{c.wert}</dd>
+            <dd className="mt-2 text-[14px] leading-relaxed text-ink-600">{c.text}</dd>
+          </Reveal>
+        ))}
+      </dl>
+      <div className="mt-5 flex flex-col gap-3 text-[12.5px] leading-relaxed text-ink-500 md:flex-row md:items-start md:justify-between">
+        <p className="max-w-3xl">
+          Ertrag: PVGIS (EU JRC), fest aufgeständert, optimal geneigt, 14 % Systemverluste. Leistung, Pacht und Haushalte aus unseren zentralen Marktannahmen, Stand {STAND} – Orientierungswerte, keine Angebote.
+        </p>
+        <Link href="/rechner/pacht" className="inline-flex shrink-0 items-center gap-1.5 text-[14px] font-semibold text-ov-700 hover:text-ov-800">
+          Mit eigenen Werten rechnen <ArrowRight aria-hidden="true" className="h-4 w-4" />
+        </Link>
+      </div>
+    </div>
+  );
+}

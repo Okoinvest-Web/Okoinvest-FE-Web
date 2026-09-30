@@ -14,6 +14,7 @@
 import { alleArtikel, artikelPfad } from "@/lib/ratgeber";
 import { LEXIKON_STAND } from "@/data/lexikon";
 import { abs } from "@/data/site";
+import { META as REGIONEN_META } from "@/data/regionen/meta";
 
 const START = new Date("2026-09-29"); // Relaunch ÖkoInvest
 const RECHT = new Date("2026-09-29"); // letzte Überarbeitung der Rechtstexte
@@ -134,5 +135,10 @@ export default async function sitemap() {
 
   const projekte = await projektEintraege();
 
-  return [...seiten, ...ratgeber, ...projekte];
+  const regionen = [
+    { url: abs("/regionen"), lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+    ...REGIONEN_META.map((r) => ({ url: abs(`/regionen/${r.slug}`), lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 })),
+  ];
+
+  return [...seiten, ...regionen, ...ratgeber, ...projekte];
 }

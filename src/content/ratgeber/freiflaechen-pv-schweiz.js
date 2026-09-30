@@ -124,7 +124,7 @@ const artikel = {
           typ: "kasten",
           variant: "recht",
           titel: "Agri-PV: Nutzen muss belegt werden",
-          text: "Die Schweiz geht bei [Agri-PV](/wissen/lexikon#agri-pv) strenger vor als Deutschland mit der DIN SPEC 91434: Es reicht nicht, dass Landwirtschaft unter den Modulen möglich bleibt. Die Anlage muss der landwirtschaftlichen Produktion einen **Vorteil** bringen oder der Forschung dienen. Direktzahlungen für die überbaute Fläche sind nach bisherigem Stand nicht vorgesehen. Mehr zu Systemen und Kennzahlen im Ratgeber [Agri-PV nach DIN SPEC 91434](/ratgeber/agri-pv-din-spec-91434).",
+          text: "Die Schweiz geht bei [Agri-PV](/wissen/lexikon#agri-pv) strenger vor als Deutschland mit der DIN SPEC 91434: Es reicht nicht, dass Landwirtschaft unter den Modulen möglich bleibt. Die Anlage muss der landwirtschaftlichen Produktion einen **Vorteil** bringen oder der Forschung dienen. Bei einer Bewilligung bleibt die Fläche nach Art. 16 der Landwirtschaftlichen Begriffsverordnung (LBV) unter Bedingungen beitragsberechtigt – die Einzelheiten klären Sie am besten mit dem kantonalen Landwirtschaftsamt. Mehr zu Systemen und Kennzahlen im Ratgeber [Agri-PV nach DIN SPEC 91434](/ratgeber/agri-pv-din-spec-91434).",
         },
         {
           typ: "p",

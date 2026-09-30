@@ -27,6 +27,7 @@ const SPALTEN = [
       { name: "Projekt anbieten", href: "/projektboerse/anbieten" },
       { name: "Bestandsanlagen", href: "/bestandsanlagen" },
       { name: "Marktdaten", href: "/marktdaten" },
+      { name: "Regionen DACH", href: "/regionen" },
       { name: "Alle Rechner", href: "/rechner" },
       { name: "Ratgeber", href: "/ratgeber" },
       { name: "Lexikon", href: "/wissen/lexikon" },

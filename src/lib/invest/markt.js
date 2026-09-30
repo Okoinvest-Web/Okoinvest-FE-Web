@@ -536,6 +536,12 @@ export const ALLGEMEIN = {
   co2KgProKwh: 0.65,
   /** Durchschnittlicher Haushaltsverbrauch für anschauliche Vergleiche */
   haushaltKwh: 3500,
+  /**
+   * Anteil der Jahreserzeugung je Monat (Jan–Dez) einer fest aufgeständerten PV-Anlage in Mitteleuropa,
+   * Summe 1 – Soll-Ist-Vergleich im Anlagen-Monitoring. Quelle: typische Monatsverteilung nach PVGIS
+   * (EU JRC, Standorte DE/AT/CH, gerundet, eigene Auswertung).
+   */
+  pvMonatsanteile: [0.025, 0.045, 0.08, 0.115, 0.13, 0.135, 0.135, 0.12, 0.09, 0.065, 0.035, 0.025],
 };
 
 export const QUELLEN = [

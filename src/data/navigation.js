@@ -40,6 +40,7 @@ export const NAVIGATION = [
         items: [
           { name: "Flächeneigentümer", href: "/flaeche-verpachten", icon: "MapPinned", text: "Fläche verpachten, sichere Pacht für 30+ Jahre" },
           { name: "Dacheigentümer", href: "/dachflaeche-verpachten", icon: "Warehouse", text: "Gewerbe- und Hallendächer verpachten" },
+          { name: "Ihre Region", href: "/regionen", icon: "MapPinned", text: "Recht, Ertrag und Pacht je Bundesland" },
           { name: "Landwirte", href: "/landwirte", icon: "Tractor", text: "Agri-PV: verpachten, selbst investieren oder beteiligen" },
           { name: "Projektentwickler", href: "/projektboerse/anbieten", icon: "FolderUp", text: "Projekte über die Börse vermarkten" },
         ],

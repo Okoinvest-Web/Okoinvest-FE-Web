@@ -33,6 +33,7 @@ import { intern, statusWechsel } from "../demo";
 import { aendern, lesen, uploadLesen, uploadSchreiben } from "./speicher";
 import { jetzt, neueId, vorTagen } from "./hilfen";
 import { kycStatusDb } from "./kycRegeln";
+import { anbieterVorkenntnisAnerkannt } from "./anbieterRegeln"; // Anbieter: anerkannte Vorkenntnis → keine Provision
 
 const { benachrichtigen, protokoll, nutzerById, nameVon, kurz, aktiveAdmins } = intern;
 
@@ -577,6 +578,7 @@ function closingAusgabe(db, n, c, { detail = false } = {}) {
     uebergabe: UEBERGABE_PUNKTE.map((u) => ({ ...u, ...((c.uebergabe || []).find((x) => x.schluessel === u.schluessel) || {}) })),
     formHinweise: formHinweise(c.struktur, c.land), hinweis: CL_HINWEIS,
     provision: provision && (bo || rolle === "verkaeufer") ? { id: provision.id, betrag: provision.betrag, satz: provision.satz, status: provision.status } : null,
+    provisionEntfallen: c.provisionEntfallen && (bo || rolle === "verkaeufer") ? { grund: c.provisionEntfallen.grund } : null,
     rechnung: beleg && (bo || rolle === "verkaeufer") ? { id: beleg.id, nummer: beleg.nummer, status: beleg.status, brutto: beleg.brutto ?? beleg.betrag ?? null } : null,
     verlauf: bo ? c.verlauf || [] : (c.verlauf || []).filter((x) => x.oeffentlich).map((x) => ({ am: x.am, text: x.text })),
     notizIntern: bo ? c.notizIntern || "" : undefined,
@@ -837,15 +839,17 @@ async function closingVollziehen(n, id, { ip = "" } = {}) {
     if (c.status === "vollzogen") return closingAusgabe(d, n, c, { detail: true });
     const pv = d.provisionen.filter((x) => x.projektId === c.projektId && x.interesseId === c.interesseId).sort((a, b) => String(b.erstelltAm).localeCompare(String(a.erstelltAm)))[0];
     c.provisionId = pv?.id || null;
+    const vk = pv ? null : anbieterVorkenntnisAnerkannt(d, c.projektId, c.interesseId);
+    if (vk) c.provisionEntfallen = { grund: "Vorkenntnis anerkannt", vorkenntnisId: vk.id };
     c.status = "vollzogen";
     c.vollzogenAm = heute();
     const beleg = pv ? (d.finanzen?.belege || []).find((b) => b.schluessel === `PV:${pv.id}` && b.status !== "storniert") : null;
     oeffentlich(c, n, "Closing vollzogen – Kaufgegenstand übergeht auf den Käufer. Übergabe-Checkliste ist offen.");
-    verlauf(c, n, pv ? `Provision ${pv.id} (${pv.betrag} €) angelegt${beleg ? `, Provisionsrechnung ${beleg.nummer}` : rechnungFehler ? ` – Rechnung beim nächsten Lauf (${rechnungFehler})` : " – Rechnung folgt im nächsten Abrechnungslauf"}.` : "Keine Provision gefunden (Projekt bereits vorher verkauft?).");
+    verlauf(c, n, pv ? `Provision ${pv.id} (${pv.betrag} €) angelegt${beleg ? `, Provisionsrechnung ${beleg.nummer}` : rechnungFehler ? ` – Rechnung beim nächsten Lauf (${rechnungFehler})` : " – Rechnung folgt im nächsten Abrechnungslauf"}.` : vk ? "Keine Provision: Vorkenntnis anerkannt (§ 4 Abs. 2 der Besonderen Bedingungen) – keine Provisionsrechnung." : "Keine Provision gefunden (Projekt bereits vorher verkauft?).");
     c.geaendertAm = jetzt();
     const p = d.projekte.find((x) => x.id === c.projektId);
     beteiligteMelden(d, c, { titel: `Closing vollzogen: ${p?.titel || ""}`, text: "Der Deal ist abgeschlossen. Übergabe und Abschlussbericht finden Sie im Closing-Raum." });
-    for (const a of aktiveAdmins(d).filter((x) => darfLesen(x, "provisionen")).slice(0, 5)) benachrichtigen(d, a, { art: "status", titel: `Closing vollzogen: ${p?.titel || ""}`, text: beleg ? `Provisionsrechnung ${beleg.nummer} erzeugt.` : "Provisionsrechnung prüfen.", link: `/portal/admin/closing/${c.id}`, objektArt: "closing", objektId: c.id }, { mail: false });
+    for (const a of aktiveAdmins(d).filter((x) => darfLesen(x, "provisionen")).slice(0, 5)) benachrichtigen(d, a, { art: "status", titel: `Closing vollzogen: ${p?.titel || ""}`, text: beleg ? `Provisionsrechnung ${beleg.nummer} erzeugt.` : vk ? "Keine Provision – Vorkenntnis anerkannt." : "Provisionsrechnung prüfen.", link: `/portal/admin/closing/${c.id}`, objektArt: "closing", objektId: c.id }, { mail: false });
     protokoll(d, n, "closing_vollzogen", "closing", c.id, `Closing ${c.id} vollzogen (${c.kaufpreis} €)`, ip);
     return closingAusgabe(d, n, c, { detail: true });
   });

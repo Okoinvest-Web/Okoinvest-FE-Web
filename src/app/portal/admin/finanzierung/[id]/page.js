@@ -93,6 +93,8 @@ export default async function FinanzierungsFallSeite({ params, searchParams }) {
                   </div>
                   <Badge ton={ANFRAGE_STATUS[a.status]?.ton}>{ANFRAGE_STATUS[a.status]?.label}</Badge>
                   {darf && ["offen", "in_pruefung"].includes(a.status) && <AnfrageKnoepfe fallId={f.id} anfrageId={a.id} />}
+                  {/* Bank-Akte: Anforderungen, Q&A, Kreditentscheidung, CPs der Bank, Auszahlungen, Berichte */}
+                  {a.status !== "zurueckgezogen" && <Link href={`/portal/admin/finanzierung/${f.id}/bank/${a.id}`} className="text-[13px] font-semibold text-ov-700 hover:text-ov-800">Bank-Akte</Link>}
                 </li>
               ))}
             </ul>

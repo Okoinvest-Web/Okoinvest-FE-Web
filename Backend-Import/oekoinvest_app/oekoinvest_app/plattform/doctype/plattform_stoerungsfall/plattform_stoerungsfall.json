@@ -25,7 +25,16 @@
   "schluessel",
   "sec_verlauf",
   "kommentare",
-  "verlauf"
+  "verlauf",
+  "sec_betrieb",
+  "ursache_kategorie",
+  "ursache_text",
+  "massnahme",
+  "cb_betrieb",
+  "ausfall_beginn",
+  "ausfall_ende",
+  "betroffen_pct",
+  "ertragsausfall"
  ],
  "fields": [
   {
@@ -156,11 +165,56 @@
    "fieldtype": "JSON",
    "label": "Verlauf",
    "read_only": 1
+  },
+  {
+   "fieldname": "sec_betrieb",
+   "fieldtype": "Section Break",
+   "label": "Betriebsführung (Ticket)"
+  },
+  {
+   "fieldname": "ursache_kategorie",
+   "fieldtype": "Data",
+   "label": "Ursache"
+  },
+  {
+   "fieldname": "ursache_text",
+   "fieldtype": "Small Text",
+   "label": "Ursache – Details"
+  },
+  {
+   "fieldname": "massnahme",
+   "fieldtype": "Small Text",
+   "label": "Maßnahme"
+  },
+  {
+   "fieldname": "cb_betrieb",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "ausfall_beginn",
+   "fieldtype": "Datetime",
+   "label": "Ausfall von"
+  },
+  {
+   "fieldname": "ausfall_ende",
+   "fieldtype": "Datetime",
+   "label": "Ausfall bis"
+  },
+  {
+   "fieldname": "betroffen_pct",
+   "fieldtype": "Float",
+   "label": "Betroffener Anteil (%)"
+  },
+  {
+   "fieldname": "ertragsausfall",
+   "fieldtype": "Long Text",
+   "label": "Ertragsausfall (JSON)"
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-30 04:31:35.820252",
+ "modified": "2026-10-01 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Plattform Stoerungsfall",

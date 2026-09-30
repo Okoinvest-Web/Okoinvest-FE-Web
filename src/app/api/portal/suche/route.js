@@ -5,10 +5,13 @@
 import { route } from "@/lib/plattform/server/route";
 import { rateLimit } from "@/lib/plattform/server/rateLimit";
 import { bedienung } from "@/lib/plattform/backend/bedienung";
+import { erweiterteTreffer } from "@/lib/plattform/server/sucheErweitert"; // Querschnitt: Dokumente, Aufgaben, Anlagen, Entwicklung, CRM, Termine, Tickets
 
 export const GET = route({}, async ({ nutzer, suche }) => {
   // großzügig (Tippen löst mehrere Anfragen aus), aber gegen Abgreifen begrenzt
   rateLimit(`suche:${nutzer.id}`, process.env.NODE_ENV === "production" ? 120 : 1200, 60e3);
-  const r = await bedienung().suchen(nutzer, { q: suche.get("q") || "", limit: Number(suche.get("limit")) || 6 });
-  return { ok: true, ...r };
+  const limit = Number(suche.get("limit")) || 6;
+  const r = await bedienung().suchen(nutzer, { q: suche.get("q") || "", limit });
+  const mehr = r.q && r.q.length >= 2 ? await erweiterteTreffer(nutzer, r.q, { limit: Math.min(10, limit) }).catch(() => []) : [];
+  return { ok: true, ...r, treffer: [...(r.treffer || []), ...mehr] };
 });

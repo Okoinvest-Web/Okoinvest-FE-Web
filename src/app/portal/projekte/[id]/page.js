@@ -22,6 +22,8 @@ import { phaseById, PROVISION } from "@/lib/invest/markt";
 import { DatenblattAnzeige, DdIndexKarte } from "@/components/Portal/Fach/DdIndex"; // Fachprüfung Kapitalseite
 import { PruefHinweise } from "@/components/Portal/Fach/DatenblattFormular";
 import { datenblattPruefen, ddIndex } from "@/lib/plattform/fach/datenblatt";
+import AnbieterAkte from "@/components/Portal/Anbieter/AnbieterAkte"; // Anbieter: Vermittlungsauftrag, Rückfragen, Anonymisierung, LOI-Stellungnahme, Vorkenntnis, Bestand
+import { anbieterBackend } from "@/lib/plattform/backend/anbieter";
 
 export const metadata = { title: "Projekt" };
 
@@ -40,6 +42,7 @@ export default async function Projekt({ params, searchParams }) {
     admin ? b.adminKonten(n) : [],
   ]);
   const bearbeiten = eigen && p.status === "entwurf";
+  const anbieterAkte = eigen || admin ? await anbieterBackend().anbieterAkte(n, id).catch(() => null) : null;
   const schritt = Number(sp?.schritt) || 0;
   const interessenten = interessen
     .filter((i) => ["nda_freigegeben", "loi_abgegeben", "loi_angenommen"].includes(i.status))
@@ -115,6 +118,7 @@ export default async function Projekt({ params, searchParams }) {
             </Karte>
           )}
           {!bearbeiten && <DatenblattAnzeige projekt={p} untertitel="So sehen Investoren Ihr Datenblatt nach NDA-Freigabe" />}
+          {anbieterAkte && <AnbieterAkte akte={anbieterAkte} />}
           <Karte titel="Nachrichten" untertitel="Abstimmung mit dem Backoffice zu diesem Projekt">
             <NachrichtenThread bezugArt="projekt" bezugId={p.id} nachrichten={thread.nachrichten} />
           </Karte>

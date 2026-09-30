@@ -1,0 +1,154 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 12:00:00.000000",
+ "description": "Mitglied bzw. Einladung im Team einer Bank (Rollen Leitung, Sachbearbeitung, Nur lesen); Token nur als Hash (plattform/api/bankakte.py).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "bank_id",
+  "konto_id",
+  "email",
+  "cb1",
+  "rolle",
+  "status",
+  "sb1",
+  "einladung_hash",
+  "einladung_ablauf",
+  "eingeladen_von"
+ ],
+ "fields": [
+  {
+   "fieldname": "bank_id",
+   "fieldtype": "Link",
+   "label": "Bank",
+   "options": "Plattform Bank",
+   "reqd": 1,
+   "search_index": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "konto_id",
+   "fieldtype": "Link",
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "search_index": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "E-Mail",
+   "options": "Email"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rolle",
+   "fieldtype": "Select",
+   "label": "Teamrolle",
+   "options": "leitung\nsachbearbeiter\nlesen",
+   "default": "sachbearbeiter",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "eingeladen\naktiv\nentfernt\nwiderrufen\nersetzt",
+   "default": "eingeladen",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "sb1",
+   "fieldtype": "Section Break",
+   "label": "Einladung"
+  },
+  {
+   "fieldname": "einladung_hash",
+   "fieldtype": "Data",
+   "label": "Einladungs-Hash (SHA-256)",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "einladung_ablauf",
+   "fieldtype": "Datetime",
+   "label": "Einladung gültig bis"
+  },
+  {
+   "fieldname": "eingeladen_von",
+   "fieldtype": "Link",
+   "label": "Eingeladen von",
+   "options": "Plattform Konto"
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Bank Mitglied",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Transaktion",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Compliance",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "search_fields": "bank_id,email"
+}

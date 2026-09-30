@@ -64,6 +64,7 @@ MATRIX = {
 	"Plattform Interesse": {ADMIN: A, TRANSAKTION: S, BUCHHALTUNG: L, **_KERN_LESEN},
 	"Plattform Provision": {ADMIN: A, BUCHHALTUNG: S, TRANSAKTION: L, **_KERN_LESEN},
 	"Plattform Frage": {ADMIN: S, TRANSAKTION: S, **_KERN_LESEN},
+	"Plattform Anbieter Akte": {ADMIN: S, TRANSAKTION: S, **_KERN_LESEN},  # Anbieter / Verkäufer: Vermittlungsauftrag, Prüfpunkte, Voten, Vorkenntnis, Bestand
 	"Plattform Bieterverfahren": {ADMIN: A, TRANSAKTION: S, BUCHHALTUNG: L, **_KERN_LESEN},
 	"Plattform Gebot": {ADMIN: A, TRANSAKTION: S, BUCHHALTUNG: L, **_KERN_LESEN},
 	"Plattform Datenraum Eintrag": {ADMIN: S, TRANSAKTION: S, **_KERN_LESEN},
@@ -111,6 +112,16 @@ MATRIX = {
 	"Plattform Wartung": {ADMIN: S, BETRIEB: S, BUCHHALTUNG: L, LESER: L},
 	"Plattform Contracting Vertrag": {ADMIN: S, BETRIEB: S, BUCHHALTUNG: L, LESER: L},
 	"Plattform Zaehlerstand Monatswert": {ADMIN: A, BETRIEB: S, BUCHHALTUNG: L, LESER: L},
+	# Betriebsführung (plattform/api/betrieb.py): Pläne, Prüfungen, Aufträge, Versicherung, Lager; Buchungen/Freigaben nur über das Portal
+	"Plattform Wartungsplan": {ADMIN: S, BETRIEB: S, BUCHHALTUNG: L, LESER: L},
+	"Plattform Pruefprotokoll": {ADMIN: S, BETRIEB: S, LESER: L},
+	"Plattform Serviceauftrag": {ADMIN: S, BETRIEB: S, BUCHHALTUNG: L, LESER: L},
+	"Plattform Versicherungsfall": {ADMIN: S, BETRIEB: S, BUCHHALTUNG: L, LESER: L},
+	"Plattform Ersatzteil": {ADMIN: S, BETRIEB: S, BUCHHALTUNG: L, LESER: L},
+	"Plattform Ersatzteil Bewegung": {ADMIN: L, BETRIEB: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform Anlagen Einstrahlung": {ADMIN: S, BETRIEB: S, LESER: L},
+	"Plattform Zaehler Freigabe": {ADMIN: L, BETRIEB: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform Betrieb Einstellungen": {ADMIN: S, BETRIEB: L},
 }
 
 # Projektentwicklung: Desk-Rolle „ÖkoInvest Projektleitung“ (2FA); Website-Rolle „ÖkoInvest Gutachter“ ohne DocPerm
@@ -134,6 +145,12 @@ MATRIX.update({
 	"Plattform Entwicklung Rueckfrage": {ADMIN: L, PROJEKTLEITUNG: L},
 	"Plattform Gutachter Einladung": {ADMIN: L, PROJEKTLEITUNG: L, COMPLIANCE: L},
 	"Plattform Gutachter Profil": {ADMIN: S, PROJEKTLEITUNG: S, LESER: L},
+})
+# Entwicklungssteuerung (plattform/api/entwicklung_steuerung.py): Entscheidungsvorlagen nur lesend im Desk (Zustandsautomat,
+# Vier-Augen-Prinzip und Momentaufnahme nur über das Portal); Kapazität je Projektleitung pflegt die Leitung.
+MATRIX.update({
+	"Plattform Entwicklung Vorlage": {ADMIN: L, PROJEKTLEITUNG: L, LESER: L},
+	"Plattform Entwicklung Kapazitaet": {ADMIN: S, PROJEKTLEITUNG: L},
 })
 
 # Planungsdateien (CAD) & Projektkostenkalkulation (plattform/api/planung.py): Plankopf pflegt die Projektleitung im Desk; Versionen
@@ -184,6 +201,10 @@ MATRIX.update({
 # Verträge, Index, Aktivierung, Kosten und Einstellungen pflegt die Buchhaltung. Zahlungs-/Steuerlogik nur über das Portal.
 MATRIX.update({
 	"Plattform Pachtvertrag": {ADMIN: A, BUCHHALTUNG: S, AKQUISE: L, LESER: L},
+	# Pachtakte (Team 1): nur lesen im Desk – Anliegen, Nachweise, Rückbau/Sicherheit laufen über die API (Zustandsautomaten)
+	"Plattform Pacht Anliegen": {ADMIN: L, AKQUISE: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform Agri Nachweis": {ADMIN: L, AKQUISE: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform Pachtakte": {ADMIN: L, AKQUISE: L, BUCHHALTUNG: L, LESER: L},
 	"Plattform Abrechnung": {ADMIN: L, BUCHHALTUNG: L, TRANSAKTION: L, LESER: L},
 	"Plattform Klaerfall": {ADMIN: S, BUCHHALTUNG: S, BETRIEB: L, LESER: L},
 	"Plattform Zahlungslauf": {ADMIN: L, BUCHHALTUNG: L},
@@ -193,6 +214,20 @@ MATRIX.update({
 	"Plattform Kostentraeger": {ADMIN: S, BUCHHALTUNG: S, LESER: L},
 	"Plattform Projektkosten": {ADMIN: S, BUCHHALTUNG: S, LESER: L},
 	"Plattform Finanzen Einstellungen": {ADMIN: S, BUCHHALTUNG: S},
+})
+
+# Backoffice-Werkzeuge (Team 8, plattform/api/{buchhaltung,datenschutz,transaktion}.py): Nachweise nur lesend (Storno, Import,
+# Buchungen, Export – nicht löschbar); Einstellungen pflegt die Buchhaltung. Datenschutzanfragen/Verdachtsfälle: Need-to-know.
+MATRIX.update({
+	"Plattform Buchhaltung Einstellungen": {ADMIN: S, BUCHHALTUNG: S},
+	"Plattform Stornobeleg": {ADMIN: L, BUCHHALTUNG: L, TRANSAKTION: L, LESER: L},
+	"Plattform Kontoauszug Import": {ADMIN: L, BUCHHALTUNG: L},
+	"Plattform Zahlungseingang": {ADMIN: L, BUCHHALTUNG: L},
+	"Plattform Buchungsexport": {ADMIN: L, BUCHHALTUNG: L},
+	"Plattform Monatsabschluss": {ADMIN: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform Datenschutzanfrage": {ADMIN: L, COMPLIANCE: L},
+	"Plattform Verdachtsfall": {COMPLIANCE: L},
+	"Plattform Deal Prognose": {ADMIN: L, TRANSAKTION: L, BUCHHALTUNG: L, LESER: L},
 })
 
 # Energiebeschaffung & Versorger-Ausschreibung (plattform/api/energie.py): Desk-Rolle „ÖkoInvest Energie“ (2FA); Website-Rolle
@@ -260,6 +295,47 @@ MATRIX.update({
 	"Plattform Lastgang": {ADMIN: L, ENERGIE: L, BUCHHALTUNG: L, LESER: L},
 	"Plattform Beteiligung Interesse": {ADMIN: L, COMPLIANCE: L},
 	"Plattform Bewertung Szenario": {},
+})
+
+# Portfolio (plattform/api/portfolio.py): Positionen nach dem Kauf, Kapitalabrufe, Ausschüttungen – wie Bereich „portfolio“ der
+# Rechte-Matrix: Leitung/Transaktion/Buchhaltung pflegen (Pflege nur über die API, Controller sichern Automat und Unveränderlichkeit),
+# Betrieb/Projektleitung/Leser lesen. Abrufe und Ausschüttungen im Desk nur lesen (Nachweis).
+MATRIX.update({
+	"Plattform Portfolio Position": {ADMIN: A, TRANSAKTION: S, BUCHHALTUNG: S, BETRIEB: L, PROJEKTLEITUNG: L, LESER: L},
+	"Plattform Kapitalabruf": {ADMIN: L, TRANSAKTION: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform Ausschuettung": {ADMIN: L, TRANSAKTION: L, BUCHHALTUNG: L, LESER: L},
+})
+
+# Kundenseite Energie (plattform/api/kundenenergie.py): Kundenanliegen (Einspruch, Kündigung, Verlängerung, Übernahme) bearbeiten
+# Leitung/Buchhaltung (Bereich „finanzen“), Betrieb/Leser lesen; Lieferantenwechsel wie Bereich „energie“. Statuswechsel nur über die
+# API (Zustandsautomat, Benachrichtigung, Folgeaktionen) – im Desk Lesen/Kommentieren.
+MATRIX.update({
+	"Plattform Kundenanliegen": {ADMIN: A, BUCHHALTUNG: S, BETRIEB: L, LESER: L},
+	"Plattform Lieferantenwechsel": {ADMIN: A, ENERGIE: S, BUCHHALTUNG: L, LESER: L},
+})
+
+# Gutachteraufträge & Bank-Akte (plattform/api/gutachterauftrag.py, api/bankakte.py): Pflege nur über die API (Zustandsautomat,
+# Rechnungsprüfung, Teamrollen der Bank) – im Desk lesend (Nachweis). Website-Rollen Gutachter/Bank ohne DocPerm.
+MATRIX.update({
+	"Plattform Gutachterauftrag": {ADMIN: L, PROJEKTLEITUNG: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform Bankakte": {ADMIN: L, TRANSAKTION: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform Bank Mitglied": {ADMIN: L, TRANSAKTION: L, COMPLIANCE: L},
+})
+
+# Mitglied/Genossenschaft & Gemeindecockpit (Team 5, plattform/api/mitglied.py, api/gemeinde.py): Pflege nur über die API
+# (Zustandsautomaten, Fristen, Benachrichtigungen) – im Desk lesend wie Bereich „genossenschaft“ bzw. „kommunen“ der Rechte-Matrix.
+# Mitgliederliste enthält IBAN und Anschrift → Leitung/Buchhaltung/Compliance/Leser; Stimmzettel nur System Manager (Wahlgeheimnis).
+MATRIX.update({
+	"Plattform Genossenschaft": {ADMIN: L, BUCHHALTUNG: L, COMPLIANCE: L, ENERGIE: L, LESER: L},
+	"Plattform Genossenschaftsmitglied": {ADMIN: L, BUCHHALTUNG: L, COMPLIANCE: L, LESER: L},
+	"Plattform Anteilsuebertragung": {ADMIN: L, BUCHHALTUNG: L, COMPLIANCE: L, LESER: L},
+	"Plattform Generalversammlung": {ADMIN: L, BUCHHALTUNG: L, COMPLIANCE: L, LESER: L},
+	"Plattform GV Stimme": {},
+	"Plattform Genossenschaft Ausschuettung": {ADMIN: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform Energiegemeinschaft": {ADMIN: L, ENERGIE: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform EG Teilnahme": {ADMIN: L, ENERGIE: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform EG Abrechnung": {ADMIN: L, ENERGIE: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform Gemeinde Akte": {ADMIN: L, AKQUISE: L, PROJEKTLEITUNG: L, LESER: L},
 })
 
 SCHLUESSEL = ["create", "delete", "email", "export", "print", "read", "report", "share", "write"]

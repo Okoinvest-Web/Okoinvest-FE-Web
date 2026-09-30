@@ -21,7 +21,8 @@ Stand: 30.09.2026 · Rolle `lieferant` (nur per Einladung) · Demo: `lieferant@e
 5. **Preisblatt ausfüllen:** Arbeitspreis bzw. Aufschlag, Grundpreis, HKN, Mengentoleranz, **Bindefrist**, Zahlungsziel, Sicherheit; Abweichungen ausdrücklich nennen.
 6. **Abgeben.** Bis Fristende beliebig oft aktualisierbar (neue Version, die letzte zählt) oder zurückziehbar. Danach gesperrt.
 7. **Folgerunde:** ggf. Einladung mit Hinweis (Rang, Abstand oder Bestpreis – nie Namen).
-8. **Ergebnis:** Zuschlag erst nach Kundenfreigabe → Zuschlagsschreiben + Kundendaten für den Liefervertrag; sonst Absage.
+8. **Ergebnis:** Zuschlag erst nach Kundenfreigabe → Zuschlagsschreiben und **Vertragsdatenblatt** (Firma, Ansprechpartner, Abnahmestellen mit MaLo/MeLo bzw. Zählpunkt, Menge, Konditionen; auch als PDF) direkt in der Anfrage; sonst Absage. Jeder Abruf der Kundendaten wird protokolliert; die Daten sind zweckgebunden.
+9. **Lieferantenwechsel:** In der Anfrage bestätigen Sie „Liefervertrag bereitgestellt“, „Anmeldung beim Netzbetreiber“ und „Belieferung begonnen“ (optional mit Bemerkung, z. B. Vertragsnummer). Kunde und ÖkoInvest bestätigen ihre Schritte selbst; Sie werden benachrichtigt.
 
 ## Typische Fehler
 

@@ -42,6 +42,7 @@ export const POST = route({ upload: true }, async ({ backend, nutzer, request })
     bezugId: String(fd.get("bezugId") || ""),
     kategorie: String(fd.get("kategorie") || "allgemein"),
     checkliste: String(fd.get("checkliste") || "").slice(0, 40),
+    stumm: fd.get("anhang") === "1", // Querschnitt: Anhang einer Nachricht (ohne Systemnachricht)
     name: datei.name || `dokument.${UPLOAD.typen[mime]}`,
     mime,
     daten,

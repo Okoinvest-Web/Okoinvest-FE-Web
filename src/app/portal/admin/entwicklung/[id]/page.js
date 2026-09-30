@@ -10,10 +10,11 @@ import { entwicklungBackend } from "@/lib/plattform/backend/entwicklung";
 import { heuteIso } from "@/lib/plattform/entwicklung";
 import { LAENDER } from "@/lib/plattform/konstanten";
 import { KalkulationReiter, PlanungReiter } from "@/components/Portal/Planung/Reiter"; // Planungsdateien & Projektkosten
+import { SteuerungReiter } from "@/components/Portal/Entwicklung/SteuerungReiter"; // Ampel, Flächensicherung, Entscheidungsvorlagen
 
 export const metadata = { title: "Entwicklungsprojekt" };
 
-const REITER = ["uebersicht", "plan", "flaechen", "risiken", "kontakte", "entscheidungen", "kosten", "freigaben", "planung", "kalkulation"];
+const REITER = ["uebersicht", "plan", "flaechen", "risiken", "kontakte", "entscheidungen", "kosten", "freigaben", "planung", "kalkulation", "steuerung"];
 
 export default async function EntwicklungProjektSeite({ params, searchParams }) {
   const n = await portalNutzer({ admin: true });
@@ -56,6 +57,7 @@ export default async function EntwicklungProjektSeite({ params, searchParams }) 
           { id: "freigaben", label: "Freigaben & Gutachter", zaehler: p.rueckfragen.filter((r) => !r.backoffice).length },
           { id: "planung", label: "Pläne" }, // Planungsdateien (CAD)
           { id: "kalkulation", label: "Kostenkalkulation" }, // Projektkostenkalkulation
+          { id: "steuerung", label: "Steuerung & Vorlagen" }, // Ampel, Grundbuch, Entscheidungsvorlagen
         ]}
       />
 
@@ -117,6 +119,7 @@ export default async function EntwicklungProjektSeite({ params, searchParams }) 
       {reiter === "freigaben" && <Freigaben projekt={p} auswahl={auswahl} />}
       {reiter === "planung" && <PlanungReiter nutzer={n} projektId={p.id} />}
       {reiter === "kalkulation" && <KalkulationReiter nutzer={n} projektId={p.id} />}
+      {reiter === "steuerung" && <SteuerungReiter nutzer={n} projektId={p.id} />}
     </>
   );
 }

@@ -35,6 +35,8 @@ MAIL_VORLAGEN = {
 	"signatur": ("Elektronische Unterschrift – ÖkoInvest", "Im Portal von ÖkoInvest gibt es Neuigkeiten zu einem Dokument zur elektronischen Unterschrift."),
 	"termin": ("Ihr Termin – ÖkoInvest", "Im Portal von ÖkoInvest gibt es Neuigkeiten zu einem Termin."),
 	"ticket": ("Ihre Support-Anfrage – ÖkoInvest", "Im Portal von ÖkoInvest gibt es Neuigkeiten zu Ihrer Support-Anfrage."),
+	# Portfolio (Kapitalabrufe, Ausschüttungen, Dokumente) – ohne Inhalte
+	"portfolio": ("Neuigkeiten zu Ihrem Portfolio – ÖkoInvest", "Zu einer Ihrer Anlagen bzw. Beteiligungen gibt es Neuigkeiten (z. B. Kapitalabruf, Ausschüttung, Dokument). Details finden Sie im Portal."),
 }
 
 
@@ -53,7 +55,7 @@ def anlegen(konto_id, art, titel, text="", link="/portal", objekt_art=None, obje
 	"""Benachrichtigung für ein Konto; E-Mail je nach Einstellung. Liefert das Dokument oder None."""
 	if art not in BENACHRICHTIGUNG_ARTEN or not konto_id:
 		return None
-	konto = frappe.db.get_value("Plattform Konto", konto_id, ["name", "email", "vorname", "aktiv", "mail_einstellungen", "komfort"], as_dict=True)
+	konto = frappe.db.get_value("Plattform Konto", konto_id, ["name", "email", "vorname", "aktiv", "mail_einstellungen", "komfort", "mail_rhythmus"], as_dict=True)
 	if not konto or not cint(konto.aktiv):
 		return None
 	from oekoinvest_app.plattform.organisation import mail_kanal_aktiv
@@ -75,10 +77,14 @@ def anlegen(konto_id, art, titel, text="", link="/portal", objekt_art=None, obje
 			"mail": 0,
 		}
 	).insert(ignore_permissions=True)
+	# Querschnitt: Tages-Digest – E-Mail wird gesammelt (querschnitt_kern.digest_lauf, Scheduler täglich), Sicherheit immer sofort
+	if mail and einstellungen(konto).get(art) and konto.get("mail_rhythmus") == "taeglich" and art != "sicherheit":
+		frappe.db.set_value("Plattform Benachrichtigung", doc.name, "digest_offen", 1, update_modified=False)
+		mail = False
 	if mail and einstellungen(konto).get(art):
 		from oekoinvest_app.plattform import mail as plattform_mail
 
-		betreff, standard_text = MAIL_VORLAGEN[art]
+		betreff, standard_text = MAIL_VORLAGEN.get(art) or ("Neuigkeiten im Portal – ÖkoInvest", "Im Portal von ÖkoInvest gibt es Neuigkeiten. Details finden Sie im Portal.")  # Arten ohne eigene Vorlage (z. B. abrechnung, finanzierung)
 		if plattform_mail.benachrichtigung(konto, mail_betreff or betreff, doc.titel if art in ("suchprofil", "aufgabe") else "", mail_text or standard_text, doc.link):
 			frappe.db.set_value("Plattform Benachrichtigung", doc.name, "mail", 1, update_modified=False)
 	return doc

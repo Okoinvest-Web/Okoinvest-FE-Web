@@ -292,7 +292,7 @@ export default async function FinanzenBackofficeSeite({ searchParams }) {
         eyebrow="Backoffice · Buchhaltung"
         titel="Finanzen & Abrechnung"
         text="Pachtabrechnung, Contracting-Rechnungen und Provisionen, Klärfälle, offene Posten und Auszahlungen mit SEPA-Export. Steuerliche Behandlung als Vorlage – mit der Steuerberatung abstimmen."
-        aktionen={<Button href="/portal/admin/deals" size="sm" variant="secondary" icon={Landmark}>Deals & Provisionen</Button>}
+        aktionen={<><Button href="/portal/admin/finanzen/buchhaltung" size="sm" icon={ListChecks}>Buchhaltung: OP, Mahnwesen, Abschluss</Button><Button href="/portal/admin/deals" size="sm" variant="secondary" icon={Landmark}>Deals & Provisionen</Button></>}
       />
       <Reiter basis="/portal/admin/finanzen" aktiv={tab} tabs={tabs} label="Bereiche Finanzen" />
       {inhalt}

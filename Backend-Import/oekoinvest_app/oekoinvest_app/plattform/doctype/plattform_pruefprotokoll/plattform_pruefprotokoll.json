@@ -1,0 +1,192 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 12:00:00.000000",
+ "description": "Prüfprotokoll (E-Check / DGUV V3, ESV / OVE E 8101, NIV-SiNa, Thermografie) mit Messwerten und serverseitiger Bewertung.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "anlage_id",
+  "plan_id",
+  "art",
+  "datum",
+  "ergebnis",
+  "cb_1",
+  "pruefer",
+  "firma",
+  "norm",
+  "einstrahlung_wm2",
+  "stoerung_id",
+  "sec_1",
+  "messwerte",
+  "befunde",
+  "bemerkung",
+  "dokument_id",
+  "erstellt_von"
+ ],
+ "fields": [
+  {
+   "fieldname": "anlage_id",
+   "fieldtype": "Link",
+   "label": "Anlage",
+   "options": "Plattform Anlage",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "plan_id",
+   "fieldtype": "Link",
+   "label": "Wartungsplan",
+   "options": "Plattform Wartungsplan"
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "wiederkehrend\nerstpruefung\nthermografie\ninspektion\nreinigung",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "datum",
+   "fieldtype": "Date",
+   "label": "Prüfdatum",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "ergebnis",
+   "fieldtype": "Select",
+   "label": "Ergebnis",
+   "options": "bestanden\nmaengel\nnicht_bestanden",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "pruefer",
+   "fieldtype": "Data",
+   "label": "Prüfer (Elektrofachkraft)"
+  },
+  {
+   "fieldname": "firma",
+   "fieldtype": "Data",
+   "label": "Firma"
+  },
+  {
+   "fieldname": "norm",
+   "fieldtype": "Data",
+   "label": "Grundlage / Norm"
+  },
+  {
+   "fieldname": "einstrahlung_wm2",
+   "fieldtype": "Float",
+   "label": "Einstrahlung (W/m²)"
+  },
+  {
+   "fieldname": "stoerung_id",
+   "fieldtype": "Link",
+   "label": "Folge-Störung",
+   "options": "Plattform Stoerungsfall"
+  },
+  {
+   "fieldname": "sec_1",
+   "fieldtype": "Section Break",
+   "label": "Messwerte und Befunde"
+  },
+  {
+   "fieldname": "messwerte",
+   "fieldtype": "Long Text",
+   "label": "Messwerte (JSON)"
+  },
+  {
+   "fieldname": "befunde",
+   "fieldtype": "Long Text",
+   "label": "Befunde (JSON)"
+  },
+  {
+   "fieldname": "bemerkung",
+   "fieldtype": "Small Text",
+   "label": "Bemerkung"
+  },
+  {
+   "fieldname": "dokument_id",
+   "fieldtype": "Data",
+   "label": "Dokument"
+  },
+  {
+   "fieldname": "erstellt_von",
+   "fieldtype": "Link",
+   "label": "Erstellt von",
+   "options": "Plattform Konto"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 00:21:25.807451",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Pruefprotokoll",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Betrieb",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "in_create": 0,
+ "naming_rule": "By script"
+}

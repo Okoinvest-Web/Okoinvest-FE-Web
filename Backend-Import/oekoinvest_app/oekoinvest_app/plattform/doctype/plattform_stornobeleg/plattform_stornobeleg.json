@@ -1,0 +1,168 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "Storno-/Korrekturbeleg mit eigener fortlaufender Nummer (ST-JJJJ-NNNNN) und Verweis auf den Ursprungsbeleg – unveränderlich, nicht löschbar.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "nummer",
+  "ursprung_id",
+  "ursprung_nummer",
+  "art",
+  "cb_1",
+  "datum",
+  "brutto",
+  "von_id",
+  "sb_1",
+  "grund",
+  "daten"
+ ],
+ "fields": [
+  {
+   "fieldname": "nummer",
+   "fieldtype": "Data",
+   "label": "Storno-Nr.",
+   "reqd": 1,
+   "in_list_view": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "ursprung_id",
+   "fieldtype": "Link",
+   "label": "Ursprungsbeleg",
+   "options": "Plattform Abrechnung",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "ursprung_nummer",
+   "fieldtype": "Data",
+   "label": "Ursprungs-Nr.",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "pacht\ncontracting\nprovision",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "datum",
+   "fieldtype": "Date",
+   "label": "Datum",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "brutto",
+   "fieldtype": "Currency",
+   "label": "Betrag (brutto)"
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "label": "Von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": ""
+  },
+  {
+   "fieldname": "grund",
+   "fieldtype": "Small Text",
+   "label": "Grund"
+  },
+  {
+   "fieldname": "daten",
+   "fieldtype": "JSON",
+   "label": "Beleg (Positionen, Steuer, Parteien, Erstattung)"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 0,
+ "links": [],
+ "modified": "2026-10-01 00:36:39.354419",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Stornobeleg",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Transaktion",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "in_create": 1,
+ "title_field": "nummer",
+ "search_fields": "nummer,ursprung_nummer"
+}

@@ -53,7 +53,7 @@ export default async function Hilfe() {
         eyebrow="Hilfe"
         titel="Hilfe & Tastenkürzel"
         text="Alles Wichtige zur Bedienung des Portals – für den schnellen Einstieg und für alle, die ohne Maus arbeiten möchten."
-        aktionen={<Button href="/portal/willkommen" variant="secondary" size="sm" icon={Compass}>Geführten Einstieg starten</Button>}
+        aktionen={<><Button href="/portal/hilfe/handbuch" variant="secondary" size="sm" icon={BookOpen}>Handbücher</Button><Button href="/portal/willkommen" variant="secondary" size="sm" icon={Compass}>Geführten Einstieg starten</Button></>}
       />
 
       <Karte titel="Schnell ans Ziel" untertitel="Befehlspalette und Tastenkürzel" aktion={<Keyboard aria-hidden="true" className="h-5 w-5 text-ov-700" />}>

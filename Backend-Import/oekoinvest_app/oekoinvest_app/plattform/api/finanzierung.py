@@ -952,6 +952,12 @@ def bank_aktion(anfrageId=None, daten=None, als_benutzer=None):  # noqa: N803
 	if not art:
 		ungueltig("Unbekannte Aktion.")
 	a, f = _bank_anfrage(n, anfrageId)
+	# Bank-Team: Teamrolle je Aktion (Nur lesen → nichts, Sachbearbeitung → Term Sheet/Rückfrage, Leitung → Absage) – api/bankakte.py
+	from oekoinvest_app.plattform.api.bankakte import bank_rolle
+	from oekoinvest_app.plattform.bankakte_kern import BANK_AKTION_ROLLE, rolle_reicht
+
+	if not rolle_reicht(bank_rolle(n, a.bank_id), BANK_AKTION_ROLLE.get(art, "leitung")):
+		verboten("Dafür fehlt Ihnen in Ihrem Haus die passende Rolle (Bank-Team).")
 	bank_name = frappe.db.get_value(DT_BANK, a.bank_id, "bank_name")
 	if art == "termsheet":
 		_ts_ablegen(n, f, a, _fach(termsheet_bereinigen, d.get("termsheet") or {}), "bank")

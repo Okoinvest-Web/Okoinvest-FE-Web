@@ -1,0 +1,264 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "Anliegen eines Contracting-Kunden: Einspruch gegen eine Rechnung, Kündigung zum Laufzeitende, Verlängerung, Übernahme der Anlage (Zustandsautomat über die API).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "art",
+  "status",
+  "kunde_id",
+  "organisation_id",
+  "anlage_id",
+  "beleg_id",
+  "cb_1",
+  "eingereicht_am",
+  "ziel_am",
+  "entschieden_am",
+  "zustaendig_id",
+  "klaerfall_id",
+  "sb_1",
+  "grund",
+  "text",
+  "betrag_strittig",
+  "wunsch_jahre",
+  "wunsch_termin",
+  "wirksam_zum",
+  "stichtag",
+  "sb_2",
+  "angebot",
+  "begruendung",
+  "korrektur_eur",
+  "verlauf",
+  "daten"
+ ],
+ "fields": [
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "einspruch\nkuendigung\nverlaengerung\nkaufoption",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "eingereicht\nin_pruefung\nangebot\nstattgegeben\nteilweise\nbestaetigt\nangenommen\nabgelehnt\nausgeschlagen\nzurueckgezogen",
+   "default": "eingereicht",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "kunde_id",
+   "fieldtype": "Link",
+   "label": "Kunde",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "organisation_id",
+   "fieldtype": "Link",
+   "label": "Organisation",
+   "options": "Plattform Organisation"
+  },
+  {
+   "fieldname": "anlage_id",
+   "fieldtype": "Link",
+   "label": "Anlage",
+   "options": "Plattform Anlage",
+   "search_index": 1
+  },
+  {
+   "fieldname": "beleg_id",
+   "fieldtype": "Link",
+   "label": "Rechnung",
+   "options": "Plattform Abrechnung",
+   "search_index": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "eingereicht_am",
+   "fieldtype": "Datetime",
+   "label": "Eingereicht am",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "ziel_am",
+   "fieldtype": "Date",
+   "label": "Bearbeitungsziel"
+  },
+  {
+   "fieldname": "entschieden_am",
+   "fieldtype": "Datetime",
+   "label": "Entschieden am"
+  },
+  {
+   "fieldname": "zustaendig_id",
+   "fieldtype": "Link",
+   "label": "Zuständig",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "klaerfall_id",
+   "fieldtype": "Link",
+   "label": "Klärfall (Korrektur)",
+   "options": "Plattform Klaerfall"
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": "Angaben des Kunden"
+  },
+  {
+   "fieldname": "grund",
+   "fieldtype": "Select",
+   "label": "Grund (Einspruch)",
+   "options": "\nmenge\npreis\ngrundgebuehr\nzeitraum\ndoppelt\nausfall\nsonstiges"
+  },
+  {
+   "fieldname": "text",
+   "fieldtype": "Small Text",
+   "label": "Begründung / Nachricht"
+  },
+  {
+   "fieldname": "betrag_strittig",
+   "fieldtype": "Currency",
+   "label": "Strittiger Betrag"
+  },
+  {
+   "fieldname": "wunsch_jahre",
+   "fieldtype": "Int",
+   "label": "Gewünschte Verlängerung (Jahre)"
+  },
+  {
+   "fieldname": "wunsch_termin",
+   "fieldtype": "Date",
+   "label": "Wunschtermin Übernahme"
+  },
+  {
+   "fieldname": "wirksam_zum",
+   "fieldtype": "Date",
+   "label": "Kündigung wirksam zum"
+  },
+  {
+   "fieldname": "stichtag",
+   "fieldtype": "Date",
+   "label": "Fristgerecht bis"
+  },
+  {
+   "fieldname": "sb_2",
+   "fieldtype": "Section Break",
+   "label": "Entscheidung"
+  },
+  {
+   "fieldname": "angebot",
+   "fieldtype": "JSON",
+   "label": "Angebot"
+  },
+  {
+   "fieldname": "begruendung",
+   "fieldtype": "Small Text",
+   "label": "Begründung an den Kunden"
+  },
+  {
+   "fieldname": "korrektur_eur",
+   "fieldtype": "Currency",
+   "label": "Korrektur (Gutschrift)"
+  },
+  {
+   "fieldname": "verlauf",
+   "fieldtype": "JSON",
+   "label": "Verlauf"
+  },
+  {
+   "fieldname": "daten",
+   "fieldtype": "JSON",
+   "label": "Bezugsdaten (Schnappschuss)"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Kundenanliegen",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Betrieb"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  }
+ ]
+}

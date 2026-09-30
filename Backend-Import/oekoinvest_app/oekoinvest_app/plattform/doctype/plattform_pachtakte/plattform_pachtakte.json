@@ -1,0 +1,149 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "Pachtakte je Pachtvertrag: Rückbau (Zustandsautomat bis zur Abnahme), Rückbausicherheit, Kündigungsdatum, Eigentümerhistorie, Zahlungsaufteilung. Nur über die API (plattform/api/pachtakte.py).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "vertrag_id",
+  "rueckbau_status",
+  "sicherheit_status",
+  "kuendigung_zum",
+  "rueckbau",
+  "sicherheit",
+  "historie",
+  "aufteilung"
+ ],
+ "fields": [
+  {
+   "fieldname": "vertrag_id",
+   "fieldtype": "Link",
+   "label": "Pachtvertrag",
+   "options": "Plattform Pachtvertrag",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "rueckbau_status",
+   "fieldtype": "Select",
+   "label": "Rückbau",
+   "options": "offen\nangekuendigt\nlaufend\nabnahme_bereit\nmaengel\nabgenommen",
+   "default": "offen",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "sicherheit_status",
+   "fieldtype": "Select",
+   "label": "Rückbausicherheit",
+   "options": "keine\nvorgesehen\nhinterlegt\nfreigegeben",
+   "default": "keine",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "kuendigung_zum",
+   "fieldtype": "Date",
+   "label": "Kündigung wirksam zum"
+  },
+  {
+   "fieldname": "rueckbau",
+   "fieldtype": "JSON",
+   "label": "Rückbau (Termin, Verlauf)"
+  },
+  {
+   "fieldname": "sicherheit",
+   "fieldtype": "JSON",
+   "label": "Sicherheit (Art, Betrag, Geber, Verlauf)"
+  },
+  {
+   "fieldname": "historie",
+   "fieldtype": "JSON",
+   "label": "Eigentümerhistorie"
+  },
+  {
+   "fieldname": "aufteilung",
+   "fieldtype": "JSON",
+   "label": "Zahlungsaufteilung"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Pachtakte",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Akquise",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "in_create": 0
+}

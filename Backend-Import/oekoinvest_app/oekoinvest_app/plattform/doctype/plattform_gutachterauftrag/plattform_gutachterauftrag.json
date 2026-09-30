@@ -1,0 +1,210 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 12:00:00.000000",
+ "description": "Gutachter-/Planerauftrag zu einem Entwicklungsprojekt: Anfrage, Angebot, Beauftragung, Lieferungen, Abnahme, Rechnungen, Bewertung (plattform/api/gutachterauftrag.py).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "titel",
+  "status",
+  "gruppe",
+  "fachgebiet",
+  "cb1",
+  "projekt_id",
+  "meilenstein_id",
+  "gutachter_id",
+  "verantwortlich_id",
+  "sb1",
+  "angebotsfrist",
+  "liefertermin",
+  "cb2",
+  "summe_netto",
+  "bewertung_schnitt",
+  "sb2",
+  "daten"
+ ],
+ "fields": [
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Leistung",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "angefragt\nangebot\nbeauftragt\nin_arbeit\nin_pruefung\nnachbesserung\nabnahmebereit\nabgenommen\nabgerechnet\nabgeschlossen\nabgelehnt\nnicht_beauftragt\nstorniert",
+   "default": "angefragt",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "gruppe",
+   "fieldtype": "Data",
+   "label": "Anfragegruppe",
+   "search_index": 1
+  },
+  {
+   "fieldname": "fachgebiet",
+   "fieldtype": "Data",
+   "label": "Fachgebiet",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Entwicklungsprojekt",
+   "options": "Plattform Entwicklungsprojekt",
+   "reqd": 1,
+   "search_index": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "meilenstein_id",
+   "fieldtype": "Link",
+   "label": "Meilenstein",
+   "options": "Plattform Entwicklung Meilenstein"
+  },
+  {
+   "fieldname": "gutachter_id",
+   "fieldtype": "Link",
+   "label": "Gutachter / Planer",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "search_index": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "verantwortlich_id",
+   "fieldtype": "Link",
+   "label": "Verantwortlich (Projektleitung)",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "sb1",
+   "fieldtype": "Section Break",
+   "label": "Termine und Beträge"
+  },
+  {
+   "fieldname": "angebotsfrist",
+   "fieldtype": "Date",
+   "label": "Angebotsfrist"
+  },
+  {
+   "fieldname": "liefertermin",
+   "fieldtype": "Date",
+   "label": "Liefertermin",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cb2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "summe_netto",
+   "fieldtype": "Currency",
+   "label": "Auftragssumme netto"
+  },
+  {
+   "fieldname": "bewertung_schnitt",
+   "fieldtype": "Float",
+   "label": "Bewertung (Durchschnitt 1–5)",
+   "precision": "1"
+  },
+  {
+   "fieldname": "sb2",
+   "fieldtype": "Section Break",
+   "label": "Akte"
+  },
+  {
+   "fieldname": "daten",
+   "fieldtype": "JSON",
+   "label": "Akte (Angebot, Termine, Lieferungen, Rechnungen, Verlauf)"
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Gutachterauftrag",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Projektleitung",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "title_field": "titel",
+ "search_fields": "projekt_id,gutachter_id,status"
+}

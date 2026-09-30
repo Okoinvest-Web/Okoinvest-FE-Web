@@ -54,3 +54,20 @@ Code: `src/lib/plattform/{flaecheFach,flaecheErklaerung,kommune}.js`, `backend/{
 3. Dauern in der Pipeline sind Erfahrungswerte, keine Zusagen (im UI so gekennzeichnet).
 4. Gemeinde-Sicht: Freischaltung nur nach unabhängiger Bestätigung der Gemeinde (Rückruf über die Verwaltung) – Prozess im Backoffice festlegen; Datenschutz: nur aggregierte, anonymisierte Projektdaten ab Bauleitplanung.
 5. Grenzwerte (Statik 0,15/0,25 kN/m², Restnutzungsdauer ≥ 25 J., Hang > 15 %, Ackerzahl ≥ 50) sind fachliche Orientierung.
+
+## Pachtakte – nach der Unterschrift (Team 1, 01.10.2026)
+
+| # | Prio | Befund (Ist vorher) | Umsetzung | Status |
+|---|---|---|---|---|
+| 23 | A | Nach „Pachtangebot annehmen“ endete die Eigentümer-Reise: Pachtvertrag nur als Zahlungsübersicht unter „Abrechnungen“, keine Fristen, kein Vertragsende | `/portal/pachtvertraege`: Vertrag, Fristen (Baubeginn laut Nichtbau-Regel, Laufzeitende, Verlängerungsoption, Erinnerung 24 Monate vorher, Kündigung), Kurzkarte an der Fläche ab „Vertrag“ | umgesetzt |
+| 24 | A | Kündigung, Eigentümerwechsel (Verkauf, Hofübergabe), Erbfall, mehrere Eigentümer nicht abbildbar – Pacht lief weiter an das alte Konto | Anliegen mit Positivliste, Pflichtunterlagen und Hinweisen je Land (§ 566/§ 593b BGB, § 1120 ABGB, Art. 290 OR, Erbnachweise, § 743 BGB/§ 839 ABGB), Zustandsautomat mit Rückfrage, Backoffice-Aufgabe, Wirkung: gekündigt/Übertragung von Vertrag und Fläche auf das neue Konto | umgesetzt |
+| 25 | A | Rückbausicherheit nur als Angebotszeile, kein Stand; Rückbau/Rückgabe ohne Abnahme | Sicherheit vereinbart → hinterlegt → freigegeben (erst nach Abnahme), Warnung „ab Baubeginn vereinbart, nicht hinterlegt“; Rückbau angekündigt → laufend → zur Abnahme → Abnahme/Mängel durch den Eigentümer; Vertragsende erst danach | umgesetzt |
+| 26 | B | Agri-PV: DIN SPEC 91434 nur in der Vorprüfung, kein jährlicher Nachweis | Bewirtschaftungsnachweis je Wirtschaftsjahr (Referenz-/Betriebsjahr) mit Live-Prüfung 66 %-Regel, Flächenverlust 10/15 %, GAP-/Mehrfachantrag-Hinweis je Land; Bestätigung/Rückfrage durch das Backoffice | umgesetzt |
+| 27 | B | Keine Jahresbescheinigung für die Steuerberatung | PDF je Kalenderjahr (netto, USt, brutto, ausgezahlt, offen, Einzelbelege) mit vorsichtigen Steuerhinweisen DE/AT/CH | umgesetzt |
+| 28 | B | Zahlungsaufteilung auf mehrere Empfänger wird nur vermerkt; der Abrechnungslauf erzeugt weiter eine Gutschrift je Vertrag; Kündigungsdatum begrenzt die Gutschriften noch nicht | Finanzmodul: Aufteilung je Empfänger (eigene KYC) und Laufzeitende = `kuendigungZum` im Abrechnungslauf | **offen – Finanzen/Buchhaltung** |
+| 29 | C | Angebotsbogen als PDF, Modellvergleich Pacht / Beteiligung / Eigeninvest im Angebot | – | offen |
+| 30 | C | Fristen-Erinnerungen per Scheduler (Laufzeitende, Sicherheit fehlt, Anliegen über Bearbeitungsziel) | Anzeige und Kennzahlen vorhanden; täglicher Lauf in hooks.py noch nicht registriert | offen |
+
+Rechtliche Hinweise der Pachtakte (Kündigung, Veräußerung, Erbfall, Steuern) vor Livegang juristisch und steuerlich gegenlesen lassen; sie sind bewusst vorsichtig formuliert.
+
+Tests: `node scripts/plattform-test-fach-flaeche.mjs --nur-logik` (Abschnitt 0, ohne Server) bzw. vollständig gegen den Server (Abschnitt 10); Python `python -m unittest oekoinvest_app.plattform.tests.test_pachtakte_kern` (11), Bench `tests/test_pachtakte.py`.

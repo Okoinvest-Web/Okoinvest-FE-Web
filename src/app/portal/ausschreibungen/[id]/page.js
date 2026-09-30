@@ -10,6 +10,8 @@ import { Hinweis, PdfLink, StatusBadgeEnergie, Tabelle, datumZeit, fmt, monatTex
 import { portalNutzer, laden } from "@/lib/plattform/server/seite";
 import { energieBackend } from "@/lib/plattform/backend/energie";
 import { SICHERHEITEN } from "@/lib/plattform/energie/ausschreibung";
+import { kundenenergieBackend } from "@/lib/plattform/backend/kundenenergie"; // Kundenseite Energie: Vertragsdaten + Wechsel nach Zuschlag
+import { WechselKarte } from "@/components/Portal/Kundenenergie/teile";
 
 export const metadata = { title: "Angebotsanfrage Strom" };
 
@@ -25,6 +27,8 @@ export default async function LieferantAusschreibung({ params }) {
   const a = r.ausschreibung;
   const p = a.profil;
   const letztes = a.eigeneAngebote.find((g) => g.runde === a.runde?.nr && g.status === "abgegeben") || null;
+  const zuschlag = a.ergebnis === "zuschlag";
+  const [vd, wechsel] = zuschlag ? await Promise.all([laden(() => kundenenergieBackend().vertragsdaten(n, a.id)), laden(() => kundenenergieBackend().lieferantenwechsel(n, { ausschreibungId: a.id }))]) : [null, []];
   return (
     <>
       <SeitenKopf
@@ -38,7 +42,25 @@ export default async function LieferantAusschreibung({ params }) {
           </>
         }
       />
-      {a.ergebnis && <div className="mb-6"><Hinweis ton={a.ergebnis === "zuschlag" ? "info" : "warn"}>{a.ergebnis === "zuschlag" ? "Ihr Angebot hat den Zuschlag erhalten. ÖkoInvest übermittelt die Kundendaten für den Lieferantenwechsel gesondert." : a.ergebnis === "absage" ? "Der Zuschlag ging an einen anderen Versorger. Vielen Dank für Ihr Angebot." : a.ergebnis === "abgebrochen" ? "Die Angebotsanfrage wurde ohne Zuschlag beendet." : "Die Ausschreibung ist abgeschlossen."}</Hinweis></div>}
+      {a.ergebnis && <div className="mb-6"><Hinweis ton={a.ergebnis === "zuschlag" ? "info" : "warn"}>{a.ergebnis === "zuschlag" ? "Ihr Angebot hat den Zuschlag erhalten. Die Kundendaten für Liefervertrag und Anmeldung finden Sie unten im Vertragsdatenblatt." : a.ergebnis === "absage" ? "Der Zuschlag ging an einen anderen Versorger. Vielen Dank für Ihr Angebot." : a.ergebnis === "abgebrochen" ? "Die Angebotsanfrage wurde ohne Zuschlag beendet." : "Die Ausschreibung ist abgeschlossen."}</Hinweis></div>}
+      {vd && (
+        <Karte id="vertragsdaten" titel="Vertragsdatenblatt" untertitel={`Kundendaten und Lokationen für Liefervertrag und Anmeldung – Lieferbeginn ${monatText(vd.ausschreibung.lieferbeginn)}`} className="mb-6" aktion={<PdfLink href={`/api/portal/kundenenergie/vertragsdaten?ausschreibung=${a.id}&format=pdf`}>PDF</PdfLink>}>
+          <div className="grid gap-5">
+            {vd.kunden.map((k, i) => (
+              <div key={i} className="grid gap-2">
+                <p className="text-[14px] font-semibold text-ink-900">{k.firma || k.ansprechpartner}<span className="font-normal text-ink-600"> · {k.ansprechpartner} · {k.email}{k.telefon ? ` · ${k.telefon}` : ""} · {k.jahresKwh ? `${fmt(k.jahresKwh)} kWh/Jahr` : ""}</span></p>
+                <Tabelle kopf={["Abnahmestelle", "PLZ / Ort", "MaLo / Zählpunkt", "MeLo", "Messart", "Netzbetreiber"]} zeilen={k.abnahmestellen.map((x) => [x.bezeichnung, `${x.plz} ${x.ort}`.trim() || "–", x.maloId || x.zaehlpunkt || "–", x.meloId || "–", String(x.messart || "–").toUpperCase(), x.netzbetreiber || "–"])} leer="Lokationsdaten folgen durch ÖkoInvest." />
+              </div>
+            ))}
+            <p className="text-[12.5px] leading-snug text-ink-500">{vd.hinweis} Abrufe werden protokolliert.</p>
+          </div>
+        </Karte>
+      )}
+      {wechsel.map((w) => (
+        <Karte key={w.id} id="wechsel" titel="Lieferantenwechsel" untertitel="Bitte bestätigen Sie Ihre Schritte: Liefervertrag bereitgestellt, Anmeldung beim Netzbetreiber, Lieferbeginn" className="mb-6">
+          <WechselKarte w={w} />
+        </Karte>
+      ))}
       <section aria-label="Eckdaten" className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Wert ton="dunkel" label="Angebotsfrist" wert={a.runde ? datumZeit(a.runde.frist) : "–"} hinweis={a.runde ? `Runde ${a.runde.nr}${a.runde.offen ? " · offen" : " · geschlossen"}` : ""} />
         <Wert label="Lieferbeginn" wert={monatText(a.lieferbeginn)} hinweis={a.zone === "AT" ? "Gebotszone AT" : "Gebotszone DE-LU"} />

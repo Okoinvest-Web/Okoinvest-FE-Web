@@ -76,7 +76,7 @@ export function SitzungenListe({ sitzungen }) {
                   </Badge>
                 )}
               </p>
-              <p className="mt-0.5 text-[13px] text-ink-500">
+              <p className="mt-0.5 text-[13px] text-ink-500" suppressHydrationWarning>{/* relative Zeit kann zwischen Server und Browser um eine Minute springen */}
                 {s.ort || "Ort unbekannt"} · aktiv {relativ(s.letzteAktivitaet)} · seit {datumZeit(s.erstelltAm)}
                 {s.organisation ? ` · ${s.organisation}` : ""}
               </p>
@@ -113,7 +113,7 @@ export function GeraeteListe({ geraete }) {
                 {g.aktuell && <Badge ton="ok">Dieses Gerät</Badge>}
                 {g.vertraut && <Badge ton="info">2FA gemerkt bis {datumZeit(g.vertrautBis).slice(0, 10)}</Badge>}
               </p>
-              <p className="mt-0.5 text-[13px] text-ink-500">Zuletzt {relativ(g.letzteAnmeldung)} · erstmals {datumZeit(g.ersteAnmeldung)}</p>
+              <p className="mt-0.5 text-[13px] text-ink-500" suppressHydrationWarning>Zuletzt {relativ(g.letzteAnmeldung)} · erstmals {datumZeit(g.ersteAnmeldung)}</p>
             </div>
             <Button
               type="button"

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarClock, Plus, TriangleAlert } from "lucide-react";
+import { CalendarClock, Gauge, Plus, TriangleAlert } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Karte, SeitenKopf } from "@/components/Portal/ui";
 import Portfolio from "@/components/Portal/Entwicklung/Portfolio";
@@ -26,7 +26,12 @@ export default async function EntwicklungPortfolioSeite({ searchParams }) {
         eyebrow="Backoffice · Projektentwicklung"
         titel="Entwicklungs-Pipeline"
         text="Alle eigenen Entwicklungsprojekte von der Flächensicherung bis zur Baureife: Phase, Pipeline-Wert, Terminverzug, Fristen und Auslastung. Ziel: rund 50 MWp Neuentwicklung pro Jahr."
-        aktionen={pf.darfBearbeiten && <Button href="/portal/admin/entwicklung/neu" size="sm" icon={Plus}>Neues Projekt</Button>}
+        aktionen={
+          <div className="flex flex-wrap gap-2">
+            <Button href="/portal/admin/entwicklung/steuerung" size="sm" variant="secondary" icon={Gauge}>Steuerung & Vorlagen</Button>
+            {pf.darfBearbeiten && <Button href="/portal/admin/entwicklung/neu" size="sm" icon={Plus}>Neues Projekt</Button>}
+          </div>
+        }
       />
 
       <section aria-label="Kennzahlen" className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">

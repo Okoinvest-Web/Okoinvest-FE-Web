@@ -51,6 +51,7 @@ export default async function AnlagenLeitstandSeite() {
         aktionen={
           <>
             <Button href="/portal/anlagen" size="sm" variant="secondary" icon={SunMedium}>Monitoring aller Anlagen</Button>
+            <Button href="/portal/admin/anlagen/betrieb" size="sm" variant="secondary" icon={CalendarClock}>Betriebsführung</Button>
             {schreiben && <Button href="/portal/admin/anlagen/neu" size="sm" icon={Plus}>Anlage anlegen</Button>}
           </>
         }

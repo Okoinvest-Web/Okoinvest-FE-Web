@@ -1,0 +1,238 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 12:00:00.000000",
+ "description": "Versicherungsfall einer Anlage (Allgefahren, Ertragsausfall, Haftpflicht) – Meldefrist, Meldung, Regulierung.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "anlage_id",
+  "stoerung_id",
+  "art",
+  "status",
+  "versicherer",
+  "police",
+  "schadennummer",
+  "cb_1",
+  "schadentag",
+  "meldefrist_bis",
+  "gemeldet_am",
+  "verspaetet",
+  "reguliert_am",
+  "sec_1",
+  "schaden_eur",
+  "selbstbehalt_eur",
+  "ertragsausfall_eur",
+  "erstattet_eur",
+  "sec_2",
+  "schadenbeschreibung",
+  "abschluss_grund",
+  "bemerkung",
+  "verlauf"
+ ],
+ "fields": [
+  {
+   "fieldname": "anlage_id",
+   "fieldtype": "Link",
+   "label": "Anlage",
+   "options": "Plattform Anlage",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "stoerung_id",
+   "fieldtype": "Link",
+   "label": "Störung",
+   "options": "Plattform Stoerungsfall"
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Versicherung",
+   "options": "allgefahren\nertragsausfall\nhaftpflicht",
+   "default": "allgefahren"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "entwurf\ngemeldet\nin_pruefung\nreguliert\nabgelehnt\nzurueckgezogen",
+   "default": "entwurf",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "versicherer",
+   "fieldtype": "Data",
+   "label": "Versicherer",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "police",
+   "fieldtype": "Data",
+   "label": "Polizze"
+  },
+  {
+   "fieldname": "schadennummer",
+   "fieldtype": "Data",
+   "label": "Schadennummer"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "schadentag",
+   "fieldtype": "Date",
+   "label": "Schadentag",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "meldefrist_bis",
+   "fieldtype": "Date",
+   "label": "Meldefrist (intern)"
+  },
+  {
+   "fieldname": "gemeldet_am",
+   "fieldtype": "Date",
+   "label": "Gemeldet am"
+  },
+  {
+   "fieldname": "verspaetet",
+   "fieldtype": "Check",
+   "label": "Nach interner Frist gemeldet"
+  },
+  {
+   "fieldname": "reguliert_am",
+   "fieldtype": "Date",
+   "label": "Reguliert am"
+  },
+  {
+   "fieldname": "sec_1",
+   "fieldtype": "Section Break",
+   "label": "Beträge"
+  },
+  {
+   "fieldname": "schaden_eur",
+   "fieldtype": "Currency",
+   "label": "Sachschaden (geschätzt)"
+  },
+  {
+   "fieldname": "selbstbehalt_eur",
+   "fieldtype": "Currency",
+   "label": "Selbstbehalt"
+  },
+  {
+   "fieldname": "ertragsausfall_eur",
+   "fieldtype": "Currency",
+   "label": "Ertragsausfall"
+  },
+  {
+   "fieldname": "erstattet_eur",
+   "fieldtype": "Currency",
+   "label": "Erstattet"
+  },
+  {
+   "fieldname": "sec_2",
+   "fieldtype": "Section Break",
+   "label": "Beschreibung"
+  },
+  {
+   "fieldname": "schadenbeschreibung",
+   "fieldtype": "Small Text",
+   "label": "Schadenbeschreibung"
+  },
+  {
+   "fieldname": "abschluss_grund",
+   "fieldtype": "Data",
+   "label": "Abschlussgrund"
+  },
+  {
+   "fieldname": "bemerkung",
+   "fieldtype": "Small Text",
+   "label": "Bemerkung"
+  },
+  {
+   "fieldname": "verlauf",
+   "fieldtype": "Long Text",
+   "label": "Verlauf (JSON)"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 00:21:25.825064",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Versicherungsfall",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Betrieb",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "in_create": 0,
+ "naming_rule": "By script"
+}

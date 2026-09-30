@@ -686,6 +686,7 @@ def _cl_ausgabe(n, doc, detail=False):
 		"uebergabe": [{**u, **next((x for x in c["uebergabe"] if x.get("schluessel") == u["schluessel"]), {})} for u in K.UEBERGABE_PUNKTE],
 		"formHinweise": K.form_hinweise(doc.struktur, doc.land), "hinweis": K.CL_HINWEIS,
 		"provision": {"id": pv.name, "betrag": flt(pv.betrag), "satz": flt(pv.satz), "status": pv.status} if pv and sichtbar_pv else None,
+		"provisionEntfallen": _provision_entfallen(doc) if sichtbar_pv and not pv else None,
 		"rechnung": {"id": beleg.name, "nummer": beleg.nummer, "status": beleg.status, "brutto": flt(beleg.brutto)} if beleg and sichtbar_pv else None,
 		"verlauf": c["verlauf"] if bo else [{"am": x.get("am"), "text": x.get("text")} for x in c["verlauf"] if x.get("oeffentlich")],
 		"notizIntern": doc.notiz_intern or "" if bo else None,
@@ -955,6 +956,15 @@ def cl_aktion(id=None, daten=None, als_benutzer=None):  # noqa: A002
 	return _cl_ausgabe(n, doc, detail=True)
 
 
+def _provision_entfallen(doc):
+	"""Vollzogenes Closing ohne Provision wegen anerkannter Vorkenntnis → {grund} (= demo c.provisionEntfallen)."""
+	if doc.status != "vollzogen":
+		return None
+	from oekoinvest_app.plattform.api.anbieter import vorkenntnis_fuer_kaeufer
+
+	return {"grund": "Vorkenntnis anerkannt"} if vorkenntnis_fuer_kaeufer(doc.projekt_id, doc.interesse_id) else None
+
+
 def _vollziehen(n, doc, ip=""):
 	kyc = _kyc(doc)
 	pr = K.closing_pruefen(_cl_dict(doc), kyc["kaeufer"], kyc["verkaeufer"])
@@ -970,16 +980,19 @@ def _vollziehen(n, doc, ip=""):
 		uebergang_anwenden(n, "projekt", p, "verkauft", "admin", extra, ip)  # → Provision (ablauf.verkauf_abschliessen) → Rechnung (Hook)
 	pv = frappe.db.get_value("Plattform Provision", {"projekt_id": doc.projekt_id, "interesse_id": doc.interesse_id}, "name", order_by="creation desc")
 	doc.provision_id = pv or None
+	from oekoinvest_app.plattform.api.anbieter import vorkenntnis_fuer_kaeufer  # Anbieter: anerkannte Vorkenntnis → keine Provision
+
+	vk = None if pv else vorkenntnis_fuer_kaeufer(doc.projekt_id, doc.interesse_id)
 	doc.status = "vollzogen"
 	doc.vollzogen_am = _heute()
 	beleg = frappe.db.get_value("Plattform Abrechnung", {"provision_id": pv, "status": ["!=", "storniert"]}, "nummer") if pv else None
 	_verlauf_add(doc, n, "Closing vollzogen – Kaufgegenstand geht auf den Käufer über. Übergabe-Checkliste ist offen.", True)
-	_verlauf_add(doc, n, f"Provision {pv} angelegt" + (f", Provisionsrechnung {beleg}." if beleg else " – Rechnung folgt im täglichen Abrechnungslauf.") if pv else "Keine Provision gefunden (Projekt bereits vorher verkauft?).")
+	_verlauf_add(doc, n, f"Provision {pv} angelegt" + (f", Provisionsrechnung {beleg}." if beleg else " – Rechnung folgt im täglichen Abrechnungslauf.") if pv else ("Keine Provision: Vorkenntnis anerkannt (§ 4 Abs. 2 der Besonderen Bedingungen) – keine Provisionsrechnung." if vk else "Keine Provision gefunden (Projekt bereits vorher verkauft?)."))
 	doc.save(ignore_permissions=True)
 	titel = p.titel or ""
 	_beteiligte_melden(doc, f"Closing vollzogen: {titel}", "Der Deal ist abgeschlossen. Übergabe und Abschlussbericht finden Sie im Closing-Raum.")
 	for k in _admins("provisionen", 1):
-		_melden(k, f"Closing vollzogen: {titel}", f"Provisionsrechnung {beleg} erzeugt." if beleg else "Provisionsrechnung prüfen.", f"/portal/admin/closing/{doc.name}", "closing", doc.name, mail=False)
+		_melden(k, f"Closing vollzogen: {titel}", f"Provisionsrechnung {beleg} erzeugt." if beleg else ("Keine Provision – Vorkenntnis anerkannt." if vk else "Provisionsrechnung prüfen."), f"/portal/admin/closing/{doc.name}", "closing", doc.name, mail=False)
 	protokoll(n, "closing_vollzogen", "closing", doc.name, f"Closing {doc.name} vollzogen ({round(flt(doc.kaufpreis))} €)", ip)
 	return _cl_ausgabe(n, doc, detail=True)
 

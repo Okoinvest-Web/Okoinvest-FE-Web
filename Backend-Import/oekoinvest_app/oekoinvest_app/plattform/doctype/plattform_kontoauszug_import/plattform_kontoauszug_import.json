@@ -1,0 +1,126 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "Eingelesener Kontoauszug (CAMT.053/.054 oder CSV) mit SHA-256 – jede Datei nur einmal.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "dateiname",
+  "format",
+  "sha256",
+  "cb_1",
+  "anzahl",
+  "neu",
+  "doppelt",
+  "sicher",
+  "von_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "dateiname",
+   "fieldtype": "Data",
+   "label": "Datei",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "format",
+   "fieldtype": "Data",
+   "label": "Format",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sha256",
+   "fieldtype": "Data",
+   "label": "SHA-256",
+   "unique": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "anzahl",
+   "fieldtype": "Int",
+   "label": "Buchungen"
+  },
+  {
+   "fieldname": "neu",
+   "fieldtype": "Int",
+   "label": "Neu",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "doppelt",
+   "fieldtype": "Int",
+   "label": "Dubletten"
+  },
+  {
+   "fieldname": "sicher",
+   "fieldtype": "Int",
+   "label": "Sichere Treffer"
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "label": "Von",
+   "options": "Plattform Konto"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 0,
+ "links": [],
+ "modified": "2026-10-01 00:36:39.308482",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Kontoauszug Import",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "in_create": 1,
+ "title_field": "dateiname",
+ "search_fields": "dateiname"
+}

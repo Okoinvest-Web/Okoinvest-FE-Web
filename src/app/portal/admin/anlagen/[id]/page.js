@@ -26,7 +26,12 @@ export default async function AnlagePflegeSeite({ params, searchParams }) {
         eyebrow={`Backoffice · ${a.typLabel}`}
         titel={a.name}
         text={`${a.id} · ${a.organisation?.name || "ohne Organisation"}${a.kunde ? ` · ${a.kunde.name}` : ""}`}
-        aktionen={<Button href={`/portal/anlagen/${a.id}`} size="sm" variant="secondary" icon={Activity}>Monitoring</Button>}
+        aktionen={
+          <>
+            <Button href={`/portal/anlagen/${a.id}`} size="sm" variant="secondary" icon={Activity}>Monitoring</Button>
+            <Button href={`/portal/admin/anlagen/betrieb/${a.id}`} size="sm" variant="secondary" icon={Activity}>Betriebsführung</Button>
+          </>
+        }
       />
       <div className="grid gap-6 xl:grid-cols-2">
         <div className="min-w-0 space-y-6">

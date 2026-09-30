@@ -7,6 +7,7 @@ import { portalNutzer, laden } from "@/lib/plattform/server/seite";
 import { kycBackend } from "@/lib/plattform/backend/kyc";
 import { cn } from "@/components/ui/cn";
 import { datum } from "@/lib/plattform/format";
+import { kycSla } from "@/lib/plattform/compliance/sla"; // SLA der Warteschlange (Team Backoffice-Werkzeuge)
 
 export const metadata = { title: "Compliance · KYC/KYB" };
 
@@ -37,6 +38,7 @@ export default async function CompliancePage({ searchParams }) {
         eyebrow="Backoffice · Compliance"
         titel="KYC/KYB-Prüfung"
         text="Warteschlange der Verifizierungen mit Risikoeinstufung, Sanktionslisten-Abgleich und Vier-Augen-Freigabe bei hohem Risiko. Unterlagen sehen nur Konten mit der Rolle „Compliance“; jeder Zugriff wird im Revisionsprotokoll vermerkt."
+        aktionen={<><Link href="/portal/admin/compliance/datenschutz" className="inline-flex h-9 items-center rounded-full bg-white px-3.5 text-[13px] font-semibold text-ink-800 ring-1 ring-inset ring-ink-200 hover:bg-ink-50">Datenschutz (DSGVO)</Link><Link href="/portal/admin/compliance/gwg" className="inline-flex h-9 items-center rounded-full bg-white px-3.5 text-[13px] font-semibold text-ink-800 ring-1 ring-inset ring-ink-200 hover:bg-ink-50">Geldwäsche-Verdacht</Link></>}
       />
       <section aria-label="Kennzahlen" className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Kennzahl ton="dunkel" icon={Hourglass} label="Warteschlange" wert={String(k.warteschlange)} href="/portal/admin/compliance" />
@@ -106,7 +108,7 @@ export default async function CompliancePage({ searchParams }) {
                           {f.naechstePruefung && f.status === "verifiziert" && <Badge>bis {datum(f.naechstePruefung)}</Badge>}
                         </div>
                       </td>
-                      <td className={zelle}>{f.eingereichtAm ? <>{datum(f.eingereichtAm)}<p className="text-[12.5px] text-ink-500">wartet {f.wartetTage} Tg.</p></> : "–"}</td>
+                      <td className={zelle}>{f.eingereichtAm ? <>{datum(f.eingereichtAm)}<p className="text-[12.5px] text-ink-500">wartet {f.wartetTage} Tg.</p>{(() => { const s = kycSla(f, new Date().toISOString().slice(0, 10)); return s.ampel === "rot" ? <Badge ton="warn">SLA überschritten</Badge> : s.ampel === "gelb" ? <Badge>SLA heute</Badge> : null; })()}</> : "–"}</td>
                       <td className={zelle}>{f.bearbeiter || "–"}</td>
                     </tr>
                   ))}

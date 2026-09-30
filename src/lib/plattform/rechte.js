@@ -56,6 +56,9 @@ export const BEREICHE = {
   sonstiges: "Weitere Admin-Funktionen",
   energie: "Energiebeschaffung", // Energiebeschaffung & Versorger-Ausschreibung
   grundbuch: "Grundbuch & Dienstbarkeiten", closing: "Deal-Abschluss (Closing)", // Grundbuch & Closing
+  genossenschaft: "Genossenschaft & Energiegemeinschaften", kommunen: "Kommunen & Gemeinden", // Mitglied/Genossenschaft und Gemeindecockpit (Team 5)
+  pachtakte: "Pachtakten (Kündigung, Eigentümerwechsel, Rückbau)", // Team 1: Pachtakte nach Vertragsschluss
+  portfolio: "Portfolio & Beteiligungen", // Investor-Portfolio nach dem Kauf (Kapitalabrufe, Ausschüttungen, Berichte)
 };
 export const BEREICH_IDS = Object.keys(BEREICHE);
 
@@ -97,6 +100,8 @@ const M = {
   // Grundbuch & Closing – 8 Spalten (leitung, akquise, transaktion, buchhaltung, lesen, betrieb, compliance, projektleitung)
   grundbuch: [2, 2, 2, 1, 1, 1, 0, 2], // Dienstbarkeiten: Akquise/Transaktion/Projektleitung schreiben, Betrieb (Anlagen) lesen
   closing: [2, 0, 2, 1, 1, 0, 1, 1], // Deal-Abschluss: Leitung/Transaktion schreiben, Buchhaltung/Compliance/Projektleitung lesen
+  pachtakte: [2, 2, 1, 2, 1, 1, 0, 1], // Pachtakten: Leitung/Akquise/Buchhaltung schreiben, Transaktion/Lesen/Betrieb/Projektleitung lesen
+  portfolio: [2, 0, 2, 2, 1, 1, 0, 1], // Portfolio: Leitung/Transaktion/Buchhaltung schreiben, Lesen/Betrieb/Projektleitung lesen
   sonstiges: [2, 1, 1, 1, 1],
 };
 // Anlagen & Monitoring: Spalte „betrieb“ (6.) – nur Anlagen schreiben, Cockpit/Aufgaben/Nutzer lesen bzw. Aufgaben schreiben
@@ -115,6 +120,11 @@ const ENERGIE_SPALTE = { cockpit: 1, vorgaenge: 1, aufgaben: 2, crm: 2, vorlagen
 const SPALTE = { leitung: 0, akquise: 1, transaktion: 2, buchhaltung: 3, lesen: 4, betrieb: 5, compliance: 6, projektleitung: 7, energie: 8 };
 for (const z of Object.values(M)) { while (z.length < 8) z.push(0); }
 for (const [b, z] of Object.entries(M)) z[8] = ENERGIE_SPALTE[b] ?? 0; // Energiebeschaffung
+// Mitglied/Genossenschaft und Gemeindecockpit (Team 5) – alle 9 Spalten (leitung, akquise, transaktion, buchhaltung, lesen,
+// betrieb, compliance, projektleitung, energie): Genossenschaft schreiben Leitung/Buchhaltung (Einzahlungen, Ausschüttungen)
+// und Energie (Energiegemeinschaften), Compliance liest; Kommunen schreiben Leitung/Akquise/Projektleitung.
+M.genossenschaft = [2, 1, 1, 2, 1, 0, 1, 0, 2];
+M.kommunen = [2, 2, 1, 1, 1, 0, 0, 2, 0];
 
 /** Rechte-Matrix { bereich: { rolle: stufe } } – für Anzeige und Prüfung */
 export const RECHTE_MATRIX = Object.fromEntries(
@@ -186,6 +196,10 @@ const API_BEREICH = {
   geodaten: "geodaten", // Geodaten & Akquise-Engine
   energie: "energie", // Energiebeschaffung & Versorger-Ausschreibung
   grundbuch: "grundbuch", closing: "closing", // Grundbuch & Closing
+  genossenschaft: "genossenschaft", energiegemeinschaften: "genossenschaft", kommunen: "kommunen", // Team 5: Genossenschaft, Energiegemeinschaften, Kommunen
+  gutachter: "entwicklung", // Gutachteraufträge (Angebot, Beauftragung, Abnahme, Rechnung) – Zahlung zusätzlich „finanzen“ (Route)
+  pachtakte: "pachtakte", // Pachtakte (Team 1)
+  portfolio: "portfolio", // Investor-Portfolio
 };
 
 /**
@@ -248,6 +262,11 @@ const SEITEN_BEREICH = {
   gesellschaften: "gesellschaften", bonitaet: "bonitaet", // Dienste: Firmen, Bonität, Identität
   energie: "energie", // Energiebeschaffung
   grundbuch: "grundbuch", closing: "closing", // Grundbuch & Closing
+  genossenschaft: "genossenschaft", energiegemeinschaften: "genossenschaft", kommunen: "kommunen", // Team 5: Genossenschaft, Energiegemeinschaften, Kommunen
+  gutachter: "entwicklung", // Gutachteraufträge (Angebot, Beauftragung, Abnahme, Rechnung) – Zahlung zusätzlich „finanzen“ (Route)
+  pachtakten: "pachtakte", // Pachtakte (Team 1)
+  portfolio: "portfolio", // Investor-Portfolio
+  hinweis: "cockpit", // Team 8: vertraulicher Geldwäsche-Hinweis an Compliance (alle Backoffice-Rollen)
 };
 
 export function seitenBereich(pfad) {

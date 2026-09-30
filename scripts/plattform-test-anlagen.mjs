@@ -10,11 +10,20 @@
 // Betrieb quittiert (zweimal → 409), interne Kommentare nur für den Betrieb · Backoffice-Unterrollen (betrieb ja,
 // akquise/lesen nein) · Messpunkt „abrechnungsrelevant“ nur geeicht · Monatswerte monoton · CSV · CSRF · Seiten.
 // Eigene Konten mit Präfix anl-test-<Lauf>@example.com, eigene Anlage – Demo-Daten bleiben unberührt.
+//
+// Betriebsführung (Team Anlagenbetrieb): Teil 0 prüft die reinen Regeln (betrieb/kern.js, auch einzeln mit --nur-logik);
+// Abschnitt 8 Ende zu Ende: Ticket mit SLA/Ursache/Ertragsausfall, Serviceauftrag (Termin → Kunde informiert, PDF),
+// Versicherungsfall (Meldefrist, Automat), Wartungsplan DE, Prüfprotokoll → Störung + PDF, Ersatzteillager, Einstrahlung/PR,
+// Zählerfreigabe (Eichfrist 409, auffällig nur mit Begründung), Monats-/Jahresbericht (PDF), Fristen-Lauf, Rechte, Seiten.
+// Abschnitt 9: Energie – Beschaffungsbericht je Kunde (PDF, Rechte).
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import * as BK from "../src/lib/plattform/betrieb/kern.js"; // Betriebsführung: reine Regeln
+import { betriebsfuehrung, energieBericht, logikBetrieb } from "./plattform-test-anlagen-betrieb.mjs"; // Betriebsführung (Abschnitte 0, 8, 9)
 
-const BASIS = (process.argv[2] || process.env.PLATTFORM_TEST_URL || "http://localhost:3100").replace(/\/$/, "");
+const BASIS = (process.argv.find((x) => x.startsWith("http")) || process.env.PLATTFORM_TEST_URL || "http://localhost:3100").replace(/\/$/, "");
+const NUR_LOGIK = process.argv.includes("--nur-logik");
 const DEMO_PASSWORT = process.env.PLATTFORM_DEMO_PASSWORT || "Demo-2026!";
 const LAUF = Date.now().toString(36);
 const PASSWORT = "Anlagen-Test-Passwort-26";
@@ -152,7 +161,13 @@ const monatVor = (m) => {
 };
 
 async function main() {
-  console.log(`Anlagen & Monitoring – Test gegen ${BASIS} (Lauf ${LAUF})`);
+  console.log(`Anlagen & Monitoring – Test ${NUR_LOGIK ? "(nur Logik)" : `gegen ${BASIS}`} (Lauf ${LAUF})`);
+  const T = { pruefe, abschnitt, Client, LAUF, monatVor };
+  logikBetrieb(T);
+  if (NUR_LOGIK) {
+    console.log(`\n${fehler ? rot(`${fehler} Fehler`) : gruen("Alle Prüfungen bestanden")} (${ok} ok)`);
+    process.exit(fehler ? 1 : 0);
+  }
   const kunde = new Client("unternehmen");
   const admin = new Client("admin");
   const fremd = new Client("fremder Kunde");
@@ -390,6 +405,9 @@ async function main() {
     const nichtGefunden = r.status === 404 || r.text.includes("NEXT_HTTP_ERROR_FALLBACK;404");
     pruefe(soll === 404 ? nichtGefunden && !r.text.includes("Thurgau") && !r.text.includes("Obstplantage") : r.status === 200 && !nichtGefunden, `${pfad} (${cl.name}) → ${soll}`, r.status);
   }
+
+  await betriebsfuehrung(T, { admin, betrieb, fremd, kunde, akquise, lesen, tid });
+  await energieBericht(T, { kunde, fremd });
 
   console.log(`\n${fehler ? rot(`${fehler} Fehler`) : gruen("Alle Prüfungen bestanden")} (${ok} ok)`);
   process.exit(fehler ? 1 : 0);

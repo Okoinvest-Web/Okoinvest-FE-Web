@@ -7,6 +7,7 @@ import { BelegListe, MonatsDiagramm, euro, euro0, kwh, tag, zeitraum } from "@/c
 import { cn } from "@/components/ui/cn";
 import { portalNutzer, laden } from "@/lib/plattform/server/seite";
 import { finanzenBackend } from "@/lib/plattform/backend/finanzen";
+import { werkzeugeBackend } from "@/lib/plattform/backend/werkzeuge"; // Mahnungen & Stornobelege (Buchhaltung)
 
 export const metadata = { title: "Abrechnungen" };
 
@@ -75,6 +76,7 @@ export default async function AbrechnungenSeite({ searchParams }) {
   const { pacht, contracting, provision, jahr } = d;
   const nichts = !pacht.sichtbar && !contracting.sichtbar && !provision.sichtbar;
   const imJahr = (liste) => liste.filter((b) => String(b.zeitraum?.von || "").startsWith(String(jahr)));
+  const schreiben = await werkzeugeBackend().bhMeineDokumente(n).catch(() => []); // Mahnungen & Stornobelege
 
   return (
     <>
@@ -111,6 +113,7 @@ export default async function AbrechnungenSeite({ searchParams }) {
               <Karte titel={`Gutschriften ${jahr}`} untertitel={pacht.auszahlung?.ibanMaskiert ? `Auszahlung auf ${pacht.auszahlung.ibanMaskiert}` : "Pachtabrechnungen als Gutschrift"} innen="p-0">
                 <BelegListe belege={imJahr(pacht.belege)} leer={`Keine Gutschriften für ${jahr}.`} betragLabel="Auszahlung" />
               </Karte>
+              <p className="mt-3 text-[13px] text-ink-500">Jahresbescheinigung als PDF, Fristen, Rückbausicherheit und Anliegen wie Kündigung, Eigentümerwechsel oder Erbfall: <Link href="/portal/pachtvertraege" className="font-semibold text-ov-700 hover:text-ov-800">Pachtverträge</Link>.</p>{/* Pachtakte (Team 1) */}
             </section>
           )}
 
@@ -142,7 +145,7 @@ export default async function AbrechnungenSeite({ searchParams }) {
               <Karte titel={`Rechnungen ${jahr}`} untertitel="Je Anlage und Monat: Arbeitspreis × gelieferte kWh + Grundgebühr" innen="p-0">
                 <BelegListe belege={imJahr(contracting.belege)} leer={`Keine Rechnungen für ${jahr}.`} />
               </Karte>
-              <p className="mt-3 text-[13px] text-ink-500">Die Live-Werte Ihrer Anlagen finden Sie unter <Link href="/portal/anlagen" className="font-semibold text-ov-700 hover:text-ov-800">Meine Anlagen</Link>. Abgerechnet wird ausschließlich über die geeichten Zähler.</p>
+              <p className="mt-3 text-[13px] text-ink-500">Die Live-Werte Ihrer Anlagen finden Sie unter <Link href="/portal/anlagen" className="font-semibold text-ov-700 hover:text-ov-800">Meine Anlagen</Link>. Abgerechnet wird ausschließlich über die geeichten Zähler. Stimmt eine Rechnung nicht? <Link href="/portal/anliegen?art=einspruch#neu" className="font-semibold text-ov-700 hover:text-ov-800">Einspruch einlegen</Link> – die Mahnung ruht, bis entschieden ist.</p>
             </section>
           )}
 
@@ -153,6 +156,21 @@ export default async function AbrechnungenSeite({ searchParams }) {
                 <BelegListe belege={provision.belege} leer="Keine Provisionsrechnungen." />
               </Karte>
               <p className="mt-3 text-[13px] text-ink-500">Zu Ihren verkauften Projekten: <Link href="/portal/projekte" className="font-semibold text-ov-700 hover:text-ov-800">Meine Projekte</Link>.</p>
+            </section>
+          )}
+          {schreiben.length > 0 && (
+            <section aria-labelledby="schreiben" className="mb-10">
+              <h2 id="schreiben" className="mb-4 font-display text-[20px] font-bold text-ink-900">Mahnungen & Stornobelege</h2>
+              <Karte innen="p-0">
+                <ul className="divide-y divide-ink-100">
+                  {schreiben.map((x) => (
+                    <li key={`${x.art}-${x.nr}`} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-[14px] md:px-6">
+                      <span><span className="font-semibold text-ink-900">{x.titel}</span> <span className="ov-num text-ink-600">{x.nr}</span> <span className="text-ink-500">zu {x.nummer} · {tag(x.datum)}{x.frist ? ` · zahlbar bis ${tag(x.frist)}` : ""}</span></span>
+                      <span className="flex items-center gap-3"><span className="ov-num font-semibold">{euro(x.betrag)}</span><a href={`/api/portal/finanzen/${x.belegId}/dokument?art=${x.art}${x.art === "mahnung" ? `&nr=${encodeURIComponent(x.nr)}` : ""}&anzeigen=1`} target="_blank" rel="noopener" className="font-semibold text-ov-700 hover:text-ov-800">PDF</a></span>
+                    </li>
+                  ))}
+                </ul>
+              </Karte>
             </section>
           )}
           <p className="text-[12.5px] leading-relaxed text-ink-500">

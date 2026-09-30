@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 12:00:00.000000",
+ "description": "Einstellungen und Laufstatus der Betriebsführung (Fristen-/SLA-Lauf).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "lauf_am",
+  "alarme"
+ ],
+ "fields": [
+  {
+   "fieldname": "lauf_am",
+   "fieldtype": "Datetime",
+   "label": "Letzter Lauf"
+  },
+  {
+   "fieldname": "alarme",
+   "fieldtype": "Long Text",
+   "label": "Gemeldete Alarme (JSON)"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 00:21:25.738147",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Betrieb Einstellungen",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Betrieb",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "in_create": 0,
+ "issingle": 1
+}

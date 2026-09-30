@@ -24,6 +24,10 @@ export default async function Nachrichten({ searchParams }) {
   const thread = art ? await laden(() => b.nachrichten(n, art, id)) : null;
   let threads = await b.nachrichtenThreads(n);
   if (filter === "ungelesen") threads = threads.filter((t) => t.ungelesen || (art && t.bezugArt === art && t.bezugId === id));
+  // Querschnitt: Suche über Titel, Gegenüber und letzte Nachricht
+  const q = typeof sp?.q === "string" ? sp.q.trim().slice(0, 80) : "";
+  if (q) threads = threads.filter((t) => [t.titel, t.gegenueber, t.letzte?.text, BEZUG_LABEL[t.bezugArt]].join(" ").toLowerCase().includes(q.toLowerCase()));
+  const qs = q ? `&q=${encodeURIComponent(q)}` : "";
   const aktiv = thread || (!admin ? await b.nachrichten(n, "nutzer", n.id) : null);
   const aktivArt = thread ? art : "nutzer";
   const aktivId = thread ? id : n.id;
@@ -37,9 +41,14 @@ export default async function Nachrichten({ searchParams }) {
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
         <Karte innen="p-2" className="self-start">
+          <form method="get" action="/portal/nachrichten" role="search" className="px-2 pb-2 pt-1">
+            <label htmlFor="nachrichten-suche" className="sr-only">Unterhaltungen durchsuchen</label>
+            <input id="nachrichten-suche" type="search" name="q" defaultValue={q} placeholder="Unterhaltungen durchsuchen …" className="h-10 w-full rounded-full bg-sand-50 px-4 text-[14px] text-ink-900 ring-1 ring-inset ring-ink-200 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-ov-500" />
+            {filter === "ungelesen" && <input type="hidden" name="filter" value="ungelesen" />}
+          </form>
           <div className="flex gap-1.5 px-2 pb-2 pt-1">
             {[["alle", "Alle"], ["ungelesen", "Ungelesen"]].map(([k, v]) => (
-              <Link key={k} href={`/portal/nachrichten?filter=${k}${art ? `&bezug=${art}:${id}` : ""}`} aria-current={filter === k ? "page" : undefined} className={cn("rounded-full px-3 py-1.5 text-[13px] font-semibold", filter === k ? "bg-navy-900 text-white" : "text-ink-600 hover:bg-ink-100")}>
+              <Link key={k} href={`/portal/nachrichten?filter=${k}${art ? `&bezug=${art}:${id}` : ""}${qs}`} aria-current={filter === k ? "page" : undefined} className={cn("rounded-full px-3 py-1.5 text-[13px] font-semibold", filter === k ? "bg-navy-900 text-white" : "text-ink-600 hover:bg-ink-100")}>
                 {v}
               </Link>
             ))}
@@ -62,7 +71,7 @@ export default async function Nachrichten({ searchParams }) {
                 const ist = t.bezugArt === aktivArt && t.bezugId === aktivId;
                 return (
                   <li key={`${t.bezugArt}:${t.bezugId}`}>
-                    <Link href={`/portal/nachrichten?bezug=${t.bezugArt}:${t.bezugId}${filter === "ungelesen" ? "&filter=ungelesen" : ""}`} aria-current={ist ? "true" : undefined} className={cn("block rounded-2xl p-3", ist ? "bg-ov-50 ring-1 ring-ov-200" : "hover:bg-sand-50")}>
+                    <Link href={`/portal/nachrichten?bezug=${t.bezugArt}:${t.bezugId}${filter === "ungelesen" ? "&filter=ungelesen" : ""}${qs}`} aria-current={ist ? "true" : undefined} className={cn("block rounded-2xl p-3", ist ? "bg-ov-50 ring-1 ring-ov-200" : "hover:bg-sand-50")}>
                       <span className="flex items-center justify-between gap-2">
                         <span className="text-[11.5px] font-semibold uppercase tracking-wider text-ink-400">{BEZUG_LABEL[t.bezugArt]}{admin && t.gegenueber ? ` · ${t.gegenueber}` : ""}</span>
                         <span className="shrink-0 text-[11.5px] text-ink-400">{relativ(t.letzte.am)}</span>
@@ -76,7 +85,7 @@ export default async function Nachrichten({ searchParams }) {
                   </li>
                 );
               })}
-            {threads.length === 0 && admin && <li className="p-4 text-[14px] text-ink-500">Keine Unterhaltungen.</li>}
+            {threads.length === 0 && (admin || q) && <li className="p-4 text-[14px] text-ink-500">{q ? `Keine Unterhaltung zu „${q}“.` : "Keine Unterhaltungen."}</li>}
           </ul>
         </Karte>
 

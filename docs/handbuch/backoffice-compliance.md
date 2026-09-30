@@ -31,6 +31,20 @@ Anlass (LOI, verbindliches Gebot, Vertrag mit Ausfallrisiko) dokumentieren → B
 
 Identität plausibilisieren → Auskunft (Datenexport im Profil als Basis, Dritte maskiert) binnen eines Monats → Löschung = Anonymisierung + Sperre (Aufbewahrungspflichten beachten) → Widerspruch gegen Akquise-Brief: **sofort Sperrvermerk** im CRM, Bestätigung an die Person.
 
+## Ablauf: Betroffenenanfrage (DSGVO) mit Frist
+
+`/portal/admin/compliance/datenschutz` → **Anfrage erfassen** (Art, Eingang, Kanal, Person; Konto per Kennung oder E-Mail). Frist: 1 Monat ab Eingang (Art. 12 Abs. 3 DSGVO), Schweiz 30 Tage; Ampel ≤ 7 Tage gelb, überschritten rot; Aufgabe 7 Tage vor Fristende.
+1. **Identität** bestätigen (Notiz, wie plausibilisiert) oder Nachweis anfordern.
+2. Auskunft/Übertragbarkeit: **Datenexport (JSON)** erzeugen, prüfen (Dritte maskiert), übermitteln – erst danach „Erledigen“.
+3. Löschung: Aufbewahrungspflichten prüfen → **Anonymisieren** (Bestätigung „LÖSCHEN“) oder Ergebnis „gesperrt“ bzw. „keine Daten“.
+4. Verlängerung um 2 Monate nur einmal und innerhalb der ersten Frist, mit Begründung (Person wird informiert). Ablehnung nur mit Begründung; Antwortentwurf enthält den Hinweis auf das Beschwerderecht.
+
+Auf derselben Seite: **Verzeichnis der Verarbeitungstätigkeiten** (CSV/JSON, Entwurf zur Prüfung durch die/den Datenschutzbeauftragte/n), **Löschkonzept** mit Fristen-Lauf, **SLA der KYC-Warteschlange** (KYC 3, KYB 5, Zweitprüfung 2 Werktage; Badge in der Warteschlange).
+
+## Ablauf: Geldwäsche-Verdacht (intern)
+
+Jede Backoffice-Rolle gibt Hinweise vertraulich unter `/portal/admin/hinweis` (sieht die Akte danach nicht). Compliance bearbeitet unter `/portal/admin/compliance/gwg`: **Prüfung übernehmen** → **Meldung erforderlich** oder **Keine Meldung** (Begründung, Vier-Augen: nicht die erfassende Person) → nach manueller Meldung über goAML **Meldung abgegeben** mit Aktenzeichen und Datum → **Abschließen** (Aufbewahrung 5 Jahre, CH 10). Die Plattform versendet nichts an Behörden; keine Information an die betroffene Person.
+
 ## Typische Fehler
 
 | Fehler | Richtig |

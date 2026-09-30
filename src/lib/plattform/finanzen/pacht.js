@@ -81,6 +81,32 @@ export function pachtPositionen(vertrag, f, { indexTabelle = [], ertragKwh = nul
   return { positionen, netto: summe(positionen, "betrag"), erklaerung, klaerung, basis: { jahresbetrag } };
 }
 
+/**
+ * Zahlungsaufteilung aus der Pachtakte (mehrere Eigentümer/Erben, Anteile in %): Positionen je Empfänger, centgenau –
+ * je Position erhält der letzte Empfänger den Rundungsrest, die Summe bleibt exakt. Weniger als zwei Empfänger → null.
+ * Rückgabe [{ nr, empfaenger, anteilProzent, positionen, netto }]
+ */
+export function pachtAufteilen(positionen = [], empfaenger = []) {
+  const liste = (empfaenger || []).filter((e) => Number(e?.anteilProzent) > 0);
+  if (liste.length < 2) return null;
+  const gesamt = liste.reduce((s, e) => s + Number(e.anteilProzent), 0);
+  const teile = liste.map((e, i) => ({ nr: i + 1, empfaenger: e, anteilProzent: Number(e.anteilProzent), positionen: [], netto: 0 }));
+  for (const p of positionen) {
+    let rest = rund2(p.betrag);
+    teile.forEach((t, i) => {
+      const quote = t.anteilProzent / gesamt;
+      const betrag = i === teile.length - 1 ? rund2(rest) : rund2(p.betrag * quote);
+      rest = rund2(rest - betrag);
+      t.positionen.push({ ...p, text: `${p.text} – Anteil ${zahlDe(t.anteilProzent, 2)} %`, menge: rund(Number(p.menge || 0) * quote, 4), betrag });
+    });
+  }
+  for (const t of teile) t.netto = summe(t.positionen, "betrag");
+  return teile;
+}
+
+/** Aufteilung gilt für Zeiträume, die am Stichtag `ab` noch nicht abgelaufen sind (ohne `ab`: sofort) */
+export const aufteilungGilt = (aufteilung, f) => !!aufteilung?.empfaenger?.length && (!aufteilung.ab || String(f.bis) >= String(aufteilung.ab));
+
 /** Monate („JJJJ-MM“) eines Zeitraums – für die Ertragssumme der Umsatzbeteiligung */
 export function monateImZeitraum(von, bis) {
   const liste = [];

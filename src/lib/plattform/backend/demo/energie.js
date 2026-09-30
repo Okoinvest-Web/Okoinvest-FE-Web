@@ -39,6 +39,8 @@ import {
 } from "../../energie/ausschreibung";
 import { losAnonym, losKontext, zwoelfMonate } from "../../energie/los";
 import { VOLLMACHT_TEXT, VOLLMACHT_VERSION } from "../../energie/texte";
+/** Wechselanalyse/Fristen für laufende bzw. gekündigte Verträge – auch aus Zuschlag, sobald aktiv (Lieferantenwechsel: kundenenergie.js) */
+const analyseRelevant = (x) => ["aktiv", "gekuendigt"].includes(x?.status);
 
 // Helfer aus demo.js erst zur Laufzeit (kein Zirkelimport beim Laden)
 const benachrichtigen = (...a) => intern.benachrichtigen(...a);
@@ -215,8 +217,12 @@ function analyseVertrag(db, vt, kurve = kurveVon(db)) {
   const pf = profilfaktorAus(kurve, zone, von, peakAnteil);
   const cal = `Cal-${von.slice(2, 4)}`;
   const tr = trend(produktVerlauf(terminAlle(db), zone, cal, "base"), 20);
-  const vertrag = { preisCt: vt.preisCt, preisArt: vt.preisArt, vertragEnde: vt.vertragEnde, kuendigungsfristMonate: vt.kuendigungsfristMonate, kuendigungsfristWochen: vt.kuendigungsfristWochen, verlaengerungMonate: vt.verlaengerungMonate, verlaengerungPreisCt: vt.verlaengerungPreisCt, jahresKwh: vt.jahresKwh || los.jahresKwh };
+  // Spot/Tranchen ohne Festpreis: Energiepreis ≈ Terminpreis der laufenden 12 Monate + Aufschlag (Nachlauf nach Zuschlag)
+  const mJetzt = heute().slice(0, 7);
+  const geschaetzt = (vt.preisCt === null || vt.preisCt === undefined) && Number.isFinite(vt.aufschlagCt) ? Math.round(((terminPreisZeitraum(kurve, zone, mJetzt, zwoelfMonate(mJetzt), "base") || 0) / 10 + vt.aufschlagCt) * 1000) / 1000 : null;
+  const vertrag = { preisCt: vt.preisCt ?? geschaetzt, preisArt: vt.preisArt, vertragEnde: vt.vertragEnde, kuendigungsfristMonate: vt.kuendigungsfristMonate, kuendigungsfristWochen: vt.kuendigungsfristWochen, verlaengerungMonate: vt.verlaengerungMonate, verlaengerungPreisCt: vt.verlaengerungPreisCt, jahresKwh: vt.jahresKwh || los.jahresKwh };
   const w = wechselanalyse({ vertrag, markt: { forwardEurMwh: fwd, profilfaktor: pf, trend: tr, quelleDemo: kurveHatDemo(kurve) }, annahmen: e, stichtag: heute() });
+  if (geschaetzt !== null) w.begruendung.unshift(`Energiepreis geschätzt (${STRUKTUREN[vt.struktur]?.kurz || vt.struktur}): Terminpreis der laufenden 12 Monate + Aufschlag ${vt.aufschlagCt.toLocaleString("de-DE")} ct/kWh.`);
   return { ...w, folgezeitraum: { von, bis }, forwardEurMwh: fwd, profilfaktor: pf, trend: tr, zone };
 }
 function nachMonat(isoTag) {
@@ -246,7 +252,7 @@ function laufDb(db, n = null) {
   const kurve = kurveVon(db);
   const erg = { analysen: 0, alarme: 0, erinnerungen: 0 };
   const z = energieZustaendig(db);
-  for (const vt of E(db).vertraege.filter((x) => ["aktiv", "gekuendigt"].includes(x.status) && x.quelle !== "zuschlag")) {
+  for (const vt of E(db).vertraege.filter(analyseRelevant)) {
     const w = analyseVertrag(db, vt, kurve);
     E(db).analysen.push({ id: neueId("WN"), vertragId: vt.id, kundeId: vt.kundeId, am: jetzt(), empfehlung: w.empfehlung, vertragCt: w.vertragCt, marktCt: w.marktCt, deltaEurJahr: w.deltaEurJahr, stichtag: w.stichtag, tageBisStichtag: w.tageBisStichtag, demoKurve: kurveHatDemo(kurve) });
     erg.analysen++;
@@ -1364,6 +1370,27 @@ export async function energieDokumentDaten(n, { art, id = "" } = {}) {
   angemeldet(n);
   const db = await lesenBereit();
   const kurve = kurveVon(db);
+  if (art === "kundenbericht") {
+    // Beschaffungsbericht je Kunde: Backoffice für jeden Kunden, Kunde nur für sich selbst
+    const kid = boLesen(n) && v.kennung(id) ? id : n.id;
+    if (!boLesen(n) && !n.rollen?.includes("unternehmen")) throw verboten();
+    const k = nutzerById(db, kid);
+    if (!k || !k.rollen.includes("unternehmen")) throw nichtGefunden("Kunde nicht gefunden.");
+    const vertraege = E(db).vertraege.filter((x) => x.kundeId === kid).sort((a, b) => String(b.beginn).localeCompare(String(a.beginn)));
+    const vt = aktiverVertrag(db, kid);
+    const ersparnis = vertraege.filter((x) => x.vorvertragId && x.quelle === "zuschlag").map((x) => {
+      const alt = E(db).vertraege.find((y) => y.id === x.vorvertragId);
+      const neuCt = x.preisCt ?? (Number.isFinite(x.aufschlagCt) ? (terminPreisZeitraum(kurve, x.zone, x.beginn.slice(0, 7), zwoelfMonate(x.beginn.slice(0, 7))) || 0) / 10 + x.aufschlagCt : null);
+      const altCt = vertragEnergiepreisCt(alt);
+      return { vertragId: x.id, lieferant: x.lieferant, altCt, neuCt: neuCt !== null ? Math.round(neuCt * 1000) / 1000 : null, jahresKwh: x.jahresKwh, eurJahr: altCt !== null && neuCt !== null && x.jahresKwh ? Math.round(((altCt - neuCt) / 100) * x.jahresKwh) : null, erwartet: x.preisCt === null || x.preisCt === undefined };
+    });
+    return {
+      art, rolle: boLesen(n) ? "admin" : "kunde", kunde: nutzerKurz(db, kid), vertraege: vertraege.map((x) => vertragAusgabe(db, x)), analyse: vt ? analyseVertrag(db, vt, kurve) : null,
+      analyseVerlauf: E(db).analysen.filter((x) => x.kundeId === kid).slice(-12), ersparnis, vollmacht: vollmachtVon(db, kid)?.status || "keine",
+      ausschreibungen: E(db).ausschreibungen.filter((a) => a.kundenIds.includes(kid) && a.status !== "entwurf").map((a) => ({ id: a.id, titel: a.titel, status: statusVon(a), lieferbeginn: a.lieferbeginn, pool: a.kundenIds.length > 1 })),
+      kurveDemo: kurveHatDemo(kurve), stand: jetzt(),
+    };
+  }
   if (art === "vollmacht") {
     const kid = boLesen(n) && v.kennung(id) ? id : n.id;
     if (!boLesen(n) && !n.rollen?.includes("unternehmen")) throw verboten();
@@ -1392,7 +1419,7 @@ export async function energieUebersicht(n) {
   const db = await lauflesen();
   const kurve = kurveVon(db);
   const offen = E(db).ausschreibungen.filter((a) => AUSSCHREIBUNG_OFFEN.includes(statusVon(a)));
-  const vertraege = E(db).vertraege.filter((x) => ["aktiv", "gekuendigt"].includes(x.status) && x.quelle !== "zuschlag");
+  const vertraege = E(db).vertraege.filter(analyseRelevant);
   const analysen = vertraege.map((x) => analyseVertrag(db, x, kurve));
   return {
     ausschreibungenOffen: offen.length,

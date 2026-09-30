@@ -16,10 +16,12 @@ import useFokusFalle from "@/components/ui/useFokusFalle";
 import { rangieren, SUCH_GRUPPEN, SUCHE_MIN, istPortalPfad } from "@/lib/plattform/suche";
 import { aktionen, navigationsZiele } from "./befehle";
 import { speicherLesen, speicherSchreiben } from "./speicher";
+import { CalendarDays, Contact, HardHat, LifeBuoy, ListTodo, SunMedium } from "lucide-react"; // Querschnitt: Icons der erweiterten Suche
 
 const ART_ICON = { flaeche: LandPlot, projekt: FolderKanban, vorgang: Inbox, nachricht: MessagesSquare, boerse: TrendingUp, nutzer: UserRound };
 const MAX_ZULETZT = 6;
-const GRUPPEN_REIHENFOLGE = ["zuletzt", "flaeche", "projekt", "vorgang", "nachricht", "boerse", "nutzer", "aktion", "navigation"];
+const GRUPPEN_REIHENFOLGE = ["zuletzt", "flaeche", "projekt", "vorgang", "nachricht", "boerse", "nutzer", "dokument", "aufgabe", "anlage", "entwicklung", "kontakt", "termin", "ticket", "aktion", "navigation"]; // Querschnitt: erweiterte Suche
+Object.assign(ART_ICON, { dokument: FileText, aufgabe: ListTodo, anlage: SunMedium, entwicklung: HardHat, kontakt: Contact, termin: CalendarDays, ticket: LifeBuoy }); // Querschnitt
 
 export default function Befehlspalette({ nutzer, offen, setOffen, beiAktion }) {
   const router = useRouter();

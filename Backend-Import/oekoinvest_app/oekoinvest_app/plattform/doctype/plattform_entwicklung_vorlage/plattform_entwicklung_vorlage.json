@@ -1,0 +1,244 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "Entscheidungsvorlage der Projektentwicklung für die Geschäftsführung (Gate, Verwertung, SPV, Budget, Abbruch) mit Momentaufnahme und Entscheidung.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "projekt_id",
+  "art",
+  "titel",
+  "status",
+  "cb_1",
+  "budget_eur",
+  "empfehlung",
+  "entscheidung_bis",
+  "erstellt_von",
+  "eingereicht_von",
+  "eingereicht_am",
+  "sec_text",
+  "beschlussvorschlag",
+  "sachverhalt",
+  "alternativen",
+  "risiken_text",
+  "sec_entscheidung",
+  "entschieden_von",
+  "entschieden_am",
+  "gewaehlte_verwertung",
+  "entscheidung_begruendung",
+  "sec_intern",
+  "snapshot",
+  "verlauf"
+ ],
+ "fields": [
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Entwicklungsprojekt",
+   "options": "Plattform Entwicklungsprojekt",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "gate_entwicklung\ngate_genehmigung\ngate_rtb\nverwertung\nspv\nbudget\nabbruch",
+   "default": "gate_entwicklung",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Titel",
+   "reqd": 1,
+   "bold": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "entwurf\neingereicht\ngenehmigt\nabgelehnt\nzurueckgestellt\nzurueckgezogen",
+   "default": "entwurf",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "budget_eur",
+   "fieldtype": "Currency",
+   "label": "Beantragtes Budget (€)"
+  },
+  {
+   "fieldname": "empfehlung",
+   "fieldtype": "Select",
+   "label": "Empfohlene Verwertung",
+   "options": "\neigenbetrieb\nverkauf\nbau_investor"
+  },
+  {
+   "fieldname": "entscheidung_bis",
+   "fieldtype": "Date",
+   "label": "Entscheidung erbeten bis"
+  },
+  {
+   "fieldname": "erstellt_von",
+   "fieldtype": "Link",
+   "label": "Erstellt von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "eingereicht_von",
+   "fieldtype": "Link",
+   "label": "Eingereicht von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "eingereicht_am",
+   "fieldtype": "Datetime",
+   "label": "Eingereicht am"
+  },
+  {
+   "fieldname": "sec_text",
+   "fieldtype": "Section Break",
+   "label": "Inhalt"
+  },
+  {
+   "fieldname": "beschlussvorschlag",
+   "fieldtype": "Text",
+   "label": "Beschlussvorschlag"
+  },
+  {
+   "fieldname": "sachverhalt",
+   "fieldtype": "Text",
+   "label": "Sachverhalt"
+  },
+  {
+   "fieldname": "alternativen",
+   "fieldtype": "Text",
+   "label": "Alternativen"
+  },
+  {
+   "fieldname": "risiken_text",
+   "fieldtype": "Text",
+   "label": "Einschätzung Risiken"
+  },
+  {
+   "fieldname": "sec_entscheidung",
+   "fieldtype": "Section Break",
+   "label": "Entscheidung"
+  },
+  {
+   "fieldname": "entschieden_von",
+   "fieldtype": "Link",
+   "label": "Entschieden von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "entschieden_am",
+   "fieldtype": "Datetime",
+   "label": "Entschieden am"
+  },
+  {
+   "fieldname": "gewaehlte_verwertung",
+   "fieldtype": "Select",
+   "label": "Gewählte Verwertung",
+   "options": "\neigenbetrieb\nverkauf\nbau_investor"
+  },
+  {
+   "fieldname": "entscheidung_begruendung",
+   "fieldtype": "Text",
+   "label": "Begründung / Auflagen"
+  },
+  {
+   "fieldname": "sec_intern",
+   "fieldtype": "Section Break",
+   "label": "Momentaufnahme und Verlauf"
+  },
+  {
+   "fieldname": "snapshot",
+   "fieldtype": "Long Text",
+   "label": "Momentaufnahme (JSON)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "verlauf",
+   "fieldtype": "Long Text",
+   "label": "Verlauf (JSON)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Entwicklung Vorlage",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Projektleitung"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "in_create": 1,
+ "title_field": "titel"
+}

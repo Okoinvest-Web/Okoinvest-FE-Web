@@ -20,7 +20,9 @@ Stand: 30.09.2026 · Rolle `unternehmen` · Demo: `unternehmen@example.com`, `en
 5. **Ausschreibung** startet das Backoffice (Energie). Versorger sehen nur ein anonymes Los – keinen Namen, keine Adresse, keine Lokations-IDs.
 6. **Angebotsvergleich prüfen:** normierte Kosten je Produkt (Festpreis, Tranchen, Spot), Bedingungen, Sensitivität, Zuschlagsvorschlag mit Begründung.
 7. **Freigeben oder ablehnen** – innerhalb der Bindefrist der Angebote. Bei Freigabe: Zuschlag, Zuschlagsschreiben, Weitergabe Ihrer Vertragsdaten an den gewählten Versorger, Aufgabe „Lieferantenwechsel einleiten“ (inkl. Kündigung des Altvertrags).
-8. **Laufende Wechselanalyse:** Empfehlung ausschreiben / abwarten / verlängern mit Begründung.
+8. **Lieferantenwechsel begleiten** (Karte „Ihr Lieferantenwechsel“ unter „Energiebeschaffung“): Nach dem Zuschlag entsteht eine Schrittfolge mit Fristen – Liefervertrag bereitgestellt (Versorger) → von Ihnen gegengezeichnet → bisheriger Vertrag gekündigt (ÖkoInvest mit Vollmacht oder Sie) → Kündigungsbestätigung → Anmeldung beim Netzbetreiber (Versorger) → Belieferung begonnen → erste Rechnung geprüft. Ihre Schritte bestätigen Sie per Knopf; überfällige Fristen sind markiert.
+9. **Laufende Wechselanalyse:** Empfehlung ausschreiben / abwarten / verlängern mit Begründung.
+10. **Energiekostenbericht** (`/portal/energie/kosten`): je Monat Netzbezug zum Energiepreis Ihres Vertrags und Solarstrom vor Ort (Contracting-Rechnungen), Mischpreis, Vorteil Solarstrom – als PDF und CSV. Nur Energiekomponente; ohne Lastgang wird der Netzbezug aus der Jahresmenge geschätzt.
 
 ## Gut zu wissen
 

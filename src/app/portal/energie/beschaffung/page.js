@@ -11,6 +11,8 @@ import { EmpfehlungBadge, FristBadge, Hinweis, PdfLink, StatusBadgeEnergie, Tabe
 import { portalNutzer, laden } from "@/lib/plattform/server/seite";
 import { energieBackend } from "@/lib/plattform/backend/energie";
 import { RECHTSHINWEISE } from "@/lib/plattform/energie/texte";
+import { kundenenergieBackend } from "@/lib/plattform/backend/kundenenergie"; // Kundenseite Energie: Lieferantenwechsel, Kostenbericht
+import { WechselKarte } from "@/components/Portal/Kundenenergie/teile";
 
 export const metadata = { title: "Meine Energiebeschaffung" };
 
@@ -25,6 +27,7 @@ export default async function MeineEnergiebeschaffung() {
     );
   }
   const d = await laden(() => energieBackend().energieMeine(n));
+  const wechsel = await laden(() => kundenenergieBackend().lieferantenwechsel(n, {}));
   const vt = d.vertraege.find((x) => ["aktiv", "gekuendigt"].includes(x.status) && x.quelle !== "zuschlag") || null;
   const neu = d.vertraege.filter((x) => x.quelle === "zuschlag");
   const w = d.analyse;
@@ -36,7 +39,7 @@ export default async function MeineEnergiebeschaffung() {
         eyebrow="Reststrom-Pool"
         titel="Meine Energiebeschaffung"
         text="ÖkoInvest holt für Ihren Reststrom Angebote mehrerer Energieversorger ein – einzeln oder gebündelt im Pool – und überwacht laufend, ob sich ein Wechsel lohnt. Ohne Ihre Freigabe wird kein Vertrag geschlossen."
-        aktionen={<Link href="/portal/energie" className="inline-flex h-10 items-center rounded-full bg-white px-4 text-[14px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50">Abnahmestellen & Lastgang</Link>}
+        aktionen={<><Link href="/portal/energie" className="inline-flex h-10 items-center rounded-full bg-white px-4 text-[14px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50">Abnahmestellen & Lastgang</Link><Link href="/portal/energie/kosten" className="inline-flex h-10 items-center rounded-full bg-white px-4 text-[14px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50">Kostenbericht</Link></>}
       />
       <section aria-label="Überblick" className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Wert ton="dunkel" label="Aktueller Vertrag" wert={vt ? ct(vt.energiepreisCt) : "–"} hinweis={vt ? `${vt.lieferantName} · bis ${datum(vt.vertragEnde)}` : "noch nicht erfasst"} />
@@ -74,6 +77,13 @@ export default async function MeineEnergiebeschaffung() {
               {a.eigeneFreigabe ? <Hinweis>Ihre Entscheidung: {a.eigeneFreigabe.entscheidung} am {datumZeit(a.eigeneFreigabe.am)}.</Hinweis> : <FreigabeKnoepfe ausschreibungId={a.id} />}
             </div>
           </div>
+        </Karte>
+      ))}
+
+      {wechsel.map((w) => (
+        <Karte key={w.id} id={w.stand.abgeschlossen ? undefined : "wechsel"} titel={w.stand.abgeschlossen ? "Lieferantenwechsel abgeschlossen" : "Ihr Lieferantenwechsel"} untertitel="Jeder Schritt mit Frist – ÖkoInvest begleitet den Wechsel bis zur ersten Rechnung">
+          <WechselKarte w={w} />
+          {!w.stand.abgeschlossen && <p className="mt-3 text-[12.5px] leading-snug text-ink-500">Ihre Schritte: Liefervertrag gegenzeichnen, Kündigungsbestätigung des bisherigen Lieferanten melden (falls sie bei Ihnen eingeht) und die erste Rechnung prüfen. Die übrigen Schritte bestätigen der neue Versorger bzw. ÖkoInvest.</p>}
         </Karte>
       ))}
 

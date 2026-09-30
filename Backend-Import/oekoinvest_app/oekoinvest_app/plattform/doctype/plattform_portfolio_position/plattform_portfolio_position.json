@@ -1,0 +1,378 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "Position im Investor-Portfolio nach dem Kauf (Bestandsanlage, Projektkauf, Co-Development) – Ertrag Soll/Ist, Covenants, Wiederverkauf.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "titel",
+  "art",
+  "status",
+  "investor_id",
+  "organisation_id",
+  "cb_stamm",
+  "typ",
+  "land",
+  "bundesland",
+  "mwp",
+  "spv_name",
+  "anteil_prozent",
+  "struktur",
+  "sec_kauf",
+  "kaufpreis",
+  "kaufdatum",
+  "inbetriebnahme",
+  "zusage",
+  "cb_kauf",
+  "closing_id",
+  "projekt_id",
+  "entwicklung_id",
+  "boerse_projekt_id",
+  "sec_betrieb",
+  "p50_kwh_jahr",
+  "verguetung_ct",
+  "opex_jahr",
+  "degradation",
+  "cb_betrieb",
+  "schuldendienst_jahr",
+  "dscr_lockup",
+  "dscr_default",
+  "covenant_ampel_gemeldet",
+  "sec_daten",
+  "ertraege",
+  "dokumente",
+  "wiederverkauf",
+  "verlauf",
+  "notiz_intern"
+ ],
+ "fields": [
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Titel",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "bestand",
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Art",
+   "options": "bestand\nprojekt\ncodev",
+   "reqd": 1
+  },
+  {
+   "default": "uebernahme",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "uebernahme\nentwicklung\nbau\nbetrieb\nverkauf_angefragt\nverkauf_boerse\nverkauft\nbeendet",
+   "reqd": 1
+  },
+  {
+   "fieldname": "investor_id",
+   "fieldtype": "Link",
+   "label": "Investor",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "organisation_id",
+   "fieldtype": "Link",
+   "label": "Organisation",
+   "options": "Plattform Organisation"
+  },
+  {
+   "fieldname": "cb_stamm",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "typ",
+   "fieldtype": "Data",
+   "label": "Typ"
+  },
+  {
+   "default": "DE",
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Land",
+   "options": "DE\nAT\nCH"
+  },
+  {
+   "fieldname": "bundesland",
+   "fieldtype": "Data",
+   "label": "Bundesland / Kanton"
+  },
+  {
+   "fieldname": "mwp",
+   "fieldtype": "Float",
+   "label": "Leistung (MWp)",
+   "precision": "3"
+  },
+  {
+   "fieldname": "spv_name",
+   "fieldtype": "Data",
+   "label": "Projektgesellschaft"
+  },
+  {
+   "default": "100",
+   "fieldname": "anteil_prozent",
+   "fieldtype": "Float",
+   "label": "Anteil (%)"
+  },
+  {
+   "fieldname": "struktur",
+   "fieldtype": "Data",
+   "label": "Struktur"
+  },
+  {
+   "fieldname": "sec_kauf",
+   "fieldtype": "Section Break",
+   "label": "Kauf und Beteiligung"
+  },
+  {
+   "fieldname": "kaufpreis",
+   "fieldtype": "Currency",
+   "label": "Kaufpreis (100 %)"
+  },
+  {
+   "fieldname": "kaufdatum",
+   "fieldtype": "Date",
+   "label": "Erworben / beteiligt seit"
+  },
+  {
+   "fieldname": "inbetriebnahme",
+   "fieldtype": "Data",
+   "label": "Inbetriebnahme (JJJJ-MM)"
+  },
+  {
+   "fieldname": "zusage",
+   "fieldtype": "Currency",
+   "label": "Kapitalzusage"
+  },
+  {
+   "fieldname": "cb_kauf",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "closing_id",
+   "fieldtype": "Link",
+   "label": "Closing",
+   "options": "Plattform Closing"
+  },
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Börsenprojekt (Kauf)",
+   "options": "Plattform Projekt"
+  },
+  {
+   "fieldname": "entwicklung_id",
+   "fieldtype": "Link",
+   "label": "Entwicklungsprojekt",
+   "options": "Plattform Entwicklungsprojekt"
+  },
+  {
+   "fieldname": "boerse_projekt_id",
+   "fieldtype": "Link",
+   "label": "Börsen-Entwurf (Wiederverkauf)",
+   "options": "Plattform Projekt"
+  },
+  {
+   "fieldname": "sec_betrieb",
+   "fieldtype": "Section Break",
+   "label": "Ertrag und Finanzierung"
+  },
+  {
+   "fieldname": "p50_kwh_jahr",
+   "fieldtype": "Float",
+   "label": "P50 (kWh/Jahr)"
+  },
+  {
+   "fieldname": "verguetung_ct",
+   "fieldtype": "Float",
+   "label": "Vergütung / Erlös (ct/kWh)",
+   "precision": "3"
+  },
+  {
+   "fieldname": "opex_jahr",
+   "fieldtype": "Currency",
+   "label": "Betriebskosten p. a."
+  },
+  {
+   "fieldname": "degradation",
+   "fieldtype": "Float",
+   "label": "Degradation p. a.",
+   "precision": "4"
+  },
+  {
+   "fieldname": "cb_betrieb",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "schuldendienst_jahr",
+   "fieldtype": "Currency",
+   "label": "Schuldendienst p. a."
+  },
+  {
+   "fieldname": "dscr_lockup",
+   "fieldtype": "Float",
+   "label": "DSCR Lock-up",
+   "precision": "2"
+  },
+  {
+   "fieldname": "dscr_default",
+   "fieldtype": "Float",
+   "label": "DSCR Default",
+   "precision": "2"
+  },
+  {
+   "fieldname": "covenant_ampel_gemeldet",
+   "fieldtype": "Data",
+   "label": "Zuletzt gemeldete Covenant-Ampel",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_daten",
+   "fieldtype": "Section Break",
+   "label": "Daten"
+  },
+  {
+   "fieldname": "ertraege",
+   "fieldtype": "JSON",
+   "label": "Monatserträge"
+  },
+  {
+   "fieldname": "dokumente",
+   "fieldtype": "JSON",
+   "label": "Dokumente"
+  },
+  {
+   "fieldname": "wiederverkauf",
+   "fieldtype": "JSON",
+   "label": "Wiederverkauf"
+  },
+  {
+   "fieldname": "verlauf",
+   "fieldtype": "JSON",
+   "label": "Verlauf"
+  },
+  {
+   "fieldname": "notiz_intern",
+   "fieldtype": "Small Text",
+   "label": "Interne Notiz"
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Portfolio Position",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Transaktion",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Betrieb",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Projektleitung",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "titel",
+ "track_changes": 1
+}

@@ -167,6 +167,8 @@ export const BENACHRICHTIGUNG_ARTEN = {
   energie: { label: "Energiebeschaffung", text: "Kündigungsfristen, Angebotsvergleich zur Freigabe, Angebotsanfragen, Fristen und Zuschläge.", mail: true, rollen: ["unternehmen", "lieferant"] },
   // Finanzierung: Bankfinanzierung (Anfrage, Term Sheet, Entscheidung, Covenant-Ampel) – Bank und Backoffice
   finanzierung: { label: "Finanzierung & Banken", text: "Finanzierungsanfragen, Term Sheets, Entscheidungen und Covenant-Frühwarnungen.", mail: true, rollen: ["bank", "investor"] },
+  // Portfolio: Kapitalabrufe, Ausschüttungen, neue Dokumente/Berichte, Covenant-Hinweise zu gekauften Anlagen und Beteiligungen
+  portfolio: { label: "Portfolio & Beteiligungen", text: "Kapitalabrufe, Ausschüttungen, neue Dokumente und Covenant-Hinweise zu Ihren Anlagen und Beteiligungen.", mail: true, rollen: ["investor"] },
 };
 export const BENACHRICHTIGUNG_ART_IDS = Object.keys(BENACHRICHTIGUNG_ARTEN);
 

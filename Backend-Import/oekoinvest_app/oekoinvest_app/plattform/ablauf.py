@@ -7,7 +7,7 @@
 #  1. statusVerlauf + System-Nachricht „Status: „alt“ → „neu“. <kommentar|grund>“ (außer Provision)
 #  2. grund → ablehn_grund
 #  3. Interesse → loi_angenommen: Projekt veroeffentlicht → reserviert (system)
-#  4. Projekt → verkauft: Provision + Käufer-Interesse abgeschlossen + übrige Interessen abgelehnt
+#  4. Projekt → verkauft: Provision (entfällt bei anerkannter Vorkenntnis zum Käufer) + Käufer-Interesse abgeschlossen + übrige Interessen abgelehnt
 #     (im Controller des Projekts, damit es auch bei Pflege im Desk greift – siehe verkauf_abschliessen)
 #  5. Projekt → veroeffentlicht: veroeffentlicht_am einmalig, passende Investoren benachrichtigen
 #  6. Dokument-Upload: System-Nachricht (in api/dokument.py)
@@ -61,6 +61,9 @@ def uebergang_anwenden(n, art, o, nach, als, extra=None, ip=""):
 	from oekoinvest_app.plattform.dienste_kern import bonitaet_uebergang_pruefen  # Dienste: LOI nur mit gültiger Bonitätsauskunft (409 „bonitaet“)
 
 	bonitaet_uebergang_pruefen(art, o, nach)
+	from oekoinvest_app.plattform.api.anbieter import uebergang_pruefen as anbieter_uebergang_pruefen  # Anbieter: Rückfragen, Anonymisierung, LOI-Stellungnahme (409/422)
+
+	anbieter_uebergang_pruefen(art, o, nach)
 
 	if extra.get("grund"):
 		o.ablehn_grund = kommentar
@@ -155,6 +158,16 @@ def system_wechsel(art, o, nach, kommentar):
 	return True
 
 
+def _interessen_nach_verkauf(projekt, kaeufer):
+	"""Käufer → abgeschlossen, alle anderen offenen Interessen → abgelehnt."""
+	for name in frappe.get_all("Plattform Interesse", filters={"projekt_id": projekt.name}, pluck="name"):
+		i = frappe.get_doc("Plattform Interesse", name)
+		if i.name == kaeufer.name:
+			system_wechsel("interesse", i, "abgeschlossen", "Kauf abgeschlossen.")
+		elif i.status not in ("abgelehnt", "abgeschlossen"):
+			system_wechsel("interesse", i, "abgelehnt", "Projekt anderweitig verkauft.")
+
+
 def verkauf_abschliessen(projekt):
 	"""Nebenwirkung Projekt → verkauft (aus PlattformProjekt.on_update): Provision + Interessen."""
 	if frappe.db.exists("Plattform Provision", {"projekt_id": projekt.name}):
@@ -162,6 +175,16 @@ def verkauf_abschliessen(projekt):
 	kaeufer = frappe.get_doc("Plattform Interesse", projekt.kaeufer_interesse_id)
 	satz = flt(projekt.provision_satz) or PROVISION_MIN
 	kaufpreis = flt(projekt.kaufpreis)
+	# Anbieter: vom Backoffice anerkannte Vorkenntnis zum Käufer → keine Provision (= demo.js uebergangAnwenden)
+	from oekoinvest_app.plattform.api.anbieter import vorkenntnis_fuer_kaeufer
+
+	vk = vorkenntnis_fuer_kaeufer(projekt.name, kaeufer.name)
+	if vk:
+		_interessen_nach_verkauf(projekt, kaeufer)
+		n = projekt.flags.get("plattform_nutzer")
+		protokoll(n, "provision_entfallen", "projekt", projekt.name, f"Keine Provision für {projekt.name}: Vorkenntnis anerkannt ({vk.get('id')})", projekt.flags.get("plattform_ip") or "")
+		nachricht_anlegen("projekt", projekt.name, von_id=n.get("id") if n else None, von_admin=True, system=True, text="Keine Provision: Für den Käufer wurde Ihre Vorkenntnis anerkannt (Vorkenntnis anerkannt).")
+		return None
 	pv = frappe.get_doc(
 		{
 			"doctype": "Plattform Provision",
@@ -178,12 +201,7 @@ def verkauf_abschliessen(projekt):
 	verlauf(pv, "offen", None, "system", "Automatisch bei Verkauf berechnet.")
 	pv.insert(ignore_permissions=True)
 
-	for name in frappe.get_all("Plattform Interesse", filters={"projekt_id": projekt.name}, pluck="name"):
-		i = frappe.get_doc("Plattform Interesse", name)
-		if i.name == kaeufer.name:
-			system_wechsel("interesse", i, "abgeschlossen", "Kauf abgeschlossen.")
-		elif i.status not in ("abgelehnt", "abgeschlossen"):
-			system_wechsel("interesse", i, "abgelehnt", "Projekt anderweitig verkauft.")
+	_interessen_nach_verkauf(projekt, kaeufer)
 
 	n = projekt.flags.get("plattform_nutzer")
 	protokoll(

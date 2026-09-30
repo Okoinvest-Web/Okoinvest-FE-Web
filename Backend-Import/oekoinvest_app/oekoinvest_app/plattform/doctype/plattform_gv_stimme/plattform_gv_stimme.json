@@ -1,0 +1,70 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "Stimmzettel eines Mitglieds (eine Stimme je Mitglied und Versammlung). Nur für die Auszählung – im Desk nur System Manager (Wahlgeheimnis).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "versammlung",
+  "mitglied",
+  "stimmen",
+  "am"
+ ],
+ "fields": [
+  {
+   "fieldname": "versammlung",
+   "fieldtype": "Link",
+   "label": "Versammlung",
+   "options": "Plattform Generalversammlung",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "mitglied",
+   "fieldtype": "Link",
+   "label": "Mitglied",
+   "options": "Plattform Genossenschaftsmitglied",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "stimmen",
+   "fieldtype": "JSON",
+   "label": "Stimmen"
+  },
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "label": "Abgegeben am"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform GV Stimme",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "in_create": 0
+}

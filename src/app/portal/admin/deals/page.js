@@ -19,7 +19,7 @@ export default async function AdminDeals() {
 
   return (
     <div className="space-y-6">
-      <SeitenKopf eyebrow="Backoffice" titel="Deals & Provisionen" text={`Provisionen werden beim Statuswechsel „Verkauft“ automatisch berechnet (${PROVISION.verkaeufer.text}).`} aktionen={<DateiLink href="/api/admin/export/provisionen" icon={FileSpreadsheet}>CSV-Export</DateiLink>} />
+      <SeitenKopf eyebrow="Backoffice" titel="Deals & Provisionen" text={`Provisionen werden beim Statuswechsel „Verkauft“ automatisch berechnet (${PROVISION.verkaeufer.text}).`} aktionen={<><Link href="/portal/admin/deals/pipeline" className="inline-flex h-9 items-center rounded-full bg-navy-900 px-3.5 text-[13px] font-semibold text-white hover:bg-navy-800">Deal-Pipeline</Link><DateiLink href="/api/admin/export/provisionen" icon={FileSpreadsheet}>CSV-Export</DateiLink></>} />
       <div className="grid gap-4 sm:grid-cols-3">
         <Kennzahl label="Offen (noch keine Rechnung)" wert={eur(summe(["offen"]))} icon={Coins} />
         <Kennzahl label="In Rechnung" wert={eur(summe(["in_rechnung"]))} icon={Receipt} />

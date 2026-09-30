@@ -1,0 +1,84 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "Verfügbare Stunden je Monat einer Projektleitung für die Kapazitätsplanung der Projektentwicklung (Standard 120 h).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "konto_id",
+  "stunden_monat"
+ ],
+ "fields": [
+  {
+   "fieldname": "konto_id",
+   "fieldtype": "Link",
+   "label": "Projektleitung",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "stunden_monat",
+   "fieldtype": "Int",
+   "label": "Stunden je Monat",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "10–200 h; ohne Eintrag gilt der Standard von 120 h."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Entwicklung Kapazitaet",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Projektleitung"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "in_create": 1,
+ "title_field": "konto_id"
+}

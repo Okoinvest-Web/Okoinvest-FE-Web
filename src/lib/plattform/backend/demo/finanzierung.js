@@ -21,6 +21,7 @@ import { vorbelegungAusProjekt } from "../../finanzierung/vorbelegung";
 import { rechneCockpit, cockpitBereinigen, cockpitStandard, ergebnisKurz, tilgungsplan, betriebsJahre, TYPEN_FZ } from "../../finanzierung/kern";
 import { BANKENPAKET, BANKENPAKET_IDS, CP_STANDARD, FALL_STATUS, termsheetBereinigen, termsheetVergleich, termsheetKennzahlen, covenantPruefung, allInZins, BankFehler } from "../../finanzierung/bank";
 import { geschaeftsmodellVergleich, GESCHAEFTSMODELLE } from "../../finanzierung/geschaeftsmodell";
+import { BANK_AKTION_ROLLE, bankRolleAus, bankRolleReicht } from "../../finanzierung/bankakte"; // Bank-Team (mehrere Sachbearbeiter, Rollen)
 import { boerseDetail, intern } from "../demo";
 import { aendern, lesen, uploadLesen, uploadSchreiben } from "./speicher";
 import { jetzt, neueId, sha256, zufallsToken } from "./hilfen";
@@ -853,6 +854,8 @@ export async function fzBankAktion(n, anfrageId, daten = {}) {
   return aendernBereit((db) => {
     const { a, f } = bankAnfrageLaden(db, n, anfrageId);
     const b = bankVon(db, a.bankId);
+    // Bank-Team: Teamrolle je Aktion (Nur lesen → nichts, Sachbearbeitung → Term Sheet/Rückfrage, Leitung → Absage) – bankakte.js
+    if (!bankRolleReicht(bankRolleAus(db.bankportal?.mitglieder || [], b, n.id), BANK_AKTION_ROLLE[aktion])) throw verboten("Dafür fehlt Ihnen in Ihrem Haus die passende Rolle (Bank-Team).");
     if (aktion === "termsheet") {
       const t = fach(() => termsheetBereinigen(daten.termsheet || {}));
       termsheetAblegen(db, n, f, a, t, "bank");

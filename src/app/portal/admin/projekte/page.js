@@ -11,6 +11,8 @@ import { BEDINGUNGEN } from "@/lib/plattform/prozesse";
 import { datumZeit, mwp, preisText, relativ } from "@/lib/plattform/format";
 import { fmt } from "@/lib/rechner/annahmen";
 import { phaseById } from "@/lib/invest/markt";
+import AnbieterCockpit from "@/components/Portal/Anbieter/Cockpit"; // Anbieter: Antworten, Vorkenntnis-Meldungen, LOI-Stellungnahmen
+import { anbieterBackend } from "@/lib/plattform/backend/anbieter";
 
 export const metadata = { title: "Projekt-Freigabe" };
 
@@ -18,10 +20,12 @@ export default async function AdminProjekte() {
   const n = await portalNutzer({ admin: true });
   const projekte = await backend().projekte(n, { alle: true });
   const pruefung = projekte.filter((p) => p.status === "pruefung");
+  const anbieterPunkte = await anbieterBackend().anbieterCockpit(n).catch(() => null);
 
   return (
     <div className="space-y-6">
       <SeitenKopf eyebrow="Backoffice" titel="Projekt-Freigabe" text="Eingereichte Projekte prüfen, veröffentlichen (mit Provisionssatz), zur Überarbeitung zurückgeben oder mit Begründung ablehnen." aktionen={<DateiLink href="/api/admin/export/projekte" icon={FileSpreadsheet}>CSV-Export</DateiLink>} />
+      {anbieterPunkte?.summe > 0 && <AnbieterCockpit daten={anbieterPunkte} titel="Von Anbietern" />}
 
       {pruefung.length ? (
         <div className="space-y-4">

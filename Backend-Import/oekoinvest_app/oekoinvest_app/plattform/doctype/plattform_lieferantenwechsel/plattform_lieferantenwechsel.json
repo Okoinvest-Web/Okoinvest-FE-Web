@@ -1,0 +1,177 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "Lieferantenwechsel nach Zuschlag einer Energie-Ausschreibung: Schritte (Liefervertrag, Kündigung Altvertrag, Anmeldung Netzbetreiber, Lieferbeginn) mit Rolle und Frist.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "ausschreibung_id",
+  "vertrag_id",
+  "kunde_id",
+  "lieferant_id",
+  "cb_1",
+  "vorvertrag_id",
+  "lieferbeginn",
+  "status",
+  "sb_1",
+  "schritte",
+  "alarme",
+  "verlauf"
+ ],
+ "fields": [
+  {
+   "fieldname": "ausschreibung_id",
+   "fieldtype": "Link",
+   "label": "Ausschreibung",
+   "options": "Plattform Ausschreibung",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "vertrag_id",
+   "fieldtype": "Link",
+   "label": "Neuer Vertrag",
+   "options": "Plattform Energie Vertrag",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "kunde_id",
+   "fieldtype": "Link",
+   "label": "Kunde",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "lieferant_id",
+   "fieldtype": "Link",
+   "label": "Versorger",
+   "options": "Plattform Lieferant",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "vorvertrag_id",
+   "fieldtype": "Link",
+   "label": "Bisheriger Vertrag",
+   "options": "Plattform Energie Vertrag"
+  },
+  {
+   "fieldname": "lieferbeginn",
+   "fieldtype": "Data",
+   "label": "Lieferbeginn (JJJJ-MM)"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "laufend\nabgeschlossen",
+   "default": "laufend",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": "Schritte"
+  },
+  {
+   "fieldname": "schritte",
+   "fieldtype": "JSON",
+   "label": "Schritte"
+  },
+  {
+   "fieldname": "alarme",
+   "fieldtype": "JSON",
+   "label": "Fristen-Alarme"
+  },
+  {
+   "fieldname": "verlauf",
+   "fieldtype": "JSON",
+   "label": "Verlauf"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Lieferantenwechsel",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Energie"
+  }
+ ]
+}

@@ -2,6 +2,7 @@
 //
 // End-to-End-Test „Projektentwicklung“ gegen den laufenden Dev-Server (Demo-Backend).
 //   node scripts/plattform-test-entwicklung.mjs [basis-url]
+//   node scripts/plattform-test-entwicklung.mjs --nur-logik      # nur reine Logik der Steuerung (ohne Server)
 //
 // Prüft: Portfolio (Summen, Ziel 50 MWp, Verzug, Fristen, Auslastung) · Pipeline-Werte = MWp × 1000 × Mitte PHASEN-Spanne ×
 // Wahrscheinlichkeit (Phase aus erledigten Meilensteinen) · Meilenstein-Abhängigkeiten (Vorgänger offen → 409, Kreis → 409,
@@ -13,8 +14,10 @@
 // Eigene Konten ent-test-<Lauf>-…@example.com und eigene Projekte – Demo-Daten bleiben unberührt.
 
 import { PHASEN, ENTWICKLUNG } from "../src/lib/invest/markt.js";
+import * as S from "../src/lib/plattform/entwicklung-steuerung.js";
 
-const BASIS = (process.argv[2] || process.env.PLATTFORM_TEST_URL || "http://localhost:3100").replace(/\/$/, "");
+const NUR_LOGIK = process.argv.includes("--nur-logik");
+const BASIS = (process.argv.slice(2).find((a) => a.startsWith("http")) || process.env.PLATTFORM_TEST_URL || "http://localhost:3100").replace(/\/$/, "");
 const DEMO_PASSWORT = process.env.PLATTFORM_DEMO_PASSWORT || "Demo-2026!";
 const LAUF = Date.now().toString(36);
 const PASSWORT = "Entwicklung-Test-Passwort-26";
@@ -130,8 +133,92 @@ function erwartet(mwp, phase) {
   return { preis, w, volumen, wert: Math.round(volumen * w) };
 }
 
+// ------------------------------------------------------------ Reine Logik: Steuerung (ohne Server, --nur-logik)
+function logikSteuerung() {
+  abschnitt("0. Steuerung – reine Logik (entwicklung-steuerung.js)");
+  const basis = { meilensteine: { ueberfaellig: 0, kritischUeberfaellig: 0 }, codVerzugMonate: 0, budgetPlan: 100000, budgetIst: 50000, risikoMax: 6, flaecheHa: 10, flaecheGesichertHa: 10, phase: "flaeche" };
+  let a = S.projektAmpel(basis);
+  pruefe(a.gesamt.farbe === "gruen" && Object.keys(S.AMPEL_DIMENSIONEN).every((d) => a[d].farbe === "gruen"), "Ampel: alles im Plan → grün", a.gesamt);
+  a = S.projektAmpel({ ...basis, meilensteine: { ueberfaellig: 2, kritischUeberfaellig: 1 } });
+  pruefe(a.termin.farbe === "rot" && a.gesamt.farbe === "rot" && /Termine/.test(a.gesamt.grund), "Ampel: kritischer Verzug → Termine rot, gesamt rot", a.gesamt);
+  pruefe(S.projektAmpel({ ...basis, meilensteine: { ueberfaellig: 1, kritischUeberfaellig: 0 } }).termin.farbe === "gelb" && S.projektAmpel({ ...basis, codVerzugMonate: 6 }).termin.farbe === "rot", "Ampel: Verzug ohne kritischen Pfad gelb, COD +6 Monate rot");
+  pruefe(S.projektAmpel({ ...basis, budgetIst: 115000 }).kosten.farbe === "rot" && S.projektAmpel({ ...basis, budgetIst: 95000 }).kosten.farbe === "gelb" && S.projektAmpel({ ...basis, budgetPlan: 0, budgetIst: 0 }).kosten.farbe === "grau" && S.projektAmpel({ ...basis, budgetPlan: 0, budgetIst: 10 }).kosten.farbe === "rot", "Ampel Kosten: > 110 % rot, > 90 % gelb, ohne Budget grau, Ist ohne Budget rot");
+  pruefe(S.projektAmpel({ ...basis, risikoMax: 15 }).risiko.farbe === "rot" && S.projektAmpel({ ...basis, risikoMax: 8 }).risiko.farbe === "gelb" && S.projektAmpel({ ...basis, pruefungUeberfaellig: 1 }).risiko.farbe === "gelb", "Ampel Risiko: ab 15 rot, ab 8 gelb, überfällige Prüfung gelb");
+  pruefe(S.projektAmpel({ ...basis, flaecheHa: 0 }).flaeche.farbe === "rot" && S.projektAmpel({ ...basis, flaecheGesichertHa: 5, phase: null }).flaeche.farbe === "gelb" && S.projektAmpel({ ...basis, flaecheGesichertHa: 5, phase: "netz" }).flaeche.farbe === "rot" && S.projektAmpel({ ...basis, optionsfristen: 1 }).flaeche.farbe === "gelb", "Ampel Fläche: ohne Fläche rot, ungesichert vor Netzzusage gelb, danach rot, ablaufende Option gelb");
+  pruefe(S.projektAmpel({ ...basis, dokumentLuecken: 2 }).dokumente.farbe === "gelb" && S.projektAmpel({ ...basis, budgetPlan: 0, budgetIst: 0 }).gesamt.farbe === "gruen", "Ampel Dokumente gelb bei Lücken; grau zählt nicht für gesamt");
+  pruefe(JSON.stringify(S.ampelVerteilung([a, S.projektAmpel(basis)])) === JSON.stringify({ gruen: 1, gelb: 0, rot: 1, grau: 0 }), "Ampel-Verteilung");
+  pruefe(S.projektAmpel({ ...basis, meilensteine: [{ ueberfaellig: true, kritisch: true }, { ueberfaellig: false }] }).termin.farbe === "rot" && S.projektAmpel({ ...basis, meilensteine: [{ ueberfaellig: true, kritisch: false }] }).termin.farbe === "gelb", "Ampel auch aus vollständiger Meilensteinliste (Projektdetail)");
+
+  const heute = "2026-10-01";
+  const ms = [
+    { id: "m1", projektId: "p1", status: "offen", sollStart: "2026-09-01", sollEnde: "2026-10-20", dokumentPflicht: ["Netzzusage"], nachweisVerzicht: "" },
+    { id: "m2", projektId: "p1", status: "offen", sollStart: "2026-10-01", sollEnde: "2026-12-31", dokumentPflicht: ["Gutachten"], gutachten: true },
+    { id: "m3", projektId: "p1", status: "offen", sollStart: "2026-06-01", sollEnde: "2026-08-31", dokumentPflicht: [] },
+    { id: "m4", projektId: "p1", status: "erledigt", sollStart: "2026-01-01", sollEnde: "2026-02-01", dokumentPflicht: ["X"] },
+    { id: "m5", projektId: "p1", status: "offen", sollStart: "2026-09-01", sollEnde: "2026-10-10", dokumentPflicht: ["Y"], nachweisVerzicht: "Liegt im Original in der Akte vor." },
+  ];
+  const luecken = S.dokumentLuecken(ms, [], { heute });
+  pruefe(luecken.map((m) => m.id).join() === "m1", "Dokumentenlücken: nur fällig in 30 Tagen, offen, Pflicht fehlt, kein Verzicht", luecken.map((m) => m.id));
+  pruefe(S.dokumentLuecken(ms, [{ meilensteinId: "m1", pflicht: "Netzzusage" }], { heute }).length === 0, "Dokumentenlücke durch Upload geschlossen");
+  const faellig = S.aufgabenFaellig([...ms, { id: "m6", status: "offen", sollEnde: "2026-10-05", aufgabeId: "AF-1" }], { heute });
+  pruefe(faellig.map((m) => m.id).sort().join() === "m3,m5", "Aufgaben: fällig in 14 Tagen oder überfällig, ohne bestehende Aufgabe", faellig.map((m) => m.id));
+
+  const kp = S.kapazitaetsplan({ heute, monate: 3, leiter: [{ id: "u1", name: "PL" }, { id: "u2", name: "PL2", stundenMonat: 16 }], projekte: [{ id: "p1", projektleiterId: "u1", status: "aktiv" }, { id: "p2", projektleiterId: "u2", status: "aktiv" }, { id: "p3", projektleiterId: "u2", status: "abgebrochen" }], meilensteine: [...ms, { id: "x", projektId: "p2", status: "offen", sollStart: "2026-10-01", sollEnde: "2026-11-15", verantwortlichId: null }, { id: "y", projektId: "p3", status: "offen", sollStart: "2026-10-01", sollEnde: "2026-11-15" }] });
+  const u1 = kp.zeilen.find((z) => z.id === "u1");
+  const u2 = kp.zeilen.find((z) => z.id === "u2");
+  // Oktober u1: Grundlast 8 + m1 (6) + m2 Gutachten (3) + m3 überfällig (6) + m5 (6) = 29
+  pruefe(kp.monate.join() === "2026-10,2026-11,2026-12" && u1.je[0].stunden === 29 && u1.je[1].stunden === 8 + 3 && u1.je[2].stunden === 8 + 3, "Kapazität: Grundlast + laufende Meilensteine (intern 6 h, Gutachten 3 h, Überfälliges im laufenden Monat)", u1.je);
+  pruefe(u1.stundenMonat === S.KAPAZITAET.stundenMonat && u2.stundenMonat === 16 && u2.je[0].stunden === 14 && u2.je[0].farbe === "gelb" && u2.projekte === 1, "Kapazität: individuelle Stunden, abgebrochene Projekte zählen nicht, Ampel ab 85 %", u2.je[0]);
+  pruefe(S.auslastungFarbe(1.01) === "rot" && S.auslastungFarbe(0.85) === "gelb" && S.auslastungFarbe(0.5) === "gruen" && S.projektleiterVorschlag(kp).id === "u1", "Auslastungs-Ampel und Vorschlag der Projektleitung mit freier Kapazität");
+
+  const pm = S.pipelineMatrix([
+    { land: "DE", phase: null, mwp: 10, status: "aktiv", pipeline: { gewichtetMwp: 0.5, wert: 100 } },
+    { land: "AT", phase: "netz", mwp: 5, status: "pausiert", pipeline: { gewichtetMwp: 1.25, wert: 200 } },
+    { land: "DE", phase: "netz", mwp: 7, status: "aktiv", pipeline: { gewichtetMwp: 1.75, wert: 300 } },
+    { land: "CH", phase: "rtb", mwp: 3, status: "boerse", pipeline: { gewichtetMwp: 2.55, wert: 900 } },
+  ]);
+  const netz = pm.zeilen.find((z) => z.phase === "netz");
+  pruefe(pm.gesamt.anzahl === 3 && pm.gesamt.mwp === 22 && netz.zellen.DE.mwp === 7 && netz.zellen.AT.mwp === 5 && netz.summe.mwpGewichtet === 3 && pm.spalten.CH.anzahl === 0, "Pipeline-Matrix Phase × Land (nur offene Projekte)", { gesamt: pm.gesamt, netz: netz.summe });
+  const za = S.zielAbgleich([{ jahr: 2027, mwp: 60, mwpGewichtet: 40, anzahl: 3 }, { jahr: 2028, mwp: 80, mwpGewichtet: 55, anzahl: 4 }], { ziel: 50, abJahr: 2026, jahre: 3 });
+  pruefe(za.length === 3 && za[0].luecke === 50 && za[0].farbe === "rot" && za[1].deckung === 0.8 && za[1].farbe === "gelb" && za[2].farbe === "gruen" && za[2].luecke === 0, "Ziel-Abgleich 50 MWp/Jahr (gewichtet): Deckung, Lücke, Ampel", za);
+
+  const rb = S.risikoBewertung({ eintritt: 4, auswirkung: 5, kostenEur: 200000, restEintritt: 2 });
+  pruefe(rb.score === 20 && rb.restScore === 10 && rb.erwartet === 120000 && rb.erwartetRest === 30000, "Risikokosten = Schadenshöhe × Wahrscheinlichkeit der Stufe; Restrisiko nach Maßnahme", rb);
+
+  const fl = [{ id: "f1", ha: 6, pachtStatus: "option", optionBis: "2026-10-21", grundbuch: "vorgemerkt" }, { id: "f2", ha: 4, pachtStatus: "verhandlung" }, { id: "f3", ha: 2, pachtStatus: "option", optionBis: "2027-06-01" }];
+  const of = S.optionsfristen(fl, { heute });
+  pruefe(of.length === 1 && of[0].id === "f1" && of[0].inTagen === 20, "Optionsfristen in 60 Tagen", of);
+  const sg = S.sicherungsgrad(fl);
+  pruefe(sg.ha === 12 && sg.vertragHa === 8 && sg.grundbuchHa === 6 && sg.grundbuchQuote === 0.5, "Sicherungsgrad Vertrag/Grundbuch", sg);
+  pruefe(["DE", "AT", "CH"].every((l) => S.GRUNDBUCH_HINWEIS[l]) && /§ 883 BGB/.test(S.GRUNDBUCH_HINWEIS.DE) && /Rangordnung/.test(S.GRUNDBUCH_HINWEIS.AT) && /Art\. 959 ZGB/.test(S.GRUNDBUCH_HINWEIS.CH), "Grundbuch-Hinweise je Land (Vormerkung, Rangordnung, ZGB)");
+
+  const entwurf = { art: "gate_entwicklung", status: "entwurf", titel: "Gate 1 Test", beschlussvorschlag: "", sachverhalt: "", budgetEur: 0, erstelltVon: "u1" };
+  const u = S.vorlageUebergang(entwurf, "einreichen", { schreiben: true, nutzerId: "u1" });
+  pruefe(!u.ok && u.status === 422 && /Beschlussvorschlag/.test(u.fehler) && /Budget/.test(u.fehler), "Vorlage einreichen ohne Pflichtangaben → 422 (Beschlussvorschlag, Budget)", u);
+  const voll = { ...entwurf, beschlussvorschlag: "Die Geschäftsführung gibt das Entwicklungsbudget frei.", sachverhalt: "Pachtvertrag unterschrieben, Netzanfrage vorbereitet.", budgetEur: 40000 };
+  pruefe(S.vorlageUebergang(voll, "einreichen", { schreiben: true, nutzerId: "u1" }).nach === "eingereicht" && S.vorlageUebergang(voll, "einreichen", { schreiben: false }).status === 403, "Einreichen mit vollständiger Vorlage; ohne Schreibrecht 403");
+  const ein = { ...voll, status: "eingereicht", eingereichtVon: "u1" };
+  pruefe(S.vorlageUebergang(ein, "genehmigen", { leitung: false, schreiben: true, nutzerId: "u2" }).status === 403, "Genehmigen nur durch die Leitung (403)");
+  pruefe(S.vorlageUebergang(ein, "genehmigen", { leitung: true, nutzerId: "u1" }).status === 409, "Vier-Augen-Prinzip: Einreicher entscheidet nicht selbst (409)");
+  pruefe(S.vorlageUebergang(ein, "ablehnen", { leitung: true, nutzerId: "u9", begruendung: "zu kurz" }).status === 422 && S.vorlageUebergang(ein, "zurueckstellen", { leitung: true, nutzerId: "u9", begruendung: "Bitte Netzauskunft nachreichen." }).nach === "zurueckgestellt", "Ablehnen/Zurückstellen nur mit Begründung (mind. 10 Zeichen)");
+  pruefe(S.vorlageUebergang(voll, "genehmigen", { leitung: true, nutzerId: "u9" }).status === 409 && S.vorlageUebergang({ ...ein, status: "genehmigt" }, "zurueckziehen", { schreiben: true }).status === 409 && S.vorlageUebergang({ ...voll, status: "zurueckgestellt" }, "einreichen", { schreiben: true }).ok, "Zustandsautomat: kein Genehmigen aus Entwurf, kein Zurückziehen nach Entscheidung, Wiedervorlage nach Zurückstellung");
+  const vw = { ...ein, art: "verwertung", budgetEur: 0, empfehlung: "" };
+  pruefe(S.vorlagePruefen(vw).some((f) => /Verwertung/.test(f)) && S.vorlageUebergang(vw, "genehmigen", { leitung: true, nutzerId: "u9" }).status === 422 && S.vorlageUebergang(vw, "genehmigen", { leitung: true, nutzerId: "u9", option: "bau_investor" }).ok, "Verwertungsentscheidung verlangt eine Option (Eigenbetrieb, Verkauf, Bau für Investor)");
+  let fo = S.vorlageFolgen(voll);
+  pruefe(fo.budgetEur === 40000 && fo.aufgaben.length === 1 && fo.entscheidungArt === "go", "Folgen Gate 1: Budgetposition + Aufgabe, Entscheidung „Go“", fo);
+  fo = S.vorlageFolgen({ art: "gate_rtb", empfehlung: "verkauf" }, { option: "eigenbetrieb" });
+  pruefe(fo.verwertung === "eigenbetrieb" && /Finanzierungsfall/.test(fo.aufgaben[0].text) && fo.entscheidungArt === "strategie", "Folgen Verwertung: gewählte Option gewinnt, Aufgabe mit nächstem Schritt", fo);
+  fo = S.vorlageFolgen({ art: "abbruch" });
+  pruefe(fo.status === "abgebrochen" && fo.entscheidungArt === "nogo" && S.vorlageFolgen({ art: "spv" }).aufgaben[0].text.includes("/portal/admin/gesellschaften"), "Folgen Abbruch (Status, No-Go) und SPV (Gründungsassistent)");
+}
+
 async function main() {
-  console.log(`Projektentwicklung – Test gegen ${BASIS} (Lauf ${LAUF})`);
+  console.log(`Projektentwicklung – Test${NUR_LOGIK ? " (nur Logik)" : ` gegen ${BASIS}`} (Lauf ${LAUF})`);
+  logikSteuerung();
+  if (NUR_LOGIK) {
+    console.log(`\n${fehler ? rot(`${fehler} Fehler`) : gruen("Alle Prüfungen bestanden")} (${ok} ok)`);
+    process.exit(fehler ? 1 : 0);
+  }
   const admin = new Client("admin");
   const lesen = new Client("bo-lesen");
   const pl = new Client("bo-projektleitung");
@@ -171,6 +258,127 @@ async function main() {
   pruefe(muehlDetail.meilensteine.some((m) => m.kritisch) && muehlDetail.meilensteine.some((m) => m.ueberfaellig), "Kritischer Pfad und Verzug markiert");
   pruefe(muehlDetail.kontakte.length >= 3 && muehlDetail.kontakte.every((k) => k.kontakt?.name), "Behörden-/Stakeholder-Kontakte aus dem CRM", muehlDetail.kontakte.length);
   pruefe(muehlDetail.risiken.length >= 3 && muehlDetail.risiken[0].score >= muehlDetail.risiken.at(-1).score, "Risikoregister (Eintritt × Auswirkung, absteigend)");
+
+  // ------------------------------------------------------------ 1b. Steuerung & Entscheidungsvorlagen (nur Demo-Konten)
+  abschnitt("1b. Steuerung: Ampel, Pipeline-Bericht, Kapazität, Flächensicherung, Entscheidungsvorlagen");
+  r = await admin.post("/api/admin/entwicklung", { titel: `ent-test-${LAUF} Steuerung`, typ: "freiflaeche", land: "AT", bundesland: "Oberösterreich", gemeinde: "Testgemeinde", mwp: 8, vermarktung: "eeg", projektleiterId: pl.nutzer.id });
+  pruefe(r.status === 201, "Steuerungs-Testprojekt (AT) mit Projektleitung angelegt", r.json);
+  const sp = r.json.projekt;
+  const sid = sp.id;
+  r = await pl.post(`/api/admin/entwicklung/${sid}/eintraege`, { art: "flaeche", daten: { bezeichnung: `Steuerfläche ${LAUF}`, eigentuemerName: "Test", ha: 9, pachtStatus: "verhandlung" } });
+  const sfid = r.json.eintrag?.id;
+  pruefe(r.status === 200 && sfid, "Projektfläche (in Verhandlung)", r.json);
+  r = await pl.post(`/api/admin/entwicklung/${sid}/eintraege`, { art: "risiko", daten: { titel: `Netzkapazität ${LAUF}`, kategorie: "netz", eintritt: 4, auswirkung: 4, kostenEur: 200000, restEintritt: 2, pruefenAm: "2026-01-15" } });
+  pruefe(r.status === 200, "Risiko mit Schadenshöhe, Restrisiko und Prüftermin", r.json);
+  r = await pl.post(`/api/admin/entwicklung/${sid}/eintraege`, { art: "risiko", daten: { titel: "Rest höher als Ausgang", eintritt: 2, auswirkung: 2, restEintritt: 4 } });
+  pruefe(r.status === 400 || r.status === 422, "Restrisiko höher als Ausgangsrisiko → abgelehnt", r.status);
+  r = await admin.get(`/api/admin/entwicklung/${sid}`);
+  const rk = (r.json.projekt?.risiken || []).find((x) => x.titel === `Netzkapazität ${LAUF}`);
+  pruefe(rk?.erwartet === 120000 && rk?.restScore === 8, "Risikoregister: Risikokosten 200.000 € × 60 % = 120.000 €, Restrisiko 2 × 4", rk && { erwartet: rk.erwartet, restScore: rk.restScore });
+
+  r = await admin.get("/api/admin/entwicklung/steuerung");
+  let st = r.json;
+  pruefe(r.status === 200 && st.projekte.every((p) => ["gruen", "gelb", "rot", "grau"].includes(p.ampel?.gesamt?.farbe)), "Projektampel für alle Projekte", r.status);
+  pruefe(st.matrix.gesamt.anzahl === st.summen.anzahl && Math.abs(st.matrix.gesamt.mwp - st.summen.mwp) < 0.05, "Pipeline Phase × Land deckt alle offenen Projekte ab (Anzahl, MWp)", { matrix: st.matrix.gesamt, summen: st.summen });
+  pruefe(st.ziel.length === 6 && st.ziel.every((j) => j.ziel === 50 && j.luecke >= 0), "Ziel-Abgleich 6 Jahre gegen 50 MWp/Jahr", st.ziel.slice(0, 2));
+  const stP = st.projekte.find((p) => p.id === sid);
+  pruefe(stP?.ampel.risiko.farbe === "rot" && stP.ampel.flaeche.farbe === "gelb" && stP.ampel.kosten.farbe === "grau", "Testprojekt: Risiko rot (16), Fläche gelb (ungesichert, Akquise), Kosten ohne Budget grau", stP?.ampel);
+  pruefe(st.risiken.some((x) => x.projektId === sid && x.pruefungUeberfaellig && x.erwartet === 120000) && st.risikoSumme.erwartet >= 120000, "Projektübergreifendes Risikoregister mit überfälliger Prüfung und Risikokosten");
+  const plZeile = st.kapazitaet.zeilen.find((z) => z.id === pl.nutzer.id);
+  pruefe(plZeile && plZeile.je.length === 6 && plZeile.je[0].stunden >= 8 && plZeile.projekte >= 1, "Kapazitätsplan der Projektleitung (6 Monate, Stunden)", plZeile && { projekte: plZeile.projekte, je: plZeile.je[0] });
+  r = await pl.post("/api/admin/entwicklung/steuerung", { aktion: "kapazitaet", nutzerId: pl.nutzer.id, stundenMonat: 60 });
+  pruefe(r.status === 403, "Kapazität setzen nur Leitung → 403", r.status);
+  r = await admin.post("/api/admin/entwicklung/steuerung", { aktion: "kapazitaet", nutzerId: pl.nutzer.id, stundenMonat: 5 });
+  pruefe(r.status === 422 || r.status === 400, "Kapazität außerhalb 10–200 h → abgelehnt", r.status);
+  r = await admin.post("/api/admin/entwicklung/steuerung", { aktion: "kapazitaet", nutzerId: pl.nutzer.id, stundenMonat: 100 });
+  pruefe(r.status === 200 && r.json.kapazitaet.zeilen.find((z) => z.id === pl.nutzer.id)?.stundenMonat === 100, "Leitung setzt Kapazität 100 h/Monat", r.json.stundenMonat);
+  await admin.post("/api/admin/entwicklung/steuerung", { aktion: "kapazitaet", nutzerId: pl.nutzer.id, stundenMonat: null });
+  r = await lesen.post("/api/admin/entwicklung/steuerung", { aktion: "aufgaben" });
+  pruefe(r.status === 403, "Unterrolle „lesen“ → Aufgaben erzeugen 403", r.status);
+  r = await lesen.get("/api/admin/entwicklung/steuerung");
+  pruefe(r.status === 200 && r.json.leitung === false && r.json.darfBearbeiten === false, "Unterrolle „lesen“ sieht die Steuerung (nur lesen)", r.status);
+  r = await investorDemo.get("/api/admin/entwicklung/steuerung");
+  pruefe(r.status === 403, "Investor (kein Backoffice) → Steuerung 403", r.status);
+
+  // Flächensicherung: Grundbuch erst mit Vertrag, Optionsfrist → Aufgabe
+  r = await pl.post(`/api/admin/entwicklung/${sid}/steuerung`, { aktion: "sicherung", flaecheId: sfid, daten: { grundbuch: "vorgemerkt" } });
+  pruefe(r.status === 409, "Grundbuch-Sicherung ohne Options-/Pachtvertrag → 409", r.json);
+  r = await pl.post(`/api/admin/entwicklung/${sid}/eintraege`, { art: "flaeche", id: sfid, daten: { pachtStatus: "option" } });
+  const inTagen = (t) => new Date(Date.now() + t * 86400e3).toISOString().slice(0, 10);
+  r = await pl.post(`/api/admin/entwicklung/${sid}/steuerung`, { aktion: "sicherung", flaecheId: sfid, daten: { grundbuch: "eingetragen" } });
+  pruefe(r.status === 422 || r.status === 400, "„Eingetragen“ ohne Eintragungsdatum → abgelehnt", r.status);
+  r = await pl.post(`/api/admin/entwicklung/${sid}/steuerung`, { aktion: "sicherung", flaecheId: sfid, daten: { grundbuch: "vorgemerkt", grundbuchDatum: inTagen(-3), optionBis: inTagen(20) } });
+  pruefe(r.status === 200 && r.json.sicherung?.grundbuchHa === 9, "Option mit Frist und Rangvormerkung gespeichert (9 ha grundbuchlich gesichert)", r.json);
+  r = await pl.get(`/api/admin/entwicklung/${sid}/steuerung`);
+  pruefe(r.status === 200 && /Rangordnung/.test(r.json.grundbuchHinweis) && Math.abs((r.json.flaechen?.[0]?.optionInTagen ?? 99) - 20) <= 1 && r.json.ampel.flaeche.farbe === "gelb", "Projektsicht: AT-Hinweis (Rangordnung), Optionsfrist, Ampel Fläche gelb", r.json.ampel?.flaeche);
+  const fsMs0 = sp.meilensteine.find((m) => m.schluessel === "flaechensicherung");
+  r = await pl.post(`/api/admin/entwicklung/${sid}/eintraege`, { art: "meilenstein", id: fsMs0.id, daten: { sollStart: inTagen(-80), sollEnde: inTagen(5) } });
+  pruefe(r.status === 200, "Flächensicherung in 5 Tagen fällig (Soll-Termin)", r.status);
+  r = await pl.post(`/api/admin/entwicklung/${sid}/steuerung`, { aktion: "aufgaben" });
+  const ersterLauf = r.json;
+  pruefe(r.status === 200 && ersterLauf.optionen === 1 && ersterLauf.meilensteine >= 1, "Aufgaben aus fälligen Meilensteinen und Optionsfrist erzeugt", ersterLauf);
+  r = await pl.post(`/api/admin/entwicklung/${sid}/steuerung`, { aktion: "aufgaben" });
+  pruefe(r.status === 200 && r.json.angelegt === 0, "Zweiter Lauf legt keine Dubletten an", r.json);
+  r = await pl.get(`/api/admin/entwicklung/${sid}/steuerung`);
+  const sAuf = r.json.aufgaben || [];
+  pruefe(sAuf.some((a) => /Optionsfrist/.test(a.titel)) && sAuf.some((a) => /Meilenstein fällig: Flächensicherung/.test(a.titel)) && sAuf.every((a) => a.zustaendig?.id === pl.nutzer.id), "Aufgaben an die Projektleitung (Optionsfrist, fälliger Meilenstein)", sAuf.map((a) => a.titel));
+  r = await pl.get(`/api/admin/entwicklung/${sid}`);
+  const fsMs = r.json.projekt.meilensteine.find((m) => m.schluessel === "flaechensicherung");
+  r = await pl.post(`/api/admin/entwicklung/${sid}/eintraege`, { art: "meilenstein", id: fsMs.id, daten: { status: "erledigt", nachweisVerzicht: "Optionsvertrag liegt im Original in der Akte." } });
+  r = await pl.get("/api/admin/aufgaben");
+  const fsAuf = (r.json.aufgaben || r.json.eintraege || []).find((a) => a.id === fsMs.aufgabeId);
+  pruefe(!!fsMs.aufgabeId && fsAuf?.status === "erledigt", "Meilenstein erledigt → zugehörige Aufgabe erledigt", { aufgabeId: fsMs.aufgabeId, status: fsAuf?.status });
+
+  // Entscheidungsvorlage Gate 1 (Projektleitung reicht ein, Leitung entscheidet)
+  r = await pl.post(`/api/admin/entwicklung/${sid}/steuerung`, { aktion: "vorlage", daten: { art: "gate_entwicklung", beschlussvorschlag: "Freigabe", budgetEur: 45000 } });
+  pruefe(r.status === 200 && r.json.vorlage?.status === "entwurf" && /Gate 1/.test(r.json.vorlage.titel), "Entwurf Gate 1 mit Standardtitel angelegt", r.json);
+  const vid = r.json.vorlage?.id;
+  r = await pl.post(`/api/admin/entwicklung/vorlagen/${vid}`, { aktion: "einreichen" });
+  pruefe(r.status === 422 && /Beschlussvorschlag|Sachverhalt/.test(r.json.error), "Einreichen ohne Sachverhalt/Beschlussvorschlag → 422", r.json);
+  r = await pl.post(`/api/admin/entwicklung/${sid}/steuerung`, { aktion: "vorlage", id: vid, daten: { beschlussvorschlag: "Die Geschäftsführung gibt 45.000 € Entwicklungsbudget für Netzanfrage, Gemeindegespräch und erste Gutachten frei.", sachverhalt: "Optionsvertrag über 9 ha, Rang im Grundbuch angemerkt; Netzzugangsantrag vorbereitet." } });
+  pruefe(r.status === 200, "Vorlage vervollständigt", r.status);
+  r = await lesen.post(`/api/admin/entwicklung/vorlagen/${vid}`, { aktion: "einreichen" });
+  pruefe(r.status === 403, "Unterrolle „lesen“ → Einreichen 403", r.status);
+  r = await pl.post(`/api/admin/entwicklung/vorlagen/${vid}`, { aktion: "einreichen" });
+  pruefe(r.status === 200 && r.json.vorlage?.status === "eingereicht" && r.json.vorlage.snapshot?.ampel?.gesamt && r.json.vorlage.snapshot.projekt?.mwp === 8, "Eingereicht mit Kennzahlen-Momentaufnahme (Ampel, Leistung)", r.json.vorlage?.status);
+  r = await pl.post(`/api/admin/entwicklung/${sid}/steuerung`, { aktion: "vorlage", id: vid, daten: { budgetEur: 1 } });
+  pruefe(r.status === 409, "Eingereichte Vorlage ist unveränderlich → 409", r.status);
+  r = await pl.post(`/api/admin/entwicklung/vorlagen/${vid}`, { aktion: "genehmigen" });
+  pruefe(r.status === 403, "Projektleitung kann nicht genehmigen → 403", r.status);
+  r = await admin.post(`/api/admin/entwicklung/vorlagen/${vid}`, { aktion: "ablehnen", begruendung: "kurz" });
+  pruefe(r.status === 422, "Ablehnen ohne ausreichende Begründung → 422", r.status);
+  r = await admin.get("/api/portal/benachrichtigungen");
+  pruefe((r.json.eintraege || r.json.benachrichtigungen || []).some((b) => /Entscheidungsvorlage/.test(b.titel)), "Leitung wurde über die eingereichte Vorlage benachrichtigt");
+  r = await admin.post(`/api/admin/entwicklung/vorlagen/${vid}`, { aktion: "genehmigen", begruendung: "Freigabe erteilt, Budget im Rahmen." });
+  pruefe(r.status === 200 && r.json.vorlage?.status === "genehmigt" && r.json.vorlage.entscheidung?.von, "Leitung genehmigt (Vier-Augen-Prinzip erfüllt)", r.json.vorlage?.status ?? r.json);
+  r = await admin.get(`/api/admin/entwicklung/${sid}`);
+  pruefe(r.json.projekt.budget.some((b) => /Budgetfreigabe/.test(b.bezeichnung) && b.planEur === 45000) && r.json.projekt.entscheidungen.some((e) => /Genehmigt: Gate 1/.test(e.titel) && e.art === "go"), "Folgen: Budgetposition 45.000 € und Eintrag im Entscheidungsprotokoll", r.json.projekt.budget.map((b) => b.bezeichnung));
+  r = await pl.get(`/api/admin/entwicklung/${sid}/steuerung`);
+  pruefe((r.json.aufgaben || []).some((a) => /Gate 1 genehmigt/.test(a.titel)), "Folgeaufgabe für die Projektleitung angelegt");
+  r = await admin.post(`/api/admin/entwicklung/vorlagen/${vid}`, { aktion: "zurueckziehen" });
+  pruefe(r.status === 409, "Entschiedene Vorlage kann nicht zurückgezogen werden → 409", r.status);
+  r = await admin.get(`/api/admin/entwicklung/vorlagen/${vid}/pdf`, { roh: true });
+  const pdfPuffer = Buffer.from(await r.arrayBuffer());
+  pruefe(r.status === 200 && (r.headers.get("content-type") || "").includes("pdf") && pdfPuffer.slice(0, 5).toString() === "%PDF-", "Entscheidungsvorlage als PDF für die Geschäftsführung", r.status);
+
+  // Verwertungsentscheidung (Gate 3) – Vier-Augen-Prinzip und Folgen
+  r = await admin.post(`/api/admin/entwicklung/${sid}/steuerung`, { aktion: "vorlage", daten: { art: "gate_rtb", beschlussvorschlag: "Die Geschäftsführung beschließt den Verkauf der Projektrechte über die Projektbörse.", sachverhalt: "Baurecht absehbar, mehrere Investoren haben Interesse signalisiert.", empfehlung: "verkauf" } });
+  const vid2 = r.json.vorlage?.id;
+  r = await admin.post(`/api/admin/entwicklung/vorlagen/${vid2}`, { aktion: "einreichen" });
+  pruefe(r.status === 200 && r.json.vorlage.snapshot?.geschaeftsmodell?.zeilen?.length === 4, "Gate 3 eingereicht mit Geschäftsmodell-Vergleich (4 Modelle)", r.json.vorlage?.snapshot?.geschaeftsmodell?.zeilen?.map((z) => z.id));
+  r = await admin.post(`/api/admin/entwicklung/vorlagen/${vid2}`, { aktion: "genehmigen", option: "verkauf" });
+  pruefe(r.status === 409 && /Vier-Augen/.test(r.json.error), "Einreicher entscheidet nicht selbst → 409", r.json);
+  r = await admin.post(`/api/admin/entwicklung/vorlagen/${vid2}`, { aktion: "zurueckziehen" });
+  pruefe(r.status === 200 && r.json.vorlage.status === "zurueckgezogen", "Vorlage zurückgezogen", r.json.vorlage?.status);
+
+  // Pipeline-Bericht
+  r = await admin.get("/api/admin/entwicklung/steuerung/export?format=pdf", { roh: true });
+  const berichtPdf = Buffer.from(await r.arrayBuffer());
+  pruefe(r.status === 200 && berichtPdf.slice(0, 5).toString() === "%PDF-", "Pipeline-Bericht als PDF", r.status);
+  r = await admin.get("/api/admin/entwicklung/steuerung/export?format=csv");
+  pruefe(r.status === 200 && r.text.includes("Ampel gesamt") && r.text.includes(`ent-test-${LAUF} Steuerung`) && r.text.includes("gewichtet MWp"), "Pipeline-Bericht als CSV (Projekte, Matrix, Ziel)", r.status);
+  r = await pl.get("/api/admin/entwicklung/steuerung/export?format=csv");
+  pruefe(r.status === 403, "CSV ohne Exportrecht (Projektleitung) → 403", r.status);
 
   // ------------------------------------------------------------ 2. Anlegen, Abhängigkeiten, Dokumentenpflicht
   abschnitt("2. Eigenes Projekt: Vorlage, Abhängigkeiten, Dokumentenpflicht, Pipeline");
@@ -403,6 +611,11 @@ async function main() {
   // ------------------------------------------------------------ 8. Seiten
   abschnitt("8. Seiten");
   for (const [cl, pfad, soll] of [
+    [admin, "/portal/admin/entwicklung/steuerung", 200],
+    [admin, `/portal/admin/entwicklung/${sid}?reiter=steuerung`, 200],
+    [admin, `/portal/admin/entwicklung/vorlagen/${vid}`, 200],
+    [pl, "/portal/admin/entwicklung/steuerung", 200],
+    [investorDemo, "/portal/admin/entwicklung/steuerung", 404],
     [admin, "/portal/admin/entwicklung", 200],
     [admin, "/portal/admin/entwicklung?ansicht=kanban", 200],
     [admin, `/portal/admin/entwicklung/${muehl.id}`, 200],

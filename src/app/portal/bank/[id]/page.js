@@ -1,28 +1,40 @@
 import Link from "next/link";
-import { ArrowLeft, FileSpreadsheet, FileText, Lock } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, FileText, Lock, UserRound } from "lucide-react";
 import { Angaben, Badge, Hinweis, Karte, SeitenKopf } from "@/components/Portal/ui";
 import { teur, datumDe, HINWEIS_BERATUNG } from "@/components/Portal/Finanzierung/teile";
-import { BankRueckmeldung, TermsheetFormular } from "@/components/Portal/Finanzierung/Aktionen";
+import { TermsheetFormular } from "@/components/Portal/Finanzierung/Aktionen";
+import { BankAbsage, ZustaendigAuswahl } from "@/components/Portal/Finanzierung/BankAkte";
+import { AkteAnforderungen, AkteNachAuswahl, AkteQa, AkteVerlauf } from "@/components/Portal/Finanzierung/BankAkteAnsicht";
 import { portalNutzer, laden } from "@/lib/plattform/server/seite";
 import { finanzierungBackend } from "@/lib/plattform/backend/finanzierung";
+import { bankakteBackend } from "@/lib/plattform/backend/bankakte";
 import { ANFRAGE_STATUS, REFERENZZINSEN } from "@/lib/plattform/finanzierung/bank";
 import { ERLOES_MODELLE, TYPEN_FZ } from "@/lib/plattform/finanzierung/kern";
+import { bankRolleReicht } from "@/lib/plattform/finanzierung/bankakte";
 
 export const metadata = { title: "Bankenpaket" };
 
-// Eine Anfrage aus Sicht der Bank: nur freigegebene Bausteine, eigene Term Sheets, keine anderen Banken (fremd → 404)
+// Eine Anfrage aus Sicht der Bank: nur freigegebene Bausteine, eigene Term Sheets, keine anderen Banken (fremd → 404);
+// Bank-Akte (Anforderungen, Q&A, Kreditentscheidung, CPs, Auszahlungen, Monitoring) mit Aktionen nach Teamrolle
 export default async function BankAnfrageSeite({ params }) {
   const n = await portalNutzer({ rollen: ["bank"] });
   const { id } = await params;
   const d = await laden(() => finanzierungBackend().fzBankAnfrage(n, id));
+  const akte = await laden(() => bankakteBackend().baAkte(n, id));
   const a = d.anfrage;
   const v = d.vorhaben;
   const ts = a.termsheet?.daten;
+  const sb = bankRolleReicht(akte.rolle, "sachbearbeiter");
+  const leitung = akte.rolle === "leitung";
   return (
     <>
       <Link href="/portal/bank" className="mb-3 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-ink-600 hover:text-ov-700"><ArrowLeft aria-hidden="true" className="h-4 w-4" />Alle Anfragen</Link>
-      <SeitenKopf eyebrow="Finanzierungsanfrage · vertraulich" titel={v.titel} text={`Frist für Ihr Term Sheet: ${datumDe(a.frist)}`}>
-        <div className="mt-3 flex flex-wrap gap-2"><Badge ton={ANFRAGE_STATUS[a.status]?.ton}>{ANFRAGE_STATUS[a.status]?.label}</Badge></div>
+      <SeitenKopf eyebrow="Finanzierungsanfrage · vertraulich" titel={v.titel} text={a.status === "ausgewaehlt" ? "Ihr Haus wurde als finanzierende Bank ausgewählt." : `Frist für Ihr Term Sheet: ${datumDe(a.frist)}`}>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Badge ton={ANFRAGE_STATUS[a.status]?.ton}>{ANFRAGE_STATUS[a.status]?.label}</Badge>
+          <Badge><UserRound aria-hidden="true" className="h-3.5 w-3.5" />Ihre Rolle: {akte.rolleLabel}</Badge>
+          {akte.zustaendig && <Badge ton="info">Zuständig: {akte.zustaendig.name}</Badge>}
+        </div>
       </SeitenKopf>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <div className="space-y-6">
@@ -49,6 +61,9 @@ export default async function BankAnfrageSeite({ params }) {
               ))}
             </ul>
           </Karte>
+          <AkteAnforderungen akte={akte} darf={sb} />
+          <AkteQa akte={akte} darf={sb} />
+          <AkteNachAuswahl akte={akte} darf={sb} leitung={leitung} />
         </div>
         <div className="space-y-6">
           {ts && (
@@ -60,17 +75,26 @@ export default async function BankAnfrageSeite({ params }) {
               ]} />
             </Karte>
           )}
-          {d.darfTermsheet ? (
+          {d.darfTermsheet && sb ? (
             <Karte titel={ts ? "Term Sheet aktualisieren" : "Term Sheet abgeben"} untertitel="Indikativ – ÖkoInvest vergleicht alle Angebote gegen das Financial Model.">
               <TermsheetFormular url={`/api/portal/bank/${a.id}`} vorschlagBetrag={v.betragWunsch} knopfText="Term Sheet übermitteln" />
             </Karte>
-          ) : (
+          ) : d.darfTermsheet ? (
+            <Hinweis ton="neutral">Mit der Rolle „Nur lesen“ sehen Sie die Anfrage; Term Sheet und Fragen gibt die Sachbearbeitung Ihres Hauses ab.</Hinweis>
+          ) : a.status !== "ausgewaehlt" ? (
             <Hinweis ton="neutral">Für diese Anfrage ist keine Abgabe mehr möglich ({ANFRAGE_STATUS[a.status]?.label}).</Hinweis>
+          ) : null}
+          {sb && (
+            <Karte titel="Zuständigkeit" untertitel="Benachrichtigungen zu dieser Anfrage gehen an die zuständige Person">
+              <ZustaendigAuswahl anfrageId={a.id} team={akte.team} aktuell={akte.zustaendig?.id} />
+              <p className="mt-2 text-[12.5px] text-ink-500"><Link href="/portal/bank/team" className="font-semibold text-ov-700 hover:text-ov-800">Team verwalten</Link></p>
+            </Karte>
           )}
-          {d.darfTermsheet && <Karte titel="Rückfrage oder Absage"><BankRueckmeldung anfrageId={a.id} /></Karte>}
+          {d.darfTermsheet && leitung && <Karte titel="Absage"><BankAbsage anfrageId={a.id} /></Karte>}
           <Karte titel="Verlauf" innen="p-0">
             <ul className="divide-y divide-ink-100">{a.verlauf.slice().reverse().map((x, i) => <li key={i} className="px-5 py-2.5 text-[13px]"><span className="text-ink-500">{new Date(x.am).toLocaleString("de-DE")}</span><br />{x.text}</li>)}</ul>
           </Karte>
+          <AkteVerlauf akte={akte} />
           <p className="text-[12px] leading-relaxed text-ink-500">{HINWEIS_BERATUNG}</p>
         </div>
       </div>

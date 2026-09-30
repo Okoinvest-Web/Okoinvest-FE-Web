@@ -35,6 +35,7 @@ import { jetzt, neueId, vorTagen } from "./hilfen";
 import { datenraumStufeOk, dokumentStufe, tagHeute, verbindlichZugelassen } from "./dealroomRegeln";
 import { kycSperre } from "./kycRegeln"; // KYC/KYB: Gebot und Zuschlag nur verifiziert
 import { bonitaetSperre } from "./diensteRegeln"; // Dienste: Gebot nur mit gültiger Bonitätsauskunft, wenn Pflicht
+import { anbieterZuschlagPruefen } from "./anbieterRegeln"; // Anbieter: kein Zuschlag auf ein vom Verkäufer abgelehntes Gebot (409)
 
 const { nachricht, benachrichtigen, protokoll, systemWechsel, darfDokument, dokumentMeta, nutzerById, kurz, nameVon, aktiveAdmins } = intern;
 
@@ -639,6 +640,7 @@ export async function bieterAktion(n, id, daten = {}) {
       if (rundeOffen(r)) throw konflikt("Ein Zuschlag ist erst nach Ablauf bzw. Ende der Runde möglich (Gleichbehandlung).");
       const g = db.dealroom.gebote.find((x) => x.id === v.kennung(daten.gebotId) && x.verfahrenId === vf.id && x.runde === r.nr && x.status === "abgegeben"); // nur Gebote der letzten Runde
       v.pflicht(g, "Bitte wählen Sie ein gültiges Gebot.");
+      anbieterZuschlagPruefen(db, g); // Stellungnahme des Verkäufers: Ablehnung sperrt den Zuschlag (409 „votum“)
       const i = db.interessen.find((x) => x.id === g.interesseId);
       v.pflicht(i && ["nda_freigegeben", "loi_abgegeben", "loi_angenommen"].includes(i.status), "Der Bieter hat keinen gültigen Datenraum-Status mehr.");
       kycSperre(db, "zuschlag", { kontoId: i.investorId, organisationId: i.organisationId || null, text: "Zuschlag nicht möglich: Der Bieter ist noch nicht verifiziert (KYC/KYB)." }); // KYC/KYB

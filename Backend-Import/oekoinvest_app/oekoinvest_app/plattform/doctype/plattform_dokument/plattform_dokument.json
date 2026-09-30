@@ -22,7 +22,16 @@
   "sec_datei",
   "datei",
   "datei_id",
-  "sha256"
+  "sha256",
+  "sec_version",
+  "version",
+  "vorgaenger",
+  "ersetzt_durch",
+  "cb_version",
+  "freigabe_status",
+  "freigabe_von",
+  "freigabe_am",
+  "freigabe_kommentar"
  ],
  "fields": [
   {
@@ -133,6 +142,61 @@
    "fieldtype": "Data",
    "label": "SHA-256",
    "read_only": 1
+  },
+  {
+   "fieldname": "sec_version",
+   "fieldtype": "Section Break",
+   "label": "Version & Freigabe"
+  },
+  {
+   "fieldname": "version",
+   "fieldtype": "Int",
+   "label": "Version",
+   "default": "1",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vorgaenger",
+   "fieldtype": "Link",
+   "options": "Plattform Dokument",
+   "label": "Vorgängerversion",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ersetzt_durch",
+   "fieldtype": "Link",
+   "options": "Plattform Dokument",
+   "label": "Ersetzt durch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_version",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "freigabe_status",
+   "fieldtype": "Select",
+   "label": "Freigabestatus",
+   "options": "\neingegangen\nin_pruefung\nfreigegeben\nabgelehnt",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "freigabe_von",
+   "fieldtype": "Data",
+   "label": "Freigabe durch (Konto-ID)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "freigabe_am",
+   "fieldtype": "Datetime",
+   "label": "Freigabe am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "freigabe_kommentar",
+   "fieldtype": "Small Text",
+   "label": "Hinweis zur Freigabe"
   }
  ],
  "index_web_pages_for_search": 0,

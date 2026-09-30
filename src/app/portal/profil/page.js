@@ -77,7 +77,7 @@ export default async function Profil({ searchParams }) {
           </Karte>
         </div>
       )}
-      <Karte titel="Ihre Daten" untertitel="Auskunft, Datenübertragbarkeit, Löschung (DSGVO)">
+      <Karte id="daten" titel="Ihre Daten" untertitel="Auskunft, Datenübertragbarkeit (Art. 20 DSGVO), Löschung (Art. 17 DSGVO)">
         <DatenUndLoeschung />
       </Karte>
     </div>

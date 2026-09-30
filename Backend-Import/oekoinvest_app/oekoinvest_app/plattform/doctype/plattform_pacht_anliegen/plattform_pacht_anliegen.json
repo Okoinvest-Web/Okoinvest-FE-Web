@@ -1,0 +1,163 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "Anliegen eines Eigentümers zum Pachtvertrag (Kündigung, Eigentümerwechsel, Erbfall, Zahlungsaufteilung, Verlängerung) mit Zustandsautomat, Verlauf und Ergebnis. Nur über die API (plattform/api/pachtakte.py).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "vertrag_id",
+  "konto_id",
+  "art",
+  "status",
+  "bearbeitung_bis",
+  "aufgabe_id",
+  "daten",
+  "ergebnis",
+  "verlauf"
+ ],
+ "fields": [
+  {
+   "fieldname": "vertrag_id",
+   "fieldtype": "Link",
+   "label": "Pachtvertrag",
+   "options": "Plattform Pachtvertrag",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "konto_id",
+   "fieldtype": "Link",
+   "label": "Eigentümer (Konto)",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "kuendigung\neigentuemerwechsel\nerbfall\nzahlungsaufteilung\nverlaengerung",
+   "default": "kuendigung",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "eingereicht\nin_pruefung\nrueckfrage\nerledigt\nabgelehnt\nzurueckgezogen",
+   "default": "eingereicht",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "bearbeitung_bis",
+   "fieldtype": "Date",
+   "label": "Bearbeitungsziel",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "aufgabe_id",
+   "fieldtype": "Link",
+   "label": "Aufgabe (Backoffice)",
+   "options": "Plattform Aufgabe"
+  },
+  {
+   "fieldname": "daten",
+   "fieldtype": "JSON",
+   "label": "Angaben (Positivliste)"
+  },
+  {
+   "fieldname": "ergebnis",
+   "fieldtype": "JSON",
+   "label": "Ergebnis"
+  },
+  {
+   "fieldname": "verlauf",
+   "fieldtype": "JSON",
+   "label": "Verlauf"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Pacht Anliegen",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Akquise",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "in_create": 0
+}

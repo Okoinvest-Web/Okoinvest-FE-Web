@@ -31,6 +31,7 @@ export function zahlungsstatus(beleg, heute) {
 export function mahnhinweis(beleg, heute, stufen = MAHNSTUFEN) {
   if (zahlungsstatus(beleg, heute) !== "ueberfaellig") return null;
   const tage = tageZwischen(beleg.faelligAm, heute);
+  if (beleg.mahnsperre) return { tage, stufe: 0, label: "Mahnsperre – Einspruch des Kunden in Prüfung", faellig: false, sperre: true }; // Kundenseite Energie: Einspruch
   const erreicht = stufen.filter((s) => tage >= s.tage).pop();
   const letzte = Math.max(0, ...(beleg.mahnungen || []).map((m) => Number(m.stufe) || 0));
   if (!erreicht) return { tage, stufe: 0, label: "Überfällig – noch keine Mahnstufe", faellig: false };

@@ -14,8 +14,11 @@ Steuerung aller Geschäftsmodelle, Freigaben mit Außenwirkung, Rechte und Siche
 | | Störungs-Leitstand: kritische Störungen offen? | `/portal/admin/anlagen` |
 | | Covenant-Frühwarnungen, Fristen Energieverträge, KYC-Warteschlange (nur Status) | `/portal/admin/finanzierung`, `/portal/admin/energie`, `/portal/admin/compliance` |
 | Mittags | Freigaben: Projekte (Satz 1,5–3 %), Zuschlagsvorschläge, Term-Sheet-Entscheidungen | `/portal/admin/projekte`, `/portal/admin/dealroom`, `/portal/admin/finanzierung/[id]` |
+| | Entscheidungsvorlagen der Projektentwicklung (Gates, Verwertung, SPV, Budget, Abbruch) – PDF prüfen, genehmigen/ablehnen/zurückstellen (Vier-Augen-Prinzip) | `/portal/admin/entwicklung/steuerung` |
 | Wöchentlich | Berichte (Trichter, Quellen, Pipeline, Provision, Durchlauf, Team), Entwicklungs-Portfolio (MWp je COD-Jahr vs. Ziel rund 50 MWp/Jahr), Revisionsprotokoll prüfen | `/portal/admin/berichte`, `/portal/admin/entwicklung`, `/portal/admin/protokoll` |
+| | Pipeline-Bericht (MWp je Phase × Land, Ziel-Abgleich, Projektampel) als PDF, Kapazität der Projektleitungen (Stunden je Monat festlegen) | `/portal/admin/entwicklung/steuerung` |
 | Monatlich | Monatsbericht-PDF, Rechte-Matrix und Nutzer durchsehen, Automationen-Protokoll, 2FA-Pflicht | `/portal/admin/rechte`, `/portal/admin/automationen`, `/portal/sicherheit` |
+| Monatlich | Leitungs-Cockpit (Pipeline MWp je Phase, gesicherte Fläche, Provisionen, Energie-Pool, Anlagen, KYC-Rückstau, offene Posten) und Management-Bericht PDF; Revisionsprotokoll gezielt durchsuchen | `/portal/admin/leitung`, `/portal/admin/protokoll` |
 
 ## Abläufe mit Leitungsentscheidung
 

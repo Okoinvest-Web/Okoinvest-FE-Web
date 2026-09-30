@@ -31,6 +31,8 @@
   "sec_suche",
   "suchprofil",
   "mail_einstellungen",
+  "mail_rhythmus",
+  "digest_zuletzt",
   "komfort",
   "onboarding",
   "onboarding_pfade"
@@ -185,6 +187,19 @@
    "fieldname": "mail_einstellungen",
    "fieldtype": "JSON",
    "label": "E-Mail-Benachrichtigungen"
+  },
+  {
+   "fieldname": "mail_rhythmus",
+   "fieldtype": "Select",
+   "label": "E-Mail-Rhythmus",
+   "options": "sofort\ntaeglich",
+   "default": "sofort"
+  },
+  {
+   "fieldname": "digest_zuletzt",
+   "fieldtype": "Datetime",
+   "label": "Letzter Tages-Digest",
+   "read_only": 1
   },
   {
    "description": "Konto-Komfort: { farbe, sprache, kanaele: { email, sicherheitEmail } }. kanaele.email = false unterdrückt Benachrichtigungs-E-Mails (Sicherheitsmeldungen gehen immer). Pflege nur über api/sicherheit.komfort_speichern.",

@@ -8,12 +8,15 @@ import { LAENDER, PROJEKT_TYPEN } from "@/lib/plattform/konstanten";
 import { mwp, preisText } from "@/lib/plattform/format";
 import { fmt } from "@/lib/rechner/annahmen";
 import { phaseById, PROVISION } from "@/lib/invest/markt";
+import AnbieterCockpit from "@/components/Portal/Anbieter/Cockpit"; // Anbieter: „Was ist zu tun?“ über alle Projekte
+import { anbieterBackend } from "@/lib/plattform/backend/anbieter";
 
 export const metadata = { title: "Meine Projekte" };
 
 export default async function Projekte() {
   const n = await portalNutzer({ rollen: ["anbieter"] });
   const projekte = await backend().projekte(n);
+  const cockpit = projekte.length ? await anbieterBackend().anbieterCockpit(n).catch(() => null) : null;
   const summe = (k) => projekte.reduce((s, p) => s + (p.statistik?.[k] || 0), 0);
 
   return (
@@ -24,6 +27,7 @@ export default async function Projekte() {
         text={`Anonymer Teaser öffentlich, Details nur nach NDA. Provision ${PROVISION.verkaeufer.text}.`}
         aktionen={<Button href="/portal/projekte/neu" icon={Plus}>Projekt anlegen</Button>}
       />
+      {cockpit && <AnbieterCockpit daten={cockpit} />}
       {projekte.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Kennzahl label="Aufrufe" wert={fmt(summe("aufrufe"))} icon={Eye} hinweis="Exposé-Aufrufe gesamt" />

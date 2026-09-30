@@ -34,6 +34,20 @@ Verkauf (Transaktion) → Provision automatisch → Provisionsrechnung sofort �
 
 Aktivierung je Contracting-Anlage (Anschaffungswert, Nutzungsdauer PV 20 / Speicher 10 Jahre als Vorschlag, AT Halbjahresregel, DE/CH monatsgenau); Projektcontrolling Budget vs. Ist je Entwicklungsprojekt.
 
+## Buchhaltung: OP, Mahnwesen, Zahlungseingang, Storno, Export, Abschluss
+
+Seite `/portal/admin/finanzen/buchhaltung` (Reiter):
+
+| Reiter | Was | Hinweise |
+|---|---|---|
+| Offene Posten | OP-Liste mit Altersstruktur, Teilzahlungen, Mahnstufe; je Beleg **Stornieren** und **Mahnsperre** | CSV-Export |
+| Mahnwesen | Mahnvorschläge auswählen → **Vorschau** → **Mahnungen erstellen** (Nummer `MA-…`, neue Frist, PDF); Stufen, Gebühren, Verzugszinsen, 40-€-Pauschale konfigurieren | Folge-Mahnung erst nach Ablauf der Frist; Einspruch des Kunden sperrt automatisch; Basiszinssatz amtlich eintragen |
+| Zahlungseingang | Kontoauszug **CAMT.053/.054 (XML) oder CSV** einlesen → Vorschläge prüfen → „sichere Treffer übernehmen“ bzw. einzeln zuordnen/ignorieren | voller Betrag → „bezahlt“ (Provision/Kunde automatisch), sonst Teilzahlung; Überzahlung → Aufgabe; SEPA-Ausgänge bestätigen angewiesene Gutschriften |
+| Storno & Korrektur | Beleg wählen, Grund angeben → **Stornobeleg** `ST-…` mit Verweis auf den Ursprung | nie löschen; bereits gezahlt → Aufgabe Erstattung/Rückforderung; Pacht/Contracting: nächster Lauf erzeugt den korrigierten Beleg |
+| Export & Konten | **DATEV-Buchungsstapel** (DE) bzw. **BMD** (AT) für einen Zeitraum, OP-Liste; Kontenzuordnung | Beispielkonten – vor dem ersten Echtimport mit der Steuerberatung festlegen und testen |
+| Monatsabschluss | Checkliste je Monat (Läufe, Klärfälle, Kontoauszüge, SEPA, Mahnlauf, Pflichtangaben, OP-Abstimmung, AfA, UVA/ZM, Export) → **Monat abschließen** | offene Pflichtpunkte blockieren; Wiedereröffnen nur mit Grund; Steuerfristen AT/DE/CH als Orientierung |
+| Nummernkreise & Steuer | Nummernkreise je Jahr mit Lückenprüfung, Steuer-Check (Pflichtangaben, Reverse Charge ohne UID) | Lücken (z. B. Testbelege) dokumentieren |
+
 ## Aufbewahrung
 
 AT 7 Jahre (§ 132 BAO, § 212 UGB; Grundstücksbezug bis 22 Jahre), DE bis 10 Jahre (§ 147 AO, § 257 HGB), CH 10 Jahre (Art. 958f OR). Belege sind nicht löschbar; Kontolöschung von Nutzern anonymisiert, Belege bleiben gesperrt erhalten.

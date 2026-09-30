@@ -17,6 +17,7 @@
 //                 energieFrageStellen(n,id,{text}) · energieFreigabe(n,id,{entscheidung,kommentar,ip})
 //   Portfolio:    energiePortfolio(n) · energieTrancheSpeichern(n,daten) · energieTrancheStornieren(n,id)
 //   Sonstiges:    energieDokumentDaten(n,{art,id}) (PDF erzeugt die Website) · energieLauf(n) · energieSystemLauf() (Demo: Scheduler-Ersatz)
+//   Bericht:      energieDokumentDaten(n,{art:"kundenbericht",id:kundeId}) – Beschaffungsbericht je Kunde (PDF)
 //
 // Nur serverseitig verwenden.
 

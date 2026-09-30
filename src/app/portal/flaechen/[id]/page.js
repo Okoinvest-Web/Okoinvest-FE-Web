@@ -21,6 +21,7 @@ import { Angebotsbogen, FachAngaben, FachPruefungListe, PipelineHinweis, begriff
 import { pachtVorschlag } from "@/lib/plattform/flaecheFach";
 import { fachBackend } from "@/lib/plattform/backend/kommune";
 import GrundbuchAmObjekt from "@/components/Portal/Closing/GrundbuchAmObjekt"; // Grundbuch & Closing
+import PachtakteAmObjekt from "@/components/Portal/Pachtakte/AmObjekt"; // Pachtakte (Team 1)
 
 export const metadata = { title: "Fläche" };
 
@@ -141,6 +142,7 @@ export default async function Flaeche({ params }) {
           </Karte>
 
           <GrundbuchAmObjekt nutzer={n} bezugArt="flaeche" bezugId={f.id} />{/* Grundbuch & Closing: Dienstbarkeit */}
+          <PachtakteAmObjekt nutzer={n} flaeche={f} />{/* Pachtakte (Team 1): Vertrag, Fristen, Anliegen */}
 
           {(admin || eigen) && (
             <Karte titel="Unterlagen zur Fläche" untertitel="Damit wir schnell und verbindlich prüfen können">

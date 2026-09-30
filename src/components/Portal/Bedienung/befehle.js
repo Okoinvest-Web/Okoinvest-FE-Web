@@ -11,6 +11,8 @@ import {
 
 import { Banknote, FileSpreadsheet, HandHeart, HardHat, Landmark, Milestone, PlugZap, ScanFace, SunMedium, Target, TriangleAlert, Zap } from "lucide-react"; // UI-Politur: Bottom-Navigation je Rolle
 import { darfLesen, seitenBereich, unterrollen } from "@/lib/plattform/rechte"; // UI-Politur: Bottom-Navigation Backoffice-Unterrollen
+import { BookOpen, CalendarDays, Fingerprint, Link2, UsersRound } from "lucide-react"; // Querschnitt: weitere Navigationsziele
+import { Wrench } from "lucide-react"; // Betriebsführung Anlagen
 
 const hatRolle = (rollen, ...r) => r.some((x) => rollen.includes(x));
 
@@ -22,8 +24,14 @@ export function navigationsZiele(rollen = []) {
     { id: "nav-dashboard", titel: "Übersicht", href: "/portal", icon: LayoutDashboard, stichworte: "dashboard start home", kuerzel: "g d" },
     { id: "nav-anfragen", titel: "Meine Anfragen", href: "/portal/anfragen", icon: Inbox, stichworte: "vorgänge anfrage", kuerzel: "g a" },
     flaeche && { id: "nav-flaechen", titel: "Flächen", href: "/portal/flaechen", icon: LandPlot, stichworte: "grundstück acker pacht", kuerzel: "g f" },
+    flaeche && { id: "nav-pachtvertraege", titel: "Pachtverträge", href: "/portal/pachtvertraege", icon: FileText, stichworte: "pacht kündigung eigentümerwechsel erbfall rückbau jahresbescheinigung agri nachweis" }, // Pachtakte (Team 1)
     (hatRolle(rollen, "anbieter") || admin) && { id: "nav-projekte", titel: admin && !hatRolle(rollen, "anbieter") ? "Projekt-Freigabe" : "Meine Projekte", href: admin && !hatRolle(rollen, "anbieter") ? "/portal/admin/projekte" : "/portal/projekte", icon: FolderKanban, stichworte: "projekt anbieter", kuerzel: "g p" },
     (hatRolle(rollen, "investor") || admin) && { id: "nav-boerse", titel: "Projektbörse", href: hatRolle(rollen, "investor") ? "/portal/boerse" : "/projektboerse", icon: TrendingUp, stichworte: "börse investment kaufen", kuerzel: "g b" },
+    hatRolle(rollen, "investor") && { id: "nav-portfolio", titel: "Portfolio", href: "/portal/portfolio", icon: TrendingUp, stichworte: "portfolio bestand ausschüttung kapitalabruf bericht beteiligung" }, // Portfolio
+    hatRolle(rollen, "mitglied") && { id: "nav-mg-geno", titel: "Genossenschaft: Mitgliedschaft & Anteile", href: "/portal/beteiligung/genossenschaft", icon: HandHeart, stichworte: "genossenschaft anteile beitritt einzahlung kündigung übertragung dividende generalversammlung" }, // Team 5
+    hatRolle(rollen, "mitglied") && { id: "nav-mg-eg", titel: "Energiegemeinschaft: Teilnahme & Abrechnung", href: "/portal/beteiligung/energiegemeinschaft", icon: Zap, stichworte: "eeg energy sharing leg zählpunkt gutschrift abrechnung" }, // Team 5
+    admin && { id: "nav-bo-geno", titel: "Genossenschaft (Backoffice)", href: "/portal/admin/genossenschaft", icon: HandHeart, stichworte: "mitglieder zulassung einzahlung generalversammlung ausschüttung dividende" }, // Team 5
+    admin && { id: "nav-bo-eg", titel: "Energiegemeinschaften (Backoffice)", href: "/portal/admin/energiegemeinschaften", icon: Zap, stichworte: "eeg teilnehmer netzbetreiber monatslauf abrechnung" }, // Team 5
     { id: "nav-nachrichten", titel: "Nachrichten", href: "/portal/nachrichten", icon: MessagesSquare, stichworte: "chat postfach", kuerzel: "g n" },
     { id: "nav-hinweise", titel: "Benachrichtigungen", href: "/portal/benachrichtigungen", icon: Bell, stichworte: "glocke hinweise e-mail" },
     { id: "nav-dokumente", titel: "Dokumente", href: "/portal/dokumente", icon: FileText, stichworte: "unterlagen upload pdf" },
@@ -38,6 +46,13 @@ export function navigationsZiele(rollen = []) {
     admin && { id: "nav-deals", titel: "Deals & Provisionen", href: "/portal/admin/deals", icon: Coins, stichworte: "provision verkauf" },
     admin && { id: "nav-nutzer", titel: "Nutzer & Protokoll", href: "/portal/admin/nutzer", icon: Users, stichworte: "konten rollen protokoll" },
     admin && { id: "nav-postausgang", titel: "E-Mail-Postausgang", href: "/portal/admin/postausgang", icon: Mail, stichworte: "mail vorschau" },
+    // Querschnitt: Handbücher, Termine, Sicherheit, Organisation, Revisionsprotokoll
+    { id: "nav-handbuch", titel: "Handbücher", href: "/portal/hilfe/handbuch", icon: BookOpen, stichworte: "anleitung handbuch hilfe dokumentation" },
+    { id: "nav-termine", titel: "Termine", href: admin ? "/portal/admin/kalender" : "/portal/termine", icon: CalendarDays, stichworte: "kalender termin buchen besichtigung" },
+    { id: "nav-sicherheit", titel: "Sicherheit & Geräte", href: "/portal/sicherheit", icon: Fingerprint, stichworte: "2fa zwei-faktor sitzungen geräte passwort" },
+    { id: "nav-organisation", titel: "Organisation & Team", href: "/portal/organisation", icon: UsersRound, stichworte: "team mitglieder einladen rollen firma" },
+    { id: "nav-datenexport", titel: "Datenexport & Konto löschen", href: "/portal/profil#daten", icon: UserRound, stichworte: "dsgvo art 20 art 17 export löschen" },
+    admin && { id: "nav-protokoll", titel: "Revisionsprotokoll durchsuchen", href: "/portal/admin/protokoll", icon: Link2, stichworte: "audit protokoll hash kette suche" },
     { id: "nav-website", titel: "Zur Website", href: "/", icon: Globe, stichworte: "startseite öffentlich" },
   ].filter(Boolean);
 }
@@ -95,10 +110,13 @@ const ROLLEN_ZIELE = [
   { id: "nav-beteiligung", titel: "Genossenschaft & Gemeinschaft", kurz: "Beteiligung", href: "/portal/beteiligung", icon: HandHeart },
   { id: "nav-kommune", titel: "Gemeinde", kurz: "Gemeinde", href: "/portal/kommune", icon: Landmark },
   { id: "nav-entwicklung", titel: "Aufträge & Projekte", kurz: "Aufträge", href: "/portal/entwicklung", icon: HardHat },
+  { id: "nav-gutachter", titel: "Auftragsverwaltung (Angebote, Lieferungen, Rechnungen)", kurz: "Verwaltung", href: "/portal/gutachter", icon: ClipboardList }, // Gutachteraufträge
   { id: "nav-bo-energie", titel: "Energie-Handelsdesk", kurz: "Handelsdesk", href: "/portal/admin/energie", icon: PlugZap },
   { id: "nav-bo-anlagen", titel: "Anlagen & Störungen", kurz: "Anlagen", href: "/portal/admin/anlagen", icon: TriangleAlert },
+  { id: "nav-bo-betrieb", titel: "Betriebsführung (SLA, Wartung, Prüfungen, Lager)", kurz: "Betrieb", href: "/portal/admin/anlagen/betrieb", icon: Wrench }, // Betriebsführung Anlagen
   { id: "nav-bo-compliance", titel: "Compliance (KYC)", kurz: "KYC", href: "/portal/admin/compliance", icon: ScanFace },
   { id: "nav-bo-entwicklung", titel: "Projektentwicklung", kurz: "Entwicklung", href: "/portal/admin/entwicklung", icon: Milestone },
+  { id: "nav-bo-entwicklung-steuerung", titel: "Entwicklung: Steuerung & Entscheidungsvorlagen", kurz: "Steuerung", href: "/portal/admin/entwicklung/steuerung", icon: Milestone }, // Projektampel, Pipeline-Bericht, Kapazität
   { id: "nav-bo-finanzen", titel: "Finanzen & Abrechnung", kurz: "Finanzen", href: "/portal/admin/finanzen", icon: Landmark },
   { id: "nav-bo-akquise", titel: "Akquise & Gebiete", kurz: "Akquise", href: "/portal/admin/akquise", icon: Target },
 ];
@@ -123,7 +141,7 @@ export function bottomNavZiele(rollen = [], nutzer = null) {
     if (nutzer) ids = ids.filter((id) => { const ziel = z(id); const bereich = ziel && seitenBereich(ziel.href); return !bereich || darfLesen(nutzer, bereich); });
   }
   else if (hatRolle(rollen, "unternehmen")) ids = ["nav-dashboard", "nav-anlagen", "nav-energie", "nav-nachrichten"];
-  else if (hatRolle(rollen, "gutachter")) ids = ["nav-dashboard", "nav-entwicklung", "nav-nachrichten", "nav-dokumente"];
+  else if (hatRolle(rollen, "gutachter")) ids = ["nav-dashboard", "nav-gutachter", "nav-entwicklung", "nav-nachrichten"]; // Gutachteraufträge
   else if (hatRolle(rollen, "kommune")) ids = ["nav-dashboard", "nav-kommune", "nav-nachrichten", "nav-dokumente"];
   else if (hatRolle(rollen, "bank")) ids = ["nav-dashboard", "nav-bank", "nav-nachrichten", "nav-dokumente"];
   else if (hatRolle(rollen, "lieferant")) ids = ["nav-dashboard", "nav-ausschreibungen", "nav-nachrichten", "nav-dokumente"];

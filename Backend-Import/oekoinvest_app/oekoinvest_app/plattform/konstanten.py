@@ -166,6 +166,15 @@ PRAEFIX = {
 	"Plattform Wartung": "WA",
 	"Plattform Contracting Vertrag": "CV",
 	"Plattform Zaehlerstand Monatswert": "ZM",
+	# Betriebsführung
+	"Plattform Wartungsplan": "WP",
+	"Plattform Pruefprotokoll": "PP",
+	"Plattform Serviceauftrag": "SA",
+	"Plattform Versicherungsfall": "VF",
+	"Plattform Ersatzteil": "ET",
+	"Plattform Ersatzteil Bewegung": "EB",
+	"Plattform Anlagen Einstrahlung": "KZ",
+	"Plattform Zaehler Freigabe": "ZF",
 	# KYC/KYB
 	"KYC Fall": "KY",
 	"KYC Dokument": "KD",
@@ -194,6 +203,8 @@ PRAEFIX = {
 	"Plattform Gutachter Profil": "GP",
 	"Plattform Projektkosten": "PK",
 	"Plattform Kostentraeger": "KT",
+	"Plattform Entwicklung Vorlage": "EVL",  # Entscheidungsvorlagen (Steuerung)
+	"Plattform Entwicklung Kapazitaet": "EKP",  # Kapazität je Projektleitung (Steuerung)
 	# Fachprüfung Kapitalseite
 	"Plattform Abnahmestelle": "AS",
 	"Plattform Lastgang": "LG",
@@ -233,6 +244,14 @@ PRAEFIX = {
 	"Plattform Planversion": "PLV",
 	"Plattform Kostenkalkulation": "KK",
 	"Plattform Kostenstand": "KS",
+	# Portfolio (Investor nach dem Kauf)
+	"Plattform Portfolio Position": "PO",
+	"Plattform Kapitalabruf": "CC",
+	"Plattform Ausschuettung": "AZ",
+	# Gutachteraufträge & Bank-Akte (Team Gutachter/Planer und Bank)
+	"Plattform Gutachterauftrag": "GAU",
+	"Plattform Bankakte": "BAK",
+	"Plattform Bank Mitglied": "BMG",
 }
 
 # ---------------------------------------------------------------- Benachrichtigungen (Glocke) – wie BENACHRICHTIGUNG_ARTEN in konstanten.js
@@ -256,6 +275,8 @@ BENACHRICHTIGUNG_ARTEN = {
 	"energie": ("Energiebeschaffung", True, False, ["unternehmen", "lieferant"]),
 	# Finanzierung: Anfragen, Term Sheets, Entscheidungen (Bank) und Covenant-Frühwarnungen (Backoffice)
 	"finanzierung": ("Finanzierung & Banken", True, False, ["bank", "investor"]),
+	# Portfolio: Kapitalabrufe, Ausschüttungen, Dokumente, Covenant-Hinweise zu gekauften Anlagen und Beteiligungen
+	"portfolio": ("Portfolio & Beteiligungen", True, False, ["investor"]),
 	# Dokumente, Signatur, Termine, Service & HR
 	"signatur": ("Elektronische Unterschrift", True, False, None),
 	"termin": ("Termine", True, False, None),

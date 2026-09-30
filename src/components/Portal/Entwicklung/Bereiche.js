@@ -185,8 +185,14 @@ export function Risiken({ projekt, auswahl }) {
     { name: "verantwortlichId", label: "Verantwortlich", typ: "auswahl", optionen: auswahl.projektleiter.map((u) => ({ wert: u.id, label: u.name })) },
     { name: "meilensteinId", label: "Bezug Meilenstein", typ: "auswahl", optionen: projekt.meilensteine.map((m) => ({ wert: m.id, label: m.titel })) },
     { name: "massnahme", label: "Maßnahmen", typ: "mehrzeilig", breit: true },
+    // Steuerung: Schadenshöhe (Risikokosten = Höhe × Wahrscheinlichkeit der Stufe), Restrisiko nach Maßnahme, nächste Prüfung
+    { name: "kostenEur", label: "Schadenshöhe bei Eintritt (€)", typ: "zahl", hinweis: "Grundlage der erwarteten Risikokosten" },
+    { name: "restEintritt", label: "Rest-Eintritt nach Maßnahme", typ: "auswahl", leer: "– wie Eintritt –", optionen: Object.entries(RISIKO_STUFEN).map(([k, l]) => ({ wert: k, label: `${k} – ${l}` })) },
+    { name: "restAuswirkung", label: "Rest-Auswirkung nach Maßnahme", typ: "auswahl", leer: "– wie Auswirkung –", optionen: Object.entries(RISIKO_STUFEN).map(([k, l]) => ({ wert: k, label: `${k} – ${l}` })) },
+    { name: "pruefenAm", label: "Nächste Überprüfung", typ: "datum" },
     { name: "extern", label: "Für Co-Investoren sichtbar", typ: "check", breit: true },
   ];
+  const risikoDaten = (d) => ({ ...d, eintritt: Number(d.eintritt), auswirkung: Number(d.auswirkung), restEintritt: d.restEintritt ? Number(d.restEintritt) : null, restAuswirkung: d.restAuswirkung ? Number(d.restAuswirkung) : null });
   return (
     <div className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
@@ -199,6 +205,7 @@ export function Risiken({ projekt, auswahl }) {
                     <p className="font-semibold text-ink-900">{r.titel}</p>
                     <p className="text-[12.5px] text-ink-500">{r.kategorieLabel} · {r.statusLabel} · {r.eintritt} × {r.auswirkung}{r.verantwortlich ? ` · ${r.verantwortlich.name}` : ""}{r.extern ? " · für Co-Investoren sichtbar" : ""}</p>
                     {r.massnahme && <p className="mt-1 text-[13.5px] text-ink-700">Maßnahme: {r.massnahme}</p>}
+                    {(r.erwartet > 0 || r.restScore || r.pruefenAm) && <p className="mt-1 text-[12.5px] text-ink-600">{r.erwartet > 0 ? `Risikokosten erwartet ${eurKurz(r.erwartet)} (Schaden ${eurKurz(r.kostenEur)})` : ""}{r.restScore ? `${r.erwartet > 0 ? " · " : ""}Restrisiko ${r.restScore}` : ""}{r.pruefenAm ? ` · Prüfung bis ${datumKurz(r.pruefenAm)}` : ""}</p>}
                   </div>
                   <div className="flex items-center gap-2">
                     <RisikoBadge score={r.score} ampel={r.ampel} />
@@ -208,7 +215,7 @@ export function Risiken({ projekt, auswahl }) {
                 {darf && (
                   <details className="mt-2">
                     <summary className="cursor-pointer text-[13px] font-semibold text-ink-700">Bearbeiten</summary>
-                    <div className="mt-3"><SchnellFormular spalten={3} felder={felder} start={{ ...r, eintritt: String(r.eintritt), auswirkung: String(r.auswirkung), verantwortlichId: r.verantwortlichId || "", meilensteinId: r.meilensteinId || "" }} onSenden={(d) => eintragSenden(projekt.id, "risiko", { ...d, eintritt: Number(d.eintritt), auswirkung: Number(d.auswirkung) }, r.id)} /></div>
+                    <div className="mt-3"><SchnellFormular spalten={3} felder={felder} start={{ ...r, eintritt: String(r.eintritt), auswirkung: String(r.auswirkung), verantwortlichId: r.verantwortlichId || "", meilensteinId: r.meilensteinId || "", kostenEur: r.kostenEur || "", restEintritt: r.restEintritt ? String(r.restEintritt) : "", restAuswirkung: r.restAuswirkung ? String(r.restAuswirkung) : "", pruefenAm: r.pruefenAm || "" }} onSenden={(d) => eintragSenden(projekt.id, "risiko", risikoDaten(d), r.id)} /></div>
                   </details>
                 )}
               </li>
@@ -220,7 +227,7 @@ export function Risiken({ projekt, auswahl }) {
       </div>
       {darf && (
         <Karte titel="Risiko erfassen">
-          <SchnellFormular spalten={3} zuruecksetzen knopf="Erfassen" meldung="Risiko erfasst." felder={felder} start={{ kategorie: "genehmigung", eintritt: "3", auswirkung: "3", status: "offen" }} onSenden={(d) => eintragSenden(projekt.id, "risiko", { ...d, eintritt: Number(d.eintritt), auswirkung: Number(d.auswirkung) })} />
+          <SchnellFormular spalten={3} zuruecksetzen knopf="Erfassen" meldung="Risiko erfasst." felder={felder} start={{ kategorie: "genehmigung", eintritt: "3", auswirkung: "3", status: "offen" }} onSenden={(d) => eintragSenden(projekt.id, "risiko", risikoDaten(d))} />
         </Karte>
       )}
     </div>
@@ -387,7 +394,7 @@ export function Freigaben({ projekt, auswahl }) {
             </div>
           )}
         </Karte>
-        <Karte titel="Gutachter & Planer" untertitel="Sehen nur zugewiesene Meilensteine, laden Gutachten hoch, stellen Rückfragen">
+        <Karte titel="Gutachter & Planer" untertitel="Sehen nur zugewiesene Meilensteine, laden Gutachten hoch, stellen Rückfragen" aktion={<Link href={`/portal/admin/gutachter?projekt=${projekt.id}`} className="text-[13px] font-semibold text-ov-700 hover:text-ov-800">Angebote & Aufträge</Link>}>
           {projekt.gutachterProfile?.length > 0 && (
             <ul className="mb-4 space-y-3">
               {projekt.gutachterProfile.map((g) => (

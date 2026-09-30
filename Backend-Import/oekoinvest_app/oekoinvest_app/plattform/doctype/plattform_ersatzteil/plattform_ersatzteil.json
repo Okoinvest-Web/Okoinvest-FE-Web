@@ -1,0 +1,173 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 12:00:00.000000",
+ "description": "Ersatzteillager der Betriebsführung (Bestand, Mindestbestand, Lagerort).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "bezeichnung",
+  "art",
+  "hersteller",
+  "artikelnummer",
+  "aktiv",
+  "cb_1",
+  "einheit",
+  "bestand",
+  "mindestbestand",
+  "zielbestand",
+  "lagerort",
+  "preis_eur",
+  "bemerkung"
+ ],
+ "fields": [
+  {
+   "fieldname": "bezeichnung",
+   "fieldtype": "Data",
+   "label": "Bezeichnung",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Passend für",
+   "options": "wechselrichter\nmodul\nspeicher\nzaehler\ndatenlogger\nsonstiges",
+   "default": "sonstiges"
+  },
+  {
+   "fieldname": "hersteller",
+   "fieldtype": "Data",
+   "label": "Hersteller"
+  },
+  {
+   "fieldname": "artikelnummer",
+   "fieldtype": "Data",
+   "label": "Artikelnummer"
+  },
+  {
+   "fieldname": "aktiv",
+   "fieldtype": "Check",
+   "label": "Aktiv",
+   "default": "1"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "einheit",
+   "fieldtype": "Data",
+   "label": "Einheit",
+   "default": "Stück"
+  },
+  {
+   "fieldname": "bestand",
+   "fieldtype": "Float",
+   "label": "Bestand",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "mindestbestand",
+   "fieldtype": "Float",
+   "label": "Mindestbestand"
+  },
+  {
+   "fieldname": "zielbestand",
+   "fieldtype": "Float",
+   "label": "Zielbestand"
+  },
+  {
+   "fieldname": "lagerort",
+   "fieldtype": "Data",
+   "label": "Lagerort"
+  },
+  {
+   "fieldname": "preis_eur",
+   "fieldtype": "Currency",
+   "label": "Preis (netto)"
+  },
+  {
+   "fieldname": "bemerkung",
+   "fieldtype": "Data",
+   "label": "Bemerkung"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 00:21:25.765716",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Ersatzteil",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Betrieb",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "in_create": 0,
+ "naming_rule": "By script"
+}

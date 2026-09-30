@@ -27,6 +27,8 @@ import { DatenblattAnzeige, DdIndexKarte } from "@/components/Portal/Fach/DdInde
 import LoiFormular from "@/components/Portal/Fach/LoiFormular";
 import { loiZeilen } from "@/lib/plattform/fach/loi";
 import { passungHinweise } from "@/lib/plattform/fach/suchprofil";
+import AnbieterAkte from "@/components/Portal/Anbieter/AnbieterAkte"; // Anbieter: Bestandsanlage (Ist-Daten) nach NDA
+import { anbieterBackend } from "@/lib/plattform/backend/anbieter";
 
 export const metadata = { title: "Exposé" };
 
@@ -40,6 +42,7 @@ export default async function PortalExpose({ params }) {
   const thread = i ? await b.nachrichten(n, "interesse", i.id) : null;
   const phase = phaseById(p.phase);
   const frei = d.zugriff !== "oeffentlich";
+  const bestandAkte = frei && p.phase === "cod" ? await anbieterBackend().anbieterAkte(n, p.id).catch(() => null) : null; // Bestandsanlage: Ertragshistorie, Verträge, Förderung, DD
 
   return (
     <div className="space-y-6">
@@ -123,6 +126,7 @@ export default async function PortalExpose({ params }) {
           </Karte>
 
           {frei && <DatenblattAnzeige projekt={{ ...p, vertraulich: d.vertraulich || {}, datenblatt: d.datenblatt || {} }} untertitel="Angaben des Anbieters – Wirtschaftlichkeit ungeprüft" />}
+          {bestandAkte && <AnbieterAkte akte={bestandAkte} />}
 
           {frei && <KiFrage projektId={p.id} />}
 

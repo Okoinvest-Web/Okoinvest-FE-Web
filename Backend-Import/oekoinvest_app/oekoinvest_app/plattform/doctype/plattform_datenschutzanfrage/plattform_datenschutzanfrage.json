@@ -1,0 +1,171 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "Betroffenenanfrage Art. 15–21 DSGVO (bzw. revDSG) mit Frist, Identitätsprüfung, Ergebnis und Nachweis – Bearbeitung nur über das Portal (Compliance).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "art",
+  "status",
+  "land",
+  "kanal",
+  "eingang_am",
+  "frist",
+  "cb_1",
+  "name_betroffener",
+  "email",
+  "konto_id",
+  "vorgang_id",
+  "zustaendig_id",
+  "erledigt_am",
+  "sb_1",
+  "beschreibung",
+  "daten"
+ ],
+ "fields": [
+  {
+   "fieldname": "art",
+   "fieldtype": "Data",
+   "label": "Art",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Status",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "land",
+   "fieldtype": "Data",
+   "label": "Recht (AT/DE/CH)"
+  },
+  {
+   "fieldname": "kanal",
+   "fieldtype": "Data",
+   "label": "Kanal"
+  },
+  {
+   "fieldname": "eingang_am",
+   "fieldtype": "Date",
+   "label": "Eingang am",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "frist",
+   "fieldtype": "Date",
+   "label": "Frist"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "name_betroffener",
+   "fieldtype": "Data",
+   "label": "Betroffene Person"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "E-Mail"
+  },
+  {
+   "fieldname": "konto_id",
+   "fieldtype": "Link",
+   "label": "Konto",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "vorgang_id",
+   "fieldtype": "Link",
+   "label": "Vorgang",
+   "options": "Plattform Vorgang"
+  },
+  {
+   "fieldname": "zustaendig_id",
+   "fieldtype": "Link",
+   "label": "Zuständig",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "erledigt_am",
+   "fieldtype": "Datetime",
+   "label": "Erledigt am"
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": ""
+  },
+  {
+   "fieldname": "beschreibung",
+   "fieldtype": "Small Text",
+   "label": "Inhalt der Anfrage"
+  },
+  {
+   "fieldname": "daten",
+   "fieldtype": "JSON",
+   "label": "Bearbeitung (Identität, Verlängerung, Ergebnis, Export, Verlauf)"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 0,
+ "links": [],
+ "modified": "2026-10-01 00:36:39.266500",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Datenschutzanfrage",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Compliance",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "in_create": 1,
+ "title_field": "name_betroffener",
+ "search_fields": "name_betroffener,email"
+}

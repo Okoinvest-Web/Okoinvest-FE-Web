@@ -23,7 +23,9 @@ Fachgrundlage: `docs/ENERGIEBESCHAFFUNG.md`.
 5. **Einladen:** Portal-Konto oder E-Mail-Link; Los ist anonym (gerundete Kennzahlen, normiertes Profil – keine Namen/Orte/IDs/Zeitreihe).
 6. **Runde auswerten:** normierter Vergleich (Festpreis = Menge × Arbeitspreis; Spot/Tranchen = Menge × lastgewichteter Terminpreis + Aufschlag; + Grundpreis + HKN), Sensitivität. Ggf. **Runde 2** nur mit Bietern mit Angebot, Hinweis ohne Namen.
 7. **Zuschlagsvorschlag** mit Begründung → **Freigabe aller Kunden** des Loses → Zuschlag (KYB des Versorgers), Zuschlagsschreiben, Absagen, Verträge, Aufgabe „Lieferantenwechsel einleiten“.
-8. Nachlauf: Vertrag beim Kunden hinterlegt, Tranchen buchen, Wechselanalyse läuft wöchentlich weiter.
+8. Nachlauf: **Lieferantenwechsel** bis zur Bestätigung des Lieferbeginns (Handelsdesk → Wechsel, gemeinsam mit Kunde und Versorger), Tranchen buchen.
+9. Ab Lieferbeginn ist der neue Vertrag „aktiv“ und läuft wie jeder Vertrag in **Wechselanalyse und Kündigungsfristen-Alarm** (90/60/30/14/7 Tage). Spot-/Tranchenverträge: Energiepreis geschätzt aus Terminpreis + Aufschlag (in der Begründung gekennzeichnet).
+10. **Beschaffungsbericht** für den Kunden (Kundenanalyse → „Beschaffungsbericht (PDF)“): Verträge, Kündigungsstichtag, Empfehlung mit Begründung, rechnerische Ersparnis gegenüber dem Vorvertrag, Ausschreibungen. Der Kunde kann seinen eigenen Bericht ebenfalls abrufen.
 
 ## Lieferantenstamm
 

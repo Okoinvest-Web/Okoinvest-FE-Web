@@ -29,6 +29,7 @@ import { fehlversuchBuchen, mitZweiFaktor, sitzungNutzer, sperrePruefen } from "
 import { backofficeEreignis, protokollAnhaengen, werkzeugeSetzen } from "./demo/backoffice"; // Backoffice: CRM, Automationen, Hash-Kette
 import { kycUebergangPruefen } from "./demo/kycRegeln"; // KYC/KYB: Freigaben nur mit verifiziertem Konto
 import { bonitaetUebergangPruefen } from "./demo/diensteRegeln"; // Dienste: Bonitätsauskunft vor LOI (konfigurierbar)
+import { anbieterUebergangPruefen, anbieterVorkenntnisAnerkannt } from "./demo/anbieterRegeln"; // Anbieter: Rückfragen, Anonymisierung, Verkäufer-Stellungnahme zur LOI, anerkannte Vorkenntnis
 export * from "./demo/crm-ops"; // Backoffice-Operationen (CRM, Akquise, Automationen, Vorlagen, Berichte, Rechte)
 import { EIGENTUM_IDS, fachAusAnfrage, flaecheFachDaten, pachtangebotBereinigen } from "../flaecheFach"; // Fachprüfung Flächen: Flurstücke je Land, Fachangaben, Pachtangebot
 import { kommuneDaten } from "../kommune"; // Fachprüfung Kommunen: strukturierte Anfrage
@@ -164,7 +165,9 @@ function benachrichtigen(db, u, { art, titel, text, link, objektArt = null, obje
     db.benachrichtigungen.splice(idx >= 0 ? idx : 0, 1);
   }
   const einstellung = { ...mailEinstellungenStandard(), ...(u.mailEinstellungen || {}) };
-  if (mail && einstellung[art] && u.komfort?.kanaele?.email !== false) { // Kanal E-Mail global abschaltbar (Konto-Komfort)
+  // Querschnitt: Tages-Digest – E-Mail wird gesammelt (demo/querschnitt.js → digestLauf), Sicherheit immer sofort
+  if (mail && einstellung[art] && u.komfort?.kanaele?.email !== false && u.mailRhythmus === "taeglich" && art !== "sicherheit") b.digest = true;
+  else if (mail && einstellung[art] && u.komfort?.kanaele?.email !== false) { // Kanal E-Mail global abschaltbar (Konto-Komfort)
     const vorlage = MAIL_VORLAGEN[art];
     postausgangAnlegen(db, {
       an: u.email,
@@ -1035,6 +1038,7 @@ function uebergangAnwenden(db, n, art, o, nach, als, extra = {}, ip = "") {
 
   kycUebergangPruefen(db, art, o, nach); // KYC/KYB: NDA-Freigabe, LOI, Veröffentlichung nur verifiziert (409 „kyc“)
   bonitaetUebergangPruefen(db, art, o, nach); // Dienste: LOI nur mit gültiger Bonitätsauskunft, wenn Pflicht (409 „bonitaet“)
+  anbieterUebergangPruefen(db, art, o, nach); // Anbieter: offene Rückfragen (422), Pflicht-Prüfpunkte/Anonymisierung (409), LOI vom Verkäufer abgelehnt (409)
   // Nebenwirkungen vor dem Wechsel (Validierung)
   if (extra.grund) o.ablehnGrund = kommentar;
   if (art === "flaeche" && nach === "pachtangebot") {
@@ -1061,13 +1065,18 @@ function uebergangAnwenden(db, n, art, o, nach, als, extra = {}, ip = "") {
     o.loi = { ...loi, am: jetzt() };
   }
   let provision = null;
+  let provisionEntfaellt = null; // Anbieter: anerkannte Vorkenntnis zum Käufer → keine Provision
   if (art === "projekt" && nach === "verkauft") {
     const kaeufer = objekt(db, "interesse", v.kennung(extra.interesseId));
     v.pflicht(kaeufer && kaeufer.projektId === o.id && ["nda_freigegeben", "loi_abgegeben", "loi_angenommen"].includes(kaeufer.status), "Käufer muss ein Interessent mit freigegebenem Datenraum sein.");
     const kaufpreis = v.zahl(extra.kaufpreis, { min: 1, max: 1e11 });
     v.pflicht(kaufpreis, "Bitte Kaufpreis angeben.");
     const satz = o.provisionSatz ?? PROVISION.verkaeufer.min;
-    provision = {
+    const vk = anbieterVorkenntnisAnerkannt(db, o.id, kaeufer.id);
+    if (vk) {
+      provisionEntfaellt = { grund: "Vorkenntnis anerkannt", vorkenntnisId: vk.id, interesseId: kaeufer.id, kaufpreis, am: jetzt() };
+      o.provisionEntfallen = provisionEntfaellt;
+    } else provision = {
       id: neueId("PV"),
       projektId: o.id,
       anbieterId: o.anbieterId,
@@ -1080,7 +1089,7 @@ function uebergangAnwenden(db, n, art, o, nach, als, extra = {}, ip = "") {
       statusVerlauf: [verlaufEintrag("offen", null, "system", "Automatisch bei Verkauf berechnet.")],
       erstelltAm: jetzt(),
     };
-    db.provisionen.push(provision);
+    if (provision) db.provisionen.push(provision);
     // Käufer → abgeschlossen, alle anderen offenen Interessen → abgelehnt
     for (const i of db.interessen.filter((x) => x.projektId === o.id)) {
       if (i.id === kaeufer.id) systemWechsel(db, "interesse", i, "abgeschlossen", "Kauf abgeschlossen.");
@@ -1111,6 +1120,10 @@ function uebergangAnwenden(db, n, art, o, nach, als, extra = {}, ip = "") {
   }
   if (provision) {
     protokoll(db, n, "provision", "provision", provision.id, `Provision ${provision.betrag} € (${provision.satz * 100} %) für ${o.id}`, ip);
+  }
+  if (provisionEntfaellt) {
+    protokoll(db, n, "provision_entfallen", "projekt", o.id, `Keine Provision für ${o.id}: Vorkenntnis anerkannt (${provisionEntfaellt.vorkenntnisId})`, ip);
+    nachricht(db, { bezugArt: "projekt", bezugId: o.id, vonId: n?.id, vonAdmin: true, system: true, text: "Keine Provision: Für den Käufer wurde Ihre Vorkenntnis anerkannt (Vorkenntnis anerkannt)." });
   }
   protokoll(db, n, "status", art, o.id, `${statusLabel(art, von)} → ${statusLabel(art, nach)}`, ip);
   backofficeEreignis(db, { typ: "status", art, objekt: o, von, nach }); // Automationen
@@ -1264,19 +1277,28 @@ export async function nachrichten(n, bezugArt, bezugId, { markieren = true } = {
       eigene: m.vonId === n.id && !m.system,
       vonName: m.vonAdmin ? "ÖkoInvest Backoffice" : nameVon(db, m.vonId) || "Nutzer",
       neu: alsAdmin ? !m.gelesenAdmin : !m.gelesenNutzer,
+      // Querschnitt: Lesebestätigung (nur eigene Nachrichten: hat die Gegenseite gelesen?) und Anhänge
+      gelesen: m.vonId === n.id && !m.system ? (m.vonAdmin ? !!m.gelesenNutzer : !!m.gelesenAdmin) : undefined,
+      anhaenge: (m.anhaenge || []).map((id) => db.dokumente.find((d) => d.id === id)).filter((d) => d && darfDokument(db, n, d)).map((d) => ({ id: d.id, name: d.name, mime: d.mime, groesse: d.groesse })),
     })),
   };
 }
 
-export async function nachrichtSenden(n, { bezugArt, bezugId, text }) {
+export async function nachrichtSenden(n, { bezugArt, bezugId, text, anhaenge = [] }) {
   if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
-  const t = v.mehrzeilig(text, 5000);
+  const anh = [...new Set((Array.isArray(anhaenge) ? anhaenge : []).slice(0, 10).map(v.kennung).filter(Boolean))]; // Querschnitt: Anhänge (vorher mit stumm hochgeladen)
+  const t = v.mehrzeilig(text, 5000) || (anh.length ? "Anhang" : "");
   v.pflicht(t.length >= 2, "Bitte geben Sie eine Nachricht ein.");
   return aendern((db) => {
     const o = darfBezug(db, n, bezugArt, bezugId, { schreiben: true });
     const eigen = besitzer(db, bezugArt, o) === n.id;
     const alsAdmin = istAdmin(n) && !eigen;
+    for (const id of anh) {
+      const d = db.dokumente.find((x) => x.id === id);
+      if (!d || d.bezugArt !== bezugArt || d.bezugId !== bezugId || d.hochgeladenVon !== n.id) throw ungueltig("Anhang gehört nicht zu dieser Unterhaltung.");
+    }
     const m = nachricht(db, { bezugArt, bezugId, vonId: n.id, vonAdmin: alsAdmin, text: t, gelesenAdmin: alsAdmin, gelesenNutzer: !alsAdmin });
+    if (anh.length) m.anhaenge = anh;
     protokoll(db, n, "nachricht", bezugArt, bezugId, "Nachricht gesendet");
     return { id: m.id, am: m.am };
   });
@@ -1285,7 +1307,8 @@ export async function nachrichtSenden(n, { bezugArt, bezugId, text }) {
 // ================================================================ Dokumente
 
 function dokumentMeta(d) {
-  return { id: d.id, bezugArt: d.bezugArt, bezugId: d.bezugId, name: d.name, mime: d.mime, groesse: d.groesse, kategorie: d.kategorie, checkliste: d.checkliste || "", am: d.am, hochgeladenVon: d.hochgeladenVon };
+  return { id: d.id, bezugArt: d.bezugArt, bezugId: d.bezugId, name: d.name, mime: d.mime, groesse: d.groesse, kategorie: d.kategorie, checkliste: d.checkliste || "", am: d.am, hochgeladenVon: d.hochgeladenVon,
+    version: d.version || 1, vorgaengerId: d.vorgaengerId || null, ersetztDurch: d.ersetztDurch || null, freigabe: d.freigabe || null }; // Querschnitt: Versionen, Freigabe
 }
 
 /** Darf n dieses Dokument sehen? */
@@ -1333,7 +1356,7 @@ export async function dokumentLesen(n, id) {
   return { meta: dokumentMeta(d), daten };
 }
 
-export async function dokumentSpeichern(n, { bezugArt, bezugId, name: dateiname, mime, daten, kategorie, checkliste }) {
+export async function dokumentSpeichern(n, { bezugArt, bezugId, name: dateiname, mime, daten, kategorie, checkliste, stumm = false }) { // stumm: Anhang einer Nachricht (ohne Systemnachricht)
   if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
   if (!UPLOAD.typen[mime]) throw new PlattformFehler(415, "Erlaubt sind PDF, JPG und PNG.");
   if (!daten?.length || daten.length > UPLOAD.maxBytes) throw new PlattformFehler(413, "Die Datei ist leer oder größer als 10 MB.");
@@ -1353,7 +1376,7 @@ export async function dokumentSpeichern(n, { bezugArt, bezugId, name: dateiname,
       const d = { id: neueId("D"), bezugArt, bezugId, name: sauber, mime, groesse: daten.length, datei, kategorie: kat, checkliste: punkt, hochgeladenVon: n.id, am: jetzt(), sha256: sha256(daten) };
       db.dokumente.push(d);
       const alsAdmin = istAdmin(n) && !eigen;
-      nachricht(db, { bezugArt, bezugId, vonId: n.id, vonAdmin: alsAdmin, system: true, text: `Dokument hochgeladen: ${sauber}`, ereignis: "nachricht", ...(alsAdmin ? {} : { gelesenNutzer: true, gelesenAdmin: false }) });
+      if (!stumm) nachricht(db, { bezugArt, bezugId, vonId: n.id, vonAdmin: alsAdmin, system: true, text: `Dokument hochgeladen: ${sauber}`, ereignis: "nachricht", ...(alsAdmin ? {} : { gelesenNutzer: true, gelesenAdmin: false }) });
       protokoll(db, n, "upload", bezugArt, bezugId, `Dokument ${sauber} (${d.groesse} B)`);
       backofficeEreignis(db, { typ: "dokument", art: bezugArt, objekt: o, extra: { kategorie: kat } }); // Automationen
       return dokumentMeta(d);

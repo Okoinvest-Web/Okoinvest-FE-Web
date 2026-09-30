@@ -25,13 +25,14 @@ export async function senden(url, { method = "POST", body } = {}) {
   return json;
 }
 
-export async function hochladen(datei, { bezugArt, bezugId, kategorie = "allgemein", checkliste = "" }) {
+export async function hochladen(datei, { bezugArt, bezugId, kategorie = "allgemein", checkliste = "", anhang = false }) {
   const fd = new FormData();
   fd.append("datei", datei);
   fd.append("bezugArt", bezugArt);
   fd.append("bezugId", bezugId);
   fd.append("kategorie", kategorie);
   if (checkliste) fd.append("checkliste", checkliste);
+  if (anhang) fd.append("anhang", "1"); // Querschnitt: Anhang einer Nachricht
   const res = await fetch("/api/portal/dokumente", { method: "POST", body: fd, headers: { "X-Plattform-Upload": "1" }, credentials: "same-origin" });
   const json = await res.json().catch(() => ({}));
   if (!res.ok || json.ok === false) throw new Error(json.error || `Upload fehlgeschlagen (${res.status})`);

@@ -91,6 +91,7 @@ function Stoerung({ s, betrieb, mitAnlage }) {
             <Link href={`/portal/anlagen/${s.anlage.id}?tab=stoerungen`} className="text-[13.5px] font-semibold text-ov-700 hover:text-ov-800">{s.anlage.name}</Link>
           )}
           {s.text && <p className="mt-1 text-[14px] leading-relaxed text-ink-700">{s.text}</p>}
+          {s.darfBearbeiten && <Link href={`/portal/admin/anlagen/betrieb/stoerung/${s.id}`} className="mt-1 inline-block text-[13px] font-semibold text-ov-700 hover:text-ov-800">Ticket: SLA, Ursache, Ertragsausfall, Auftrag</Link>}
           <p className="mt-1.5 text-[12.5px] text-ink-500">
             {s.regelLabel} · erkannt {datumZeit(s.erkanntAm)} ({alterText(s.erkanntAm)}){s.anzahl > 1 ? ` · ${s.anzahl}× gemeldet, zuletzt ${alterText(s.zuletztAm)}` : ""}
             {s.behobenAm ? ` · behoben ${datumZeit(s.behobenAm)}` : ""}

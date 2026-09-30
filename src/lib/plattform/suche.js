@@ -129,6 +129,8 @@ export const SUCH_GRUPPEN = {
   nachricht: "Nachrichten",
   boerse: "Projektbörse",
   nutzer: "Nutzer",
+  // Querschnitt: erweiterte Suche (server/sucheErweitert.js)
+  dokument: "Dokumente", aufgabe: "Aufgaben", anlage: "Anlagen", entwicklung: "Entwicklungsprojekte", kontakt: "CRM-Kontakte", termin: "Termine", ticket: "Support-Tickets",
 };
 
 export const SUCHE_MIN = 2;

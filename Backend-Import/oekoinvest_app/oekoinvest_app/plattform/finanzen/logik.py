@@ -165,6 +165,18 @@ def laufzeit_ende(beginn, laufzeit_jahre):
 	return plus_tage(ziel, -1) if ist_datum(ziel) else f"{j}-02-28"
 
 
+def vertrags_ende(v):
+	"""Tatsächliches Pachtende: Laufzeitende, bei Kündigung spätestens kuendigungZum, bei Beendigung spätestens beendetAm (= vertragsEnde in JS)."""
+	v = v or {}
+	kandidaten = [laufzeit_ende(v.get("beginn"), v.get("laufzeitJahre"))]
+	if v.get("status") in ("gekuendigt", "beendet"):
+		kandidaten.append(v.get("kuendigungZum"))
+	if v.get("status") == "beendet":
+		kandidaten.append(v.get("beendetAm"))
+	gueltig = sorted(d for d in kandidaten if d and ist_datum(d))
+	return gueltig[0] if gueltig else None
+
+
 def faelligkeiten(v, stichtag, ausblick_bis=None):
 	"""v: {id, vertragsdatum, beginn, laufzeitJahre, faelligkeit, zahlweise, zahlungszielTage, reservierungJahr, vorlaufTage}"""
 	rhythmus = v.get("faelligkeit") if v.get("faelligkeit") in RHYTHMEN else "jaehrlich"
@@ -181,14 +193,16 @@ def faelligkeiten(v, stichtag, ausblick_bis=None):
 			"faktorJahr": (p["monate"] / 12) * p["anteil"], "faelligAm": faellig, "erstellbarAb": erstellbar, "zahlweise": zahlweise,
 		})
 
+	v_ende = vertrags_ende(v)  # Kündigung/Beendigung begrenzt Reservierung und Pacht
 	if float(v.get("reservierungJahr") or 0) > 0 and ist_datum(v.get("vertragsdatum")):
 		res_bis = plus_tage(v["beginn"], -1) if ist_datum(v.get("beginn")) else None
+		if v_ende and (not res_bis or v_ende < res_bis):
+			res_bis = v_ende
 		if not res_bis or res_bis >= v["vertragsdatum"]:
 			for p in perioden(v["vertragsdatum"], res_bis, rhythmus, stopp):
 				eintrag("reservierung", p, "nachschuessig")
 	if ist_datum(v.get("beginn")):
-		ende = laufzeit_ende(v["beginn"], v.get("laufzeitJahre"))
-		for p in perioden(v["beginn"], ende, rhythmus, stopp):
+		for p in perioden(v["beginn"], v_ende, rhythmus, stopp):
 			eintrag("pacht", p, "vorschuessig" if v.get("zahlweise") == "vorschuessig" else "nachschuessig")
 	return aus
 
@@ -317,6 +331,30 @@ def pacht_positionen(vertrag, f, index_tabelle=(), ertrag_kwh=None, ertrag_fehlt
 		erkl.append(f"Feste Jahrespacht {zahl_de(jahresbetrag, 2)} €" + (f" ({zahl_de(jahresbetrag / ha, 2)} €/ha bei {zahl_de(ha, 2)} ha)" if ha else "") + ".")
 	pos.append({"art": "index" if vertrag.get("modell") == "indexiert" else "pacht", "artikel": "PACHT", "text": f"{'Pacht (wertgesichert)' if vertrag.get('modell') == 'indexiert' else 'Pacht'} {_zeitraum_text(f)}", "menge": rund(f["faktorJahr"], 4), "einheit": "Jahr", "preis": jahresbetrag, "betrag": rund2(jahresbetrag * f["faktorJahr"])})
 	return {"positionen": pos, "netto": summe(pos, "betrag"), "erklaerung": erkl, "klaerung": klaerung, "basis": {"jahresbetrag": jahresbetrag}}
+
+
+def pacht_aufteilen(positionen, empfaenger):
+	"""Zahlungsaufteilung (Pachtakte): Positionen je Empfänger nach Anteil, centgenau (Rest an den letzten) – = pachtAufteilen in JS."""
+	liste = [e for e in (empfaenger or []) if float((e or {}).get("anteilProzent") or 0) > 0]
+	if len(liste) < 2:
+		return None
+	gesamt = sum(float(e["anteilProzent"]) for e in liste)
+	teile = [{"nr": i + 1, "empfaenger": e, "anteilProzent": float(e["anteilProzent"]), "positionen": [], "netto": 0} for i, e in enumerate(liste)]
+	for p in positionen or []:
+		rest = rund2(p["betrag"])
+		for i, t in enumerate(teile):
+			quote = t["anteilProzent"] / gesamt
+			betrag = rund2(rest) if i == len(teile) - 1 else rund2(p["betrag"] * quote)
+			rest = rund2(rest - betrag)
+			t["positionen"].append({**p, "text": f"{p['text']} – Anteil {zahl_de(t['anteilProzent'], 2)} %", "menge": rund(float(p.get("menge") or 0) * quote, 4), "betrag": betrag})
+	for t in teile:
+		t["netto"] = summe(t["positionen"], "betrag")
+	return teile
+
+
+def aufteilung_gilt(aufteilung, f):
+	"""Aufteilung gilt für Zeiträume, die am Stichtag `ab` noch nicht abgelaufen sind (ohne `ab`: sofort)."""
+	return bool((aufteilung or {}).get("empfaenger")) and (not aufteilung.get("ab") or str(f["bis"]) >= str(aufteilung["ab"]))
 
 
 def monate_im_zeitraum(von, bis):
@@ -460,6 +498,8 @@ def mahnhinweis(beleg, heute_):
 	if zahlungsstatus(beleg, heute_) != "ueberfaellig":
 		return None
 	tage = tage_zwischen(str(beleg["faelligAm"]), heute_)
+	if beleg.get("mahnsperre"):  # Kundenseite Energie: Einspruch des Kunden in Prüfung
+		return {"tage": tage, "stufe": 0, "label": "Mahnsperre – Einspruch des Kunden in Prüfung", "faellig": False, "sperre": True}
 	erreicht = [s for s in MAHNSTUFEN if tage >= s[0]]
 	letzte = max([int(m.get("stufe") or 0) for m in beleg.get("mahnungen") or []] or [0])
 	if not erreicht:

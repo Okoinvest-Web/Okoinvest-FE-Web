@@ -15,6 +15,6 @@ export const GET = route({}, async ({ backend, nutzer, suche }) => {
 
 export const POST = route({}, async ({ backend, nutzer, body }) => {
   rateLimit(`nachricht:${nutzer.id}`, ...grenze("nachricht"));
-  const m = await backend.nachrichtSenden(nutzer, { bezugArt: String(body.bezugArt || ""), bezugId: String(body.bezugId || ""), text: body.text });
+  const m = await backend.nachrichtSenden(nutzer, { bezugArt: String(body.bezugArt || ""), bezugId: String(body.bezugId || ""), text: body.text, anhaenge: Array.isArray(body.anhaenge) ? body.anhaenge.slice(0, 10).map(String) : [] }); // Querschnitt: Anhänge
   return { ok: true, nachricht: m };
 });

@@ -30,6 +30,7 @@ import {
   planBerechnen, planMonate, plusMonate, quartal, risikoAmpel, risikoScore, tageZwischen, verzugTage, vermarktungLabel, vorlage,
 } from "../../entwicklung";
 import { PHASEN } from "@/lib/invest/markt";
+import { risikoBewertung } from "../../entwicklung-steuerung"; // Risikokosten, Restrisiko
 import { intern } from "../demo";
 import { aendern, lesen, uploadLesen, uploadSchreiben } from "./speicher";
 import { jetzt, neueId, sha256, slugify, zufallsToken } from "./hilfen";
@@ -265,7 +266,7 @@ function projektAusgabe(db, n, p) {
       return { ...pf, pachtStatusLabel: PACHT_STATUS[pf.pachtStatus]?.label || pf.pachtStatus, plattformFlaeche: f ? { id: f.id, bezeichnung: f.bezeichnung, status: f.status } : null, eigentuemerKonto: personKurz(db, f?.nutzerId) };
     }),
     meilensteine: liste.map((m) => meilensteinAusgabe(db, m, k.kp, heute)),
-    risiken: E(db).risiken.filter((r) => r.projektId === p.id).map((r) => ({ ...r, score: risikoScore(r), ampel: risikoAmpel(risikoScore(r)), kategorieLabel: RISIKO_KATEGORIEN[r.kategorie] || r.kategorie, statusLabel: RISIKO_STATUS[r.status] || r.status, verantwortlich: personKurz(db, r.verantwortlichId) })).sort((a, b) => b.score - a.score),
+    risiken: E(db).risiken.filter((r) => r.projektId === p.id).map((r) => ({ ...r, ...risikoBewertung(r), score: risikoScore(r), ampel: risikoAmpel(risikoScore(r)), kategorieLabel: RISIKO_KATEGORIEN[r.kategorie] || r.kategorie, statusLabel: RISIKO_STATUS[r.status] || r.status, verantwortlich: personKurz(db, r.verantwortlichId) })).sort((a, b) => b.score - a.score),
     entscheidungen: E(db).entscheidungen.filter((x) => x.projektId === p.id).map((x) => ({ ...x, artLabel: ENTSCHEIDUNG_ARTEN[x.art] || x.art, von: personKurz(db, x.vonId) })).sort((a, b) => String(b.datum).localeCompare(String(a.datum))),
     budget: E(db).budget.filter((b) => b.projektId === p.id).map((b) => ({ ...b, kategorieLabel: BUDGET_KATEGORIEN[b.kategorie] || b.kategorie })),
     kontakte: (p.kontakte || []).map((kt) => {
@@ -580,6 +581,9 @@ function meilensteinSpeichern(db, n, p, id, d) {
   if (ziel.status === "erledigt" && altStatus !== "erledigt") {
     protokoll(db, n, "meilenstein_erledigt", "entwicklung", p.id, `Meilenstein erledigt: ${ziel.titel}${ziel.nachweisVerzicht && (ziel.dokumentPflicht || []).length ? " (Nachweisverzicht begründet)" : ""}`);
     fortschrittMelden(db, p, ziel);
+    // Aufgabe aus dem Meilenstein (Steuerung) automatisch erledigen
+    const auf = ziel.aufgabeId ? (db.aufgaben || []).find((a) => a.id === ziel.aufgabeId && a.status !== "erledigt") : null;
+    if (auf) Object.assign(auf, { status: "erledigt", erledigtAm: jetzt(), erledigtVon: n.id });
   } else {
     protokoll(db, n, alt ? "meilenstein_geaendert" : "meilenstein_angelegt", "entwicklung", p.id, `${alt ? "Meilenstein geändert" : "Meilenstein angelegt"}: ${ziel.titel}${has("status") && altStatus !== ziel.status ? ` (${MEILENSTEIN_STATUS[ziel.status]?.label})` : ""}`);
   }
@@ -666,6 +670,11 @@ const EINTRAG = {
       const u = nutzerById(db, v.kennung(d.verantwortlichId));
       x.verantwortlichId = u && u.rollen.includes("admin") ? u.id : null;
     }
+    // Steuerung (entwicklung-steuerung.js): Schadenshöhe, Restrisiko nach Maßnahme, nächste Überprüfung
+    if (has("kostenEur")) x.kostenEur = v.zahl(d.kostenEur, { min: 0, max: 1e9 }) ?? 0;
+    for (const k of ["restEintritt", "restAuswirkung"]) if (has(k)) x[k] = d[k] === "" || d[k] === null ? null : Math.round(v.zahl(d[k], { min: 1, max: 5 }) ?? 0) || null;
+    if (has("pruefenAm")) x.pruefenAm = datumOk(d.pruefenAm) || "";
+    if ((x.restEintritt && x.restEintritt > x.eintritt) || (x.restAuswirkung && x.restAuswirkung > x.auswirkung)) throw ungueltig("Das Restrisiko kann nicht höher sein als das Ausgangsrisiko.");
     v.pflicht(x.titel.length >= 3, "Bitte beschreiben Sie das Risiko.");
     x.geaendertAm = jetzt();
     if (alt) Object.assign(alt, x);

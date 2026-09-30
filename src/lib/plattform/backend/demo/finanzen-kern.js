@@ -322,6 +322,13 @@ export function provisionNachziehen(db, n, b) {
 
 // ================================================================ Abrechnungslauf
 
+/** Empfänger der Zahlungsaufteilung → aktives Konto mit dieser E-Mail (sonst null → Klärfall) */
+export function kontoPerEmail(db, email) {
+  const e = String(email || "").trim().toLowerCase();
+  if (!e) return null;
+  return (db.nutzer || []).find((u) => u.aktiv !== false && String(u.email || "").toLowerCase() === e)?.id || null;
+}
+
 /** Pachtvertrag → Parameter der Fälligkeitsberechnung */
 export function vertragFuerFaelligkeit(db, pt) {
   return { ...pt, vorlaufTage: pt.vorlaufTage ?? einstellungen(db).vorlaufTage, zahlungszielTage: pt.zahlungszielTage ?? einstellungen(db).zahlungszielTage };
@@ -382,7 +389,9 @@ export function laufAusfuehren(db, n, opt) {
   // ---------------------------------------------------------------- Pacht
   if (art === "pacht" || art === "alle") {
     for (const pt of db.finanzen.pachtvertraege) {
-      if (!["aktiv", "gekuendigt"].includes(pt.status)) continue;
+      // „beendet“: nur noch der Rest bis zum Vertragsende (anteilig), danach keine Gutschrift (F.vertragsEnde);
+      // ohne bekanntes Ende (weder kuendigungZum noch beendetAm) wie bisher gar nicht mehr
+      if (!["aktiv", "gekuendigt", "beendet"].includes(pt.status) || (pt.status === "beendet" && !pt.beendetAm && !pt.kuendigungZum)) continue;
       if (opt.vertragIds?.length && !opt.vertragIds.includes(pt.id)) continue;
       const eigentuemer = nutzerById(db, pt.eigentuemerId);
       for (const f of F.abzurechnen(vertragFuerFaelligkeit(db, pt), stichtag)) {
@@ -397,7 +406,9 @@ export function laufAusfuehren(db, n, opt) {
           ertrag = a ? F.ertragAusMonatswerten(a.zeilen, a.messpunkte, f.von, f.bis) : { kwh: null, fehlt: ["keine Anlage/Monatswerte verknüpft"] };
         }
         const r = F.pachtPositionen(pt, f, { indexTabelle: db.finanzen.vpi, ertragKwh: ertrag.kwh, ertragFehlt: ertrag.fehlt });
-        if (r.klaerung || !eigentuemer) {
+        // Zahlungsaufteilung aus der Pachtakte: je Eigentümer ein eigener Gutschriftbeleg (Schlüssel …:A<nr>)
+        const teile = F.aufteilungGilt(pt.zahlungsaufteilung, f) ? F.pachtAufteilen(r.positionen, pt.zahlungsaufteilung.empfaenger) : null;
+        if (r.klaerung || (!eigentuemer && !teile)) {
           klaeren({ art: "pacht", schluessel: f.schluessel, bezug: { pachtvertragId: pt.id }, bezugText, gruende: [r.klaerung || "Eigentümer-Konto nicht gefunden."] });
           continue;
         }
@@ -405,17 +416,36 @@ export function laufAusfuehren(db, n, opt) {
           lauf.uebersprungen++;
           continue;
         }
-        const partei = parteiFuer(db, { kontoId: pt.eigentuemerId });
-        const kyc = kycAuszahlung(db, { kontoId: pt.eigentuemerId, flaecheId: pt.flaecheId || null });
-        kycKlaerfall(db, lauf, pt, partei, kyc, trocken);
         const pachtGesellschaft = pt.gesellschaftId || (pt.anlageId && anlagen[pt.anlageId] ? anlageGesellschaftId(db, anlagen[pt.anlageId].roh || anlagen[pt.anlageId].anlage) : OEKOINVEST_ID);
-        erzeugen({
-          art: "pacht", gesellschaftId: pachtGesellschaft, empfaengerId: pt.eigentuemerId, partei, schluessel: f.schluessel,
-          bezug: { pachtvertragId: pt.id, flaecheId: pt.flaecheId || null, anlageId: pt.anlageId || null, phase: f.phase },
-          bezugText, zeitraum: { von: f.von, bis: f.bis }, faelligAm: f.faelligAm, positionen: r.positionen, steuerVorlage: pachtSteuerVorlage(pt),
-          erklaerung: r.erklaerung, kennzahlen: { ...r.basis, phase: f.phase, zahlweise: f.zahlweise },
-          hinweise: kyc.ok ? [] : [`Auszahlung gesperrt: ${kyc.gruende.join(" ")}`],
-        });
+        const empfaenger = teile
+          ? teile.map((t) => ({ kontoId: kontoPerEmail(db, t.empfaenger.email), name: t.empfaenger.name || t.empfaenger.email || `Empfänger ${t.nr}`, schluessel: `${f.schluessel}:A${t.nr}`, positionen: t.positionen, netto: t.netto, anteilProzent: t.anteilProzent, nr: t.nr }))
+          : [{ kontoId: pt.eigentuemerId, schluessel: f.schluessel, positionen: r.positionen, netto: r.netto }];
+        for (const em of empfaenger) {
+          if (teile && aktiverBeleg(db, em.schluessel)) {
+            lauf.vorhanden++;
+            continue;
+          }
+          const text = teile ? `${bezugText} – Anteil ${F.zahlDe(em.anteilProzent, 2)} % (${em.name})` : bezugText;
+          if (!em.kontoId) {
+            klaeren({ art: "pacht", schluessel: em.schluessel, bezug: { pachtvertragId: pt.id }, bezugText: text, gruende: [`Empfänger „${em.name}“ der Zahlungsaufteilung hat kein Portal-Konto – Gutschrift erst nach Registrierung und Verifizierung.`] });
+            continue;
+          }
+          if (!(em.netto > 0)) {
+            lauf.uebersprungen++;
+            continue;
+          }
+          const partei = parteiFuer(db, { kontoId: em.kontoId });
+          const kyc = kycAuszahlung(db, { kontoId: em.kontoId, flaecheId: pt.flaecheId || null });
+          kycKlaerfall(db, lauf, { ...pt, eigentuemerId: em.kontoId }, partei, kyc, trocken);
+          erzeugen({
+            art: "pacht", gesellschaftId: pachtGesellschaft, empfaengerId: em.kontoId, partei, schluessel: em.schluessel,
+            bezug: { pachtvertragId: pt.id, flaecheId: pt.flaecheId || null, anlageId: pt.anlageId || null, phase: f.phase, ...(teile ? { aufteilung: { nr: em.nr, anteilProzent: em.anteilProzent, gesamtNetto: r.netto } } : {}) },
+            bezugText: text, zeitraum: { von: f.von, bis: f.bis }, faelligAm: f.faelligAm, positionen: em.positionen, steuerVorlage: pachtSteuerVorlage(pt),
+            erklaerung: teile ? [...r.erklaerung, `Zahlungsaufteilung laut Pachtakte (${pt.zahlungsaufteilung.empfaenger.length} Empfänger): Ihr Anteil ${F.zahlDe(em.anteilProzent, 2)} % von ${F.euro(r.netto)} netto.`] : r.erklaerung,
+            kennzahlen: { ...r.basis, phase: f.phase, zahlweise: f.zahlweise, ...(teile ? { anteilProzent: em.anteilProzent } : {}) },
+            hinweise: kyc.ok ? [] : [`Auszahlung gesperrt: ${kyc.gruende.join(" ")}`],
+          });
+        }
       }
     }
   }

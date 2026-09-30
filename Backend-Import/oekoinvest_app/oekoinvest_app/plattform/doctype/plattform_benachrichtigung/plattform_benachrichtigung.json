@@ -14,6 +14,7 @@
   "cb_benachrichtigung",
   "gelesen",
   "mail",
+  "digest_offen",
   "objekt_art",
   "objekt_id",
   "sec_inhalt",
@@ -44,7 +45,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Art",
-   "options": "status\nnachricht\nnda\nsuchprofil\nanfrage\naufgabe\nsicherheit\nabrechnung\nsignatur\ntermin\nticket\nstoerung\nentwicklung",
+   "options": "status\nnachricht\nnda\nsuchprofil\nanfrage\naufgabe\nsicherheit\nabrechnung\nsignatur\ntermin\nticket\nstoerung\nentwicklung\nenergie\nfinanzierung\nportfolio",
    "read_only": 1,
    "reqd": 1
   },
@@ -71,6 +72,13 @@
    "fieldname": "mail",
    "fieldtype": "Check",
    "label": "Per E-Mail gemeldet",
+   "read_only": 1
+  },
+  {
+   "fieldname": "digest_offen",
+   "fieldtype": "Check",
+   "label": "Für Tages-Digest vorgemerkt",
+   "default": "0",
    "read_only": 1
   },
   {

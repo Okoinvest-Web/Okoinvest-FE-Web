@@ -1,0 +1,176 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 12:00:00.000000",
+ "description": "Freigabe eines plausibilisierten Zählerstand-Monatswerts für die Contracting-Abrechnung (Befund, Begründung) – append-only.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "anlage_id",
+  "monatswert_id",
+  "messpunkt_id",
+  "register",
+  "monat",
+  "cb_1",
+  "stand",
+  "stufe",
+  "von_id",
+  "am",
+  "sec_1",
+  "befunde",
+  "begruendung"
+ ],
+ "fields": [
+  {
+   "fieldname": "anlage_id",
+   "fieldtype": "Link",
+   "label": "Anlage",
+   "options": "Plattform Anlage",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "monatswert_id",
+   "fieldtype": "Link",
+   "label": "Monatswert",
+   "options": "Plattform Zaehlerstand Monatswert"
+  },
+  {
+   "fieldname": "messpunkt_id",
+   "fieldtype": "Link",
+   "label": "Messpunkt",
+   "options": "Plattform Messpunkt"
+  },
+  {
+   "fieldname": "register",
+   "fieldtype": "Data",
+   "label": "Register"
+  },
+  {
+   "fieldname": "monat",
+   "fieldtype": "Data",
+   "label": "Monat",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "stand",
+   "fieldtype": "Float",
+   "label": "Zählerstand"
+  },
+  {
+   "fieldname": "stufe",
+   "fieldtype": "Select",
+   "label": "Befund",
+   "options": "ok\nhinweis\nwarnung\nfehler",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "label": "Freigegeben von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "label": "Am"
+  },
+  {
+   "fieldname": "sec_1",
+   "fieldtype": "Section Break",
+   "label": "Befund"
+  },
+  {
+   "fieldname": "befunde",
+   "fieldtype": "Long Text",
+   "label": "Befunde (JSON)"
+  },
+  {
+   "fieldname": "begruendung",
+   "fieldtype": "Small Text",
+   "label": "Begründung"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 00:21:25.838413",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Zaehler Freigabe",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Betrieb",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "in_create": 0,
+ "naming_rule": "By script"
+}

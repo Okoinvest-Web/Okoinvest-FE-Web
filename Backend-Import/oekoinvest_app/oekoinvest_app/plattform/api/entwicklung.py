@@ -298,6 +298,9 @@ def projekt_json(n, p):
 			"id": r.name, "titel": r.titel, "kategorie": r.kategorie, "kategorieLabel": K.RISIKO_KATEGORIEN.get(r.kategorie, r.kategorie), "eintritt": cint(r.eintritt), "auswirkung": cint(r.auswirkung),
 			"score": sc, "ampel": {"id": K.risiko_ampel(sc), "label": K.risiko_ampel(sc)}, "massnahme": r.massnahme or "", "status": r.status, "statusLabel": K.RISIKO_STATUS.get(r.status, r.status),
 			"extern": bool(cint(r.extern)), "meilensteinId": r.meilenstein_id or None, "verantwortlichId": r.verantwortlich_id or None, "verantwortlich": _person(r.verantwortlich_id),
+			# Steuerung: Risikokosten und Restrisiko (entwicklung_steuerung_kern.risiko_bewertung)
+			"kostenEur": flt(r.get("kosten_eur")), "restEintritt": cint(r.get("rest_eintritt")) or None, "restAuswirkung": cint(r.get("rest_auswirkung")) or None, "pruefenAm": _datum(r.get("pruefen_am")) or "",
+			**{x: y for x, y in _risiko_bewertung(r).items() if x != "score"},
 		})
 	risiken.sort(key=lambda r: -r["score"])
 	kontakte = []
@@ -325,6 +328,12 @@ def projekt_json(n, p):
 		"gutachterProfile": [profil_json(g) for g in dict.fromkeys(g for m in liste for g in m["gutachterIds"])],
 		"darfBearbeiten": bo_schreiben(n),
 	}
+
+
+def _risiko_bewertung(r):
+	from oekoinvest_app.plattform.entwicklung_steuerung_kern import risiko_bewertung
+
+	return risiko_bewertung({"eintritt": r.eintritt, "auswirkung": r.auswirkung, "kostenEur": r.get("kosten_eur"), "restEintritt": r.get("rest_eintritt"), "restAuswirkung": r.get("rest_auswirkung")})
 
 
 def _kennzahlen_speichern(p, k):
@@ -703,6 +712,10 @@ def _meilenstein(n, p, kennung, d):
 	if m["status"] == "erledigt" and alt_status != "erledigt":
 		protokoll(n, "meilenstein_erledigt", "entwicklung", p.name, f"Meilenstein erledigt: {doc.titel}")
 		_fortschritt_melden(p, doc)
+		# Aufgabe aus dem Meilenstein (Steuerung, entwicklung_steuerung.py) automatisch erledigen
+		auf = doc.get("aufgabe_id")
+		if auf and frappe.db.get_value("Plattform Aufgabe", auf, "status") == "offen":
+			frappe.db.set_value("Plattform Aufgabe", auf, {"status": "erledigt", "erledigt_am": now_datetime(), "erledigt_von": n.id})
 	else:
 		protokoll(n, "meilenstein_geaendert" if alt else "meilenstein_angelegt", "entwicklung", p.name, f"{'Meilenstein geändert' if alt else 'Meilenstein angelegt'}: {doc.titel}")
 	for g in neue_gutachter:
@@ -803,7 +816,21 @@ def _eintrag(n, p, art, kennung, d):
 			f["meilenstein_id"] = mid if mid and frappe.db.exists(DT_MS, {"name": mid, "projekt_id": p.name}) else None
 		if "verantwortlichId" in d:
 			f["verantwortlich_id"] = v.kennung(d.get("verantwortlichId")) or None
-		doc = _einfacher_eintrag(DT_RISIKO, p, kennung, f, lambda x: v.pflicht(len(x.titel or "") >= 3, "Bitte beschreiben Sie das Risiko."))
+		# Steuerung (entwicklung_steuerung_kern): Schadenshöhe, Restrisiko nach Maßnahme, nächste Überprüfung
+		if "kostenEur" in d:
+			f["kosten_eur"] = v.zahl(d.get("kostenEur"), min=0, max=1e9) or 0
+		for k, feld in (("restEintritt", "rest_eintritt"), ("restAuswirkung", "rest_auswirkung")):
+			if k in d:
+				f[feld] = int(v.zahl(d.get(k), min=1, max=5) or 0) if d.get(k) not in (None, "") else 0
+		if "pruefenAm" in d:
+			f["pruefen_am"] = _datum_ok(d.get("pruefenAm"))
+
+		def _risiko_pruefen(x):
+			v.pflicht(len(x.titel or "") >= 3, "Bitte beschreiben Sie das Risiko.")
+			if (cint(x.get("rest_eintritt")) and cint(x.rest_eintritt) > cint(x.eintritt)) or (cint(x.get("rest_auswirkung")) and cint(x.rest_auswirkung) > cint(x.auswirkung)):
+				ungueltig("Das Restrisiko kann nicht höher sein als das Ausgangsrisiko.")
+
+		doc = _einfacher_eintrag(DT_RISIKO, p, kennung, f, _risiko_pruefen)
 		protokoll(n, "risiko", "entwicklung", p.name, f"Risiko {'geändert' if kennung else 'erfasst'}: {doc.titel} ({doc.eintritt}×{doc.auswirkung})")
 		return {"id": doc.name, "titel": doc.titel, "eintritt": cint(doc.eintritt), "auswirkung": cint(doc.auswirkung), "score": cint(doc.score)}
 	if art == "entscheidung":

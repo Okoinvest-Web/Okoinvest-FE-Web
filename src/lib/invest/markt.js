@@ -213,6 +213,14 @@ export const FINANZIERUNG = {
   steuerLand: { DE: 0.3, AT: 0.23, CH: 0.18 },
   afaDegressiv: { DE: 0.3, AT: 0.3, CH: 0 },
   ifbAt: { satz: 0.22, regulaer: 0.15, maxBemessung: 1000000, befristetBis: "2026-12-31" },
+  /**
+   * Portfolio (Investor nach dem Kauf): Quellensteuer auf Gewinnausschüttungen einer Kapitalgesellschaft – DE
+   * Kapitalertragsteuer 25 % + 5,5 % Soli (§§ 43, 43a EStG, ohne Kirchensteuer), AT KESt 27,5 % (§ 27a EStG),
+   * CH Verrechnungssteuer 35 % (Art. 13 VStG, Rückforderung je nach Empfänger). Für Kapitalgesellschaften als Empfänger
+   * gelten Befreiungen/Erstattungen (DE § 8b KStG/§ 43b EStG, AT § 10 KStG, CH Meldeverfahren) – nur Orientierung für
+   * den Hinweis im Portfolio, Steuerberatung nötig.
+   */
+  quellensteuerAusschuettung: { DE: 0.26375, AT: 0.275, CH: 0.35 },
 };
 
 /* ------------------------------------------------------------------ */
@@ -560,6 +568,14 @@ export const GEMEINSCHAFTEN = {
    *  kapitalertragsteuer DE: 25 % + Solidaritätszuschlag (ohne Kirchensteuer)
    */
   beteiligung: { anteilEur: 250, verwaltungAnteil: 0.01, ruecklageAnteil: 0.1, kapitalertragsteuer: 0.26375 },
+  /**
+   * Steuerabzug auf Dividenden der Genossenschaft (Mitgliederbereich /portal/beteiligung, vereinfacht, ohne Kirchensteuer):
+   *  DE: Kapitalertragsteuer 25 % + Solidaritätszuschlag 5,5 % darauf (§ 43a EStG, SolZG); Sparer-Pauschbetrag 1.000 € (§ 20 Abs. 9 EStG)
+   *  AT: Kapitalertragsteuer 27,5 % (§ 27a Abs. 1 Z 2 EStG AT)
+   *  CH: Verrechnungssteuer 35 % (Art. 13 VStG), rückforderbar
+   * Rückvergütungen (nach Umsatz) ohne Abzug gerechnet – steuerliche Behandlung durch Steuerberatung prüfen.
+   */
+  steuerAbzug: { DE: 0.26375, AT: 0.275, CH: 0.35, freibetragDeEur: 1000 },
 };
 
 /* ------------------------------------------------------------------ */

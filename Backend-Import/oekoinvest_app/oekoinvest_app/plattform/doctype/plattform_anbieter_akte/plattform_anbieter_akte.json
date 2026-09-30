@@ -1,0 +1,147 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:projekt_id",
+ "creation": "2026-10-01 08:00:00.000000",
+ "description": "Anbieter / Verkäufer je Projekt: Vermittlungsauftrag, Rückfragen, Stellungnahmen zu LOIs, Vorkenntnis, Bestandsanlage",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "projekt_id",
+  "cb_aa",
+  "mandat",
+  "sb_pruefung",
+  "pruefpunkte",
+  "voten",
+  "vorkenntnis",
+  "sb_bestand",
+  "bestand"
+ ],
+ "fields": [
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Projekt",
+   "options": "Plattform Projekt",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "cb_aa",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mandat",
+   "fieldtype": "JSON",
+   "label": "Vermittlungsauftrag"
+  },
+  {
+   "fieldname": "sb_pruefung",
+   "fieldtype": "Section Break",
+   "label": "Prüfung & Interessenten"
+  },
+  {
+   "fieldname": "pruefpunkte",
+   "fieldtype": "JSON",
+   "label": "Prüfpunkte"
+  },
+  {
+   "fieldname": "voten",
+   "fieldtype": "JSON",
+   "label": "Stellungnahmen zu LOIs"
+  },
+  {
+   "fieldname": "vorkenntnis",
+   "fieldtype": "JSON",
+   "label": "Vorkenntnis-Meldungen"
+  },
+  {
+   "fieldname": "sb_bestand",
+   "fieldtype": "Section Break",
+   "label": "Bestandsanlage"
+  },
+  {
+   "fieldname": "bestand",
+   "fieldtype": "JSON",
+   "label": "Bestandsdaten"
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Anbieter Akte",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Transaktion"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Compliance"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "projekt_id",
+ "track_changes": 1
+}

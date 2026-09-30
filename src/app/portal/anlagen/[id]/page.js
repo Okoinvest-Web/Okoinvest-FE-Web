@@ -113,6 +113,7 @@ export default async function AnlageSeite({ params, searchParams }) {
             Störungen erkennt das Monitoring automatisch (keine Daten, Fehlercode, Leistung deutlich unter Erwartung, unplausible Zählerstände). Solange eine Störung die Erzeugung mindert, liefert die Anlage weniger Solarstrom – den fehlenden Strom beziehen Sie automatisch aus dem Netz über Ihren Stromlieferanten. {a.betriebsfuehrer || "ÖkoInvest"} quittiert und behebt Störungen als Betriebsführer; Sie werden benachrichtigt und können Hinweise ergänzen.
           </Hinweis>
         )}
+        {!backoffice && ["kunde", "team-schreiben"].includes(a.meinZugriff) && <div><Button href={`/portal/anliegen?art=stoerung&anlage=${a.id}#neu`} size="sm" icon={TriangleAlert}>Störung melden</Button></div>} {/* Kundenseite Energie */}
         <StoerungenListe stoerungen={a.stoerungen || []} betrieb={betrieb} leer="Keine Störungen in dieser Auswahl." />
       </div>
     );
@@ -272,6 +273,14 @@ export default async function AnlageSeite({ params, searchParams }) {
           </p>
         </Karte>
       </div>
+      {!backoffice && ["kunde", "team-schreiben"].includes(a.meinZugriff) && (
+        <Hinweis ton="neutral" icon={FileText} titel="Vertragsende, Verlängerung oder Übernahme">
+          Kündigung zum Laufzeitende, Verlängerung oder Übernahme der Anlage können Sie im Portal anfragen – mit Fristprüfung, Angebot und schriftlicher Bestätigung.{" "}
+          <Link href={`/portal/anliegen?art=kuendigung&anlage=${a.id}#neu`} className="font-semibold text-ov-700 hover:text-ov-800">Kündigung</Link> ·{" "}
+          <Link href={`/portal/anliegen?art=verlaengerung&anlage=${a.id}#neu`} className="font-semibold text-ov-700 hover:text-ov-800">Verlängerung</Link> ·{" "}
+          <Link href={`/portal/anliegen?art=kaufoption&anlage=${a.id}#neu`} className="font-semibold text-ov-700 hover:text-ov-800">Übernahme anfragen</Link>
+        </Hinweis>
+      )} {/* Kundenseite Energie */}
       {eigentum}
       </div>
     ) : (

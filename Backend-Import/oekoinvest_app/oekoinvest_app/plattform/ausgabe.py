@@ -317,6 +317,11 @@ def dokument_meta(d):
 		"checkliste": d.get("checkliste") or "",
 		"am": iso(d.am),
 		"hochgeladenVon": d.hochgeladen_von or None,
+		# Querschnitt: Versionen und Freigabestatus (plattform/api/querschnitt.py)
+		"version": cint(d.get("version")) or 1,
+		"vorgaengerId": d.get("vorgaenger") or None,
+		"ersetztDurch": d.get("ersetzt_durch") or None,
+		"freigabe": {"status": d.get("freigabe_status"), "vonId": d.get("freigabe_von") or None, "am": iso(d.get("freigabe_am")), "kommentar": d.get("freigabe_kommentar") or ""} if d.get("freigabe_status") else None,
 	}
 
 

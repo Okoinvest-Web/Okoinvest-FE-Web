@@ -13,6 +13,7 @@ Stand: 30.09.2026 · Rollen `flaeche` und `landwirt` · Demo: `flaeche@example.c
 | Projektentwicklung (`/portal/entwicklung`) | „Wo steht mein Projekt?“ – vereinfachte Meilensteine bis zur Inbetriebnahme |
 | Grundbuch (`/portal/grundbuch`) | Dienstbarkeit: jeder Schritt mit „Was bedeutet das für Sie?“ |
 | Abrechnungen (`/portal/abrechnungen`) | Pacht-Gutschriften, Jahresübersicht, Indexierung, nächste Zahlung |
+| Pachtverträge (`/portal/pachtvertraege`) | Fristen, Rückbausicherheit, Rückbau-Abnahme, Anliegen (Kündigung, Eigentümerwechsel, Erbfall, mehrere Eigentümer, Verlängerung), Agri-PV-Nachweise, Jahresbescheinigung (PDF) |
 | Unterschriften (`/portal/signatur`) | Dokumente elektronisch unterschreiben |
 | Verifizierung (`/portal/verifizierung`) | Identität, Bankverbindung, Eigentumsnachweis – Voraussetzung für Auszahlungen |
 | Termine, Nachrichten, Dokumente, Support | Besichtigung buchen, Rückfragen, Unterlagen |
@@ -57,6 +58,16 @@ Banken verlangen, dass das Nutzungsrecht im Grundbuch steht – vor Grundschulde
 
 1. **Verifizierung abschließen:** Ausweis, Bankverbindung (IBAN), Eigentumsnachweis für die Fläche. Ohne Verifizierung werden Gutschriften erstellt, aber nicht ausgezahlt (Hinweis im Portal).
 2. Gutschriften erscheinen je Periode mit PDF. Indexierung wird zum 1.1. mit dem Jahresdurchschnitt des Vorjahres angepasst und erklärt.
+
+## Nach der Unterschrift: Pachtverträge (`/portal/pachtvertraege`)
+
+- **Fristen:** Späteste Frist bis Baubeginn (mit der vereinbarten Nichtbau-Regel), Ende der Grundlaufzeit, Verlängerungsoption, Erinnerung zwei Jahre vor Laufzeitende, Vertragsende nach Kündigung. Verbindlich ist Ihr Vertrag.
+- **Rückbausicherheit:** Art, Betrag, Sicherungsgeber und Datum der Hinterlegung. Ist sie ab Baubeginn vereinbart, aber noch nicht hinterlegt, weist die Seite darauf hin. Freigegeben wird sie erst, nachdem Sie den Rückbau abgenommen haben.
+- **Rückbau:** Ankündigung mit Termin → Rückbau läuft → „Zur Abnahme bereit“. Dann prüfen Sie die Fläche und **bestätigen die Abnahme** oder **melden Mängel** mit Beschreibung (Fotos unter „Dokumente“ der Fläche). Erst danach wird der Vertrag beendet und die Dienstbarkeit gelöscht.
+- **Anliegen:** Kündigung/Vertragsende, Eigentümerwechsel (Verkauf, Schenkung, Hofübergabe), Erbfall (Erbnachweis je Land: DE Erbschein/Testament mit Eröffnungsniederschrift/ENZ, AT Amtsbestätigung bzw. Einantwortung, CH Erbbescheinigung), mehrere Eigentümer (Pacht nach Anteilen, zusammen 100 %), Verlängerung. Je Art nennt die Seite die rechtlichen Grundzüge (vorsichtig formuliert) und die benötigten Unterlagen. Wir antworten in der Regel innerhalb von 14 Tagen; Rückfragen beantworten Sie direkt im Anliegen.
+- **Eigentümerwechsel/Erbfall:** Nach Prüfung überträgt das Backoffice Vertrag und Fläche auf das Konto des neuen Eigentümers; die Pacht geht ab dem Stichtag an ihn, ausgezahlt wird nach seiner Verifizierung. Ihr bisheriger Vertrag erscheint unter „Übertragene Verträge“, Ihre Abrechnungen bleiben abrufbar.
+- **Agri-PV (Landwirte):** Vor dem Bau erfassen Sie **Referenzjahre** (Ertrag ohne Anlage), danach jedes **Betriebsjahr**. Die Seite prüft sofort nach DIN SPEC 91434: Ertrag mindestens 66 % des Referenzertrags, Flächenverlust höchstens 10 % (Kategorie I) bzw. 15 % (Kategorie II), Hinweis zur Förderfähigkeit (GAP/Mehrfachantrag). Das Backoffice bestätigt den Nachweis oder stellt eine Rückfrage.
+- **Jahresbescheinigung:** Je Kalenderjahr ein PDF mit allen Gutschriften (netto, Umsatzsteuer, brutto, ausgezahlt, offen) und vorsichtigen Steuerhinweisen je Land – für Ihre Steuerberatung.
 
 ## Typische Fehler
 

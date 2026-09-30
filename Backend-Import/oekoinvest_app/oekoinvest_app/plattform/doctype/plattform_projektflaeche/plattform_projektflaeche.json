@@ -17,7 +17,13 @@
   "pacht_beginn",
   "pacht_ende",
   "pacht_eur_ha",
-  "notiz"
+  "notiz",
+  "sec_sicherung",
+  "grundbuch",
+  "grundbuch_datum",
+  "cb_sicherung",
+  "option_bis",
+  "option_aufgabe_id"
  ],
  "fields": [
   {
@@ -89,11 +95,45 @@
    "fieldname": "notiz",
    "fieldtype": "Small Text",
    "label": "Notiz (intern)"
+  },
+  {
+   "fieldname": "sec_sicherung",
+   "fieldtype": "Section Break",
+   "label": "Grundbuch und Optionsfrist"
+  },
+  {
+   "fieldname": "grundbuch",
+   "fieldtype": "Select",
+   "label": "Grundbuch-Sicherung",
+   "options": "keine\nbeantragt\nvorgemerkt\neingetragen",
+   "default": "keine"
+  },
+  {
+   "fieldname": "grundbuch_datum",
+   "fieldtype": "Date",
+   "label": "Eintragung / Rang am"
+  },
+  {
+   "fieldname": "cb_sicherung",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "option_bis",
+   "fieldtype": "Date",
+   "label": "Option ausüben bis"
+  },
+  {
+   "fieldname": "option_aufgabe_id",
+   "fieldtype": "Link",
+   "label": "Aufgabe Optionsfrist",
+   "options": "Plattform Aufgabe",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-30 20:00:00.000000",
+ "modified": "2026-10-01 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Plattform Projektflaeche",

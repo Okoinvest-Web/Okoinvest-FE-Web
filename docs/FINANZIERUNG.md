@@ -85,4 +85,5 @@ DocType `Plattform Foerderprogramm` (im Desk pflegbar).
 | Backend (Demo/Frappe) | `backend/finanzierung.js`, `backend/demo/finanzierung{,-seed}.js`, `backend/frappe/finanzierung.js`, Frappe `plattform/api/finanzierung.py`, `plattform/finanzierung_kern.py` |
 | PDFs/CSV | `src/lib/plattform/server/finanzierung-pdf.js`; Frappe-Druckformate „Finanzierungsvergleich“, „Bank Reporting Covenants“ |
 | Seiten | `/portal/finanzierung` (Investor/Anbieter), `/portal/admin/finanzierung[/id]` (Backoffice), `/portal/bank[/id]` (Bank), `/einladung/bank/[token]` |
-| Tests | `node scripts/plattform-test-finanzierung.mjs` (`--nur-logik` ohne Server); Frappe `tests/test_finanzierung{,_kern}.py` |
+| Bank-Akte (Anforderungen, Q&A, Kreditentscheidung, CP-Bestätigung, Auszahlungen, Berichte, Bank-Team) | `src/lib/plattform/finanzierung/bankakte.js`, `backend/{demo,frappe}/bankakte.js`, Frappe `plattform/api/bankakte.py`, `plattform/bankakte_kern.py`; Seiten `/portal/bank/[id]`, `/portal/bank/team`, `/portal/admin/finanzierung/[id]/bank/[anfrageId]` |
+| Tests | `node scripts/plattform-test-finanzierung.mjs` (`--nur-logik` ohne Server); Frappe `tests/test_finanzierung{,_kern}.py` | · `node scripts/plattform-test-gutachter-bank.mjs` (Bank-Akte)

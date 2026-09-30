@@ -1,0 +1,81 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "Einstellungen der Buchhaltung: Mahnstufen, Gebühren, Verzugszinsen, Kontenzuordnung für DATEV/BMD (Beispielwerte – mit der Steuerberatung abstimmen).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "mahnwesen",
+  "cb_1",
+  "konten"
+ ],
+ "fields": [
+  {
+   "fieldname": "mahnwesen",
+   "fieldtype": "JSON",
+   "label": "Mahnwesen (Stufen, Gebühren, Zinsen)"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "konten",
+   "fieldtype": "JSON",
+   "label": "Kontenzuordnung DATEV/BMD"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-01 00:36:39.253884",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Buchhaltung Einstellungen",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

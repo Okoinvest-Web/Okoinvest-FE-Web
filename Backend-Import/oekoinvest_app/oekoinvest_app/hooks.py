@@ -199,14 +199,21 @@ scheduler_events = {
 		"oekoinvest_app.plattform.api.dienste.gesellschaft_fristen_taeglich",  # Dienste: Fristen der Projektgesellschaften (Meldungen, Jahresabschluss, WiEReG)
 		# ↓ weitere tägliche Jobs
 		"oekoinvest_app.plattform.api.closing.fristen_taeglich",  # Grundbuch & Closing: überfällige Grundbuch-Schritte an das Backoffice
+		"oekoinvest_app.plattform.api.anbieter.frist_lauf_taeglich",  # Anbieter / Verkäufer: Erinnerung an überfällige Rückfragen des Backoffice
 		"oekoinvest_app.plattform.api.finanzierung.covenants_taeglich",  # Finanzierung: Covenant-Prüfung (DSCR/LLCR), Reporting-Fristen
+		"oekoinvest_app.plattform.api.gutachterauftrag.fristen_taeglich",  # Gutachteraufträge: Angebotsfristen, Liefertermine, Termine, Zahlungsziele
+		"oekoinvest_app.plattform.api.portfolio.fristen_taeglich",  # Portfolio: Erinnerung/Verzug Kapitalabrufe, Covenant-Hinweise (DSCR aus Monatserträgen)
 		"oekoinvest_app.plattform.energie_quellen.spot_taeglich",  # Energiebeschaffung: Day-Ahead DE-LU/AT von Energy-Charts (CC BY 4.0)
 		"oekoinvest_app.plattform.api.energie.fristen_taeglich",  # Energiebeschaffung: Kündigungsfristen-Alarm, Erinnerung Angebotsfristen
+		"oekoinvest_app.plattform.api.betrieb.lauf_taeglich",  # Betriebsführung: Fristen (Eichung, Garantie, Wartung, Meldefrist), SLA, Nachbestellung
+		"oekoinvest_app.plattform.api.kundenenergie.fristen_taeglich",  # Kundenseite Energie: Lieferantenwechsel anlegen, Fristen-Alarme
 		"oekoinvest_app.plattform.api.entwicklung.fristen_taeglich",  # Projektentwicklung: Fristen-Erinnerungen, optional ERPNext-Abgleich
+		"oekoinvest_app.plattform.api.entwicklung_steuerung.aufgaben_taeglich",  # Entwicklungssteuerung: Aufgaben aus fälligen Meilensteinen und Optionsfristen
 		"oekoinvest_app.plattform.api.signatur.erinnerungen_senden",  # Signatur: Erinnerung nach 3 Tagen, abgelaufene Fristen
 		"oekoinvest_app.plattform.api.hr.hrms_abgleich",  # HR: Leave Applications (HRMS, optional) → Abwesenheit + Vertretung
 		"oekoinvest_app.plattform.api.onboarding.mail_lauf_taeglich",  # Onboarding B1: Erinnerung an offene Einstiegsschritte nach 3/7 Tagen
 		"oekoinvest_app.plattform.api.akquise_kampagne.nachfassen_taeglich",  # Akquise A1b: Nachfassstufen der Kampagnen (Aufgaben)
+		"oekoinvest_app.plattform.api.querschnitt.digest_taeglich",  # Querschnitt: Tages-Digest der Benachrichtigungen (E-Mail ohne Inhalte)
 	],
 	# Deal-Room: Erinnerung 48 h vor Ende einer Angebotsfrist
 	"hourly": [

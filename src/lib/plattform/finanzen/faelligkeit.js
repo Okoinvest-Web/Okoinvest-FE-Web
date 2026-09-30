@@ -11,6 +11,8 @@
 //                 abgerechnet – so entsteht beim späteren Pachtbeginn keine Rückforderung.
 //   pacht         vom Pachtbeginn bis zum Laufzeitende (Beginn + Laufzeit − 1 Tag), Zahlweise laut Vertrag.
 //
+// Kündigung/Beendigung: `vertragsEnde` (kuendigungZum bzw. beendetAm) ersetzt das Laufzeitende, wenn es früher liegt.
+//
 // Fällig: vorschüssig am ersten Tag der Periode + Zahlungsziel, nachschüssig am Tag nach Periodenende + Zahlungsziel.
 // Abgerechnet (Gutschrift erzeugt) wird eine Periode, sobald der Erstellungstag erreicht ist:
 //   vorschüssig   `vorlaufTage` vor der Fälligkeit (Eigentümer erhält die Gutschrift rechtzeitig)
@@ -55,6 +57,18 @@ export function laufzeitEnde(beginn, laufzeitJahre) {
 }
 
 /**
+ * Tatsächliches Pachtende (inklusive): Laufzeitende, bei Kündigung („gekuendigt“/„beendet“) spätestens `kuendigungZum`,
+ * bei Beendigung spätestens `beendetAm` – der letzte Zeitraum wird taggenau anteilig gerechnet, danach entsteht keine
+ * Gutschrift mehr. null = offen (keine Laufzeit, keine Kündigung).
+ */
+export function vertragsEnde(vertrag = {}) {
+  const kandidaten = [laufzeitEnde(vertrag.beginn, vertrag.laufzeitJahre)];
+  if (["gekuendigt", "beendet"].includes(vertrag.status)) kandidaten.push(vertrag.kuendigungZum);
+  if (vertrag.status === "beendet") kandidaten.push(vertrag.beendetAm);
+  return kandidaten.filter((d) => istDatum(d)).sort()[0] || null;
+}
+
+/**
  * Alle Fälligkeiten eines Vertrags bis `stichtag` (inkl. künftiger Perioden bis `ausblickBis` für „nächste Zahlung“).
  * vertrag: { id, vertragsdatum, beginn, laufzeitJahre, faelligkeit, zahlweise, zahlungszielTage, reservierungJahr, vorlaufTage }
  * Rückgabe: [{ schluessel, phase, von, bis, anteil, faktorJahr, faelligAm, erstellbarAb, zahlweise }]
@@ -76,17 +90,18 @@ export function faelligkeiten(vertrag, { stichtag, ausblickBis = null } = {}) {
       faelligAm, erstellbarAb, zahlweise,
     });
   };
+  const vEnde = vertragsEnde(vertrag); // Kündigung/Beendigung begrenzt Reservierung und Pacht
   // Reservierungsprämie bis zum Pachtbeginn (nachschüssig)
   if (Number(vertrag.reservierungJahr) > 0 && istDatum(vertrag.vertragsdatum)) {
-    const resBis = istDatum(vertrag.beginn) ? plusTage(vertrag.beginn, -1) : null;
+    let resBis = istDatum(vertrag.beginn) ? plusTage(vertrag.beginn, -1) : null;
+    if (vEnde && (!resBis || vEnde < resBis)) resBis = vEnde;
     if (!resBis || resBis >= vertrag.vertragsdatum) {
       // offener Beginn: Perioden werden fortgeschrieben; abgerechnet wird erst nach Periodenende (nachschüssig)
       for (const p of perioden({ ab: vertrag.vertragsdatum, bis: resBis, rhythmus, stopp })) eintrag("reservierung", p, "nachschuessig");
     }
   }
   if (istDatum(vertrag.beginn)) {
-    const ende = laufzeitEnde(vertrag.beginn, vertrag.laufzeitJahre);
-    for (const p of perioden({ ab: vertrag.beginn, bis: ende, rhythmus, stopp })) eintrag("pacht", p, vertrag.zahlweise === "vorschuessig" ? "vorschuessig" : "nachschuessig");
+    for (const p of perioden({ ab: vertrag.beginn, bis: vEnde, rhythmus, stopp })) eintrag("pacht", p, vertrag.zahlweise === "vorschuessig" ? "vorschuessig" : "nachschuessig");
   }
   return ergebnis;
 }

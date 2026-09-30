@@ -35,7 +35,8 @@ from oekoinvest_app.plattform.checkliste import CHECKLISTE_IDS
 from oekoinvest_app.plattform.prozesse import BOERSE_STATUS, DATENRAUM_STATUS
 
 MAX_BASE64 = (UPLOAD_MAX_BYTES + 2) // 3 * 4 + 16
-FELDER = ["name", "bezug_art", "bezug_id", "dateiname", "mime", "groesse", "kategorie", "checkliste", "am", "hochgeladen_von", "datei_id"]
+FELDER = ["name", "bezug_art", "bezug_id", "dateiname", "mime", "groesse", "kategorie", "checkliste", "am", "hochgeladen_von", "datei_id",
+	"version", "vorgaenger", "ersetzt_durch", "freigabe_status", "freigabe_von", "freigabe_am", "freigabe_kommentar"]  # Querschnitt: Versionen, Freigabe
 
 
 def mime_aus_bytes(b):
@@ -136,7 +137,7 @@ def lesen(id=None, als_benutzer=None):  # noqa: A002
 
 
 @frappe.whitelist(methods=["POST"])
-def speichern(bezugArt=None, bezugId=None, name=None, mime=None, kategorie=None, inhaltBase64=None, checkliste=None, als_benutzer=None):
+def speichern(bezugArt=None, bezugId=None, name=None, mime=None, kategorie=None, inhaltBase64=None, checkliste=None, stumm=None, als_benutzer=None):  # stumm: Anhang einer Nachricht (Querschnitt)
 	n = nutzer(als_benutzer)
 	if mime not in UPLOAD_TYPEN:
 		ungueltig("Erlaubt sind PDF, JPG und PNG.")
@@ -194,17 +195,18 @@ def speichern(bezugArt=None, bezugId=None, name=None, mime=None, kategorie=None,
 	d.datei_id = datei.name
 	d.save(ignore_permissions=True)
 
-	nachricht_anlegen(
-		bezugArt,
-		o.name,
-		von_id=n.id,
-		von_admin=als_admin,
-		system=True,
-		text=f"Dokument hochgeladen: {sauber}",
-		gelesen_nutzer=None if als_admin else True,
-		gelesen_admin=None if als_admin else False,
-		ereignis="nachricht",
-	)
+	if not v.wahr(stumm):
+		nachricht_anlegen(
+			bezugArt,
+			o.name,
+			von_id=n.id,
+			von_admin=als_admin,
+			system=True,
+			text=f"Dokument hochgeladen: {sauber}",
+			gelesen_nutzer=None if als_admin else True,
+			gelesen_admin=None if als_admin else False,
+			ereignis="nachricht",
+		)
 	protokoll(n, "upload", bezugArt, o.name, f"Dokument {sauber} ({len(daten)} B)")
 	from oekoinvest_app.plattform.backoffice import backoffice_ereignis  # Backoffice: Automationen
 

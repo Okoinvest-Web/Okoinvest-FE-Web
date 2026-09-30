@@ -21,6 +21,8 @@ BEREICHE = {
 	"entwicklung": "Projektentwicklung",  # Projektentwicklung
 	"gesellschaften": "Gesellschaften & SPV-Gründung", "bonitaet": "Bonitätsauskünfte", "register": "Registerauskünfte",  # Dienste
 	"grundbuch": "Grundbuch & Dienstbarkeiten", "closing": "Deal-Abschluss (Closing)",  # Grundbuch & Closing
+	"portfolio": "Portfolio & Beteiligungen",  # Investor-Portfolio nach dem Kauf
+	"pachtakte": "Pachtakten (Kündigung, Eigentümerwechsel, Rückbau)",  # Team 1: Pachtakte nach Vertragsschluss
 	"geodaten": "Geodaten & Akquise-Karte",  # Geodaten & Akquise-Engine
 	"signatur": "Elektronische Unterschrift", "kalender": "Termine & Kalender", "support": "Service & Support", "team": "Team & HR", "wissen": "Wissensdatenbank",  # Signatur, Termine, Service & HR
 }
@@ -62,7 +64,9 @@ _M = {
 	"wissen": [2, 2, 2, 2, 1, 2, 2, 2],
 	# Grundbuch & Closing – 8 Spalten (leitung, akquise, transaktion, buchhaltung, lesen, betrieb, compliance, projektleitung), wie rechte.js
 	"grundbuch": [2, 2, 2, 1, 1, 1, 0, 2],
+	"pachtakte": [2, 2, 1, 2, 1, 1, 0, 1],  # Pachtakten (wie rechte.js)
 	"closing": [2, 0, 2, 1, 1, 0, 1, 1],
+	"portfolio": [2, 0, 2, 2, 1, 1, 0, 1],  # Portfolio (wie rechte.js): Leitung/Transaktion/Buchhaltung schreiben, Lesen/Betrieb/Projektleitung lesen
 	"sonstiges": [2, 1, 1, 1, 1],
 }
 # Anlagen & Monitoring: Spalte „betrieb“ (wie rechte.js) – Anlagen schreiben, Cockpit/Nutzer lesen, Aufgaben schreiben
@@ -96,6 +100,11 @@ for _b, _z in _M.items():
 		_z.append(0)
 	if len(_z) < len(BACKOFFICE_ROLLEN):
 		_z.append(_ENERGIE.get(_b, 0))
+# Mitglied/Genossenschaft und Gemeindecockpit (Team 5) – alle 9 Spalten, wie rechte.js
+BEREICHE["genossenschaft"] = "Genossenschaft & Energiegemeinschaften"
+BEREICHE["kommunen"] = "Kommunen & Gemeinden"
+_M["genossenschaft"] = [2, 1, 1, 2, 1, 0, 1, 0, 2]
+_M["kommunen"] = [2, 2, 1, 1, 1, 0, 0, 2, 0]
 RECHTE_MATRIX = {b: dict(zip(BACKOFFICE_ROLLEN, s)) for b, s in _M.items()}
 STUFE_LABEL = ["–", "lesen", "schreiben"]
 BEREICH_FUER_ART = {"vorgang": "vorgaenge", "flaeche": "flaechen", "projekt": "projekte", "interesse": "interessen", "provision": "provisionen"}

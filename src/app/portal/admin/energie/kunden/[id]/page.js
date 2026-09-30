@@ -92,6 +92,7 @@ export default async function KundenAnalyse({ params }) {
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <Karte titel="Stromverträge" untertitel="Laufend, gekündigt, neu (aus Zuschlag)">
           <Tabelle kopf={["Lieferant", "Struktur", "Preis", "Laufzeit", "Frist", "Status"]} zeilen={k.vertraege.map((x) => [x.lieferantName || x.lieferant, x.strukturLabel + (x.pool ? " · Pool" : ""), x.preisCt !== null && x.preisCt !== undefined ? `${fmt(x.preisCt, 3)} ct${x.preisArt === "gesamt" ? " (gesamt)" : ""}` : x.aufschlagCt !== undefined ? `+${fmt(x.aufschlagCt, 3)} ct` : "–", `${datum(x.beginn)} – ${datum(x.vertragEnde)}`, <FristBadge key="f" tage={x.tageBisStichtag} />, x.status])} leer="Noch kein Vertrag erfasst." />
+          <div className="mt-4"><PdfLink href={`/api/portal/energie/dokument?art=kundenbericht&id=${k.kunde.id}`}>Beschaffungsbericht für den Kunden (PDF)</PdfLink></div>
           {schreiben && <div className="mt-4"><VertragFormular url={`/api/admin/energie/kunden/${k.kunde.id}`} vertrag={vt} titel={vt ? "Laufenden Vertrag bearbeiten" : "Laufenden Vertrag erfassen"} /></div>}
         </Karte>
         <Karte titel="Stammdaten & Vollmacht" untertitel="Abnahmestellen und Lastgänge aus dem Kundenportal (Fachprüfung)">

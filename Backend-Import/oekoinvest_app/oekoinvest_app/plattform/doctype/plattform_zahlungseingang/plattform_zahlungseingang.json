@@ -1,0 +1,214 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "Buchung aus dem Kontoauszug mit Zuordnungsvorschlag; Zuordnung zu Rechnung/Gutschrift nur über das Portal.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "import_id",
+  "datum",
+  "valuta",
+  "betrag",
+  "waehrung",
+  "richtung",
+  "cb_1",
+  "name_gegenpartei",
+  "iban_maskiert",
+  "referenz",
+  "schluessel",
+  "sb_1",
+  "status",
+  "abrechnung_id",
+  "nummer",
+  "teilzahlung",
+  "differenz",
+  "cb_2",
+  "grund",
+  "zweck",
+  "vorschlag",
+  "erledigt_von",
+  "erledigt_am"
+ ],
+ "fields": [
+  {
+   "fieldname": "import_id",
+   "fieldtype": "Link",
+   "label": "Import",
+   "options": "Plattform Kontoauszug Import",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "datum",
+   "fieldtype": "Date",
+   "label": "Buchungsdatum",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "valuta",
+   "fieldtype": "Date",
+   "label": "Valuta"
+  },
+  {
+   "fieldname": "betrag",
+   "fieldtype": "Currency",
+   "label": "Betrag",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "waehrung",
+   "fieldtype": "Data",
+   "label": "Währung"
+  },
+  {
+   "fieldname": "richtung",
+   "fieldtype": "Data",
+   "label": "Richtung (eingang/ausgang)"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "name_gegenpartei",
+   "fieldtype": "Data",
+   "label": "Gegenpartei"
+  },
+  {
+   "fieldname": "iban_maskiert",
+   "fieldtype": "Data",
+   "label": "IBAN (maskiert)"
+  },
+  {
+   "fieldname": "referenz",
+   "fieldtype": "Data",
+   "label": "Referenz"
+  },
+  {
+   "fieldname": "schluessel",
+   "fieldtype": "Data",
+   "label": "Dubletten-Schlüssel",
+   "search_index": 1
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": ""
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Status (offen/zugeordnet/ignoriert)",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "abrechnung_id",
+   "fieldtype": "Link",
+   "label": "Beleg",
+   "options": "Plattform Abrechnung"
+  },
+  {
+   "fieldname": "nummer",
+   "fieldtype": "Data",
+   "label": "Belegnummer"
+  },
+  {
+   "fieldname": "teilzahlung",
+   "fieldtype": "Check",
+   "label": "Teilzahlung"
+  },
+  {
+   "fieldname": "differenz",
+   "fieldtype": "Currency",
+   "label": "Überzahlung"
+  },
+  {
+   "fieldname": "cb_2",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "grund",
+   "fieldtype": "Small Text",
+   "label": "Grund (ignoriert)"
+  },
+  {
+   "fieldname": "zweck",
+   "fieldtype": "Small Text",
+   "label": "Verwendungszweck"
+  },
+  {
+   "fieldname": "vorschlag",
+   "fieldtype": "JSON",
+   "label": "Zuordnungsvorschlag"
+  },
+  {
+   "fieldname": "erledigt_von",
+   "fieldtype": "Link",
+   "label": "Erledigt von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "erledigt_am",
+   "fieldtype": "Datetime",
+   "label": "Erledigt am"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 0,
+ "links": [],
+ "modified": "2026-10-01 00:36:39.371633",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Zahlungseingang",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "in_create": 1,
+ "title_field": "name_gegenpartei",
+ "search_fields": "nummer,referenz"
+}

@@ -61,5 +61,10 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 - [x] Zentral: plattform-test-geodaten.mjs erneut (Demo enthält jetzt DE-Kandidaten)
 - [ ] Muster-Verträge Grundbuch/Closing je Land anwaltlich/notariell freigeben, Gebührentabellen (GNotKG, GGG/GebG, kantonal) aktualisieren – siehe docs/GRUNDBUCH-CLOSING.md Abschnitt 9
 
+- [ ] Team 5 (Mitglied/Genossenschaft, Kommune): vor dem ersten echten Beitritt Prospekt-/Informationspflichten (VermAnlG/KMG/FIDLEG), Form der Beitrittserklärung, Online-GV laut Satzung, GwG-Identifizierung und Steuerabzug anwaltlich bzw. steuerlich klären; Demo-DB: Testdaten mt-test-* (Genossenschaften, Energiegemeinschaften, Testgemeinden) entfernen; Bench-Tests (FrappeTestCase) für api/mitglied.py und api/gemeinde.py ergänzen
+
+- [x] Team 6 Gutachter/Planer und Bank: Auftragsverwaltung Gutachter (Angebot → Beauftragung → Lieferung/Mängel → Abnahme → Rechnung/Zahlung → Bewertung), Bank-Akte (Anforderungen, Q&A, Kreditentscheidung, CP-Bestätigung, Auszahlungen, Berichte) und Bank-Team; Test `plattform-test-gutachter-bank.mjs` (151 grün)
+- [ ] Team 6 offen: FrappeTestCase-Tests für `api/gutachterauftrag.py`/`api/bankakte.py` auf einer Bench; Desk-Workspace-Kacheln/Druckformate für Gutachterauftrag und Bank-Akte; Termine der Gutachteraufträge optional in den Kalender (Modul Termine) spiegeln; Auftragsbestätigung optional über das Signatur-Modul; ERPNext Purchase Invoice für bezahlte Gutachter-Rechnungen (heute: Plattform Projektkosten)
+
 ## Abschluss
 - [x] Zentrale Tests aller Testreihen (21 Reihen, 2.323 Prüfungen), Backend-Konsistenzprüfer (0/0), Produktions-Build, Seiten-Audit (123 öffentlich, 20 Rollen im Portal), npm audit 0, Commit

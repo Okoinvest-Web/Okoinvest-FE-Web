@@ -100,7 +100,7 @@ def liste(bezugArt=None, bezugId=None, markieren=None, als_benutzer=None):
 	nachrichten = frappe.get_all(
 		"Plattform Nachricht",
 		filters={"bezug_art": bezugArt, "bezug_id": o.name},
-		fields=["name", "text", "am", "system", "von_admin", "von_id", "gelesen_nutzer", "gelesen_admin"],
+		fields=["name", "text", "am", "system", "von_admin", "von_id", "gelesen_nutzer", "gelesen_admin", "anhaenge"],
 		order_by="am asc, creation asc",
 		limit_page_length=0,
 	)
@@ -136,20 +136,45 @@ def liste(bezugArt=None, bezugId=None, markieren=None, als_benutzer=None):
 				"eigene": m.von_id == n.id and not cint(m.system),
 				"vonName": von_name(m),
 				"neu": not cint(m[feld]),
+				# Querschnitt: Lesebestätigung (eigene Nachricht von der Gegenseite gelesen) und Anhänge
+				"gelesen": (bool(cint(m.gelesen_nutzer)) if cint(m.von_admin) else bool(cint(m.gelesen_admin))) if (m.von_id == n.id and not cint(m.system)) else None,
+				"anhaenge": _anhaenge(m, n),
 			}
 			for m in nachrichten
 		],
 	}
 
 
+def _anhaenge(m, n):
+	"""Anhänge einer Nachricht – nur vorhandene Dokumente, die der Nutzer sehen darf."""
+	from oekoinvest_app.plattform.api.dokument import darf_dokument
+	from oekoinvest_app.plattform.kern import aus_json
+
+	ids = aus_json(m.get("anhaenge"), []) or []
+	aus = []
+	for k in ids[:10]:
+		if not frappe.db.exists("Plattform Dokument", k):
+			continue
+		d = frappe.get_doc("Plattform Dokument", k)
+		if darf_dokument(n, d):
+			aus.append({"id": d.name, "name": d.dateiname, "mime": d.mime, "groesse": cint(d.groesse)})
+	return aus
+
+
 @frappe.whitelist(methods=["POST"])
-def senden(bezugArt=None, bezugId=None, text=None, als_benutzer=None):
+def senden(bezugArt=None, bezugId=None, text=None, anhaenge=None, als_benutzer=None):
 	n = nutzer(als_benutzer)
-	t = v.mehrzeilig(text, 5000)
+	# Querschnitt: Anhänge = zuvor „stumm“ hochgeladene eigene Dokumente derselben Unterhaltung
+	anh = list(dict.fromkeys(x for x in (v.kennung(i) for i in (anhaenge if isinstance(anhaenge, list) else [])[:10]) if x))
+	t = v.mehrzeilig(text, 5000) or ("Anhang" if anh else "")
 	v.pflicht(len(t) >= 2, "Bitte geben Sie eine Nachricht ein.")
 	o = darf_bezug(n, bezugArt, bezugId, schreiben=True)  # Team ab Teamrolle „Mitglied“
 	eigen = ist_eigen(bezugArt, o, n)
 	als_admin = ist_admin(n) and not eigen
+	for k in anh:
+		d = frappe.db.get_value("Plattform Dokument", k, ["bezug_art", "bezug_id", "hochgeladen_von"], as_dict=True)
+		if not d or d.bezug_art != bezugArt or d.bezug_id != o.name or d.hochgeladen_von != n.id:
+			frappe.throw("Anhang gehört nicht zu dieser Unterhaltung.", frappe.ValidationError)
 	m = nachricht_anlegen(
 		bezugArt,
 		o.name,
@@ -159,5 +184,9 @@ def senden(bezugArt=None, bezugId=None, text=None, als_benutzer=None):
 		gelesen_nutzer=not als_admin,
 		gelesen_admin=als_admin,
 	)
+	if anh:
+		from oekoinvest_app.plattform.kern import als_json
+
+		frappe.db.set_value("Plattform Nachricht", m.name, "anhaenge", als_json(anh), update_modified=False)
 	protokoll(n, "nachricht", bezugArt, o.name, "Nachricht gesendet")
 	return {"id": m.name, "am": iso(m.am)}

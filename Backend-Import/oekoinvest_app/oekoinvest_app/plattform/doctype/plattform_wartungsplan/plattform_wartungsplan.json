@@ -1,0 +1,179 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 12:00:00.000000",
+ "description": "Wiederkehrender Wartungsplan einer Anlage (Art, Intervall, Fälligkeit, Norm) – Fristen-Lauf legt Aufgaben an.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "anlage_id",
+  "art",
+  "bezeichnung",
+  "aktiv",
+  "cb_1",
+  "intervall_monate",
+  "vorlauf_tage",
+  "naechste_faelligkeit",
+  "letzte_durchfuehrung",
+  "sec_1",
+  "norm",
+  "dienstleister",
+  "hinweis"
+ ],
+ "fields": [
+  {
+   "fieldname": "anlage_id",
+   "fieldtype": "Link",
+   "label": "Anlage",
+   "options": "Plattform Anlage",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "inspektion\nreinigung\npruefung\nthermografie\nreparatur\nsoftware",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "bezeichnung",
+   "fieldtype": "Data",
+   "label": "Bezeichnung",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "aktiv",
+   "fieldtype": "Check",
+   "label": "Aktiv",
+   "default": "1"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "intervall_monate",
+   "fieldtype": "Int",
+   "label": "Intervall (Monate)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "vorlauf_tage",
+   "fieldtype": "Int",
+   "label": "Vorlauf (Tage)",
+   "default": "30"
+  },
+  {
+   "fieldname": "naechste_faelligkeit",
+   "fieldtype": "Date",
+   "label": "Nächste Fälligkeit",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "letzte_durchfuehrung",
+   "fieldtype": "Date",
+   "label": "Letzte Durchführung"
+  },
+  {
+   "fieldname": "sec_1",
+   "fieldtype": "Section Break",
+   "label": "Grundlage"
+  },
+  {
+   "fieldname": "norm",
+   "fieldtype": "Data",
+   "label": "Grundlage / Norm"
+  },
+  {
+   "fieldname": "dienstleister",
+   "fieldtype": "Data",
+   "label": "Dienstleister"
+  },
+  {
+   "fieldname": "hinweis",
+   "fieldtype": "Small Text",
+   "label": "Hinweis"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 00:21:25.834162",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Wartungsplan",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Betrieb",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "in_create": 0,
+ "naming_rule": "By script"
+}

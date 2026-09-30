@@ -1,0 +1,164 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "Agri-PV-Bewirtschaftungsnachweis je Pachtvertrag und Wirtschaftsjahr (Referenz- oder Betriebsjahr) nach DIN SPEC 91434. Nur über die API (plattform/api/pachtakte.py).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "vertrag_id",
+  "konto_id",
+  "flaeche_id",
+  "jahr",
+  "art",
+  "status",
+  "aufgabe_id",
+  "daten",
+  "verlauf"
+ ],
+ "fields": [
+  {
+   "fieldname": "vertrag_id",
+   "fieldtype": "Link",
+   "label": "Pachtvertrag",
+   "options": "Plattform Pachtvertrag",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "konto_id",
+   "fieldtype": "Link",
+   "label": "Eigentümer (Konto)",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "flaeche_id",
+   "fieldtype": "Link",
+   "label": "Fläche",
+   "options": "Plattform Flaeche"
+  },
+  {
+   "fieldname": "jahr",
+   "fieldtype": "Int",
+   "label": "Wirtschaftsjahr",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "referenz\nbetrieb",
+   "default": "referenz",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "entwurf\neingereicht\nrueckfrage\nbestaetigt",
+   "default": "entwurf",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "aufgabe_id",
+   "fieldtype": "Link",
+   "label": "Aufgabe (Backoffice)",
+   "options": "Plattform Aufgabe"
+  },
+  {
+   "fieldname": "daten",
+   "fieldtype": "JSON",
+   "label": "Angaben"
+  },
+  {
+   "fieldname": "verlauf",
+   "fieldtype": "JSON",
+   "label": "Verlauf"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Agri Nachweis",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Akquise",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "in_create": 0
+}

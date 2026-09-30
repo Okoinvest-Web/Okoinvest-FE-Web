@@ -187,7 +187,7 @@ def _vertrag_json(x):
 
 
 def _aktiver_vertrag(kid):
-	rows = frappe.get_all(EV, filters={"kunde_id": kid, "status": ["in", ["aktiv", "gekuendigt"]], "quelle": ["!=", "zuschlag"]}, fields=["*"], order_by="vertrag_ende asc", limit_page_length=1)
+	rows = frappe.get_all(EV, filters={"kunde_id": kid, "status": ["in", ["aktiv", "gekuendigt"]]}, fields=["*"], order_by="vertrag_ende asc", limit_page_length=1)
 	return rows[0] if rows else None
 
 
@@ -224,12 +224,18 @@ def _analyse(vt, kurve=None, e=None):
 		ps = 3120 / 8760
 		off = (fwd - peak * ps) / (1 - ps)
 		pf = round((anteil * peak + (1 - anteil) * off) / fwd, 3) if anteil is not None else None
+	geschaetzt = None
+	if not vt.preis_ct and vt.aufschlag_ct is not None:
+		m = _heute()[:7]
+		geschaetzt = round((ek.termin_preis_zeitraum(kurve, zone, m, ek.zwoelf_monate(m), "base") or 0) / 10 + flt(vt.aufschlag_ct), 3)
 	w = ek.wechselanalyse(
-		{"preisCt": flt(vt.preis_ct) if vt.preis_ct else None, "preisArt": vt.preis_art, "vertragEnde": ende, "kuendigungsfristMonate": cint(vt.kuendigungsfrist_monate), "kuendigungsfristWochen": cint(vt.kuendigungsfrist_wochen) or None, "verlaengerungPreisCt": flt(vt.verlaengerung_preis_ct) or None, "jahresKwh": flt(vt.jahres_kwh) or los["jahresKwh"]},
+		{"preisCt": flt(vt.preis_ct) if vt.preis_ct else geschaetzt, "preisArt": vt.preis_art, "vertragEnde": ende, "kuendigungsfristMonate": cint(vt.kuendigungsfrist_monate), "kuendigungsfristWochen": cint(vt.kuendigungsfrist_wochen) or None, "verlaengerungPreisCt": flt(vt.verlaengerung_preis_ct) or None, "jahresKwh": flt(vt.jahres_kwh) or los["jahresKwh"]},
 		{"forwardEurMwh": fwd, "profilfaktor": pf},
 		e,
 		_heute(),
 	)
+	if geschaetzt is not None:
+		w["begruendung"] = [f"Energiepreis geschätzt ({vt.struktur}): Terminpreis der laufenden 12 Monate + Aufschlag {flt(vt.aufschlag_ct)} ct/kWh.", *w["begruendung"]]
 	return {**w, "folgezeitraum": {"von": von, "bis": bis}, "forwardEurMwh": fwd, "profilfaktor": pf, "zone": zone}
 
 
@@ -338,7 +344,7 @@ def uebersicht(als_benutzer=None):
 	_lese(n)
 	kurve = _kurve()
 	e = _einstellungen_werte()
-	vts = frappe.get_all(EV, filters={"status": ["in", ["aktiv", "gekuendigt"]], "quelle": ["!=", "zuschlag"]}, fields=["*"], limit_page_length=0)
+	vts = frappe.get_all(EV, filters={"status": ["in", ["aktiv", "gekuendigt"]]}, fields=["*"], limit_page_length=0)
 	an = [_analyse(x, kurve, e) for x in vts]
 	offen = frappe.get_all(A, filters={"status": ["in", ["laufend", "auswertung", "freigabe"]]}, fields=["name", "status"], limit_page_length=0)
 	return {
@@ -1208,6 +1214,30 @@ def dokument_daten(art=None, id=None, als_benutzer=None):  # noqa: A002
 	n = nutzer(als_benutzer)
 	from oekoinvest_app.plattform.energie_texte import VOLLMACHT_TEXT
 
+	if art == "kundenbericht":
+		kid = id if _bo_lesen(n) and id else n.id
+		if not _bo_lesen(n) and "unternehmen" not in (n.get("rollen") or []):
+			verboten()
+		if not frappe.db.exists("Plattform Konto", kid):
+			nicht_gefunden("Kunde nicht gefunden.")
+		k = kurz(kid) or {}
+		vts = frappe.get_all(EV, filters={"kunde_id": kid}, fields=["*"], order_by="beginn desc", limit_page_length=0)
+		vt = _aktiver_vertrag(kid)
+		kurve = _kurve()
+		ers = []
+		for x in vts:
+			if x.quelle == "zuschlag" and x.vorvertrag_id and frappe.db.exists(EV, x.vorvertrag_id):
+				alt = frappe.get_doc(EV, x.vorvertrag_id)
+				alt_ct = ek.energiepreis_ct(flt(alt.preis_ct) or None, alt.preis_art)
+				neu_ct = flt(x.preis_ct) or ((ek.termin_preis_zeitraum(kurve, x.zone, str(x.beginn)[:7], ek.zwoelf_monate(str(x.beginn)[:7])) or 0) / 10 + flt(x.aufschlag_ct))
+				ers.append({"vertragId": x.name, "lieferant": x.lieferant, "altCt": alt_ct, "neuCt": round(neu_ct, 3), "jahresKwh": flt(x.jahres_kwh), "eurJahr": round((alt_ct - neu_ct) / 100 * flt(x.jahres_kwh)) if alt_ct is not None else None, "erwartet": not x.preis_ct})
+		return {
+			"art": art, "rolle": "admin" if _bo_lesen(n) else "kunde", "kunde": {"id": kid, "name": name_von(kid), "firma": k.get("firma", ""), "email": k.get("email", "")},
+			"vertraege": [_vertrag_json(x) for x in vts], "analyse": _analyse(vt, kurve) if vt else None, "ersparnis": ers, "vollmacht": (_vollmacht(kid) or {}).get("status", "keine"),
+			"analyseVerlauf": [{"am": iso(x.am), "empfehlung": x.empfehlung, "vertragCt": x.vertrag_ct, "marktCt": x.markt_ct} for x in frappe.get_all(WN, filters={"kunde_id": kid}, fields=["am", "empfehlung", "vertrag_ct", "markt_ct"], order_by="am desc", limit_page_length=12)],
+			"ausschreibungen": [{"id": a.name, "titel": a.titel, "status": a.status, "lieferbeginn": a.lieferbeginn, "pool": len(aus_json(a.kunden, []) or []) > 1} for a in frappe.get_all(A, filters={"kunden": ["like", f'%"{kid}"%'], "status": ["!=", "entwurf"]}, fields=["name", "titel", "status", "lieferbeginn", "kunden"], limit_page_length=0)],
+			"kurveDemo": False, "stand": iso(jetzt()),
+		}
 	if art == "vollmacht":
 		kid = id if _bo_lesen(n) and id else n.id
 		k = kurz(kid) or {}
@@ -1252,7 +1282,7 @@ def _lauf(n=None, nur_fristen=False):
 	alarme = aus_json(frappe.db.get_single_value(ES, "alarme"), {}) or {}
 	erg = {"analysen": 0, "alarme": 0, "erinnerungen": 0}
 	z = next(iter(_energie_admins()), None)
-	for vt in frappe.get_all(EV, filters={"status": ["in", ["aktiv", "gekuendigt"]], "quelle": ["!=", "zuschlag"]}, fields=["*"], limit_page_length=0):
+	for vt in frappe.get_all(EV, filters={"status": ["in", ["aktiv", "gekuendigt"]]}, fields=["*"], limit_page_length=0):
 		w = _analyse(vt, kurve, e)
 		key = f"{vt.name}|{w['stichtag']}|{w['alarm']}"
 		neu = w["alarm"] is not None and w["stichtag"] and vt.status == "aktiv" and key not in alarme

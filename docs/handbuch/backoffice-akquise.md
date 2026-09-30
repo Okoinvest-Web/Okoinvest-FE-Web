@@ -37,6 +37,14 @@ Stand: 30.09.2026 · Unterrolle `akquise` (Anfragen, Flächen-Pipeline, Gebiete,
 
 Anfrage `/dachflaeche-verpachten` → Dachdaten (Asbest, Statik, Brandwände) prüfen → Angebot Contracting/Dachpacht mit Vertrieb → Dachnutzungsvertrag + Grundbuch-Akte (Dienstbarkeit/Servitut) → Übergabe an Betrieb (Anlage anlegen) und Buchhaltung.
 
+## Ablauf E: Pachtakte nach Vertragsschluss (`/portal/admin/pachtakten`)
+
+1. Neue Anliegen der Eigentümer (Kündigung, Eigentümerwechsel, Erbfall, Zahlungsaufteilung, Verlängerung) erscheinen als Aufgabe (Ziel 14 Tage) und in der Arbeitsliste, sortiert nach Bearbeitungsziel.
+2. „Bearbeitung beginnen“ → Unterlagen prüfen (Grundbuchauszug, Übergabe-/Kaufvertrag, Erbnachweis je Land) → bei Bedarf „Rückfrage stellen“ (Text Pflicht).
+3. „Erledigen“ wirkt sofort: Kündigung → Vertrag gekündigt zum Datum; Eigentümerwechsel/Erbfall → in der **Akte** das neue Konto wählen, Vertrag und Fläche gehen über (Gutschriften ab dann an dieses Konto, Auszahlung erst nach dessen KYC). Nie ohne geprüften Nachweis übertragen.
+4. Rückbau: erst nach Kündigung bzw. in den letzten 24 Monaten ankündigen (Termin), „Zur Abnahme melden“ – der Eigentümer bestätigt oder meldet Mängel. Sicherheit erst nach Abnahme freigeben, danach „Pachtvertrag beenden“ (Löschungsbewilligung dokumentieren).
+5. Agri-PV-Nachweise prüfen (66 %-Regel, Flächenverlust) und bestätigen oder Rückfrage stellen.
+
 ## Ablauf D: Kommune
 
 Strukturierte Anfrage → CRM-Organisation → **Berechtigung unabhängig bestätigen** (Rückruf über die Gemeindeverwaltung) → Rolle `kommune` freischalten → Gemeindetermin.

@@ -12,6 +12,8 @@ import { datum, ha, mwp, preisText, relativ } from "@/lib/plattform/format";
 import { fmt } from "@/lib/rechner/annahmen";
 import { phaseById } from "@/lib/invest/markt";
 import ErsteSchritte from "@/components/Portal/Bedienung/Onboarding/ErsteSchritte";
+import { BriefcaseBusiness } from "lucide-react"; // Portfolio
+import { portfolioBackend } from "@/lib/plattform/backend/portfolio"; // Portfolio
 
 export const metadata = { title: "Übersicht" };
 
@@ -65,6 +67,8 @@ export default async function PortalStart({ searchParams }) {
   if (investor) {
     kacheln.push({ label: "Passende Projekte", wert: fmt(boerse?.projekte.filter((p) => (p.matching?.score || 0) >= 70).length || 0), hinweis: n.suchprofil ? "Matching-Score ≥ 70" : "Suchprofil fehlt", icon: Sparkles, href: "/portal/boerse?sortierung=passung" });
     kacheln.push({ label: "Merkliste", wert: fmt(merkliste.length), hinweis: `${fmt(datenraeume.length)} Datenräume frei`, icon: Heart, href: "/portal/boerse?ansicht=merkliste" });
+    const pf = await portfolioBackend().pfMeine(n).catch(() => null); // Portfolio: Positionen nach dem Kauf
+    if (pf?.positionen.length) kacheln.push({ label: "Portfolio", wert: fmt(pf.kennzahlen.anzahl), hinweis: pf.kennzahlen.offeneAbrufe ? `${fmt(pf.kennzahlen.offeneAbrufe)} Kapitalabruf(e) offen` : `${fmt(pf.kennzahlen.mwp)} MWp anteilig`, icon: BriefcaseBusiness, href: "/portal/portfolio" });
   }
   kacheln.push({ label: "Offene Anfragen", wert: fmt(offeneVorgaenge.length), hinweis: `${fmt(vorgaenge.length)} gesamt`, icon: Inbox, href: "/portal/anfragen" });
   kacheln.push({ label: "Ungelesene Nachrichten", wert: fmt(ungelesen), hinweis: `${fmt(threads.length)} ${threads.length === 1 ? "Unterhaltung" : "Unterhaltungen"}`, icon: MessagesSquare, href: "/portal/nachrichten" });

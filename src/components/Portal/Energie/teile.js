@@ -50,6 +50,7 @@ export function DeskNavigation({ aktiv }) {
     ["kunden", "/portal/admin/energie/kunden", "Kunden & Wechselanalyse"],
     ["ausschreibungen", "/portal/admin/energie/ausschreibungen", "Ausschreibungen"],
     ["lieferanten", "/portal/admin/energie/lieferanten", "Lieferanten"],
+    ["wechsel", "/portal/admin/energie/wechsel", "Lieferantenwechsel"], // Kundenseite Energie: Wechsel nach Zuschlag
   ];
   return (
     <nav aria-label="Energiebeschaffung" className="-mx-4 mb-6 overflow-x-auto px-4 ov-no-scrollbar md:mx-0 md:px-0">

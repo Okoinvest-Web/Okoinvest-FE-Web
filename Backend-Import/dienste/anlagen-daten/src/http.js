@@ -108,7 +108,7 @@ export function apiServer({ konfig, db, ingest, log }) {
     ingest.on(`messwert:${id}`, neu);
     ingest.on(`status:${id}`, neu);
     const ping = setInterval(() => res.write(`: ping ${Date.now()}\n\n`), 15000);
-    await senden();
+    // Aufräumen VOR dem ersten await registrieren – sonst geht ein früher Verbindungsabbruch verloren (Zähler/Listener/Timer blieben stehen)
     req.on("close", () => {
       ingest.off(`messwert:${id}`, neu);
       ingest.off(`status:${id}`, neu);
@@ -116,6 +116,7 @@ export function apiServer({ konfig, db, ingest, log }) {
       clearTimeout(drossel);
       offen.set(id, (offen.get(id) || 1) - 1);
     });
+    await senden();
   }
 
   const opts = konfig.http.tlsKey && konfig.http.tlsCert ? { key: konfig.http.tlsKey, cert: konfig.http.tlsCert } : null;

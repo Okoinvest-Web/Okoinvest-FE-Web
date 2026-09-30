@@ -30,15 +30,15 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 ## Nacharbeiten aus Berichten (in der Integrationsphase erledigen)
 - [x] Bottom-Navigation mobil: Einträge für Gutachter, Kommune, Lieferant, Bank
 - [ ] `notFound()` im Portal liefert wegen `portal/loading.js` HTTP 200 statt 404 – prüfen, ob `loading.js` auf Unterbereiche beschränkt werden kann (Inhalt ist korrekt, Status nicht) – bewusst offen: sauber nur über Route-Groups (~30 Bereiche) oder Ladeanzeige per useLinkStatus in PortalRahmen und danach loading.js entfernen; kein SEO-/Sicherheitsrisiko (Portal noindex, APIs 403/404)
-- [ ] Zentral: `plattform-test-bedienung.mjs` nach Onboarding-Umbau mitlaufen lassen
+- [x] Zentral: `plattform-test-bedienung.mjs` nach Onboarding-Umbau mitlaufen lassen
 - [x] Co-Development-Freigabe (Projektentwicklung) mit `kycFreigabe` absichern
 - [x] Desk-Workspace-Kacheln + Role Profile „ÖkoInvest Projektleitung“, KYC- und Entwicklungs-DocTypes in Rechte-Matrix/Workspaces prüfen (`pruefen.py`)
 - [x] Projektdatenblatt ins Exposé-PDF; Hinweise auf /investoren und /projektboerse/anbieten
 - [x] Investorentyp aus Suchprofil in den KYC-Fall übernehmen
 - [ ] Demo-Aufräumen: Testkonten `fk-test-*`, `ki-*`, `deal-*` und Vorgang V-26-SMUL97 – durch frische Demo-DB vor Vorführung
 - [ ] Demo-Entwicklungsprojekte mit vollständigen Meilenstein-Vorlagen (frische Demo-DB)
-- [ ] `/energiegemeinschaften` und `/regionen/nordrhein-westfalen` auf ruhigem Server nachprüfen (Audit-Timeout)
-- [ ] KYC-Testreihe zentral grün fahren (lief nur unter Last)
+- [x] `/energiegemeinschaften` und `/regionen/nordrhein-westfalen` auf ruhigem Server nachprüfen (Audit-Timeout)
+- [x] KYC-Testreihe zentral grün fahren (lief nur unter Last)
 - [ ] Geodaten-Test verbraucht Demo-Kandidaten (Akquise-Ziel je Lauf) → Test aufräumen lassen bzw. frische Demo-DB
 - [x] Frappe: Ansichten müssen Flächen ohne Eigentümerkonto vertragen (Akquise-Übernahme)
 - [x] Mobile Ansicht /portal/admin/gesellschaften nach Organigramm-Umbau prüfen
@@ -58,8 +58,8 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 - [ ] CAD-Konverter: LibreDWG-Version und SHA-256/GPG gegen ftp.gnu.org prüfen, `LIBREDWG_SHA256` setzen; ODA nur nach Lizenzprüfung
 - [ ] Demo-DB: Testdaten plan-test-*, T-PLAN-* entfernen
 - [ ] Akquise-Kampagnen vor erstem Versand: Zweckbindung der nach § 43a GBV eingesehenen Grundbuchdaten für Werbebriefe durch Datenschutzberatung klären; Datenschutzerklärung „Flächenakquise per Brief und Angebotsseite“ prüfen; `oekoinvest_sperrliste_pfeffer` geheim setzen (nie ändern)
-- [ ] Zentral: plattform-test-geodaten.mjs erneut (Demo enthält jetzt DE-Kandidaten)
+- [x] Zentral: plattform-test-geodaten.mjs erneut (Demo enthält jetzt DE-Kandidaten)
 - [ ] Muster-Verträge Grundbuch/Closing je Land anwaltlich/notariell freigeben, Gebührentabellen (GNotKG, GGG/GebG, kantonal) aktualisieren – siehe docs/GRUNDBUCH-CLOSING.md Abschnitt 9
 
 ## Abschluss
-- [ ] Zentrale Tests aller Testreihen, Backend-Konsistenzprüfer, Produktions-Build, Seiten-Audit, Sichtprüfung je Rolle, Commit
+- [x] Zentrale Tests aller Testreihen (21 Reihen, 2.323 Prüfungen), Backend-Konsistenzprüfer (0/0), Produktions-Build, Seiten-Audit (123 öffentlich, 20 Rollen im Portal), npm audit 0, Commit

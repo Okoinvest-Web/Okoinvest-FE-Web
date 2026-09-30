@@ -8,8 +8,10 @@
 // Build Google, sämtliche Seiten hätten sich geändert. Datum nur anfassen,
 // wenn sich der INHALT der Seite wirklich ändert.
 //
-// Portal, Login/Registrierung und /projektboerse/anbieten (Formular) gehören
-// nicht in die Sitemap bzw. sind über robots.txt gesperrt.
+// Portal, Login/Registrierung, /angebot, /einladung, /termin/verwalten und die
+// Entwürfe unter /bedingungen (noindex) gehören nicht in die Sitemap bzw. sind
+// über robots.txt gesperrt. /projektboerse/anbieten ist eine indexierbare
+// Landingpage (mit EN-Gegenstück) und bleibt drin.
 
 import { alleArtikel, artikelPfad } from "@/lib/ratgeber";
 import { LEXIKON_STAND } from "@/data/lexikon";
@@ -137,8 +139,8 @@ export default async function sitemap() {
   const projekte = await projektEintraege();
 
   const regionen = [
-    { url: abs("/regionen"), lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-    ...REGIONEN_META.map((r) => ({ url: abs(`/regionen/${r.slug}`), lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 })),
+    { url: abs("/regionen"), lastModified: START, changeFrequency: "monthly", priority: 0.8 },
+    ...REGIONEN_META.map((r) => ({ url: abs(`/regionen/${r.slug}`), lastModified: START, changeFrequency: "monthly", priority: 0.8 })),
   ];
 
   return [...seiten, ...regionen, ...ratgeber, ...projekte];

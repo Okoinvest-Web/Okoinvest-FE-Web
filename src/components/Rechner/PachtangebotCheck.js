@@ -39,7 +39,8 @@ export default function PachtangebotCheck() {
         <p className="font-display text-[22px] font-extrabold text-ink-900">Pachtangebot-Check · ÖkoInvest</p>
         <p className="text-[13px] text-ink-600">
           {fmt(e.ha, e.ha % 1 ? 1 : 0)} ha {FLAECHENARTEN.find((f) => f.id === e.flaechenart).label}, {REGIONEN.find((x) => x.id === e.regionId)?.label} · Orientierung, keine Rechtsberatung · erstellt am{" "}
-          {new Date().toLocaleDateString("de-DE")}
+          {/* Datum nur für den Druck – Server und Browser können abweichen (Zeitzone, Mitternacht) */}
+          <span suppressHydrationWarning>{new Date().toLocaleDateString("de-DE")}</span>
         </p>
       </div>
 

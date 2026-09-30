@@ -143,7 +143,7 @@ export default function Footer() {
 
         {/* Rechtliches */}
         <div className="flex flex-col gap-4 py-8 text-[13.5px] text-white/50 md:flex-row md:items-center md:justify-between">
-          <p>© {jahr} {GESELLSCHAFT.name} · Alle Rechte vorbehalten</p>
+          <p suppressHydrationWarning>© {jahr} {GESELLSCHAFT.name} · Alle Rechte vorbehalten</p>
           <nav aria-label="Rechtliche Links">
             <ul className="flex flex-wrap gap-x-6 gap-y-2">
               <li><button type="button" onClick={() => setPopup(true)} className="transition-colors hover:text-white">Privatsphäre-Einstellungen</button></li>

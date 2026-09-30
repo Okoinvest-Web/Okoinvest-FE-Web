@@ -1,4 +1,4 @@
-# Import-Frappe – Plattform-Backend `oekoinvest_app`
+# Backend-Import – Plattform-Backend `oekoinvest_app`
 
 Frappe-v15-App für Portal, Projektbörse und Backoffice der ÖkoInvest-Website.
 Die Website (Next.js) spricht die App ausschließlich serverseitig über `src/lib/plattform/backend/frappe.js` an.
@@ -10,7 +10,7 @@ Verbindlicher Vertrag: `docs/API.md` (Methoden, Rollen, Automaten), Betrieb der 
 ## Inhalt
 
 ```
-Import-Frappe/
+Backend-Import/
   ANLEITUNG.md                      ← diese Datei
   oekoinvest_app/                   ← App-Repository (bench get-app)
     pyproject.toml, README.md
@@ -56,10 +56,10 @@ Kennungen: `U-26-XXXXXX`, `V-…`, `F-…`, `P-…`, `I-…`, `PV-…`, `D-…`,
 
 ## Schritt 1 – App installieren
 
-Den Ordner `Import-Frappe/oekoinvest_app` auf den Server kopieren (oder als eigenes Git-Repository bereitstellen), dann im `frappe-bench`-Ordner:
+Den Ordner `Backend-Import/oekoinvest_app` auf den Server kopieren (oder als eigenes Git-Repository bereitstellen), dann im `frappe-bench`-Ordner:
 
 ```bash
-bench get-app /home/frappe/Import-Frappe/oekoinvest_app     # bzw. bench get-app <git-url>
+bench get-app /home/frappe/Backend-Import/oekoinvest_app     # bzw. bench get-app <git-url>
 bench --site <site> install-app oekoinvest_app
 bench --site <site> migrate
 bench restart

@@ -16,7 +16,7 @@ flowchart LR
   end
   DL -- "MQTT 5 über TLS :8883\nBenutzer je Gerät, QoS 1\noekoinvest/v1/AL/GZ/messwerte" --> B[(MQTT-Broker\nMosquitto + go-auth\noder EMQX)]
   B -- "Auth/ACL-Hook (HTTP, intern :8081)" --> D
-  B -- "Abo oekoinvest/v1/+/+/+" --> D[Ingest-Dienst\nservices/anlagen-daten]
+  B -- "Abo oekoinvest/v1/+/+/+" --> D[Ingest-Dienst\nBackend-Import/dienste/anlagen-daten]
   D -- "INSERT (Hypertable)\nCAggs 15 min/1 h/1 Tag" --> T[(TimescaleDB)]
   D -- "dienst_zugaenge · dienst_anlagen\ndienst_stoerung · dienst_verbindung" --> F[Frappe\noekoinvest_app]
   W[Next.js\n/portal/anlagen] -- "Stammdaten, Rechte\nanlagen.* (als_benutzer)" --> F
@@ -78,9 +78,9 @@ Payload `messwerte` (alle Messgrößen optional, mindestens eine; Einheit steckt
 | `wechselrichter_status` | – | `ok` · `warnung` · `stoerung` · `aus` |
 | `fehlercode` | – | Herstellercode als Text (≤ 80 Zeichen) |
 
-Test: `mosquitto_pub` (siehe Assistent „Gerät verbinden“ bzw. `services/anlagen-daten/README.md`).
+Test: `mosquitto_pub` (siehe Assistent „Gerät verbinden“ bzw. `Backend-Import/dienste/anlagen-daten/README.md`).
 
-## 3. Ingest-Dienst `services/anlagen-daten`
+## 3. Ingest-Dienst `Backend-Import/dienste/anlagen-daten`
 
 Eigenständig deployt (eigene `package.json` mit `mqtt` und `pg`, Docker-Compose mit Broker + TimescaleDB + Dienst).
 
@@ -141,7 +141,7 @@ alle mit Leserecht) und ab Schwere „mittel“ Kunde + Team; Behebung → Kunde
 1. Frappe migrieren (`bench --site <site> migrate`): legt DocTypes und die Rolle `ÖkoInvest Anlagen-Dienst` an.
 2. Frappe-Benutzer für den Dienst (Website User, nur Rolle `ÖkoInvest Anlagen-Dienst`), API-Key/Secret erzeugen.
 3. `site_config.json`: `oekoinvest_mqtt_host`, `oekoinvest_mqtt_port` (Anzeige im Assistenten).
-4. Dienst: Zertifikate, `.env` aus `.env.example`, `docker compose up -d --build` (siehe `services/anlagen-daten/README.md`).
+4. Dienst: Zertifikate, `.env` aus `.env.example`, `docker compose up -d --build` (siehe `Backend-Import/dienste/anlagen-daten/README.md`).
 5. Website: `ANLAGEN_DATEN_URL`, `ANLAGEN_DATEN_TOKEN` (= `DIENST_TOKEN`), `ANLAGEN_MQTT_HOST`, `ANLAGEN_MQTT_PORT`.
 6. Backoffice-Konten des Betriebs: Unterrolle `betrieb` unter `/portal/admin/rechte`.
 7. Je Anlage: anlegen (Assistent), Kunde/Organisation zuordnen, Messpunkte (geeicht) und Vertrag erfassen, „Gerät verbinden“, Passwort im Datenlogger hinterlegen, auf „verbunden“ warten.

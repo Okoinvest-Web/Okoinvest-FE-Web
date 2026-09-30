@@ -1,7 +1,7 @@
 // src/lib/plattform/messdaten/index.js
 //
 // Messdaten-Adapter (Zeitreihen der Anlagen). Nur serverseitig.
-//   dienst.js     – Abfrage-API des Ingest-Dienstes services/anlagen-daten (ANLAGEN_DATEN_URL + ANLAGEN_DATEN_TOKEN)
+//   dienst.js     – Abfrage-API des Ingest-Dienstes Backend-Import/dienste/anlagen-daten (ANLAGEN_DATEN_URL + ANLAGEN_DATEN_TOKEN)
 //   simulator.js  – deterministische, realistische Kurven im Demo-Betrieb (ohne MQTT/Datenbank)
 //
 // Auswahl: ANLAGEN_DATEN_URL gesetzt → Dienst. Sonst Simulator, wenn das Demo-Backend aktiv ist oder

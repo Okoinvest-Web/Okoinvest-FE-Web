@@ -49,7 +49,7 @@ APIs: siehe `docs/API.md`, Abschnitt 6.
 | `SESSION_SECRET` | **Produktion** | Schlüssel für Sitzungstoken, mindestens 32 Zeichen, zufällig (`openssl rand -base64 48`). Ohne: Middleware und APIs verweigern jede Sitzung. In Entwicklung fester, unsicherer Fallback mit Warnung im Log. Wechsel = alle abgemeldet. |
 | `PLATTFORM_BACKEND` | Produktion | `frappe` für den Betrieb. Sonst Demo-Backend. |
 | `PLATTFORM_DEMO` | – | `1` erlaubt das Demo-Backend auch im Production-Build (Vorführserver). Ohne `PLATTFORM_BACKEND=frappe` und ohne `PLATTFORM_DEMO=1` antwortet die Plattform in Produktion mit 503 „nicht konfiguriert“ – keine stillen Demo-Daten. |
-| `SERVER`, `API_KEY`, `API_SECRET` | bei Frappe | wie `src/lib/apiBaseUrl.js`; API-Nutzer mit Rolle `ÖkoInvest API` (Einrichtung: `Import-Frappe/ANLEITUNG.md`) |
+| `SERVER`, `API_KEY`, `API_SECRET` | bei Frappe | wie `src/lib/apiBaseUrl.js`; API-Nutzer mit Rolle `ÖkoInvest API` (Einrichtung: `Backend-Import/ANLEITUNG.md`) |
 | `PLATTFORM_BASIS_URL` | empfohlen | Basis für Links in E-Mails (Bestätigung, Passwort). Standard in Produktion: `NEXT_PUBLIC_SITE_URL` bzw. `https://www.oekoinvest.com`. Nie aus dem Host-Header. |
 | `PLATTFORM_ORIGINS` | – | zusätzliche erlaubte Origins für Mutationen, kommagetrennt (z. B. Staging-Domain) |
 | `PLATTFORM_DEMO_PASSWORT` | – | Passwort der Demo-Konten (Standard `Demo-2026!`), wirkt beim Neuanlegen der Demo-Datenbank |
@@ -211,7 +211,7 @@ Vertrag: `docs/API.md`, Abschnitt 8. Code: `src/lib/plattform/{totp,qr,geraet,or
 Leitstand der Contracting-Anlagen für Kunden (Rolle `unternehmen` bzw. Mitglieder der Organisation) und den Betrieb. Architektur, MQTT-Vertrag, Ingest-Dienst: [`docs/ANLAGEN-IOT.md`](./ANLAGEN-IOT.md); Vertrag: `docs/API.md`, Abschnitt 10.
 
 - Seiten: `/portal/anlagen` (Kacheln/Liste/Karte, Summen, Ampel, Suche „/“, Ansicht „v“), `/portal/anlagen/[id]` (Live per SSE mit „Stand vor x s“ und Veraltet-Markierung, Energiefluss, Diagramme Tag/Woche/Monat/Jahr mit Soll-Ist und CSV, Zählerstände Abrechnung/Monitoring, Störungen, Technik & Wartung, Vertrag & Kosten), Backoffice `/portal/admin/anlagen` (Störungs-Leitstand), `/portal/admin/anlagen/neu` (Assistent), `/portal/admin/anlagen/[id]` (Pflege, „Gerät verbinden“ mit einmaligem Passwort).
-- Code: `src/lib/plattform/anlagen.js`, `src/lib/plattform/messdaten/**`, `backend/{anlagen,demo/anlagen,demo/anlagen-seed,frappe/anlagen}.js`, `src/app/api/{portal,admin}/anlagen/**`, `src/components/Portal/Anlagen/**`; Dienst `services/anlagen-daten/`; Frappe `plattform/api/anlagen.py`, `plattform/anlagen_kern.py`.
+- Code: `src/lib/plattform/anlagen.js`, `src/lib/plattform/messdaten/**`, `backend/{anlagen,demo/anlagen,demo/anlagen-seed,frappe/anlagen}.js`, `src/app/api/{portal,admin}/anlagen/**`, `src/components/Portal/Anlagen/**`; Dienst `Backend-Import/dienste/anlagen-daten/`; Frappe `plattform/api/anlagen.py`, `plattform/anlagen_kern.py`.
 - Demo: einmalig unter `db.anlagen` ergänzt – 7 fiktive Anlagen (6 für „Muster Logistik GmbH (fiktiv)“, Inhaberin `unternehmen@example.com`; eine fremde nur fürs Backoffice), Szenarien offline / Wechselrichter-Teilausfall / Minderleistung, Konto `bo-betrieb@example.com` (Unterrolle Betrieb, Passwort wie alle Demo-Konten). Messdaten aus dem Simulator (deterministisch); „Testnachricht senden“ ersetzt im Assistenten den Datenlogger.
 
 | Variable | Pflicht | Bedeutung |
@@ -221,4 +221,4 @@ Leitstand der Contracting-Anlagen für Kunden (Rolle `unternehmen` bzw. Mitglied
 | `ANLAGEN_MQTT_HOST`, `ANLAGEN_MQTT_PORT` | – | Broker-Angaben im Assistenten (Demo; Frappe: `site_config` `oekoinvest_mqtt_host/port`) |
 | `ANLAGEN_SIMULATOR` | – | `1` = Simulator auch mit Frappe-Stammdaten (Vorführung) |
 
-Test: `node scripts/plattform-test-anlagen.mjs` (Sichtbarkeit, fremde Anlage → 403 auch für Messdaten/Zähler/Live, Passwort nur einmal/nur Hash, Messpunkt-/Monatswert-Regeln, Störung quittieren nur Betrieb, Unterrollen, CSRF, Seiten); Frappe `tests/test_anlagen.py`; Dienst `cd services/anlagen-daten && npm test`.
+Test: `node scripts/plattform-test-anlagen.mjs` (Sichtbarkeit, fremde Anlage → 403 auch für Messdaten/Zähler/Live, Passwort nur einmal/nur Hash, Messpunkt-/Monatswert-Regeln, Störung quittieren nur Betrieb, Unterrollen, CSRF, Seiten); Frappe `tests/test_anlagen.py`; Dienst `cd Backend-Import/dienste/anlagen-daten && npm test`.

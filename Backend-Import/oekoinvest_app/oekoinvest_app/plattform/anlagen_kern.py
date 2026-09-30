@@ -70,7 +70,7 @@ def prioritaet(schwere, alter_stunden, quittiert, offen=True):
 
 # ---------------------------------------------------------------- Gerätepasswörter (scrypt, Format der Website)
 # scrypt$N$r$p$<salt base64>$<hash base64>, 64 Byte, NFKC – identisch zu src/lib/plattform/server/passwort.js und
-# services/anlagen-daten/src/auth.js (der Ingest-Dienst prüft Broker-Anmeldungen gegen diesen Hash).
+# Backend-Import/dienste/anlagen-daten/src/auth.js (der Ingest-Dienst prüft Broker-Anmeldungen gegen diesen Hash).
 
 SCRYPT_N, SCRYPT_R, SCRYPT_P, SCRYPT_LEN = 16384, 8, 1, 64
 

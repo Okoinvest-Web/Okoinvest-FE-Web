@@ -284,7 +284,7 @@ Interesse-Objekte (auch in `merken`, `nda_anfragen` und `boerse.detail.interesse
 
 `demoLinks` und `postausgang` (E-Mails, die Frappe versenden würde: `{id, am, an, anName, nutzerId, art (bestaetigung|passwort|status|nachricht|nda|suchprofil|anfrage|aufgabe), betreff, text, link, linkText, hinweis}`) gibt es nur im Demo-Backend (im Frappe-Adapter liefern sie `[]`; Frappe versendet über die Email Queue).
 
-Umsetzung: Frappe-App `oekoinvest_app` unter `Import-Frappe/oekoinvest_app` (Installation: `Import-Frappe/ANLEITUNG.md`). Zustandsautomaten zusätzlich im Controller erzwungen: Statusänderungen außerhalb der API (z. B. im Desk) sind nur als Admin-Schritt ohne Pflichtangaben möglich; die Provision entsteht beim Übergang Projekt → `verkauft` im Controller; `Plattform Aktivitaet` ist append-only (Ändern/Löschen/Umbenennen verboten).
+Umsetzung: Frappe-App `oekoinvest_app` unter `Backend-Import/oekoinvest_app` (Installation: `Backend-Import/ANLEITUNG.md`). Zustandsautomaten zusätzlich im Controller erzwungen: Statusänderungen außerhalb der API (z. B. im Desk) sind nur als Admin-Schritt ohne Pflichtangaben möglich; die Provision entsteht beim Übergang Projekt → `verkauft` im Controller; `Plattform Aktivitaet` ist append-only (Ändern/Löschen/Umbenennen verboten).
 
 ### ki (Nutzungsprotokoll des KI-Assistenten)
 | Methode | Argumente | Rückgabe | Hinweise |

@@ -2,7 +2,7 @@
 //
 // Anlagen & Monitoring – Stammlisten, MQTT-Vertrag und reine Rechenregeln (Ampel, Prognose, Kosten).
 // Client- und serverseitig nutzbar (keine Node-Importe). Frappe: plattform/anlagen_kern.py (gleiche Werte),
-// Ingest-Dienst: services/anlagen-daten/src/schema.js (gleicher MQTT-Vertrag).
+// Ingest-Dienst: Backend-Import/dienste/anlagen-daten/src/schema.js (gleicher MQTT-Vertrag).
 //
 // Grundsatz: MQTT-Werte sind MONITORING. Abrechnungsrelevant sind nur Messpunkte an einer geeichten
 // Messstelle bzw. am Smart-Meter-Gateway (Monatswerte des Messstellenbetreibers).

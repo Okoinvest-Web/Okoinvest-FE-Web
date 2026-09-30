@@ -1,6 +1,6 @@
 // src/lib/plattform/messdaten/dienst.js
 //
-// Adapter zur Abfrage-API des Ingest-Dienstes `services/anlagen-daten` (TimescaleDB). Nur serverseitig.
+// Adapter zur Abfrage-API des Ingest-Dienstes `Backend-Import/dienste/anlagen-daten` (TimescaleDB). Nur serverseitig.
 //   ANLAGEN_DATEN_URL    Basis-URL des Dienstes, z. B. https://anlagen-daten.intern:8443 (TLS wird geprüft;
 //                        eigene CA über NODE_EXTRA_CA_CERTS – eine Abschaltung der Zertifikatsprüfung gibt es nicht)
 //   ANLAGEN_DATEN_TOKEN  Service-Token (Bearer), mindestens 32 Zeichen – nie im Browser, nie im Log

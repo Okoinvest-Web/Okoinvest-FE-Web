@@ -79,13 +79,13 @@ export function Tabelle({ kopf = [], zeilen = [], rechts = [], leer = "Keine Ein
       <table className="w-full min-w-[560px] border-collapse text-[13.5px]">
         <thead>
           <tr className="border-b border-ink-100 text-left text-[12px] uppercase tracking-wide text-ink-500">
-            {kopf.map((k, i) => <th key={k} scope="col" className={cn("px-3 py-2 font-semibold first:pl-5 md:first:pl-3", rechts.includes(i) && "text-right")}>{k}</th>)}
+            {kopf.map((k, i) => <th key={k} scope="col" className={cn("whitespace-nowrap px-3 py-2 font-semibold first:pl-5 last:pr-5 md:first:pl-3 md:last:pr-3", rechts.includes(i) && "text-right")}>{k}</th>)}
           </tr>
         </thead>
         <tbody>
           {zeilen.map((z, j) => (
             <tr key={j} className="border-b border-ink-100 last:border-0">
-              {z.map((w, i) => <td key={i} className={cn("px-3 py-2.5 align-top text-ink-800 first:pl-5 md:first:pl-3", rechts.includes(i) && "ov-num text-right")}>{w}</td>)}
+              {z.map((w, i) => <td key={i} className={cn("whitespace-nowrap px-3 py-2.5 align-top text-ink-800 first:pl-5 last:pr-5 md:first:pl-3 md:last:pr-3", rechts.includes(i) && "ov-num text-right")}>{w}</td>)}
             </tr>
           ))}
         </tbody>

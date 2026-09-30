@@ -168,7 +168,7 @@ export default function Bedienung({ nutzer, ungelesen = 0 }) {
         </div>
       )}
       <InstallHinweis pfad={pfad} />
-      <BottomNav rollen={rollen} pfad={pfad} ungelesen={ungelesen} onSuche={paletteAuf} />
+      <BottomNav rollen={rollen} nutzer={nutzer} pfad={pfad} ungelesen={ungelesen} onSuche={paletteAuf} />
     </>
   );
 }

@@ -9,6 +9,9 @@ import {
   LayoutDashboard, ListTodo, LogOut, Mail, MessagesSquare, Plus, Search, ShieldCheck, Sparkles, TrendingUp, UserRound, Users, Globe, Compass,
 } from "lucide-react";
 
+import { Banknote, FileSpreadsheet, HandHeart, HardHat, Landmark, Milestone, PlugZap, ScanFace, SunMedium, Target, TriangleAlert, Zap } from "lucide-react"; // UI-Politur: Bottom-Navigation je Rolle
+import { darfLesen, seitenBereich, unterrollen } from "@/lib/plattform/rechte"; // UI-Politur: Bottom-Navigation Backoffice-Unterrollen
+
 const hatRolle = (rollen, ...r) => r.some((x) => rollen.includes(x));
 
 /** Navigationsziele (alle, die die Rollen sehen dürfen – deckungsgleich mit der Seitenleiste) */
@@ -81,18 +84,56 @@ export function kuerzelListe(rollen = []) {
   ];
 }
 
-/** Die 4 wichtigsten Ziele je Rolle für die mobile Bottom-Navigation */
-export function bottomNavZiele(rollen = []) {
-  const alle = navigationsZiele(rollen);
+// UI-Politur: Fachziele der übrigen Rollen und Backoffice-Unterrollen für die Bottom-Navigation
+// (deckungsgleich mit der Seitenleiste in PortalRahmen.js)
+const ROLLEN_ZIELE = [
+  { id: "nav-anlagen", titel: "Mein Solarstrom", kurz: "Solarstrom", href: "/portal/anlagen", icon: SunMedium },
+  { id: "nav-energie", titel: "Energie & Lastgang", kurz: "Energie", href: "/portal/energie", icon: Zap, exakt: true },
+  { id: "nav-beschaffung", titel: "Energiebeschaffung", kurz: "Beschaffung", href: "/portal/energie/beschaffung", icon: PlugZap },
+  { id: "nav-ausschreibungen", titel: "Angebotsanfragen", kurz: "Anfragen", href: "/portal/ausschreibungen", icon: FileSpreadsheet },
+  { id: "nav-bank", titel: "Finanzierungsanfragen", kurz: "Anfragen", href: "/portal/bank", icon: Banknote },
+  { id: "nav-beteiligung", titel: "Genossenschaft & Gemeinschaft", kurz: "Beteiligung", href: "/portal/beteiligung", icon: HandHeart },
+  { id: "nav-kommune", titel: "Gemeinde", kurz: "Gemeinde", href: "/portal/kommune", icon: Landmark },
+  { id: "nav-entwicklung", titel: "Aufträge & Projekte", kurz: "Aufträge", href: "/portal/entwicklung", icon: HardHat },
+  { id: "nav-bo-energie", titel: "Energie-Handelsdesk", kurz: "Handelsdesk", href: "/portal/admin/energie", icon: PlugZap },
+  { id: "nav-bo-anlagen", titel: "Anlagen & Störungen", kurz: "Anlagen", href: "/portal/admin/anlagen", icon: TriangleAlert },
+  { id: "nav-bo-compliance", titel: "Compliance (KYC)", kurz: "KYC", href: "/portal/admin/compliance", icon: ScanFace },
+  { id: "nav-bo-entwicklung", titel: "Projektentwicklung", kurz: "Entwicklung", href: "/portal/admin/entwicklung", icon: Milestone },
+  { id: "nav-bo-finanzen", titel: "Finanzen & Abrechnung", kurz: "Finanzen", href: "/portal/admin/finanzen", icon: Landmark },
+  { id: "nav-bo-akquise", titel: "Akquise & Gebiete", kurz: "Akquise", href: "/portal/admin/akquise", icon: Target },
+];
+
+/** Die 4 wichtigsten Ziele je Rolle für die mobile Bottom-Navigation (nutzer optional: Backoffice-Unterrollen) */
+export function bottomNavZiele(rollen = [], nutzer = null) {
+  const alle = [...navigationsZiele(rollen), ...ROLLEN_ZIELE];
   const z = (id) => alle.find((x) => x.id === id);
   let ids;
-  if (rollen.includes("admin")) ids = ["nav-cockpit", "nav-aufgaben", "nav-vorgaenge", "nav-nachrichten"];
+  if (rollen.includes("admin")) {
+    // Backoffice: Cockpit, Aufgaben, Fachbereich der Unterrolle, Nachrichten – nur lesbare Bereiche
+    const u = nutzer ? unterrollen(nutzer) : ["leitung"];
+    const fach = u.includes("leitung") ? "nav-vorgaenge"
+      : u.includes("energie") ? "nav-bo-energie"
+      : u.includes("betrieb") ? "nav-bo-anlagen"
+      : u.includes("compliance") ? "nav-bo-compliance"
+      : u.includes("projektleitung") ? "nav-bo-entwicklung"
+      : u.includes("buchhaltung") ? "nav-bo-finanzen"
+      : u.includes("akquise") ? "nav-bo-akquise"
+      : "nav-vorgaenge";
+    ids = ["nav-cockpit", "nav-aufgaben", fach, "nav-nachrichten"];
+    if (nutzer) ids = ids.filter((id) => { const ziel = z(id); const bereich = ziel && seitenBereich(ziel.href); return !bereich || darfLesen(nutzer, bereich); });
+  }
+  else if (hatRolle(rollen, "unternehmen")) ids = ["nav-dashboard", "nav-anlagen", "nav-energie", "nav-nachrichten"];
+  else if (hatRolle(rollen, "gutachter")) ids = ["nav-dashboard", "nav-entwicklung", "nav-nachrichten", "nav-dokumente"];
+  else if (hatRolle(rollen, "kommune")) ids = ["nav-dashboard", "nav-kommune", "nav-nachrichten", "nav-dokumente"];
+  else if (hatRolle(rollen, "bank")) ids = ["nav-dashboard", "nav-bank", "nav-nachrichten", "nav-dokumente"];
+  else if (hatRolle(rollen, "lieferant")) ids = ["nav-dashboard", "nav-ausschreibungen", "nav-nachrichten", "nav-dokumente"];
   else if (hatRolle(rollen, "flaeche", "landwirt")) ids = ["nav-dashboard", "nav-flaechen", "nav-nachrichten", "nav-dokumente"];
   else if (hatRolle(rollen, "investor")) ids = ["nav-dashboard", "nav-boerse", "nav-nachrichten", "nav-profil"];
   else if (hatRolle(rollen, "anbieter")) ids = ["nav-dashboard", "nav-projekte", "nav-nachrichten", "nav-dokumente"];
+  else if (hatRolle(rollen, "mitglied")) ids = ["nav-dashboard", "nav-beteiligung", "nav-nachrichten", "nav-dokumente"];
   else ids = ["nav-dashboard", "nav-anfragen", "nav-nachrichten", "nav-dokumente"];
   const kurz = { "nav-dashboard": "Übersicht", "nav-cockpit": "Cockpit", "nav-aufgaben": "Aufgaben", "nav-vorgaenge": "Vorgänge", "nav-flaechen": "Flächen", "nav-nachrichten": "Nachrichten", "nav-dokumente": "Dokumente", "nav-boerse": "Börse", "nav-profil": "Profil", "nav-projekte": "Projekte", "nav-anfragen": "Anfragen" };
-  return ids.map(z).filter(Boolean).map((e) => ({ ...e, kurz: kurz[e.id] || e.titel }));
+  return ids.map(z).filter(Boolean).map((e) => ({ ...e, kurz: e.kurz || kurz[e.id] || e.titel }));
 }
 
 export const SuchIcon = Search;

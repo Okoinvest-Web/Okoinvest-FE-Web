@@ -83,7 +83,7 @@ export function LinienChart({ reihen = [], xTicks = [], xText = String, yEinheit
     return d;
   };
   return (
-    <svg viewBox={`0 0 ${breite} ${hoehe}`} className="h-auto w-full" role="img" aria-label={beschreibung || `Diagramm${yEinheit ? ` (${yEinheit})` : ""}`}>
+    <div className="overflow-x-auto"><svg viewBox={`0 0 ${breite} ${hoehe}`} className="h-auto w-full" style={{ minWidth: Math.round(breite * 0.8) }} role="img" aria-label={beschreibung || `Diagramm${yEinheit ? ` (${yEinheit})` : ""}`}>
       {ax.ticks.map((t) => (
         <g key={t}>
           <line x1={PAD.l} x2={breite - PAD.r} y1={Y(t)} y2={Y(t)} stroke={t === 0 ? FARBEN.basis : FARBEN.raster} strokeWidth={t === 0 ? 1.2 : 1} />
@@ -114,11 +114,11 @@ export function LinienChart({ reihen = [], xTicks = [], xText = String, yEinheit
         </path>
       ))}
       {xTicks.map((x) => (
-        <text key={x} x={X(x)} y={hoehe - 8} textAnchor="middle" fontSize="11" fill={FARBEN.text}>
+        <text key={x} x={X(x)} y={hoehe - 8} textAnchor={X(x) > breite - PAD.r - 28 ? "end" : X(x) < PAD.l + 20 ? "start" : "middle"} fontSize="11" fill={FARBEN.text}>
           {xText(x)}
         </text>
       ))}
-    </svg>
+    </svg></div>
   );
 }
 
@@ -138,9 +138,11 @@ export function BalkenChart({ kategorien = [], reihen = [], gestapelt = false, y
   const Y = (y) => PAD.t + (1 - (y - ax.von) / (ax.bis - ax.von)) * h;
   const gruppe = w / kategorien.length;
   const bw = gestapelt ? Math.min(40, gruppe * 0.6) : Math.min(22, (gruppe * 0.75) / Math.max(1, reihen.length));
-  const jedeN = Math.ceil(kategorien.length / 14);
+  // Beschriftung ausdünnen, damit sich Achsenlabels nicht überlappen (≈ 6,5 px je Zeichen bei 11 px Schrift)
+  const labelBreite = Math.max(...kategorien.map((k) => String(k).length)) * 6.5 + 8;
+  const jedeN = Math.max(1, Math.ceil(kategorien.length / 14), Math.ceil(labelBreite / gruppe));
   return (
-    <svg viewBox={`0 0 ${breite} ${hoehe}`} className="h-auto w-full" role="img" aria-label={beschreibung || "Balkendiagramm"}>
+    <div className="overflow-x-auto"><svg viewBox={`0 0 ${breite} ${hoehe}`} className="h-auto w-full" style={{ minWidth: Math.round(breite * 0.8) }} role="img" aria-label={beschreibung || "Balkendiagramm"}>
       {ax.ticks.map((t) => (
         <g key={t}>
           <line x1={PAD.l} x2={breite - PAD.r} y1={Y(t)} y2={Y(t)} stroke={t === 0 ? FARBEN.basis : FARBEN.raster} />
@@ -193,7 +195,7 @@ export function BalkenChart({ kategorien = [], reihen = [], gestapelt = false, y
           <title>{linie.name}</title>
         </path>
       )}
-    </svg>
+    </svg></div>
   );
 }
 

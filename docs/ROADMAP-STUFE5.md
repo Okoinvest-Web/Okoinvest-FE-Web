@@ -28,7 +28,7 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 - [x] **B4 Deal-Abschluss end-to-end** – Kaufvertrag-Vorlagen (SPA Asset/Share Deal), Signatur, Notartermin, Closing-Checkliste, Kaufpreiszahlung/Treuhand-Hinweis, automatische Provisionsrechnung, Übergabe
 
 ## Nacharbeiten aus Berichten (in der Integrationsphase erledigen)
-- [ ] Bottom-Navigation mobil: Einträge für Gutachter, Kommune, Lieferant, Bank
+- [x] Bottom-Navigation mobil: Einträge für Gutachter, Kommune, Lieferant, Bank
 - [ ] `notFound()` im Portal liefert wegen `portal/loading.js` HTTP 200 statt 404 – prüfen, ob `loading.js` auf Unterbereiche beschränkt werden kann (Inhalt ist korrekt, Status nicht)
 - [ ] Zentral: `plattform-test-bedienung.mjs` nach Onboarding-Umbau mitlaufen lassen
 - [ ] Co-Development-Freigabe (Projektentwicklung) mit `kycFreigabe` absichern
@@ -41,10 +41,10 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 - [ ] KYC-Testreihe zentral grün fahren (lief nur unter Last)
 - [ ] Geodaten-Test verbraucht Demo-Kandidaten (Akquise-Ziel je Lauf) → Test aufräumen lassen bzw. frische Demo-DB
 - [ ] Frappe: Ansichten müssen Flächen ohne Eigentümerkonto vertragen (Akquise-Übernahme)
-- [ ] Mobile Ansicht /portal/admin/gesellschaften nach Organigramm-Umbau prüfen
+- [x] Mobile Ansicht /portal/admin/gesellschaften nach Organigramm-Umbau prüfen
 - [ ] `pruefen.py`: allow_guest-Ausnahme für Identitäts-Webhook bestätigen
 - [ ] Testdaten-Präfixe `dienste-test-*`, `fz-test-*`, Finanzen-Testverträge → frische Demo-DB
-- [ ] UI-Politur Handelsdesk: Kennzahl-Kacheln abgeschnitten, X-Achsen-Labels überlappen, Tabelle rechts abgeschnitten, Brotkrumen „Energie & Lastgang“ auf Admin-Handelsdesk falsch
+- [x] UI-Politur Handelsdesk: Kennzahl-Kacheln abgeschnitten, X-Achsen-Labels überlappen, Tabelle rechts abgeschnitten, Brotkrumen „Energie & Lastgang“ auf Admin-Handelsdesk falsch
 - [ ] `pruefen.py` Warnungen: 6 DocTypes in desk_rechte.py (Abnahmestelle, Akquise Ziel, Beteiligung Interesse, Bewertung Szenario, Lastgang, Netzkapazitaet), 106 Übersetzungen, doc_events Payment Entry Guard
 - [x] Login-Seite: neue Demo-Konten (lieferant@, bank@, kommune@, gutachter@, bo-*@) in der Demo-Schnellauswahl
 - [ ] Frappe: `energie_quellen.historie_laden` einmalig nach Installation (GO-LIVE.md)

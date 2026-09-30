@@ -67,8 +67,43 @@ export default function Organigramm({ daten }) {
     return { key: `${e.von}-${e.nach}`, pfad, x2, ym, anteil: e.anteil };
   }).filter(Boolean);
 
+  // UI-Politur: mobile Fassung als eingerückte Liste (Baum in Tiefensuche, Beteiligungsquote je Kante)
+  const anteilVon = new Map(kanten.map((e) => [`${e.von}-${e.nach}`, e.anteil]));
+  const knotenMap = new Map(knoten.map((k) => [k.id, k]));
+  const liste = [];
+  const gesehen = new Set();
+  const besuche = (id, tiefe, mutter) => {
+    if (gesehen.has(id) || !knotenMap.has(id)) return;
+    gesehen.add(id);
+    liste.push({ k: knotenMap.get(id), tiefe, anteil: mutter ? anteilVon.get(`${mutter}-${id}`) : null });
+    for (const kind of kinder.get(id) || []) if (tiefe < 8) besuche(kind, tiefe + 1, id);
+  };
+  wurzeln.forEach((id) => besuche(id, 0, null));
+  knoten.forEach((k) => besuche(k.id, 0, null));
+
   return (
-    <div className="overflow-x-auto">
+    <>
+    <ol aria-label={`Beteiligungsstruktur der Gesellschaften (${knoten.length})`} className="grid gap-2 md:hidden">
+      <li className="rounded-full bg-sand-100 px-4 py-2 text-center text-[12.5px] font-bold text-ink-700">{gruppe}</li>
+      {liste.map(({ k, tiefe, anteil }) => {
+        const farbe = FARBE[k.status] || "#6b7486";
+        const ext = externZu.get(k.id) || [];
+        return (
+          <li key={k.id} style={{ marginLeft: Math.min(tiefe, 4) * 14 }} className={tiefe ? "border-l-2 border-ov-200 pl-2.5" : ""}>
+            <a href={`/portal/admin/gesellschaften/${k.id}`} className="block rounded-2xl bg-white px-3.5 py-2.5 ring-1 ring-ink-200 hover:ring-ov-400" style={{ borderLeft: `4px solid ${farbe}` }}>
+              <span className="flex items-start justify-between gap-2">
+                <span className="min-w-0 break-words text-[13.5px] font-bold leading-snug text-ink-900">{k.name}</span>
+                {anteil != null && <span className="ov-num shrink-0 rounded-full bg-ov-50 px-2 py-0.5 text-[11.5px] font-bold text-ov-800 ring-1 ring-ov-200">{`${String(anteil).replace(".", ",")} %`}</span>}
+              </span>
+              <span className="mt-0.5 block text-[12px] text-ink-500">{[k.land, k.registernummer || "in Gründung"].filter(Boolean).join(" · ")}</span>
+              <span className="block text-[11.5px] font-semibold" style={{ color: farbe }}>{GESELLSCHAFT_STATUS[k.status]?.label || k.status}</span>
+              {ext.length > 0 && <span className="mt-0.5 block text-[11.5px] text-ink-500">{`+ ${ext.map((x) => `${x.name} ${x.anteil} %`).join(", ")}`}</span>}
+            </a>
+          </li>
+        );
+      })}
+    </ol>
+    <div className="hidden overflow-x-auto md:block">
       <svg role="img" aria-label={`Beteiligungsstruktur der Gesellschaften (${knoten.length})`} viewBox={`0 0 ${W} ${Hges}`} className="h-auto w-full font-sans" style={{ minWidth: Math.min(W, 720) }}>
         <rect x="8" y="8" width={W - 16} height="30" rx="15" fill="#f5f3ea" />
         <text x={W / 2} y="28" textAnchor="middle" fontSize="12" fontWeight="700" fill="#394050">{gruppe}</text>
@@ -99,5 +134,6 @@ export default function Organigramm({ daten }) {
         })}
       </svg>
     </div>
+    </>
   );
 }

@@ -55,7 +55,7 @@ export function Wert({ label, wert, hinweis, icon: Icon, ton = "hell", className
         {label}
       </p>
       <p className={cn("ov-num mt-2 truncate font-display text-[22px] font-extrabold leading-tight tracking-tight md:text-[24px]", dunkel ? "text-white" : "text-ink-900")}>{wert}</p>
-      {hinweis && <p className={cn("mt-1 truncate text-[12px]", dunkel ? "text-white/60" : "text-ink-500")}>{hinweis}</p>}
+      {hinweis && <p className={cn("mt-1 line-clamp-2 text-[12px] leading-snug", dunkel ? "text-white/60" : "text-ink-500")}>{hinweis}</p>}
     </div>
   );
 }

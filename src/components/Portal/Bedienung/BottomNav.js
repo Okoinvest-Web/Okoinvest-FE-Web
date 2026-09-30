@@ -8,18 +8,18 @@ import { Search } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { bottomNavZiele } from "./befehle";
 
-function aktiv(pfad, href) {
-  if (href === "/portal" || href === "/portal/admin") return pfad === href;
+function aktiv(pfad, href, exakt = false) {
+  if (exakt || href === "/portal" || href === "/portal/admin") return pfad === href;
   return pfad === href || pfad.startsWith(href + "/");
 }
 
-export default function BottomNav({ rollen, pfad, ungelesen = 0, onSuche }) {
-  const ziele = bottomNavZiele(rollen);
+export default function BottomNav({ rollen, nutzer = null, pfad, ungelesen = 0, onSuche }) {
+  const ziele = bottomNavZiele(rollen, nutzer);
   return (
     <nav aria-label="Schnellnavigation" id="portal-bottomnav" className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-200/80 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
-      <ul className="mx-auto grid max-w-[560px] grid-cols-5">
+      <ul className={cn("mx-auto grid max-w-[560px]", ziele.length === 3 ? "grid-cols-4" : "grid-cols-5")}>
         {ziele.map((z) => {
-          const ist = aktiv(pfad, z.href);
+          const ist = aktiv(pfad, z.href, z.exakt);
           const Icon = z.icon;
           const zaehler = z.id === "nav-nachrichten" && ungelesen > 0 ? ungelesen : 0;
           return (

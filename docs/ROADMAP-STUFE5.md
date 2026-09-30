@@ -8,7 +8,7 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 - [ ] Projektentwicklung (Entwicklungsakte, Gantt, Risiken, Portfolio, Gutachter-Rolle)
 - [ ] ERPNext-Finanzen (Pacht, Contracting, Provisionsrechnung, Assets, Controlling)
 - [ ] Dokumente/Signatur/Termine/Helpdesk/HR
-- [ ] Fachprüfung A (Fläche, Landwirt, Dach, Kommune)
+- [x] Fachprüfung A (Fläche, Landwirt, Dach, Kommune) – offen: eigene Rolle `kommune` (→ B1), Menüpunkt /portal/kommune
 - [ ] Fachprüfung B (Investor, Anbieter, Unternehmen, Mitglied)
 
 ## Welle A (sofort, überwiegend Backend – wenig Dev-Server)
@@ -18,9 +18,9 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 - [ ] **A3 Energiebeschaffung & Versorger-Ausschreibung** – Backoffice-Handelsdesk: Spot (EPEX via Energy-Charts) und Terminmarkt (EEX Cal/Q/M – Lizenzfrage, manuelle/lizenzierte Einspielung), Beschaffungsstrategien (Tranchen, Hedge-Quote, Spot-Anteil), Lastgang-Analysen je Kunde, **Ausschreibung/Bieterwettbewerb unter Energieversorgern** (neue Rolle Lieferant/Energieversorger mit eigenem Portal; anonymisierte Lastgänge, Preisblatt, Frist, mehrere Runden, Vergleich, Zuschlag, Vertrag; Versand an Versorger ohne Portal per E-Mail mit Angebotslink), **laufende Wechselanalyse** je Kunde (Vertrag vs. Marktpreis-Forward, Kündigungsfristen-Alarm, Empfehlung), Pool-Bündelung mehrerer Kunden (Reststrom-Pool)
 
 ## Welle B (nach Stufe 4)
-- [ ] **B0 Eigenbetrieb & Bankfinanzierung** – Geschäftsmodelle je Projekt: Build-to-Sell (ÖKOVOLT baut für Investor, EPC-Übergabe), Eigenbetrieb durch ÖkoInvest/SPV mit **Bankfinanzierung** (Finanzierungsanfrage an mehrere Banken, Bankenpaket mit Financial Model/Ertragsgutachten/Verträgen, Term-Sheet-Vergleich, DSCR/LLCR-Covenants, Auszahlungsvoraussetzungen, Covenant-Monitoring im Betrieb aus Anlagen-Messdaten), reine Verpachtung
-- [ ] **B0b Dach-Contracting mit Dienstbarkeit** – Dachnutzungs-/Servitutsvertrag (AT Servitut, DE beschränkte persönliche Dienstbarkeit, CH Dienstbarkeit), Grundbuch-Eintragungsablauf (Vertrag, Beglaubigung/Notar, Grundbuchsgesuch, Rang, Rangrücktritt Bank, Eintragungsbestätigung), Fristen, Verknüpfung mit Contracting-Vertrag und Anlage
-- [ ] **B1 Onboarding-Assistenten je Rolle und Unterrolle** (Investor je Typ, Anbieter/Verkäufer Projekt & Bestandsanlage, Flächen-/Dach-Eigentümer, Landwirt, Contracting-Kunde, Reststrom-Kunde, Kommune, Gutachter, Backoffice je Unterrolle)
+- [~] **B0 Eigenbetrieb & Bankfinanzierung** (läuft, zusammen mit B2) – Geschäftsmodelle je Projekt: Build-to-Sell (ÖKOVOLT baut für Investor, EPC-Übergabe), Eigenbetrieb durch ÖkoInvest/SPV mit **Bankfinanzierung** (Finanzierungsanfrage an mehrere Banken, Bankenpaket mit Financial Model/Ertragsgutachten/Verträgen, Term-Sheet-Vergleich, DSCR/LLCR-Covenants, Auszahlungsvoraussetzungen, Covenant-Monitoring im Betrieb aus Anlagen-Messdaten), reine Verpachtung
+- [~] **B0b Dach-Contracting mit Dienstbarkeit** (läuft, zusammen mit B4) – Dachnutzungs-/Servitutsvertrag (AT Servitut, DE beschränkte persönliche Dienstbarkeit, CH Dienstbarkeit), Grundbuch-Eintragungsablauf (Vertrag, Beglaubigung/Notar, Grundbuchsgesuch, Rang, Rangrücktritt Bank, Eintragungsbestätigung), Fristen, Verknüpfung mit Contracting-Vertrag und Anlage
+- [ ] **B1 Onboarding-Assistenten je Rolle und Unterrolle** (+ eigene Rolle `kommune` mit Menü /portal/kommune) (Investor je Typ, Anbieter/Verkäufer Projekt & Bestandsanlage, Flächen-/Dach-Eigentümer, Landwirt, Contracting-Kunde, Reststrom-Kunde, Kommune, Gutachter, Backoffice je Unterrolle)
 - [ ] **B2 Investor-Finanzierungscockpit** – ROI je Projekt nach Login, Finanzierungsvergleich (Eigenkapital, Annuitätenkredit, Förderkredit KfW/aws/OeKB, Leasing, Mietkauf), Förder-Check je Land (EEG/EAG/Einmalvergütung/Investitionszuschüsse), Steuern (AfA), Szenarien speichern, PDF
 - [ ] **B3 Planungsdateien & Projektkosten** – DWG/DXF-Upload mit Vorschau (DXF im Browser, DWG → Konvertierungsdienst), Projektkostenkalkulation nach Gewerken inkl. Netzanschluss aus Akquise-Distanz, Anbindung Projektentwicklung/ERPNext
 - [ ] **B4 Deal-Abschluss end-to-end** – Kaufvertrag-Vorlagen (SPA Asset/Share Deal), Signatur, Notartermin, Closing-Checkliste, Kaufpreiszahlung/Treuhand-Hinweis, automatische Provisionsrechnung, Übergabe

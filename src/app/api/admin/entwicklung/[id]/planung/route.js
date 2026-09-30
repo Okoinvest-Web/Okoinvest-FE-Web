@@ -1,6 +1,6 @@
 // GET  /api/admin/entwicklung/[id]/planung – Planliste des Entwicklungsprojekts (Backoffice, Bereich „entwicklung“ lesen)
 // POST /api/admin/entwicklung/[id]/planung – Plankopf anlegen/ändern { id?, daten: { plannummer, titel, planart, massstab,
-//      blattformat, planer, meilensteinId } } (Bereich „entwicklung“ schreiben). Uploads: POST /api/portal/planung/upload.
+//      blattformat, planer, meilensteinId } } (Bereich „entwicklung“ schreiben). Uploads: POST /api/planung/upload.
 import { route } from "@/lib/plattform/server/route";
 import { planungBackend } from "@/lib/plattform/backend/planung";
 

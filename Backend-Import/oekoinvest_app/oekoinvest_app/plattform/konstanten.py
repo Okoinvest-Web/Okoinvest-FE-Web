@@ -228,6 +228,11 @@ PRAEFIX = {
 	"Plattform Covenant Pruefung": "CO",
 	"Plattform Finanzierungsdokument": "FD",
 	"Plattform Foerderprogramm": "FP",
+	# Planungsdateien (CAD) & Projektkostenkalkulation
+	"Plattform Planunterlage": "PL",
+	"Plattform Planversion": "PLV",
+	"Plattform Kostenkalkulation": "KK",
+	"Plattform Kostenstand": "KS",
 }
 
 # ---------------------------------------------------------------- Benachrichtigungen (Glocke) – wie BENACHRICHTIGUNG_ARTEN in konstanten.js

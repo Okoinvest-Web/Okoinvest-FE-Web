@@ -44,7 +44,7 @@ export default async function Einarbeitung() {
                   <div className="mt-1 h-2 rounded-full bg-ink-100" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={t.quote} aria-label={`Einarbeitung ${t.name}`}>
                     <div className={`h-2 rounded-full ${t.quote === 100 ? "bg-ov-600" : "bg-ov-400"}`} style={{ width: `${Math.max(4, t.quote)}%` }} />
                   </div>
-                  <p className="mt-1 text-[12px] text-ink-500">{t.gestartetAm ? `Begonnen ${datum(t.gestartetAm)}` : "Noch nicht begonnen"}{t.letzterLogin ? ` · zuletzt angemeldet ${datum(t.letzterLogin)}` : ""}</p>
+                  <p className="mt-1 text-[12px] text-ink-500">{t.gestartetAm ? `Begonnen ${datum(t.gestartetAm)}` : "Noch keine Schritte bestätigt"}{t.letzterLogin ? ` · zuletzt angemeldet ${datum(t.letzterLogin)}` : ""}</p>
                 </div>
                 <div className="min-w-0">
                   {t.offen.length ? (

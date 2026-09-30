@@ -277,7 +277,7 @@ class Client {
     const fd = new FormData();
     fd.append("datei", new Blob([daten]), name);
     for (const [k, w] of Object.entries(felder)) fd.append(k, w);
-    return this.anfrage("POST", "/api/portal/planung/upload", fd, { kopf, origin });
+    return this.anfrage("POST", "/api/planung/upload", fd, { kopf, origin });
   }
 }
 
@@ -501,7 +501,7 @@ async function e2e() {
   r = await inv.get(`/portal/planung/${vB.id}`);
   pruefe(r.status === 200 && r.text.includes("Belegungsplan"), "Planvorschau für Co-Investor 200", r.status);
   r = await eig.get(`/portal/planung/${vB.id}`);
-  pruefe(r.status === 404, "Planvorschau für Eigentümer 404", r.status);
+  pruefe((r.status === 404 || r.text.includes("NEXT_HTTP_ERROR_FALLBACK;404")) && !r.text.includes("Belegungsplan Modulfelder"), "Planvorschau für Eigentümer 404", r.status);
   r = await gut.get(`/portal/entwicklung/${pid}`);
   pruefe(r.status === 200 && r.text.includes("P-300") && !r.text.includes("P-100"), "Externe Projektseite zeigt Gutachter nur P-300", r.status);
 }

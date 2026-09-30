@@ -30,7 +30,7 @@ async function hochladen(datei, felder) {
   for (const [k, w] of Object.entries(felder)) if (w !== undefined && w !== null && w !== "") fd.append(k, String(w));
   let res;
   try {
-    res = await fetch("/api/portal/planung/upload", { method: "POST", body: fd, headers: { "X-Plattform-Upload": "1" }, credentials: "same-origin" });
+    res = await fetch("/api/planung/upload", { method: "POST", body: fd, headers: { "X-Plattform-Upload": "1" }, credentials: "same-origin" });
   } catch {
     throw new Error("Keine Verbindung – bitte prüfen Sie Ihre Internetverbindung.");
   }

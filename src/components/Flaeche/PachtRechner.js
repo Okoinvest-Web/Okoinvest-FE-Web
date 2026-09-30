@@ -12,11 +12,12 @@ import { fmt, fmtEur } from "@/lib/rechner/annahmen";
 const FARBE = { solar: "#669933", db: "#f5a70f", acker: "#97a0b0", raster: "#eef0f4" };
 const tsd = (v) => `${fmt(v / 1000, v >= 1e6 ? 0 : v >= 1e5 ? 0 : 1)} Tsd. €`;
 
-export default function PachtRechner() {
-  const [ha, setHa] = useState(10);
-  const [regionId, setRegionId] = useState("de-sued");
+// `start` (optional): Vorbelegung, z. B. von der personalisierten Angebotsseite /angebot/[code] – { ha, regionId, proHa }
+export default function PachtRechner({ start = {} } = {}) {
+  const [ha, setHa] = useState(Number(start.ha) > 0 ? Math.round(Number(start.ha) * 10) / 10 : 10);
+  const [regionId, setRegionId] = useState(REGIONEN.some((x) => x.id === start.regionId) ? start.regionId : "de-sued");
   const [modell, setModell] = useState("fest");
-  const [proHa, setProHa] = useState(PACHT.freiflaecheProHa.mittel);
+  const [proHa, setProHa] = useState(Number(start.proHa) > 0 ? Number(start.proHa) : PACHT.freiflaecheProHa.mittel);
   const [umsatzPct, setUmsatzPct] = useState(6);
   const [mindestProHa, setMindestProHa] = useState(PACHT.freiflaecheProHa.min);
   const [laufzeit, setLaufzeit] = useState(PACHT.laufzeit);

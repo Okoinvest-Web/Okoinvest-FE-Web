@@ -941,3 +941,20 @@ Recherche und Rechtsgrundlagen: [`docs/GRUNDBUCH-CLOSING.md`](./GRUNDBUCH-CLOSIN
 - Backoffice Closing: `GET, POST (201) /api/admin/closing` · `GET, PATCH /api/admin/closing/[id]` · `POST /api/admin/closing/[id]/aktion`
 - Portal Closing (Käufer/Verkäufer bzw. Backoffice): `GET /api/portal/closing` · `GET, POST /api/portal/closing/[id]` (`cp_melden`) · `GET /api/portal/closing/[id]/pdf?art=spa|bericht` · `GET /api/portal/closing/[id]/termin` (.ics)
 - Seiten: `/portal/admin/grundbuch[?status=&land=]`, `/portal/admin/grundbuch/[id]`, `/portal/grundbuch[/id]`, `/portal/admin/closing[?status=]`, `/portal/admin/closing/[id]`, `/portal/closing[/id]`; Kurzanzeige an `/portal/flaechen/[id]`.
+
+## Onboarding-Assistenten je Rolle und Untertyp (Team B1)
+
+Deklarative Pfade: `src/lib/plattform/onboarding/pfade/*.js` (investor, verkaeufer, flaeche, kunde, kommune, mitglied, gutachter, lieferant, bank, backoffice), Auswertung `onboarding/motor.js`, Fakten aus echten Daten `server/onboarding.js`. Frappe: `plattform/onboarding_kern.py` + `plattform/onboarding_pfade.json` (Export: `node scripts/onboarding-pfade-export.mjs`), `plattform/api/onboarding.py`.
+
+| Methode | Pfad | Rechte | Inhalt |
+|---|---|---|---|
+| GET | `/api/portal/onboarding` | angemeldet | `{ zustand (generischer Einstieg), liste (Checkliste = Schritte des aktiven Pfads), pfad: {id,titel,untertyp,untertypen,abgeschlossen,pflichtOffen,naechster} }` |
+| GET | `/api/portal/onboarding?ansicht=assistent` | angemeldet | `{ pfade[{id,titel,text}], pfad (Auswertung: schritte[{id,titel,kurz,art,formular,text,punkte,links,pflicht,bestaetigbar,erledigt,spaeter}], erledigt, gesamt, quote, pflichtOffen, abschliessbar, abgeschlossen, naechster), pfadZustand }` – keine Rohfakten |
+| GET | `/api/portal/onboarding?ansicht=tour` | angemeldet | `{ tour: { aus, gesehen[] } }` |
+| PUT | `/api/portal/onboarding` | eigenes Konto, JSON + Origin | `{ aktion: pfad\|untertyp\|bestaetigen\|spaeter\|fortsetzen\|abschliessen\|tour, pfad?, untertyp?, schritt?, aus?, gesehen? }` → 403 fremder Pfad, 422 unbekannter/nicht bestätigbarer Schritt oder Untertyp (Backoffice: nur eigene Unterrolle), 409 Abschluss mit offenen Pflichtschritten (Meldung nennt sie). Ohne `aktion` wie bisher `{status,schritt,erledigt,checklisteAus}`. |
+| GET | `/api/admin/onboarding` | Backoffice, Unterrolle Leitung (sonst 403) | `{ team: [{id,name,email,unterrollen,untertyp,erledigt,gesamt,quote,abgeschlossen,offen[{id,kurz,pflicht}],gestartetAm,letzterLogin}] }` |
+| POST | `/api/admin/onboarding/lauf` | Leitung | Erinnerungslauf jetzt → `{ versendet }` (Frappe: `onboarding.mail_lauf_taeglich`, täglich) |
+
+Zustand am Konto (Demo `nutzer.onboardingPfade`, Frappe `Plattform Konto.onboarding_pfade`): `{ aktiv, pfade: { <pfad>: { untertyp, bestaetigt[], spaeter[], gestartetAm, abgeschlossenAm } }, tour: { aus, gesehen[] }, mails: { willkommen, erinnerung3, erinnerung7 }, auswertung (Snapshot), aktualisiertAm }`.
+Frappe-Methoden (`oekoinvest_app.plattform.api.onboarding`): `zustand`, `speichern(zustand, aktion, auswertung, protokollText)` (prüft Struktur erneut: `onboarding_kern.struktur_pruefen`), `mail(art, pfadTitel, offen)`, `team`, `mail_lauf`.
+Rolle **`kommune`** (neu, selbst wählbar): Anfrage-Typ `kommune` → Rolle `kommune` (bisher `unternehmen`); Frappe-Rolle „Plattform Kommune“; Patch `oekoinvest_app.patches.kommune_rolle` migriert Konten mit kommunalem Anliegen.

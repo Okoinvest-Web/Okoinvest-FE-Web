@@ -1,4 +1,5 @@
-// POST /api/portal/planung/upload – multipart: datei, projektId, planId? (neuer Planstand) oder Plankopf (plannummer, titel,
+// POST /api/planung/upload – multipart (bewusst außerhalb von /api/portal: die Middleware puffert Anfragen höchstens 10 MB,
+//      CAD-Dateien dürfen bis 30 MB groß sein; Anmeldung, Rolle, CSRF prüft route() wie überall): datei, projektId, planId? (neuer Planstand) oder Plankopf (plannummer, titel,
 //      planart, massstab, blattformat, planer, meilensteinId) sowie planstand (JJJJ-MM-TT), aenderung. Kopfzeile
 //      X-Plattform-Upload: 1. DWG/DXF ≤ 30 MB, PDF ≤ 25 MB, Shapefile-ZIP ≤ 20 MB, KML/KMZ/GeoJSON ≤ 10 MB – Typ an den ersten
 //      Bytes erkannt. Berechtigt: Backoffice (Projektentwicklung schreiben), Gutachter/Planer am zugewiesenen Meilenstein.

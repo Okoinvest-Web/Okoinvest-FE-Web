@@ -169,6 +169,26 @@ Test: `node scripts/plattform-test-ki.mjs` (ohne Schlüssel: Fallback ohne Fehle
 - **Barrierefreiheit & Mobil**: Fokus auf die Überschrift nach jedem Seitenwechsel (mit Ansage), Sprunglinks zu Inhalt, Navigation und Suche, Bottom-Navigation unter 1024 px mit den 4 wichtigsten Zielen je Rolle + Suche.
 - Test: `node scripts/plattform-test-bedienung.mjs` (Suche nur Berechtigtes, Onboarding-Zustand, CSRF, PWA-Dateien); Frappe `tests/test_bedienung.py`.
 
+## Onboarding-Assistenten je Rolle und Untertyp (Team B1)
+
+Aus dem generischen 4-Schritte-Einstieg wurden fachlich geführte Assistenten (`/portal/willkommen`, `?schritt=<id>` für den Wiedereinstieg aus der Checkliste „Erste Schritte“). Jeder Schritt ist überspringbar („Später“), erledigt wird er aus **echten Daten** (Profil, Suchprofil, Fläche, Projekt, KYC eingereicht, Abnahmestelle, Vertrag, Termin …) oder – bei reinen Erklärschritten – per „Verstanden“. Abschluss nur, wenn alle Pflichtschritte erfüllt sind (Server prüft, 409).
+
+| Pfad | Rollen | Untertypen | Kern |
+|---|---|---|---|
+| Investor | investor | Family Office, Fonds/AIF, Stadtwerk/EVU, IPP, Privat | Firmendaten, Suchprofil, Ticket/Struktur, KYC/KYB, NDA-Rahmen, Bonitätshinweis, Finanzierungs-Cockpit, Benachrichtigungen, Termin Transaktionsteam |
+| Verkäufer | anbieter | Projektrechte, Bestandsanlage | Firma, Provisionsvereinbarung, Projekt mit Datenblatt-Mindestdaten je Phase bzw. Bestandsdaten (COD), Unterlagen-Checkliste, Qualitätsprüfung, KYB, Termin |
+| Fläche/Dach | flaeche, landwirt | Eigentümer, Landwirt (Agri-PV), Dach | Fläche/Dach anlegen, Fachangaben + Einreichen, Flächencheck übernehmen, Eigentumsnachweis/IBAN (KYC), Ablauf/Pipeline, Besichtigung |
+| Unternehmen | unternehmen | Contracting, Reststrom | Mein Solarstrom, Rechnungen, Störung · bzw. MaLo/MeLo/Zählpunkt, Lastgang, Vertrag/Kündigungsfrist, Beschaffungsvollmacht; Ansprechpartner |
+| Kommune | kommune | – | Ansprechpartner, Gemeindedaten (strukturierte Anfrage), Bauleitplanung/Kriterienkatalog, Bürger-/Kommunalbeteiligung, Gemeinde-Sicht, Gemeindetermin |
+| Mitglied, Gutachter, Lieferant, Bank | je Rolle | – | kurze Pfade (Beteiligung + Pflichthinweise; Aufträge + 2FA; Angebotsanfragen; Finanzierungsanfragen + 2FA) |
+| Einarbeitung Backoffice | admin | je Unterrolle (Leitung … Nur lesen, Projektleitung) | 2FA (Pflicht), Profil, Schnellsuche, Benachrichtigungen, Kurzanleitung je Modul mit Links, Gebiete (Akquise), erste Aufgabe erledigen |
+
+- **Tour-Hinweise**: ein kurzer Tipp je wichtiger Seite (Börse, Projekte, Flächen, Energie, Gemeinde, Cockpit …), „Verstanden“ bzw. „Tipps ausschalten“ – am Konto gespeichert.
+- **Team-Sicht** `/portal/admin/einarbeitung` (nur Leitung): Einarbeitungsstand je Backoffice-Konto, offene Pflichtpunkte, Erinnerungslauf.
+- **E-Mail-Serie**: Willkommensmail beim ersten Aufruf des Portals (Konten ≤ 14 Tage), Erinnerung an offene Pflichtschritte nach 3 und 7 Tagen (nicht bei ausgeblendeter Checkliste oder abgeschlossenem Einstieg); Demo: Postausgang, Frappe: `hooks.py` → `onboarding.mail_lauf_taeglich`. Mails enthalten nur die Zahl offener Schritte und einen Portal-Link.
+- **Rolle `kommune`**: eigene Rolle mit Rollenkarte in der Registrierung, Menü „Gemeinde“ → `/portal/kommune`, keine Unternehmens-Menüs/APIs; Demo-Konto `kommune@example.com` und bestehende Kommune-Konten werden einmalig migriert (Demo beim ersten Zugriff, Frappe per Patch).
+- Definitionen ändern: Pfad-Datei anpassen, dann `node scripts/onboarding-pfade-export.mjs` (JSON für Frappe). Test: `node scripts/plattform-test-onboarding.mjs` (`--nur-logik` ohne Server); Frappe `python -m unittest oekoinvest_app.plattform.tests.test_onboarding_kern`.
+
 ## Backoffice: CRM, Akquise, Automationen, Berichte, Rechte
 
 Seiten (Rolle admin, je nach Unterrolle): `/portal/admin/crm` (Kontakte/Organisationen, Suche „/“, neu „n“, Massenaktionen), `/portal/admin/crm/[id]` (Stammdaten, Beziehungen, Aktivität mit Wiedervorlage, Vorlage senden, Verlauf), `/portal/admin/crm/organisation/[id]`, `/portal/admin/crm/dubletten`, `/portal/admin/akquise` (Score, Priorität A/B/C, Tasten j/k/a/b/c, SLA-Ampel 2 Werktage, Gebiete, Zuweisung nach Gebiet), `/portal/admin/automationen` (Wenn–Und–Dann-Editor, Testlauf, Ausführungsprotokoll), `/portal/admin/vorlagen` (Platzhalter, Vorschau, Versionen), `/portal/admin/berichte` (Trichter, Quellen, Pipeline, Provision, Durchlauf, Team; CSV und Monatsbericht-PDF), `/portal/admin/protokoll` (Hash-Kette prüfen), `/portal/admin/rechte` (Unterrollen, Matrix). Vertrag: `docs/API.md`, Abschnitt 9.

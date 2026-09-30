@@ -8,7 +8,7 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 - [x] Projektentwicklung (Entwicklungsakte, Gantt, Risiken, Portfolio, Gutachter-Rolle)
 - [x] ERPNext-Finanzen (Pacht, Contracting, Provisionsrechnung, Assets, Controlling)
 - [x] Dokumente/Signatur/Termine/Helpdesk/HR
-- [x] Fachprüfung A (Fläche, Landwirt, Dach, Kommune) – offen: eigene Rolle `kommune` (→ B1), Menüpunkt /portal/kommune
+- [x] Fachprüfung A (Fläche, Landwirt, Dach, Kommune) – eigene Rolle `kommune` + Menüpunkt /portal/kommune erledigt (B1)
 - [x] Fachprüfung B (Investor, Anbieter, Unternehmen, Mitglied) + Anlagen-Eigentum ÖkoInvest/SPV, Kundensicht „Mein Solarstrom“
 
 ## Welle A (sofort, überwiegend Backend – wenig Dev-Server)
@@ -22,13 +22,15 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 ## Welle B (nach Stufe 4)
 - [x] **B0 Eigenbetrieb & Bankfinanzierung** (zusammen mit B2) – Geschäftsmodelle je Projekt: Build-to-Sell (ÖKOVOLT baut für Investor, EPC-Übergabe), Eigenbetrieb durch ÖkoInvest/SPV mit **Bankfinanzierung** (Finanzierungsanfrage an mehrere Banken, Bankenpaket mit Financial Model/Ertragsgutachten/Verträgen, Term-Sheet-Vergleich, DSCR/LLCR-Covenants, Auszahlungsvoraussetzungen, Covenant-Monitoring im Betrieb aus Anlagen-Messdaten), reine Verpachtung
 - [~] **B0b Dach-Contracting mit Dienstbarkeit** (läuft, zusammen mit B4) – Dachnutzungs-/Servitutsvertrag (AT Servitut, DE beschränkte persönliche Dienstbarkeit, CH Dienstbarkeit), Grundbuch-Eintragungsablauf (Vertrag, Beglaubigung/Notar, Grundbuchsgesuch, Rang, Rangrücktritt Bank, Eintragungsbestätigung), Fristen, Verknüpfung mit Contracting-Vertrag und Anlage
-- [~] **B1 Onboarding-Assistenten je Rolle und Unterrolle** (läuft) (+ eigene Rolle `kommune` mit Menü /portal/kommune) (Investor je Typ, Anbieter/Verkäufer Projekt & Bestandsanlage, Flächen-/Dach-Eigentümer, Landwirt, Contracting-Kunde, Reststrom-Kunde, Kommune, Gutachter, Backoffice je Unterrolle)
+- [x] **B1 Onboarding-Assistenten je Rolle und Unterrolle** (+ eigene Rolle `kommune` mit Menü /portal/kommune) (Investor je Typ, Anbieter/Verkäufer Projekt & Bestandsanlage, Flächen-/Dach-Eigentümer, Landwirt, Contracting-Kunde, Reststrom-Kunde, Kommune, Gutachter, Backoffice je Unterrolle)
 - [x] **B2 Investor-Finanzierungscockpit** – ROI je Projekt nach Login, Finanzierungsvergleich (Eigenkapital, Annuitätenkredit, Förderkredit KfW/aws/OeKB, Leasing, Mietkauf), Förder-Check je Land (EEG/EAG/Einmalvergütung/Investitionszuschüsse), Steuern (AfA), Szenarien speichern, PDF
 - [~] **B3 Planungsdateien & Projektkosten** (läuft) – DWG/DXF-Upload mit Vorschau (DXF im Browser, DWG → Konvertierungsdienst), Projektkostenkalkulation nach Gewerken inkl. Netzanschluss aus Akquise-Distanz, Anbindung Projektentwicklung/ERPNext
 - [ ] **B4 Deal-Abschluss end-to-end** – Kaufvertrag-Vorlagen (SPA Asset/Share Deal), Signatur, Notartermin, Closing-Checkliste, Kaufpreiszahlung/Treuhand-Hinweis, automatische Provisionsrechnung, Übergabe
 
 ## Nacharbeiten aus Berichten (in der Integrationsphase erledigen)
 - [ ] Bottom-Navigation mobil: Einträge für Gutachter, Kommune, Lieferant, Bank
+- [ ] `notFound()` im Portal liefert wegen `portal/loading.js` HTTP 200 statt 404 – prüfen, ob `loading.js` auf Unterbereiche beschränkt werden kann (Inhalt ist korrekt, Status nicht)
+- [ ] Zentral: `plattform-test-bedienung.mjs` nach Onboarding-Umbau mitlaufen lassen
 - [ ] Co-Development-Freigabe (Projektentwicklung) mit `kycFreigabe` absichern
 - [ ] Desk-Workspace-Kacheln + Role Profile „ÖkoInvest Projektleitung“, KYC- und Entwicklungs-DocTypes in Rechte-Matrix/Workspaces prüfen (`pruefen.py`)
 - [ ] Projektdatenblatt ins Exposé-PDF; Hinweise auf /investoren und /projektboerse/anbieten

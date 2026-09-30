@@ -37,6 +37,14 @@ export const PLATZHALTER = [
   { gruppe: "Backoffice", schluessel: "zustaendig.vorname", text: "Vorname der zuständigen Person", beispiel: "Backoffice" },
   { gruppe: "Allgemein", schluessel: "portal.link", text: "Link ins Portal zum Objekt", beispiel: "https://www.oekoinvest.com/portal" },
   { gruppe: "Allgemein", schluessel: "heute", text: "Heutiges Datum", beispiel: "30.09.2026" },
+  // Akquise-Kampagnen (Serienbrief an Flächeneigentümer, nur im Kampagnen-Kontext befüllt)
+  { gruppe: "Akquise-Kampagne", schluessel: "kampagne.name", text: "Name der Kampagne (intern)", beispiel: "Unterallgäu A 96 – Herbst 2026" },
+  { gruppe: "Akquise-Kampagne", schluessel: "flaeche.gemeinde", text: "Gemeinde der Zielfläche", beispiel: "Türkheim" },
+  { gruppe: "Akquise-Kampagne", schluessel: "flaeche.flurstuecke", text: "Flurstücke/Grundstücke des Empfängers", beispiel: "Gemarkung Türkheim, Flst. 1234/5" },
+  { gruppe: "Akquise-Kampagne", schluessel: "flaeche.pachtMin", text: "Pachtspanne von (€/ha und Jahr)", beispiel: "2.800" },
+  { gruppe: "Akquise-Kampagne", schluessel: "flaeche.pachtMax", text: "Pachtspanne bis (€/ha und Jahr)", beispiel: "4.500" },
+  { gruppe: "Akquise-Kampagne", schluessel: "angebot.link", text: "Persönlicher Link zur Angebotsseite (Einmalcode)", beispiel: "https://www.oekoinvest.com/angebot/ABCDE2345F" },
+  { gruppe: "Akquise-Kampagne", schluessel: "angebot.code", text: "Einmalcode (lesbar)", beispiel: "ABCDE-2345F" },
 ];
 export const PLATZHALTER_SCHLUESSEL = new Set(PLATZHALTER.map((p) => p.schluessel));
 

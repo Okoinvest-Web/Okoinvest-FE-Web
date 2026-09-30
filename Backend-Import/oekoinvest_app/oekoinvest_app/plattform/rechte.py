@@ -1,6 +1,8 @@
 # Copyright (c) 2026, ÖkoInvest GmbH
 #
-# Backoffice-Unterrollen (identisch zu src/lib/plattform/rechte.js): leitung, akquise, transaktion, buchhaltung, lesen.
+# Backoffice-Unterrollen (identisch zu src/lib/plattform/rechte.js – dort ist die Wahrheit): leitung, akquise, transaktion,
+# buchhaltung, lesen, betrieb, compliance, projektleitung, energie. Abgleich JS ↔ Python: tests/test_rechte_kern.py und
+# werkzeuge/pruefen.py (Fehler bei jeder Abweichung in Unterrollen, Bereichen oder Stufen).
 # Gespeichert am Plattform Konto im Feld `backoffice_rollen` (kommagetrennt, ausgegeben als `backofficeRollen`).
 # Ohne Unterrolle gilt „leitung“ (rückwärtskompatibel). Stufen: 0 kein Zugriff, 1 lesen, 2 schreiben.
 # Die Website prüft vorab in jeder Admin-Route (server/route.js); die Backoffice-Methoden prüfen selbst mit recht_noetig().

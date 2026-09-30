@@ -422,8 +422,12 @@ def _vertrag_setzen(doc, d, neu):
 		ungueltig("Bitte geben Sie das Basisjahr des Index an.")
 	if doc.modell == "umsatz" and (not flt(doc.umsatz_anteil) > 0 or not flt(doc.umsatz_erloes_ct) > 0 or not doc.anlage_id):
 		ungueltig("Umsatzbeteiligung: Anteil, Erlös je kWh und verknüpfte Anlage angeben.")
-	if doc.flaeche_id and frappe.db.get_value("Plattform Flaeche", doc.flaeche_id, "nutzer_id") != doc.eigentuemer_id:
-		ungueltig("Die Fläche gehört nicht zum gewählten Eigentümer.")
+	if doc.flaeche_id:
+		eigentuemer_flaeche = frappe.db.get_value("Plattform Flaeche", doc.flaeche_id, "nutzer_id")
+		if not eigentuemer_flaeche:  # z. B. Akquise-Übernahme aus den Geodaten: Eigentümerkonto entsteht erst nach Kontakt
+			ungueltig("Die Fläche hat noch kein Eigentümerkonto. Bitte zuerst den Eigentümer im Portal registrieren bzw. der Fläche zuordnen.")
+		if eigentuemer_flaeche != doc.eigentuemer_id:
+			ungueltig("Die Fläche gehört nicht zum gewählten Eigentümer.")
 	if doc.anlage_id and not frappe.db.exists("Plattform Anlage", doc.anlage_id):
 		ungueltig("Anlage nicht gefunden.")
 

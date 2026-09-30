@@ -13,13 +13,16 @@
 #               Dynamic Link, title/search/sort-Felder, Select-Standardwerte, fetch_from, Rechte (Rollen existieren,
 #               Website-/API-Rollen ohne DocPerm), Abgleich mit der Desk-Rechte-Matrix (werkzeuge/desk_rechte.py)
 #   hooks.py    alle Pfade (after_install/migrate, scheduler_events, doc_events, jinja, override_*, doctype_js …)
-#               zeigen auf existierende Funktionen/Klassen/Dateien (per AST); required_apps nur frappe
+#               zeigen auf existierende Funktionen/Klassen/Dateien (per AST); required_apps nur frappe; doc_events auf
+#               DocTypes optionaler Apps (ERPNext/HRMS …) nur mit Guard (App installiert + site_config-Schalter)
 #   Fixtures    Rollen, Rollenprofile, Workflows (inaktiv!), Number Cards, Dashboard Charts, Notifications,
 #               E-Mail-Vorlagen, Briefkopf, Custom Fields – Verweise auf DocTypes, Felder, Rollen, Jinja-Syntax
 #   Workspaces  Links, Shortcuts, Karten, Charts, Inhaltsblöcke, Rollen
 #   Berichte    Ordner, JSON, execute(), JS-Filter, Rollen mit Leserecht auf ref_doctype
 #   Druck       Ordner = scrub(Name), HTML-Datei = JSON-HTML, CSS aktuell, Jinja-Syntax, registrierte Jinja-Methoden
 #   Sonstiges   patches.txt, modules.txt, translations/de.csv, Mail-Templates, pyproject.toml, site_config-Beispiel
+#   Rechte      plattform/rechte.py = src/lib/plattform/rechte.js (Unterrollen, Bereiche, Stufen; per Node-Export, falls
+#               Node und Website-Quelltext vorhanden – sonst übersprungen)
 #
 # Jinja-Syntax wird mit jinja2 geprüft, falls installiert (pip install jinja2 – z. B. in einen eigenen Ordner und
 # PYTHONPATH setzen); sonst einfache Blockprüfung.
@@ -172,6 +175,55 @@ def pfad_pruefen(bereich, dotted, art=("def",)):
 	return True
 
 
+def _funktion(baum, name):
+	for knoten in baum.body if baum else []:
+		if isinstance(knoten, (ast.FunctionDef, ast.AsyncFunctionDef)) and knoten.name == name:
+			return knoten
+	return None
+
+
+def _guard_quelle(datei, name, tiefe=0):
+	"""Quelltext einer Guard-Funktion inkl. der von ihr (im selben Modul bzw. per `from … import`) gerufenen Funktionen."""
+	baum = ast_von(datei)
+	if not baum or tiefe > 3:
+		return ""
+	fn = _funktion(baum, name)
+	if fn is None:  # importiert? → im Quellmodul weitersuchen
+		for knoten in baum.body:
+			if isinstance(knoten, ast.ImportFrom) and knoten.module and any((a.asname or a.name) == name for a in knoten.names):
+				ziel = modul_datei(knoten.module)
+				original = next(a.name for a in knoten.names if (a.asname or a.name) == name)
+				return _guard_quelle(ziel, original, tiefe + 1) if ziel else ""
+		return ""
+	with open(datei, encoding="utf-8") as f:
+		quelle = ast.get_source_segment(f.read(), fn) or ""
+	for aufruf in ast.walk(fn):
+		if isinstance(aufruf, ast.Call) and isinstance(aufruf.func, ast.Name) and aufruf.func.id != name:
+			quelle += "\n" + _guard_quelle(datei, aufruf.func.id, tiefe + 1)
+	return quelle
+
+
+def optional_guard(dotted):
+	"""Erkennt, ob ein doc_events-Handler für DocTypes optionaler Apps (ERPNext/HRMS/Drive/Helpdesk) als ERSTE Anweisung
+	abbricht, wenn die App fehlt oder der site_config-Schalter aus ist: `if not aktiv(): return` (bzw. `if not …: return`),
+	wobei die Bedingung – direkt oder über gerufene Funktionen – `frappe.get_installed_apps()` UND `frappe.conf` prüft."""
+	modul, _, name = dotted.rpartition(".")
+	datei = modul_datei(modul)
+	fn = _funktion(ast_von(datei), name) if datei else None
+	if fn is None:
+		return False
+	rumpf = [s for s in fn.body if not (isinstance(s, ast.Expr) and isinstance(getattr(s, "value", None), ast.Constant) and isinstance(s.value.value, str))]
+	rumpf = [s for s in rumpf if not isinstance(s, (ast.Import, ast.ImportFrom))]
+	if not rumpf or not isinstance(rumpf[0], ast.If) or not rumpf[0].body or not isinstance(rumpf[0].body[-1], ast.Return):
+		return False
+	with open(datei, encoding="utf-8") as f:
+		quelle = ast.get_source_segment(f.read(), rumpf[0].test) or ""
+	for aufruf in ast.walk(rumpf[0].test):
+		if isinstance(aufruf, ast.Call) and isinstance(aufruf.func, ast.Name):
+			quelle += "\n" + _guard_quelle(datei, aufruf.func.id)
+	return "get_installed_apps" in quelle and re.search(r"frappe\.conf\b|\bconf\.get\(", quelle) is not None
+
+
 # ---------------------------------------------------------------------------------------------------- Jinja
 def jinja_pruefen(bereich, quelle, bekannte_methoden, pflicht_registriert=True):
 	if not quelle:
@@ -269,11 +321,11 @@ def hooks_pruefen(h, doctypes):
 	for dt, ereignisse in (h.get("doc_events") or {}).items():
 		if dt != "*" and dt not in doctypes and dt not in FRAPPE_DOCTYPES and dt not in ERPNEXT_HRMS_DOCTYPES:
 			fehler("hooks", f"doc_events: DocType {dt} unbekannt")
-		elif dt in ERPNEXT_HRMS_DOCTYPES:
-			warnung("hooks", f"doc_events auf {dt} (optionale App) – Handler muss prüfen, ob die App installiert und eingeschaltet ist")
 		for ereignis, pfade in ereignisse.items():
 			for p in [pfade] if isinstance(pfade, str) else pfade:
-				pfad_pruefen(f"hooks.doc_events.{dt}.{ereignis}", p)
+				if pfad_pruefen(f"hooks.doc_events.{dt}.{ereignis}", p) and dt in ERPNEXT_HRMS_DOCTYPES and not optional_guard(p):
+					warnung("hooks", f"doc_events auf {dt} (optionale App) – {p} muss als erste Anweisung abbrechen, wenn die App nicht installiert "
+					        "oder in site_config nicht eingeschaltet ist (z. B. `if not aktiv(): return` mit get_installed_apps + frappe.conf)")
 	for schluessel in ("override_whitelisted_methods", "permission_query_conditions", "has_permission", "standard_queries", "override_doctype_dashboards"):
 		for _k, p in (h.get(schluessel) or {}).items():
 			pfad_pruefen(f"hooks.{schluessel}", p)
@@ -869,7 +921,8 @@ def uebersetzungen_pruefen(doctypes):
 		if z[0] in quellen and quellen[z[0]] != z[1]:
 			fehler("Übersetzung", f"„{z[0]}“ widersprüchlich übersetzt")
 		quellen[z[0]] = z[1]
-	technisch = re.compile(r"^([A-Z]{1,3}|[0-9.]+|[a-z]+/[a-z.+-]+|admin|system|email|info|status|konto|ki|regel|reset|Frau|Herr|Divers)$")
+	# nicht übersetzungsbedürftig: Kürzel, Zahlen, MIME-Typen, Maßstäbe (1:500), Blattformate (A0–A4) und einige Fachwörter
+	technisch = re.compile(r"^([A-Z]{1,3}|[0-9.]+|[a-z]+/[a-z.+-]+|[0-9]+:[0-9]+|A[0-9]|admin|system|email|info|status|konto|ki|regel|reset|Frau|Herr|Divers)$")
 	fehlend = set()
 	for name, d in doctypes.items():
 		if re.search(r"(ae|oe|ue)", name) and name not in quellen:
@@ -961,13 +1014,43 @@ def paket_pruefen():
 	if os.path.isfile(beispiel):
 		sc = json_laden(beispiel, "site_config")
 		for k, v in (sc or {}).items():
-			if re.search(r"(secret|password|passwort|token|api_key|encryption_key|db_)", k, re.I) and v not in (None, "", False):
+			if not k.startswith("_") and re.search(r"(secret|password|passwort|token|api_key|encryption_key|db_|schluessel|pfeffer)", k, re.I) and v not in (None, "", False):
 				fehler("site_config", f"{k}: Beispiel darf keine Geheimnisse enthalten")
+		# Vollständigkeit: jeder Schlüssel, den die App liest (frappe.conf.get("…") bzw. _conf("…")), steht im Beispiel
+		genutzt = set()
+		for wurzel, ordner, dateien in os.walk(APP):
+			ordner[:] = [o for o in ordner if o not in ("__pycache__", "tests")]
+			for d in dateien:
+				if d.endswith(".py"):
+					inhalt = open(os.path.join(wurzel, d), encoding="utf-8").read()
+					genutzt |= set(re.findall(r"(?:\bconf\.get|\b_conf)\(\s*[\"']((?:oekoinvest|plattform|cad)_[a-z0-9_]+)[\"']", inhalt))
+					genutzt |= set(re.findall(r"^SCHALTER\w*\s*=\s*[\"']((?:oekoinvest|plattform)_[a-z0-9_]+)[\"']", inhalt, re.M))
+		fehlend = sorted(genutzt - set(sc or {}))
+		if fehlend:
+			warnung("site_config", f"site_config.beispiel.json: {len(fehlend)} genutzte Schlüssel fehlen: {', '.join(fehlend)}")
 	else:
 		warnung("Paket", "site_config.beispiel.json fehlt")
 	for datei in ("README.md", "GO-LIVE.md", "ANLEITUNG.md", "installieren.sh"):
 		if not os.path.isfile(os.path.join(BASIS, datei)):
 			warnung("Paket", f"{datei} fehlt")
+
+
+def rechte_abgleich():
+	"""Backoffice-Rechte-Matrix Python ↔ JS (Wahrheit: src/lib/plattform/rechte.js). Liefert Anzahl Bereiche oder None."""
+	if APP_REPO not in sys.path:
+		sys.path.insert(0, APP_REPO)
+	try:
+		from oekoinvest_app.plattform.tests import test_rechte_kern as T
+
+		js = T.js_matrix()
+	except Exception as e:
+		fehler("Rechte", f"Abgleich rechte.py ↔ rechte.js nicht möglich: {e}")
+		return None
+	if js is None:
+		return None
+	for a in T.abweichungen(js):
+		fehler("Rechte", f"plattform/rechte.py weicht von src/lib/plattform/rechte.js ab: {a}")
+	return len(js["matrix"])
 
 
 def json_alle_pruefen():
@@ -1011,6 +1094,8 @@ def main():
 	statistik["Workspaces"] = workspaces_pruefen(doctypes, berichte, fixtures, rollen_fixture)
 	statistik["Patches"] = patches_pruefen()
 	statistik["Übersetzungen"] = uebersetzungen_pruefen(doctypes)
+	bereiche = rechte_abgleich()
+	statistik["Rechte-Bereiche JS = Python" if bereiche is not None else "Rechte-Abgleich JS"] = bereiche if bereiche is not None else "übersprungen (ohne Node/rechte.js)"
 	statistik["Mail-Templates"] = mail_templates_pruefen(methoden, fixtures)
 	js, node = js_pruefen()
 	statistik["JS-Dateien" + ("" if node else " (ohne node --check)")] = js

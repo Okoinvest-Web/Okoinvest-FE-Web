@@ -163,7 +163,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-09-30 08:00:00.000000",
+ "modified": "2026-09-30 08:49:36.028969",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "ÖkoInvest CRM",
@@ -197,6 +197,12 @@
   },
   {
    "role": "ÖkoInvest Leser"
+  },
+  {
+   "role": "ÖkoInvest Projektleitung"
+  },
+  {
+   "role": "ÖkoInvest Energie"
   }
  ],
  "sequence_id": 5.0,

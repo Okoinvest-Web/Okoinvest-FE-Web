@@ -1,0 +1,358 @@
+{
+ "charts": [],
+ "content": "[{\"id\": \"2QUYHSpBTz\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Finanzen & Finanzierung</b></span>\", \"col\": 12}}, {\"id\": \"WZOmihsAIH\", \"type\": \"paragraph\", \"data\": {\"text\": \"<span style=\\\"color:var(--text-muted)\\\">Pacht- und Contracting-Abrechnung, Zahlungs- und Abrechnungsläufe, Klärfälle, Anlagenaktivierung und Projektkosten sowie Bankfinanzierung mit Term Sheets, Kreditverträgen und Covenant-Prüfungen. Mit ERPNext: Belege zusätzlich im Modul Buchhaltung.</span>\", \"col\": 12}}, {\"id\": \"jJEsWedP1d\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"a8vHZpNDmd\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Schnellzugriff</b></span>\", \"col\": 12}}, {\"id\": \"sMPDiAbZSS\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Klärfälle\", \"col\": 3}}, {\"id\": \"YJWSm99xMk\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Abrechnungen\", \"col\": 3}}, {\"id\": \"I90jMgUaM2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Finanzierungsfälle\", \"col\": 3}}, {\"id\": \"AAKpD7pCGe\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Provisionen erwartet/realisiert\", \"col\": 3}}, {\"id\": \"9uX3GS87yo\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"NyPFSJv1BL\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Bereiche</b></span>\", \"col\": 12}}, {\"id\": \"WIXvnUC5vM\", \"type\": \"card\", \"data\": {\"card_name\": \"Abrechnung\", \"col\": 4}}, {\"id\": \"rbE9rvdFqQ\", \"type\": \"card\", \"data\": {\"card_name\": \"Anlagen & Kosten\", \"col\": 4}}, {\"id\": \"684tJzoDcm\", \"type\": \"card\", \"data\": {\"card_name\": \"Bankfinanzierung\", \"col\": 4}}, {\"id\": \"XvCOt9ZS0k\", \"type\": \"card\", \"data\": {\"card_name\": \"Einstellungen\", \"col\": 4}}]",
+ "creation": "2026-09-30 08:49:36.028969",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "income",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "Finanzen & Finanzierung",
+ "links": [
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Abrechnung",
+   "link_count": 6,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Pachtvertrag",
+   "link_count": 0,
+   "link_to": "Plattform Pachtvertrag",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Abrechnung",
+   "link_count": 0,
+   "link_to": "Plattform Abrechnung",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Abrechnungslauf",
+   "link_count": 0,
+   "link_to": "Plattform Abrechnungslauf",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Zahlungslauf",
+   "link_count": 0,
+   "link_to": "Plattform Zahlungslauf",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Klärfall",
+   "link_count": 0,
+   "link_to": "Plattform Klaerfall",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "VPI-Wert",
+   "link_count": 0,
+   "link_to": "Plattform VPI Wert",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Anlagen & Kosten",
+   "link_count": 3,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Anlagen-Aktivierung",
+   "link_count": 0,
+   "link_to": "Plattform Anlagen Aktivierung",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kostenträger",
+   "link_count": 0,
+   "link_to": "Plattform Kostentraeger",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Projektkosten",
+   "link_count": 0,
+   "link_to": "Plattform Projektkosten",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Bankfinanzierung",
+   "link_count": 8,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Finanzierungsfall",
+   "link_count": 0,
+   "link_to": "Plattform Finanzierungsfall",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Bank",
+   "link_count": 0,
+   "link_to": "Plattform Bank",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Finanzierungsanfrage",
+   "link_count": 0,
+   "link_to": "Plattform Finanzierungsanfrage",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Term Sheet",
+   "link_count": 0,
+   "link_to": "Plattform Term Sheet",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kreditvertrag",
+   "link_count": 0,
+   "link_to": "Plattform Kreditvertrag",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Covenant-Prüfung",
+   "link_count": 0,
+   "link_to": "Plattform Covenant Pruefung",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Finanzierungsdokument",
+   "link_count": 0,
+   "link_to": "Plattform Finanzierungsdokument",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Förderprogramm",
+   "link_count": 0,
+   "link_to": "Plattform Foerderprogramm",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Einstellungen",
+   "link_count": 1,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Finanzen-Einstellungen",
+   "link_count": 0,
+   "link_to": "Plattform Finanzen Einstellungen",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-30 08:49:36.028969",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Finanzen & Finanzierung",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "role": "ÖkoInvest Transaktion"
+  },
+  {
+   "role": "ÖkoInvest Betrieb"
+  },
+  {
+   "role": "ÖkoInvest Akquise"
+  },
+  {
+   "role": "ÖkoInvest Projektleitung"
+  },
+  {
+   "role": "ÖkoInvest Leser"
+  }
+ ],
+ "sequence_id": 11.0,
+ "shortcuts": [
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": null,
+   "label": "Klärfälle",
+   "link_to": "Plattform Klaerfall",
+   "stats_filter": null,
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "format": null,
+   "label": "Abrechnungen",
+   "link_to": "Plattform Abrechnung",
+   "stats_filter": null,
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "format": null,
+   "label": "Finanzierungsfälle",
+   "link_to": "Plattform Finanzierungsfall",
+   "stats_filter": null,
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Grey",
+   "doc_view": "",
+   "format": null,
+   "label": "Provisionen erwartet/realisiert",
+   "link_to": "Provisionen Erwartet Realisiert",
+   "stats_filter": null,
+   "type": "Report",
+   "url": null
+  }
+ ],
+ "title": "Finanzen & Finanzierung"
+}

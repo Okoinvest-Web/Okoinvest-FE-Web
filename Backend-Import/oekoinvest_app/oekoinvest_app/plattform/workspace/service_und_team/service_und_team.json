@@ -1,0 +1,244 @@
+{
+ "charts": [],
+ "content": "[{\"id\": \"kxJJru4z9D\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Service & Team</b></span>\", \"col\": 12}}, {\"id\": \"vASMYnxEYX\", \"type\": \"paragraph\", \"data\": {\"text\": \"<span style=\\\"color:var(--text-muted)\\\">Elektronische Unterschrift, Termine, Service-Tickets, Wissensdatenbank sowie Mitarbeitende, Abwesenheiten und Zeiterfassung. Mit HRMS/Helpdesk: Daten zusätzlich in den jeweiligen Apps.</span>\", \"col\": 12}}, {\"id\": \"GDiQetHXXL\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"84yQKpLb6b\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Schnellzugriff</b></span>\", \"col\": 12}}, {\"id\": \"fFoEmJuE20\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Termine\", \"col\": 3}}, {\"id\": \"iXex84zRlJ\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tickets\", \"col\": 3}}, {\"id\": \"cZx0VFyn8A\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Wissensdatenbank\", \"col\": 3}}, {\"id\": \"Iuk8HAz5hu\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Signaturvorgänge\", \"col\": 3}}, {\"id\": \"o5wlzsv8Jk\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"oXF4bGzAKo\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Bereiche</b></span>\", \"col\": 12}}, {\"id\": \"QpLdRgjZgW\", \"type\": \"card\", \"data\": {\"card_name\": \"Signatur\", \"col\": 4}}, {\"id\": \"vfcyg0Bakx\", \"type\": \"card\", \"data\": {\"card_name\": \"Termine & Service\", \"col\": 4}}, {\"id\": \"e5Rvbq8PxS\", \"type\": \"card\", \"data\": {\"card_name\": \"Team & HR\", \"col\": 4}}]",
+ "creation": "2026-09-30 08:49:36.028969",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "users",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "Service & Team",
+ "links": [
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Signatur",
+   "link_count": 2,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Signaturvorgang",
+   "link_count": 0,
+   "link_to": "Plattform Signaturvorgang",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Unterzeichner",
+   "link_count": 0,
+   "link_to": "Plattform Signatur Unterzeichner",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Termine & Service",
+   "link_count": 4,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Termin",
+   "link_count": 0,
+   "link_to": "Plattform Termin",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Ticket",
+   "link_count": 0,
+   "link_to": "Plattform Ticket",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Wissensartikel",
+   "link_count": 0,
+   "link_to": "Plattform Wissensartikel",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Service-Einstellungen",
+   "link_count": 0,
+   "link_to": "Plattform Service Einstellungen",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Team & HR",
+   "link_count": 3,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Mitarbeiter",
+   "link_count": 0,
+   "link_to": "Plattform Mitarbeiter",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Abwesenheit",
+   "link_count": 0,
+   "link_to": "Plattform Abwesenheit",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Zeiteintrag",
+   "link_count": 0,
+   "link_to": "Plattform Zeiteintrag",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-30 08:49:36.028969",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Service & Team",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "role": "ÖkoInvest Akquise"
+  },
+  {
+   "role": "ÖkoInvest Transaktion"
+  },
+  {
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "role": "ÖkoInvest Betrieb"
+  },
+  {
+   "role": "ÖkoInvest Compliance"
+  },
+  {
+   "role": "ÖkoInvest Projektleitung"
+  },
+  {
+   "role": "ÖkoInvest Energie"
+  },
+  {
+   "role": "ÖkoInvest Leser"
+  }
+ ],
+ "sequence_id": 12.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": null,
+   "label": "Termine",
+   "link_to": "Plattform Termin",
+   "stats_filter": null,
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": null,
+   "label": "Tickets",
+   "link_to": "Plattform Ticket",
+   "stats_filter": null,
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "format": null,
+   "label": "Wissensdatenbank",
+   "link_to": "Plattform Wissensartikel",
+   "stats_filter": null,
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "format": null,
+   "label": "Signaturvorgänge",
+   "link_to": "Plattform Signaturvorgang",
+   "stats_filter": null,
+   "type": "DocType",
+   "url": null
+  }
+ ],
+ "title": "Service & Team"
+}

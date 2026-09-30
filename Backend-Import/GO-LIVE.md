@@ -8,7 +8,9 @@ Reihenfolge von oben nach unten. Jede Zeile abhaken und mit Datum/Kürzel verseh
 
 ## 0. Paket prüfen (vor jeder Auslieferung)
 
-- [ ] `python Backend-Import/werkzeuge/pruefen.py` → **0 Fehler** (Warnungen durchsehen)
+- [ ] `python Backend-Import/werkzeuge/pruefen.py` → **0 Fehler, 0 Warnungen** (prüft u. a. Rechte-Matrix `rechte.py` = `src/lib/plattform/rechte.js`,
+      Guards der ERPNext-Hooks, Vollständigkeit von `site_config.beispiel.json`)
+- [ ] Kern-Tests ohne Bench: `cd Backend-Import/oekoinvest_app && python -m unittest discover -s oekoinvest_app/plattform/tests -p "test_*_kern.py" -t .`
 - [ ] `python Backend-Import/werkzeuge/bauen.py` → „0 Druckformat(e) aktualisiert“ (sonst Änderungen committen)
 - [ ] `python Backend-Import/werkzeuge/desk_rechte.py` → „0 DocType(s) abweichend“
 - [ ] Texte juristisch freigegeben: Klick-NDA (`src/lib/plattform/konstanten.js` = `plattform/druck.py`), Provisionsvereinbarung,
@@ -38,6 +40,42 @@ Reihenfolge von oben nach unten. Jede Zeile abhaken und mit Datum/Kürzel verseh
 - [ ] Ausgabe „Kurzbericht“ prüfen: Einrichtung-Version 1, Sprache de, Zeitzone Europe/Vienna, 2FA 1, keine Desk-Rollen ohne 2FA
 - [ ] `encryption_key` aus `sites/<site>/site_config.json` getrennt sichern (ohne ihn sind TOTP-Geheimnisse und Passwort-Felder verloren)
 - [ ] `developer_mode` 0, `allow_tests` false (Produktion)
+- [ ] **Einmalig** nach der Installation: Spotpreis-Historie der Energiebeschaffung laden (Day-Ahead DE-LU/AT, rund 400 Tage,
+      Energy-Charts, CC BY 4.0; ausgehendes HTTPS zu `api.energy-charts.info` nötig, dauert einige Minuten):
+      `bench --site <site> execute oekoinvest_app.plattform.energie_quellen.historie_laden`
+      (optional `--kwargs "{'tage': 400}"`). Danach übernimmt der tägliche Job `spot_taeglich`; Kontrolle: Desk → „Plattform Marktpreis Spot“
+      enthält Werte beider Zonen. Nicht wiederholt ausführen (lädt alles erneut); `oekoinvest_spot_abruf: 0` schaltet den Abruf ab.
+
+## 3a. Geheimnisse, Dienste und Sonderfälle
+
+Alle Geheimnisse nur per `bench --site <site> set-config <schluessel> <wert>` setzen (landet in `sites/<site>/site_config.json`,
+nicht im Repository), zusätzlich im Passwortmanager ablegen. `site_config.beispiel.json` enthält nur Platzhalter (`null`).
+
+- [ ] **`oekoinvest_sperrliste_pfeffer`** (geheim, Pflicht vor der ersten Akquise-Kampagne): `openssl rand -hex 32`.
+      Die Werbe-Sperrliste (Widersprüche nach Art. 21 DSGVO) speichert nur Hashes mit diesem Pfeffer – **den Wert nie ändern**,
+      sonst greifen gespeicherte Widersprüche nicht mehr und Widersprechende würden erneut angeschrieben. Ohne Wert gilt ein Demo-Pfeffer.
+      Nach Serververlust denselben Wert aus dem Passwortmanager wieder setzen.
+- [ ] **`oekoinvest_kyc_schluessel`** (geheim): Schlüssel der verschlüsselten KYC-Ablage (64 Hex-Zeichen, z. B. `openssl rand -hex 32`),
+      getrennt vom Backup sichern, nie ändern (sonst sind abgelegte Unterlagen nicht mehr lesbar). `oekoinvest_kyc_gating` = `alle`.
+- [ ] **CAD-Konverter** (Planungsdateien DWG → DXF, `dienste/cad-konverter`): Dienst nur im internen Netz betreiben;
+      `cad_konverter_url` (z. B. `http://cad-konverter:8080`) und `cad_konverter_token` (≥ 32 Zeichen, `openssl rand -hex 32`, gleicher Wert
+      wie `KONVERTER_TOKEN` des Dienstes) setzen. Ohne beide Werte zeigt das Portal „Vorschau nach Konvertierung“.
+- [ ] **LibreDWG-Prüfsumme** vor dem ersten Build: Tarball `libredwg-<version>.tar.xz` samt `.sig` von `https://ftp.gnu.org/gnu/libredwg/`
+      laden, GPG-Signatur gegen den Schlüssel der GNU-Maintainer prüfen (`gpg --verify libredwg-<version>.tar.xz.sig`), dann
+      `sha256sum` bilden und als `LIBREDWG_SHA256` beim Build übergeben (`LIBREDWG_SHA256=<sha256> docker compose up -d --build`).
+      Ohne Wert warnt der Build nur – in Produktion nicht zulässig. ODA File Converter nur nach Lizenzprüfung.
+- [ ] **Identitäts-Webhook** (Online-Identifizierung, einzige `allow_guest`-Ausnahme der App):
+      `POST https://backend.<domain>/api/method/oekoinvest_app.plattform.api.dienste.webhook_identitaet?anbieter=<anbieter>`.
+      Der Endpunkt prüft die **HMAC-SHA256-Signatur** über den Roh-Body zeitkonstant (Geheimnis `oekoinvest_ident_webhook_secret`,
+      ≥ 16 Zeichen, beim Anbieter hinterlegen), antwortet bei falscher Signatur ohne Details mit 401, ist ratenbegrenzt
+      (120/min je IP) und idempotent (Ereignis-ID), begrenzt den Body auf 256 KB und ändert **nie** den KYC-Status (Ergebnis nur als
+      Hinweis am KYC-Fall; die Entscheidung trifft Compliance). nginx: nur diesen Pfad öffentlich (bzw. für die IP-Bereiche des Anbieters)
+      freigeben, die übrige Plattform-API weiter nur für den Website-Server. `werkzeuge/pruefen.py` lässt `allow_guest` ausschließlich hier zu
+      (mit `@rate_limit` und Signaturprüfung). Weitere Werte: `oekoinvest_ident_anbieter`, `_api_url`, `_api_key`, `_api_secret`, `_stufe`.
+- [ ] Register/Bonität: Zefix-Zugang (CH), Vermittler für Firmenbuch/Handelsregister, Bonitätsanbieter – Zugangsdaten nur per `set-config`;
+      `oekoinvest_dienste_demo` in Produktion `false`.
+- [ ] Flächen ohne Eigentümerkonto (Akquise-Übernahme aus den Geodaten) sind vorgesehen: Ansichten, Druck und Nachrichten vertragen sie;
+      Pachtverträge lassen sich erst anlegen, wenn der Eigentümer registriert und der Fläche zugeordnet ist.
 
 ## 4. Backups und Restore-Test
 
@@ -72,7 +110,9 @@ Reihenfolge von oben nach unten. Jede Zeile abhaken und mit Datum/Kürzel verseh
 
 ## 8. Benutzer, Rollen, 2FA
 
-- [ ] Rollenprofile vorhanden (ÖkoInvest Leitung, Akquise, Transaktion, Buchhaltung, Betrieb, Compliance, Nur lesen, API-Benutzer, Anlagen-Dienst)
+- [ ] Rollenprofile vorhanden (ÖkoInvest Leitung, Akquise, Transaktion, Buchhaltung, Betrieb, Compliance, Projektleitung, Energie, Nur lesen, API-Benutzer, Anlagen-Dienst)
+- [ ] Workspaces je Rollenprofil sichtbar: Cockpit, Akquise & Flächen (inkl. Geodaten, Kampagnen, Gemeinde-Screening), Projektbörse & Deals,
+      Projektentwicklung (inkl. Planung & Kosten), Grundbuch & Closing, Energiebeschaffung, Finanzen & Finanzierung, Service & Team, CRM, Compliance (KYC)
 - [ ] Desk-Benutzer je Person mit genau einem Rollenprofil (`installation.desk_benutzer_anlegen`), keine Sammelkonten
 - [ ] 2FA: System Settings „Enable Two Factor Auth“ an, Methode OTP-App; jeder Desk-Benutzer hat die Einrichtung abgeschlossen
 - [ ] `System Manager` nur für 1–2 benannte Administratoren; Administrator-Konto nicht für die Tagesarbeit

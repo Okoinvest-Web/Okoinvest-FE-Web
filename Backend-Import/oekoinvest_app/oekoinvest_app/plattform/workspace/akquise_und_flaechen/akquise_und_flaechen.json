@@ -9,7 +9,7 @@
    "label": "Anfragen nach Typ"
   }
  ],
- "content": "[{\"id\": \"UF0eWIXiiQ\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Akquise & Flächen</b></span>\", \"col\": 12}}, {\"id\": \"E8JkqH3MB9\", \"type\": \"paragraph\", \"data\": {\"text\": \"<span style=\\\"color:var(--text-muted)\\\">Anfragen aus der Website, Flächenakquise und Standortprüfung bis zum Pachtvertrag.</span>\", \"col\": 12}}, {\"id\": \"n7IWUSmTtz\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Unbearbeitete Anfragen\", \"col\": 3}}, {\"id\": \"QPxC5HChpo\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Anfragen diesen Monat\", \"col\": 3}}, {\"id\": \"evbLJoLoae\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Flächen in Pipeline\", \"col\": 3}}, {\"id\": \"TOdoe5c3ve\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Hektar in Pipeline\", \"col\": 3}}, {\"id\": \"GprQFnIiU7\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"4KKEpYEZAm\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Schnellzugriff</b></span>\", \"col\": 12}}, {\"id\": \"ggQBwBAD3U\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Anfragen\", \"col\": 3}}, {\"id\": \"dRPPgdzUvZ\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Flächen\", \"col\": 3}}, {\"id\": \"3gpmmICiBl\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Pipeline Flächen\", \"col\": 3}}, {\"id\": \"rDp37eCZ32\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"JgdPI1af7W\", \"type\": \"chart\", \"data\": {\"chart_name\": \"ÖkoInvest Flächen nach Status\", \"col\": 6}}, {\"id\": \"2pkAFEn3z5\", \"type\": \"chart\", \"data\": {\"chart_name\": \"ÖkoInvest Anfragen nach Typ\", \"col\": 6}}, {\"id\": \"dkyayq7YYD\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"sBS9UYJQTF\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Bereiche</b></span>\", \"col\": 12}}, {\"id\": \"jmsn9dLVId\", \"type\": \"card\", \"data\": {\"card_name\": \"Anfragen\", \"col\": 4}}, {\"id\": \"VuddLEG62H\", \"type\": \"card\", \"data\": {\"card_name\": \"Flächen\", \"col\": 4}}, {\"id\": \"kd9Gf2leMe\", \"type\": \"card\", \"data\": {\"card_name\": \"Auswertung\", \"col\": 4}}]",
+ "content": "[{\"id\": \"UF0eWIXiiQ\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Akquise & Flächen</b></span>\", \"col\": 12}}, {\"id\": \"E8JkqH3MB9\", \"type\": \"paragraph\", \"data\": {\"text\": \"<span style=\\\"color:var(--text-muted)\\\">Anfragen aus der Website, Flächenakquise und Standortprüfung bis zum Pachtvertrag.</span>\", \"col\": 12}}, {\"id\": \"n7IWUSmTtz\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Unbearbeitete Anfragen\", \"col\": 3}}, {\"id\": \"QPxC5HChpo\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Anfragen diesen Monat\", \"col\": 3}}, {\"id\": \"evbLJoLoae\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Flächen in Pipeline\", \"col\": 3}}, {\"id\": \"TOdoe5c3ve\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Hektar in Pipeline\", \"col\": 3}}, {\"id\": \"GprQFnIiU7\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"4KKEpYEZAm\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Schnellzugriff</b></span>\", \"col\": 12}}, {\"id\": \"ggQBwBAD3U\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Anfragen\", \"col\": 3}}, {\"id\": \"dRPPgdzUvZ\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Flächen\", \"col\": 3}}, {\"id\": \"3gpmmICiBl\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Pipeline Flächen\", \"col\": 3}}, {\"id\": \"02j5Tn74KI\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Akquise-Ziele offen\", \"col\": 3}}, {\"id\": \"dkT7GIqbR6\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Kampagnen aktiv\", \"col\": 3}}, {\"id\": \"7vMojLKmtM\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Gemeinde-Screening\", \"col\": 3}}, {\"id\": \"rDp37eCZ32\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"JgdPI1af7W\", \"type\": \"chart\", \"data\": {\"chart_name\": \"ÖkoInvest Flächen nach Status\", \"col\": 6}}, {\"id\": \"2pkAFEn3z5\", \"type\": \"chart\", \"data\": {\"chart_name\": \"ÖkoInvest Anfragen nach Typ\", \"col\": 6}}, {\"id\": \"dkyayq7YYD\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"sBS9UYJQTF\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Bereiche</b></span>\", \"col\": 12}}, {\"id\": \"jmsn9dLVId\", \"type\": \"card\", \"data\": {\"card_name\": \"Anfragen\", \"col\": 4}}, {\"id\": \"VuddLEG62H\", \"type\": \"card\", \"data\": {\"card_name\": \"Flächen\", \"col\": 4}}, {\"id\": \"kd9Gf2leMe\", \"type\": \"card\", \"data\": {\"card_name\": \"Auswertung\", \"col\": 4}}, {\"id\": \"aSeZGUGz8S\", \"type\": \"card\", \"data\": {\"card_name\": \"Geodaten & Akquise-Karte\", \"col\": 4}}, {\"id\": \"nG0dwjiMEo\", \"type\": \"card\", \"data\": {\"card_name\": \"Kampagnen\", \"col\": 4}}, {\"id\": \"FhE7V9A5oA\", \"type\": \"card\", \"data\": {\"card_name\": \"Gemeinde-Screening\", \"col\": 4}}]",
  "creation": "2026-09-30 08:00:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -117,9 +117,117 @@
    "onboard": 0,
    "only_for": "",
    "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Geodaten & Akquise-Karte",
+   "link_count": 2,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Akquise-Ziel",
+   "link_count": 0,
+   "link_to": "Plattform Akquise Ziel",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Netzkapazität",
+   "link_count": 0,
+   "link_to": "Plattform Netzkapazitaet",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kampagnen",
+   "link_count": 3,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kampagne",
+   "link_count": 0,
+   "link_to": "Plattform Kampagne",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kampagnenziel (Serienbrief)",
+   "link_count": 0,
+   "link_to": "Plattform Kampagnenziel",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Sperrliste (Widerspruch)",
+   "link_count": 0,
+   "link_to": "Plattform Sperrliste",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Gemeinde-Screening",
+   "link_count": 1,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Gemeinde-Potenzial",
+   "link_count": 0,
+   "link_to": "Plattform Gemeinde Potenzial",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
   }
  ],
- "modified": "2026-09-30 08:00:00.000000",
+ "modified": "2026-09-30 08:49:36.028969",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Akquise & Flächen",
@@ -161,6 +269,9 @@
   },
   {
    "role": "ÖkoInvest Compliance"
+  },
+  {
+   "role": "ÖkoInvest Projektleitung"
   }
  ],
  "sequence_id": 2.0,
@@ -194,6 +305,36 @@
    "report_ref_doctype": "Plattform Flaeche",
    "stats_filter": null,
    "type": "Report",
+   "url": null
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "{} offen",
+   "label": "Akquise-Ziele offen",
+   "link_to": "Plattform Akquise Ziel",
+   "stats_filter": "[[\"Plattform Akquise Ziel\", \"status\", \"=\", \"offen\", false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": "{} aktiv",
+   "label": "Kampagnen aktiv",
+   "link_to": "Plattform Kampagne",
+   "stats_filter": "[[\"Plattform Kampagne\", \"status\", \"=\", \"aktiv\", false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "format": null,
+   "label": "Gemeinde-Screening",
+   "link_to": "Plattform Gemeinde Potenzial",
+   "stats_filter": null,
+   "type": "DocType",
    "url": null
   }
  ],

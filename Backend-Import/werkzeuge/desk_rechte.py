@@ -250,6 +250,17 @@ MATRIX.update({
 	"Plattform Gemeinde Potenzial": {ADMIN: S, AKQUISE: S},
 })
 
+# Fachprüfung Kapitalseite (plattform/api/fach.py): Abnahmestellen und Lastgänge der Unternehmen (Reststrom-Pool) nutzt die
+# Energiebeschaffung (Kundenanalyse) – im Desk nur lesen wie Bereich „energie“ (Pflege nur über das Portal, Rolle UND Eigentum).
+# Beteiligungs-Vormerkungen enthalten die Bestätigungs-IP → nur Leitung/Compliance lesen. Bewertungsszenarien der
+# Investoren/Anbieter sind privat (wie Finanzierungsszenario) → nur System Manager.
+MATRIX.update({
+	"Plattform Abnahmestelle": {ADMIN: L, ENERGIE: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform Lastgang": {ADMIN: L, ENERGIE: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform Beteiligung Interesse": {ADMIN: L, COMPLIANCE: L},
+	"Plattform Bewertung Szenario": {},
+})
+
 SCHLUESSEL = ["create", "delete", "email", "export", "print", "read", "report", "share", "write"]
 
 

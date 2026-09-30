@@ -152,5 +152,19 @@
     "role": "ÖkoInvest Energie"
    }
   ]
+ },
+ {
+  "doctype": "Role Profile",
+  "name": "ÖkoInvest Projektleitung",
+  "role_profile": "ÖkoInvest Projektleitung",
+  "roles": [
+   {
+    "doctype": "Has Role",
+    "parent": "ÖkoInvest Projektleitung",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "ÖkoInvest Projektleitung"
+   }
+  ]
  }
 ]

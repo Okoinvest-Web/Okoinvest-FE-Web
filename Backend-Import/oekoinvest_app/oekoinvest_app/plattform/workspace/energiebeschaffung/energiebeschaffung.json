@@ -1,0 +1,304 @@
+{
+ "charts": [],
+ "content": "[{\"id\": \"YP0ar3fDw2\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Energiebeschaffung</b></span>\", \"col\": 12}}, {\"id\": \"UTHMsTEopZ\", \"type\": \"paragraph\", \"data\": {\"text\": \"<span style=\\\"color:var(--text-muted)\\\">Handelsdesk (Spot und Terminkurve), Beschaffungstranchen des Reststrom-Pools, Versorger-Ausschreibungen mit Angeboten, Lieferantenstamm, Vollmachten sowie Abnahmestellen und Lastgänge der Unternehmen. Pflege über das Portal-Backoffice.</span>\", \"col\": 12}}, {\"id\": \"Pe4a18JLzj\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"SgT2nvWD7N\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Schnellzugriff</b></span>\", \"col\": 12}}, {\"id\": \"gsMmWj548f\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Ausschreibungen laufend\", \"col\": 3}}, {\"id\": \"4CnsW0Hasc\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Beschaffungstranchen\", \"col\": 3}}, {\"id\": \"xzyDraherF\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Terminkurve\", \"col\": 3}}, {\"id\": \"FwxhJrACk9\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Lieferanten\", \"col\": 3}}, {\"id\": \"WvYKyfpwRn\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"y219jJIZJM\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Bereiche</b></span>\", \"col\": 12}}, {\"id\": \"wcvXCwrFzh\", \"type\": \"card\", \"data\": {\"card_name\": \"Markt & Handel\", \"col\": 4}}, {\"id\": \"ICC3Xv3gHk\", \"type\": \"card\", \"data\": {\"card_name\": \"Ausschreibungen\", \"col\": 4}}, {\"id\": \"SP1UikNfqJ\", \"type\": \"card\", \"data\": {\"card_name\": \"Lieferanten & Vollmachten\", \"col\": 4}}, {\"id\": \"AWO7ORUa54\", \"type\": \"card\", \"data\": {\"card_name\": \"Kunden (Reststrom-Pool)\", \"col\": 4}}, {\"id\": \"GtKOU5hnjo\", \"type\": \"card\", \"data\": {\"card_name\": \"Einstellungen\", \"col\": 4}}]",
+ "creation": "2026-09-30 08:49:36.028969",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "support",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "Energiebeschaffung",
+ "links": [
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Markt & Handel",
+   "link_count": 4,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Spotpreis",
+   "link_count": 0,
+   "link_to": "Plattform Marktpreis Spot",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Terminpreis",
+   "link_count": 0,
+   "link_to": "Plattform Marktpreis Termin",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Beschaffungstranche",
+   "link_count": 0,
+   "link_to": "Plattform Beschaffungstranche",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Energievertrag",
+   "link_count": 0,
+   "link_to": "Plattform Energie Vertrag",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Ausschreibungen",
+   "link_count": 3,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Ausschreibung",
+   "link_count": 0,
+   "link_to": "Plattform Ausschreibung",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Lieferantenangebot",
+   "link_count": 0,
+   "link_to": "Plattform Lieferantenangebot",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Wechselanalyse",
+   "link_count": 0,
+   "link_to": "Plattform Wechselanalyse",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Lieferanten & Vollmachten",
+   "link_count": 3,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Lieferant",
+   "link_count": 0,
+   "link_to": "Plattform Lieferant",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Lieferanten-Einladung",
+   "link_count": 0,
+   "link_to": "Plattform Lieferant Einladung",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Beschaffungsvollmacht",
+   "link_count": 0,
+   "link_to": "Plattform Beschaffungsvollmacht",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kunden (Reststrom-Pool)",
+   "link_count": 2,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Abnahmestelle",
+   "link_count": 0,
+   "link_to": "Plattform Abnahmestelle",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Lastgang",
+   "link_count": 0,
+   "link_to": "Plattform Lastgang",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Einstellungen",
+   "link_count": 1,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Energie-Einstellungen",
+   "link_count": 0,
+   "link_to": "Plattform Energie Einstellungen",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-30 08:49:36.028969",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Energiebeschaffung",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "role": "ÖkoInvest Energie"
+  },
+  {
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "role": "ÖkoInvest Compliance"
+  },
+  {
+   "role": "ÖkoInvest Leser"
+  }
+ ],
+ "sequence_id": 10.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": "{} laufend",
+   "label": "Ausschreibungen laufend",
+   "link_to": "Plattform Ausschreibung",
+   "stats_filter": "[[\"Plattform Ausschreibung\", \"status\", \"in\", [\"laufend\", \"auswertung\", \"freigabe\"], false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "format": null,
+   "label": "Beschaffungstranchen",
+   "link_to": "Plattform Beschaffungstranche",
+   "stats_filter": null,
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "format": null,
+   "label": "Terminkurve",
+   "link_to": "Plattform Marktpreis Termin",
+   "stats_filter": null,
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "format": null,
+   "label": "Lieferanten",
+   "link_to": "Plattform Lieferant",
+   "stats_filter": null,
+   "type": "DocType",
+   "url": null
+  }
+ ],
+ "title": "Energiebeschaffung"
+}

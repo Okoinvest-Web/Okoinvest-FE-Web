@@ -1,0 +1,367 @@
+{
+ "charts": [],
+ "content": "[{\"id\": \"Dftem8DRgB\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Projektentwicklung</b></span>\", \"col\": 12}}, {\"id\": \"XFaX58RwT6\", \"type\": \"paragraph\", \"data\": {\"text\": \"<span style=\\\"color:var(--text-muted)\\\">Entwicklungsprojekte mit Meilensteinen, Risiken und Entscheidungen, Gutachter, Planungsdateien (CAD) und Projektkostenkalkulation. Freigaben, Uploads und Festschreiben laufen über das Portal-Backoffice (Nachweis).</span>\", \"col\": 12}}, {\"id\": \"VfJvd19z3k\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"jCmhZQq5DB\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Schnellzugriff</b></span>\", \"col\": 12}}, {\"id\": \"PIwBCXRM1q\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Entwicklungsprojekte aktiv\", \"col\": 3}}, {\"id\": \"6qgKNcYB7v\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Planversionen in Prüfung\", \"col\": 3}}, {\"id\": \"5AQX7lZJLb\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Kostenkalkulationen\", \"col\": 3}}, {\"id\": \"elSiw23XKH\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Entwicklungspipeline\", \"col\": 3}}, {\"id\": \"7BMAjBqi5I\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"aMc4DEkWBC\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Bereiche</b></span>\", \"col\": 12}}, {\"id\": \"WMtI5aeRr0\", \"type\": \"card\", \"data\": {\"card_name\": \"Entwicklung\", \"col\": 4}}, {\"id\": \"7s76N9NE0P\", \"type\": \"card\", \"data\": {\"card_name\": \"Freigaben & Unterlagen\", \"col\": 4}}, {\"id\": \"ebiPO70lmc\", \"type\": \"card\", \"data\": {\"card_name\": \"Gutachter\", \"col\": 4}}, {\"id\": \"UruVJIsv4z\", \"type\": \"card\", \"data\": {\"card_name\": \"Planung & Kosten\", \"col\": 4}}, {\"id\": \"5QDerKvFSW\", \"type\": \"card\", \"data\": {\"card_name\": \"Auswertung\", \"col\": 4}}]",
+ "creation": "2026-09-30 08:49:36.028969",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "project",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "Projektentwicklung",
+ "links": [
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Entwicklung",
+   "link_count": 6,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Entwicklungsprojekt",
+   "link_count": 0,
+   "link_to": "Plattform Entwicklungsprojekt",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Meilenstein",
+   "link_count": 0,
+   "link_to": "Plattform Entwicklung Meilenstein",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Risiko",
+   "link_count": 0,
+   "link_to": "Plattform Entwicklung Risiko",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Entscheidung",
+   "link_count": 0,
+   "link_to": "Plattform Entwicklung Entscheidung",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Projektfläche",
+   "link_count": 0,
+   "link_to": "Plattform Projektflaeche",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kontakt",
+   "link_count": 0,
+   "link_to": "Plattform Entwicklung Kontakt",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Freigaben & Unterlagen",
+   "link_count": 4,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Freigabe (Co-Development)",
+   "link_count": 0,
+   "link_to": "Plattform Entwicklung Freigabe",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Dokument",
+   "link_count": 0,
+   "link_to": "Plattform Entwicklung Dokument",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Rückfrage",
+   "link_count": 0,
+   "link_to": "Plattform Entwicklung Rueckfrage",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Meilenstein-Vorlage",
+   "link_count": 0,
+   "link_to": "Plattform Meilenstein Vorlage",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Gutachter",
+   "link_count": 2,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Gutachter-Profil",
+   "link_count": 0,
+   "link_to": "Plattform Gutachter Profil",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Gutachter-Einladung",
+   "link_count": 0,
+   "link_to": "Plattform Gutachter Einladung",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Planung & Kosten",
+   "link_count": 5,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Planunterlage",
+   "link_count": 0,
+   "link_to": "Plattform Planunterlage",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Planversion",
+   "link_count": 0,
+   "link_to": "Plattform Planversion",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kostenkalkulation",
+   "link_count": 0,
+   "link_to": "Plattform Kostenkalkulation",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kostenstand",
+   "link_count": 0,
+   "link_to": "Plattform Kostenstand",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Budgetposition",
+   "link_count": 0,
+   "link_to": "Plattform Budgetposition",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Auswertung",
+   "link_count": 1,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Entwicklungspipeline",
+   "link_count": 0,
+   "link_to": "Entwicklungspipeline",
+   "link_type": "Report",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-30 08:49:36.028969",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Projektentwicklung",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "role": "ÖkoInvest Projektleitung"
+  },
+  {
+   "role": "ÖkoInvest Akquise"
+  },
+  {
+   "role": "ÖkoInvest Transaktion"
+  },
+  {
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "role": "ÖkoInvest Leser"
+  }
+ ],
+ "sequence_id": 8.0,
+ "shortcuts": [
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "{} aktiv",
+   "label": "Entwicklungsprojekte aktiv",
+   "link_to": "Plattform Entwicklungsprojekt",
+   "stats_filter": "[[\"Plattform Entwicklungsprojekt\", \"status\", \"=\", \"aktiv\", false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "{} in Prüfung",
+   "label": "Planversionen in Prüfung",
+   "link_to": "Plattform Planversion",
+   "stats_filter": "[[\"Plattform Planversion\", \"status\", \"=\", \"pruefung\", false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "format": null,
+   "label": "Kostenkalkulationen",
+   "link_to": "Plattform Kostenkalkulation",
+   "stats_filter": null,
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Grey",
+   "doc_view": "",
+   "format": null,
+   "label": "Entwicklungspipeline",
+   "link_to": "Entwicklungspipeline",
+   "stats_filter": null,
+   "type": "Report",
+   "url": null
+  }
+ ],
+ "title": "Projektentwicklung"
+}

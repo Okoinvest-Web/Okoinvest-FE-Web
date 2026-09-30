@@ -3,7 +3,7 @@ import { ArrowLeft, Download, FileSpreadsheet, FileText, Gauge, Handshake, Landm
 import { Angaben, Badge, Hinweis, Karte, SeitenKopf } from "@/components/Portal/ui";
 import Reiter from "@/components/Portal/Anlagen/Reiter";
 import { Wert } from "@/components/Portal/Anlagen/teile";
-import { AmpelBadge, eur, teur, pct, fx, datumDe, HINWEIS_BERATUNG } from "@/components/Portal/Finanzierung/teile";
+import { AmpelBadge, eur, teur, pct, fx, datumDe, HINWEIS_BERATUNG, capexQuelleText } from "@/components/Portal/Finanzierung/teile";
 import { AnfrageKnoepfe, AnfrageSenden, CpSchalter, DokumentHochladen, Entscheidung, GeschaeftsmodellRechner, KnopfAktion, KreditvertragFormular, ModellBearbeiten, PaketFreigabe, TermsheetFormular } from "@/components/Portal/Finanzierung/Aktionen";
 import { portalNutzer, laden } from "@/lib/plattform/server/seite";
 import { finanzierungBackend } from "@/lib/plattform/backend/finanzierung";
@@ -40,7 +40,7 @@ export default async function FinanzierungsFallSeite({ params, searchParams }) {
     inhalt = (
       <div className="space-y-6">
         <section aria-label="Kennzahlen" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-          <Wert ton="dunkel" label="Gesamtinvestition" wert={teur(e.capex)} hinweis={`${Math.round(p.capexProKwp)} €/kWp`} />
+          <Wert ton="dunkel" label="Gesamtinvestition" wert={teur(e.capex)} hinweis={[`${Math.round(p.capexProKwp)} €/kWp`, capexQuelleText(f.capexQuelle)].filter(Boolean).join(" · ")} />
           <Wert label="Finanzierungsbedarf" wert={teur(f.betragWunsch)} />
           <Wert label="Projekt-IRR (P50)" wert={pct(p.projektIrr)} hinweis={`P90 ${pct(p.projektIrrP90)}`} />
           <Wert label="NPV (WACC)" wert={teur(p.npv)} />

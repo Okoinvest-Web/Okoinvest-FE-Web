@@ -23,8 +23,8 @@ from oekoinvest_app.plattform import validierung as v
 from oekoinvest_app.plattform.benachrichtigung import aktive_admins
 from oekoinvest_app.plattform.benachrichtigung import anlegen as benachrichtigen
 from oekoinvest_app.plattform.finanzierung_kern import (
-	BANKENPAKET, BANKENPAKET_IDS, CP_STANDARD, GESCHAEFTSMODELLE, FinanzierungFehler, all_in_zins, covenant_pruefung,
-	monats_cfads, termsheet_bereinigen, tilgungsplan,
+	BANKENPAKET, BANKENPAKET_IDS, CP_STANDARD, GESCHAEFTSMODELLE, FinanzierungFehler, all_in_zins, capex_quelle, covenant_pruefung,
+	kalkulation_kurz, monats_cfads, termsheet_bereinigen, tilgungsplan,
 )
 from oekoinvest_app.plattform.kern import (
 	als_json, aus_json, iso, ist_admin, konflikt, name_von, nicht_angemeldet, nicht_gefunden, nutzer, protokoll, sha256, ungueltig, verboten,
@@ -179,8 +179,16 @@ def _bezug(f):
 FALL_LABEL = {"vorbereitung": "Vorbereitung", "angefragt": "Banken angefragt", "termsheets": "Term Sheets liegen vor", "entschieden": "Bank ausgewählt", "vertrag": "Kreditvertrag unterzeichnet", "auszahlung": "Ausgezahlt / Betrieb", "abgebrochen": "Abgebrochen"}
 
 
+def _kalkulation_kurz(projekt_id):
+	"""Übergebener Stand der Projektkostenkalkulation eines Entwicklungsprojekts (Plattform Kostenkalkulation.uebergabe) – oder None."""
+	if not projekt_id or not frappe.db.exists("DocType", "Plattform Kostenkalkulation"):
+		return None
+	return kalkulation_kurz(aus_json(frappe.db.get_value("Plattform Kostenkalkulation", {"projekt_id": projekt_id}, "uebergabe"), None))
+
+
 def _fall_json(f, voll=False):
 	e = aus_json(f.eingaben, {}) or {}
+	quelle = e.pop("_capexQuelle", None)  # Herkunft des Capex (im JSON der Eingaben mitgeführt, nicht Teil des Financial Model)
 	cov = aus_json(f.covenant, None)
 	gm = aus_json(f.geschaeftsmodell_detail, None)
 	out = {
@@ -190,6 +198,7 @@ def _fall_json(f, voll=False):
 		"covenant": {"ampel": cov.get("ampel"), "letzte": cov.get("letzte"), "llcr": cov.get("llcr"), "geprueftAm": cov.get("geprueftAm")} if cov else None,
 		"kreditvertrag": _kv_json(f), "reporting": {"naechsteFrist": str(f.reporting_frist or ""), "zuletzt": iso(f.reporting_zuletzt), "gemahnt": bool(cint(f.reporting_gemahnt))} if f.reporting_frist else None,
 		"erstelltAm": iso(f.creation), "geaendertAm": iso(f.modified),
+		"capexQuelle": quelle,  # { art: kostenkalkulation|standard|manuell, stand, standLabel, am, finanzierungsbedarf }
 	}
 	if not voll:
 		return out
@@ -374,7 +383,7 @@ def auswahl(als_benutzer=None):
 	ent = frappe.get_all("Plattform Entwicklungsprojekt", filters={"status": ["!=", "abgebrochen"]}, fields=["name", "titel", "mwp", "land", "typ"], limit_page_length=500) if frappe.db.exists("DocType", "Plattform Entwicklungsprojekt") else []
 	anl = frappe.get_all("Plattform Anlage", filters={"kwp": [">", 0]}, fields=["name", "kwp", "land", "typ"], limit_page_length=500)
 	return {
-		"entwicklung": [{"id": x.name, "titel": x.titel, "mwp": flt(x.mwp), "land": x.land, "typ": x.typ} for x in ent],
+		"entwicklung": [{"id": x.name, "titel": x.titel, "mwp": flt(x.mwp), "land": x.land, "typ": x.typ, "kostenkalkulation": _kalkulation_kurz(x.name)} for x in ent],
 		"anlagen": [{"id": x.name, "titel": frappe.db.get_value("Plattform Anlage", x.name, "titel") or x.name, "kwp": flt(x.kwp), "land": x.land, "typ": x.typ} for x in anl],
 	}
 
@@ -394,6 +403,8 @@ def fall_anlegen(daten=None, als_benutzer=None):
 	if len(titel) < 3:
 		ungueltig("Bitte einen Titel angeben.")
 	capex = flt(e.get("capex"))
+	quelle = capex_quelle(capex, _kalkulation_kurz(bezug_id)) if bezug_art == "entwicklung" else None
+	e = {**e, "_capexQuelle": quelle} if quelle else e
 	f = frappe.get_doc({
 		"doctype": DT_FALL, "titel": titel, "spv": v.text(d.get("spv"), 160), "spv_organisation_id": v.kennung(d.get("spvOrganisationId")) or None,
 		"bezug_art": bezug_art, "bezug_id": bezug_id, "land": v.auswahl(e.get("land"), ["DE", "AT", "CH"], "DE"), "mwp": flt(e.get("mwp")),
@@ -402,7 +413,7 @@ def fall_anlegen(daten=None, als_benutzer=None):
 		"cps": als_json([{"id": i, "label": l, "erledigt": False, "am": None, "von": None, "nachweis": ""} for i, l in CP_STANDARD]),
 		"notiz": v.mehrzeilig(d.get("notiz"), 2000), "erstellt_von": n.id, "verlauf": als_json([]),
 	})
-	_verlauf(f, n, "Finanzierungsfall angelegt")
+	_verlauf(f, n, f"Finanzierungsfall angelegt – Capex aus Kostenkalkulation{' (' + quelle['standLabel'] + ')' if quelle.get('standLabel') else ''}" if (quelle or {}).get("art") == "kostenkalkulation" else "Finanzierungsfall angelegt")
 	f.insert(ignore_permissions=True)
 	protokoll(n, "anlegen", "finanzierung", f.name, f"Finanzierungsfall „{f.titel}“ angelegt")
 	return _fall_json(f)
@@ -422,7 +433,12 @@ def fall_aendern(id=None, daten=None, als_benutzer=None):  # noqa: A002
 	if d.get("betragWunsch") is not None:
 		f.betrag_wunsch = round(v.zahl(d.get("betragWunsch"), 0, 5e9) or 0)
 	if d.get("eingaben"):
-		f.eingaben = als_json(d.get("eingaben"))  # vom Adapter bereinigt (cockpitBereinigen)
+		alt = aus_json(f.eingaben, {}) or {}
+		neu = dict(d.get("eingaben") or {})  # vom Adapter bereinigt (cockpitBereinigen)
+		neu.pop("_capexQuelle", None)
+		if alt.get("_capexQuelle"):  # Herkunft behalten, solange der Capex unverändert ist
+			neu["_capexQuelle"] = alt["_capexQuelle"] if abs(flt(neu.get("capex")) - flt(alt.get("capex"))) < 1 else {"art": "manuell"}
+		f.eingaben = als_json(neu)
 		_verlauf(f, n, "Financial Model aktualisiert")
 	if d.get("status") is not None:
 		s = v.auswahl(d.get("status"), ["abgebrochen", "vorbereitung"], "")

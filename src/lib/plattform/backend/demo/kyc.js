@@ -22,7 +22,7 @@ import { stufe, unterrollen } from "../../rechte";
 import {
   KYC_BEARBEITBAR, KYC_DOKUMENTE, KYC_KONTOTYPEN, KYC_KONTROLLE_ARTEN, KYC_MITTEL_QUELLEN, KYC_PRUEFPUNKTE, KYC_SCHRITTE, KYC_SCHRITT_IDS, KYC_STATUS,
   KYC_TICKETS, KYC_UPLOAD, KYC_WARTESCHLANGE, heuteIso, ibanPruefen, kontoinhaberPasst, kycAnforderungen, kycEinstellungenStandard, kycFortschritt, kycGeltung,
-  kycRisiko, kycSchrittAktiv, kycStatusLabel, kycUebergangErlaubt, loeschenAb, monateSpaeter, tageBis, ibanMaskiert, ibanFormatiert,
+  kycRisiko, kycSchrittAktiv, kycStatusLabel, kycUebergangErlaubt, loeschenAb, monateSpaeter, tageBis, ibanMaskiert, ibanFormatiert, kycInvestorVorgaben,
 } from "../../kyc";
 import { DEMO_SANKTIONSLISTE, prueflingeAusFall, sanktionsAbgleich } from "../../sanktionsliste";
 import { kycEntschluesseln, kycSchluesselStatus, kycVerschluesseln } from "../../server/kycKrypto";
@@ -31,6 +31,7 @@ import { aendern, lesen, DATEN_ORDNER } from "./speicher";
 import { jetzt, neueId, sha256 } from "./hilfen";
 import { kycEinstellungenDb, kycErgebnisAnhaengenDb, kycFallFuer, kycFreigabeDb, kycStatusDb } from "./kycRegeln";
 import { kycSeed } from "./kyc-seed";
+import { suchprofilFuer } from "./teams"; // Investorentyp aus dem (Konto- bzw. Team-)Suchprofil
 
 const { benachrichtigen, protokoll, nutzerById, nameVon } = intern;
 
@@ -134,6 +135,13 @@ const eigenerFall = (db, n) => (db.kyc.faelle || []).find((f) => f.kontoId === n
 const dokumenteVon = (db, f) => (db.kyc.dokumente || []).filter((d) => d.fallId === f.id && !d.geloescht);
 const flaechenVon = (db, kontoId) => (db.flaechen || []).filter((x) => x.nutzerId === kontoId).map((x) => ({ id: x.id, bezeichnung: x.bezeichnung, land: x.land }));
 
+/** Investorentyp aus dem Suchprofil (nur Investorenkonten) – wird in den KYC-Fall übernommen */
+function investorTypVon(db, n) {
+  if (!n?.rollen?.includes("investor")) return "";
+  const typ = suchprofilFuer(db, n)?.investorTyp || nutzerById(db, n.id)?.suchprofil?.investorTyp || "";
+  return kycInvestorVorgaben(typ) ? typ : "";
+}
+
 function kontextFuer(db, f) {
   const u = nutzerById(db, f.kontoId);
   return { rollen: u?.rollen || [], flaechen: flaechenVon(db, f.kontoId), einstellungen: kycEinstellungenDb(db) };
@@ -190,6 +198,7 @@ function fallFuerNutzer(db, f) {
   const sichtStatus = f.status === "zweitpruefung" ? "in_pruefung" : f.status;
   return {
     id: f.id, kontotyp: f.kontotyp, status: sichtStatus, statusLabel: kycStatusLabel(sichtStatus), organisationId: f.organisationId || null,
+    investorTyp: f.investorTyp || "", investorVorgaben: kycInvestorVorgaben(f.investorTyp),
     person: f.person || {}, firma: f.firma || {}, ubos: f.ubos || [], vertreter: f.vertreter || [], einreicherVertretungsberechtigt: f.einreicherVertretungsberechtigt ?? null,
     pep: f.pep || {}, mittelherkunft: f.mittelherkunft || {}, steuer: f.steuer || {},
     bank: f.bank ? { iban: f.bank.iban ? ibanFormatiert(f.bank.iban) : "", kontoinhaber: f.bank.kontoinhaber || "", bic: f.bank.bic || "", geprueft: f.status === "verifiziert" && !!f.bank.geprueft } : {},
@@ -226,6 +235,7 @@ export async function kycFall(n) {
     status: { ...status, statusLabel: kycStatusLabel(status.status === "zweitpruefung" ? "in_pruefung" : status.status), status: status.status === "zweitpruefung" ? "in_pruefung" : status.status, risiko: undefined },
     flaechen: kontext.flaechen,
     freigaben: freigabenFuer(db, n.id, status),
+    investorVorgaben: kycInvestorVorgaben(f?.investorTyp || investorTypVon(db, n)), // Vorschlag Kontotyp/Unterlagen aus dem Suchprofil
     ablage: kycSchluesselStatus(),
   };
 }
@@ -245,7 +255,8 @@ function listeBereinigen(liste, fn, max = 12) {
 
 const ABSCHNITTE = {
   kontotyp: (d, f, n, db) => {
-    const typ = v.auswahl(d.kontotyp, Object.keys(KYC_KONTOTYPEN), "");
+    // ohne Angabe: Vorschlag aus dem Investorentyp des Suchprofils
+    const typ = v.auswahl(d.kontotyp, Object.keys(KYC_KONTOTYPEN), "") || kycInvestorVorgaben(f.investorTyp)?.kontotyp || "";
     v.pflicht(typ, "Bitte wählen Sie den Kontotyp.");
     f.kontotyp = typ;
     if (typ === "unternehmen" && n.organisation?.id && ["inhaber", "admin"].includes(n.organisation.rolle) && !(db.kyc.faelle || []).some((x) => x.organisationId === n.organisation.id && x.id !== f.id)) {
@@ -298,11 +309,12 @@ export async function kycSpeichern(n, { abschnitt, daten = {} } = {}) {
     let f = eigenerFall(db, n);
     if (!f) {
       if (abschnitt !== "kontotyp") throw ungueltig("Bitte wählen Sie zuerst den Kontotyp.");
-      f = { id: neueId("KY"), kontoId: n.id, organisationId: null, kontotyp: "", status: "offen", verlauf: [], erstelltAm: jetzt(), geaendertAm: jetzt() };
-      verlauf(f, "offen", n, "nutzer", "Verifizierung begonnen.");
+      f = { id: neueId("KY"), kontoId: n.id, organisationId: null, kontotyp: "", investorTyp: investorTypVon(db, n), status: "offen", verlauf: [], erstelltAm: jetzt(), geaendertAm: jetzt() };
+      verlauf(f, "offen", n, "nutzer", f.investorTyp ? `Verifizierung begonnen (Investorentyp: ${kycInvestorVorgaben(f.investorTyp).label}).` : "Verifizierung begonnen.");
       db.kyc.faelle.push(f);
     }
     if (!KYC_BEARBEITBAR.includes(f.status)) throw konflikt(f.status === "verifiziert" ? "Ihre Verifizierung ist abgeschlossen. Für Änderungen starten Sie bitte eine erneute Prüfung." : "Ihre Angaben liegen gerade zur Prüfung vor und können nicht geändert werden.");
+    f.investorTyp = investorTypVon(db, n) || f.investorTyp || ""; // Suchprofil kann sich geändert haben
     ABSCHNITTE[abschnitt](daten || {}, f, n, db);
     f.geaendertAm = jetzt();
     protokoll(db, n, "kyc_angaben", "kyc", f.id, `Angaben gespeichert: ${abschnitt}`);
@@ -388,6 +400,7 @@ export async function kycEinreichen(n, { ip = "" } = {}) {
   return aendernBereit((db) => {
     const f = eigenerFall(db, n);
     if (!f) throw ungueltig("Bitte beginnen Sie zuerst mit der Verifizierung.");
+    if (KYC_BEARBEITBAR.includes(f.status)) f.investorTyp = investorTypVon(db, n) || f.investorTyp || "";
     const anf = kycAnforderungen({ ...f, dokumente: dokumenteVon(db, f) }, { rollen: n.rollen || [], flaechen: flaechenVon(db, n.id), einstellungen: kycEinstellungenDb(db) });
     const fp = kycFortschritt(anf);
     if (fp.fehlend.length) throw ungueltig(`Es fehlen noch: ${fp.fehlend.map((x) => x.label).join(" · ")}`);
@@ -472,7 +485,7 @@ function fallZeile(db, f) {
   const wartetSeit = f.eingereichtAm || f.erstelltAm;
   return {
     id: f.id, kontoId: f.kontoId, konto: u ? { name: nameVon(db, u.id), email: u.email, rollen: u.rollen } : null,
-    organisation: org ? { id: org.id, name: org.name } : null, kontotyp: f.kontotyp, bezeichnung: f.kontotyp === "unternehmen" ? f.firma?.name || org?.name || "Unternehmen" : [f.person?.vorname, f.person?.nachname].filter(Boolean).join(" ") || nameVon(db, f.kontoId),
+    organisation: org ? { id: org.id, name: org.name } : null, kontotyp: f.kontotyp, investorTyp: f.investorTyp || "", investorTypLabel: kycInvestorVorgaben(f.investorTyp)?.label || "", bezeichnung: f.kontotyp === "unternehmen" ? f.firma?.name || org?.name || "Unternehmen" : [f.person?.vorname, f.person?.nachname].filter(Boolean).join(" ") || nameVon(db, f.kontoId),
     status: f.status, statusLabel: kycStatusLabel(f.status, { intern: true }), risiko: f.risiko?.stufe || null, sanktionen: f.sanktionen?.status || null,
     pep: !!(f.pep?.istPep || f.pep?.naheStehend || (f.ubos || []).some((x) => x.pep)), eingereichtAm: f.eingereichtAm || null, wartetTage: wartetSeit ? Math.max(0, -tageBis(String(wartetSeit).slice(0, 10))) : null,
     bearbeiterId: f.bearbeiterId || null, bearbeiter: f.bearbeiterId ? nameVon(db, f.bearbeiterId) : "", erstPrueferId: f.pruefung?.erstPrueferId || null,

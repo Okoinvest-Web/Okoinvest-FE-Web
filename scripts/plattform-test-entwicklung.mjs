@@ -8,7 +8,8 @@
 // Dokumentenpflicht → 422, Verzicht mit Begründung) · Eigentümer sieht nur die vereinfachte Sicht SEINER Fläche (keine Risiken,
 // Kosten, Namen, Notizen, fremden Flächen) + Benachrichtigung bei erledigtem Meilenstein · Gutachter nur Zugewiesenes
 // (Einladung, Upload, Meldung, Rückfrage; fremde Meilensteine/Projekte → 403) · Co-Investor nur mit Freigabe, nur externe Risiken ·
-// fremde → 403 · Übergabe an Börse erzeugt Projekt (zweimal → 409) · Übergabe Bau vor RTB → 409 · Unterrollen · CSRF · Seiten.
+// fremde → 403 · Co-Development nur mit verifiziertem KYC/KYB (Freigabe/Zugriff sonst 409 „kyc“, Pilot-Geltung nur für
+// eigene Testkonten) · Übergabe an Börse erzeugt Projekt (zweimal → 409) · Übergabe Bau vor RTB → 409 · Unterrollen · CSRF · Seiten.
 // Eigene Konten ent-test-<Lauf>-…@example.com und eigene Projekte – Demo-Daten bleiben unberührt.
 
 import { PHASEN, ENTWICKLUNG } from "../src/lib/invest/markt.js";
@@ -89,6 +90,7 @@ class Client {
   post = (p, b, o) => this.anfrage("POST", p, b ?? {}, o);
   patch = (p, b, o) => this.anfrage("PATCH", p, b ?? {}, o);
   del = (p, o) => this.anfrage("DELETE", p, undefined, o);
+  put = (p, b, o) => this.anfrage("PUT", p, b ?? {}, o);
 
   async login(email, passwort = DEMO_PASSWORT) {
     let r;
@@ -325,6 +327,36 @@ async function main() {
   pruefe(r.status === 403, "Investor → nicht freigegebenes Dokument 403", r.status);
   r = await investorDemo.get(`/api/portal/entwicklung/${muehl.id}`);
   pruefe(r.status === 200 && r.json.projekt?.investor && !r.text.includes("Einwände aus der Nachbarschaft"), "Demo-Investor: Mühlweg freigegeben, interne Risiken ausgeblendet", r.status);
+
+  // KYC/KYB: Co-Development-Freigabe und -Zugriff nur mit verifiziertem Investor. Die Sperre gilt in der Entwicklung nur
+  // für Pilot-Konten (PLATTFORM_KYC_GATING) – eigene Testkonten werden aufgenommen und am Ende wieder entfernt.
+  abschnitt("5b. Co-Development nur mit verifiziertem KYC/KYB");
+  const comp = new Client("bo-compliance");
+  await comp.login("bo-compliance@example.com");
+  const inv2 = new Client("Investor ohne KYC (Test)");
+  await inv2.registrieren("inv2", ["investor"], "Ina", "Unverifiziert (Test)");
+  const pilot = [inv2, inv];
+  try {
+    for (const c of pilot) r = await comp.put("/api/admin/compliance/einstellungen", { pilotKonto: { id: c.nutzer.id, an: true } });
+    pruefe(r.status === 200, "Testkonten im Pilotbetrieb der KYC-Sperren", r.status);
+    r = await eintrag(admin, "freigabe", { nutzerId: inv2.nutzer.id });
+    pruefe(r.status === 409 && r.json.code === "kyc" && /verifiziert/.test(r.json.error || ""), "Freigabe für nicht verifizierten Investor → 409 (kyc)", r.json);
+    r = await admin.get(`/api/admin/entwicklung/${pid}`);
+    pruefe(!(r.json.projekt?.freigaben || []).some((x) => x.nutzerId === inv2.nutzer.id), "Keine Freigabe angelegt", (r.json.projekt?.freigaben || []).length);
+    r = await inv.get(`/api/portal/entwicklung/${pid}`);
+    pruefe(r.status === 409 && r.json.code === "kyc" && !r.text.includes(`Externes Risiko ${LAUF}`) && !r.text.includes("meilensteine"), "Bestehende Freigabe ohne KYC → 409 (kyc), keine Projektdaten", { status: r.status, code: r.json.code });
+    r = await inv.get("/api/portal/entwicklung");
+    const eintragKyc = (r.json.projekte || []).find((x) => x.id === pid);
+    pruefe(r.status === 200 && eintragKyc?.kycErforderlich?.schritt === "codevelopment" && !eintragKyc.investor, "Übersicht: Projekt mit Hinweis „Verifizierung erforderlich“, ohne Co-Investor-Sicht", eintragKyc && { kyc: eintragKyc.kycErforderlich, investor: !!eintragKyc.investor });
+    r = await inv.get(`/api/portal/kyc/freigabe?schritt=codevelopment`);
+    pruefe(r.status === 200 && r.json.freigabe?.ok === false && r.json.freigabe?.aktiv === true, "KYC-Freigabeprüfung kennt den Schritt „codevelopment“", r.json.freigabe);
+    r = await inv.get(`/portal/entwicklung/${pid}`);
+    pruefe(r.status === 200 && r.text.includes("Verifizierung erforderlich") && !r.text.includes(`Externes Risiko ${LAUF}`), "Seite zeigt Hinweis zur Verifizierung statt Projektdaten", r.status);
+  } finally {
+    for (const c of pilot) if (c.nutzer) await comp.put("/api/admin/compliance/einstellungen", { pilotKonto: { id: c.nutzer.id, an: false } }).catch(() => {});
+  }
+  r = await inv.get(`/api/portal/entwicklung/${pid}`);
+  pruefe(r.status === 200 && r.json.projekt?.investor, "Ohne KYC-Sperre (kein Pilot-Konto): Zugriff wie zuvor", r.status);
 
   // ------------------------------------------------------------ 6. Übergaben
   abschnitt("6. Übergabe an Börse und Bau");

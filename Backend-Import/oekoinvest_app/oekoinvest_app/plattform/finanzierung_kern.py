@@ -204,3 +204,35 @@ def monats_cfads(erzeugung, einspeisung, strompreis_ct, grundgebuehr_monat, mark
 	erloes = eigen * strompreis_ct / 100 + grundgebuehr_monat + einspeisung * markt_ct / 100
 	kosten = opex_monat + pacht_monat
 	return erloes, kosten, erloes - kosten
+
+
+# ---------------------------------------------------------------- Capex aus der Projektkostenkalkulation (wie demo/finanzierung.js)
+
+
+def kalkulation_kurz(uebergabe):
+	"""Übergebener Stand der Projektkostenkalkulation (planung.kalkulation_aktion „uebergeben“) in Kurzform – oder None.
+	Maßgeblich für die Finanzierung ist der Finanzierungsbedarf (Gesamtkosten inkl. Finanzierungskosten und Sicherheiten)."""
+	if not isinstance(uebergabe, dict):
+		return None
+	try:
+		betrag = round(float(uebergabe.get("finanzierungsbedarf") or 0) or float(uebergabe.get("capex") or 0))
+	except (TypeError, ValueError):
+		return None
+	if betrag <= 0:
+		return None
+	try:
+		capex = round(float(uebergabe.get("capex") or 0)) or None
+	except (TypeError, ValueError):
+		capex = None
+	return {"finanzierungsbedarf": betrag, "capex": capex, "stand": uebergabe.get("stand") or None, "standLabel": uebergabe.get("standLabel") or "", "am": uebergabe.get("am") or None, "eurProKwp": uebergabe.get("eurProKwp")}
+
+
+def capex_quelle(capex, kk):
+	"""Herkunft des Capex eines neuen Finanzierungsfalls: kostenkalkulation (entspricht dem Finanzierungsbedarf) | manuell | standard."""
+	if not kk:
+		return {"art": "standard"}
+	try:
+		gleich = abs(float(capex or 0) - kk["finanzierungsbedarf"]) < 1
+	except (TypeError, ValueError):
+		gleich = False
+	return {"art": "kostenkalkulation", **kk} if gleich else {"art": "manuell"}

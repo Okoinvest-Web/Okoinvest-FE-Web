@@ -12,6 +12,8 @@
 // i. S. v. § 1 Abs. 11 / § 2 Abs. 1 Nr. 14 GwG), ist eine Auslegungsfrage und rechtlich zu klären. Die Plattform
 // behauptet keine Video- oder Online-Identifizierung – diese erfolgt nur über zugelassene Anbieter (Schnittstelle vorgesehen).
 
+import { INVESTOR_TYPEN } from "./fach/suchprofil";
+
 // ================================================================ Grundbegriffe
 
 export const KYC_KONTOTYPEN = {
@@ -135,6 +137,7 @@ export const KYC_SCHRITTE = {
   veroeffentlichung: { label: "Projekt-Veröffentlichung", hinweis: "Projekte werden erst nach abgeschlossener Verifizierung des Anbieters (KYB) veröffentlicht.", wer: "Anbieter" },
   auszahlung: { label: "Pachtauszahlung / Gutschrift", hinweis: "Auszahlungen setzen eine abgeschlossene Verifizierung, eine geprüfte Bankverbindung und einen Eigentumsnachweis voraus.", wer: "Eigentümer" },
   contracting: { label: "Contracting-Vertrag", hinweis: "Contracting-Verträge setzen eine abgeschlossene Verifizierung des Kunden (KYB) voraus.", wer: "Kunde" },
+  codevelopment: { label: "Co-Development (Projektentwicklung)", hinweis: "Die Co-Development-Freigabe eines Entwicklungsprojekts setzt eine abgeschlossene Verifizierung voraus.", wer: "Investor" },
 };
 export const KYC_SCHRITT_IDS = Object.keys(KYC_SCHRITTE);
 
@@ -255,6 +258,30 @@ export function loeschenAb(endeIso, jahre = 5) {
 
 // ================================================================ Anforderungen je Fall
 
+/**
+ * Investorentyp aus dem Suchprofil (fach/suchprofil.js INVESTOR_TYPEN) → Vorgaben für den KYC-Fall:
+ * vorgeschlagener Kontotyp, zusätzliche Pflichtunterlagen (nur KYB) und Hinweis für Nutzer und Compliance.
+ * Der Typ wird beim Anlegen des Falls übernommen (fall.investorTyp) und beim Einreichen aktualisiert.
+ * Über vereinfachte Sorgfaltspflichten (beaufsichtigte Einrichtungen) entscheidet immer die Compliance im Einzelfall.
+ */
+export const KYC_INVESTOR_TYPEN = {
+  family_office: { kontotyp: "unternehmen", pflichtDokumente: ["gesellschafterliste"], hinweis: "Family Office: Häufig mehrstufige Holding- oder Stiftungsstrukturen – bitte die wirtschaftlich Berechtigten bis zur natürlichen Person angeben und die Gesellschafterliste beifügen." },
+  fonds: { kontotyp: "unternehmen", pflichtDokumente: ["satzung"], reguliert: true, hinweis: "Fonds / Asset Manager: Angaben zur Kapitalverwaltungsgesellschaft bzw. zum Fonds (Register, Aufsicht) und Gesellschaftsvertrag bzw. Anlagebedingungen beifügen. Bei beaufsichtigten Einrichtungen können vereinfachte Sorgfaltspflichten in Betracht kommen – darüber entscheidet die Compliance." },
+  stadtwerk: { kontotyp: "unternehmen", pflichtDokumente: ["gesellschafterliste"], hinweis: "Stadtwerk / kommunales Unternehmen: Gesellschafterliste (Beteiligung der Kommune) beifügen. Ist keine natürliche Person wirtschaftlich berechtigt, sind in der Regel die gesetzlichen Vertreter als fiktive wirtschaftlich Berechtigte anzugeben." },
+  evu: { kontotyp: "unternehmen", pflichtDokumente: ["gesellschafterliste"], hinweis: "Energieversorger: Konzern- bzw. Beteiligungsstruktur mit der Gesellschafterliste offenlegen." },
+  ipp: { kontotyp: "unternehmen", pflichtDokumente: ["gesellschafterliste"], hinweis: "Unabhängiger Stromerzeuger (IPP): Konzern- bzw. Beteiligungsstruktur mit der Gesellschafterliste offenlegen." },
+  versicherung: { kontotyp: "unternehmen", pflichtDokumente: ["satzung"], reguliert: true, hinweis: "Versicherung / Pensionskasse: Satzung beifügen und die zuständige Aufsicht angeben. Bei beaufsichtigten Einrichtungen können vereinfachte Sorgfaltspflichten in Betracht kommen – darüber entscheidet die Compliance." },
+  unternehmen: { kontotyp: "unternehmen", pflichtDokumente: [], hinweis: "Unternehmen: Prüfung der Firma (KYB) mit wirtschaftlich Berechtigten und vertretungsberechtigten Personen." },
+  privat: { kontotyp: "privat", pflichtDokumente: [], hinweis: "Privatinvestor: Prüfung als natürliche Person; bitte die Herkunft der Mittel angeben." },
+  genossenschaft: { kontotyp: "unternehmen", pflichtDokumente: ["satzung"], hinweis: "Energiegenossenschaft: Satzung beifügen. Bei breiter Mitgliederstruktur sind in der Regel die Vorstandsmitglieder als fiktive wirtschaftlich Berechtigte anzugeben." },
+};
+
+/** Vorgaben für einen Investorentyp (oder null) – { typ, label, kontotyp, pflichtDokumente, reguliert, hinweis } */
+export function kycInvestorVorgaben(investorTyp) {
+  const x = KYC_INVESTOR_TYPEN[investorTyp];
+  return x ? { typ: investorTyp, label: INVESTOR_TYPEN[investorTyp], reguliert: false, ...x } : null;
+}
+
 const gefuellt = (...w) => w.every((x) => x !== undefined && x !== null && String(x).trim() !== "");
 
 /**
@@ -272,6 +299,8 @@ export function kycAnforderungen(fall, { rollen = [], flaechen = [], einstellung
   const add = (x) => a.push({ pflicht: true, ...x });
   const typ = f.kontotyp || "";
   add({ id: "kontotyp", gruppe: "Start", label: "Kontotyp gewählt", erfuellt: !!KYC_KONTOTYPEN[typ] });
+  const it = KYC_INVESTOR_TYPEN[f.investorTyp];
+  if (it) add({ id: "investortyp", gruppe: "Start", label: `Investorentyp (aus Ihrem Suchprofil): ${INVESTOR_TYPEN[f.investorTyp]}`, pflicht: false, erfuellt: true, hinweis: it.hinweis });
   if (!typ) return a;
 
   const p = f.person || {};
@@ -302,8 +331,12 @@ export function kycAnforderungen(fall, { rollen = [], flaechen = [], einstellung
       hinweis: hat("registerauszug") && !hat("registerauszug", (d) => !d.ausgestelltAm || (tageBis(d.ausgestelltAm) ?? 0) >= -KYC_REGISTERAUSZUG_MAX_TAGE) ? "Der Auszug ist älter als 3 Monate." : "",
     });
     add({ id: "doc_transparenzregister", gruppe: "Unternehmen", label: reg.ubo, dokumentArt: "transparenzregister", erfuellt: hat("transparenzregister") });
-    add({ id: "doc_gesellschafterliste", gruppe: "Unternehmen", label: KYC_DOKUMENTE.gesellschafterliste.label, dokumentArt: "gesellschafterliste", pflicht: false, erfuellt: hat("gesellschafterliste") });
-    add({ id: "doc_satzung", gruppe: "Unternehmen", label: KYC_DOKUMENTE.satzung.label, dokumentArt: "satzung", pflicht: false, erfuellt: hat("satzung") });
+    // Investorentyp aus dem Suchprofil: je Typ zusätzliche Pflichtunterlagen (KYC_INVESTOR_TYPEN)
+    const extra = KYC_INVESTOR_TYPEN[f.investorTyp]?.pflichtDokumente || [];
+    const optional = (art) => !extra.includes(art);
+    const dokLabel = (art) => (optional(art) ? KYC_DOKUMENTE[art].label : KYC_DOKUMENTE[art].label.replace(" (optional)", ""));
+    add({ id: "doc_gesellschafterliste", gruppe: "Unternehmen", label: dokLabel("gesellschafterliste"), dokumentArt: "gesellschafterliste", pflicht: !optional("gesellschafterliste"), erfuellt: hat("gesellschafterliste") });
+    add({ id: "doc_satzung", gruppe: "Unternehmen", label: dokLabel("satzung"), dokumentArt: "satzung", pflicht: !optional("satzung"), erfuellt: hat("satzung") });
     const ubos = f.ubos || [];
     const uboOk = ubos.length > 0 && ubos.every((u) => gefuellt(u.vorname, u.nachname, u.geburtsdatum, u.wohnsitzland, u.kontrolleArt) && (u.kontrolleArt === "kontrolle" || u.kontrolleArt === "fiktiv" || Number(u.anteil) >= 25));
     add({ id: "ubos", gruppe: "Wirtschaftlich Berechtigte", label: "Wirtschaftlich Berechtigte (Anteil ≥ 25 % bzw. Kontrolle) erfasst", erfuellt: uboOk, hinweis: "Wer mehr als 25 % der Kapitalanteile oder Stimmrechte hält oder auf andere Weise Kontrolle ausübt. Gibt es keine solche Person, gilt der gesetzliche Vertreter als fiktiver wirtschaftlich Berechtigter." });

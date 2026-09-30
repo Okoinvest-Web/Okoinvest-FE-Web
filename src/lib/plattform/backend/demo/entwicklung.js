@@ -13,7 +13,8 @@
 //   Eigentümer      – Konto (oder Team) einer verknüpften Plattform-Fläche: nur vereinfachter Fortschritt (Meilensteine mit
 //                     externem Titel, Quartal statt Datum), eigene Flächen – keine Risiken, Kosten, Namen, Notizen
 //   Co-Investor     – Freigabe je Projekt (Konto oder Organisation, Rolle investor): Fortschritt, Termine, freigegebene
-//                     Risiken (Kennzeichen „extern“) und Dokumente
+//                     Risiken (Kennzeichen „extern“) und Dokumente – Freigabe und Zugriff nur mit verifiziertem KYC/KYB
+//                     (kycRegeln, Schritt „codevelopment“), sonst 409 (Code „kyc“)
 //   Gutachter       – Rolle gutachter UND Zuweisung am Meilenstein: nur die zugewiesenen Meilensteine, eigene Rückfragen,
 //                     Upload von Gutachten; kann „in Arbeit“/„eingereicht“ melden, nie erledigen
 //   sonst           – 403 (Seiten: 404)
@@ -37,6 +38,7 @@ import { entwicklungSeed } from "./entwicklung-seed";
 import * as anlagenDemo from "./anlagen";
 
 import { internSicherheit } from "./sicherheitWerkzeuge";
+import { kycFreigabeDb, kycSperre } from "./kycRegeln"; // KYC/KYB: Co-Development nur mit verifiziertem Investor
 
 const { benachrichtigen, protokoll, nutzerById, nameVon } = intern;
 const postausgangAnlegen = (...a) => internSicherheit.postausgangAnlegen(...a);
@@ -131,9 +133,19 @@ function istEigentuemer(db, n, p) {
   });
 }
 
-function freigabeFuer(db, n, p) {
+/** Co-Development-Freigabe des Kontos bzw. seiner Organisation (ohne KYC-Prüfung) */
+function freigabeRoh(db, n, p) {
   if (!n?.rollen?.includes("investor")) return null;
   return (p.freigaben || []).find((fg) => (fg.nutzerId && fg.nutzerId === n.id) || (fg.organisationId && teamRolle(db, n.id, fg.organisationId))) || null;
+}
+
+/** KYC-Ziel des zugreifenden Investors: eigener Fall bzw. KYB der freigegebenen (oder aktiven) Organisation */
+const kycZiel = (n, fg) => ({ kontoId: n.id, organisationId: fg?.organisationId || n.organisation?.id || null });
+
+/** Wirksame Freigabe: nur mit verifiziertem KYC/KYB (Schritt „codevelopment“) */
+function freigabeFuer(db, n, p) {
+  const fg = freigabeRoh(db, n, p);
+  return fg && kycFreigabeDb(db, "codevelopment", kycZiel(n, fg)).ok ? fg : null;
 }
 
 function gutachterMeilensteine(db, n, p) {
@@ -144,7 +156,9 @@ function gutachterMeilensteine(db, n, p) {
 /** Zugriffe des Nutzers auf ein Projekt: { backoffice, eigentuemer, investor (Freigabe|null), gutachter [Meilensteine] } */
 function zugriffe(db, n, p) {
   if (!n || !p) return null;
-  const z = { backoffice: boLesen(n), eigentuemer: istEigentuemer(db, n, p), investor: freigabeFuer(db, n, p), gutachter: gutachterMeilensteine(db, n, p) };
+  const fg = freigabeRoh(db, n, p);
+  const kyc = fg ? kycFreigabeDb(db, "codevelopment", kycZiel(n, fg)) : null;
+  const z = { backoffice: boLesen(n), eigentuemer: istEigentuemer(db, n, p), investor: kyc?.ok ? fg : null, investorKyc: kyc && !kyc.ok ? kyc : null, gutachter: gutachterMeilensteine(db, n, p) };
   z.irgendeiner = z.backoffice || z.eigentuemer || !!z.investor || z.gutachter.length > 0;
   return z;
 }
@@ -718,6 +732,8 @@ const EINTRAG = {
       if (u && !u.rollen.includes("investor")) throw ungueltig("Co-Development-Freigaben gibt es nur für Investorenkonten.");
       x.nutzerId = u?.id || null;
       x.organisationId = o?.id || null;
+      // KYC/KYB: Freigabe nur für verifizierte Investoren (409, Code „kyc“)
+      kycSperre(db, "codevelopment", { kontoId: x.nutzerId, organisationId: x.organisationId, text: "Co-Development-Freigabe nicht möglich: Der Investor ist noch nicht verifiziert (KYC/KYB)." });
     }
     if (Object.hasOwn(d, "risiken")) x.risiken = v.wahr(d.risiken);
     if (Object.hasOwn(d, "dokumente")) x.dokumente = v.wahr(d.dokumente);
@@ -979,6 +995,8 @@ function externAusgabe(db, n, p, z) {
     id: p.id, titel: p.titel, typLabel: ENTWICKLUNG_TYPEN[p.typ] || p.typ, land: p.land, bundesland: p.bundesland, gemeinde: p.gemeinde || "",
     phaseLabel: k.phaseLabel, fortschritt: k.fortschritt, statusLabel: ENTWICKLUNG_STATUS[p.status]?.label || p.status,
     sichten: [z.eigentuemer && "eigentuemer", z.investor && "investor", z.gutachter.length && "gutachter"].filter(Boolean),
+    // Co-Development freigegeben, aber Verifizierung offen → Hinweis statt Projektdaten
+    kycErforderlich: z.investorKyc && !z.investor ? { schritt: "codevelopment", status: z.investorKyc.status } : null,
   };
   if (z.eigentuemer) {
     const schritte = liste.filter((m) => m.externTitel && m.status !== "entfaellt");
@@ -1024,7 +1042,7 @@ export async function entwicklungMeine(n) {
   return E(db).projekte
     .filter((p) => p.status !== "abgebrochen")
     .map((p) => ({ p, z: zugriffe(db, n, p) }))
-    .filter(({ z }) => z.eigentuemer || z.investor || z.gutachter.length)
+    .filter(({ z }) => z.eigentuemer || z.investor || z.investorKyc || z.gutachter.length)
     .map(({ p, z }) => externAusgabe(db, n, p, z));
 }
 
@@ -1033,7 +1051,10 @@ export async function entwicklungExtern(n, id) {
   const db = await lesenBereit();
   const p = projektLaden(db, id);
   const z = zugriffe(db, n, p);
-  if (!(z.eigentuemer || z.investor || z.gutachter.length) || p.status === "abgebrochen") throw verboten("Dieses Projekt ist für Ihr Konto nicht freigegeben.");
+  if (!(z.eigentuemer || z.investor || z.gutachter.length) || p.status === "abgebrochen") {
+    if (z.investorKyc && p.status !== "abgebrochen") kycSperre(db, "codevelopment", kycZiel(n, freigabeRoh(db, n, p))); // 409 (Code „kyc“)
+    throw verboten("Dieses Projekt ist für Ihr Konto nicht freigegeben.");
+  }
   return externAusgabe(db, n, p, z);
 }
 

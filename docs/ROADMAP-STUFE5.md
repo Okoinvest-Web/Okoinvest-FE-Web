@@ -29,12 +29,12 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 
 ## Nacharbeiten aus Berichten (in der Integrationsphase erledigen)
 - [x] Bottom-Navigation mobil: Einträge für Gutachter, Kommune, Lieferant, Bank
-- [ ] `notFound()` im Portal liefert wegen `portal/loading.js` HTTP 200 statt 404 – prüfen, ob `loading.js` auf Unterbereiche beschränkt werden kann (Inhalt ist korrekt, Status nicht)
+- [ ] `notFound()` im Portal liefert wegen `portal/loading.js` HTTP 200 statt 404 – prüfen, ob `loading.js` auf Unterbereiche beschränkt werden kann (Inhalt ist korrekt, Status nicht) – bewusst offen: sauber nur über Route-Groups (~30 Bereiche) oder Ladeanzeige per useLinkStatus in PortalRahmen und danach loading.js entfernen; kein SEO-/Sicherheitsrisiko (Portal noindex, APIs 403/404)
 - [ ] Zentral: `plattform-test-bedienung.mjs` nach Onboarding-Umbau mitlaufen lassen
-- [ ] Co-Development-Freigabe (Projektentwicklung) mit `kycFreigabe` absichern
+- [x] Co-Development-Freigabe (Projektentwicklung) mit `kycFreigabe` absichern
 - [x] Desk-Workspace-Kacheln + Role Profile „ÖkoInvest Projektleitung“, KYC- und Entwicklungs-DocTypes in Rechte-Matrix/Workspaces prüfen (`pruefen.py`)
-- [ ] Projektdatenblatt ins Exposé-PDF; Hinweise auf /investoren und /projektboerse/anbieten
-- [ ] Investorentyp aus Suchprofil in den KYC-Fall übernehmen
+- [x] Projektdatenblatt ins Exposé-PDF; Hinweise auf /investoren und /projektboerse/anbieten
+- [x] Investorentyp aus Suchprofil in den KYC-Fall übernehmen
 - [ ] Demo-Aufräumen: Testkonten `fk-test-*`, `ki-*`, `deal-*` und Vorgang V-26-SMUL97 – durch frische Demo-DB vor Vorführung
 - [ ] Demo-Entwicklungsprojekte mit vollständigen Meilenstein-Vorlagen (frische Demo-DB)
 - [ ] `/energiegemeinschaften` und `/regionen/nordrhein-westfalen` auf ruhigem Server nachprüfen (Audit-Timeout)
@@ -54,7 +54,7 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 - [x] Nutzungsbedingungen §§ 1–22, Besondere Bedingungen unter /bedingungen/* (Entwurf, noindex), Handbücher je Rolle und Backoffice-Unterrolle, Prozesslandkarte (docs/handbuch/)
 - [ ] Nach anwaltlicher Freigabe: `FREIGEGEBEN = true` in src/app/bedingungen/_teile.js, dann /bedingungen/* in Footer (Rechtliches) und Sitemap aufnehmen; Platzhalter (Vergütung, Fristen, Anbieter, Gerichtsstand) füllen; offene Rechtsfragen (GwG-Verpflichteter, Art. 9 Online-Ident, Grundbuch-Direktansprache, Drittland KI, WAG/KWG/§ 34c GewO, MaklerG) klären
 
-- [ ] Finanzierungsmodul: `p.kostenkalkulation?.finanzierungsbedarf` aus der Projektkostenkalkulation statt Standard-Capex verwenden (fzAuswahl/eingabenAusBezug)
+- [x] Finanzierungsmodul: `p.kostenkalkulation?.finanzierungsbedarf` aus der Projektkostenkalkulation statt Standard-Capex verwenden (fzAuswahl/eingabenAusBezug)
 - [ ] CAD-Konverter: LibreDWG-Version und SHA-256/GPG gegen ftp.gnu.org prüfen, `LIBREDWG_SHA256` setzen; ODA nur nach Lizenzprüfung
 - [ ] Demo-DB: Testdaten plan-test-*, T-PLAN-* entfernen
 - [ ] Akquise-Kampagnen vor erstem Versand: Zweckbindung der nach § 43a GBV eingesehenen Grundbuchdaten für Werbebriefe durch Datenschutzberatung klären; Datenschutzerklärung „Flächenakquise per Brief und Angebotsseite“ prüfen; `oekoinvest_sperrliste_pfeffer` geheim setzen (nie ändern)

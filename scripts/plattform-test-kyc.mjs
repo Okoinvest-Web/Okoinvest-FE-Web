@@ -437,6 +437,27 @@ async function main() {
     r = await fl.get("/api/portal/kyc");
     pruefe(r.status === 200 && !r.json.fall, "Personenbezogene Angaben des Falls entfernt", r.json.fall);
 
+    abschnitt("9b. Investorentyp aus dem Suchprofil (Portal-Logik)");
+    const fo = new Client("family office");
+    await fo.registrieren("fo", ["investor"], "Fiona", `Office${LAUF}`);
+    r = await fo.put("/api/portal/suchprofil", { typen: ["freiflaeche"], laender: ["DE"], investorTyp: "family_office", benachrichtigen: false });
+    pruefe(r.status === 200 && r.json.suchprofil?.investorTyp === "family_office", "Suchprofil mit Investorentyp Family Office gespeichert", r.json);
+    r = await fo.get("/api/portal/kyc");
+    pruefe(r.status === 200 && !r.json.fall && r.json.investorVorgaben?.kontotyp === "unternehmen", "Ohne Fall: Vorschlag Kontotyp „Unternehmen“ aus dem Suchprofil", r.json.investorVorgaben);
+    r = await fo.patch("/api/portal/kyc", { abschnitt: "kontotyp", daten: {} });
+    const fa = r.json.fall;
+    pruefe(r.status === 200 && fa?.investorTyp === "family_office" && fa?.kontotyp === "unternehmen", "KYC-Fall übernimmt Investorentyp, Kontotyp aus dem Typ vorbelegt", fa && { investorTyp: fa.investorTyp, kontotyp: fa.kontotyp });
+    const anfFo = Object.fromEntries((r.json.anforderungen || []).map((x) => [x.id, x]));
+    pruefe(anfFo.investortyp?.erfuellt && /Family Office/.test(anfFo.investortyp.label) && anfFo.doc_gesellschafterliste?.pflicht === true, "Anforderungen je Typ: Hinweis + Gesellschafterliste Pflicht", { investortyp: anfFo.investortyp?.label, gl: anfFo.doc_gesellschafterliste });
+    r = await fo.put("/api/portal/suchprofil", { typen: ["freiflaeche"], laender: ["DE"], investorTyp: "genossenschaft", benachrichtigen: false });
+    r = await fo.patch("/api/portal/kyc", { abschnitt: "pep", daten: { istPep: false, naheStehend: false } });
+    const anfGe = Object.fromEntries((r.json.anforderungen || []).map((x) => [x.id, x]));
+    pruefe(r.json.fall?.investorTyp === "genossenschaft" && anfGe.doc_satzung?.pflicht === true && anfGe.doc_gesellschafterliste?.pflicht === false, "Geänderter Investorentyp wird übernommen (Genossenschaft: Satzung Pflicht)", { typ: r.json.fall?.investorTyp, satzung: anfGe.doc_satzung?.pflicht });
+    r = await comp.get(`/api/admin/compliance/${r.json.fall?.id}`);
+    pruefe(r.status === 200 && r.json.fall?.investorTyp === "genossenschaft" && /genossenschaft/i.test(r.json.fall?.investorTypLabel || ""), "Compliance sieht den Investorentyp am Fall", r.json.fall?.investorTypLabel);
+    r = await sank.get("/api/portal/kyc");
+    pruefe(r.status === 200 && !r.json.investorVorgaben, "Ohne Investorentyp im Suchprofil kein Vorschlag", r.json.investorVorgaben);
+
     abschnitt("10. Seiten");
     for (const [c, p, erwartet] of [[inv, "/portal/verifizierung", 200], [comp, "/portal/admin/compliance", 200], [comp, `/portal/admin/compliance/${fallInv}`, 200], [admin, "/portal/admin/compliance", 200]]) {
       r = await c.get(p);

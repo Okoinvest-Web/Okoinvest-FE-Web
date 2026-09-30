@@ -58,7 +58,7 @@ const FAQ = [
   },
   {
     q: "Wie läuft der Zugang zu vertraulichen Unterlagen?",
-    a: "Öffentlich sehen Sie einen anonymen Exposé-Teaser mit Region, Größe, Phase und Eckdaten. Nach Registrierung und digitaler Vertraulichkeitsvereinbarung (NDA) erhalten Sie Zugriff auf den Datenraum mit Pachtverträgen, Planungsunterlagen, Netzzusage und Gutachten – jeder Zugriff wird protokolliert.",
+    a: "Öffentlich sehen Sie einen anonymen Exposé-Teaser mit Region, Größe, Phase und Eckdaten. Nach Registrierung und digitaler Vertraulichkeitsvereinbarung (NDA) erhalten Sie Zugriff auf den Datenraum mit Pachtverträgen, Planungsunterlagen, Netzzusage und Gutachten – jeder Zugriff wird protokolliert. Das vertrauliche Exposé als PDF enthält zusätzlich das Standard-Projektdatenblatt (Technik, Ertrag, Netz, Genehmigung, Vermarktung) mit seiner Vollständigkeit.",
   },
   {
     q: "Bieten Sie Co-Development an?",
@@ -197,7 +197,7 @@ export default function InvestorenSeite() {
             { icon: UserPlus, title: "Suchprofil", text: "Ticketgröße, Phasen, Länder und Technologien festlegen – einmal registrieren, jederzeit anpassen." },
             { icon: Zap, title: "Matching", text: "Passende Projekte kommen per Benachrichtigung, oft bevor sie öffentlich in der Börse stehen." },
             { icon: ShieldCheck, title: "NDA", text: "Digitale Vertraulichkeitsvereinbarung mit einem Klick – Voraussetzung für Details und Datenraum." },
-            { icon: FolderLock, title: "Datenraum", text: "Pachtverträge, Planung, Netz, Gutachten und Fragen & Antworten an einem Ort, jeder Zugriff protokolliert." },
+            { icon: FolderLock, title: "Datenraum", text: "Pachtverträge, Planung, Netz, Gutachten und Fragen & Antworten an einem Ort, jeder Zugriff protokolliert. Das Exposé-PDF enthält das Projektdatenblatt." },
             { icon: FileSignature, title: "LOI", text: "Absichtserklärung mit Preis, Zahlungsstaffel und Exklusivität – Start der vertieften Prüfung." },
             { icon: Handshake, title: "SPA & Closing", text: "Kaufvertrag über Anteile oder Rechte, Übergabe der Projektgesellschaft, Begleitung bis zum Bau." },
           ]}

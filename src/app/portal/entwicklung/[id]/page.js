@@ -10,6 +10,7 @@ import { heuteIso } from "@/lib/plattform/entwicklung";
 import { LAENDER } from "@/lib/plattform/konstanten";
 import { cn } from "@/components/ui/cn";
 import { PlanungExtern } from "@/components/Portal/Planung/Reiter"; // Planungsdateien (Gutachter/Co-Investor)
+import KycHinweisServer from "@/components/Portal/Kyc/KycHinweisServer"; // Co-Development nur mit verifiziertem KYC/KYB
 
 export const metadata = { title: "Projektentwicklung" };
 
@@ -22,7 +23,14 @@ const STAND = {
 export default async function EntwicklungExtern({ params }) {
   const n = await portalNutzer();
   const { id } = await params;
-  const p = await laden(() => entwicklungBackend().entwicklungExtern(n, id));
+  let p;
+  try {
+    p = await laden(() => entwicklungBackend().entwicklungExtern(n, id));
+  } catch (e) {
+    // Co-Development freigegeben, Verifizierung (KYC/KYB) aber noch offen → Hinweis statt Projektdaten
+    if (e?.status === 409 && e?.code === "kyc") return <CoDevKycOffen nutzer={n} />;
+    throw e;
+  }
   const heute = heuteIso();
 
   return (
@@ -122,3 +130,12 @@ export default async function EntwicklungExtern({ params }) {
   );
 }
 
+function CoDevKycOffen({ nutzer }) {
+  return (
+    <>
+      <Link href="/portal/entwicklung" className="mb-3 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-ink-600 hover:text-ov-700"><ArrowLeft aria-hidden="true" className="h-4 w-4" />Projektentwicklung</Link>
+      <SeitenKopf eyebrow="Co-Development" titel="Verifizierung erforderlich" text="Dieses Entwicklungsprojekt ist für Sie freigegeben. Fortschritt, Termine, Risiken und Unterlagen sehen Sie, sobald Ihre Verifizierung (KYC/KYB) abgeschlossen ist." />
+      <KycHinweisServer schritt="codevelopment" nutzer={nutzer} />
+    </>
+  );
+}

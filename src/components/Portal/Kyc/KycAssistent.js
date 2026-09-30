@@ -176,6 +176,7 @@ export default function KycAssistent({ start, rollen = [] }) {
   const [daten, setDaten] = useState(start);
   const fall = daten.fall;
   const typ = fall?.kontotyp || "";
+  const vorgaben = fall?.investorVorgaben || daten.investorVorgaben || null; // Investorentyp aus dem Suchprofil
   const bearbeitbar = !fall || fall.bearbeitbar;
   const investor = rollen.includes("investor");
   const eigentuemer = rollen.includes("flaeche") || rollen.includes("landwirt");
@@ -338,18 +339,24 @@ export default function KycAssistent({ start, rollen = [] }) {
               {Object.entries(KYC_KONTOTYPEN).map(([k, t]) => {
                 const Icon = k === "privat" ? UserRound : Building2;
                 const gewaehlt = typ === k;
+                const empfohlen = !typ && vorgaben?.kontotyp === k;
                 return (
                   <button key={k} type="button" disabled={!bearbeitbar || laeuft} onClick={() => speichern("kontotyp", { kontotyp: k })}
                     className={cn("flex min-w-0 items-start gap-3 rounded-2xl p-4 text-left ring-1 ring-inset transition", gewaehlt ? "bg-ov-50 ring-2 ring-ov-500" : "bg-white ring-ink-200 hover:ring-ov-300")}>
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-navy-50 text-navy-700"><Icon aria-hidden="true" className="h-5 w-5" /></span>
                     <span className="min-w-0">
-                      <span className="block font-display text-[16px] font-bold text-ink-900">{t.label}</span>
+                      <span className="block font-display text-[16px] font-bold text-ink-900">{t.label}{empfohlen && <span className="ml-2 align-middle text-[11.5px] font-semibold uppercase tracking-wide text-ov-700">Empfohlen</span>}</span>
                       <span className="mt-1 block text-[13.5px] leading-snug text-ink-600">{t.text}</span>
                     </span>
                   </button>
                 );
               })}
             </div>
+            {vorgaben && (
+              <p className="mt-4 rounded-2xl bg-sand-100 px-4 py-3 text-[13.5px] leading-relaxed text-ink-700">
+                <strong className="text-ink-900">Aus Ihrem Suchprofil: {vorgaben.label}.</strong> {vorgaben.hinweis}
+              </p>
+            )}
             <p className="mt-4 text-[13px] leading-relaxed text-ink-500">
               Warum? Bei der Vermittlung von Projekten, Pachtverträgen und Beteiligungen müssen wir Vertragspartner und wirtschaftlich Berechtigte nach dem Geldwäscherecht identifizieren. Ihre Unterlagen werden verschlüsselt gespeichert und nur von unserer Compliance eingesehen.
             </p>

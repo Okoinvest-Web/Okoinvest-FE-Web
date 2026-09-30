@@ -1786,6 +1786,7 @@ export async function exposeDaten(n, id, { ip = "" } = {}) {
   return {
     projekt: { ...projektOeffentlich(p), datenraumQualitaet: checklisteProjekt(p, doks).quote },
     vertraulich: projektVertraulich(p),
+    datenblatt: p.datenblatt || {}, // Projektdatenblatt im Exposé (Portal-Logik)
     dokumente: doks.filter((d) => zugriff !== "nda" || d.kategorie === "datenraum").map(dokumentMeta),
     zugriff,
     empfaenger: { name: nameVon(db, n.id), firma: u?.firma || "", email: u?.email || "", rolle: zugriff === "nda" ? "investor" : zugriff },

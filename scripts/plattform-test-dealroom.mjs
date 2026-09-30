@@ -179,6 +179,7 @@ async function main() {
     netzanschluss: "zusage", codGeplant: "2027-10", preisModus: "proKwp", preisProKwp: 90,
     beschreibung: "Testprojekt aus dem automatischen Deal-Room-Test. Baureif, Netzzusage vorhanden, Pachtverträge gesichert. Keine echten Angaben.",
     vertraulich: { gemeinde: `Dealgemeinde-${LAUF}` },
+    datenblatt: { modulTyp: `Testmodul-${LAUF}`, mwac: 6.2 }, // Projektdatenblatt → Exposé-PDF
   });
   await anbieter.post(`/api/portal/projekte/${pid}/provision`, { akzeptiert: true });
   await anbieter.post("/api/portal/status", { art: "projekt", id: pid, nach: "pruefung" });
@@ -297,6 +298,12 @@ async function main() {
   pruefe(r.status === 403, "…auch über die bisherige Dokument-Route → 403", r.status);
   r = await a.get(`/api/boerse/${slug}`);
   pruefe(r.status === 200 && !r.json.dokumente.some((d) => d.id === dok2.id) && r.json.dokumente.some((d) => d.id === dok1.id), "Exposé-Dokumentliste ohne Stufe-2-Unterlage", { status: r.status, doks: r.json.dokumente?.map((d) => d.name), error: r.json.error });
+  r = await a.anfrage("GET", `/api/portal/projekte/${pid}/expose`, undefined, { roh: true });
+  const exposeText = r.status === 200 ? Buffer.from(await r.arrayBuffer()).toString("latin1") : "";
+  pruefe(r.status === 200 && exposeText.startsWith("%PDF") && exposeText.includes("(Projektdatenblatt)") && exposeText.includes(`Testmodul-${LAUF}`) && /Vollst.ndigkeit \d+ %/.test(exposeText), "Exposé-PDF (nach NDA) enthält das Projektdatenblatt mit Vollständigkeit", { status: r.status, laenge: exposeText.length });
+  r = await gast.anfrage("GET", `/api/boerse/${slug}/teaser`, undefined, { roh: true });
+  const teaserText = r.status === 200 ? Buffer.from(await r.arrayBuffer()).toString("latin1") : "";
+  pruefe(r.status === 200 && !teaserText.includes(`Testmodul-${LAUF}`) && !teaserText.includes("(Projektdatenblatt)"), "Öffentlicher Teaser ohne Projektdatenblatt", r.status);
   r = await a.anfrage("GET", `/api/portal/datenraum/dokumente/${dok1.id}`, undefined, { roh: true });
   const cd = decodeURIComponent(r.headers.get("content-disposition") || "");
   pruefe(r.status === 200 && cd.includes(a.nutzer.nachname) && cd.includes(heute()) && cd.includes("vertraulich"), "Download mit Empfänger und Datum im Dateinamen (Wasserzeichen-Hinweis)", cd);

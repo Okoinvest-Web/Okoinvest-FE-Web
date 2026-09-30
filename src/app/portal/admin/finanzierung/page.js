@@ -69,7 +69,7 @@ export default async function FinanzierungBackofficeSeite({ searchParams }) {
   } else if (tab === "neu") {
     const auswahl = await laden(() => b.fzAuswahl(n));
     inhalt = (
-      <Karte titel="Finanzierungsfall anlegen" untertitel="Der Finanzierungsbedarf wird aus den Projektkosten vorbelegt (Entwicklungsprojekt: Standard-Capex je kWp + Entwicklungsbudget; Anlage: Contracting-Vertrag). Alle Annahmen sind danach im Financial Model änderbar.">
+      <Karte titel="Finanzierungsfall anlegen" untertitel="Der Finanzierungsbedarf wird aus den Projektkosten vorbelegt (Entwicklungsprojekt: Finanzierungsbedarf aus der übergebenen Projektkostenkalkulation, sonst Standard-Capex je kWp + Entwicklungsbudget; Anlage: Contracting-Vertrag). Alle Annahmen sind danach im Financial Model änderbar.">
         {u.darfSchreiben ? <FallAnlegen auswahl={auswahl} /> : <p className="text-[14px] text-ink-500">Ihre Backoffice-Rolle darf hier nur lesen.</p>}
       </Karte>
     );

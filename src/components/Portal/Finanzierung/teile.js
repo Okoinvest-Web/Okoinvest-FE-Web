@@ -10,6 +10,14 @@ export const fx = (x, s = 2) => (Number.isFinite(x) ? `${x.toLocaleString("de-DE
 export const jahre = (x) => (Number.isFinite(x) ? `${x.toLocaleString("de-DE", { maximumFractionDigits: 1 })} J.` : "–");
 export const datumDe = (s) => (s ? String(s).slice(0, 10).split("-").reverse().join(".") : "–");
 
+/** Herkunft des Capex eines Finanzierungsfalls (capexQuelle aus dem Backend) als kurzer Text */
+export function capexQuelleText(q) {
+  if (q?.art === "kostenkalkulation") return `aus Kostenkalkulation Stand ${[q.standLabel, q.am ? `vom ${datumDe(q.am)}` : ""].filter(Boolean).join(" ") || "–"}`;
+  if (q?.art === "standard") return "Standard-Capex (Marktwerte) + Entwicklungsbudget";
+  if (q?.art === "manuell") return "manuell angepasst";
+  return "";
+}
+
 const AMPEL_KLASSE = {
   gruen: "bg-ov-50 text-ov-800 ring-ov-200",
   gelb: "bg-sun-300/25 text-ink-900 ring-sun-400/50",

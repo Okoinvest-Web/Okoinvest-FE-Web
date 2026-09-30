@@ -3,7 +3,8 @@
 // Projekt-Exposé als PDF im Markenstil (Navy/Grün/Sand), mehrseitig:
 //  - vertrauliche Fassung (Investor nach NDA-Freigabe, Anbieter, Backoffice): alle Kennzahlen,
 //    Phase, Beschreibung, vertrauliche Angaben, Datenraum-Index, Vertraulichkeitshinweis mit
-//    Empfänger (jede Seite) – der Download wird vom Backend protokolliert
+//    Empfänger (jede Seite), Projektdatenblatt (ausgefüllte Felder je Bereich, Vollständigkeit, Kennzahlen) –
+//    der Download wird vom Backend protokolliert
 //  - öffentlicher Teaser: nur Felder der Positivliste (oeffentlich.js), kein Datenraum
 // Daten liefert das Backend (Operation `exposeDaten` bzw. `boerseDetail`), das Layout entsteht hier.
 
@@ -13,6 +14,7 @@ import { VERTRAULICH_FELDER } from "../oeffentlich";
 import { datum, datumZeit, mwp, preisText, preisGesamt } from "../format";
 import { PHASEN, phaseById } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import { DATENBLATT_BEREICHE, datenblattKennzahlen, datenblattVollstaendigkeit, feldAnzeige } from "../fach/datenblatt";
 
 const F = {
   navy950: "#03122b", navy900: "#041d42", navy700: "#003473", ov300: "#aed083", ov500: "#669933", ov600: "#558227", ov50: "#f4f9ee",
@@ -29,7 +31,7 @@ export function preisJeKwp(p) {
   return g && p?.mwp ? g / (p.mwp * 1000) : null;
 }
 
-export function exposePdf({ projekt: p, vertraulich = null, dokumente = [], teaser = false, empfaenger = null, erstelltAm = new Date().toISOString(), portalUrl = "" }) {
+export function exposePdf({ projekt: p, vertraulich = null, datenblatt = null, dokumente = [], teaser = false, empfaenger = null, erstelltAm = new Date().toISOString(), portalUrl = "" }) {
   const doc = new PdfDokument({
     titel: `${teaser ? "Teaser" : "Exposé"}: ${p.titel}`,
     thema: teaser ? "Öffentlicher Projekt-Teaser" : "Vertrauliches Projekt-Exposé",
@@ -165,6 +167,8 @@ export function exposePdf({ projekt: p, vertraulich = null, dokumente = [], teas
       y += h;
     });
 
+    datenblattAbschnitt();
+
     ueberschrift("Datenraum");
     if (!dokumente.length) absatz("Noch keine Unterlagen im Datenraum.", { farbe: F.ink500 });
     for (const d of dokumente) {
@@ -183,6 +187,47 @@ export function exposePdf({ projekt: p, vertraulich = null, dokumente = [], teas
   }
 
   if (teaser) hinweisBox();
+
+  // Projektdatenblatt (nur vertrauliche Fassung): ausgefüllte Felder je Bereich; Felder aus `vertraulich` stehen oben
+  function datenblattAbschnitt() {
+    const pv = { ...p, datenblatt: datenblatt || {}, vertraulich: vertraulich || {} };
+    const vs = datenblattVollstaendigkeit(pv);
+    const kz = datenblattKennzahlen(pv);
+    ueberschrift("Projektdatenblatt");
+    const kennzahlen = [
+      `Vollständigkeit ${vs.quote} % (${vs.erfuellt} von ${vs.erwartet} erwarteten Angaben der Phase)`,
+      kz.dcAc ? `DC/AC ${fmt(kz.dcAc, 2)}` : "",
+      kz.mwpProHa ? `${fmt(kz.mwpProHa, 2)} MWp/ha` : "",
+      kz.p90ZuP50 ? `P90/P50 ${fmt(kz.p90ZuP50 * 100, 1)} %` : "",
+      kz.jahresertragP50Mwh ? `Jahresertrag P50 ${fmt(kz.jahresertragP50Mwh)} MWh` : "",
+    ].filter(Boolean);
+    absatz(kennzahlen.join("  ·  "), { groesse: 9, farbe: F.ink500 });
+    y += 4;
+    let leer = true;
+    for (const b of DATENBLATT_BEREICHE) {
+      const zeilen = b.felder
+        .filter((f) => f.pfad !== "vertraulich")
+        .map((f) => [f.label, feldAnzeige(f, pv.datenblatt[f.id])])
+        .filter(([, w]) => w);
+      if (!zeilen.length) continue;
+      leer = false;
+      platz(40);
+      y += 6;
+      s.text(RAND, y + 10, b.titel, { groesse: 9.5, fett: true, farbe: F.navy700 });
+      y += 16;
+      zeilen.forEach(([label, wert], i) => {
+        const wz = umbrechen(wert, B - 218, 9.5);
+        const lz = umbrechen(label, 180, 8.5);
+        const h = Math.max(wz.length, lz.length) * 13.5 + 10;
+        platz(h);
+        if (i % 2 === 0) s.rechteck(RAND, y, B, h, F.ink50);
+        lz.forEach((z, j) => s.text(RAND + 8, y + 16 + j * 13.5, z, { groesse: 8.5, farbe: F.ink500 }));
+        wz.forEach((z, j) => s.text(RAND + 204, y + 16 + j * 13.5, z, { groesse: 9.5, farbe: F.ink900 }));
+        y += h;
+      });
+    }
+    if (leer) absatz("Der Anbieter hat das Standard-Projektdatenblatt noch nicht ausgefüllt – Angaben siehe Datenraum.", { farbe: F.ink500 });
+  }
 
   // Vertraulichkeits- bzw. Teaser-Hinweis (vertraulich: oben auf Seite 1, Teaser: am Ende)
   function hinweisBox() {

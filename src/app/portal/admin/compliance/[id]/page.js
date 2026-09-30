@@ -31,6 +31,7 @@ export default async function ComplianceFallSeite({ params }) {
             <KycStatusBadge status={f.status} intern />
             <RisikoBadge stufe={f.risiko} />
             {f.vierAugen && <Badge ton="info">Vier-Augen</Badge>}
+            {f.investorTypLabel && <Badge>{f.investorTypLabel}</Badge>}
           </div>
         }
       />

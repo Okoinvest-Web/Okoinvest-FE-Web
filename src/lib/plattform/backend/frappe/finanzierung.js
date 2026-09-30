@@ -82,6 +82,8 @@ export async function fzFallAnlegen(n, daten = {}) {
     if (x) {
       basis = cockpitStandard({ land: x.land, typ: TYPEN_FZ[x.typ] ? x.typ : "freiflaeche", mwp: x.mwp || (x.kwp || 0) / 1000 || 10 });
       if (daten.bezugArt === "anlage") basis = { ...basis, modell: "contracting", lieferAnteil: 0.6 };
+      // Entwicklungsprojekt mit übergebener Projektkostenkalkulation: Finanzierungsbedarf statt Standard-Capex (Quelle vermerkt Frappe)
+      if (daten.bezugArt === "entwicklung" && x.kostenkalkulation?.finanzierungsbedarf > 0) basis = { ...basis, capex: x.kostenkalkulation.finanzierungsbedarf };
       titel ||= x.titel;
     }
   }

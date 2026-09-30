@@ -296,6 +296,30 @@ async function api() {
   const a2 = r.json.fall.anfragen.find((a) => a.bankId === bank2?.id);
   const a3 = r.json.fall.anfragen.find((a) => a.bankId === bankId3);
 
+  abschnitt("A3b. Capex aus der Projektkostenkalkulation (Entwicklungsprojekt)");
+  r = await admin.post("/api/admin/entwicklung", { titel: `fz-test-${LAUF} Kalkulation`, typ: "freiflaeche", land: "DE", bundesland: "Bayern", gemeinde: "Testdorf", mwp: 8, vermarktung: "eeg" });
+  const ep = r.json.projekt;
+  pruefe(r.status === 201 && ep?.id, "Entwicklungsprojekt angelegt", r.status);
+  r = await admin.post("/api/admin/entwicklung", { titel: `fz-test-${LAUF} ohne Kalkulation`, typ: "freiflaeche", land: "DE", bundesland: "Bayern", gemeinde: "Testdorf", mwp: 8, vermarktung: "eeg" });
+  const ep2 = r.json.projekt;
+  r = await admin.post(`/api/admin/entwicklung/${ep?.id}/kalkulation/aktion`, { aktion: "uebergeben" });
+  const ueb = r.json.kalkulation?.uebergabe;
+  pruefe(r.status === 200 && ueb?.finanzierungsbedarf > 0, "Projektkostenkalkulation übergeben", r.json.kalkulation?.uebergabe || r.json);
+  r = await admin.get("/api/admin/finanzierung/auswahl");
+  const aw = (r.json.entwicklung || []).find((x) => x.id === ep?.id);
+  pruefe(r.status === 200 && aw?.kostenkalkulation?.finanzierungsbedarf === Math.round(ueb?.finanzierungsbedarf) && !(r.json.entwicklung || []).find((x) => x.id === ep2?.id)?.kostenkalkulation, "Auswahl zeigt übergebene Kostenkalkulation je Projekt", aw?.kostenkalkulation);
+  r = await admin.post("/api/admin/finanzierung", { bezugArt: "entwicklung", bezugId: ep?.id });
+  const fk = r.json.fall;
+  pruefe(r.status === 201 && fk?.capex === Math.round(ueb?.finanzierungsbedarf) && fk?.capexQuelle?.art === "kostenkalkulation" && fk.capexQuelle.stand === ueb?.stand, "Fall: Capex = Finanzierungsbedarf aus der Kostenkalkulation, Quelle mit Stand", fk && { capex: fk.capex, soll: ueb?.finanzierungsbedarf, quelle: fk.capexQuelle });
+  r = await admin.patch(`/api/admin/finanzierung/${fk?.id}`, { eingaben: { opexKwp: 12 } });
+  pruefe(r.status === 200 && r.json.fall?.capexQuelle?.art === "kostenkalkulation", "Andere Annahme geändert: Quelle bleibt", r.json.fall?.capexQuelle);
+  r = await admin.patch(`/api/admin/finanzierung/${fk?.id}`, { eingaben: { capex: 9000000 } });
+  pruefe(r.status === 200 && r.json.fall?.capexQuelle?.art === "manuell", "Capex überschrieben: Quelle „manuell“", r.json.fall?.capexQuelle);
+  r = await admin.post("/api/admin/finanzierung", { bezugArt: "entwicklung", bezugId: ep2?.id });
+  pruefe(r.status === 201 && r.json.fall?.capexQuelle?.art === "standard" && r.json.fall.capex > 0, "Ohne Kalkulation: Standard-Capex (Quelle „standard“)", r.json.fall?.capexQuelle);
+  r = await admin.get(`/portal/admin/finanzierung/${fk?.id}`);
+  pruefe(r.status === 200 && r.text.includes("manuell angepasst"), "Fallseite kennzeichnet die Capex-Quelle", r.status);
+
   abschnitt("A4. Bank sieht nur ihre Anfrage und freigegebene Bausteine");
   r = await bank.get("/api/portal/bank");
   pruefe(r.status === 200 && r.json.anfragen.some((a) => a.id === a1?.id) && !r.json.anfragen.some((a) => a.id === a2?.id), "Bank-Liste: eigene Anfrage ja, Anfrage an andere Bank nein");

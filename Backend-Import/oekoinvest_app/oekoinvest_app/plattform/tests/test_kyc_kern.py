@@ -138,6 +138,37 @@ class TestRegeln(unittest.TestCase):
 		self.assertFalse(k.freigabe("auszahlung", {"verifiziert": True, "bank": {"geprueft": False}})["ok"])
 		self.assertTrue(k.freigabe("nda", {"verifiziert": False}, aktiv=False)["ok"])
 
+	def test_codevelopment_schritt(self):
+		# Co-Development (Projektentwicklung): Freigabe nur mit verifiziertem KYC/KYB – Portal-Logik
+		self.assertIn("codevelopment", k.SCHRITTE)
+		self.assertTrue(k.einstellungen_standard()["gating"]["codevelopment"])
+		self.assertTrue(k.schritt_aktiv("codevelopment", "U-1", k.einstellungen_standard(), None))
+		self.assertFalse(k.freigabe("codevelopment", {"verifiziert": False})["ok"])
+		self.assertTrue(k.freigabe("codevelopment", {"verifiziert": True})["ok"])
+
+	def test_investortyp_aus_suchprofil(self):
+		self.assertIsNone(k.investor_vorgaben(""))
+		self.assertIsNone(k.investor_vorgaben("unbekannt"))
+		self.assertEqual(k.investor_vorgaben("privat")["kontotyp"], "privat")
+		self.assertEqual(k.investor_vorgaben("family_office")["kontotyp"], "unternehmen")
+		self.assertTrue(k.investor_vorgaben("fonds")["reguliert"])
+		# gleiche Typen wie das Suchprofil (fach/suchprofil.py)
+		from oekoinvest_app.plattform.fach.suchprofil import INVESTOR_TYPEN
+
+		self.assertEqual(sorted(INVESTOR_TYPEN), sorted(k.INVESTOR_TYPEN))
+		f = {"kontotyp": "unternehmen", "investorTyp": "stadtwerk", "dokumente": [], "firma": {}, "ubos": [], "vertreter": []}
+		anf = {x["id"]: x for x in k.anforderungen(f, rollen=["investor"])}
+		self.assertTrue(anf["investortyp"]["erfuellt"] and not anf["investortyp"]["pflicht"])
+		self.assertTrue(anf["doc_gesellschafterliste"]["pflicht"])
+		self.assertNotIn("(optional)", anf["doc_gesellschafterliste"]["label"])
+		self.assertFalse(anf["doc_satzung"]["pflicht"])
+		anf = {x["id"]: x for x in k.anforderungen({**f, "investorTyp": "genossenschaft"}, rollen=["investor"])}
+		self.assertTrue(anf["doc_satzung"]["pflicht"])
+		self.assertFalse(anf["doc_gesellschafterliste"]["pflicht"])
+		anf = {x["id"]: x for x in k.anforderungen({**f, "investorTyp": ""}, rollen=["investor"])}
+		self.assertNotIn("investortyp", anf)
+		self.assertFalse(anf["doc_gesellschafterliste"]["pflicht"])
+
 	def test_mime(self):
 		self.assertEqual(k.mime_aus_bytes(b"%PDF-1.4"), "application/pdf")
 		self.assertEqual(k.mime_aus_bytes(b"\x89PNG\r\n\x1a\nxx"), "image/png")

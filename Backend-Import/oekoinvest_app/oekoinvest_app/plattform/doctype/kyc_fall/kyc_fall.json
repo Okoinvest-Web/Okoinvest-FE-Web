@@ -11,6 +11,7 @@
   "konto",
   "organisation",
   "kontotyp",
+  "investor_typ",
   "bezeichnung",
   "email",
   "cb_fall",
@@ -89,6 +90,14 @@
    "label": "Kontotyp",
    "options": "\nprivat\nunternehmen",
    "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "investor_typ",
+   "fieldtype": "Select",
+   "label": "Investorentyp (aus Suchprofil)",
+   "options": "\nfamily_office\nfonds\nstadtwerk\nevu\nipp\nversicherung\nunternehmen\nprivat\ngenossenschaft",
+   "read_only": 1,
    "in_standard_filter": 1
   },
   {

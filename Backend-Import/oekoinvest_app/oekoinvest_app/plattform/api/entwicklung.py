@@ -8,7 +8,8 @@
 # Rechte (Rolle UND Eigentum, jede Methode selbst):
 #   Backoffice   – Rolle admin mit Bereich „entwicklung“ (rechte.py): lesen ≥ 1, schreiben = 2 (Unterrollen leitung, projektleitung)
 #   Eigentümer   – Konto/Team einer verknüpften Plattform-Fläche: nur vereinfachter Fortschritt (externe Titel, Quartale)
-#   Co-Investor  – Freigabe je Projekt (Konto oder Organisation, Rolle investor): Fortschritt, externe Risiken, freigegebene Dokumente
+#   Co-Investor  – Freigabe je Projekt (Konto oder Organisation, Rolle investor): Fortschritt, externe Risiken, freigegebene Dokumente;
+#                  Freigabe und Zugriff nur mit verifiziertem KYC/KYB (kyc_kern, Schritt „codevelopment“), sonst 409 (Code „kyc“)
 #   Gutachter    – Rolle gutachter UND Zuweisung am Meilenstein: nur zugewiesene Meilensteine, eigene Rückfragen, Upload
 #   sonst        – 403
 #
@@ -99,13 +100,27 @@ def _ist_eigentuemer(n, pid):
 	return False
 
 
-def _freigabe(n, pid):
+def _freigabe_roh(n, pid):
+	"""Co-Development-Freigabe des Kontos bzw. seiner Organisation (ohne KYC-Prüfung)."""
 	if "investor" not in (n.get("rollen") or []):
 		return None
 	for fg in frappe.get_all(DT_FREIGABE, filters={"projekt_id": pid}, fields=["name", "nutzer_id", "organisation_id", "risiken", "dokumente"], limit_page_length=0):
 		if (fg.nutzer_id and fg.nutzer_id == n.id) or (fg.organisation_id and team_rolle(n.id, fg.organisation_id)):
 			return fg
 	return None
+
+
+def _kyc_codev(n, fg):
+	"""KYC-Freigabe „codevelopment“ für den zugreifenden Investor (eigener Fall bzw. KYB der freigegebenen/aktiven Organisation)."""
+	from oekoinvest_app.plattform.kyc_kern import kyc_freigabe
+
+	return kyc_freigabe("codevelopment", n.id, fg.organisation_id or (n.get("organisation") or {}).get("id") or None)
+
+
+def _freigabe(n, pid):
+	"""Wirksame Co-Development-Freigabe: nur mit verifiziertem KYC/KYB (auch für Planungsdateien und Dokumente)."""
+	fg = _freigabe_roh(n, pid)
+	return fg if fg and _kyc_codev(n, fg)["ok"] else None
 
 
 def _ms_liste(pid):
@@ -119,10 +134,13 @@ def _gutachter_ms(n, pid, liste=None):
 
 
 def zugriffe(n, p, liste=None):
+	fg = _freigabe_roh(n, p.name)
+	kyc = _kyc_codev(n, fg) if fg else None
 	return {
 		"backoffice": bo_lesen(n),
 		"eigentuemer": _ist_eigentuemer(n, p.name),
-		"investor": _freigabe(n, p.name),
+		"investor": fg if kyc and kyc["ok"] else None,
+		"investorKyc": kyc if kyc and not kyc["ok"] else None,  # Freigabe vorhanden, aber KYC/KYB noch nicht verifiziert
 		"gutachter": _gutachter_ms(n, p.name, liste),
 	}
 
@@ -843,6 +861,9 @@ def _eintrag(n, p, art, kennung, d):
 				ungueltig("Bitte ein Investorenkonto oder eine Organisation wählen.")
 			if (kid and frappe.db.exists(DT_FREIGABE, {"projekt_id": p.name, "nutzer_id": kid})) or (oid and frappe.db.exists(DT_FREIGABE, {"projekt_id": p.name, "organisation_id": oid})):
 				konflikt("Für dieses Konto bzw. diese Organisation besteht bereits eine Freigabe.")
+			from oekoinvest_app.plattform.kyc_kern import kyc_sperre
+
+			kyc_sperre("codevelopment", konto_id=kid or None, organisation_id=oid or None, text="Co-Development-Freigabe nicht möglich: Der Investor ist noch nicht verifiziert (KYC/KYB).")  # 409
 			f.update(nutzer_id=kid or None, organisation_id=oid or None, seit=now_datetime(), von_id=n.id)
 		for k in ("risiken", "dokumente"):
 			if k in d or not kennung:
@@ -1184,6 +1205,8 @@ def _extern_json(n, p, z, liste):
 		"id": p.name, "titel": p.titel, "typLabel": K.ENTWICKLUNG_TYPEN.get(p.typ, p.typ), "land": p.land, "bundesland": p.bundesland, "gemeinde": p.gemeinde or "",
 		"phaseLabel": k["phaseLabel"], "fortschritt": k["fortschritt"], "statusLabel": K.ENTWICKLUNG_STATUS.get(p.status, p.status),
 		"sichten": [x for x, an in (("eigentuemer", z["eigentuemer"]), ("investor", z["investor"]), ("gutachter", z["gutachter"])) if an],
+		# Co-Development freigegeben, aber Verifizierung offen → Hinweis statt Projektdaten
+		"kycErforderlich": {"schritt": "codevelopment", "status": z["investorKyc"]["status"]} if z.get("investorKyc") and not z["investor"] else None,
 	}
 	if z["eigentuemer"]:
 		meine = []
@@ -1263,7 +1286,7 @@ def meine(als_benutzer=None):
 			continue
 		liste = _ms_liste(pid)
 		z = zugriffe(n, p, liste)
-		if z["eigentuemer"] or z["investor"] or z["gutachter"]:
+		if z["eigentuemer"] or z["investor"] or z["gutachter"] or z["investorKyc"]:
 			erg.append(_extern_json(n, p, z, liste))
 	return erg
 
@@ -1275,6 +1298,11 @@ def extern(id=None, als_benutzer=None):  # noqa: A002
 	liste = _ms_liste(p.name)
 	z = zugriffe(n, p, liste)
 	if not (z["eigentuemer"] or z["investor"] or z["gutachter"]) or p.status == "abgebrochen":
+		if z["investorKyc"] and p.status != "abgebrochen":
+			from oekoinvest_app.plattform.kyc_kern import kyc_sperre
+
+			fg = _freigabe_roh(n, p.name)
+			kyc_sperre("codevelopment", konto_id=n.id, organisation_id=fg.organisation_id or (n.get("organisation") or {}).get("id") or None)  # 409 (Code „kyc“)
 		verboten("Dieses Projekt ist für Ihr Konto nicht freigegeben.")
 	return _extern_json(n, p, z, liste)
 

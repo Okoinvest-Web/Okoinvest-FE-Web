@@ -94,7 +94,7 @@ def fall_dict(f, mit_dokumenten=True):
 	firma = aus_json(f.firma_json, {}) or {}
 	b = _bank(f.name) or {}
 	return {
-		"id": f.name, "kontoId": f.konto, "organisationId": f.organisation or None, "kontotyp": f.kontotyp or "", "status": f.status,
+		"id": f.name, "kontoId": f.konto, "organisationId": f.organisation or None, "kontotyp": f.kontotyp or "", "investorTyp": f.get("investor_typ") or "", "status": f.status,
 		"person": aus_json(f.person_json, {}) or {}, "firma": {kk: vv for kk, vv in firma.items() if kk != "einreicherVertretungsberechtigt"},
 		"einreicherVertretungsberechtigt": firma.get("einreicherVertretungsberechtigt"),
 		"ubos": [{"id": u.zeile_id or u.name, "vorname": u.vorname, "nachname": u.nachname, "geburtsdatum": str(u.geburtsdatum) if u.geburtsdatum else "", "staatsangehoerigkeit": u.staatsangehoerigkeit, "wohnsitzland": u.wohnsitzland, "anteil": flt(u.anteil) or None, "kontrolleArt": u.kontrolle_art, "pep": bool(u.pep)} for u in f.get("ubos") or []],
@@ -128,7 +128,8 @@ def fall_fuer_nutzer(f):
 	sicht = "in_pruefung" if f.status == "zweitpruefung" else f.status
 	b = d["bank"]
 	return {
-		**{kk: d[kk] for kk in ("id", "kontotyp", "organisationId", "person", "firma", "ubos", "vertreter", "einreicherVertretungsberechtigt", "pep", "mittelherkunft", "steuer")},
+		"investorVorgaben": k.investor_vorgaben(d["investorTyp"]),
+		**{kk: d[kk] for kk in ("id", "kontotyp", "investorTyp", "organisationId", "person", "firma", "ubos", "vertreter", "einreicherVertretungsberechtigt", "pep", "mittelherkunft", "steuer")},
 		"status": sicht, "statusLabel": k.STATUS.get(sicht, sicht),
 		"bank": {"iban": " ".join(b["iban"][i:i + 4] for i in range(0, len(b["iban"]), 4)) if b.get("iban") else "", "kontoinhaber": b.get("kontoinhaber", ""), "bic": b.get("bic", ""), "geprueft": f.status == "verifiziert" and b.get("geprueft", False)} if b else {},
 		"nachforderung": f.nachforderung or "" if f.status == "nachgefordert" else "",
@@ -137,6 +138,20 @@ def fall_fuer_nutzer(f):
 		"bearbeitbar": f.status in k.BEARBEITBAR,
 		"dokumente": [dokument_meta(x) for x in _dokumente(f.name)],
 	}
+
+
+def _investor_typ(n):
+	"""Investorentyp aus dem (Konto- bzw. Team-)Suchprofil – nur Investorenkonten; wird in den KYC-Fall übernommen."""
+	if "investor" not in (n.get("rollen") or []):
+		return ""
+	from oekoinvest_app.plattform.organisation import suchprofil_fuer
+
+	sp = suchprofil_fuer(n) or {}
+	typ = sp.get("investorTyp") if isinstance(sp, dict) else ""
+	if not typ:
+		eigen = aus_json(frappe.db.get_value("Plattform Konto", n.id, "suchprofil"), {}) or {}
+		typ = eigen.get("investorTyp") if isinstance(eigen, dict) else ""
+	return typ if k.investor_vorgaben(typ) else ""
 
 
 def _eigener_fall(n):
@@ -260,6 +275,7 @@ def fall(als_benutzer=None):
 		"fall": fall_fuer_nutzer(f), "anforderungen": anf, "fortschritt": k.fortschritt(anf),
 		"status": {**st, "status": sicht, "statusLabel": k.STATUS.get(sicht, sicht), "risiko": None},
 		"flaechen": _flaechen(n.id),
+		"investorVorgaben": k.investor_vorgaben((f.get("investor_typ") if f else "") or _investor_typ(n)),  # Vorschlag Kontotyp/Unterlagen aus dem Suchprofil
 		"freigaben": {s: {"label": d[0], "aktiv": k.schritt_aktiv(s, n.id, e, k._umgebung()), "pflichtBeiGeltung": (e.get("gating") or {}).get(s) is not False, "ok": st["verifiziert"]} for s, d in k.SCHRITTE.items()},
 		"ablage": {"gesetzt": bool(frappe.conf.get("oekoinvest_kyc_schluessel")), "entwicklung": False},
 	}
@@ -301,14 +317,17 @@ def speichern(abschnitt=None, daten=None, als_benutzer=None):
 	if not f:
 		if abschnitt != "kontotyp":
 			ungueltig("Bitte wählen Sie zuerst den Kontotyp.")
-		f = frappe.get_doc({"doctype": k.DT_FALL, "konto": n.id, "status": "offen", "kontotyp": ""})
-		_verlauf(f, "offen", n, "nutzer", "Verifizierung begonnen.")
+		it = _investor_typ(n)
+		f = frappe.get_doc({"doctype": k.DT_FALL, "konto": n.id, "status": "offen", "kontotyp": "", "investor_typ": it})
+		_verlauf(f, "offen", n, "nutzer", f"Verifizierung begonnen (Investorentyp: {k.investor_vorgaben(it)['label']})." if it else "Verifizierung begonnen.")
 		f.flags.kyc_uebergang = True
 		f.insert(ignore_permissions=True)
 	if f.status not in k.BEARBEITBAR:
 		konflikt("Ihre Verifizierung ist abgeschlossen. Für Änderungen starten Sie bitte eine erneute Prüfung." if f.status == "verifiziert" else "Ihre Angaben liegen gerade zur Prüfung vor und können nicht geändert werden.")
+	f.investor_typ = _investor_typ(n) or f.get("investor_typ") or ""  # Suchprofil kann sich geändert haben
 	if abschnitt == "kontotyp":
-		typ = v.auswahl(d.get("kontotyp"), list(k.KONTOTYPEN), "")
+		# ohne Angabe: Vorschlag aus dem Investorentyp des Suchprofils
+		typ = v.auswahl(d.get("kontotyp"), list(k.KONTOTYPEN), "") or (k.investor_vorgaben(f.investor_typ) or {}).get("kontotyp") or ""
 		v.pflicht(typ, "Bitte wählen Sie den Kontotyp.")
 		f.kontotyp = typ
 		org = n.get("organisation") or {}
@@ -436,6 +455,8 @@ def einreichen(ip=None, als_benutzer=None):
 	f = _eigener_fall(n)
 	if not f:
 		ungueltig("Bitte beginnen Sie zuerst mit der Verifizierung.")
+	if f.status in k.BEARBEITBAR:
+		f.investor_typ = _investor_typ(n) or f.get("investor_typ") or ""
 	fp = k.fortschritt(_anforderungen(f))
 	if fp["fehlend"]:
 		ungueltig("Es fehlen noch: " + " · ".join(x["label"] for x in fp["fehlend"]))
@@ -517,7 +538,8 @@ def _zeile(f):
 	return {
 		"id": f.name, "kontoId": f.konto, "konto": {"name": f"{konto.get('vorname') or ''} {konto.get('nachname') or ''}".strip(), "email": konto.get("email"), "rollen": _konto_rollen(f.konto)} if konto else None,
 		"organisation": {"id": f.organisation, "name": frappe.db.get_value("Plattform Organisation", f.organisation, "titel")} if f.organisation else None,
-		"kontotyp": f.kontotyp, "bezeichnung": f.bezeichnung, "status": f.status, "statusLabel": k.STATUS.get(f.status), "risiko": f.risiko or None, "sanktionen": f.sanktionen_status or None,
+		"kontotyp": f.kontotyp, "investorTyp": f.get("investor_typ") or "", "investorTypLabel": (k.investor_vorgaben(f.get("investor_typ")) or {}).get("label", ""),
+		"bezeichnung": f.bezeichnung, "status": f.status, "statusLabel": k.STATUS.get(f.status), "risiko": f.risiko or None, "sanktionen": f.sanktionen_status or None,
 		"pep": bool(cint(f.pep)), "eingereichtAm": iso(f.eingereicht_am), "wartetTage": (getdate(nowdate()) - getdate(warte)).days if warte else None,
 		"bearbeiterId": f.bearbeiter, "bearbeiter": name_von(f.bearbeiter) if f.bearbeiter else "", "erstPrueferId": f.erst_pruefer,
 		"naechstePruefung": str(f.naechste_pruefung) if f.naechste_pruefung else None, "ausweisGueltigBis": str(f.ausweis_gueltig_bis) if f.ausweis_gueltig_bis else None, "loeschenAb": str(f.loeschen_ab) if f.loeschen_ab else None,
@@ -529,7 +551,7 @@ def warteschlange(status=None, q=None, als_benutzer=None):  # noqa: A002
 	n = nutzer(als_benutzer)
 	if not compliance_lesen(n):
 		verboten("Nur für die Compliance.")
-	felder = ["name", "konto", "organisation", "kontotyp", "bezeichnung", "status", "risiko", "sanktionen_status", "pep", "eingereicht_am", "creation", "bearbeiter", "erst_pruefer", "naechste_pruefung", "ausweis_gueltig_bis", "loeschen_ab"]
+	felder = ["name", "konto", "organisation", "kontotyp", "investor_typ", "bezeichnung", "status", "risiko", "sanktionen_status", "pep", "eingereicht_am", "creation", "bearbeiter", "erst_pruefer", "naechste_pruefung", "ausweis_gueltig_bis", "loeschen_ab"]
 	alle = frappe.get_all(k.DT_FALL, filters={"status": ["!=", "geloescht"]}, fields=felder, limit_page_length=5000)
 	status = status or "offen"
 	heute = getdate(nowdate())

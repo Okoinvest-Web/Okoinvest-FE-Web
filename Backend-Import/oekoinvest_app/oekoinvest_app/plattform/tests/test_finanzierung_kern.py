@@ -66,5 +66,23 @@ class TestFinanzierungKern(unittest.TestCase):
 		self.assertEqual(len(K.CP_IDS), len(set(K.CP_IDS)))
 
 
+class TestCapexAusKostenkalkulation(unittest.TestCase):
+	def test_kalkulation_kurz(self):
+		self.assertIsNone(K.kalkulation_kurz(None))
+		self.assertIsNone(K.kalkulation_kurz({"finanzierungsbedarf": 0, "capex": 0}))
+		kk = K.kalkulation_kurz({"gesamt": 9_000_000, "capex": 8_600_000, "finanzierungsbedarf": 9_350_000.4, "stand": "kostenschaetzung", "standLabel": "Kostenschätzung", "am": "2026-09-01T10:00:00Z"})
+		self.assertEqual(kk["finanzierungsbedarf"], 9_350_000)
+		self.assertEqual(kk["capex"], 8_600_000)
+		self.assertEqual(kk["standLabel"], "Kostenschätzung")
+		self.assertEqual(K.kalkulation_kurz({"capex": 5_000_000})["finanzierungsbedarf"], 5_000_000)  # älterer Stand ohne Finanzierungsbedarf
+
+	def test_capex_quelle(self):
+		kk = K.kalkulation_kurz({"capex": 8_600_000, "finanzierungsbedarf": 9_350_000, "standLabel": "Kostenschätzung"})
+		self.assertEqual(K.capex_quelle(9_350_000, kk)["art"], "kostenkalkulation")
+		self.assertEqual(K.capex_quelle(9_350_000, kk)["standLabel"], "Kostenschätzung")
+		self.assertEqual(K.capex_quelle(7_000_000, kk)["art"], "manuell")
+		self.assertEqual(K.capex_quelle(7_000_000, None)["art"], "standard")
+
+
 if __name__ == "__main__":
 	unittest.main()

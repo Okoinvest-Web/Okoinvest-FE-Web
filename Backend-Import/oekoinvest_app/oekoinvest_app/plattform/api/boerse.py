@@ -168,6 +168,7 @@ def expose(id=None, ip=None, als_benutzer=None):  # noqa: A002
 	return {
 		"projekt": {**projekt_oeffentlich(pj), "datenraumQualitaet": datenraum_qualitaet(pj)},
 		"vertraulich": projekt_vertraulich(pj),
+		"datenblatt": pj.get("datenblatt") or {},  # Projektdatenblatt im Exposé-PDF (Portal-Logik)
 		"dokumente": dokumente,
 		"zugriff": zugriff,
 		"empfaenger": {"name": name_von(n.id), "firma": konto.get("firma") or "", "email": konto.get("email") or "", "rolle": "investor" if zugriff == "nda" else zugriff},

@@ -13,7 +13,7 @@ import { COCKPIT_FELDER } from "@/lib/plattform/finanzierung/kern";
 import { SICHERHEITEN, CP_STANDARD, REFERENZZINSEN, BANKENPAKET } from "@/lib/plattform/finanzierung/bank";
 import { TILGUNG_PROFILE } from "@/lib/plattform/finanzierung/kern";
 import { GESCHAEFTSMODELLE } from "@/lib/plattform/finanzierung/geschaeftsmodell";
-import { teur, pct, fx } from "./teile";
+import { teur, pct, fx, capexQuelleText } from "./teile";
 
 const knopf = "inline-flex h-11 items-center justify-center gap-2 rounded-full bg-ov-600 px-5 text-[14px] font-semibold text-white transition-colors hover:bg-ov-700 disabled:opacity-60";
 const knopfHell = "inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-4 text-[13px] font-semibold text-ink-800 ring-1 ring-inset ring-ink-200 hover:ring-ink-300 disabled:opacity-60";
@@ -61,6 +61,7 @@ export function FallAnlegen({ auswahl }) {
   const [s, los] = useAktion();
   const [d, setD] = useState({ bezugArt: "entwicklung", bezugId: "", titel: "", spv: "", betragWunsch: "" });
   const liste = d.bezugArt === "entwicklung" ? auswahl.entwicklung : d.bezugArt === "anlage" ? auswahl.anlagen : [];
+  const kk = d.bezugArt === "entwicklung" ? liste.find((x) => x.id === d.bezugId)?.kostenkalkulation : null;
   return (
     <form
       className="grid gap-4 sm:grid-cols-2"
@@ -83,6 +84,13 @@ export function FallAnlegen({ auswahl }) {
             {liste.map((x) => <option key={x.id} value={x.id}>{x.titel}</option>)}
           </select>
         </F>
+      )}
+      {d.bezugArt === "entwicklung" && d.bezugId && (
+        <p className="text-[13px] leading-relaxed text-ink-600 sm:col-span-2" role="status">
+          {kk
+            ? <>Gesamtinvestition (Capex) <strong className="text-ink-900">{teur(kk.finanzierungsbedarf)}</strong> – Finanzierungsbedarf {capexQuelleText({ art: "kostenkalkulation", ...kk })}.</>
+            : "Für dieses Projekt ist keine Projektkostenkalkulation übergeben – Vorbelegung mit Standard-Capex je kWp (Marktwerte) + Entwicklungsbudget."}
+        </p>
       )}
       <F label="Titel (leer = aus dem Bezug)"><input value={d.titel} maxLength={120} onChange={(e) => setD({ ...d, titel: e.target.value })} className={zahlFeld} /></F>
       <F label="Projektgesellschaft (SPV)"><input value={d.spv} maxLength={160} onChange={(e) => setD({ ...d, spv: e.target.value })} className={zahlFeld} placeholder="z. B. Solarpark X GmbH & Co. KG" /></F>

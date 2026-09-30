@@ -239,6 +239,7 @@ function fallAusgabe(db, f, { voll = false, kyb = null } = {}) {
     anfragenAnzahl: F(db).anfragen.filter((a) => a.fallId === f.id).length, termsheetsAnzahl: F(db).anfragen.filter((a) => a.fallId === f.id && ["termsheet", "ausgewaehlt"].includes(a.status)).length,
     covenant: f.covenant ? { ampel: f.covenant.ampel, letzte: f.covenant.letzte, llcr: f.covenant.llcr, geprueftAm: f.covenant.geprueftAm } : null,
     kreditvertrag: f.kreditvertrag || null, reporting: f.reporting || null, erstelltAm: f.erstelltAm, geaendertAm: f.geaendertAm,
+    capexQuelle: f.capexQuelle || null, // { art: kostenkalkulation|standard|manuell, stand, standLabel, am, finanzierungsbedarf }
   };
   if (!voll) return aus;
   const anfragen = F(db).anfragen.filter((a) => a.fallId === f.id).map((a) => anfrageAusgabe(db, a));
@@ -309,19 +310,36 @@ export async function fzAuswahl(n) {
   leseNoetig(n);
   const db = await lesenBereit();
   return {
-    entwicklung: (db.entwicklung?.projekte || []).filter((p) => p.status !== "abgebrochen").map((p) => ({ id: p.id, titel: p.titel, mwp: p.mwp, land: p.land, typ: p.typ })),
+    entwicklung: (db.entwicklung?.projekte || []).filter((p) => p.status !== "abgebrochen").map((p) => ({ id: p.id, titel: p.titel, mwp: p.mwp, land: p.land, typ: p.typ, kostenkalkulation: kalkulationKurz(p.kostenkalkulation) })),
     anlagen: (db.anlagen?.anlagen || []).filter((a) => a.kwp > 0).map((a) => ({ id: a.id, titel: a.name, kwp: a.kwp, land: a.land, typ: a.typ })),
   };
 }
 
-/** Eingaben eines neuen Falls aus dem Bezug (Entwicklungsprojekt: Leistung, Land, Typ, Entwicklungsbudget; Anlage: Contracting) */
+/** Übergebener Stand der Projektkostenkalkulation (planung.js → Aktion „uebergeben“) in Kurzform – oder null */
+function kalkulationKurz(k) {
+  const betrag = Math.round(Number(k?.finanzierungsbedarf) || Number(k?.capex) || 0);
+  if (!k || betrag <= 0) return null;
+  return { finanzierungsbedarf: betrag, capex: Math.round(Number(k.capex) || 0) || null, stand: k.stand || null, standLabel: k.standLabel || "", am: k.am || null, eurProKwp: k.eurProKwp ?? null };
+}
+
+/**
+ * Eingaben eines neuen Falls aus dem Bezug (Entwicklungsprojekt: Leistung, Land, Typ, Capex; Anlage: Contracting).
+ * Capex eines Entwicklungsprojekts: Finanzierungsbedarf aus der übergebenen Projektkostenkalkulation (inkl. Entwicklung,
+ * Netz, Finanzierungskosten und Sicherheiten), sonst Standard-Capex (markt.js) + Entwicklungsbudget. `quelle` beschreibt die Herkunft.
+ */
 function eingabenAusBezug(db, bezugArt, bezugId, basis = {}) {
   if (bezugArt === "entwicklung") {
     const p = (db.entwicklung?.projekte || []).find((x) => x.id === bezugId);
     if (!p) throw nichtGefunden("Entwicklungsprojekt nicht gefunden.");
     const s = cockpitStandard({ land: p.land, typ: p.typ === "agri" ? "agri" : p.typ === "speicher" ? "speicher" : "freiflaeche", mwp: p.mwp || 10 });
+    const kk = kalkulationKurz(p.kostenkalkulation);
+    if (kk) {
+      const e = cockpitBereinigen({ ...s, capex: kk.finanzierungsbedarf, ...basis });
+      const quelle = e.capex === kk.finanzierungsbedarf ? { art: "kostenkalkulation", ...kk } : { art: "manuell" };
+      return { e, titel: p.titel, quelle };
+    }
     const budget = (db.entwicklung.budget || []).filter((b) => b.projektId === p.id).reduce((x, b) => x + Math.max(Number(b.planEur) || 0, Number(b.istEur) || 0), 0);
-    return { e: cockpitBereinigen({ ...s, capex: s.capex + budget, ...basis }), titel: p.titel };
+    return { e: cockpitBereinigen({ ...s, capex: s.capex + budget, ...basis }), titel: p.titel, quelle: { art: "standard" } };
   }
   if (bezugArt === "anlage") {
     const a = (db.anlagen?.anlagen || []).find((x) => x.id === bezugId);
@@ -345,15 +363,15 @@ export async function fzFallAnlegen(n, daten = {}) {
   const bezugId = bezugArt === "frei" ? null : v.kennung(daten.bezugId);
   if (bezugArt !== "frei" && !bezugId) throw ungueltig("Bitte das Projekt bzw. die Anlage wählen.");
   return aendernBereit((db) => {
-    const { e, titel } = eingabenAusBezug(db, bezugArt, bezugId, daten.eingaben || {});
+    const { e, titel, quelle = null } = eingabenAusBezug(db, bezugArt, bezugId, daten.eingaben || {});
     const t = v.text(daten.titel, 120) || titel;
     v.pflicht(t.length >= 3, "Bitte einen Titel angeben.");
     const f = {
       id: neueId("FF"), titel: t, spv: v.text(daten.spv, 160), spvOrganisationId: v.kennung(daten.spvOrganisationId) || null, bezugArt, bezugId, eingaben: e,
-      betragWunsch: Math.round(v.zahl(daten.betragWunsch, { min: 0, max: 5e9 }) || e.capex * e.fkQuote), status: "vorbereitung", paketFreigabe: ["steckbrief", "financial_model"],
+      betragWunsch: Math.round(v.zahl(daten.betragWunsch, { min: 0, max: 5e9 }) || e.capex * e.fkQuote), status: "vorbereitung", paketFreigabe: ["steckbrief", "financial_model"], capexQuelle: quelle,
       cps: CP_STANDARD.map((c) => ({ ...c, erledigt: false, am: null, von: null, nachweis: "" })), notiz: v.mehrzeilig(daten.notiz, 2000), erstelltVon: n.id, erstelltAm: jetzt(), geaendertAm: jetzt(), verlauf: [],
     };
-    verlauf(f, n, db, "Finanzierungsfall angelegt");
+    verlauf(f, n, db, quelle?.art === "kostenkalkulation" ? `Finanzierungsfall angelegt – Capex aus Kostenkalkulation${quelle.standLabel ? ` (${quelle.standLabel})` : ""}` : "Finanzierungsfall angelegt");
     F(db).faelle.push(f);
     protokoll(db, n, "anlegen", "finanzierung", f.id, `Finanzierungsfall „${f.titel}“ angelegt`);
     return fallAusgabe(db, f);
@@ -370,7 +388,9 @@ export async function fzFallAendern(n, id, daten = {}) {
     if (daten.notiz !== undefined) f.notiz = v.mehrzeilig(daten.notiz, 2000);
     if (daten.betragWunsch !== undefined) f.betragWunsch = Math.round(v.zahl(daten.betragWunsch, { min: 0, max: 5e9 }) || 0);
     if (daten.eingaben) {
+      const capexVorher = f.eingaben.capex;
       f.eingaben = cockpitBereinigen({ ...f.eingaben, ...daten.eingaben }, f.eingaben);
+      if (f.capexQuelle && f.eingaben.capex !== capexVorher) f.capexQuelle = { art: "manuell" }; // Capex überschrieben
       verlauf(f, n, db, "Financial Model aktualisiert");
     }
     if (daten.status !== undefined) {

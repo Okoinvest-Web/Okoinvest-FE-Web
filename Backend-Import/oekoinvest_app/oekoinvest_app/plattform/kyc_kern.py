@@ -88,7 +88,30 @@ SCHRITTE = {
 	"veroeffentlichung": ("Projekt-Veröffentlichung", "Projekte werden erst nach abgeschlossener Verifizierung des Anbieters (KYB) veröffentlicht."),
 	"auszahlung": ("Pachtauszahlung / Gutschrift", "Auszahlungen setzen eine abgeschlossene Verifizierung, eine geprüfte Bankverbindung und einen Eigentumsnachweis voraus."),
 	"contracting": ("Contracting-Vertrag", "Contracting-Verträge setzen eine abgeschlossene Verifizierung des Kunden (KYB) voraus."),
+	"codevelopment": ("Co-Development (Projektentwicklung)", "Die Co-Development-Freigabe eines Entwicklungsprojekts setzt eine abgeschlossene Verifizierung voraus."),
 }
+
+# Investorentyp aus dem Suchprofil (fach/suchprofil.py INVESTOR_TYPEN) → Vorgaben für den KYC-Fall – wie KYC_INVESTOR_TYPEN in kyc.js:
+# (vorgeschlagener Kontotyp, zusätzliche Pflichtunterlagen nur bei KYB, beaufsichtigt?, Hinweis)
+INVESTOR_TYPEN = {
+	"family_office": ("Family Office", "unternehmen", ("gesellschafterliste",), False, "Family Office: Häufig mehrstufige Holding- oder Stiftungsstrukturen – bitte die wirtschaftlich Berechtigten bis zur natürlichen Person angeben und die Gesellschafterliste beifügen."),
+	"fonds": ("Fonds / Asset Manager (AIF, Spezialfonds)", "unternehmen", ("satzung",), True, "Fonds / Asset Manager: Angaben zur Kapitalverwaltungsgesellschaft bzw. zum Fonds (Register, Aufsicht) und Gesellschaftsvertrag bzw. Anlagebedingungen beifügen. Bei beaufsichtigten Einrichtungen können vereinfachte Sorgfaltspflichten in Betracht kommen – darüber entscheidet die Compliance."),
+	"stadtwerk": ("Stadtwerk / kommunales Unternehmen", "unternehmen", ("gesellschafterliste",), False, "Stadtwerk / kommunales Unternehmen: Gesellschafterliste (Beteiligung der Kommune) beifügen. Ist keine natürliche Person wirtschaftlich berechtigt, sind in der Regel die gesetzlichen Vertreter als fiktive wirtschaftlich Berechtigte anzugeben."),
+	"evu": ("Energieversorger", "unternehmen", ("gesellschafterliste",), False, "Energieversorger: Konzern- bzw. Beteiligungsstruktur mit der Gesellschafterliste offenlegen."),
+	"ipp": ("Unabhängiger Stromerzeuger (IPP)", "unternehmen", ("gesellschafterliste",), False, "Unabhängiger Stromerzeuger (IPP): Konzern- bzw. Beteiligungsstruktur mit der Gesellschafterliste offenlegen."),
+	"versicherung": ("Versicherung / Pensionskasse", "unternehmen", ("satzung",), True, "Versicherung / Pensionskasse: Satzung beifügen und die zuständige Aufsicht angeben. Bei beaufsichtigten Einrichtungen können vereinfachte Sorgfaltspflichten in Betracht kommen – darüber entscheidet die Compliance."),
+	"unternehmen": ("Unternehmen (Eigenversorgung, PPA)", "unternehmen", (), False, "Unternehmen: Prüfung der Firma (KYB) mit wirtschaftlich Berechtigten und vertretungsberechtigten Personen."),
+	"privat": ("Privatinvestor", "privat", (), False, "Privatinvestor: Prüfung als natürliche Person; bitte die Herkunft der Mittel angeben."),
+	"genossenschaft": ("Energiegenossenschaft / Bürgerenergie", "unternehmen", ("satzung",), False, "Energiegenossenschaft: Satzung beifügen. Bei breiter Mitgliederstruktur sind in der Regel die Vorstandsmitglieder als fiktive wirtschaftlich Berechtigte anzugeben."),
+}
+
+
+def investor_vorgaben(investor_typ):
+	"""Wie kycInvestorVorgaben() in kyc.js: {"typ", "label", "kontotyp", "pflichtDokumente", "reguliert", "hinweis"} oder None."""
+	x = INVESTOR_TYPEN.get(investor_typ or "")
+	if not x:
+		return None
+	return {"typ": investor_typ, "label": x[0], "kontotyp": x[1], "pflichtDokumente": list(x[2]), "reguliert": x[3], "hinweis": x[4]}
 
 
 def einstellungen_standard():
@@ -427,6 +450,9 @@ def anforderungen(fall, rollen=(), flaechen=(), einstellungen=None):
 
 	typ = f.get("kontotyp") or ""
 	add(id="kontotyp", gruppe="Start", label="Kontotyp gewählt", erfuellt=typ in KONTOTYPEN)
+	it = investor_vorgaben(f.get("investorTyp"))
+	if it:
+		add(id="investortyp", gruppe="Start", label=f"Investorentyp (aus Ihrem Suchprofil): {it['label']}", pflicht=False, erfuellt=True, hinweis=it["hinweis"])
 	if not typ:
 		return a
 	p = f.get("person") or {}
@@ -450,6 +476,9 @@ def anforderungen(fall, rollen=(), flaechen=(), einstellungen=None):
 		ubos = f.get("ubos") or []
 		ubo_ok = bool(ubos) and all(_gefuellt(u.get("vorname"), u.get("nachname"), u.get("geburtsdatum"), u.get("wohnsitzland"), u.get("kontrolleArt")) and (u.get("kontrolleArt") in ("kontrolle", "fiktiv") or float(u.get("anteil") or 0) >= 25) for u in ubos)
 		add(id="ubos", gruppe="Wirtschaftlich Berechtigte", label="Wirtschaftlich Berechtigte erfasst", erfuellt=ubo_ok)
+		extra = (it or {}).get("pflichtDokumente") or []
+		for art in ("gesellschafterliste", "satzung"):
+			add(id=f"doc_{art}", gruppe="Unternehmen", label=DOKUMENTE[art][0].replace(" (optional)", "") if art in extra else DOKUMENTE[art][0], dokumentArt=art, pflicht=art in extra, erfuellt=hat(art))
 		vt = f.get("vertreter") or []
 		add(id="vertreter", gruppe="Vertretung", label="Vertretungsberechtigte erfasst", erfuellt=bool(vt) and all(_gefuellt(x.get("vorname"), x.get("nachname"), x.get("geburtsdatum"), x.get("funktion")) for x in vt))
 		for x in vt:

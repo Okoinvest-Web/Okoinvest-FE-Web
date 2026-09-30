@@ -111,7 +111,7 @@ export default function Anbieten() {
           cols={3}
           items={[
             { icon: UserPlus, title: "Anbieterkonto anlegen", text: "Kostenlos registrieren. Ihr Konto ist sofort nutzbar." },
-            { icon: LayoutList, title: "Projekt erfassen", text: "Grunddaten, Entwicklungsstand, Exposé und vertrauliche Angaben – jeder Schritt wird gespeichert." },
+            { icon: LayoutList, title: "Projekt erfassen", text: "Grunddaten, Entwicklungsstand, Exposé, Projektdatenblatt und vertrauliche Angaben – jeder Schritt wird gespeichert. Das Datenblatt erscheint nach der NDA im Exposé-PDF." },
             { icon: BadgePercent, title: "Provision akzeptieren", text: `Erfolgsprovision ${PROVISION.verkaeufer.text} – digital, mit Zeitstempel.` },
             { icon: ClipboardCheck, title: "Prüfung durch das Backoffice", text: "Wir prüfen Angaben und Unterlagen und melden uns bei Rückfragen im Portal." },
             { icon: Send, title: "Veröffentlichung & Vermarktung", text: "Anonymer Teaser in der Börse, Datenraum nach NDA, LOIs und Abschluss im Portal." },

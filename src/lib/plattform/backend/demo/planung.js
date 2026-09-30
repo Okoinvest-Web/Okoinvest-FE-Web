@@ -24,6 +24,7 @@ import { analyseDatei } from "../../planung/analyse";
 import { dwgNachDxf, konverterKonfiguriert } from "../../planung/konverter";
 import { kalkulationAusgabe, parameterFuer as parameterFuerRoh } from "../../planung/ausgabe";
 import { GEWERKE, KOSTENSTAENDE, KOSTENSTAND_IDS, VERLEGEARTEN, berechnen, r2, standSchnappschuss, trasseSetzen, uebernahmeAusDxf, vorschlag, zusammenfuehren } from "../../planung/kosten";
+import { kycFreigabeDb } from "./kycRegeln"; // KYC/KYB: Co-Development-Zugriff nur verifiziert
 
 const { protokoll, benachrichtigen, nutzerById, nameVon } = intern;
 
@@ -72,7 +73,9 @@ const meilensteine = (db, pid) => (db.entwicklung?.meilensteine || []).filter((m
 
 function freigabeFuer(db, n, p) {
   if (!n?.rollen?.includes("investor")) return null;
-  return (p.freigaben || []).find((fg) => (fg.nutzerId && fg.nutzerId === n.id) || (fg.organisationId && teamRolle(db, n.id, fg.organisationId))) || null;
+  const fg = (p.freigaben || []).find((x) => (x.nutzerId && x.nutzerId === n.id) || (x.organisationId && teamRolle(db, n.id, x.organisationId))) || null;
+  // Co-Development nur mit verifiziertem KYC/KYB (wie entwicklung.js)
+  return fg && kycFreigabeDb(db, "codevelopment", { kontoId: n.id, organisationId: fg.organisationId || n.organisation?.id || null }).ok ? fg : null;
 }
 
 /** Zugriffskontext des Nutzers auf ein Projekt */

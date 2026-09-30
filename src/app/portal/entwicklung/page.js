@@ -25,7 +25,7 @@ export default async function EntwicklungMeine() {
           {projekte.map((p) => (
             <li key={p.id}>
               <Link href={`/portal/entwicklung/${p.id}`} className="group block h-full rounded-3xl bg-white p-5 ring-1 ring-ink-200/70 transition-shadow hover:shadow-[0_12px_32px_-18px_rgba(3,18,43,0.35)] hover:ring-ov-200 md:p-6">
-                <div className="flex flex-wrap gap-1.5">{p.sichten.map((s) => <Badge key={s} ton="info">{SICHT[s]}</Badge>)}<Badge>{p.phaseLabel}</Badge></div>
+                <div className="flex flex-wrap gap-1.5">{p.sichten.map((s) => <Badge key={s} ton="info">{SICHT[s]}</Badge>)}{p.kycErforderlich && <Badge ton="warn">Co-Development · Verifizierung erforderlich</Badge>}<Badge>{p.phaseLabel}</Badge></div>
                 <h2 className="mt-3 font-display text-[19px] font-bold text-ink-900">{p.titel}</h2>
                 <p className="text-[13.5px] text-ink-500">{[p.typLabel, p.gemeinde, p.bundesland, LAENDER[p.land]].filter(Boolean).join(" · ")}</p>
                 <div className="mt-4"><Fortschritt wert={p.fortschritt} /></div>

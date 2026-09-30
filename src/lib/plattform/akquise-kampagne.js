@@ -113,10 +113,13 @@ export function normText(s) {
     .trim();
 }
 
-/** Personen-Schlüssel (vor dem Hashen): Name bzw. Firma + PLZ (+ Straße). Gleiche Person in anderer Kampagne → gleicher Schlüssel. */
-export function personSchluessel({ vorname = "", nachname = "", firma = "", plz = "", strasse = "" } = {}) {
+/**
+ * Personen-Schlüssel (vor dem Hashen): Name bzw. Firma + PLZ. Die Straße zählt bewusst NICHT (Schreibweisen „Str.“/
+ * „Straße 5a“ …) – lieber einmal zu viel gesperrt als ein Widerspruch übersehen. Gleiche Person → gleicher Schlüssel.
+ */
+export function personSchluessel({ vorname = "", nachname = "", firma = "", plz = "" } = {}) {
   const name = firma && !nachname ? normText(firma) : `${normText(nachname)}|${normText(vorname)}`;
-  return `p|${name}|${String(plz || "").replace(/\s/g, "")}|${normText(strasse).replace(/\s*\d.*$/, "")}`;
+  return `p|${name}|${String(plz || "").replace(/\s/g, "").toUpperCase()}`;
 }
 
 /** Flurstücks-Schlüssel (Land, Gemarkung/KG-Nummer, Flurstücks-/Grundstücksnummer) */

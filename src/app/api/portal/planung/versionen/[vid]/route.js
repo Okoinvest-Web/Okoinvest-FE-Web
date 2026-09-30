@@ -1,6 +1,6 @@
 // GET  /api/portal/planung/versionen/[vid] – Datei der Planversion (?abgeleitet=1: aus DWG konvertierte DXF bzw. GeoJSON-Vorschau
 //      aus KMZ/Shapefile; ?anzeigen=1 PDF inline; ?meta=1 Metadaten als JSON). Rechte wie Sichtbarkeit, Abruf protokolliert.
-// POST /api/portal/planung/versionen/[vid] – { aktion: einreichen | freigeben | zurueckweisen | zurueckziehen | konvertieren, kommentar }
+// POST /api/portal/planung/versionen/[vid] – { aktion: einreichen | freigeben | zurueckweisen | zurueckziehen | konvertieren | analysieren, kommentar }
 import { route } from "@/lib/plattform/server/route";
 import { planungBackend } from "@/lib/plattform/backend/planung";
 

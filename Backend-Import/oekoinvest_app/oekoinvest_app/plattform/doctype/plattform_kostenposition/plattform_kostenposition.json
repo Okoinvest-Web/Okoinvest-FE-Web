@@ -1,0 +1,107 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 22:00:00.000000",
+ "description": "Position einer Kostenkalkulation (nur überschriebene, eigene oder mit Ist/Notiz – alle übrigen folgen dem Vorschlag).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "schluessel",
+  "gewerk",
+  "bezeichnung",
+  "art",
+  "menge",
+  "einheit",
+  "ep",
+  "satz",
+  "manuell",
+  "ist_eur",
+  "angebot",
+  "notiz"
+ ],
+ "fields": [
+  {
+   "fieldname": "schluessel",
+   "fieldtype": "Data",
+   "label": "Schlüssel",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "gewerk",
+   "fieldtype": "Select",
+   "label": "Gewerk",
+   "options": "ent_pacht\nent_planung\nent_gutachten\nent_gebuehren\nent_recht\nent_netzpruefung\ngr_dienstbarkeit\ngr_notar\nmodule\nwechselrichter\nunterkonstruktion\ndc\nac\nbos\nzaun\nwege\nausgleich\nspeicher\nbauleitung\nstation\ntrasse\nquerung\nnetzanschluss\nbkz\nversicherung\ncontingency\nbauzeitzinsen\nfin_gebuehren\nrueckbau\nsonstiges",
+   "default": "sonstiges",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "bezeichnung",
+   "fieldtype": "Data",
+   "label": "Bezeichnung",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "menge\nprozent\nzins",
+   "default": "menge"
+  },
+  {
+   "fieldname": "menge",
+   "fieldtype": "Float",
+   "label": "Menge",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "einheit",
+   "fieldtype": "Data",
+   "label": "Einheit"
+  },
+  {
+   "fieldname": "ep",
+   "fieldtype": "Currency",
+   "label": "Einheitspreis (€)",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "satz",
+   "fieldtype": "Float",
+   "label": "Satz (Anteil, 0,05 = 5 %)",
+   "precision": "6"
+  },
+  {
+   "fieldname": "manuell",
+   "fieldtype": "Check",
+   "label": "Überschrieben"
+  },
+  {
+   "fieldname": "ist_eur",
+   "fieldtype": "Currency",
+   "label": "Ist (€)"
+  },
+  {
+   "fieldname": "angebot",
+   "fieldtype": "Data",
+   "label": "Angebot/Vergabe"
+  },
+  {
+   "fieldname": "notiz",
+   "fieldtype": "Small Text",
+   "label": "Notiz"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 22:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Kostenposition",
+ "owner": "Administrator",
+ "istable": 1,
+ "editable_grid": 1,
+ "permissions": [],
+ "track_changes": 0
+}

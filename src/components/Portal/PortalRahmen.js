@@ -157,6 +157,7 @@ const LABELS = {
   energie: "Energie & Lastgang", beteiligung: "Genossenschaft & Gemeinschaft", bewertung: "Bewertung", // Fachprüfung Kapitalseite
   verifizierung: "Verifizierung", compliance: "Compliance", // KYC/KYB
   gesellschaften: "Gesellschaften", bonitaet: "Bonität", identitaet: "Online-Identifizierung", // Dienste
+  grundbuch: "Grundbuch", closing: "Deal-Abschluss", // Grundbuch & Closing
   signatur: "Unterschriften", termine: "Termine", support: "Support", kalender: "Kalender", team: "Team & Zeiten", wissen: "Wissensdatenbank", // Signatur, Termine, Service & HR
   karte: "Karte",
   hilfe: "Hilfe",

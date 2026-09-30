@@ -136,6 +136,15 @@ MATRIX.update({
 	"Plattform Gutachter Profil": {ADMIN: S, PROJEKTLEITUNG: S, LESER: L},
 })
 
+# Planungsdateien (CAD) & Projektkostenkalkulation (plattform/api/planung.py): Plankopf pflegt die Projektleitung im Desk; Versionen
+# (Freigabestatus, Dateien) und Kostenstände nur lesend – Upload, Freigabe und Festschreiben nur über das Portal (Nachweis).
+MATRIX.update({
+	"Plattform Planunterlage": {ADMIN: S, PROJEKTLEITUNG: S, AKQUISE: L, TRANSAKTION: L, LESER: L},
+	"Plattform Planversion": {ADMIN: L, PROJEKTLEITUNG: L, LESER: L},
+	"Plattform Kostenkalkulation": {ADMIN: A, PROJEKTLEITUNG: S, TRANSAKTION: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform Kostenstand": {ADMIN: L, PROJEKTLEITUNG: L, BUCHHALTUNG: L, LESER: L},  # append-only
+})
+
 # KYC/KYB: Personendaten und Unterlagen NUR für „ÖkoInvest Compliance“ (lesen im Desk; Prüfung/Entscheidung über das Portal
 # bzw. plattform/api/kyc.py). Leitung/Admin bewusst ohne DocPerm (Datenminimierung) – Status sieht sie im Portal.
 MATRIX.update({

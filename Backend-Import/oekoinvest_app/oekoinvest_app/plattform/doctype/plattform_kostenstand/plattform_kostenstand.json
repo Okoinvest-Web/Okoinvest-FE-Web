@@ -1,0 +1,170 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 22:00:00.000000",
+ "description": "Festgeschriebener Kostenstand (Schätzung, Kostenrahmen, Kostenberechnung, Angebote, Vergabe, Abrechnung) – append-only, Historie der Kalkulation.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "projekt_id",
+  "kalkulation_id",
+  "stand",
+  "am",
+  "cb_1",
+  "summe_gesamt",
+  "eur_pro_kwp",
+  "von_id",
+  "kommentar",
+  "sb_1",
+  "schnappschuss"
+ ],
+ "fields": [
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Entwicklungsprojekt",
+   "options": "Plattform Entwicklungsprojekt",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "kalkulation_id",
+   "fieldtype": "Link",
+   "label": "Kostenkalkulation",
+   "options": "Plattform Kostenkalkulation",
+   "reqd": 1
+  },
+  {
+   "fieldname": "stand",
+   "fieldtype": "Select",
+   "label": "Kostenstand",
+   "options": "schaetzung\nkostenrahmen\nkostenberechnung\nangebote\nvergabe\nabrechnung",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "label": "Festgeschrieben am",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "summe_gesamt",
+   "fieldtype": "Currency",
+   "label": "Gesamtkosten (€)",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "eur_pro_kwp",
+   "fieldtype": "Float",
+   "label": "€/kWp",
+   "precision": "2"
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "label": "Von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "kommentar",
+   "fieldtype": "Small Text",
+   "label": "Kommentar"
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": "Momentaufnahme"
+  },
+  {
+   "fieldname": "schnappschuss",
+   "fieldtype": "Long Text",
+   "label": "Summen, Gruppen, Positionen (JSON)"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 22:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Kostenstand",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Projektleitung"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "in_create": 1,
+ "title_field": "stand",
+ "search_fields": "stand,projekt_id"
+}

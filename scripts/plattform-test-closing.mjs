@@ -268,7 +268,7 @@ async function http() {
     r = await landwirt.get(`/api/portal/grundbuch/${atDemo.id}`);
     pruefe(r.status === 200 && r.json.akte.schritte.every((s) => s.portal && s.text === undefined && s.notiz === undefined) && r.json.akte.eigentuemerId === undefined, "Eigentümer-Sicht vereinfacht („Was bedeutet das für Sie?“, keine internen Notizen)", { status: r.status, fehler: r.json?.error, schritt: r.json?.akte?.schritte?.[0] });
     r = await flaeche.get(`/portal/grundbuch/${atDemo.id}`);
-    pruefe(r.status === 404 || !r.text.includes(atDemo.id), "Seite fremder Akte → 404 (ohne Inhalte)", r.status);
+    pruefe(r.status === 404 || !r.text.includes(atDemo.titel), "Seite fremder Akte → 404 (ohne Inhalte)", r.status);
   }
   r = await admin.get("/api/admin/grundbuch/auswahl");
   pruefe(r.status === 200 && Array.isArray(r.json.flaechen) && Array.isArray(r.json.anlagen), "Auswahl Flächen/Anlagen für neue Akte");
@@ -399,7 +399,7 @@ async function http() {
   r = await tInvestor.get(`/api/portal/closing/${cid}`);
   pruefe(r.status === 403, "Fremder Investor → 403", r.status);
   r = await fremd.get(`/portal/closing/${cid}`);
-  pruefe(r.status === 404 || !r.text.includes(cid), "Seite fremder Closing-Raum → 404 (ohne Inhalte)", r.status);
+  pruefe(r.status === 404 || !r.text.includes(`Closing-Test verifiziert ${LAUF}`), "Seite fremder Closing-Raum → 404 (ohne Inhalte)", r.status);
   r = await investor.get("/api/portal/closing");
   pruefe(r.status === 200 && r.json.closings.some((c) => c.id === cid), "Käufer: Liste eigener Closings");
 

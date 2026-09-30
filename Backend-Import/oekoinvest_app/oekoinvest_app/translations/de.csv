@@ -409,3 +409,57 @@ auffaellig,Auffällig
 ungueltig,Ungültig
 gruen,Grün
 berechtigtes_interesse,Berechtigtes Interesse
+schaetzung,Kostenschätzung
+kostenrahmen,Kostenrahmen
+kostenberechnung,Kostenberechnung
+angebote,Angebote
+vergabe,Vergabe
+uebergeben,Übergeben
+lageplan,Lageplan / Übersicht
+belegungsplan,Belegungsplan
+kabelplan,Kabel- und Stringplan
+trassenplan,Trassenplan Mittelspannung
+elektro,Elektroplan
+bplan,Bebauungsplan / Vorhabenplan
+vermessung,Vermessung / Bestand
+detail,Detail / Schnitt
+Sonderformat,Sonderformat
+digital,digital
+dwg,DWG
+dxf,DXF
+kml,KML
+kmz,KMZ
+geojson,GeoJSON
+shape,Shapefile (ZIP)
+ausstehend,Ausstehend
+laeuft,Läuft
+fertig,Fertig
+fehler,Fehler
+nicht_verfuegbar,Nicht verfügbar
+menge,Menge × Einheitspreis
+zins,Zins
+ent_pacht,Pachtvorlauf / Reservierung
+ent_planung,Planung
+ent_gutachten,Gutachten
+ent_gebuehren,Gebühren B-Plan / Genehmigung
+ent_recht,Rechtsberatung
+ent_netzpruefung,Netzprüfung
+gr_dienstbarkeit,Dienstbarkeiten
+gr_notar,Notar / Grundbuch
+module,Module
+unterkonstruktion,Unterkonstruktion inkl. Rammung
+dc,DC-Verkabelung
+ac,AC-Verkabelung
+bos,Monitoring / Blitzschutz / Kommunikation
+zaun,Zaun / Tore / Kamera
+wege,Wege und Erdarbeiten
+ausgleich,Ausgleichs- und Ökomaßnahmen
+bauleitung,Bauleitung / EPC-Marge
+station,Trafostation / Übergabestation
+trasse,Mittelspannungstrasse
+querung,Querungen
+netzanschluss,Umspannwerk- / Netzanschlusskosten
+bkz,Baukostenzuschuss
+contingency,Unvorhergesehenes
+bauzeitzinsen,Bauzeitzinsen
+fin_gebuehren,Finanzierungsgebühren

@@ -22,10 +22,8 @@ import { entwicklungIst } from "./finanzen";
 import { BLATTFORMATE, FORMATE, MASSSTAEBE, PLANARTEN, PLAN_AKTIONEN, PLAN_STATUS, aktionPruefen, formatErkennen, naechsterIndex, planZugriff } from "../../planung/regeln";
 import { analyseDatei } from "../../planung/analyse";
 import { dwgNachDxf, konverterKonfiguriert } from "../../planung/konverter";
-import {
-  GEWERKE, GRUPPEN, KOSTENSTAENDE, KOSTENSTAND_IDS, VERLEGEARTEN, berechnen, parameterVoll, r2, sollIst, standSchnappschuss, standVergleich, trasseSetzen,
-  trassenLaenge, uebernahmeAusDxf, vorschlag, zusammenfuehren,
-} from "../../planung/kosten";
+import { kalkulationAusgabe, parameterFuer as parameterFuerRoh } from "../../planung/ausgabe";
+import { GEWERKE, KOSTENSTAENDE, KOSTENSTAND_IDS, VERLEGEARTEN, berechnen, r2, standSchnappschuss, trasseSetzen, uebernahmeAusDxf, vorschlag, zusammenfuehren } from "../../planung/kosten";
 
 const { protokoll, benachrichtigen, nutzerById, nameVon } = intern;
 
@@ -285,7 +283,7 @@ function versionFinden(db, id) {
   return { x, plan, p };
 }
 
-/** Statusaktion an einer Version: einreichen | freigeben | zurueckweisen | zurueckziehen | konvertieren */
+/** Statusaktion an einer Version: einreichen | freigeben | zurueckweisen | zurueckziehen | konvertieren | analysieren (Kennzahlen neu auswerten) */
 export async function planungVersionAktion(n, versionId, { aktion, kommentar = "" } = {}) {
   angemeldet(n);
   const db0 = await lesenBereit();
@@ -301,6 +299,18 @@ export async function planungVersionAktion(n, versionId, { aktion, kommentar = "
       const { x, plan, p } = versionFinden(db, versionId);
       Object.assign(x, erg);
       protokoll(db, n, "plan", "entwicklung", p.id, `Konvertierung ${plan.plannummer} Index ${x.index}: ${erg.konvertierung.status}`);
+      return versionAusgabe(db, x, { ...kontext(db, n, p), planer: true });
+    });
+  }
+  if (aktion === "analysieren") {
+    if (!z0.schreiben) throw verboten("Nur die Projektentwicklung kann die Auswertung anstoßen.");
+    const quelle = x0.format === "dwg" ? x0.abgeleitet : x0.datei;
+    if (!quelle?.datei) throw konflikt("Noch keine auswertbare Datei – DWG bitte erst konvertieren.");
+    const { analyse } = analyseDatei(x0.format === "dwg" ? "dxf" : x0.format, await uploadLesen(quelle.datei), {});
+    return aendern((db) => {
+      const { x, plan, p } = versionFinden(db, versionId);
+      x.analyse = { ...(x.analyse || {}), ...analyse };
+      protokoll(db, n, "plan", "entwicklung", p.id, `Plan ${plan.plannummer} Index ${x.index} ausgewertet`);
       return versionAusgabe(db, x, { ...kontext(db, n, p), planer: true });
     });
   }
@@ -364,15 +374,7 @@ function projektParameter(db, p) {
   return { typ: p.typ, land: p.land, mwp: Number(p.mwp) || 0, mwh: Number(p.mwh) || 0, flaecheHa: Math.round(fl.reduce((s, f) => s + (Number(f.ha) || 0), 0) * 100) / 100, flaechenAnzahl: Math.max(1, fl.length), gutachten };
 }
 
-/** Gespeicherte Parameter + Projektwerte (Typ, Land, Leistung, Gutachten immer aus dem Projekt) */
-function parameterFuer(db, p, k) {
-  const pp = projektParameter(db, p);
-  const s = k?.parameter || {};
-  return {
-    ...s, typ: pp.typ, land: pp.land, mwp: pp.mwp, mwh: pp.mwh, gutachten: pp.gutachten,
-    flaecheHa: s.flaecheHa ?? pp.flaecheHa, flaechenAnzahl: s.flaechenAnzahl ?? pp.flaechenAnzahl, kostenstand: k?.kostenstand || s.kostenstand || "schaetzung",
-  };
-}
+const parameterFuer = (db, p, k) => parameterFuerRoh(projektParameter(db, p), k);
 
 function akquiseTrasse(db, p) {
   const flIds = new Set((db.entwicklung?.flaechen || []).filter((f) => f.projektId === p.id && f.flaecheId).map((f) => f.flaecheId));
@@ -394,30 +396,23 @@ function dxfQuellen(db, p) {
 
 async function kalkAusgabe(db, n, p) {
   const k = PL(db).kalkulationen.find((x) => x.projektId === p.id) || null;
-  const parameter = parameterFuer(db, p, k);
-  const pos = zusammenfuehren(k?.positionen || [], vorschlag(parameter));
-  const e = berechnen(pos, parameter);
   let ist = null;
   try {
     const r = await entwicklungIst(n, p.id);
-    ist = { jeArt: r.jeArt || {}, quelle: r.quelle || "plattform", summe: r.ist || 0 };
+    ist = { jeArt: r.jeArt || {}, quelle: r.quelle || "plattform" };
   } catch {
     ist = null;
   }
-  const staende = PL(db).staende.filter((x) => x.projektId === p.id).sort((a, b) => String(b.am).localeCompare(String(a.am)));
-  return {
+  return kalkulationAusgabe({
     projekt: { id: p.id, titel: p.titel, typ: p.typ, land: p.land, mwp: p.mwp, mwh: p.mwh },
-    id: k?.id || null, gespeichert: !!k, kostenstand: parameter.kostenstand, kostenstandLabel: KOSTENSTAENDE[parameter.kostenstand].label,
-    parameter: { ...e.parameter, trasseLaengeM: trassenLaenge(e.parameter), contingencyEigen: k?.parameter?.contingency !== null && k?.parameter?.contingency !== undefined },
-    positionen: e.positionen, gruppen: e.gruppen, gewerke: e.gewerke, summen: e.summen, benchmark: e.benchmark,
-    sollIst: sollIst(e, ist), istQuelle: ist ? ist.quelle : "manuell",
-    staende: staende.map((s, i) => ({ id: s.id, stand: s.stand, standLabel: KOSTENSTAENDE[s.stand]?.label, am: s.am, von: person(db, s.vonId)?.name || "", kommentar: s.kommentar, summen: s.summen, gruppen: s.gruppen, vergleich: standVergleich(s, staende[i + 1]) })),
+    projektParameter: projektParameter(db, p),
+    gespeichert: k ? { id: k.id, kostenstand: k.kostenstand, parameter: k.parameter, positionen: k.positionen, geaendertAm: k.geaendertAm, geaendertVon: person(db, k.vonId)?.name || "" } : null,
+    ist,
+    staende: PL(db).staende.filter((x) => x.projektId === p.id).map((s) => ({ id: s.id, stand: s.stand, am: s.am, von: person(db, s.vonId)?.name || "", kommentar: s.kommentar, summen: s.summen, gruppen: s.gruppen })),
     uebergabe: p.kostenkalkulation || null,
     quellen: { akquise: akquiseTrasse(db, p), dxf: dxfQuellen(db, p) },
-    auswahl: { gruppen: GRUPPEN, gewerke: Object.fromEntries(Object.entries(GEWERKE).map(([k2, g]) => [k2, { label: g.label, gruppe: g.gruppe, kg: g.kg }])), kostenstaende: KOSTENSTAENDE, verlegearten: VERLEGEARTEN },
-    geaendertAm: k?.geaendertAm || null, geaendertVon: person(db, k?.vonId)?.name || "",
     darfBearbeiten: boSchreiben(n),
-  };
+  });
 }
 
 export async function kalkulationHolen(n, projektId) {

@@ -1,5 +1,5 @@
 {
- "_hinweis": "GENERIERT aus src/lib/plattform/closing/grundbuch.js und closing.js – nicht von Hand ändern (Generator: siehe Backend-Import/README bzw. docs/GRUNDBUCH-CLOSING.md)",
+ "_hinweis": "GENERIERT aus src/lib/plattform/closing/grundbuch.js und closing.js – nicht von Hand ändern (Generator: node scripts/closing-vorlagen-export.mjs)",
  "stand": "30.09.2026",
  "GB_LAENDER": {
   "DE": "Deutschland",

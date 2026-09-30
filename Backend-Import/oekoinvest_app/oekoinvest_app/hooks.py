@@ -156,6 +156,7 @@ jinja = {
 		"oekoinvest_app.plattform.api.closing.oekoinvest_closing",  # Grundbuch & Closing: Druckformate Kaufvertrag (Muster), Abschlussbericht
 		"oekoinvest_app.plattform.energie_druck.oekoinvest_energie_vergleich",  # Energiebeschaffung: Angebotsvergleich/Zuschlag
 		"oekoinvest_app.plattform.api.entwicklung.oekoinvest_entwicklung",  # Projektentwicklung: Druckformat „Projektsteckbrief“
+		"oekoinvest_app.plattform.api.planung.oekoinvest_kostenrahmen",  # Planungsdateien & Projektkosten: Druckformat „Kostenrahmen“
 	],
 }
 

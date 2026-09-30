@@ -31,6 +31,7 @@ DRUCKFORMATE = {
 	"Anlagen-Datenblatt": "Plattform Anlage",
 	"Vorgangsblatt": "Plattform Vorgang",
 	"Projektsteckbrief": "Plattform Entwicklungsprojekt",  # Projektentwicklung
+	"Kostenrahmen": "Plattform Kostenkalkulation",  # Planungsdateien & Projektkosten (Kostenkalkulation nach Gewerken)
 	"Abrechnung Beleg": "Plattform Abrechnung",  # ERPNext-Finanzen & Abrechnung (Gutschrift/Rechnung)
 	"Projektgesellschaft Gruendungspaket": "Plattform Projektgesellschaft",  # Dienste: SPV-Gründung (Muster)
 	"Bonitaet Information": "Plattform Bonitaetsauskunft",  # Dienste: Information des Betroffenen (Art. 14 DSGVO)

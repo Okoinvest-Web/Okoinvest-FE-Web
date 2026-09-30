@@ -1,0 +1,47 @@
+{#- ÖkoInvest – Kostenrahmen (Plattform Kostenkalkulation): Projektkosten nach Kostengruppen (angelehnt an DIN 276) und Gewerken, €/kWp, Finanzierungsbedarf, Kostenstände. Intern. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set d = oekoinvest_kostenrahmen(doc.name) -%}
+{%- set s = d.summen or {} -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Projektentwicklung · Kostenrahmen · {{ d.kostenstand }} · intern</div>
+	<div class="oi-titel">{{ (d.projekt.titel if d.projekt else doc.projekt_id) | e }}</div>
+	<div class="oi-untertitel">{{ doc.projekt_id }} · {{ oekoinvest_zahl(d.projekt.mwp if d.projekt else 0, 2) }} {{ "MW" if d.projekt and d.projekt.typ == "speicher" else "MWp" }}{% if d.projekt and d.projekt.mwh %} · {{ oekoinvest_zahl(d.projekt.mwh, 0) }} MWh{% endif %}</div>
+</div>
+
+<table class="oi-kacheln"><tr>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_eur(s.gesamt) }}</div><div class="oi-bez">Gesamtkosten (ohne Sicherheiten)</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl(s.eurProKwp or 0, 0) }} €</div><div class="oi-bez">je kWp</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_eur(s.capex) }}</div><div class="oi-bez">Capex ohne Finanzierung</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_eur(s.finanzierungsbedarf) }}</div><div class="oi-bez">Finanzierungsbedarf</div></td>
+</tr></table>
+
+{% if d.parameter %}
+<p class="oi-text">Fläche {{ oekoinvest_zahl(d.parameter.flaecheHa, 1) }} ha · Zaun {% if d.parameter.zaunM %}{{ oekoinvest_zahl(d.parameter.zaunM, 0) }} m{% else %}aus Fläche geschätzt{% endif %} · MS-Trasse {{ oekoinvest_zahl(d.trasse_m, 0) }} m · Unvorhergesehenes {{ oekoinvest_prozent(d.parameter.contingency) }} · Fremdkapital {{ oekoinvest_prozent(d.parameter.fkQuote) }} · Bauzeitzins {{ oekoinvest_prozent(d.parameter.zinsBau) }} über {{ d.parameter.bauzeitMonate }} Monate</p>
+{% endif %}
+
+{% for g in d.gruppen or [] %}
+<div class="oi-abschnitt">{{ g.label }} (KG {{ g.kg }})</div>
+<table class="oi-tabelle">
+	<tr><th>Position</th><th>KG</th><th class="oi-zahl">Menge / Satz</th><th class="oi-zahl">EP €</th><th class="oi-zahl">Betrag</th><th class="oi-zahl">€/kWp</th></tr>
+	{% for x in g.positionen %}<tr>
+		<td>{{ x.bezeichnung | e }}{% if x.manuell %} <span class="oi-badge oi-navy">überschrieben</span>{% endif %}</td>
+		<td>{{ x.kg }}</td>
+		<td class="oi-zahl">{% if x.art == "menge" %}{{ oekoinvest_zahl(x.menge, 2) }} {{ x.einheit or "" }}{% else %}{{ oekoinvest_prozent(x.satz) }}{% endif %}</td>
+		<td class="oi-zahl">{% if x.art == "menge" %}{{ oekoinvest_zahl(x.ep, 2) }}{% endif %}</td>
+		<td class="oi-zahl">{{ oekoinvest_eur(x.betrag) }}</td>
+		<td class="oi-zahl">{{ oekoinvest_zahl(x.eurProKwp or 0, 1) }}</td>
+	</tr>{% endfor %}
+	<tr><td><strong>Summe {{ g.label }}</strong></td><td></td><td></td><td></td><td class="oi-zahl"><strong>{{ oekoinvest_eur(g.soll) }}</strong></td><td class="oi-zahl">{{ oekoinvest_zahl(g.eurProKwp or 0, 1) }}</td></tr>
+</table>
+{% endfor %}
+
+{% if d.staende %}
+<div class="oi-abschnitt">Kostenstände</div>
+<table class="oi-tabelle">
+	<tr><th>Datum</th><th>Kostenstand</th><th class="oi-zahl">Gesamt</th><th class="oi-zahl">€/kWp</th><th>Kommentar</th></tr>
+	{% for x in d.staende %}<tr><td>{{ oekoinvest_datum(x.am) }}</td><td>{{ x.label }}</td><td class="oi-zahl">{{ oekoinvest_eur(x.summe_gesamt) }}</td><td class="oi-zahl">{{ oekoinvest_zahl(x.eur_pro_kwp or 0, 0) }}</td><td>{{ (x.kommentar or "") | e }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+<div class="oi-hinweis">Vorschlagswerte aus Marktspannen (Plattform, markt.js) – eigene Einschätzung, keine Angebotspreise. Überschriebene Positionen stammen aus Angeboten, Vergaben oder manuellen Schätzungen. Bauzeitzinsen = FK-Quote × Bausumme × Zins × Bauzeit/12 × 50 %.</div>
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · Stand {{ oekoinvest_datum(frappe.utils.now_datetime(), true) }} · vertraulich, nur für den internen Gebrauch</div>

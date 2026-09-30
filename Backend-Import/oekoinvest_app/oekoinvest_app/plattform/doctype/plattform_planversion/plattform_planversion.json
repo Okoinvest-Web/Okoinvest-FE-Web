@@ -1,0 +1,268 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 22:00:00.000000",
+ "description": "Planstand (Änderungsindex) einer Planunterlage: Datei privat, abgeleitete DXF/GeoJSON-Vorschau, DXF-Analyse, Freigabestatus mit Verlauf. Status nur über das Portal.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "plan_id",
+  "projekt_id",
+  "aenderungsindex",
+  "status",
+  "format",
+  "cb_1",
+  "planstand",
+  "planer",
+  "aenderung",
+  "von_id",
+  "am",
+  "sb_1",
+  "datei",
+  "dateiname",
+  "mime",
+  "groesse",
+  "cb_2",
+  "abgeleitet_datei",
+  "abgeleitet_name",
+  "abgeleitet_art",
+  "konvertierung_status",
+  "konvertierung_hinweis",
+  "sb_2",
+  "analyse",
+  "status_verlauf",
+  "freigegeben_am",
+  "freigegeben_von",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "plan_id",
+   "fieldtype": "Link",
+   "label": "Planunterlage",
+   "options": "Plattform Planunterlage",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Entwicklungsprojekt",
+   "options": "Plattform Entwicklungsprojekt",
+   "reqd": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "aenderungsindex",
+   "fieldtype": "Data",
+   "label": "Änderungsindex",
+   "reqd": 1,
+   "in_list_view": 1,
+   "length": 3
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Freigabestatus",
+   "options": "entwurf\npruefung\nfreigegeben\nersetzt",
+   "default": "entwurf",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "format",
+   "fieldtype": "Select",
+   "label": "Format",
+   "options": "dwg\ndxf\npdf\nkml\nkmz\ngeojson\nshape",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "planstand",
+   "fieldtype": "Date",
+   "label": "Planstand"
+  },
+  {
+   "fieldname": "planer",
+   "fieldtype": "Data",
+   "label": "Planer"
+  },
+  {
+   "fieldname": "aenderung",
+   "fieldtype": "Small Text",
+   "label": "Änderung gegenüber Vorstand"
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "label": "Hochgeladen von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "label": "Am"
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": "Dateien"
+  },
+  {
+   "fieldname": "datei",
+   "fieldtype": "Attach",
+   "label": "Originaldatei (privat)"
+  },
+  {
+   "fieldname": "dateiname",
+   "fieldtype": "Data",
+   "label": "Dateiname"
+  },
+  {
+   "fieldname": "mime",
+   "fieldtype": "Data",
+   "label": "Typ"
+  },
+  {
+   "fieldname": "groesse",
+   "fieldtype": "Int",
+   "label": "Größe (Byte)"
+  },
+  {
+   "fieldname": "cb_2",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "abgeleitet_datei",
+   "fieldtype": "Attach",
+   "label": "Abgeleitete Datei (DXF aus DWG bzw. GeoJSON-Vorschau)"
+  },
+  {
+   "fieldname": "abgeleitet_name",
+   "fieldtype": "Data",
+   "label": "Name abgeleitete Datei"
+  },
+  {
+   "fieldname": "abgeleitet_art",
+   "fieldtype": "Select",
+   "label": "Art abgeleitete Datei",
+   "options": "\ndxf\ngeojson"
+  },
+  {
+   "fieldname": "konvertierung_status",
+   "fieldtype": "Select",
+   "label": "Konvertierung",
+   "options": "\nausstehend\nlaeuft\nfertig\nfehler\nnicht_verfuegbar"
+  },
+  {
+   "fieldname": "konvertierung_hinweis",
+   "fieldtype": "Data",
+   "label": "Hinweis Konvertierung"
+  },
+  {
+   "fieldname": "sb_2",
+   "fieldtype": "Section Break",
+   "label": "Analyse & Verlauf"
+  },
+  {
+   "fieldname": "analyse",
+   "fieldtype": "Long Text",
+   "label": "Analyse (JSON: Einheit, Ausdehnung, Layer, Kennzahlen)"
+  },
+  {
+   "fieldname": "status_verlauf",
+   "fieldtype": "Long Text",
+   "label": "Statusverlauf (JSON)"
+  },
+  {
+   "fieldname": "freigegeben_am",
+   "fieldtype": "Datetime",
+   "label": "Freigegeben am"
+  },
+  {
+   "fieldname": "freigegeben_von",
+   "fieldtype": "Link",
+   "label": "Freigegeben von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Beschreibung"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 22:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Planversion",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Projektleitung"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "in_create": 1,
+ "title_field": "dateiname",
+ "search_fields": "aenderungsindex,dateiname"
+}

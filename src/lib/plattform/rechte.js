@@ -252,7 +252,7 @@ const SEITEN_BEREICH = {
 export function seitenBereich(pfad) {
   const teile = String(pfad || "").split("?")[0].split("/").filter(Boolean); // ["portal","admin",teil]
   if (teile[0] !== "portal" || teile[1] !== "admin") return null;
-  if (teile[2] === "akquise" && teile[3] === "karte") return "geodaten"; // Geodaten & Akquise-Karte
+  if (teile[2] === "akquise" && ["karte", "kampagnen", "gemeinden", "sperrliste"].includes(teile[3])) return "geodaten"; // Geodaten & Akquise-Karte, Kampagnen, Gemeinde-Screening (A1b)
   return SEITEN_BEREICH[teile[2] || ""] || "sonstiges";
 }
 

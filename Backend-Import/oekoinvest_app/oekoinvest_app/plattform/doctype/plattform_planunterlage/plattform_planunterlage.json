@@ -1,0 +1,219 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 22:00:00.000000",
+ "description": "Plankopf eines Entwicklungsprojekts (Plannummer, Planart, Maßstab, Blattformat, Planer) – Versionen in „Plattform Planversion“.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "projekt_id",
+  "plannummer",
+  "titel",
+  "planart",
+  "cb_1",
+  "massstab",
+  "blattformat",
+  "planer",
+  "planer_id",
+  "meilenstein_id",
+  "sb_1",
+  "status",
+  "aktueller_index",
+  "description",
+  "erstellt_von"
+ ],
+ "fields": [
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Entwicklungsprojekt",
+   "options": "Plattform Entwicklungsprojekt",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "plannummer",
+   "fieldtype": "Data",
+   "label": "Plannummer",
+   "reqd": 1,
+   "in_list_view": 1,
+   "length": 40
+  },
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Plantitel",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "planart",
+   "fieldtype": "Select",
+   "label": "Planart",
+   "options": "lageplan\nbelegungsplan\nkabelplan\ntrassenplan\nelektro\nbplan\nvermessung\ngruen\ndetail\nsonstiges",
+   "default": "sonstiges",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "massstab",
+   "fieldtype": "Select",
+   "label": "Maßstab",
+   "options": "1:100\n1:200\n1:250\n1:500\n1:1000\n1:2000\n1:2500\n1:5000\n1:10000\nohne",
+   "default": "ohne"
+  },
+  {
+   "fieldname": "blattformat",
+   "fieldtype": "Select",
+   "label": "Blattformat",
+   "options": "A0\nA1\nA2\nA3\nA4\nSonderformat\ndigital",
+   "default": "digital"
+  },
+  {
+   "fieldname": "planer",
+   "fieldtype": "Data",
+   "label": "Planer (Büro/Person)"
+  },
+  {
+   "fieldname": "planer_id",
+   "fieldtype": "Link",
+   "label": "Planer-Konto (Gutachter)",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "meilenstein_id",
+   "fieldtype": "Link",
+   "label": "Meilenstein",
+   "options": "Plattform Entwicklung Meilenstein"
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": "Aktueller Stand"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status (aktuelle Version)",
+   "options": "entwurf\npruefung\nfreigegeben\nersetzt",
+   "default": "entwurf",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "aktueller_index",
+   "fieldtype": "Data",
+   "label": "Aktueller Index",
+   "read_only": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Beschreibung"
+  },
+  {
+   "fieldname": "erstellt_von",
+   "fieldtype": "Link",
+   "label": "Angelegt von",
+   "options": "Plattform Konto",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 22:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Planunterlage",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Akquise"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Transaktion"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Projektleitung"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "in_create": 1,
+ "title_field": "titel",
+ "search_fields": "plannummer,titel"
+}

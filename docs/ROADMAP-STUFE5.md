@@ -21,11 +21,11 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 
 ## Welle B (nach Stufe 4)
 - [x] **B0 Eigenbetrieb & Bankfinanzierung** (zusammen mit B2) – Geschäftsmodelle je Projekt: Build-to-Sell (ÖKOVOLT baut für Investor, EPC-Übergabe), Eigenbetrieb durch ÖkoInvest/SPV mit **Bankfinanzierung** (Finanzierungsanfrage an mehrere Banken, Bankenpaket mit Financial Model/Ertragsgutachten/Verträgen, Term-Sheet-Vergleich, DSCR/LLCR-Covenants, Auszahlungsvoraussetzungen, Covenant-Monitoring im Betrieb aus Anlagen-Messdaten), reine Verpachtung
-- [~] **B0b Dach-Contracting mit Dienstbarkeit** (läuft, zusammen mit B4) – Dachnutzungs-/Servitutsvertrag (AT Servitut, DE beschränkte persönliche Dienstbarkeit, CH Dienstbarkeit), Grundbuch-Eintragungsablauf (Vertrag, Beglaubigung/Notar, Grundbuchsgesuch, Rang, Rangrücktritt Bank, Eintragungsbestätigung), Fristen, Verknüpfung mit Contracting-Vertrag und Anlage
+- [x] **B0b Dach-Contracting mit Dienstbarkeit** – Dachnutzungs-/Servitutsvertrag (AT Servitut, DE beschränkte persönliche Dienstbarkeit, CH Dienstbarkeit), Grundbuch-Eintragungsablauf (Vertrag, Beglaubigung/Notar, Grundbuchsgesuch, Rang, Rangrücktritt Bank, Eintragungsbestätigung), Fristen, Verknüpfung mit Contracting-Vertrag und Anlage
 - [x] **B1 Onboarding-Assistenten je Rolle und Unterrolle** (+ eigene Rolle `kommune` mit Menü /portal/kommune) (Investor je Typ, Anbieter/Verkäufer Projekt & Bestandsanlage, Flächen-/Dach-Eigentümer, Landwirt, Contracting-Kunde, Reststrom-Kunde, Kommune, Gutachter, Backoffice je Unterrolle)
 - [x] **B2 Investor-Finanzierungscockpit** – ROI je Projekt nach Login, Finanzierungsvergleich (Eigenkapital, Annuitätenkredit, Förderkredit KfW/aws/OeKB, Leasing, Mietkauf), Förder-Check je Land (EEG/EAG/Einmalvergütung/Investitionszuschüsse), Steuern (AfA), Szenarien speichern, PDF
 - [~] **B3 Planungsdateien & Projektkosten** (läuft) – DWG/DXF-Upload mit Vorschau (DXF im Browser, DWG → Konvertierungsdienst), Projektkostenkalkulation nach Gewerken inkl. Netzanschluss aus Akquise-Distanz, Anbindung Projektentwicklung/ERPNext
-- [ ] **B4 Deal-Abschluss end-to-end** – Kaufvertrag-Vorlagen (SPA Asset/Share Deal), Signatur, Notartermin, Closing-Checkliste, Kaufpreiszahlung/Treuhand-Hinweis, automatische Provisionsrechnung, Übergabe
+- [x] **B4 Deal-Abschluss end-to-end** – Kaufvertrag-Vorlagen (SPA Asset/Share Deal), Signatur, Notartermin, Closing-Checkliste, Kaufpreiszahlung/Treuhand-Hinweis, automatische Provisionsrechnung, Übergabe
 
 ## Nacharbeiten aus Berichten (in der Integrationsphase erledigen)
 - [ ] Bottom-Navigation mobil: Einträge für Gutachter, Kommune, Lieferant, Bank
@@ -51,6 +51,8 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 - [ ] `rechte.py`: Spalte `projektleitung` ergänzen (finanzen=1, passend zu rechte.js)
 - [ ] Steuer-/Rechtspunkte Finanzen (Backend-Import/FINANZEN-ERPNEXT.md) mit Steuerberatung klären; UID eintragen
 - [ ] Datenschutzerklärung: Abschnitte für Geodaten/Akquise-Direktwerbung, Energiebeschaffung (Lastgänge an Lieferanten anonymisiert), Bank-Portal, Signatur, Terminbuchung
+
+- [ ] Muster-Verträge Grundbuch/Closing je Land anwaltlich/notariell freigeben, Gebührentabellen (GNotKG, GGG/GebG, kantonal) aktualisieren – siehe docs/GRUNDBUCH-CLOSING.md Abschnitt 9
 
 ## Abschluss
 - [ ] Zentrale Tests aller Testreihen, Backend-Konsistenzprüfer, Produktions-Build, Seiten-Audit, Sichtprüfung je Rolle, Commit

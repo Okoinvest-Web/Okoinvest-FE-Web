@@ -43,7 +43,7 @@ export default async function Handelsdesk({ searchParams }) {
         aktionen={schreiben ? <AktionKnopf url="/api/admin/energie" body={{ aktion: "lauf" }} label="Wechselanalyse jetzt ausführen" erfolgText="Analyse ausgeführt – Fristen-Alarme als Aufgaben angelegt." /> : null}
       />
       <DeskNavigation aktiv="desk" />
-      <section aria-label="Kennzahlen" className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <section aria-label="Kennzahlen" className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6">
         <Wert ton="dunkel" icon={Gavel} label="Offene Ausschreibungen" wert={String(u.ausschreibungenOffen)} hinweis={`${u.freigabeOffen} warten auf Kundenfreigabe`} />
         <Wert icon={Users} label="Kunden" wert={String(u.kunden)} hinweis={`${u.lieferanten} aktive Versorger`} />
         <Wert icon={TrendingDown} label="Empfehlung ausschreiben" wert={String(u.empfehlungen.ausschreiben || 0)} hinweis={`${u.empfehlungen.abwarten || 0} abwarten · ${u.empfehlungen.verlaengern || 0} verlängern`} />
@@ -90,7 +90,7 @@ async function Spotmarkt({ n, zone }) {
         <ZonenWahl zone={zone} tab="uebersicht" />
         {s.quelle === "simulation" && <Hinweis ton="warn">Simulation: {s.fehler || "Live-Daten nicht verfügbar."} Werte nicht für Entscheidungen verwenden.</Hinweis>}
       </div>
-      <section aria-label="Kennzahlen Spotmarkt" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <section aria-label="Kennzahlen Spotmarkt" className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6">
         <Wert label="Base €/MWh (365 Tage)" wert={fmt(g.base, 2)} hinweis={`Peak ${fmt(g.peak, 2)} €/MWh`} />
         <Wert label="Offpeak €/MWh" wert={fmt(g.offpeak, 2)} hinweis="Wochenende und 20–8 Uhr" />
         <Wert label="Solar-Capture €/MWh" wert={fmt(g.capture, 2)} hinweis={`Capture-Rate ${prozent(g.captureRate, 0)}`} />
@@ -112,7 +112,7 @@ async function Spotmarkt({ n, zone }) {
           <Legende eintraege={[{ name: "Base", farbe: FARBEN.navy }, { name: "Peak", farbe: FARBEN.gruen }, { name: "Solar-Capture", farbe: FARBEN.sonne }]} />
         </Karte>
       </div>
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Karte titel="Jahres- und Monatswerte" untertitel="€/MWh · negative Stunden · Capture-Rate">
           <Tabelle
             kopf={["Zeitraum", "Base", "Peak", "Offpeak", "Capture", "Rate", "neg. h", "Max"]}
@@ -124,7 +124,7 @@ async function Spotmarkt({ n, zone }) {
           />
         </Karte>
         <Karte titel="Durchschnittlicher Tagesgang" untertitel="365 Tage, Werktag und Wochenende">
-          <LinienChart reihen={[{ name: "Werktag", farbe: FARBEN.navy, punkte: s.profil.werktag.map((y, x) => ({ x, y })) }, { name: "Wochenende", farbe: FARBEN.gruen, gestrichelt: true, punkte: s.profil.wochenende.map((y, x) => ({ x, y })) }]} xTicks={[0, 6, 12, 18, 23]} xText={(h) => `${h} Uhr`} yEinheit="€/MWh" hoehe={220} beschreibung="Durchschnittlicher Preis je Stunde" breite={480} />
+          <LinienChart reihen={[{ name: "Werktag", farbe: FARBEN.navy, punkte: s.profil.werktag.map((y, x) => ({ x, y })) }, { name: "Wochenende", farbe: FARBEN.gruen, gestrichelt: true, punkte: s.profil.wochenende.map((y, x) => ({ x, y })) }]} xTicks={[0, 6, 12, 18, 23]} xText={(h) => `${h} Uhr`} yEinheit="€/MWh" hoehe={260} beschreibung="Durchschnittlicher Preis je Stunde" />
           <Legende eintraege={[{ name: "Werktag", farbe: FARBEN.navy }, { name: "Wochenende", farbe: FARBEN.gruen }]} />
         </Karte>
       </div>
@@ -148,7 +148,7 @@ async function Terminmarkt({ n, zone, produkt, schreiben }) {
         <ZonenWahl zone={zone} tab="termin" />
         {t.enthaeltDemo && <Hinweis ton="warn">Die Kurve enthält Demo-Werte (keine EEX-Daten). Für Entscheidungen lizenzierte oder zitierte Kurse mit Quelle einspielen.</Hinweis>}
       </div>
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <Karte titel={`Terminkurve ${zone === "AT" ? "Österreich" : "Deutschland"}`} untertitel="Monate, Quartale, Kalenderjahre – Base/Peak in €/MWh">
           <BalkenChart kategorien={kurvenPunkte.map((r) => r.produkt)} reihen={[{ name: "Base", farbe: FARBEN.navy, werte: kurvenPunkte.map((r) => r.base) }, { name: "Peak", farbe: FARBEN.gruen, werte: kurvenPunkte.map((r) => r.peak) }]} yEinheit="€/MWh" beschreibung="Terminkurve Base und Peak je Produkt" />
           <Legende eintraege={[{ name: "Base", farbe: FARBEN.navy }, { name: "Peak", farbe: FARBEN.gruen }]} />
@@ -214,7 +214,7 @@ async function Portfolio({ n, schreiben }) {
           </div>
         </Karte>
       ))}
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-6 2xl:grid-cols-2">
         <Karte titel="Tranchen" untertitel="Gekaufte Base-Mengen je Quartal">
           <Tabelle
             kopf={["Periode", "Zone", "MWh", "€/MWh", "gekauft", "Gegenpartei", ""]}

@@ -10,6 +10,23 @@ import { rolleLabel } from "@/lib/plattform/konstanten";
 
 export const dynamic = "force-dynamic";
 
+// Weitere Demo-Konten aus den Fach-Seeds (Energie, Entwicklung, Backoffice-Unterrollen)
+const WEITERE_DEMO_KONTEN = [
+  { email: "kommune@example.com", label: "Gemeinde", gruppe: "Kunden & Partner" },
+  { email: "gutachter@example.com", label: "Gutachter/Planer", gruppe: "Kunden & Partner" },
+  { email: "bank@example.com", label: "Bank", gruppe: "Kunden & Partner" },
+  { email: "lieferant@example.com", label: "Energieversorger", gruppe: "Kunden & Partner" },
+  { email: "energie-kunde1@example.com", label: "Reststrom-Kunde", gruppe: "Kunden & Partner" },
+  { email: "bo-akquise@example.com", label: "Akquise", gruppe: "Backoffice" },
+  { email: "bo-projektleitung@example.com", label: "Projektleitung", gruppe: "Backoffice" },
+  { email: "bo-transaktion@example.com", label: "Transaktion", gruppe: "Backoffice" },
+  { email: "bo-compliance@example.com", label: "Compliance", gruppe: "Backoffice" },
+  { email: "bo-buchhaltung@example.com", label: "Buchhaltung", gruppe: "Backoffice" },
+  { email: "bo-betrieb@example.com", label: "Anlagenbetrieb", gruppe: "Backoffice" },
+  { email: "bo-energie@example.com", label: "Energie", gruppe: "Backoffice" },
+  { email: "bo-lesen@example.com", label: "Nur lesen", gruppe: "Backoffice" },
+];
+
 export const metadata = {
   title: "Anmelden | ÖkoInvest",
   description: "Anmeldung zum Portal von ÖkoInvest: Status Ihrer Anfragen, Flächen und Projekte, Projektbörse, Dokumente und Nachrichten an einem Ort.",
@@ -24,7 +41,10 @@ export default async function Login({ searchParams }) {
   if (nutzer) redirect(weiter || "/portal");
 
   const demoKonten = istDemo()
-    ? DEMO_KONTEN.map((k) => ({ email: k.email, passwort: DEMO_PASSWORT(), label: rolleLabel(k.rollen[0]) }))
+    ? [
+        ...DEMO_KONTEN.map((k) => ({ email: k.email, label: rolleLabel(k.rollen[0]), gruppe: k.rollen[0] === "admin" ? "Backoffice" : "Kunden & Partner" })),
+        ...WEITERE_DEMO_KONTEN,
+      ].map((k) => ({ ...k, passwort: DEMO_PASSWORT() }))
     : [];
 
   return (

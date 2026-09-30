@@ -170,8 +170,11 @@ export default function LoginFormular({ weiter, hinweis, demoKonten = [], demo =
         <div className="rounded-2xl bg-sun-300/20 p-4 ring-1 ring-inset ring-sun-400/40">
           <p className="text-[13px] font-semibold text-ink-900">Demo-Modus – fiktive Konten zum Ausprobieren</p>
           <p className="mt-0.5 text-[12.5px] text-ink-600">Passwort für alle: <code className="rounded bg-white px-1.5 py-0.5 text-[12px]">{demoKonten[0].passwort}</code></p>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {demoKonten.map((k) => (
+          {["Kunden & Partner", "Backoffice"].map((gruppe) => (
+          <div key={gruppe} className="mt-3">
+          <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ink-500">{gruppe}</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {demoKonten.filter((k) => (k.gruppe || "Kunden & Partner") === gruppe).map((k) => (
               <button
                 key={k.email}
                 type="button"
@@ -186,6 +189,8 @@ export default function LoginFormular({ weiter, hinweis, demoKonten = [], demo =
               </button>
             ))}
           </div>
+          </div>
+          ))}
         </div>
       )}
     </div>

@@ -46,7 +46,7 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 - [ ] Testdaten-Präfixe `dienste-test-*`, `fz-test-*`, Finanzen-Testverträge → frische Demo-DB
 - [ ] UI-Politur Handelsdesk: Kennzahl-Kacheln abgeschnitten, X-Achsen-Labels überlappen, Tabelle rechts abgeschnitten, Brotkrumen „Energie & Lastgang“ auf Admin-Handelsdesk falsch
 - [ ] `pruefen.py` Warnungen: 6 DocTypes in desk_rechte.py (Abnahmestelle, Akquise Ziel, Beteiligung Interesse, Bewertung Szenario, Lastgang, Netzkapazitaet), 106 Übersetzungen, doc_events Payment Entry Guard
-- [ ] Login-Seite: neue Demo-Konten (lieferant@, bank@, kommune@, gutachter@, bo-*@) in der Demo-Schnellauswahl
+- [x] Login-Seite: neue Demo-Konten (lieferant@, bank@, kommune@, gutachter@, bo-*@) in der Demo-Schnellauswahl
 - [ ] Frappe: `energie_quellen.historie_laden` einmalig nach Installation (GO-LIVE.md)
 - [ ] `rechte.py`: Spalte `projektleitung` ergänzen (finanzen=1, passend zu rechte.js)
 - [ ] Steuer-/Rechtspunkte Finanzen (Backend-Import/FINANZEN-ERPNEXT.md) mit Steuerberatung klären; UID eintragen

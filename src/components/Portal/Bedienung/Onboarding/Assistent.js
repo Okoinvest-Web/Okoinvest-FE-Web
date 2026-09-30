@@ -135,13 +135,13 @@ export default function Assistent({ nutzer: nutzerStart, start, pfade, startSchr
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
         <nav aria-label="Schritte des Einstiegs" className="min-w-0">
-          <ol className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+          <ol className="flex flex-wrap gap-2 lg:flex-col lg:flex-nowrap">
             {pfad.schritte.map((s, i) => {
               const aktiv = !abschlussOffen && s.id === schritt.id;
               return (
-                <li key={s.id} className="shrink-0 lg:shrink">
+                <li key={s.id} className="min-w-0 lg:w-full">
                   <button type="button" onClick={() => gehe(s.id)} aria-current={aktiv ? "step" : undefined}
-                    className={cn("flex w-full items-center gap-2.5 rounded-2xl px-3 py-2 text-left text-[13.5px] ring-1 ring-inset transition-colors", aktiv ? "bg-white font-semibold text-ink-900 ring-ov-400" : "bg-white/60 text-ink-700 ring-ink-200/70 hover:ring-ov-300")}>
+                    className={cn("flex w-full items-center gap-2 rounded-2xl px-2.5 py-1.5 text-left text-[13px] ring-1 ring-inset transition-colors lg:gap-2.5 lg:px-3 lg:py-2 lg:text-[13.5px]", aktiv ? "bg-white font-semibold text-ink-900 ring-ov-400" : "bg-white/60 text-ink-700 ring-ink-200/70 hover:ring-ov-300")}>
                     <span className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold", s.erledigt ? "bg-ov-500 text-white" : s.spaeter ? "bg-sand-100 text-ink-700 ring-1 ring-ink-300" : aktiv ? "bg-navy-900 text-white" : "bg-ink-100 text-ink-500")}>
                       {s.erledigt ? <Check aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={3} /> : s.spaeter ? <Clock aria-hidden="true" className="h-3.5 w-3.5" /> : i + 1}
                     </span>
@@ -154,9 +154,9 @@ export default function Assistent({ nutzer: nutzerStart, start, pfade, startSchr
                 </li>
               );
             })}
-            <li className="shrink-0 lg:shrink">
+            <li className="min-w-0 lg:w-full">
               <button type="button" onClick={() => setAbschlussOffen(true)} aria-current={abschlussOffen ? "step" : undefined}
-                className={cn("flex w-full items-center gap-2.5 rounded-2xl px-3 py-2 text-left text-[13.5px] ring-1 ring-inset", abschlussOffen ? "bg-white font-semibold text-ink-900 ring-ov-400" : "bg-white/60 text-ink-700 ring-ink-200/70 hover:ring-ov-300")}>
+                className={cn("flex w-full items-center gap-2 rounded-2xl px-2.5 py-1.5 text-left text-[13px] ring-1 ring-inset lg:gap-2.5 lg:px-3 lg:py-2 lg:text-[13.5px]", abschlussOffen ? "bg-white font-semibold text-ink-900 ring-ov-400" : "bg-white/60 text-ink-700 ring-ink-200/70 hover:ring-ov-300")}>
                 <span className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-full", pfad.abgeschlossen ? "bg-ov-500 text-white" : "bg-ink-100 text-ink-500")}><Compass aria-hidden="true" className="h-3.5 w-3.5" /></span>
                 <span className="whitespace-nowrap">Abschluss</span>
               </button>

@@ -239,6 +239,17 @@ MATRIX.update({
 	"Plattform Closing": {ADMIN: A, TRANSAKTION: S, BUCHHALTUNG: L, COMPLIANCE: L, PROJEKTLEITUNG: L, LESER: L},
 })
 
+# Geodaten & Akquise (A1/A1b, plattform/api/geodaten.py, api/akquise_kampagne.py): nur Leitung und Akquise (Bereich
+# „geodaten“ der Rechte-Matrix). Kampagnen/Empfänger enthalten Eigentümerdaten; Sperrliste nur lesend (Pflege über die API).
+MATRIX.update({
+	"Plattform Akquise Ziel": {ADMIN: S, AKQUISE: S},
+	"Plattform Netzkapazitaet": {ADMIN: S, AKQUISE: S},
+	"Plattform Kampagne": {ADMIN: S, AKQUISE: S},
+	"Plattform Kampagnenziel": {ADMIN: S, AKQUISE: S},
+	"Plattform Sperrliste": {ADMIN: L, AKQUISE: L},
+	"Plattform Gemeinde Potenzial": {ADMIN: S, AKQUISE: S},
+})
+
 SCHLUESSEL = ["create", "delete", "email", "export", "print", "read", "report", "share", "write"]
 
 

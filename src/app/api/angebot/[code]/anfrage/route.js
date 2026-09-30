@@ -34,3 +34,4 @@ export const POST = route({ auth: "optional", maxBytes: 16 * 1024 }, async ({ pa
   await b.angebotAnfrageVerknuepfen(code, { vorgangId: r.id, einwilligungTelefon: rueckruf, telefon: rueckruf ? k.telefon : "" });
   return { ok: true, vorgang: r.id };
 });
+

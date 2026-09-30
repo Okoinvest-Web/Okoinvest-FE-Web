@@ -15,3 +15,4 @@ export const GET = route({ admin: true, recht: [{ bereich: "geodaten", stufe: 1 
   await backend.protokollEintrag(nutzer, { aktion: "export", objektArt: "kampagne", objektId: d.kampagne.id, text: `Versandliste Stufe ${stufe} (${zeilen.length} Empfänger)`, ip }).catch(() => null);
   return new Response(csv(spalten, zeilen), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="versandliste-${d.kampagne.id}-stufe${stufe}.csv"`, "Cache-Control": "no-store" } });
 });
+

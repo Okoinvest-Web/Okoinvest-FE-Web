@@ -13,3 +13,4 @@ export const POST = route({ admin: true, maxBytes: 64 * 1024, recht: RECHT }, as
   const r = await kampagneAnlegen(nutzer, body);
   return Response.json({ ok: true, ...r }, { status: 201, headers: { "Cache-Control": "no-store" } });
 });
+

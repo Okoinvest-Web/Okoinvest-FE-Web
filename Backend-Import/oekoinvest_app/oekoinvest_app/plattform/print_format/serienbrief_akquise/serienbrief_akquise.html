@@ -1,0 +1,47 @@
+{#- ÖkoInvest – Serienbrief Akquise (Plattform Kampagnenziel): je nicht gesperrtem Empfänger ein Brief mit persönlicher Ansprache, Flächendaten, unverbindlicher Pachtspanne, Link/QR-Code zur Angebotsseite (/angebot/<Code>), Datenschutzinformation (Art. 14 DSGVO, Datenquelle Grundbuch je Land) und Widerspruchshinweis (Art. 21 DSGVO). Anschriftfeld nur Name/Anschrift (Fensterkuvert). Texte aus plattform/akquise_kampagne_kern.py (gleich wie der PDF-Serienbrief der Website). -#}
+{%- set d = oekoinvest_serienbrief(doc.name) -%}
+{% if not d.briefe %}
+<div class="oi-hinweis">Für diese Zielfläche gibt es keine versandbereiten Empfänger (Eigentümer noch nicht erfasst oder gesperrt).</div>
+{% endif %}
+{% for b in d.briefe %}
+<div class="{{ 'oi-seitenumbruch' if not loop.first else '' }}">
+	{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+	{% if d.demo %}<div class="oi-muster-stempel">DEMO – fiktive Daten, nicht versenden</div>{% endif %}
+	<table style="width:100%;border-collapse:collapse;margin-top:18mm">
+		<tr>
+			<td style="width:58%;vertical-align:top;height:40mm">
+				<div class="oi-klein" style="border-bottom:1px solid #c5ccd6;padding-bottom:2px;margin-bottom:6px">{{ b.absenderZeile | e }}</div>
+				{% for z in b.anschrift %}<div>{{ z | e }}</div>{% endfor %}
+			</td>
+			<td style="vertical-align:top">
+				<div class="oi-klein">Unser Zeichen</div>
+				<div>{{ b.zeichen | e }}</div>
+				<div class="oi-klein" style="margin-top:6px">Ihr persönlicher Code</div>
+				<div class="oi-marke" style="font-size:12pt;letter-spacing:.06em">{{ b.code }}</div>
+				<div style="margin-top:6px">{{ b.datum | e }}</div>
+			</td>
+		</tr>
+	</table>
+	<div class="oi-titel" style="font-size:12pt;margin:6mm 0 4mm">{{ b.betreff | e }}</div>
+	{% for absatz in b.text.split("\n\n") %}<p class="oi-absatz oi-text">{{ absatz | e }}</p>{% endfor %}
+	<p class="oi-absatz">{{ b.keinInteresse | e }}</p>
+	<table class="oi-tabelle" style="background:#f3f6ef">
+		<tr>
+			<td>
+				<table class="oi-daten">
+					{% for zeile in b.flaechenDaten %}<tr><td class="oi-feld">{{ zeile[0] }}</td><td>{{ zeile[1] | e }}</td></tr>{% endfor %}
+				</table>
+				<div style="margin-top:4px"><strong>Ihr Steckbrief und Pachtrechner:</strong> {{ b.link | e }}</div>
+			</td>
+			<td style="width:32mm;text-align:right;vertical-align:middle">{% if b.qr %}<img src="{{ b.qr }}" alt="QR-Code zur Angebotsseite" style="width:28mm;height:28mm">{% endif %}</td>
+		</tr>
+	</table>
+	<p class="oi-absatz">Mit freundlichen Grüßen<br><br>{{ d.firma.name }}</p>
+	<div class="oi-warnung">{{ b.widerspruch | e }}</div>
+	<div class="oi-seitenumbruch"></div>
+	<div class="oi-abschnitt">Datenschutzinformation zu diesem Schreiben ({{ "Art. 14 DSGVO und Art. 19 DSG" if b.land == "CH" else "Art. 14 DSGVO" }})</div>
+	{% for z in b.datenschutz %}<p class="oi-absatz oi-klein">{{ z | e }}</p>{% endfor %}
+	<div class="oi-warnung">{{ b.widerspruch | e }}</div>
+	<div class="oi-fuss">{{ d.firma.name }} · {{ d.firma.strasse }} · {{ d.firma.ort }} · {{ d.firma.fn }} · {{ b.zeichen | e }} · Code {{ b.code }}</div>
+</div>
+{% endfor %}

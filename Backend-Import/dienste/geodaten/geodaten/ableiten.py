@@ -7,6 +7,7 @@ import json
 from .geometrie import kompaktheit
 from .scoring import SCORING_VERSION, bester_knoten, bewerte, kennzahlen, mwp_fuer, naechster_knoten, prioritaet, widmungslage
 from .netz import jsround, netzkosten
+from .importe_de_ch import kulisse_verbund
 
 GEEIGNET = ("acker", "gruenland")
 NACHBAR_M = 3
@@ -97,12 +98,15 @@ def kandidaten_bezirk(conn, bezirk):
 			{"g": geom, "bl": bundesland, "a": list(ZONEN_ARTEN)}).fetchone()
 		hat_zonen = conn.execute("SELECT EXISTS (SELECT 1 FROM geo.widmungszone WHERE bundesland = %s AND art = ANY(%s))", (bundesland, list(ZONEN_ARTEN))).fetchone()[0]
 		zone_abstand = (float(zone[0]) if zone[1] else 1e9) if hat_zonen else None
-		widmung = widmungslage(bundesland, uw["luftlinieM"] / 1000 if uw else None, zone_abstand)
+		kulisse = kulisse_verbund(conn, geom, land)  # DE: EEG-Kulisse/§ 35 BauGB, CH: Eignung/FFF (A1b)
+		widmung = widmungslage(bundesland, uw["luftlinieM"] / 1000 if uw else None, zone_abstand if land == "AT" else None, land=land,
+			privilegiert_anteil=(kulisse or {}).get("privilegiertAnteil"), eignung_anteil=(kulisse or {}).get("eignungAnteil"))
 		parz_geos = [json.loads(t[14]) for t in teile]
 		m = {
 			"ha": ha, "kompaktheit": kompaktheit(parz_geos, m2), "neigungGrad": jsround(sum(t[7] * t[4] for t in teile) / m2 * 10) / 10,
 			"exposition": mehrheit(8), "nutzung": nutzung, "schutz": schutz, "siedlungAbstandM": siedlung["abstandM"] if siedlung else None,
 			"netz": netz, "widmung": widmung, "bundesland": bundesland, "land": land,
+			**({"kulisse": kulisse} if kulisse else {}),
 		}
 		b = bewerte(m)
 		kz = kennzahlen(ha, b["ertragKwhProKwp"])
@@ -123,16 +127,17 @@ def kandidaten_bezirk(conn, bezirk):
 			"umspannwerk": json.dumps(uw_json, ensure_ascii=False), "widmung": json.dumps({"status": widmung["status"], "text": widmung["text"]}, ensure_ascii=False),
 			"score": b["score"], "ampel": b["ampel"], "prioritaet": prioritaet(b["score"], ha), "kriterien": json.dumps(b["kriterien"], ensure_ascii=False),
 			"ko": json.dumps(b["ko"], ensure_ascii=False), "kennzahlen": json.dumps({**kz, "agri": kennzahlen(ha, b["ertragKwhProKwp"], agri=True)}), "demo": any(t[13] for t in teile), "geom": geom, "sp": sp,
+			"kulisse": json.dumps(kulisse) if kulisse else None,
 		})
 	conn.execute("DELETE FROM geo.kandidat WHERE bezirk = %s", (bezirk,))
 	with conn.cursor() as c:
 		c.executemany(
 			"""INSERT INTO geo.kandidat (id, parzellen, flaeche_ha, kompaktheit, neigung_grad, exposition, nutzung, bundesland, bezirk, gemeinde, land, siedlung, schutz, netz,
-			     umspannwerk, widmung, score, ampel, prioritaet, kriterien, ko, kennzahlen, scoring_version, demo, geom, schwerpunkt)
+			     umspannwerk, widmung, score, ampel, prioritaet, kriterien, ko, kennzahlen, scoring_version, demo, geom, schwerpunkt, kulisse)
 			   VALUES (%(id)s, %(parzellen)s, %(ha)s, %(kompaktheit)s, %(neigung)s, %(exposition)s, %(nutzung)s, %(bundesland)s, %(bezirk)s, %(gemeinde)s, %(land)s,
 			     %(siedlung)s, %(schutz)s, %(netz)s, %(umspannwerk)s, %(widmung)s, %(score)s, %(ampel)s, %(prioritaet)s, %(kriterien)s, %(ko)s, %(kennzahlen)s,
-			     '""" + SCORING_VERSION + """', %(demo)s, %(geom)s, %(sp)s)
-			   ON CONFLICT (id) DO UPDATE SET score = EXCLUDED.score, kriterien = EXCLUDED.kriterien, berechnet_am = now()""",
+			     '""" + SCORING_VERSION + """', %(demo)s, %(geom)s, %(sp)s, %(kulisse)s)
+			   ON CONFLICT (id) DO UPDATE SET score = EXCLUDED.score, kriterien = EXCLUDED.kriterien, kulisse = EXCLUDED.kulisse, berechnet_am = now()""",
 			zeilen,
 		)
 	conn.commit()

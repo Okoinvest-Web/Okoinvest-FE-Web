@@ -1,0 +1,317 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 18:00:00.000000",
+ "description": "Zielfläche einer Akquise-Kampagne (Kandidat aus dem Geodaten-Dienst) mit Grundbuch-Aufgabe, Kostenschätzung und Empfängern.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "titel",
+  "kampagne",
+  "status",
+  "kandidat_id",
+  "demo",
+  "auch_in_anderer_kampagne",
+  "cb_ziel",
+  "land",
+  "bundesland",
+  "bezirk",
+  "gemeinde",
+  "sb_werte",
+  "flaeche_ha",
+  "mwp",
+  "score",
+  "ampel",
+  "prioritaet",
+  "cb_werte",
+  "netz",
+  "kulisse",
+  "pacht",
+  "widmung_text",
+  "sb_grundbuch",
+  "grundbuch_status",
+  "grundbuch_aufgabe",
+  "grundbuch_schaetzung",
+  "cb_grundbuch",
+  "grundbuch_kosten_ist",
+  "grundbuch_ergebnis_am",
+  "gesichert_ha",
+  "sb_empfaenger",
+  "empfaenger",
+  "sb_geo",
+  "parzellen",
+  "gesperrte_flurstuecke",
+  "schwerpunkt",
+  "geometrie",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Titel",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "kampagne",
+   "fieldtype": "Link",
+   "label": "Kampagne",
+   "options": "Plattform Kampagne",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "offen\ngrundbuch\nermittelt\nangeschrieben\nreaktion\ntermin\ngesichert\nabgelehnt\ngesperrt",
+   "default": "offen",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "kandidat_id",
+   "fieldtype": "Data",
+   "label": "Kandidat (Geodaten-Dienst)",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "demo",
+   "fieldtype": "Check",
+   "label": "Demo-Daten"
+  },
+  {
+   "fieldname": "auch_in_anderer_kampagne",
+   "fieldtype": "Check",
+   "label": "Auch in anderer Kampagne"
+  },
+  {
+   "fieldname": "cb_ziel",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "label": "Land",
+   "options": "DE\nAT\nCH"
+  },
+  {
+   "fieldname": "bundesland",
+   "fieldtype": "Data",
+   "label": "Bundesland / Kanton"
+  },
+  {
+   "fieldname": "bezirk",
+   "fieldtype": "Data",
+   "label": "Bezirk / Landkreis"
+  },
+  {
+   "fieldname": "gemeinde",
+   "fieldtype": "Data",
+   "label": "Gemeinde",
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "sb_werte",
+   "fieldtype": "Section Break",
+   "label": "Bewertung"
+  },
+  {
+   "fieldname": "flaeche_ha",
+   "fieldtype": "Float",
+   "label": "Fläche (ha)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "mwp",
+   "fieldtype": "Float",
+   "label": "MWp",
+   "precision": "1"
+  },
+  {
+   "fieldname": "score",
+   "fieldtype": "Int",
+   "label": "Score"
+  },
+  {
+   "fieldname": "ampel",
+   "fieldtype": "Select",
+   "label": "Ampel",
+   "options": "gruen\ngelb\nrot"
+  },
+  {
+   "fieldname": "prioritaet",
+   "fieldtype": "Select",
+   "label": "Priorität",
+   "options": "A\nB\nC"
+  },
+  {
+   "fieldname": "cb_werte",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "netz",
+   "fieldtype": "JSON",
+   "label": "Netz (Knoten, Trasse, Kosten)"
+  },
+  {
+   "fieldname": "kulisse",
+   "fieldtype": "JSON",
+   "label": "Flächenkulisse (DE/CH)"
+  },
+  {
+   "fieldname": "pacht",
+   "fieldtype": "JSON",
+   "label": "Pachtspanne"
+  },
+  {
+   "fieldname": "widmung_text",
+   "fieldtype": "Small Text",
+   "label": "Widmung / Planungsrecht"
+  },
+  {
+   "fieldname": "sb_grundbuch",
+   "fieldtype": "Section Break",
+   "label": "Grundbuch"
+  },
+  {
+   "fieldname": "grundbuch_status",
+   "fieldtype": "Select",
+   "label": "Grundbuch",
+   "options": "offen\nbeantragt\nerledigt",
+   "default": "offen"
+  },
+  {
+   "fieldname": "grundbuch_aufgabe",
+   "fieldtype": "Link",
+   "label": "Aufgabe Grundbuchabfrage",
+   "options": "Plattform Aufgabe"
+  },
+  {
+   "fieldname": "grundbuch_schaetzung",
+   "fieldtype": "JSON",
+   "label": "Kostenschätzung"
+  },
+  {
+   "fieldname": "cb_grundbuch",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "grundbuch_kosten_ist",
+   "fieldtype": "Currency",
+   "label": "Kosten tatsächlich"
+  },
+  {
+   "fieldname": "grundbuch_ergebnis_am",
+   "fieldtype": "Datetime",
+   "label": "Ergebnis erfasst am"
+  },
+  {
+   "fieldname": "gesichert_ha",
+   "fieldtype": "Float",
+   "label": "Gesichert (ha)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "sb_empfaenger",
+   "fieldtype": "Section Break",
+   "label": "Empfänger (Eigentümer)"
+  },
+  {
+   "fieldname": "empfaenger",
+   "fieldtype": "Table",
+   "label": "Empfänger",
+   "options": "Plattform Kampagnenempfaenger"
+  },
+  {
+   "fieldname": "sb_geo",
+   "fieldtype": "Section Break",
+   "label": "Geometrie"
+  },
+  {
+   "fieldname": "parzellen",
+   "fieldtype": "JSON",
+   "label": "Flurstücke"
+  },
+  {
+   "fieldname": "gesperrte_flurstuecke",
+   "fieldtype": "JSON",
+   "label": "Gesperrte Flurstücke (Sperrliste)"
+  },
+  {
+   "fieldname": "schwerpunkt",
+   "fieldtype": "JSON",
+   "label": "Schwerpunkt"
+  },
+  {
+   "fieldname": "geometrie",
+   "fieldtype": "Long Text",
+   "label": "Geometrie (GeoJSON, WGS84)"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Beschreibung (intern)",
+   "hidden": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 08:11:08.479555",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Kampagnenziel",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Akquise",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "title_field": "titel",
+ "show_title_field_in_link": 1
+}

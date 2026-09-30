@@ -157,6 +157,7 @@ jinja = {
 		"oekoinvest_app.plattform.energie_druck.oekoinvest_energie_vergleich",  # Energiebeschaffung: Angebotsvergleich/Zuschlag
 		"oekoinvest_app.plattform.api.entwicklung.oekoinvest_entwicklung",  # Projektentwicklung: Druckformat „Projektsteckbrief“
 		"oekoinvest_app.plattform.api.planung.oekoinvest_kostenrahmen",  # Planungsdateien & Projektkosten: Druckformat „Kostenrahmen“
+		"oekoinvest_app.plattform.api.akquise_kampagne.oekoinvest_serienbrief",  # Akquise A1b: Druckformat „Serienbrief Akquise“
 	],
 }
 
@@ -205,6 +206,7 @@ scheduler_events = {
 		"oekoinvest_app.plattform.api.signatur.erinnerungen_senden",  # Signatur: Erinnerung nach 3 Tagen, abgelaufene Fristen
 		"oekoinvest_app.plattform.api.hr.hrms_abgleich",  # HR: Leave Applications (HRMS, optional) → Abwesenheit + Vertretung
 		"oekoinvest_app.plattform.api.onboarding.mail_lauf_taeglich",  # Onboarding B1: Erinnerung an offene Einstiegsschritte nach 3/7 Tagen
+		"oekoinvest_app.plattform.api.akquise_kampagne.nachfassen_taeglich",  # Akquise A1b: Nachfassstufen der Kampagnen (Aufgaben)
 	],
 	# Deal-Room: Erinnerung 48 h vor Ende einer Angebotsfrist
 	"hourly": [

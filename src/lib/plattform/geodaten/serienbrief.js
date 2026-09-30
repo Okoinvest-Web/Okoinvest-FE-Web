@@ -63,13 +63,20 @@ export function flurstueckText(ziel, empfaenger) {
   const alle = ziel.parzellen || [];
   const eigene = empfaenger?.flurstuecke?.length ? alle.filter((p) => empfaenger.flurstuecke.includes(p.id)) : alle;
   const land = ziel.land || "DE";
-  const t = eigene.map((p) => {
-    const gem = String(p.kg || "").replace(/^DEMO-(KG|Gemarkung)\s*/, "");
-    if (land === "AT") return `KG ${gem || p.kgNr}, Gst.-Nr. ${p.gstNr}`;
-    if (land === "CH") return `${gem}, Parzelle ${p.gstNr}`;
-    return `Gemarkung ${gem || p.kgNr}, Flst. ${p.gstNr}`;
+  // nach Gemarkung/KG gruppiert: „Gemarkung X, Flst. 12, 13/1 und 2 weitere“
+  const gruppen = new Map();
+  for (const p of eigene) {
+    const gem = String(p.kg || "").replace(/^DEMO-(KG|Gemarkung)\s*/, "") || p.kgNr;
+    if (!gruppen.has(gem)) gruppen.set(gem, []);
+    gruppen.get(gem).push(p.gstNr);
+  }
+  const teile = [...gruppen.entries()].map(([gem, nr]) => {
+    const liste = nr.length > 4 ? `${nr.slice(0, 4).join(", ")} und ${nr.length - 4} weitere` : nr.join(", ");
+    if (land === "AT") return `KG ${gem}, Gst.-Nr. ${liste}`;
+    if (land === "CH") return `${gem}, Parzelle ${liste}`;
+    return `Gemarkung ${gem}, Flst. ${liste}`;
   });
-  return t.length > 4 ? `${t.slice(0, 4).join("; ")} und ${t.length - 4} weitere` : t.join("; ");
+  return teile.join("; ");
 }
 
 /**
@@ -131,7 +138,7 @@ export function briefFuer(kampagne, ziel, empfaenger, { basisUrl = "https://www.
     codeRoh: empfaenger.code,
     flaechenDaten: [
       ["Gemeinde", ziel.gemeinde],
-      ["Flurstücke", kontext.flaeche.flurstuecke],
+      ["Flurstücke", `${(empfaenger?.flurstuecke?.length || (ziel.parzellen || []).length)} in ${[...new Set((ziel.parzellen || []).map((p) => String(p.kg || "").replace(/^DEMO-(KG|Gemarkung)\s*/, "")))].slice(0, 2).join(", ")}`],
       ["Fläche (Bereich)", `rund ${kontext.flaeche.ha} ha`],
       ["Mögliche Leistung", `etwa ${kontext.flaeche.mwp} MWp`],
       ["Pacht (unverbindlich)", `${kontext.flaeche.pachtMin}–${kontext.flaeche.pachtMax} € je ha und Jahr`],

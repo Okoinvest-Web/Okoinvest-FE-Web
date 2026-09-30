@@ -71,7 +71,7 @@ function sperreEintragen(db, n, { person, land, flurstuecke = [], grund = "wider
     return vorhanden;
   }
   const s = {
-    id: neueId("SP"),
+    id: neueId("SL"),
     personHash,
     anzeige: person ? personMaskiert(person) : `${flurstuecke.length} Flurstück(e)`,
     flurstueckHashes: fHashes,
@@ -213,7 +213,7 @@ function zielAusKandidat(k, kampagneId, akq) {
   const parzellen = (k.parzellen || []).slice(0, 60).map((p) => ({ id: v.text(p.id, 60), kg: v.text(p.kg, 80), kgNr: v.text(p.kgNr, 12), gstNr: v.text(p.gstNr, 24), ha: v.zahl(p.ha, { min: 0, max: 100000, stellen: 4 }) }));
   const gesperrteFs = parzellen.filter((p) => flurstueckGesperrt(akq, land, p));
   return {
-    id: neueId("KZ"),
+    id: neueId("AQZ"),
     kampagneId,
     kandidatId: v.text(k.id, 80),
     demo: !!k.demo,
@@ -260,7 +260,7 @@ export async function kampagneAnlegen(n, kandidaten = [], daten = {}) {
   return boAendern((db) => {
     const akq = akqSicher(db);
     const k = {
-      id: neueId("KA"),
+      id: neueId("AQ"),
       name,
       beschreibung: v.mehrzeilig(daten.beschreibung, 1000),
       land: laender[0],
@@ -416,7 +416,7 @@ export async function grundbuchErgebnis(n, zielId, daten = {}) {
       while (codes.has(code));
       codes.add(code);
       const e = {
-        id: neueId("KE"),
+        id: neueId("AQE"),
         ...p,
         flurstuecke: p.flurstuecke.filter((id) => z.parzellen.some((x) => x.id === id)),
         code,

@@ -67,6 +67,27 @@ docker compose run --rm geodaten python -m geodaten.cli ableiten
 - **Protokoll:** Jeder Lauf steht in `geo.importlauf`. Lizenz, Stand und Anzahl stehen in `geo.quelle` (`python -m geodaten.cli quellen`).
 - **Feldnamen:** Der Import prüft sie gegen das Stage-Schema. Weicht eine Ausgabe ab, bricht er mit der Liste der vorhandenen Spalten ab. Dann die Kandidatenliste im jeweiligen Schritt ergänzen.
 
+## Deutschland und Schweiz (Ausbaustufe A1b)
+
+Die Schema-Erweiterung `sql/002_de_ch.sql` (Tabellen `verkehr_linie`, `kulisse`; Spalten `parzelle.kennzeichen`, `kandidat.kulisse`) läuft automatisch mit `schema`. Import-Schritte in `geodaten/importe_de_ch.py`:
+
+```
+docker compose run --rm geodaten python -m geodaten.cli import alkis       --datei /daten/alkis_nw.zip --bundesland Nordrhein-Westfalen --quelle alkis --stand <JJJJ-MM-TT>
+docker compose run --rm geodaten python -m geodaten.cli import feldbloecke --datei /daten/feldbloecke_nw.gpkg --quelle invekos_de --jahr 2026
+docker compose run --rm geodaten python -m geodaten.cli import verkehr     --datei /daten/germany-latest.osm.pbf
+docker compose run --rm geodaten python -m geodaten.cli import kulisse     --datei /daten/bena_by.zip --art benachteiligt --land DE --quelle kulisse_bena
+docker compose run --rm geodaten python -m geodaten.cli import kulisse     --datei /daten/organische_boeden.gpkg --art moor --land DE --quelle kulisse_moor_thuenen
+docker compose run --rm geodaten python -m geodaten.cli import av_ch       --datei /daten/av_be.gpkg --bundesland Bern --quelle av_ch
+docker compose run --rm geodaten python -m geodaten.cli import kulisse     --datei /daten/fff_be.gpkg --art fff --land CH --quelle ch_fff
+docker compose run --rm geodaten python -m geodaten.cli import dgm         --datei /daten/dgm_de.vrt
+docker compose run --rm geodaten python -m geodaten.cli ableiten
+```
+
+- `ableiten` berechnet für DE-Verbünde Randstreifen (500 m) und Privilegierung (200 m, Autobahn bzw. zweigleisige Hauptbahn) per Puffer/Verschneidung sowie die Kulissen-Anteile, für CH Eignung/FFF. Regeln: `docs/AKQUISE-GEODATEN.md` Abschnitt 9.
+- DGM je Land als VRT aus Kacheln (`gdalbuildvrt`, DGM1 der Länder bzw. swissALTI3D).
+- Demo DE: `python demo/demo_bauen_de.py <netz.json> <verkehr.json> <orte.json> <schutz.json>` (Abfragen in `demo/overpass/*-{schwaben,unterallgaeu}.overpassql`).
+- Tests: `python -m unittest discover -s tests` (inkl. `test_scoring_de_ch.py`).
+
 ## Aktualisierung (empfohlen)
 
 | Quelle | Rhythmus |

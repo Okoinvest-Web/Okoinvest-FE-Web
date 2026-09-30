@@ -169,21 +169,58 @@ Vor dem Produktivimport muss jede Quelle nochmals gegen die aktuelle Datensatzse
 - Telefon, E-Mail und SMS brauchen vorher eine Einwilligung (§ 174 TKG 2021).
 - Die Robinsonliste nach § 151 GewO bindet nur Adressverlage und Direktmarketingunternehmen.
 
-## 11. Ausbau Deutschland und Schweiz
+## 11. Deutschland und Schweiz (Recherche 30.09.2026, Ausbaustufe A1b)
 
-**Deutschland**
+Status wie oben: **geprüft** = Seite selbst gelesen, **Snippet** = nur Suchergebnis/Sekundärquelle.
 
-- **ALKIS Open Data:** 15 von 16 Ländern stellen Flurstücke ohne Eigentümer frei bereit (Snippet, FOSSGIS 2025). Übersicht je Land: [geodienstleistungen.de/alkis](https://geodienstleistungen.de/alkis.html).
-- **Bayern:** Flurstücks-Vektoren mit Nummern sind **kein** Open Data (geprüft). Frei unter CC BY 4.0 sind Parzellarkarte (Raster), Tatsächliche Nutzung, Gebäude und LoD2.
-- **MaStR Gesamtdatenexport:** DL-DE/BY-2.0, XML/ZIP, täglich (geprüft). Dient als Bestand an Anlagen und Netzbetreibern.
-- **Netzkapazitäten:** § 14e EnWG verlangt keine Kapazitätskarten (geprüft). § 17c EnWG-E („Netzanschlusspaket“, Kapazitätskarte HS/MS, monatlich) ist nach Recherchestand ein Entwurf.
+### ALKIS-Flurstücke (ohne Eigentümer)
 
-**Schweiz**
+15 von 16 Ländern offen, Bayern nicht (geprüft: FOSSGIS 2025; Übersicht [geodienstleistungen.de/alkis](https://geodienstleistungen.de/alkis.html), Stand 27.03.2026, ohne Lizenzen).
 
-- **Amtliche Vermessung:** über geodienste.ch (INTERLIS/GPKG/WFS, kantonale Bedingungen, teils Registrierung/Freigabe; geprüft).
-- **swisstopo-OGD** (auch swissALTI3D): frei, Quellenangabe „© swisstopo“ (geprüft).
-- **BFE Sonnendach:** opendata.swiss (Snippet).
-- **Kapazitäten der Netzbetreiber:** offen.
+| Land | Lizenz | Bezug | Status |
+|---|---|---|---|
+| BW | dl-de/by-2-0 („Datenquelle: LGL, www.lgl-bw.de“) | [opengeodata.lgl-bw.de](https://opengeodata.lgl-bw.de/) NAS/Shape, WFS | Freigabe geprüft, Lizenz Snippet |
+| BY | **kein Open Data** – Vektor 2,90 €/Flurstück (mind. 20 €); Parzellarkarte als Raster ohne Flurnummern CC BY 4.0 | [geodatenonline.bayern.de](https://geodatenonline.bayern.de/geodatenonline/seiten/dfkalkis_info) | geprüft |
+| BE | dl-de/zero-2-0 | WFS gdi.berlin.de/services/wfs/alkis_flurstuecke | Snippet |
+| BB | dl-de/by-2-0 („GeoBasis-DE/LGB“) | data.geobasis-bb.de, OGC API alkis-vereinfacht | Snippet |
+| HB | CC BY 4.0 | geo.bremen.de (seit 09.06.2024) | Snippet |
+| HH | dl-de/by-2-0 | Transparenzportal, INSPIRE-WFS | Snippet |
+| HE | frei, Lizenzname (zero/by) offen | gds.hessen.de | Freigabe geprüft |
+| MV | CC BY 4.0 | LAiV-Downloadportal (landesweit seit 02/2026) | Snippet |
+| NI | CC BY 4.0 („© GeoBasis-DE/LGLN <Jahr>“) | ni-lgln-opengeodata.hub.arcgis.com | Snippet |
+| NW | dl-de/zero-2-0 | opengeodata.nrw.de …/gru_xml, OGC API | Snippet |
+| RP | dl-de/by-2-0 („©GeoBasis-DE / LVermGeoRP“) | geoshop.rlp.de, WFS | Snippet |
+| SL | dl-de/by-2-0 | shop.lvgl.saarland.de | Snippet |
+| SN | dl-de/by-2-0 | geodaten.sachsen.de (NAS) | Snippet |
+| ST | dl-de/by-2-0 („© GeoBasis-DE / LVermGeo ST“) | lvermgeo.sachsen-anhalt.de (NAS) | Snippet |
+| SH | CC BY 4.0 | INSPIRE-WFS gdi-sh.de | Snippet |
+| TH | dl-de/by-2-0 | geoportal-th.de (Shape/NAS) | Snippet |
+
+### Weitere Quellen Deutschland
+
+| Datensatz | Lizenz | Bezug | Status |
+|---|---|---|---|
+| Feldblöcke/InVeKoS | je Land: NW, SN dl-de/by-2-0; BB offen (Lizenz offen); **BY Feldstückskarte CC BY-ND 4.0 (keine Bearbeitung!)** | [geodienstleistungen.de/feldbloecke](https://geodienstleistungen.de/feldbloecke.html) | Snippet |
+| Benachteiligte Gebiete | BY CC BY 4.0 (Energie-Atlas, Shape); NRW dl-de/by-2-0 (OGC API `inspire-lc-bena`); BW LUBW-Shape („kein amtliches Dokument“, Lizenz offen); bundesweit kein Datensatz | [Energie-Atlas Bayern](https://www.energieatlas.bayern.de/erneuerbare-energien/photovoltaik/freiflaechen/benachteiligte_gebiete) | geprüft (BY, NRW) |
+| Moorkulisse | Thünen „Kulisse organischer Böden“ CC BY 4.0, DOI 10.3220/DATA20230510130443-0 | [atlas.thuenen.de](https://atlas.thuenen.de/maps/243/metadata_detail) | geprüft |
+| Schutzgebiete | BfN-WFS unter GeoNutzV, Hinweis „Nicht für Planungszwecke geeignet“; Alternative EEA Natura 2000 CC BY 4.0 | [geodienste.bfn.de](https://geodienste.bfn.de/ogc/wfs/schutzgebiet) | geprüft |
+| MaStR Gesamtexport | dl-de/by-2-0, XML ~3 GB täglich; genaue Koordinaten erst ab 30 kW; Koordinaten der Netzanschlusspunkte offen – nur als Hinweisquelle | [marktstammdatenregister.de](https://www.marktstammdatenregister.de/MaStR/Datendownload) | geprüft |
+| DGM | BKG DGM200 dl-de/by-2-0; DGM25 nur Behörden; Bayern DGM1 CC BY 4.0 | gdz.bkg.bund.de, geodaten.bayern.de | Snippet |
+| Grundkarte | **TopPlusOpen** dl-de/by-2-0, „© BKG (Jahr) dl-de/by-2-0“ (in der Karte verwendet); basemap.de CC BY 4.0 | sgx.geodatenzentrum.de/wmts_topplus_open | geprüft |
+| Autobahn/Schiene, Umspannwerke Schwaben | OSM ODbL; Demo-Abfrage 30.09.2026 (Overpass-Spiegel, OSM-Stand 2026-06/07) | `demo/overpass/*-{schwaben,unterallgaeu}.overpassql` | – |
+
+**Gesetzestexte (geprüft, gesetze-im-internet.de):** § 37 Abs. 1 Nr. 2 lit. c EEG (500 m längs Autobahnen oder Schienenwegen, vom äußeren Rand der Fahrbahn, keine Gleiszahl), Nr. 3 lit. e (Moor mit Wiedervernässung), lit. h/i (benachteiligte Gebiete), § 37c EEG (Opt-out der Länder; Schwelle 1 % bzw. ab 2031 1,5 % der LF – Wortlaut Abs. 2 nachprüfen), § 35 Abs. 1 Nr. 8 lit. b BauGB (200 m längs Autobahnen bzw. Schienenwegen des übergeordneten Netzes i. S. d. § 2b AEG mit mind. zwei Hauptgleisen), § 35 Abs. 1 Nr. 9 BauGB (besondere Solaranlagen ≤ 25.000 m², Hofbezug), § 43a GBV (Grundbucheinsicht für EE-Projektierer ab 750 kW, seit 01.05.2025).
+
+### Schweiz
+
+| Datensatz | Lizenz / Bedingungen | Bezug | Status |
+|---|---|---|---|
+| Amtliche Vermessung (Liegenschaften) | je Kanton: frei u. a. AG, AI, AR, BE, BL, BS, FR, GL, GR, SH, SO, SZ, TG, TI, UR, VD, VS, ZG, ZH; Registrierung u. a. NW, OW; kostenpflichtig LU, JU (ab 10 ha), NE (Vertrag) | [geodienste.ch/services/av](https://www.geodienste.ch/services/av) | geprüft, Einordnung nachprüfen |
+| swissALTI3D, swissTLM3D | OGD swisstopo, kommerziell erlaubt, „© swisstopo“ | STAC data.geo.admin.ch | geprüft |
+| Fruchtfolgeflächen | je Kanton, Modell `Fruchtfolgeflaechen_V1` | models.geo.admin.ch | Snippet |
+| Eignungsgebiete Solar | kantonale Richtpläne (Art. 8b RPG, Stromgesetz); Art. 32c RPV | Kantone | Snippet |
+| Solarexpress (Art. 71a EnG) | alpine Großanlagen; Verlängerung beschlossen (21.03.2025), Details offen | – | Snippet |
+| Grundkarte | swisstopo WMTS (3857), „© swisstopo“ | docs.geo.admin.ch | geprüft |
 
 ## Offen zur Nachprüfung
 
@@ -194,5 +231,9 @@ Vor dem Produktivimport muss jede Quelle nochmals gegen die aktuelle Datensatzse
 - Feldnamen INVEKOS 2026-1
 - DKM-Stichtag 01.04.2026
 - DLM-Bauwerke-Lizenz
-- Länderwerte der ALKIS-Tabelle
+- ALKIS-Lizenzen der Länder mit Status „Snippet“ auf den Landesseiten bestätigen; Bayern INSPIRE-WFS Flurstücke (HVD-Verordnung?)
+- Lizenzen Feldblöcke BB/NI, BW-Kulisse benachteiligte Gebiete, Länder mit Verordnung nach § 37c EEG
+- MaStR-Koordinaten der Netzanschlusspunkte; TopPlusOpen Pflichtlink „Datenquellen“
+- CH: Kategorien je Kanton (geodienste.ch), Art. 24ter RPG, Solarexpress-Verlängerung
+- Zweckbindung: Nutzung von Grundbuchdaten aus § 43a GBV für Werbebriefe
 - Status § 17c EnWG

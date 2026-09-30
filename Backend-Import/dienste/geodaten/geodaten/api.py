@@ -61,16 +61,16 @@ def protokoll(conn, request: Request, anzahl):
 
 KANDIDAT_FELDER = """k.id, k.demo, k.flaeche_ha, k.score, k.ampel, k.prioritaet, k.ko, k.kriterien, k.land, k.bundesland, k.bezirk, k.gemeinde,
   k.kompaktheit, k.neigung_grad, k.exposition, k.nutzung, k.siedlung, k.schutz, k.netz, k.umspannwerk, k.widmung, k.kennzahlen, k.parzellen,
-  ST_AsGeoJSON(ST_Transform(k.schwerpunkt, 4326), 6), ST_AsGeoJSON(ST_Transform(k.geom, 4326), 6), Box2D(ST_Transform(k.geom, 4326))::text"""
+  ST_AsGeoJSON(ST_Transform(k.schwerpunkt, 4326), 6), ST_AsGeoJSON(ST_Transform(k.geom, 4326), 6), Box2D(ST_Transform(k.geom, 4326))::text, k.kulisse"""
 
 
 def kandidat_json(conn, r, detail=False):
-	(kid, demo, ha, score, ampel, prio, ko, kriterien, land, bl, bez, gem, kompakt, neigung, expo, nutzung, siedlung, schutz, netz, uw, widmung, kz, parz, sp, geo, box) = r
+	(kid, demo, ha, score, ampel, prio, ko, kriterien, land, bl, bez, gem, kompakt, neigung, expo, nutzung, siedlung, schutz, netz, uw, widmung, kz, parz, sp, geo, box, kulisse) = r
 	zahlen = [float(x) for x in re.findall(r"-?\d+\.?\d*", box or "")]
 	out = {
 		"id": kid, "demo": demo, "ha": ha, "mwp": kz.get("mwp"), "score": score, "ampel": ampel, "prioritaet": prio, "ko": ko, "kriterien": kriterien,
 		"schwerpunkt": json.loads(sp)["coordinates"], "bbox": zahlen[:4], "geometrie": json.loads(geo), "land": land, "bundesland": bl, "bezirk": bez, "gemeinde": gem,
-		"merkmale": {"kompaktheit": kompakt, "neigungGrad": neigung, "exposition": expo, "nutzung": nutzung, "hauptnutzung": "acker" if (nutzung or {}).get("acker", 0) >= (nutzung or {}).get("gruenland", 0) else "gruenland", "siedlung": siedlung, "schutz": schutz},
+		"merkmale": {"kompaktheit": kompakt, "neigungGrad": neigung, "exposition": expo, "nutzung": nutzung, "hauptnutzung": "acker" if (nutzung or {}).get("acker", 0) >= (nutzung or {}).get("gruenland", 0) else "gruenland", "siedlung": siedlung, "schutz": schutz, **({"kulisse": kulisse} if kulisse else {})},
 		"netz": netz, "umspannwerk": uw, "widmung": widmung, "kennzahlen": {k: v for k, v in kz.items() if k != "agri"}, "kennzahlenAgri": kz.get("agri"),
 	}
 	if detail:
@@ -106,14 +106,14 @@ def uebersicht():
 			"""SELECT count(*), COALESCE(sum(flaeche_ha), 0), COALESCE(sum((kennzahlen->>'mwp')::numeric), 0),
 			          count(*) FILTER (WHERE ampel = 'gruen'), count(*) FILTER (WHERE prioritaet = 'A') FROM geo.kandidat""").fetchone()
 		gebiete = {}
-		for feld, name in (("bundesland", "bundeslaender"), ("bezirk", "bezirke"), ("gemeinde", "gemeinden")):
+		for feld, name in (("land", "laender"), ("bundesland", "bundeslaender"), ("bezirk", "bezirke"), ("gemeinde", "gemeinden")):
 			gebiete[name] = [{"name": z[0], "anzahl": z[1]} for z in conn.execute(f"SELECT {feld}, count(*) FROM geo.kandidat WHERE {feld} IS NOT NULL GROUP BY 1 ORDER BY 1").fetchall()]
 	return {"version": SCORING_VERSION, "kennzahlen": {"kandidaten": k[0], "ha": round(float(k[1]), 1), "mwp": round(float(k[2]), 1), "gruen": k[3], "prioA": k[4]}, "gebiete": gebiete}
 
 
 @app.get("/v1/kandidaten", dependencies=[Depends(token_pruefen)])
 def kandidaten(request: Request, bbox: str = "", minHa: float = 0, maxTrasseKm: float = 0, minScore: int = 0, bundesland: str = "", bezirk: str = "", gemeinde: str = "",
-		ampel: str = "", q: str = Query("", max_length=80), limit: int = 500):
+		ampel: str = "", q: str = Query("", max_length=80), limit: int = 500, land: str = ""):
 	box = bbox_lesen(bbox)
 	bed = ["TRUE"]
 	par = {}
@@ -129,6 +129,9 @@ def kandidaten(request: Request, bbox: str = "", minHa: float = 0, maxTrasseKm: 
 	if minScore:
 		bed.append("k.score >= %(ms)s")
 		par["ms"] = minScore
+	if land in ("AT", "DE", "CH"):
+		bed.append("k.land = %(land)s")
+		par["land"] = land
 	for feld, wert in (("bundesland", bundesland), ("bezirk", bezirk), ("gemeinde", gemeinde)):
 		if wert:
 			bed.append(f"k.{feld} = %({feld})s")
@@ -190,7 +193,8 @@ def ebenen(ebene: str, bbox: str = ""):
 	box = bbox_lesen(bbox)
 	if not box:
 		raise HTTPException(400, "bbox erforderlich")
-	tabelle = {"schutzgebiete": ("geo.schutzgebiet", "id, name, art"), "zonen": ("geo.widmungszone", "id, name, art, bundesland")}.get(ebene)
+	tabelle = {"schutzgebiete": ("geo.schutzgebiet", "id, name, art"), "zonen": ("geo.widmungszone", "id, name, art, bundesland"),
+		"verkehr": ("geo.verkehr_linie", "id, art, usage, gleise, name")}.get(ebene)  # verkehr: A1b (Autobahn/Schiene, DE)
 	if not tabelle:
 		raise HTTPException(404, "Ebene unbekannt")
 	toleranz = max(1.0, (box[2] - box[0]) * 20)  # Meter – grobe Vereinfachung je nach Ausschnitt

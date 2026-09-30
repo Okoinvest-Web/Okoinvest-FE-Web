@@ -59,18 +59,18 @@ function briefSeiten(doc, b, { demo = false } = {}) {
   s.text(ix, 58 * MM + 42, b.code, { groesse: 11, fett: true, farbe: NAVY, zeichenabstand: 0.6 });
   s.text(ix, 58 * MM + 62, b.datum, { groesse: 8.5, farbe: TEXT });
   // Betreff und Text
-  y = 103 * MM;
+  y = 100 * MM;
   y = s.absatz(links, y, b.betreff, { breite, groesse: 11.5, fett: true, farbe: NAVY, zeilenhoehe: 15 }) + 22;
   for (const absatz of `${b.text}\n\n${b.keinInteresse}`.split(/\n/)) {
     if (!absatz.trim()) {
       y += 6;
       continue;
     }
-    y = s.absatz(links, y, absatz, { breite, groesse: 9.8, farbe: TEXT, zeilenhoehe: 13.4 }) + 13.4;
+    y = s.absatz(links, y, absatz, { breite, groesse: 9.6, farbe: TEXT, zeilenhoehe: 12.9 }) + 12.9;
   }
   // Flächendaten + QR-Box
   y += 4;
-  const boxH = 96;
+  const boxH = 92;
   const qr = 82;
   s.rechteck(links, y, breite, boxH, "#f3f6ef", { rand: "#d9e2d0", randBreite: 0.6 });
   let yy = y + 16;
@@ -89,10 +89,14 @@ function briefSeiten(doc, b, { demo = false } = {}) {
     s.text(links, y, g, { groesse: 9.8, farbe: TEXT });
     y += g ? 13 : 8;
   }
-  // Widerspruch (hervorgehoben, unten auf Seite 1)
-  const wy = Math.max(y + 8, doc.hoehe - 38 * MM);
-  s.rechteck(links, wy, breite, 44, "#fff6e5", { rand: "#c98a00", randBreite: 0.6 });
-  s.absatz(links + 8, wy + 13, b.widerspruch, { breite: breite - 16, groesse: 7.6, farbe: "#5c3d00", zeilenhoehe: 9.6 });
+  // Widerspruch (hervorgehoben, unten auf Seite 1; reicht der Platz nicht, Verweis – vollständig auf Seite 2)
+  const wy = Math.max(y + 6, doc.hoehe - 36 * MM);
+  if (wy + 44 <= doc.hoehe - 16 * MM) {
+    s.rechteck(links, wy, breite, 44, "#fff6e5", { rand: "#c98a00", randBreite: 0.6 });
+    s.absatz(links + 8, wy + 13, b.widerspruch, { breite: breite - 16, groesse: 7.6, farbe: "#5c3d00", zeilenhoehe: 9.6 });
+  } else {
+    s.text(links, Math.min(y + 4, doc.hoehe - 17 * MM), "Widerspruchsrecht (Art. 21 DSGVO) und Datenschutzinformation: siehe Rückseite.", { groesse: 7.8, fett: true, farbe: "#5c3d00" });
+  }
   s.text(links, doc.hoehe - 12 * MM, `${b.absenderZeile} · Datenschutzinformation auf der Rückseite`, { groesse: 6.5, farbe: GRAU });
 
   // Seite 2: Datenschutzinformation

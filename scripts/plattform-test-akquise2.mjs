@@ -311,7 +311,7 @@ async function main() {
     const kz = r.json.kampagne.kennzahlen;
     const eA2 = r.json.ziele.find((z) => z.id === zA.id).empfaenger[0];
     pruefe(kz.briefe === 3 && kz.aufrufe >= 1 && kz.anfragen === 1 && kz.termine === 1 && kz.widersprueche === 1 && kz.gesichertHa === 8, "Kennzahlen: Briefe, Aufrufe, Anfragen, Termine, Widersprüche, gesicherte ha", kz);
-    pruefe(kz.kosten.grundbuch === 16 && kz.kosten.versand > 0 && kz.kostenJeHa === Math.round(kz.kosten.summe / 8), "Kosten (Grundbuch Ist + Versand) und Kosten je gesichertem ha", kz.kosten);
+    pruefe(kz.kosten.grundbuch === 16 && kz.kosten.versand > 0 && kz.kostenJeHa === Math.round(kz.kosten.summe / 8), "Kosten (Grundbuch Ist + Versand) und Kosten je gesichertem ha", { kosten: kz.kosten, einstellung: r.json.kampagne.kosten, land: r.json.kampagne.land, briefe: kz.briefe });
     pruefe(eA2.einwilligungTelefon?.quelle && eA2.anfragen.length === 1, "Einwilligung Telefon aus dem Formular vermerkt", eA2.einwilligungTelefon);
     r = await akquise.post("/api/admin/geodaten/kampagnen/nachfassen", {});
     pruefe(r.status === 200 && r.json.ausgeloest === 0, "Nachfassen jetzt: noch nichts fällig (Fristen ≥ 7 Tage)", r.json);

@@ -62,6 +62,12 @@ export async function uebersicht({ nutzer } = {}) {
     kennzahlen: u?.kennzahlen || { kandidaten: 0, ha: 0, mwp: 0, gruen: 0, prioA: 0 },
     gebiete: u?.gebiete || { bundeslaender: [], bezirke: [], gemeinden: [] },
     start: { mitte: [13.19, 48.17], zoom: 9 },
+    // Sprungziele der Karte (A1b) – je Land, sofern im Dienst Kandidaten vorhanden sind
+    regionen: [
+      { id: "at", land: "AT", label: "Österreich", mitte: [13.3, 47.7], zoom: 8 },
+      { id: "de", land: "DE", label: "Deutschland (Süd)", mitte: [10.6, 48.3], zoom: 8 },
+      { id: "ch", land: "CH", label: "Schweiz", mitte: [8.2, 46.9], zoom: 8 },
+    ].filter((r) => !u?.gebiete?.laender || u.gebiete.laender.some((x) => x.name === r.land)),
   };
 }
 

@@ -8,3 +8,4 @@ const RECHT = [{ bereich: "geodaten", stufe: 2 }, { bereich: "akquise", stufe: 2
 
 export const PATCH = route({ admin: true, recht: RECHT }, async ({ nutzer, params, body }) => ({ ok: true, ...(await akquise2Backend().empfaengerAendern(nutzer, params.zielId, params.empfaengerId, body)) }));
 export const POST = route({ admin: true, recht: RECHT }, async ({ nutzer, params, body }) => ({ ok: true, ...(await akquise2Backend().empfaengerSperren(nutzer, params.zielId, params.empfaengerId, { grund: body.grund, quelle: body.quelle, notiz: body.notiz })) }));
+

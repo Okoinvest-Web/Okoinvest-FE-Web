@@ -11,3 +11,4 @@ export const POST = route({ auth: false }, async ({ params, ip }) => {
   if (code) await akquise2Backend().angebotAufruf(code).catch(() => null);
   return { ok: true };
 });
+

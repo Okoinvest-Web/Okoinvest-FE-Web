@@ -14,3 +14,4 @@ export const POST = route({ auth: false, maxBytes: 2 * 1024 }, async ({ params, 
   await akquise2Backend().angebotWiderspruch(code);
   return { ok: true };
 });
+

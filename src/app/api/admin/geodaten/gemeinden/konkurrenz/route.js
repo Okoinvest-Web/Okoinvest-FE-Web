@@ -10,3 +10,4 @@ export const POST = route({ admin: true, recht: RECHT }, async ({ nutzer, body }
   return Response.json(r, { status: 201, headers: { "Cache-Control": "no-store" } });
 });
 export const DELETE = route({ admin: true, recht: RECHT }, async ({ nutzer, body }) => akquise2Backend().konkurrenzEntfernen(nutzer, body?.schluessel, body?.id));
+

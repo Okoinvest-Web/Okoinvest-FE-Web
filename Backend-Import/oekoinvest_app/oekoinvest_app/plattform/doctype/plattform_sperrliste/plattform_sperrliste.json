@@ -1,0 +1,185 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 18:00:00.000000",
+ "description": "Sperrvermerk der Flächenakquise: Widerspruch → nie wieder anschreiben (über alle Kampagnen). Nur Abgleichswerte (Hash aus Name + PLZ bzw. Flurstück) und maskierte Anzeige, kein Klartext.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "anzeige",
+  "aktiv",
+  "grund",
+  "quelle",
+  "land",
+  "cb_sperre",
+  "person_hash",
+  "flurstueck_hashes",
+  "kampagne",
+  "ziel",
+  "von",
+  "sb_aufhebung",
+  "aufgehoben_am",
+  "aufgehoben_von",
+  "aufhebungsgrund",
+  "notiz",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "anzeige",
+   "fieldtype": "Data",
+   "label": "Anzeige (maskiert)",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "aktiv",
+   "fieldtype": "Check",
+   "label": "Aktiv",
+   "default": "1",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "grund",
+   "fieldtype": "Select",
+   "label": "Grund",
+   "options": "widerspruch\nkein_interesse\nverstorben\nsonstiges",
+   "default": "widerspruch",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "quelle",
+   "fieldtype": "Select",
+   "label": "Eingang",
+   "options": "online\nbrief\ntelefon\nemail\npersoenlich",
+   "default": "brief",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "label": "Land",
+   "options": "\nDE\nAT\nCH"
+  },
+  {
+   "fieldname": "cb_sperre",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "person_hash",
+   "fieldtype": "Data",
+   "label": "Abgleichswert Person",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "flurstueck_hashes",
+   "fieldtype": "JSON",
+   "label": "Abgleichswerte Flurstücke"
+  },
+  {
+   "fieldname": "kampagne",
+   "fieldtype": "Link",
+   "label": "Kampagne",
+   "options": "Plattform Kampagne"
+  },
+  {
+   "fieldname": "ziel",
+   "fieldtype": "Link",
+   "label": "Zielfläche",
+   "options": "Plattform Kampagnenziel"
+  },
+  {
+   "fieldname": "von",
+   "fieldtype": "Link",
+   "label": "Erfasst von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "sb_aufhebung",
+   "fieldtype": "Section Break",
+   "label": "Aufhebung (nur Leitung, nur bei Irrtum)"
+  },
+  {
+   "fieldname": "aufgehoben_am",
+   "fieldtype": "Datetime",
+   "label": "Aufgehoben am"
+  },
+  {
+   "fieldname": "aufgehoben_von",
+   "fieldtype": "Link",
+   "label": "Aufgehoben von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "aufhebungsgrund",
+   "fieldtype": "Small Text",
+   "label": "Begründung"
+  },
+  {
+   "fieldname": "notiz",
+   "fieldtype": "Small Text",
+   "label": "Notiz"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Beschreibung (intern)",
+   "hidden": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 08:11:08.535549",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Sperrliste",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Akquise",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "title_field": "anzeige",
+ "show_title_field_in_link": 1
+}

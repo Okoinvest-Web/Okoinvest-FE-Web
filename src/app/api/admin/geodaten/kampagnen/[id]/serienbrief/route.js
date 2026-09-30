@@ -19,3 +19,4 @@ export const GET = route({ admin: true, recht: [{ bereich: "geodaten", stufe: 1 
   const pdf = serienbriefPdf(briefe, { titel: `Serienbrief ${d.kampagne.name}`, demo: !!d.kampagne.demo });
   return new Response(pdf, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="serienbrief-${d.kampagne.id}-stufe${stufe}.pdf"`, "Cache-Control": "no-store" } });
 });
+

@@ -20,7 +20,7 @@ export default async function AkquiseKarteSeite() {
           <p className="text-[14px] text-ink-600 sm:hidden">Kandidatenflächen mit Score, Netzanschluss und Schutzgebieten.{modus === "demo" && " Demo-Daten."}</p>
           <p className="hidden max-w-3xl text-[14px] text-ink-600 sm:block">
             Kandidatenflächen aus Kataster, Schlägen, Gelände und Schutzgebieten – bewertet nach Größe, Form, Neigung, Nutzung, Abstand, Netzanschluss (Trasse und Kosten) und Widmungslage.
-            {modus === "demo" && " Demo-Betrieb: synthetische Parzellen rund um Braunau/Innviertel, Umspannwerke aus OpenStreetMap."}
+            {modus === "demo" && " Demo-Betrieb: synthetische Parzellen rund um Braunau/Innviertel und Türkheim/Unterallgäu (mit EEG-Kulisse und A 96), Umspannwerke und Verkehrswege aus OpenStreetMap."}
           </p>
         </div>
         <Link href="/portal/admin/akquise" className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-ov-700 hover:text-ov-800">
@@ -35,3 +35,4 @@ export default async function AkquiseKarteSeite() {
     </div>
   );
 }
+

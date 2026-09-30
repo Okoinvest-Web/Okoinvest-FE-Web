@@ -191,6 +191,8 @@ PLATZHALTER = {
 	"anrede", "briefanrede", "vorname", "nachname", "firma", "email", "ort", "vorgang.id", "vorgang.typ", "vorgang.status", "flaeche.bezeichnung", "flaeche.ha",
 	"flaeche.ort", "flaeche.bundesland", "flaeche.score", "flaeche.mwp", "flaeche.status", "projekt.titel", "projekt.mwp", "projekt.phase", "projekt.land",
 	"projekt.status", "zustaendig.name", "zustaendig.vorname", "portal.link", "heute",
+	# Akquise-Kampagnen (Serienbrief, nur im Kampagnen-Kontext befüllt – plattform/akquise_kampagne_kern.py)
+	"kampagne.name", "flaeche.gemeinde", "flaeche.flurstuecke", "flaeche.pachtMin", "flaeche.pachtMax", "angebot.link", "angebot.code",
 }
 MUSTER = re.compile(r"\{\{\s*([a-zA-Z][a-zA-Z0-9_.]{0,60})\s*\}\}")
 

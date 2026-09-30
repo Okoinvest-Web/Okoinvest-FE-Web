@@ -1,0 +1,231 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 18:00:00.000000",
+ "description": "Ermittelte Eigentümerin bzw. ermittelter Eigentümer einer Zielfläche (Grundbuch) mit Einmalcode, Briefen, Rücklauf, Einwilligungen und Nachfassstufen.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "empfaenger_id",
+  "anrede",
+  "titel",
+  "vorname",
+  "nachname",
+  "firma",
+  "zusatz",
+  "strasse",
+  "plz",
+  "ort",
+  "land",
+  "flurstuecke",
+  "code",
+  "code_aktiv",
+  "sperr_hash",
+  "gesperrt",
+  "gesperrt_grund",
+  "status",
+  "briefe",
+  "aufrufe",
+  "erster_aufruf_am",
+  "letzter_aufruf_am",
+  "anfragen",
+  "termine",
+  "rueckmeldung_am",
+  "rueckmeldung_text",
+  "widerspruch_am",
+  "einwilligung_telefon",
+  "einwilligung_email",
+  "nachfass",
+  "erfasst_von"
+ ],
+ "fields": [
+  {
+   "fieldname": "empfaenger_id",
+   "fieldtype": "Data",
+   "label": "Kennung",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "anrede",
+   "fieldtype": "Select",
+   "label": "Anrede",
+   "options": "\nFrau\nHerr\nDivers"
+  },
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Titel"
+  },
+  {
+   "fieldname": "vorname",
+   "fieldtype": "Data",
+   "label": "Vorname",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "nachname",
+   "fieldtype": "Data",
+   "label": "Nachname",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "firma",
+   "fieldtype": "Data",
+   "label": "Firma / Gemeinschaft"
+  },
+  {
+   "fieldname": "zusatz",
+   "fieldtype": "Data",
+   "label": "Adresszusatz"
+  },
+  {
+   "fieldname": "strasse",
+   "fieldtype": "Data",
+   "label": "Straße"
+  },
+  {
+   "fieldname": "plz",
+   "fieldtype": "Data",
+   "label": "PLZ"
+  },
+  {
+   "fieldname": "ort",
+   "fieldtype": "Data",
+   "label": "Ort",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "label": "Land",
+   "options": "\nDE\nAT\nCH"
+  },
+  {
+   "fieldname": "flurstuecke",
+   "fieldtype": "JSON",
+   "label": "Flurstücke (Kennungen, leer = alle)"
+  },
+  {
+   "fieldname": "code",
+   "fieldtype": "Data",
+   "label": "Einmalcode",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "code_aktiv",
+   "fieldtype": "Check",
+   "label": "Code aktiv",
+   "default": "1"
+  },
+  {
+   "fieldname": "sperr_hash",
+   "fieldtype": "Data",
+   "label": "Sperr-Abgleichswert",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "gesperrt",
+   "fieldtype": "Check",
+   "label": "Gesperrt (Sperrliste)",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "gesperrt_grund",
+   "fieldtype": "Data",
+   "label": "Sperrgrund"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "neu\nangeschrieben\nreaktion\ntermin\ngesichert\nabgelehnt\nwiderspruch",
+   "default": "neu",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "briefe",
+   "fieldtype": "JSON",
+   "label": "Briefe"
+  },
+  {
+   "fieldname": "aufrufe",
+   "fieldtype": "Int",
+   "label": "Aufrufe der Angebotsseite",
+   "default": "0"
+  },
+  {
+   "fieldname": "erster_aufruf_am",
+   "fieldtype": "Datetime",
+   "label": "Erster Aufruf"
+  },
+  {
+   "fieldname": "letzter_aufruf_am",
+   "fieldtype": "Datetime",
+   "label": "Letzter Aufruf"
+  },
+  {
+   "fieldname": "anfragen",
+   "fieldtype": "JSON",
+   "label": "Anfragen (Vorgänge)"
+  },
+  {
+   "fieldname": "termine",
+   "fieldtype": "JSON",
+   "label": "Termine"
+  },
+  {
+   "fieldname": "rueckmeldung_am",
+   "fieldtype": "Datetime",
+   "label": "Rückmeldung am"
+  },
+  {
+   "fieldname": "rueckmeldung_text",
+   "fieldtype": "Small Text",
+   "label": "Rückmeldung"
+  },
+  {
+   "fieldname": "widerspruch_am",
+   "fieldtype": "Datetime",
+   "label": "Widerspruch am"
+  },
+  {
+   "fieldname": "einwilligung_telefon",
+   "fieldtype": "JSON",
+   "label": "Einwilligung Telefon (Nachweis)"
+  },
+  {
+   "fieldname": "einwilligung_email",
+   "fieldtype": "JSON",
+   "label": "Einwilligung E-Mail (Nachweis)"
+  },
+  {
+   "fieldname": "nachfass",
+   "fieldtype": "JSON",
+   "label": "Nachfassstufen (erledigt)"
+  },
+  {
+   "fieldname": "erfasst_von",
+   "fieldtype": "Link",
+   "label": "Erfasst von",
+   "options": "Plattform Konto"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Kampagnenempfaenger",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "istable": 1,
+ "editable_grid": 1
+}

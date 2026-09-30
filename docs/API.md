@@ -771,6 +771,29 @@ Architektur, Scoring, Datenschutz: [`docs/AKQUISE-GEODATEN.md`](./AKQUISE-GEODAT
 `GET /api/admin/geodaten` (Übersicht: Modus, Quellen/Lizenzen, Kennzahlen, Gebiete, Ziele) · `GET /api/admin/geodaten/kandidaten?bbox=&minHa=&maxTrasseKm=&minScore=&bundesland=&bezirk=&gemeinde=&ampel=&q=&limit=` · `GET /api/admin/geodaten/kandidaten/[id]` (Steckbrief) · `GET /api/admin/geodaten/umkreis?knoten=&km=` · `GET /api/admin/geodaten/netz?bbox=&arten=` (GeoJSON) · `GET /api/admin/geodaten/ebenen/[schutzgebiete|zonen]?bbox=` · `GET /api/admin/geodaten/suche?q=` · `GET /api/admin/geodaten/export?format=csv|geojson&<Filter>` (protokolliert, Rate-Limit `export`) · `GET /api/admin/geodaten/anschreiben?kandidat=` · `GET|POST /api/admin/geodaten/ziele` (POST `{ kandidatId, notiz? }` → 201) · `POST /api/admin/geodaten/kapazitaet`.
 Kandidat (JSON): `{ id, demo, ha, mwp, score, ampel, prioritaet, ko[], kriterien[{ id, label, punkte, max, text, art }], schwerpunkt[lon,lat], bbox, geometrie (MultiPolygon, WGS84), land, bundesland, bezirk, gemeinde, kg[], parzellen[{ id, kg, kgNr, gstNr, ha, nutzung, kultur }], merkmale{ kompaktheit, neigungGrad, exposition, nutzung, hauptnutzung, siedlung, schutz[] }, netz{ knoten, luftlinieM, trasseM, ebene, kosten{ summe, min, max, proKwp, anteil, ampel, monate }, kapazitaetAmpel }, umspannwerk, widmung{ status, text }, kennzahlen, kennzahlenAgri }`.
 
+## Akquise-Kampagnen, Sperrliste, Angebotsseite, Gemeinde-Screening (Ausbaustufe A1b)
+
+Fachlich: [`docs/AKQUISE-GEODATEN.md`](./AKQUISE-GEODATEN.md) Abschnitte 9–12. Rechte: Bereich `geodaten` (Leitung, Akquise); Änderungen zusätzlich `akquise` schreiben, Übergabe an die Kommune-Ansprache zusätzlich `crm` schreiben. Backend-Schnittstelle `src/lib/plattform/backend/akquise2.js` (Demo `backend/demo/{akquise-kampagne,gemeinde-screening}.js`, Frappe `oekoinvest_app.plattform.api.akquise_kampagne`).
+
+| Website | Frappe-Methode | Inhalt |
+|---|---|---|
+| `GET /api/admin/geodaten/kampagnen` | `kampagnen` | Liste mit Kennzahlen (löst fällige Nachfassstufen aus), `sperrlisteAnzahl` |
+| `POST /api/admin/geodaten/kampagnen` `{ name, kandidatIds[] \| filter{} \| gemeinde+land, test? }` | `kampagne_anlegen(kandidaten, daten)` | Kandidaten lädt der Website-Server; 201; ein Land je Kampagne; `test` nur Leitung |
+| `GET\|PATCH\|DELETE /api/admin/geodaten/kampagnen/[id]` | `kampagne`, `kampagne_aendern`, `kampagne_loeschen` | PATCH `{ name, beschreibung, nachfass[], kosten{porto,druck,sonstige}, vorlageId, status }`; DELETE nur Entwurf ohne Versand bzw. Testkampagne (Leitung) |
+| `POST …/[id]/starten` | `kampagne_starten` | aktiv + Aufgabe „Grundbuchabfrage“ je Ziel |
+| `GET …/[id]/serienbrief?stufe=1\|2&format=pdf\|json` | `serienbrief_daten` | PDF (2 Seiten je Brief) bzw. Brief-Blöcke; protokolliert, Rate-Limit |
+| `GET …/[id]/versandliste?stufe=` | `serienbrief_daten` | CSV (Excel-DE) |
+| `POST …/[id]/versand` `{ stufe, empfaengerIds? }` | `versand_bestaetigen` | Briefe vermerken |
+| `POST /api/admin/geodaten/kampagnen/ziele/[zielId]/grundbuch` `{ empfaenger[], kostenIst? }` | `grundbuch_ergebnis` | Eigentümer, Einmalcode, Sperrlisten-Abgleich |
+| `PATCH …/ziele/[zielId]/empfaenger/[eid]` / `POST` (Sperre) | `empfaenger_aendern` / `empfaenger_sperren` | Rückmeldung, Termin, Einwilligung (mit Nachweis), gesichert, abgelehnt / Widerspruch |
+| `POST /api/admin/geodaten/kampagnen/nachfassen` | `nachfassen` (+ Scheduler `nachfassen_taeglich`) | fällige Stufen |
+| `GET\|POST /api/admin/geodaten/sperrliste`, `DELETE …/sperrliste/[id]` `{ begruendung }` | `sperrliste`, `sperre_anlegen`, `sperre_aufheben` | maskiert; Aufheben nur Leitung |
+| `POST /api/angebot/[code]/aufruf \| anfrage \| widerspruch` (öffentlich, Origin + Rate-Limit) | `angebot_aufruf`, `angebot_anfrage`, `angebot_widerspruch` (nur API-Benutzer) | Rücklauf; Anfrage legt Vorgang `flaeche` (Herkunft `kampagne`) an |
+| Seite `/angebot/[code]` | `angebot_fuer_code` | nur Flächen-Steckbrief, keine Eigentümerdaten, noindex |
+| `GET\|PATCH\|DELETE /api/admin/geodaten/gemeinden`, `POST\|DELETE …/gemeinden/konkurrenz`, `POST\|DELETE …/gemeinden/uebergabe` | `gemeinden_screening(kandidaten, filter)`, `gemeinde_speichern`, `konkurrenz_anlegen/entfernen`, `gemeinde_uebergeben`, `uebergabe_zuruecknehmen`, `gemeinde_zuruecksetzen` | Ranking; Übergabe → CRM-Organisation, Aktivität, Aufgabe |
+
+Kandidaten tragen in DE/CH zusätzlich `merkmale.kulisse` (`randstreifenAnteil, privilegiertAnteil, benachteiligtAnteil, moorAnteil, konversionAnteil, abstandAutobahnM, abstandSchieneM` bzw. `eignungAnteil, fffAnteil, vorbelastet`); Filter `land=AT|DE|CH`; Ebene `GET /api/admin/geodaten/ebenen/verkehr?bbox=`.
+
 ## Dienste: Identität, Register, Bonität, SPV-Gründung (Abschnitt „Dienste“)
 
 Referenz: `src/lib/plattform/backend/demo/dienste.js` · Frappe: `plattform/api/dienste.py`, Regeln `plattform/dienste_kern.py` (Spiegel von `src/lib/plattform/dienste/**`) · Anbieter, Kosten, Recht: [`docs/DIENSTE-EXTERN.md`](./DIENSTE-EXTERN.md).

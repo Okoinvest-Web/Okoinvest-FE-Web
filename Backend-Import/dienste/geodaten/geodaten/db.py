@@ -21,8 +21,11 @@ def verbindung():
 
 
 def schema_anlegen(conn):
-	with open(SCHEMA_DATEI, encoding="utf-8") as f:
-		conn.execute(f.read())
+	"""001_schema.sql und alle weiteren sql/NNN_*.sql in Reihenfolge (idempotent; 002 = Deutschland/Schweiz)."""
+	ordner = os.path.dirname(SCHEMA_DATEI)
+	for name in sorted(x for x in os.listdir(ordner) if x.endswith(".sql")):
+		with open(os.path.join(ordner, name), encoding="utf-8") as f:
+			conn.execute(f.read())
 	conn.commit()
 
 

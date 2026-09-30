@@ -10,3 +10,4 @@ const RECHT = [{ bereich: "geodaten", stufe: 2 }, { bereich: "akquise", stufe: 2
 export const GET = route({ admin: true }, async ({ nutzer, suche }) => ({ ok: true, ...(await gemeindenScreening(nutzer, { land: suche.get("land"), bundesland: suche.get("bundesland"), bezirk: suche.get("bezirk"), minPunkte: suche.get("minPunkte") })) }));
 export const PATCH = route({ admin: true, recht: RECHT }, async ({ nutzer, body }) => akquise2Backend().gemeindeSpeichern(nutzer, body.schluessel, body));
 export const DELETE = route({ admin: true, recht: RECHT }, async ({ nutzer, body }) => akquise2Backend().gemeindeZuruecksetzen(nutzer, body?.schluessel));
+

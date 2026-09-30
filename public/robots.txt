@@ -10,6 +10,7 @@ Disallow: /portal
 Disallow: /portal/
 Disallow: /login
 Disallow: /registrieren
+Disallow: /angebot
 
 # KI-Trainingscrawler ohne Nutzen für Suche und Antworten
 User-agent: GPTBot

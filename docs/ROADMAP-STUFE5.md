@@ -17,7 +17,7 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 
 - [x] **A3 Energiebeschaffung & Versorger-Ausschreibung** – Backoffice-Handelsdesk: Spot (EPEX via Energy-Charts) und Terminmarkt (EEX Cal/Q/M – Lizenzfrage, manuelle/lizenzierte Einspielung), Beschaffungsstrategien (Tranchen, Hedge-Quote, Spot-Anteil), Lastgang-Analysen je Kunde, **Ausschreibung/Bieterwettbewerb unter Energieversorgern** (neue Rolle Lieferant/Energieversorger mit eigenem Portal; anonymisierte Lastgänge, Preisblatt, Frist, mehrere Runden, Vergleich, Zuschlag, Vertrag; Versand an Versorger ohne Portal per E-Mail mit Angebotslink), **laufende Wechselanalyse** je Kunde (Vertrag vs. Marktpreis-Forward, Kündigungsfristen-Alarm, Empfehlung), Pool-Bündelung mehrerer Kunden (Reststrom-Pool)
 
-- [~] **A1b Akquise DE/CH + Kampagnen + Gemeinde-Screening** (läuft)
+- [x] **A1b Akquise DE/CH + Kampagnen + Gemeinde-Screening** – DE-Scoring (EEG-Kulisse, § 35 BauGB, Moor), CH-Adapter, Demo Unterallgäu, Kampagnen (Grundbuch-Aufgaben, Serienbrief-PDF, Angebotsseite /angebot/[code], Nachfassen, Sperrliste), Gemeinde-Screening; Test `plattform-test-akquise2.mjs` 115 grün. Offen: Datenschutzerklärung (Flächenakquise per Brief/Angebotsseite), `SPERRLISTE_PFEFFER`, robots/Sitemap-Ausschluss /angebot, Bench-Tests `test_akquise_kampagne.py`
 
 ## Welle B (nach Stufe 4)
 - [x] **B0 Eigenbetrieb & Bankfinanzierung** (zusammen mit B2) – Geschäftsmodelle je Projekt: Build-to-Sell (ÖKOVOLT baut für Investor, EPC-Übergabe), Eigenbetrieb durch ÖkoInvest/SPV mit **Bankfinanzierung** (Finanzierungsanfrage an mehrere Banken, Bankenpaket mit Financial Model/Ertragsgutachten/Verträgen, Term-Sheet-Vergleich, DSCR/LLCR-Covenants, Auszahlungsvoraussetzungen, Covenant-Monitoring im Betrieb aus Anlagen-Messdaten), reine Verpachtung
@@ -57,6 +57,8 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 - [ ] Finanzierungsmodul: `p.kostenkalkulation?.finanzierungsbedarf` aus der Projektkostenkalkulation statt Standard-Capex verwenden (fzAuswahl/eingabenAusBezug)
 - [ ] CAD-Konverter: LibreDWG-Version und SHA-256/GPG gegen ftp.gnu.org prüfen, `LIBREDWG_SHA256` setzen; ODA nur nach Lizenzprüfung
 - [ ] Demo-DB: Testdaten plan-test-*, T-PLAN-* entfernen
+- [ ] Akquise-Kampagnen vor erstem Versand: Zweckbindung der nach § 43a GBV eingesehenen Grundbuchdaten für Werbebriefe durch Datenschutzberatung klären; Datenschutzerklärung „Flächenakquise per Brief und Angebotsseite“ prüfen; `oekoinvest_sperrliste_pfeffer` geheim setzen (nie ändern)
+- [ ] Zentral: plattform-test-geodaten.mjs erneut (Demo enthält jetzt DE-Kandidaten)
 - [ ] Muster-Verträge Grundbuch/Closing je Land anwaltlich/notariell freigeben, Gebührentabellen (GNotKG, GGG/GebG, kantonal) aktualisieren – siehe docs/GRUNDBUCH-CLOSING.md Abschnitt 9
 
 ## Abschluss

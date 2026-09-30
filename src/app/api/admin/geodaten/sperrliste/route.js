@@ -10,3 +10,4 @@ export const POST = route({ admin: true, recht: RECHT }, async ({ nutzer, body }
   const r = await akquise2Backend().sperreAnlegen(nutzer, body);
   return Response.json({ ok: true, ...r }, { status: 201, headers: { "Cache-Control": "no-store" } });
 });
+

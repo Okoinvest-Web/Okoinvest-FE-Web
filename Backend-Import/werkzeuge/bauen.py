@@ -47,6 +47,7 @@ DRUCKFORMATE = {
 	"Loeschungsbewilligung Hinweis Muster": "Plattform Grundbuch Vorgang",
 	"Kaufvertrag SPA Muster": "Plattform Closing",
 	"Closing Abschlussbericht": "Plattform Closing",
+	"Serienbrief Akquise": "Plattform Kampagnenziel",  # Akquise A1b: Serienbrief je Zielfläche (Art. 14, Widerspruch, QR/Link)
 }
 
 

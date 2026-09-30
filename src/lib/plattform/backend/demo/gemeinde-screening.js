@@ -118,7 +118,7 @@ export async function konkurrenzAnlegen(n, schluessel, daten = {}) {
   schreibRecht(n);
   const s = schluesselPruefen(schluessel);
   const x = {
-    id: neueId("KK"),
+    id: neueId("KH"),
     entwickler: v.text(daten.entwickler, 120),
     projekt: v.text(daten.projekt, 160),
     mw: v.zahl(daten.mw, { min: 0, max: 5000, stellen: 1 }),

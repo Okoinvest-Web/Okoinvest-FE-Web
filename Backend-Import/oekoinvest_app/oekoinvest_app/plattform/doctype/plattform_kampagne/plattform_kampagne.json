@@ -1,0 +1,227 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 18:00:00.000000",
+ "description": "Akquise-Kampagne: Zielflächen aus der Geodaten-Akquise, Eigentümer-Ermittlung (Grundbuch), Serienbrief mit Einmalcode, Rücklauf, Nachfassstufen (plattform/api/akquise_kampagne.py).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "titel",
+  "status",
+  "land",
+  "test",
+  "demo",
+  "cb_kopf",
+  "zustaendig_id",
+  "erstellt_von",
+  "gestartet_am",
+  "vorlage_id",
+  "sb_quelle",
+  "quelle_art",
+  "quelle_gemeinde",
+  "quelle_filter",
+  "cb_quelle",
+  "nachfass",
+  "sb_kosten",
+  "kosten_porto",
+  "kosten_druck",
+  "cb_kosten",
+  "kosten_sonstige",
+  "sb_text",
+  "beschreibung",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "entwurf\naktiv\nabgeschlossen",
+   "default": "entwurf",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "label": "Land",
+   "options": "DE\nAT\nCH",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "test",
+   "fieldtype": "Check",
+   "label": "Testkampagne (vollständig löschbar)",
+   "default": "0"
+  },
+  {
+   "fieldname": "demo",
+   "fieldtype": "Check",
+   "label": "Demo-Daten",
+   "default": "0"
+  },
+  {
+   "fieldname": "cb_kopf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "zustaendig_id",
+   "fieldtype": "Link",
+   "label": "Zuständig",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "erstellt_von",
+   "fieldtype": "Link",
+   "label": "Angelegt von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "gestartet_am",
+   "fieldtype": "Datetime",
+   "label": "Gestartet am"
+  },
+  {
+   "fieldname": "vorlage_id",
+   "fieldtype": "Link",
+   "label": "Brieftext (Vorlage)",
+   "options": "Plattform Vorlage",
+   "description": "Leer = Standard-Serienbrief. Datenschutz- und Widerspruchsblock sind fest."
+  },
+  {
+   "fieldname": "sb_quelle",
+   "fieldtype": "Section Break",
+   "label": "Quelle und Regeln"
+  },
+  {
+   "fieldname": "quelle_art",
+   "fieldtype": "Select",
+   "label": "Quelle",
+   "options": "auswahl\nfilter\ngemeinde",
+   "default": "auswahl"
+  },
+  {
+   "fieldname": "quelle_gemeinde",
+   "fieldtype": "Data",
+   "label": "Gemeinde (Quelle)"
+  },
+  {
+   "fieldname": "quelle_filter",
+   "fieldtype": "JSON",
+   "label": "Filter (Quelle)"
+  },
+  {
+   "fieldname": "cb_quelle",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "nachfass",
+   "fieldtype": "JSON",
+   "label": "Nachfassstufen",
+   "description": "[{id, art: zweiter_brief|anruf_einwilligung, nachTagen, aktiv}] – nach X Tagen ohne Reaktion eine Aufgabe; Anruf nur mit Einwilligung."
+  },
+  {
+   "fieldname": "sb_kosten",
+   "fieldtype": "Section Break",
+   "label": "Kosten"
+  },
+  {
+   "fieldname": "kosten_porto",
+   "fieldtype": "Currency",
+   "label": "Porto je Brief",
+   "description": "Leer = Standard je Land"
+  },
+  {
+   "fieldname": "kosten_druck",
+   "fieldtype": "Currency",
+   "label": "Druck je Brief"
+  },
+  {
+   "fieldname": "cb_kosten",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "kosten_sonstige",
+   "fieldtype": "Currency",
+   "label": "Sonstige Kosten"
+  },
+  {
+   "fieldname": "sb_text",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "beschreibung",
+   "fieldtype": "Small Text",
+   "label": "Beschreibung / Strategie"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Beschreibung (intern)",
+   "hidden": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 08:11:08.477837",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Kampagne",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Akquise",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "title_field": "titel",
+ "show_title_field_in_link": 1
+}

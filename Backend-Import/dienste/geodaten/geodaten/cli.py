@@ -3,6 +3,7 @@
 #   schema                          Datenmodell anlegen (idempotent)
 #   import <schritt> --datei … [--stand JJJJ-MM-TT] [--bundesland …] [--erzwingen]
 #       schritte: vgd | dkm | invekos | osm | natura2000 | schutz | dgm | zonen | gebaeude
+#                 DE/CH (A1b): alkis | feldbloecke | kulisse (--art --land --quelle) | verkehr | av_ch
 #   ableiten [--bezirk …]           Nutzung, Kandidaten, Scoring (je Bezirk)
 #   demo [--verzeichnis demo]       Demo-Datensatz laden und Kandidaten berechnen
 #   quellen                         Quellen mit Lizenz/Stand ausgeben
@@ -10,7 +11,7 @@
 import argparse
 import datetime as dt
 
-from . import ableiten, importe
+from . import ableiten, importe, importe_de_ch
 from .db import schema_anlegen, verbindung
 
 
@@ -23,7 +24,8 @@ def main(argv=None):
 	sub = p.add_subparsers(dest="befehl", required=True)
 	sub.add_parser("schema")
 	i = sub.add_parser("import")
-	i.add_argument("schritt", choices=["vgd", "dkm", "invekos", "osm", "natura2000", "schutz", "dgm", "zonen", "gebaeude"])
+	i.add_argument("schritt", choices=["vgd", "dkm", "invekos", "osm", "natura2000", "schutz", "dgm", "zonen", "gebaeude", "alkis", "feldbloecke", "kulisse", "verkehr", "av_ch"])
+	i.add_argument("--land")
 	i.add_argument("--datei", required=True)
 	i.add_argument("--stand")
 	i.add_argument("--bundesland")
@@ -54,6 +56,11 @@ def main(argv=None):
 			"dgm": lambda: importe.import_dgm(conn, args.datei, st, e),
 			"zonen": lambda: importe.import_zonen(conn, args.datei, args.quelle, args.bundesland, args.art, st, e),
 			"gebaeude": lambda: importe.import_gebaeude(conn, args.datei, args.quelle or "bev_dlm_bauwerke", st, e),
+			"alkis": lambda: importe_de_ch.import_alkis(conn, args.datei, st, args.bundesland, args.quelle or "alkis", e),
+			"feldbloecke": lambda: importe_de_ch.import_feldbloecke(conn, args.datei, st, args.jahr, args.quelle or "invekos_de", e),
+			"kulisse": lambda: importe_de_ch.import_kulisse(conn, args.datei, args.art, args.land, args.quelle or "kulisse_bena", st, None, e),
+			"verkehr": lambda: importe_de_ch.import_verkehr(conn, args.datei, args.quelle or "osm_verkehr_de", e),
+			"av_ch": lambda: importe_de_ch.import_av_ch(conn, args.datei, st, args.bundesland, args.quelle or "av_ch", e),
 		}
 		if args.schritt == "zonen" and not (args.quelle and args.bundesland and args.art):
 			raise SystemExit("zonen: --quelle, --bundesland und --art angeben (z. B. noe_pv_zonen, Niederösterreich, noe_pv_zone)")

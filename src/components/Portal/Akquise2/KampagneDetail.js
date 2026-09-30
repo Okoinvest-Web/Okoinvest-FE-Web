@@ -325,10 +325,10 @@ export default function KampagneDetail({ daten, darfSchreiben = false, leitung =
       </Karte>
 
       <Karte titel={`Zielflächen (${ziele.length})`} aktion={
-        <select aria-label="Status filtern" value={filter} onChange={(e) => setFilter(e.target.value)} className={cn(auswahlfeld, "h-10 w-auto")}>
+        <div className="w-full sm:w-60"><select aria-label="Status filtern" value={filter} onChange={(e) => setFilter(e.target.value)} className={cn(auswahlfeld, "h-10")}>
           <option value="">Alle Status</option>
           {Object.entries(ZIEL_STATUS).map(([s, l]) => <option key={s} value={s}>{l} ({ziele.filter((x) => x.status === s).length})</option>)}
-        </select>
+        </select></div>
       }>
         <ul className="space-y-2">{sichtbar.map((x) => <ZielKarte key={x.id} kampagne={k} ziel={x} darfSchreiben={darfSchreiben && k.status !== "abgeschlossen"} />)}</ul>
       </Karte>

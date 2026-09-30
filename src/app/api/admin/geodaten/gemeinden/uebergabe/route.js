@@ -11,3 +11,4 @@ export const POST = route({ admin: true, recht: [{ bereich: "geodaten", stufe: 2
   return Response.json(r, { status: 201, headers: { "Cache-Control": "no-store" } });
 });
 export const DELETE = route({ admin: true, recht: RECHT }, async ({ nutzer, body }) => akquise2Backend().uebergabeZuruecknehmen(nutzer, body?.schluessel));
+

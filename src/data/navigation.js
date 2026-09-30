@@ -64,6 +64,7 @@ export const NAVIGATION = [
         label: "Projektbörse",
         items: [
           { name: "Projekte entdecken", href: "/projektboerse", icon: "LayoutGrid", text: "Von Projektrechten bis Bestandsanlage" },
+          { name: "Börse auf der Karte", href: "/projektboerse/karte", icon: "Map", text: "Projekte nach Region in DACH" },
           { name: "Projekt anbieten", href: "/projektboerse/anbieten", icon: "FolderUp", text: "Inserieren, prüfen lassen, verkaufen" },
           { name: "Für Investoren", href: "/investoren", icon: "LineChart", text: "Suchprofil, NDA, Datenraum" },
           { name: "Bestandsanlagen", href: "/bestandsanlagen", icon: "Gauge", text: "Laufende Parks kaufen und verkaufen" },

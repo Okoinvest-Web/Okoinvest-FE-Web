@@ -34,6 +34,7 @@ const SEITEN = [
   // Projektbörse
   { pfad: "/projektboerse", prio: 0.9, freq: "daily" },
   { pfad: "/projektboerse/anbieten", prio: 0.7, freq: "monthly" },
+  { pfad: "/projektboerse/karte", prio: 0.7, freq: "daily" },
   // Strom & Gemeinschaft
   { pfad: "/virtuelles-kraftwerk", prio: 0.8, freq: "monthly" },
   { pfad: "/reststrom", prio: 0.8, freq: "monthly" },

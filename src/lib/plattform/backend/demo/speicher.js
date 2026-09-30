@@ -89,6 +89,48 @@ function nacheinander(fn) {
   return lauf;
 }
 
+// Wiederhergestellt (Team Service): dateiLesen, dateiSchreiben und seedFn fehlten seit Commit 640c032
+// (ReferenceError bei jedem Zugriff) – unverändert aus dem Stand davor übernommen.
+
+// BEWUSST SYNCHRON: React 19 schneidet im Dev-Modus den Rückgabewert von
+// awaited I/O (fs.promises) für die Debug-Anzeige mit und liefert ihn im
+// HTML aus – das war die komplette Demo-Datenbank inkl. Passwort-Hashes auf
+// jeder Seite (2–5 MB). Synchrones Lesen erzeugt keinen solchen I/O-Eintrag.
+async function dateiLesen() {
+  try {
+    const st = statSync(DATEI);
+    if (cache && cache.mtimeMs === st.mtimeMs && cache.size === st.size) return structuredClone(cache.db);
+    const roh = readFileSync(DATEI, "utf8");
+    const db = JSON.parse(roh);
+    cache = { mtimeMs: st.mtimeMs, size: st.size, db };
+    return structuredClone(db);
+  } catch (e) {
+    if (e.code === "ENOENT") return null;
+    throw e;
+  }
+}
+
+async function dateiSchreiben(db) {
+  const tmp = `${DATEI}.${process.pid}.${Date.now()}.tmp`;
+  await fs.writeFile(tmp, JSON.stringify(db, null, 1), "utf8");
+  for (let i = 0; ; i++) {
+    try {
+      await fs.rename(tmp, DATEI);
+      break;
+    } catch (e) {
+      // Windows: Ziel kurzzeitig von einem Leser geöffnet
+      if (i > 20 || !["EPERM", "EBUSY", "EACCES"].includes(e.code)) {
+        await fs.rm(tmp, { force: true }).catch(() => {});
+        throw e;
+      }
+      await warte(15);
+    }
+  }
+  cache = null;
+}
+
+let seedFn = null;
+/** Seed-Funktion registrieren (liefert eine neue, befüllte Datenbank) */
 export function seedSetzen(fn) {
   seedFn = fn;
 }

@@ -229,6 +229,7 @@ const SEITEN_BEREICH = {
   akquise: "akquise",
   projekte: "projekte",
   interessen: "interessen",
+  dealroom: "interessen", // Deal-Room-Übersicht (Gebote, Q&A, Zugriffe) – wie die API /api/admin/dealroom
   deals: "provisionen",
   nutzer: "nutzer",
   postausgang: "postausgang",

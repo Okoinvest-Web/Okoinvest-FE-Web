@@ -27,7 +27,10 @@ export function istFirma(db, { kontoId = null, organisationId = null } = {}) {
 
 /** Neueste Auskunft zum Subjekt (Organisation vor Konto) */
 export function bonitaetAktuell(db, { kontoId = null, organisationId = null } = {}) {
-  const liste = (db?.dienste?.bonitaet || []).filter((a) => (organisationId && a.subjekt?.organisationId === organisationId) || (kontoId && a.subjekt?.kontoId === kontoId));
+  const alle = db?.dienste?.bonitaet || [];
+  // Organisation vor Konto: eine neuere Personenauskunft darf eine (rote) Firmenauskunft nicht überdecken
+  const org = organisationId ? alle.filter((a) => a.subjekt?.organisationId === organisationId) : [];
+  const liste = org.length ? org : alle.filter((a) => kontoId && a.subjekt?.kontoId === kontoId);
   return liste.sort((a, b) => String(b.auskunftAm || b.am).localeCompare(String(a.auskunftAm || a.am)))[0] || null;
 }
 

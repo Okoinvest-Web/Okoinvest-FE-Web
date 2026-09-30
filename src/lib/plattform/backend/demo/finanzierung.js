@@ -509,8 +509,10 @@ export async function fzAktion(n, fallId, daten = {}) {
       termsheetAblegen(db, n, f, a, t, "backoffice");
     } else if (aktion === "entscheidung") {
       if (!istLeitung(n)) throw verboten("Die Bankentscheidung trifft die Leitung.");
+      if (f.kreditvertrag) throw konflikt("Der Kreditvertrag ist bereits erfasst – die Bankentscheidung kann nicht mehr geändert werden.");
       const a = F(db).anfragen.find((x) => x.id === v.kennung(daten.anfrageId) && x.fallId === f.id);
       if (!a) throw nichtGefunden("Anfrage nicht gefunden.");
+      if (["abgesagt", "zurueckgezogen"].includes(a.status)) throw konflikt("Diese Anfrage wurde zurückgezogen bzw. abgesagt.");
       const ts = F(db).termsheets.filter((t) => t.anfrageId === a.id).sort((x, y) => String(y.am).localeCompare(String(x.am)))[0];
       if (!ts) throw konflikt("Für diese Bank liegt kein Term Sheet vor.");
       const begruendung = v.mehrzeilig(daten.begruendung, 1500);

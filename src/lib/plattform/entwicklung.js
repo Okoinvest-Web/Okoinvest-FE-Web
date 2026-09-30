@@ -9,6 +9,7 @@
 // Planwerte (Monate) zur Vorbelegung, im Projekt je Meilenstein änderbar – keine Zusage über Verfahrensdauern.
 
 import { ENTWICKLUNG, PHASEN } from "@/lib/invest/markt";
+import { heuteLokal } from "./format";
 
 export const ENTWICKLUNG_TYPEN = {
   freiflaeche: "Freiflächen-PV",
@@ -294,11 +295,14 @@ export function vorlage(land = "DE", typ = "freiflaeche") {
 
 const TAG = 86400e3;
 export const isoTag = (d) => new Date(d).toISOString().slice(0, 10);
-export const heuteIso = () => new Date().toISOString().slice(0, 10);
+export const heuteIso = () => heuteLokal(); // Europe/Vienna (Überfälligkeit von Meilensteinen)
 export function plusMonate(iso, monate) {
   const d = new Date(`${iso}T00:00:00Z`);
   const ganz = Math.floor(monate);
+  const tag = d.getUTCDate();
+  d.setUTCDate(1);
   d.setUTCMonth(d.getUTCMonth() + ganz);
+  d.setUTCDate(Math.min(tag, new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate())); // 31.01. + 1 → 28.02. (nicht 03.03.)
   const rest = monate - ganz;
   if (rest) d.setTime(d.getTime() + Math.round(rest * 30.4 * TAG));
   return isoTag(d);

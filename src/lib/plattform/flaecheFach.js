@@ -714,7 +714,7 @@ export function angebotsbogen(f) {
     laufzeit: Number(pa.laufzeitJahre) || PACHT.laufzeit,
     verlaengerungJahre: gesetzt("verlaengerungJahre") ? Number(pa.verlaengerungJahre) : opt2 ? Number(opt2[1]) * Number(opt2[2]) : 0,
     indexArt: idx,
-    indexSatz: (Number(pa.indexSatzProzent) || 1.5) / 100,
+    indexSatz: (gesetzt("indexSatzProzent") ? Number(pa.indexSatzProzent) : 1.5) / 100, // ausdrücklich 0 % bleibt 0 %
     reservierungProHa: Number(pa.reservierungProHaJahr) || 0,
     vorlaufJahre: gesetzt("vorlaufJahre") ? Number(pa.vorlaufJahre) : PACHT.reservierungJahre.ueblich,
     optionsfrist: gesetzt("optionsfristJahre") ? Number(pa.optionsfristJahre) : 0,

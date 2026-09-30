@@ -384,7 +384,7 @@ export async function abrechnungslauf(n, daten = {}) {
   const stichtag = F.istDatum(daten.stichtag) ? daten.stichtag : heute;
   if (stichtag > F.plusTage(heute, 62)) throw ungueltig("Der Stichtag darf höchstens zwei Monate in der Zukunft liegen.");
   const monat = /^20\d\d-(0[1-9]|1[0-2])$/.test(String(daten.monat || "")) ? daten.monat : F.vormonat(stichtag.slice(0, 7));
-  if (monat >= heute.slice(0, 7)) throw ungueltig("Contracting wird erst nach Monatsende abgerechnet (Monatswerte des Messstellenbetreibers).");
+  if (["contracting", "alle"].includes(art) && monat >= heute.slice(0, 7)) throw ungueltig("Contracting wird erst nach Monatsende abgerechnet (Monatswerte des Messstellenbetreibers).");
   const ids = (x) => (Array.isArray(x) ? x.map((i) => v.kennung(i)).filter(Boolean).slice(0, 200) : []);
   const opt = { art, stichtag, monat, trockenlauf: v.wahr(daten.trockenlauf), vertragIds: ids(daten.vertragIds), anlageIds: ids(daten.anlageIds) };
   const db = await lesenBereit();
@@ -640,7 +640,8 @@ export async function zahlungslaufAktion(n, id, { aktion } = {}) {
     const zl = db.finanzen.zahlungslaeufe.find((x) => x.id === v.kennung(id));
     if (!zl) throw nichtGefunden("Zahlungslauf nicht gefunden.");
     if (zl.status !== "erstellt") throw konflikt("Der Zahlungslauf ist bereits abgeschlossen.");
-    const belege = db.finanzen.belege.filter((b) => zl.belegIds.includes(b.id) && b.status === "angewiesen");
+    // nur Belege, die noch zu DIESEM Lauf gehören (zwischenzeitlich „offen“ gesetzt und neu exportiert → anderer Lauf)
+    const belege = db.finanzen.belege.filter((b) => zl.belegIds.includes(b.id) && b.status === "angewiesen" && b.zahlungslaufId === zl.id);
     if (aktion === "bestaetigen") {
       for (const b of belege) {
         b.status = "bezahlt";

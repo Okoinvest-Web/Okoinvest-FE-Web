@@ -27,7 +27,7 @@ export function matching(projekt, profil) {
     gruende.push(PHASEN.find((x) => x.id === projekt.phase)?.kurz || projekt.phase);
   } else {
     const idx = PHASEN.findIndex((x) => x.id === projekt.phase);
-    const nah = p.phasen.some((ph) => Math.abs(PHASEN.findIndex((x) => x.id === ph) - idx) === 1);
+    const nah = idx >= 0 && p.phasen.some((ph) => Math.abs(PHASEN.findIndex((x) => x.id === ph) - idx) === 1); // Projekt ohne/mit unbekannter Phase: nicht „benachbart“
     if (nah) score += 12;
   }
 

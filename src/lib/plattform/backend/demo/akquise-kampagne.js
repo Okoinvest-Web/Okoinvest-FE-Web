@@ -313,6 +313,7 @@ export async function kampagneAendern(n, id, daten = {}) {
       v.pflicht(st, "Unbekannter Status.");
       v.pflicht(!(k.status === "abgeschlossen" && st !== "abgeschlossen"), "Abgeschlossene Kampagnen lassen sich nicht wieder öffnen.");
       if (st === "aktiv" && k.status !== "aktiv") throw ungueltig("Bitte „Kampagne starten“ verwenden (legt die Grundbuch-Aufgaben an).");
+      v.pflicht(!(k.status === "aktiv" && st === "entwurf"), "Eine laufende Kampagne kann nicht zurück in den Entwurf (Codes und Nachfassen der Empfänger).");
       k.status = st;
     }
     W.protokoll(db, n, "aendern", "kampagne", k.id, `Kampagne „${k.name}“ geändert`);
@@ -407,10 +408,14 @@ export async function grundbuchErgebnis(n, zielId, daten = {}) {
     const z = zielVon(akq, zielId);
     const k = kampagneVon(akq, z.kampagneId);
     v.pflicht(k.status !== "abgeschlossen", "Die Kampagne ist abgeschlossen.");
+    v.pflicht(z.status !== "gesperrt", "Für dieses Ziel liegt ein Widerspruch vor (Sperrliste) – kein Grundbuch-Ergebnis.");
     const codes = new Set(akq.ziele.flatMap((x) => (x.empfaenger || []).map((e) => e.code)));
     const ergebnis = [];
     for (const p of personen) {
-      const sperre = personGesperrt(akq, p);
+      // Widerspruch je Person ODER alle angegebenen Flurstücke der Person stehen auf der Sperrliste (Art. 21 DSGVO)
+      const eigene = p.flurstuecke.map((id) => z.parzellen.find((x) => x.id === id)).filter(Boolean);
+      const fsSperren = eigene.map((x) => flurstueckGesperrt(akq, z.land || k.land, x)).filter(Boolean);
+      const sperre = personGesperrt(akq, p) || (eigene.length && fsSperren.length === eigene.length ? fsSperren[0] : null);
       let code;
       do code = codeErzeugen();
       while (codes.has(code));
@@ -418,7 +423,7 @@ export async function grundbuchErgebnis(n, zielId, daten = {}) {
       const e = {
         id: neueId("AQE"),
         ...p,
-        flurstuecke: p.flurstuecke.filter((id) => z.parzellen.some((x) => x.id === id)),
+        flurstuecke: p.flurstuecke.filter((id) => z.parzellen.some((x) => x.id === id) && !(z.gesperrteFlurstuecke || []).includes(id)),
         code,
         codeAktiv: !sperre,
         sperrHash: hash(personSchluessel(p)),
@@ -446,7 +451,8 @@ export async function grundbuchErgebnis(n, zielId, daten = {}) {
     z.grundbuch.status = "erledigt";
     z.grundbuch.ergebnisAm = jetzt();
     if (kostenIst !== null) z.grundbuch.kostenIst = kostenIst;
-    z.status = z.empfaenger.every((e) => e.gesperrt) ? "gesperrt" : "ermittelt";
+    // erneute Erfassung (weitere Eigentümer) setzt einen fortgeschrittenen Status nicht zurück
+    if (!["angeschrieben", "reaktion", "termin", "gesichert", "abgelehnt"].includes(z.status)) z.status = z.empfaenger.every((e) => e.gesperrt) ? "gesperrt" : "ermittelt";
     const a = (db.aufgaben || []).find((x) => x.id === z.grundbuch.aufgabeId);
     if (a && a.status === "offen") {
       a.status = "erledigt";
@@ -466,7 +472,8 @@ export async function empfaengerAendern(n, zielId, empfaengerId, daten = {}) {
     const z = zielVon(akq, zielId);
     const e = (z.empfaenger || []).find((x) => x.id === v.kennung(empfaengerId));
     if (!e) throw nichtGefunden("Empfänger nicht gefunden.");
-    v.pflicht(!e.gesperrt || daten.status === undefined, "Gesperrte Empfänger (Widerspruch) können nicht weiter bearbeitet werden.");
+    // Widerspruch: nur noch Notizen – kein Status, Termin, Rücklauf oder Einwilligung (sonst wieder „offen“)
+    v.pflicht(!e.gesperrt || ["status", "termin", "rueckmeldung", "einwilligungTelefon", "einwilligungEmail"].every((f) => daten[f] === undefined), "Gesperrte Empfänger (Widerspruch) können nicht weiter bearbeitet werden.");
     if (daten.einwilligungTelefon !== undefined) {
       if (daten.einwilligungTelefon) {
         const q = v.text(daten.einwilligungTelefon.quelle, 120);
@@ -528,6 +535,7 @@ export async function empfaengerSperren(n, zielId, empfaengerId, { grund = "wide
 function versandEmpfaenger(akq, k, stufe) {
   const out = [];
   for (const z of zieleVon(akq, k.id)) {
+    if (z.status === "gesperrt") continue; // Widerspruch auf Ziel-/Flurstücksebene
     for (const e of z.empfaenger || []) {
       if (e.gesperrt || !e.codeAktiv || personGesperrt(akq, e)) continue;
       const n = (e.briefe || []).length;

@@ -227,7 +227,7 @@ export async function ticketAktion(n, id, { aktion, status, prioritaet, zustaend
       if (st === t.status) return ausgabe(db, n, t, { detail: true });
       verlauf(t, `Status: ${TICKET_STATUS[t.status].label} → ${TICKET_STATUS[st].label}`, n);
       t.status = st;
-      if (st === "geloest") t.geloestAm = jetzt();
+      if (st === "geloest" || st === "geschlossen") t.geloestAm ||= jetzt(); // direkt geschlossen: SLA-Lösungsfrist nicht weiterlaufen lassen
       if (TICKET_OFFEN.includes(st)) t.geloestAm = null;
       if (st !== "neu" && !t.ersteReaktionAm) t.ersteReaktionAm = jetzt();
       melden(db, t.kontoId, { art: "ticket", titel: `${TICKET_STATUS[st].label}: ${t.betreff}`, text: st === "geloest" ? "Bitte prüfen Sie die Lösung – mit einer Antwort öffnen Sie das Ticket wieder." : "Der Status Ihres Tickets hat sich geändert.", link: `/portal/support/${t.id}`, objektArt: "ticket", objektId: t.id }, { mail: st === "geloest" || st === "wartet_kunde" });

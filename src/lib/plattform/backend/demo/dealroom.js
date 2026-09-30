@@ -21,6 +21,7 @@ import { LAENDER, PROJEKT_TYPEN, SUCHPROFIL_SCHWELLE } from "../../konstanten";
 import { PlattformFehler, konflikt, nichtGefunden, ungueltig, verboten } from "../../fehler";
 import * as v from "../../validierung";
 import { projektOeffentlich } from "../../oeffentlich";
+import { darfLesen } from "../../rechte";
 import { matching } from "../../matching";
 import { PHASEN } from "@/lib/invest/markt";
 import {
@@ -636,7 +637,7 @@ export async function bieterAktion(n, id, daten = {}) {
     } else if (aktion === "zuschlag") {
       if (ende) throw konflikt("Das Verfahren ist bereits beendet.");
       if (rundeOffen(r)) throw konflikt("Ein Zuschlag ist erst nach Ablauf bzw. Ende der Runde möglich (Gleichbehandlung).");
-      const g = db.dealroom.gebote.find((x) => x.id === v.kennung(daten.gebotId) && x.verfahrenId === vf.id && x.status === "abgegeben");
+      const g = db.dealroom.gebote.find((x) => x.id === v.kennung(daten.gebotId) && x.verfahrenId === vf.id && x.runde === r.nr && x.status === "abgegeben"); // nur Gebote der letzten Runde
       v.pflicht(g, "Bitte wählen Sie ein gültiges Gebot.");
       const i = db.interessen.find((x) => x.id === g.interesseId);
       v.pflicht(i && ["nda_freigegeben", "loi_abgegeben", "loi_angenommen"].includes(i.status), "Der Bieter hat keinen gültigen Datenraum-Status mehr.");
@@ -1083,6 +1084,7 @@ export async function dealCockpit(n, projektId, { tage = 60 } = {}) {
 export async function dealroomUebersicht(n) {
   angemeldet(n);
   if (!istAdmin(n)) throw verboten("Nur für das Backoffice.");
+  if (!darfLesen(n, "interessen")) throw verboten("Ihre Backoffice-Rolle erlaubt im Bereich „NDA & LOI“ kein Lesen."); // Rechte-Matrix (auch für den direkten Seitenaufruf)
   const db = await lesenBereit();
   const titel = (id) => db.projekte.find((p) => p.id === id)?.titel || id;
   const pseudoCache = new Map();

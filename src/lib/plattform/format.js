@@ -8,6 +8,10 @@ import { PREIS_MODUS } from "./konstanten";
 
 const TZ = "Europe/Vienna";
 
+/** Heutiges Datum (JJJJ-MM-TT) in der Zeitzone der Plattform (Europe/Vienna) – für Fristen und Fälligkeiten.
+ *  Nicht `toISOString().slice(0, 10)`: das ist UTC und liefert zwischen 0 und 2 Uhr Ortszeit den Vortag. */
+export const heuteLokal = (d = new Date()) => new Date(d).toLocaleDateString("sv-SE", { timeZone: TZ });
+
 export function datum(iso) {
   if (!iso) return "–";
   const d = new Date(iso);

@@ -73,11 +73,11 @@ export function geojsonPrimitive(gj, { projiziert = !!gj?.oekoinvestProjiziert }
     const L = String(pr.layer || pr.Layer || pr.LAYER || pr.name || pr.Name || ft.geometry?.type || "Geometrie").slice(0, 80);
     for (const geo of geometrien(ft.geometry)) {
       const basis = { L, aci: null, rgb: null, g, i: String(g), q: geo.type };
-      const linie = (koord, zu) => {
+      const linie = (koord, zu, loch = false) => {
         const pts = [];
         for (const p of koord) pts.push(...proj(p));
         if (zu && pts.length >= 4 && (pts[0] !== pts[pts.length - 2] || pts[1] !== pts[pts.length - 1])) pts.push(pts[0], pts[1]);
-        prims.push({ t: "p", ...basis, pts, zu, laenge: punkteLaenge(pts), flaeche: zu ? punkteFlaeche(pts.slice(0, -2)) : 0 });
+        prims.push({ t: "p", ...basis, pts, zu, laenge: punkteLaenge(pts), flaeche: zu ? punkteFlaeche(pts.slice(0, -2)) : 0, ...(loch ? { loch: true } : {}) });
       };
       switch (geo.type) {
         case "Point": {
@@ -99,10 +99,10 @@ export function geojsonPrimitive(gj, { projiziert = !!gj?.oekoinvestProjiziert }
           for (const c of geo.coordinates) linie(c, false);
           break;
         case "Polygon":
-          (geo.coordinates || []).forEach((ring) => linie(ring, true)); // Löcher als eigene Kontur (Fläche dann getrennt)
+          (geo.coordinates || []).forEach((ring, i) => linie(ring, true, i > 0)); // Ring 0 = Außenrand, weitere = Löcher (Fläche wird abgezogen)
           break;
         case "MultiPolygon":
-          for (const poly of geo.coordinates) for (const ring of poly) linie(ring, true);
+          for (const poly of geo.coordinates) poly.forEach((ring, i) => linie(ring, true, i > 0));
           break;
         default:
           break;

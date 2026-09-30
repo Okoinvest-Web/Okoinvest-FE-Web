@@ -151,7 +151,12 @@ export function bewertungBereinigen(e = {}) {
     const n = typeof v === "number" ? v : Number(String(v ?? "").replace(",", "."));
     if (v !== "" && v !== null && v !== undefined && Number.isFinite(n)) out[f.id] = Math.min(f.max, Math.max(f.min, n));
   }
-  for (const k of ["mwp", "kwp", "ibnJahr"]) if (Number.isFinite(Number(e[k]))) out[k] = Number(e[k]);
+  // Leistung/Jahr nur plausibel übernehmen: "" bzw. null ergäben Number() = 0 → Division durch 0 (€/kWp = Infinity)
+  const GRENZEN = { mwp: [0.001, 5000], kwp: [1, 5e6], ibnJahr: [1990, 2100] };
+  for (const k of ["mwp", "kwp", "ibnJahr"]) {
+    const x = e[k] === "" || e[k] === null || e[k] === undefined ? NaN : Number(e[k]);
+    if (Number.isFinite(x) && x >= GRENZEN[k][0] && x <= GRENZEN[k][1]) out[k] = x;
+  }
   for (const k of ["regionId", "bauart", "typ"]) if (typeof e[k] === "string" && /^[a-zA-Z-]{2,20}$/.test(e[k])) out[k] = e[k];
   if (e.modus === "bestand" || e.modus === "entwicklung") out.modus = e.modus;
   return out;

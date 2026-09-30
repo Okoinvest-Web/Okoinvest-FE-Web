@@ -5,11 +5,13 @@
 // Sommerzeit-Sprünge. „Heute“ gilt in Europe/Vienna (Sitz der ÖkoInvest GmbH).
 
 /** Kaufmännisch auf Cent runden (EPSILON gegen 1,005 → 1,00) */
-export const rund2 = (x) => Math.round((Number(x) + Number.EPSILON) * 100) / 100;
+// Betrag symmetrisch runden (auch Gutschriften/negative Beträge: −1,005 → −1,01, nicht −1,00)
 export const rund = (x, stellen = 2) => {
   const f = 10 ** stellen;
-  return Math.round((Number(x) + Number.EPSILON) * f) / f;
+  const r = (Math.sign(Number(x)) * Math.round((Math.abs(Number(x)) + Number.EPSILON) * f)) / f;
+  return r === 0 ? 0 : r; // −0 vermeiden („-0,00 €“)
 };
+export const rund2 = (x) => rund(x, 2);
 export const summe = (liste, feld) => rund2(liste.reduce((s, x) => s + (Number(feld ? x[feld] : x) || 0), 0));
 
 const TAG = /^(\d{4})-(\d{2})-(\d{2})$/;

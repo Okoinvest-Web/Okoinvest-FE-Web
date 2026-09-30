@@ -296,7 +296,8 @@ function varianteAufbauen(art, e, jahre) {
     const fkL = FINANZIERUNG.foerderkredit[e.land] || FINANZIERUNG.foerderkredit.DE;
     const a = C * Math.min(e.foerderAnteil, fkL.anteilMax, e.fkQuote);
     const b = Math.max(0, C * e.fkQuote - a);
-    return { ...skaliert([tranche(a, e.foerderZins, e.foerderLaufzeit, fkL.tilgung, e.foerderAnlauf), tranche(b, e.zins, e.laufzeitKredit, "annuitaet", e.tilgungsfrei)]), dsra: true, gebuehr: true, gebuehrBasis: b };
+    const s = skaliert([tranche(a, e.foerderZins, e.foerderLaufzeit, fkL.tilgung, e.foerderAnlauf), tranche(b, e.zins, e.laufzeitKredit, "annuitaet", e.tilgungsfrei)]);
+    return { ...s, dsra: true, gebuehr: true, gebuehrBasis: s.tranchen[1]?.betrag ?? b }; // Gebühr auf die (ggf. per DSCR gekürzte) Bank-Tranche
   }
   if (art === "mietkauf") return { tranchen: [tranche(C * (1 - e.mietkaufAnzahlung), e.mietkaufZins, e.mietkaufLaufzeit, "annuitaet")], begrenzt: false };
   if (art === "leasing") {

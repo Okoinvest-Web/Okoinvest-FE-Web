@@ -1041,7 +1041,9 @@ function uebergangAnwenden(db, n, art, o, nach, als, extra = {}, ip = "") {
     // Fachprüfung Flächen: vollständiger Angebotsbogen (Modell, Indexierung, Reservierung, Rückbau, Dienstbarkeit …)
     o.pachtangebot = pachtangebotBereinigen(extra.pachtangebot, { am: jetzt() });
   }
-  if (art === "projekt" && nach === "veroeffentlicht") {
+  const erstVeroeffentlicht = art === "projekt" && nach === "veroeffentlicht" && !o.veroeffentlichtAm; // Suchprofil-Alarm nur einmal
+  if (art === "projekt" && nach === "veroeffentlicht" && (von === "pruefung" || extra.provisionSatz !== undefined)) {
+    // Satz nur bei Freigabe aus der Prüfung Pflicht; „Reservierung aufheben“ behält den vereinbarten Satz
     let satz = v.zahl(extra.provisionSatz, { min: 0, max: 100 });
     if (satz !== null && satz > 0.2) satz = satz / 100; // Eingabe in Prozent
     v.pflicht(satz !== null && satz >= PROVISION.verkaeufer.min - 1e-9 && satz <= PROVISION.verkaeufer.max + 1e-9, `Provisionssatz muss zwischen ${PROVISION.verkaeufer.min * 100} und ${PROVISION.verkaeufer.max * 100} % liegen.`);
@@ -1091,8 +1093,8 @@ function uebergangAnwenden(db, n, art, o, nach, als, extra = {}, ip = "") {
   o.statusVerlauf.push(verlaufEintrag(nach, n, als, kommentar));
   o.geaendertAm = jetzt();
 
-  // Neu veröffentlicht → Investoren mit passendem Suchprofil benachrichtigen
-  if (art === "projekt" && nach === "veroeffentlicht") {
+  // Neu veröffentlicht → Investoren mit passendem Suchprofil benachrichtigen (nicht erneut nach Reservierung/Rücknahme)
+  if (erstVeroeffentlicht) {
     suchprofilAlarm(db, o);
   }
 
@@ -1453,7 +1455,7 @@ export async function aktivitaeten(n, { limit = 100, objektId, objektIds } = {})
   const ids = new Set([objektId, ...(Array.isArray(objektIds) ? objektIds.slice(0, 50) : [])].filter(Boolean).map(String));
   if (ids.size) liste = liste.filter((a) => ids.has(a.objektId));
   return liste
-    .slice(-Math.min(500, limit))
+    .slice(-Math.min(500, Math.max(1, Number(limit) || 100)))
     .reverse()
     .map((a) => ({ ...a, nutzer: nameVon(db, a.nutzerId) || (a.nutzerId ? a.nutzerId : "Gast/System") }));
 }
@@ -1774,9 +1776,10 @@ export async function exposeDaten(n, id, { ip = "" } = {}) {
   const admin = istAdmin(n);
   const eigen = p.anbieterId === n.id || org.darfTeamLesenObjekt(db, n, p); // auch Team des Anbieters
   let zugriff = admin ? "admin" : eigen ? "eigentuemer" : null;
+  let i = null;
   if (!zugriff) {
     if (![...BOERSE_STATUS, "verkauft"].includes(p.status)) throw nichtGefunden("Projekt nicht gefunden.");
-    const i = db.interessen.find((x) => x.projektId === p.id && DATENRAUM_STATUS.includes(x.status) && (x.investorId === n.id || org.darfTeamLesenObjekt(db, n, x))) || db.interessen.find((x) => x.projektId === p.id && x.investorId === n.id);
+    i = db.interessen.find((x) => x.projektId === p.id && DATENRAUM_STATUS.includes(x.status) && (x.investorId === n.id || org.darfTeamLesenObjekt(db, n, x))) || db.interessen.find((x) => x.projektId === p.id && x.investorId === n.id);
     if (!i || !DATENRAUM_STATUS.includes(i.status)) throw verboten("Das vollständige Exposé steht nach Freigabe Ihrer NDA-Anfrage zur Verfügung.");
     zugriff = "nda";
   }
@@ -1787,7 +1790,7 @@ export async function exposeDaten(n, id, { ip = "" } = {}) {
     projekt: { ...projektOeffentlich(p), datenraumQualitaet: checklisteProjekt(p, doks).quote },
     vertraulich: projektVertraulich(p),
     datenblatt: p.datenblatt || {}, // Projektdatenblatt im Exposé (Portal-Logik)
-    dokumente: doks.filter((d) => zugriff !== "nda" || d.kategorie === "datenraum").map(dokumentMeta),
+    dokumente: doks.filter((d) => zugriff !== "nda" || (d.kategorie === "datenraum" && datenraumStufeOk(db, d, i))).map(dokumentMeta), // Deal-Room: Stufe 2 erst nach LOI (wie boerseDetail)
     zugriff,
     empfaenger: { name: nameVon(db, n.id), firma: u?.firma || "", email: u?.email || "", rolle: zugriff === "nda" ? "investor" : zugriff },
     erstelltAm: jetzt(),

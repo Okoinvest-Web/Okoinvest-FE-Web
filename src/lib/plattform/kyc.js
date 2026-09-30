@@ -13,6 +13,7 @@
 // behauptet keine Video- oder Online-Identifizierung – diese erfolgt nur über zugelassene Anbieter (Schnittstelle vorgesehen).
 
 import { INVESTOR_TYPEN } from "./fach/suchprofil";
+import { heuteLokal } from "./format";
 
 // ================================================================ Grundbegriffe
 
@@ -238,7 +239,7 @@ export function kontoinhaberPasst(inhaber, { vorname = "", nachname = "", firma 
 
 // ================================================================ Datum
 
-export const heuteIso = (d = new Date()) => d.toISOString().slice(0, 10);
+export const heuteIso = (d = new Date()) => heuteLokal(d); // Europe/Vienna (Fristen: Ausweis, Wiederholungsprüfung, Löschung)
 export function tageBis(datumIso, jetzt = new Date()) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(datumIso || ""))) return null;
   return Math.floor((new Date(`${datumIso}T00:00:00Z`).getTime() - new Date(`${heuteIso(jetzt)}T00:00:00Z`).getTime()) / 86400000);

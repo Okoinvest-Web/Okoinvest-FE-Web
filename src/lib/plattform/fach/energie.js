@@ -186,13 +186,16 @@ export function abnahmestelleBereinigen(d = {}) {
 export function abnahmestelleHinweise(s, { jetzt, benutzungsstunden } = {}) {
   const h = [];
   if (!s) return h;
-  const heute = (jetzt ? new Date(jetzt) : new Date()).toISOString().slice(0, 10);
+  const heute = (jetzt ? new Date(jetzt) : new Date()).toLocaleDateString("sv-SE", { timeZone: "Europe/Vienna" }); // lokales Datum (Fristen)
   if (s.land === "DE" && s.messart === "slp" && s.jahresverbrauchKwh > RLM_GRENZE_KWH) h.push({ stufe: "warnung", text: `Über ${RLM_GRENZE_KWH.toLocaleString("de-DE")} kWh/Jahr ist in Deutschland in der Regel eine registrierende Leistungsmessung (RLM) vorgeschrieben – Messart beim Netzbetreiber prüfen.` });
   if (s.messart === "slp") h.push({ stufe: "info", text: "Bei SLP-Messung gibt es keinen echten Lastgang – für die Pool-Bewertung genügt die Jahresmenge, eine Lastgang-Analyse ist erst mit RLM oder Smart Meter möglich." });
   if (s.vertragEnde) {
     const ende = new Date(`${s.vertragEnde}T00:00:00Z`);
     const frist = new Date(ende);
+    // Monatsende begrenzen: 31.12. − 3 Monate = 30.09. (nicht 01.10. – sonst wird die Frist verpasst)
+    frist.setUTCDate(1);
     frist.setUTCMonth(frist.getUTCMonth() - (s.kuendigungsfristMonate ?? 3));
+    frist.setUTCDate(Math.min(ende.getUTCDate(), new Date(Date.UTC(frist.getUTCFullYear(), frist.getUTCMonth() + 1, 0)).getUTCDate()));
     const fristIso = frist.toISOString().slice(0, 10);
     if (s.vertragEnde < heute) h.push({ stufe: "warnung", text: "Vertragsende liegt in der Vergangenheit – ggf. Verlängerung oder Ersatzversorgung zu teuren Konditionen prüfen." });
     else if (fristIso < heute) h.push({ stufe: "warnung", text: `Kündigungsfrist abgelaufen (Stichtag ${fristIso.split("-").reverse().join(".")}) – prüfen Sie die automatische Verlängerung.` });

@@ -791,8 +791,8 @@ export function kennzahlen(prims, einheit = { m: 1 }) {
     switch (konv.id) {
       case "module":
         if (p.zu && p.flaeche > 0) {
-          tischGruppen.add(p.i);
-          k.modulflaecheM2 += p.flaeche * f * f;
+          if (!p.loch) tischGruppen.add(p.i);
+          k.modulflaecheM2 += (p.loch ? -1 : 1) * p.flaeche * f * f; // GeoJSON/Shapefile: Löcher abziehen
         }
         break;
       case "zaun":
@@ -808,13 +808,13 @@ export function kennzahlen(prims, einheit = { m: 1 }) {
         k.kabelAcM += p.laenge * f;
         break;
       case "wege":
-        if (p.zu) k.wegeM2 += p.flaeche * f * f;
+        if (p.zu) k.wegeM2 += (p.loch ? -1 : 1) * p.flaeche * f * f;
         break;
       case "trafo":
         trafoGruppen.add(p.i);
         break;
       case "anlage":
-        if (p.zu) k.anlageM2 += p.flaeche * f * f;
+        if (p.zu) k.anlageM2 += (p.loch ? -1 : 1) * p.flaeche * f * f;
         break;
       default:
         break;

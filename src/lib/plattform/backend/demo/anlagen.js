@@ -118,7 +118,8 @@ function kundeAusgabe(db, a) {
 
 function vertragAusgabe(c) {
   if (!c) return null;
-  const ende = c.beginn ? `${Number(c.beginn.slice(0, 4)) + (Number(c.laufzeitJahre) || 0)}${c.beginn.slice(4)}` : "";
+  let ende = c.beginn ? `${Number(c.beginn.slice(0, 4)) + (Number(c.laufzeitJahre) || 0)}${c.beginn.slice(4)}` : "";
+  if (ende.slice(4) === "-02-29" && new Date(`${ende}T00:00:00Z`).getUTCMonth() !== 1) ende = `${ende.slice(0, 4)}-02-28`; // Beginn 29.02., Zieljahr ohne Schalttag
   return { ...c, ende };
 }
 

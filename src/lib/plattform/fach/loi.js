@@ -61,7 +61,7 @@ const pflicht = (b, msg) => {
  * @returns {object} gespeicherte LOI (ohne `am`)
  */
 export function loiBereinigen(l = {}, { mwp = 0, jetzt } = {}) {
-  const heute = (jetzt ? new Date(jetzt) : new Date()).toISOString().slice(0, 10);
+  const heute = (jetzt ? new Date(jetzt) : new Date()).toLocaleDateString("sv-SE", { timeZone: "Europe/Vienna" }); // lokales Datum (nicht UTC)
   const strukturiert = l?.struktur === true || l?.struktur === "true";
   const t = mehrzeilig(l?.text, 3000);
   pflicht(t.length >= 10, "Bitte beschreiben Sie Ihre Absichtserklärung (mind. 10 Zeichen).");

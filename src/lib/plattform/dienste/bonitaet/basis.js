@@ -51,6 +51,7 @@ export const BONITAET_RECHTSGRUNDLAGEN = {
  *   D&B Failure Score (1–100): ≥ 51 grün, ≥ 21 gelb, sonst rot
  */
 export function bonitaetAmpel(anbieter, score) {
+  if (score === null || score === undefined || score === "") return "unbekannt"; // Number(null) wäre 0 → „grün“
   const s = Number(score);
   if (!Number.isFinite(s)) return "unbekannt";
   if (anbieter === "ksv1870") return s <= 299 ? "gruen" : s <= 399 ? "gelb" : "rot";

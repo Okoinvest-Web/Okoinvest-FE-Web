@@ -99,7 +99,7 @@ export function sanktionsliste() {
   try {
     if (existsSync(LISTE_DATEI)) {
       const roh = readFileSync(LISTE_DATEI, "utf8");
-      if (!listeCache || listeCache.roh !== roh.length) listeCache = { roh: roh.length, liste: JSON.parse(roh) };
+      if (!listeCache || listeCache.roh !== roh) listeCache = { roh, liste: JSON.parse(roh) }; // Inhalt vergleichen (Re-Import gleicher Länge)
       return listeCache.liste;
     }
   } catch (e) {
@@ -410,7 +410,7 @@ export async function kycEinreichen(n, { ip = "" } = {}) {
     f.einreichungIp = ip || "";
     if (f.bank) f.bank.inhaberPasst = kontoinhaberPasst(f.bank.kontoinhaber, f.kontotyp === "unternehmen" ? { firma: f.firma?.name } : { vorname: f.person?.vorname, nachname: f.person?.nachname });
     abgleichAusfuehren(db, f, n, "Einreichung");
-    f.risiko = { ...kycRisiko(f, kycEinstellungenDb(db)), manuell: false };
+    if (!f.risiko?.manuell) f.risiko = { ...kycRisiko(f, kycEinstellungenDb(db)), manuell: false }; // manuelle Einstufung der Compliance bleibt
     complianceMelden(db, f, `KYC ${f.kontotyp === "unternehmen" ? "KYB" : "KYC"} zur Prüfung: ${f.id}`, `Neuer Vorgang in der Warteschlange (Risiko ${f.risiko.stufe}).`);
     nutzerMelden(db, f, "Verifizierung eingereicht", "Vielen Dank – wir prüfen Ihre Angaben und melden uns im Portal.");
     return kycFallSync(db, n, f);
@@ -560,7 +560,8 @@ const ERGEBNISSE = ["verifiziert", "nachgefordert", "abgelehnt"];
 
 /** Vier-Augen: immer (Einstellung), bei Risiko hoch oder wenn ein Sanktionstreffer als Namensgleichheit ausgeschlossen wurde */
 function vierAugenNoetig(f, e) {
-  return !!(e.vierAugenImmer || (e.vierAugenBeiHoch && (f.risiko?.stufe === "hoch" || (f.sanktionen?.treffer || []).length > 0)));
+  // auch nach manueller Herabstufung: Regel-Risiko „hoch“ bleibt Vier-Augen-pflichtig
+  return !!(e.vierAugenImmer || (e.vierAugenBeiHoch && (f.risiko?.stufe === "hoch" || f.risiko?.regelStufe === "hoch" || (f.sanktionen?.treffer || []).length > 0)));
 }
 
 export async function kycAktion(n, id, daten = {}) {
@@ -570,6 +571,7 @@ export async function kycAktion(n, id, daten = {}) {
   return aendernBereit((db) => {
     const f = fallById(db, id);
     if (!f) throw nichtGefunden("KYC-Fall nicht gefunden.");
+    if (f.kontoId === n.id) throw verboten("Den eigenen KYC-Fall prüft eine andere Person der Compliance.");
     const e = kycEinstellungenDb(db);
     f.pruefung = f.pruefung || {};
     let hinweis = "";
@@ -782,10 +784,11 @@ export async function kycFristen(n, { stichtag = null, fallId = null } = {}) {
         }
       }
       if (["verifiziert", "in_pruefung", "eingereicht", "zweitpruefung"].includes(f.status) && liste.stand && f.sanktionen?.listeStand !== liste.stand) {
-        const vorher = (f.sanktionen?.treffer || []).length;
+        const vorher = new Set((f.sanktionen?.treffer || []).map((t) => `${t.eintragId}|${t.prueflingName}`));
         const s = abgleichAusfuehren(db, f, null, "Neuer Listenstand");
         erg.neuAbgeglichen++;
-        if (s.status === "treffer_pruefen" && s.treffer.length > vorher) {
+        // neuer, unbewerteter Treffer (auch wenn gleichzeitig ein alter wegfällt und die Anzahl gleich bleibt)
+        if (s.status === "treffer_pruefen" && s.treffer.some((t) => !t.bewertung && !vorher.has(`${t.eintragId}|${t.prueflingName}`))) {
           erg.neueTreffer++;
           if (f.status === "verifiziert") {
             f.status = "in_pruefung";

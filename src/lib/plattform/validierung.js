@@ -29,7 +29,9 @@ export function email(v) {
 /** Zahl in Grenzen oder null */
 export function zahl(v, { min = -Infinity, max = Infinity, stellen } = {}) {
   if (v === undefined || v === null || v === "" || typeof v === "object") return null;
-  const n = typeof v === "number" ? v : Number(String(v).replace(/\s/g, "").replace(",", "."));
+  let s = typeof v === "number" ? "" : String(v).replace(/\s/g, "");
+  if (/^-?\d{1,3}(\.\d{3})+,\d+$/.test(s) || /^-?\d{1,3}(\.\d{3}){2,}$/.test(s)) s = s.replace(/\./g, ""); // eindeutige Tausenderpunkte (1.500.000 / 2.500,50)
+  const n = typeof v === "number" ? v : Number(s.replace(",", "."));
   if (!Number.isFinite(n) || n < min || n > max) return null;
   return stellen === undefined ? n : Math.round(n * 10 ** stellen) / 10 ** stellen;
 }

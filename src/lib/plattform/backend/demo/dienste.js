@@ -123,6 +123,14 @@ function sitzungAusgabe(s) {
 }
 
 /** Konfiguration + eigene Sitzungen + letzte MRZ-Vorprüfung */
+/** Bilanzstichtag „MM-TT“ nur als gültiger Kalendertag (z. B. „13-45“ ließe die Fristberechnung mit RangeError abstürzen) */
+const stichtagOk = (x) => {
+  const s = String(x || "");
+  if (!/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(s)) return false;
+  const d = new Date(`2024-${s}T00:00:00Z`); // Schaltjahr: 02-29 zulässig
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(5, 10) === s;
+};
+
 export async function identStatus(n) {
   angemeldet(n);
   const db = await lesenBereit();
@@ -640,7 +648,7 @@ export async function gesellschaftAnlegen(n, daten = {}) {
       gesellschafter: gesellschafterBereinigen(db, daten.gesellschafter), geschaeftsfuehrung: gfBereinigen(daten.geschaeftsfuehrung),
       komplementaer: rf.komplementaer ? { name: leerText(daten.komplementaer?.name), register: leerText(daten.komplementaer?.register, 60), gesellschaftId: v.kennung(daten.komplementaer?.gesellschaftId) || null } : null,
       gegenstand: v.mehrzeilig(daten.gegenstand, 3000) || gegenstandVorlage({ land: rf.land, typ: projekt?.typ, ort: projekt?.gemeinde }),
-      bilanzstichtag: /^\d{2}-\d{2}$/.test(String(daten.bilanzstichtag || "")) ? daten.bilanzstichtag : "12-31",
+      bilanzstichtag: stichtagOk(daten.bilanzstichtag) ? daten.bilanzstichtag : "12-31",
       musterprotokoll: v.wahr(daten.musterprotokoll), projekt, entwicklungProjektId: projekt?.id || null, status: "entwurf", registernummer: "",
       namenspruefung: namenspruefung ? { ergebnis: namenspruefung.ergebnis, am: namenspruefung.am, quelle: namenspruefung.quelle, aehnlich: namenspruefung.aehnlich, hinweise: namenspruefung.hinweise } : null,
       schritte: schritteFuer(rechtsform), herkunft: "assistent", erstelltVon: n.id, erstelltAm: jetzt(), geaendertAm: jetzt(), verlauf: [],
@@ -696,7 +704,7 @@ export async function gesellschaftAendern(n, id, daten = {}) {
     } else if (["name", "stammkapital", "gesellschafter", "geschaeftsfuehrung", "gegenstand"].some((k) => k in daten)) {
       throw konflikt("Nach der Beurkundung sind Änderungen an Firma, Kapital, Gesellschaftern oder Gegenstand nur über das Notariat möglich.");
     }
-    if ("bilanzstichtag" in daten && /^\d{2}-\d{2}$/.test(String(daten.bilanzstichtag))) setze("bilanzstichtag", daten.bilanzstichtag);
+    if ("bilanzstichtag" in daten && stichtagOk(daten.bilanzstichtag)) setze("bilanzstichtag", daten.bilanzstichtag);
     if ("steuernummer" in daten) setze("steuernummer", leerText(daten.steuernummer, 40));
     if ("status" in daten && daten.status === "aufgeloest") setze("status", "aufgeloest");
     if (geaendert.length) {

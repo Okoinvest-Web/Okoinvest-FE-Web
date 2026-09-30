@@ -496,15 +496,16 @@ export async function wiederherstellungscodesNeu(n, { code } = {}) {
  * (+ zweiFaktorMethode, codesUebrig) oder wirft 401 (code „zwei_faktor“) bzw. 429 (gesperrt).
  */
 export async function zweiFaktorPruefen({ nutzerId, code, ip = "", userAgent = "", land = "" } = {}) {
-  return aendern((db) => {
+  const erg = await aendern((db) => {
     sammlungen(db);
     const u = nutzerById(db, nutzerId);
     if (!u || !u.aktiv) throw nichtAngemeldet();
     sperrePruefen(db, u.email);
     const r = codeEinloesen(db, u, code);
     if (!r) {
+      // Fehlversuch speichern: ein Wurf hier würde die Änderung verwerfen (aendern speichert nur bei Erfolg) → keine Sperre
       fehlversuchBuchen(db, { email: u.email, nutzer: u, ip, userAgent, land, grund: "2fa" });
-      throw new PlattformFehler(401, "Der Code ist ungültig oder wurde bereits verwendet.", "zwei_faktor");
+      return { fehlversuch: true };
     }
     if (r.methode === "wiederherstellung") {
       sicherheitMelden(db, u, {
@@ -516,6 +517,8 @@ export async function zweiFaktorPruefen({ nutzerId, code, ip = "", userAgent = "
     }
     return { ...mitZweiFaktor(db, internSicherheit.ohneGeheimnis(u)), zweiFaktorMethode: r.methode, codesUebrig: r.codesUebrig };
   });
+  if (erg?.fehlversuch) throw new PlattformFehler(401, "Der Code ist ungültig oder wurde bereits verwendet.", "zwei_faktor");
+  return erg;
 }
 
 // ================================================================ Operationen: E-Mail-Link (passwortlos)

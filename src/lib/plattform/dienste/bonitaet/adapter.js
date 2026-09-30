@@ -86,13 +86,16 @@ function demoAuskunft({ name, land }) {
  * Liefert normalisiert { anbieter, anbieterLabel, status, score, skala, ampel, kreditlimit, waehrung, ausfallwahrscheinlichkeit,
  *   zahlungsweise, negativmerkmale[], referenz, auskunftAm, demo, pdfBase64? }
  */
+/** Zahl oder null – `null`/"" der Auskunftei bleiben „keine Angabe“ (Number(null) wäre 0) */
+const zahlOderNull = (x) => (x === null || x === undefined || x === "" || !Number.isFinite(Number(x)) ? null : Number(x));
+
 export async function bonitaetAbrufen(subjekt, env = process.env) {
   const k = bonitaetKonfig(env);
   if (!k.anbieter || !k.aktiv) throw Object.assign(new Error("Die Bonitätsauskunft ist nicht konfiguriert (Vertrag mit einer Auskunftei erforderlich)."), { status: 503 });
   const daten = { land: subjekt.land, name: subjekt.name, registernummer: subjekt.registernummer || "", anschrift: subjekt.anschrift || "" };
   const r = k.demo ? demoAuskunft(daten) : await extern(k, daten);
   const status = r?.status === "keine_daten" ? "keine_daten" : "abgeschlossen";
-  const score = Number.isFinite(Number(r?.score)) ? Number(r.score) : null;
+  const score = zahlOderNull(r?.score);
   return {
     anbieter: k.anbieter,
     anbieterLabel: k.label,
@@ -100,9 +103,9 @@ export async function bonitaetAbrufen(subjekt, env = process.env) {
     score,
     skala: String(r?.skala || BONITAET_ANBIETER[k.anbieter]?.skala || "").slice(0, 120),
     ampel: status === "keine_daten" ? "unbekannt" : bonitaetAmpel(k.anbieter, score),
-    kreditlimit: Number.isFinite(Number(r?.kreditlimit)) ? Number(r.kreditlimit) : null,
+    kreditlimit: zahlOderNull(r?.kreditlimit),
     waehrung: /^[A-Z]{3}$/.test(String(r?.waehrung || "")) ? r.waehrung : "EUR",
-    ausfallwahrscheinlichkeit: Number.isFinite(Number(r?.ausfallwahrscheinlichkeit)) ? Number(r.ausfallwahrscheinlichkeit) : null,
+    ausfallwahrscheinlichkeit: zahlOderNull(r?.ausfallwahrscheinlichkeit),
     zahlungsweise: String(r?.zahlungsweise || "").slice(0, 160),
     negativmerkmale: (Array.isArray(r?.negativmerkmale) ? r.negativmerkmale : []).slice(0, 10).map((x) => String(x).slice(0, 200)),
     referenz: String(r?.referenz || "").slice(0, 80),

@@ -525,7 +525,11 @@ export function lastgangAnalyse(g, { regionId = "de-sued", pvKwp = null, bestand
     wochenendeAnteil: rund(summeKwh ? wochenendeKwh / summeKwh : 0, 3),
     lastprofil: { id: profil.id, label: profil.label },
     wochenprofil: woche.map((r, t) => r.map((s, h) => rund(wocheN[t][h] ? s / wocheN[t][h] : 0, 1))),
-    monate: monate.map((m, i) => ({ monat: i + 1, kwh: Math.round(m), vollstaendig: monateN[i] >= 26 * 96 })),
+    // Lastgang über mehr als 12 Monate: gleiche Kalendermonate mehrerer Jahre auf EINEN Monat mitteln (sonst doppelt gezählt)
+    monate: monate.map((m, i) => {
+      const slotsMonat = [31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][i] * 96;
+      return { monat: i + 1, kwh: Math.round(monateN[i] > slotsMonat ? (m * slotsMonat) / monateN[i] : m), vollstaendig: monateN[i] >= 26 * 96 };
+    }),
     lastdauerlinie: lastdauer,
     pv: { varianten: pv, empfehlungKwp: empfehlung?.kwp || null, gewaehltKwp: gewaehlt?.kwp || null, regionId, bestandKwp: bestandPvKwp || 0 },
     pool: {

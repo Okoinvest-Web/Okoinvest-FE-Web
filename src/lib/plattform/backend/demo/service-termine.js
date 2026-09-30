@@ -218,12 +218,19 @@ export async function terminBuchen(n, daten = {}, { ip = "" } = {}) {
     const offen = db.service.termine.filter((t) => t.kontakt?.email === kontakt.email && TERMIN_AKTIV.includes(t.status) && new Date(t.start) > new Date());
     if (!bo && offen.length >= 3) throw konflikt("Sie haben bereits drei offene Termine. Bitte sagen Sie einen ab oder melden Sie sich über das Portal.");
     const iso = start.toISOString();
+    // Bezug (Vorgang/Fläche/Projekt): Kunden nur an eigene Objekte – sonst fremde Kennung im Backoffice-Termin
+    let bezugArt = v.auswahl(daten.bezugArt, ["vorgang", "flaeche", "projekt"], "") || null;
+    let bezugId = bezugArt ? v.kennung(daten.bezugId) || null : null;
+    if (bezugArt && bezugId && !bo) {
+      const o = ({ vorgang: db.vorgaenge, flaeche: db.flaechen, projekt: db.projekte }[bezugArt] || []).find((x) => x.id === bezugId);
+      if (!o || !kontoId || (bezugArt === "projekt" ? o.anbieterId : o.nutzerId) !== kontoId) bezugArt = bezugId = null;
+    }
     const mitarbeiterId = mitarbeiterWaehlen(db, art, iso, { wunschId: bo ? v.kennung(daten.mitarbeiterId) || null : null, ort: { land: kontakt.land, bundesland: v.text(daten.kontakt?.bundesland, 60), plz: kontakt.plz } });
     if (!mitarbeiterId) throw konflikt("Dieser Zeitpunkt ist nicht (mehr) frei. Bitte wählen Sie einen anderen Termin.");
     const t = {
       id: neueId("TE"), art, start: iso, ende: new Date(start.getTime() + a.dauer * 60e3).toISOString(), mitarbeiterId, vertretungFuerId: null, kontoId, kontakt,
       kanal, ort: a.kanal === "vor_ort" ? v.text(daten.ort || [kontakt.plz, kontakt.ort].filter(Boolean).join(" "), 160) : "", notiz,
-      bezugArt: v.auswahl(daten.bezugArt, ["vorgang", "flaeche", "projekt"], "") || null, bezugId: v.kennung(daten.bezugId) || null,
+      bezugArt, bezugId,
       status: "gebucht", sequenz: 0, erinnertAm: null, herkunft: bo ? "backoffice" : n ? "portal" : v.auswahl(daten.herkunft, ["kontakt", "flaechencheck", "website"], "website"),
       tokenHash: null, verlauf: [], erstelltAm: jetzt(), ip: ip || "",
     };

@@ -49,9 +49,9 @@ export function perioden({ ab, bis = null, rhythmus = "jaehrlich", stopp }) {
 export function laufzeitEnde(beginn, laufzeitJahre) {
   if (!istDatum(beginn) || !(Number(laufzeitJahre) > 0)) return null;
   const j = jahrVon(beginn) + Number(laufzeitJahre);
-  const md = String(beginn).slice(4);
-  const ziel = md === "-02-29" ? `${j}-02-28` : `${j}${md}`;
-  return plusTage(ziel, istDatum(ziel) ? -1 : 0);
+  const ziel = `${j}${String(beginn).slice(4)}`;
+  // Beginn 29.02.: im Schaltjahr endet die Laufzeit am 28.02., sonst am Monatsende (28.02.) – nie am 27.02.
+  return istDatum(ziel) ? plusTage(ziel, -1) : `${j}-02-28`;
 }
 
 /**

@@ -228,7 +228,7 @@ export async function zeiten(n, { kontoId = "", monat = "", projektId = "" } = {
 export async function zeitErfassen(n, daten = {}) {
   adminNoetig(n);
   const datum = String(daten.datum || heuteTag());
-  v.pflicht(tagGueltig(datum) && datum <= tagPlus(heuteTag(), 1), "Bitte geben Sie ein gültiges Datum an (nicht in der Zukunft).");
+  v.pflicht(tagGueltig(datum) && datum <= heuteTag(), "Bitte geben Sie ein gültiges Datum an (nicht in der Zukunft).");
   const stunden = Math.round((v.zahl(daten.stunden, { min: 0.25, max: HR_GRENZEN.stundenTagMax }) || 0) * 4) / 4;
   v.pflicht(stunden >= 0.25, "Bitte geben Sie die Stunden an (0,25–12).");
   const taetigkeit = v.auswahl(daten.taetigkeit, TAETIGKEIT_IDS, "");

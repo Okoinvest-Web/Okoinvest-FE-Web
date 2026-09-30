@@ -188,6 +188,24 @@ export default function DatenschutzPage() {
         Ergebnis ausdrücklich mit einer Anfrage an uns senden, verarbeiten wir es wie in Abschnitt 5 beschrieben.
       </p>
 
+      <h2>8a. KI-Assistent im Portal (optional)</h2>
+      <p>
+        Im Portal können Sie optional einen Assistenten nutzen: Exposé-Entwürfe, Zusammenfassung von Anfragen, Fragen zu freigegebenen
+        Projektunterlagen, Erläuterungen zu Ihrer Fläche und Entwürfe für Nachrichten. Ist der KI-Modus aktiviert, übermitteln wir nur die für
+        die jeweilige Aufgabe erforderlichen und für Sie freigegebenen Angaben an den Dienst Claude der Anthropic PBC (USA) bzw. deren
+        Vertragspartner als Auftragsverarbeiter – Projektdaten, Angaben zu Ihrer Fläche, den Nachrichtenverlauf zum jeweiligen Vorgang und Ihre
+        Frage. <strong>Nicht übermittelt werden E-Mail-Adressen, Telefonnummern und IP-Adressen.</strong> Rechtsgrundlage ist Art. 6 Abs. 1
+        lit. b DSGVO (Nutzung des Portals) bzw. lit. f DSGVO (effiziente Bearbeitung). Für die Übermittlung in die USA gelten{" "}
+        <mark>[EU-US Data Privacy Framework bzw. Standardvertragsklauseln – wird juristisch festgelegt]</mark>. Die Ergebnisse sind Entwürfe,
+        die ein Mensch prüft; es findet keine automatisierte Entscheidung im Sinne von Art. 22 DSGVO statt.
+      </p>
+      <p>
+        <strong>Protokoll:</strong> Wir speichern, welches Konto wann welche Assistenzfunktion zu welchem Objekt genutzt hat, sowie technische
+        Verbrauchswerte – <strong>keine Fragen, Eingaben oder Antworten</strong>. Zweck: Missbrauchsschutz, Tages-Kontingent und
+        Kostenkontrolle. Speicherdauer: <mark>[12 Monate – wird festgelegt]</mark>. Ohne KI-Modus arbeitet der Assistent regelbasiert; Ihre
+        Angaben verlassen die Plattform dabei nicht.
+      </p>
+
       <h2>9. Live-Strommarktdaten</h2>
       <p>
         Börsenstrompreise und Erzeugungsdaten (z. B. auf der Seite <Link href="/energie-live">Energie live</Link>) beziehen wir{" "}

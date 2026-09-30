@@ -6,12 +6,15 @@
 // Grundstücksnummer, Umspannwerk), Steckbrief mit Score-Begründung, Übernahme als Akquise-Ziel, Anschreiben-Vorlage,
 // Export CSV/GeoJSON, Messwerkzeug. Alle Daten über /api/admin/geodaten/** (Rechte serverseitig).
 // Tastatur: „/“ Suche, „m“ Messen, „Esc“ schließt Steckbrief/Messen.
+// Ausbaustufe A1b: Deutschland (TopPlusOpen des BKG als Grundkarte, Autobahn/Schiene als Ebene, EEG-Kulisse im Steckbrief),
+// Sprung zwischen den Demo-Regionen, Filter „Land“, Kampagne aus der aktuellen Liste bilden.
 
 import "leaflet/dist/leaflet.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  Check, ClipboardCopy, Crosshair, Download, FileText, Filter, Layers, List, Loader2, Maximize2, Minimize2, Ruler, Search, Target, X, Zap,
+  Check, ClipboardCopy, Crosshair, Download, FileText, Filter, Layers, List, Loader2, Maximize2, Megaphone, Minimize2, Ruler, Search, Target, X, Zap,
 } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { senden } from "@/lib/plattform/client";
@@ -31,8 +34,14 @@ const SCHUTZ_FARBE = { nationalpark: "#436621", natura2000: "#436621", naturschu
 const BASEMAP = "https://mapsneu.wien.gv.at/basemap";
 const ATTRIBUTION =
   'Grundkarte: <a href="https://basemap.at" target="_blank" rel="noopener">basemap.at</a> · Netz/Schutzgebiete: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap-Mitwirkende</a> (ODbL) · Kataster: BEV · Schläge: AMA';
+// Deutschland: TopPlusOpen (BKG, dl-de/by-2-0, Web Mercator) – basemap.at deckt nur Österreich ab
+const TOPPLUS = "https://sgx.geodatenzentrum.de/wmts_topplus_open/tile/1.0.0/web_grau/default/WEBMERCATOR/{z}/{y}/{x}.png";
+const ATTRIBUTION_DE =
+  'Grundkarte: © <a href="https://gdz.bkg.bund.de" target="_blank" rel="noopener">BKG</a> (2026) <a href="https://www.govdata.de/dl-de/by-2-0" target="_blank" rel="noopener">dl-de/by-2-0</a> (TopPlusOpen) · Netz/Verkehr/Schutzgebiete: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap-Mitwirkende</a> (ODbL) · Flurstücke: DEMO';
 const AMPEL_TEXT = { gruen: "gut geeignet", gelb: "prüfen", rot: "kritisch" };
 const WIDMUNG_TEXT = { zone: "in Zone / Priorität 1", angrenzend: "angrenzend / Priorität 2", ausserhalb: "außerhalb", unklar: "Einzelfall" };
+const WIDMUNG_TEXT_DE = { zone: "privilegiert (§ 35 BauGB)", angrenzend: "teilweise privilegiert", ausserhalb: "außerhalb", unklar: "Bebauungsplan nötig" };
+const pct = (x) => `${fmt((Number(x) || 0) * 100)} %`;
 
 const km = (m) => fmt((m || 0) / 1000, 1);
 const knotenName = (k) => k?.name || `${KNOTEN_ARTEN[k?.art]?.kurz || "Netzknoten"} (ohne Namen)`;
@@ -189,8 +198,17 @@ function Steckbrief({ k, darfSchreiben, onSchliessen, onUmkreis, onAnschreiben, 
             <Zeile label="Kompaktheit">{fmt((k.merkmale?.kompaktheit || 0) * 100)} %</Zeile>
             <Zeile label="Siedlung">{k.merkmale?.siedlung ? `${fmt(k.merkmale.siedlung.abstandM)} m (${k.merkmale.siedlung.name})` : "–"}</Zeile>
             <Zeile label="Schutzgebiete">{k.merkmale?.schutz?.length ? k.merkmale.schutz.map((s) => `${s.name} (${s.anteil > 0 ? `${fmt(s.anteil * 100)} %` : `${fmt(s.abstandM)} m`})`).join(", ") : "keine im Umkreis von 300 m"}</Zeile>
-            <Zeile label="Widmung">{WIDMUNG_TEXT[k.widmung?.status] || "–"}</Zeile>
+            <Zeile label={k.land === "DE" ? "Planungsrecht" : "Widmung"}>{(k.land === "DE" ? WIDMUNG_TEXT_DE : WIDMUNG_TEXT)[k.widmung?.status] || "–"}</Zeile>
           </dl>
+          {k.land === "DE" && k.merkmale?.kulisse && (
+            <dl className="mt-2 rounded-2xl bg-ov-50/60 px-3 py-1 ring-1 ring-ov-100">
+              <Zeile label="EEG-Randstreifen 500 m">{pct(k.merkmale.kulisse.randstreifenAnteil)}</Zeile>
+              <Zeile label="Privilegiert 200 m (BauGB)">{pct(k.merkmale.kulisse.privilegiertAnteil)}</Zeile>
+              <Zeile label="Benachteiligtes Gebiet">{pct(k.merkmale.kulisse.benachteiligtAnteil)}{k.merkmale.kulisse.demo ? " (Demo)" : ""}</Zeile>
+              <Zeile label="Moorboden">{pct(k.merkmale.kulisse.moorAnteil)}</Zeile>
+              <Zeile label="Abstand Autobahn / Schiene">{k.merkmale.kulisse.abstandAutobahnM != null ? `${fmt(k.merkmale.kulisse.abstandAutobahnM)} m` : "> 600 m"} / {k.merkmale.kulisse.abstandSchieneM != null ? `${fmt(k.merkmale.kulisse.abstandSchieneM)} m` : "> 600 m"}</Zeile>
+            </dl>
+          )}
           {k.widmung?.text && <p className="mt-1 text-[11.5px] text-ink-500">{k.widmung.text}</p>}
         </section>
 
@@ -344,7 +362,7 @@ function AnschreibenDialog({ kandidat, onSchliessen }) {
 
 // ------------------------------------------------------------------------------------------------ Hauptkomponente
 
-const FILTER_START = { minHa: "2", maxTrasseKm: "", minScore: "", ampel: "", bundesland: "", bezirk: "", gemeinde: "" };
+const FILTER_START = { minHa: "2", maxTrasseKm: "", minScore: "", ampel: "", land: "", bundesland: "", bezirk: "", gemeinde: "" };
 
 export default function AkquiseKarte({ darfSchreiben = false }) {
   const kartenRef = useRef(null);
@@ -357,7 +375,9 @@ export default function AkquiseKarte({ darfSchreiben = false }) {
   const [info, setInfo] = useState(null);
   const [fehler, setFehler] = useState("");
   const [grund, setGrund] = useState("grau");
-  const [sicht, setSicht] = useState({ kandidaten: true, heat: true, uw: true, trafo: true, schutz: true, zonen: false, radius: true });
+  const [sicht, setSicht] = useState({ kandidaten: true, heat: true, uw: true, trafo: true, schutz: true, zonen: false, radius: true, verkehr: true });
+  const router = useRouter();
+  const [kampagne, setKampagne] = useState({ offen: false, name: "", laeuft: false, fehler: "" });
   const [filter, setFilter] = useState(FILTER_START);
   const [liste, setListe] = useState([]);
   const [anzahl, setAnzahl] = useState(0);
@@ -398,8 +418,9 @@ export default function AkquiseKarte({ darfSchreiben = false }) {
       ebenenRef.current.grau = Lf.tileLayer(`${BASEMAP}/bmapgrau/normal/google3857/{z}/{y}/{x}.png`, opt);
       ebenenRef.current.ortho = Lf.tileLayer(`${BASEMAP}/bmaporthofoto30cm/normal/google3857/{z}/{y}/{x}.jpeg`, opt);
       ebenenRef.current.overlay = Lf.tileLayer(`${BASEMAP}/bmapoverlay/normal/google3857/{z}/{y}/{x}.png`, { maxZoom: 19 });
+      ebenenRef.current.topplus = Lf.tileLayer(TOPPLUS, { maxZoom: 18, attribution: ATTRIBUTION_DE }); // Deutschland (A1b)
       ebenenRef.current.grau.addTo(m);
-      for (const name of ["schutz", "zonen", "heat", "kandidaten", "netz", "radius", "mess"]) ebenenRef.current[name] = Lf.layerGroup().addTo(m);
+      for (const name of ["schutz", "zonen", "verkehr", "heat", "kandidaten", "netz", "radius", "mess"]) ebenenRef.current[name] = Lf.layerGroup().addTo(m);
       Lf.control.scale({ imperial: false }).addTo(m);
       m.on("zoomend", () => setZoom(m.getZoom()));
       karte.current = m;
@@ -417,11 +438,12 @@ export default function AkquiseKarte({ darfSchreiben = false }) {
     const m = karte.current;
     const e = ebenenRef.current;
     if (!bereit || !m) return;
-    for (const t of ["grau", "ortho", "overlay"]) if (m.hasLayer(e[t])) m.removeLayer(e[t]);
+    for (const t of ["grau", "ortho", "overlay", "topplus"]) if (m.hasLayer(e[t])) m.removeLayer(e[t]);
     if (grund === "ortho") {
       e.ortho.addTo(m).bringToBack();
       e.overlay.addTo(m);
-    } else e.grau.addTo(m).bringToBack();
+    } else if (grund === "topplus") e.topplus.addTo(m).bringToBack();
+    else e.grau.addTo(m).bringToBack();
   }, [grund, bereit]);
 
   // Übersicht (Quellen, Kennzahlen, Gebiete, Ziele)
@@ -490,11 +512,19 @@ export default function AkquiseKarte({ darfSchreiben = false }) {
     const bbox = bboxVonKarte(m);
     const arten = ["uew", "uw110", "ms", ...(z >= 12 && sicht.trafo ? ["trafo"] : [])].filter((a) => a === "trafo" || sicht.uw);
     try {
-      const [netz, schutz, zonen] = await Promise.all([
+      const [netz, schutz, zonen, verkehr] = await Promise.all([
         arten.length && z >= 7 ? holen(`/api/admin/geodaten/netz?bbox=${bbox}&arten=${arten.join(",")}`) : { features: [] },
         sicht.schutz && z >= 9 ? holen(`/api/admin/geodaten/ebenen/schutzgebiete?bbox=${bbox}`) : { features: [] },
         sicht.zonen && z >= 8 ? holen(`/api/admin/geodaten/ebenen/zonen?bbox=${bbox}`) : { features: [] },
+        sicht.verkehr && z >= 10 ? holen(`/api/admin/geodaten/ebenen/verkehr?bbox=${bbox}`) : { features: [] },
       ]);
+      e.verkehr.clearLayers();
+      for (const f of verkehr.features || []) {
+        const ab = f.properties.art === "autobahn";
+        Lf.geoJSON(f, { style: { color: ab ? "#b45309" : "#394050", weight: ab ? 3 : Number(f.properties.gleise) >= 2 ? 2.5 : 1.5, dashArray: ab ? null : "5 4", opacity: 0.85 } })
+          .bindTooltip(`${f.properties.name || (ab ? "Autobahn" : "Schiene")}${ab ? "" : ` · ${Number(f.properties.gleise) >= 2 ? "zweigleisig" : "eingleisig"} (geschätzt)`}`)
+          .addTo(e.verkehr);
+      }
       e.netz.clearLayers();
       for (const f of netz.features || []) {
         const p = f.properties;
@@ -521,7 +551,7 @@ export default function AkquiseKarte({ darfSchreiben = false }) {
     } catch (err) {
       setFehler(err.message);
     }
-  }, [sicht.uw, sicht.trafo, sicht.schutz, sicht.zonen]);
+  }, [sicht.uw, sicht.trafo, sicht.schutz, sicht.zonen, sicht.verkehr]);
 
   useEffect(() => {
     const m = karte.current;
@@ -694,6 +724,23 @@ export default function AkquiseKarte({ darfSchreiben = false }) {
       <div className="flex-1 overflow-y-auto p-4">
         {tab === "filter" && (
           <div className="space-y-4">
+            {info?.regionen?.length > 1 && (
+              <div>
+                <p className="mb-1 text-[13px] font-semibold text-ink-700">Gebiet</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {info.regionen.map((r) => (
+                    <button key={r.id} type="button" onClick={() => { karte.current?.setView([r.mitte[1], r.mitte[0]], r.zoom); setGrund(r.land === "AT" ? "grau" : "topplus"); setF("land", r.land); }} className={cn("h-9 rounded-full px-2 text-[12.5px] font-semibold ring-1 ring-inset", filter.land === r.land ? "bg-navy-700 text-white ring-navy-700" : "bg-white text-ink-700 ring-ink-200")}>{r.label.split(" (")[0]}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <label className="block">
+              <span className="mb-1 block text-[13px] font-semibold text-ink-700">Land</span>
+              <select value={filter.land} onChange={(e) => setF("land", e.target.value)} className={cn(auswahlfeld, "h-10")}>
+                <option value="">alle</option>
+                {(g.laender || []).map((w) => <option key={w.name} value={w.name}>{{ AT: "Österreich", DE: "Deutschland", CH: "Schweiz" }[w.name] || w.name} ({w.anzahl})</option>)}
+              </select>
+            </label>
             <label className="block">
               <span className="mb-1 flex justify-between text-[13px] font-semibold text-ink-700"><span>Mindestgröße</span><span className="ov-num">{filter.minHa || 0} ha</span></span>
               <input type="range" min="0" max="50" step="1" value={filter.minHa || 0} onChange={(e) => setF("minHa", e.target.value)} className="ov-range w-full" />
@@ -735,6 +782,35 @@ export default function AkquiseKarte({ darfSchreiben = false }) {
                 <button type="button" onClick={() => setUmkreis(null)} className="rounded-full p-1 hover:bg-white" aria-label="Umkreis-Suche beenden"><X className="h-4 w-4" aria-hidden="true" /></button>
               </div>
             )}
+            {darfSchreiben && anzeige.length > 0 && (
+              <div className="mb-3 rounded-2xl bg-sand-50 p-3 ring-1 ring-ink-100">
+                {kampagne.offen ? (
+                  <form className="space-y-2" onSubmit={async (e) => {
+                    e.preventDefault();
+                    setKampagne((x) => ({ ...x, laeuft: true, fehler: "" }));
+                    try {
+                      const ids = anzeige.filter((k) => k.ampel !== "rot").slice(0, 300).map((k) => k.id);
+                      const r = await senden("/api/admin/geodaten/kampagnen", { body: { name: kampagne.name, kandidatIds: ids } });
+                      router.push(`/portal/admin/akquise/kampagnen/${r.kampagne.id}`);
+                    } catch (err) {
+                      setKampagne((x) => ({ ...x, laeuft: false, fehler: err.message }));
+                    }
+                  }}>
+                    <p className="text-[12.5px] text-ink-600">{anzeige.filter((k) => k.ampel !== "rot").length} Flächen (ohne rote, max. 300) – ein Land je Kampagne.</p>
+                    <input required minLength={3} value={kampagne.name} onChange={(e) => setKampagne({ ...kampagne, name: e.target.value })} placeholder="Name der Kampagne" aria-label="Name der Kampagne" className={cn(eingabe, "h-10")} />
+                    <div className="flex gap-2">
+                      <button type="submit" disabled={kampagne.laeuft} className="h-9 flex-1 rounded-full bg-ov-600 text-[13px] font-semibold text-white hover:bg-ov-700 disabled:opacity-60">Anlegen</button>
+                      <button type="button" onClick={() => setKampagne({ offen: false, name: "", laeuft: false, fehler: "" })} className="h-9 rounded-full bg-white px-3 text-[13px] font-semibold text-ink-700 ring-1 ring-inset ring-ink-200">Abbrechen</button>
+                    </div>
+                    <FehlerBox>{kampagne.fehler}</FehlerBox>
+                  </form>
+                ) : (
+                  <button type="button" onClick={() => setKampagne({ ...kampagne, offen: true })} className="flex w-full items-center justify-center gap-1.5 text-[13px] font-semibold text-ov-700">
+                    <Megaphone className="h-4 w-4" aria-hidden="true" /> Kampagne aus dieser Liste bilden
+                  </button>
+                )}
+              </div>
+            )}
             {laedt && <p className="flex items-center gap-2 text-[13px] text-ink-500"><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> lädt …</p>}
             <ul className="divide-y divide-ink-100">
               {anzeige.map((k) => (
@@ -757,8 +833,8 @@ export default function AkquiseKarte({ darfSchreiben = false }) {
           <div className="space-y-3">
             <div>
               <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-ink-500">Grundkarte</p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {[["grau", "Grau"], ["ortho", "Orthofoto"]].map(([v, l]) => (
+              <div className="grid grid-cols-3 gap-1.5">
+                {[["grau", "Grau (AT)"], ["ortho", "Orthofoto (AT)"], ["topplus", "TopPlus (DE)"]].map(([v, l]) => (
                   <button key={v} type="button" aria-pressed={grund === v} onClick={() => setGrund(v)} className={cn("h-9 rounded-full text-[13px] font-semibold ring-1 ring-inset", grund === v ? "bg-navy-700 text-white ring-navy-700" : "bg-white text-ink-700 ring-ink-200")}>{l}</button>
                 ))}
               </div>
@@ -771,6 +847,7 @@ export default function AkquiseKarte({ darfSchreiben = false }) {
               <Schalter an={sicht.trafo} onChange={(v) => setSicht({ ...sicht, trafo: v })} farbe={KNOTEN_STIL.trafo.farbe}>Trafostationen (ab Zoom 12)</Schalter>
               <Schalter an={sicht.schutz} onChange={(v) => setSicht({ ...sicht, schutz: v })} farbe={SCHUTZ_FARBE.natura2000}>Schutzgebiete</Schalter>
               <Schalter an={sicht.zonen} onChange={(v) => setSicht({ ...sicht, zonen: v })} farbe="#0b4488">Zonen / OÖ-Prioritätsradien</Schalter>
+              <Schalter an={sicht.verkehr} onChange={(v) => setSicht({ ...sicht, verkehr: v })} farbe="#b45309">Autobahn / Schiene (DE, EEG-Randstreifen)</Schalter>
               <Schalter an={sicht.radius} onChange={(v) => setSicht({ ...sicht, radius: v })} farbe="#003473">Radien & Trassenlinie</Schalter>
             </div>
             <div className="rounded-2xl bg-sand-50 p-3 text-[12px] text-ink-600 ring-1 ring-ink-100">

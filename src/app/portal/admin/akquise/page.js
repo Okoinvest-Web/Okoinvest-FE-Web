@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlarmClock, Gauge, LandPlot, MapPinned, Search, Star, UserX } from "lucide-react";
+import { AlarmClock, Gauge, LandPlot, Landmark, MapPinned, Megaphone, Search, Star, UserX } from "lucide-react";
 import { Karte, Kennzahl, SeitenKopf } from "@/components/Portal/ui";
 import { auswahlfeld, eingabe } from "@/components/Portal/felder";
 import { cn } from "@/components/ui/cn";
@@ -41,6 +41,24 @@ export default async function AdminAkquise({ searchParams }) {
           </span>
           <span className="hidden rounded-full bg-ov-600 px-4 py-2 text-[14px] font-semibold sm:inline">Karte öffnen</span>
         </Link>
+      )}
+      {darfLesen(n, "geodaten") && ( // Akquise Ausbaustufe 2: Kampagnen und Gemeinde-Screening
+        <div className="grid gap-4 md:grid-cols-2">
+          <Link href="/portal/admin/akquise/kampagnen" className="ov-card-hover flex items-center gap-4 rounded-3xl bg-white p-5 ring-1 ring-ink-200/70">
+            <Megaphone aria-hidden="true" className="h-7 w-7 shrink-0 text-ov-600" />
+            <span className="min-w-0 flex-1">
+              <span className="block font-display text-[16px] font-bold text-ink-900">Akquise-Kampagnen</span>
+              <span className="block text-[13px] text-ink-600">Grundbuch, Serienbrief mit persönlichem Link, Rücklauf, Nachfassen, Sperrliste.</span>
+            </span>
+          </Link>
+          <Link href="/portal/admin/akquise/gemeinden" className="ov-card-hover flex items-center gap-4 rounded-3xl bg-white p-5 ring-1 ring-ink-200/70">
+            <Landmark aria-hidden="true" className="h-7 w-7 shrink-0 text-ov-600" />
+            <span className="min-w-0 flex-1">
+              <span className="block font-display text-[16px] font-bold text-ink-900">Gemeinde-Screening</span>
+              <span className="block text-[13px] text-ink-600">Ranking der Gemeinden nach Potenzial, Netz, Bauleitplanung und Wettbewerb.</span>
+            </span>
+          </Link>
+        </div>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

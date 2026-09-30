@@ -24,7 +24,7 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 - [x] **B0b Dach-Contracting mit Dienstbarkeit** – Dachnutzungs-/Servitutsvertrag (AT Servitut, DE beschränkte persönliche Dienstbarkeit, CH Dienstbarkeit), Grundbuch-Eintragungsablauf (Vertrag, Beglaubigung/Notar, Grundbuchsgesuch, Rang, Rangrücktritt Bank, Eintragungsbestätigung), Fristen, Verknüpfung mit Contracting-Vertrag und Anlage
 - [x] **B1 Onboarding-Assistenten je Rolle und Unterrolle** (+ eigene Rolle `kommune` mit Menü /portal/kommune) (Investor je Typ, Anbieter/Verkäufer Projekt & Bestandsanlage, Flächen-/Dach-Eigentümer, Landwirt, Contracting-Kunde, Reststrom-Kunde, Kommune, Gutachter, Backoffice je Unterrolle)
 - [x] **B2 Investor-Finanzierungscockpit** – ROI je Projekt nach Login, Finanzierungsvergleich (Eigenkapital, Annuitätenkredit, Förderkredit KfW/aws/OeKB, Leasing, Mietkauf), Förder-Check je Land (EEG/EAG/Einmalvergütung/Investitionszuschüsse), Steuern (AfA), Szenarien speichern, PDF
-- [~] **B3 Planungsdateien & Projektkosten** (läuft) – DWG/DXF-Upload mit Vorschau (DXF im Browser, DWG → Konvertierungsdienst), Projektkostenkalkulation nach Gewerken inkl. Netzanschluss aus Akquise-Distanz, Anbindung Projektentwicklung/ERPNext
+- [x] **B3 Planungsdateien & Projektkosten** – DWG/DXF-Upload mit Vorschau (DXF im Browser, DWG → Konvertierungsdienst), Projektkostenkalkulation nach Gewerken inkl. Netzanschluss aus Akquise-Distanz, Anbindung Projektentwicklung/ERPNext
 - [x] **B4 Deal-Abschluss end-to-end** – Kaufvertrag-Vorlagen (SPA Asset/Share Deal), Signatur, Notartermin, Closing-Checkliste, Kaufpreiszahlung/Treuhand-Hinweis, automatische Provisionsrechnung, Übergabe
 
 ## Nacharbeiten aus Berichten (in der Integrationsphase erledigen)
@@ -50,7 +50,9 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 - [ ] Frappe: `energie_quellen.historie_laden` einmalig nach Installation (GO-LIVE.md)
 - [ ] `rechte.py`: Spalte `projektleitung` ergänzen (finanzen=1, passend zu rechte.js)
 - [ ] Steuer-/Rechtspunkte Finanzen (Backend-Import/FINANZEN-ERPNEXT.md) mit Steuerberatung klären; UID eintragen
-- [ ] Datenschutzerklärung: Abschnitte für Geodaten/Akquise-Direktwerbung, Energiebeschaffung (Lastgänge an Lieferanten anonymisiert), Bank-Portal, Signatur, Terminbuchung
+- [x] Datenschutzerklärung: Abschnitte für Geodaten/Akquise-Direktwerbung, Energiebeschaffung (Lastgänge an Lieferanten anonymisiert), Bank-Portal, Signatur, Terminbuchung (Recht-Team, anwaltliche Prüfung offen)
+- [x] Nutzungsbedingungen §§ 1–22, Besondere Bedingungen unter /bedingungen/* (Entwurf, noindex), Handbücher je Rolle und Backoffice-Unterrolle, Prozesslandkarte (docs/handbuch/)
+- [ ] Nach anwaltlicher Freigabe: `FREIGEGEBEN = true` in src/app/bedingungen/_teile.js, dann /bedingungen/* in Footer (Rechtliches) und Sitemap aufnehmen; Platzhalter (Vergütung, Fristen, Anbieter, Gerichtsstand) füllen; offene Rechtsfragen (GwG-Verpflichteter, Art. 9 Online-Ident, Grundbuch-Direktansprache, Drittland KI, WAG/KWG/§ 34c GewO, MaklerG) klären
 
 - [ ] Muster-Verträge Grundbuch/Closing je Land anwaltlich/notariell freigeben, Gebührentabellen (GNotKG, GGG/GebG, kantonal) aktualisieren – siehe docs/GRUNDBUCH-CLOSING.md Abschnitt 9
 

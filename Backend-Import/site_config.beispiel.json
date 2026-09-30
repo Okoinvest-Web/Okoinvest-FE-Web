@@ -58,6 +58,10 @@
  "oekoinvest_helpdesk": false,
  "_oekoinvest_apps": "Schalter der optionalen Integrationen – wirken nur, wenn die App installiert ist.",
 
+ "cad_konverter_url": "http://cad-konverter:8080",
+ "cad_konverter_token": null,
+ "_cad_konverter": "Planungsdateien: DWG → DXF über Backend-Import/dienste/cad-konverter (internes Netz). Token ≥ 32 Zeichen per bench set-config setzen, nie hier eintragen. Ohne beide Werte: „Vorschau nach Konvertierung“.",
+
  "allow_tests": false,
  "developer_mode": 0,
  "_betrieb": "Produktion: developer_mode 0, allow_tests false. Tests nur auf einer eigenen Test-Site."

@@ -12,12 +12,12 @@ import { usePathname } from "next/navigation";
  * - Google Consent Mode v2: Standard „denied“, nach Einwilligung nur analytics_storage „granted“
  *   (keine Werbe-/Personalisierungsfreigaben).
  * - Widerruf: Messung wird sofort gestoppt und die _ga-Cookies werden gelöscht.
- * - Seiten mit Einmal-Tokens (/scan, /fortsetzen) und die Info-Bildschirme (/tv) werden nie gemessen;
+ * - Seiten mit Einmal-Tokens (/scan, /fortsetzen, /angebot) und die Info-Bildschirme (/tv) werden nie gemessen;
  *   von URL-Parametern werden nur utm_* übertragen.
  */
 // Eigene GA4-Property für ÖkoInvest – ohne Mess-ID wird nichts geladen (nie die ID der DE-Seite)
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || null;
-const AUSGENOMMEN = /^\/(scan|fortsetzen|tv)(\/|$)/;
+const AUSGENOMMEN = /^\/(scan|fortsetzen|tv|angebot)(\/|$)/; // angebot: persönliche Einmalcodes der Akquise-Kampagnen
 
 export function statistikErlaubt() {
   if (typeof document === "undefined") return false;

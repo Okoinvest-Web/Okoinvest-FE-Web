@@ -10,14 +10,25 @@
 // Platzhalter in «…» werden beim Serienbrief aus dem CRM-Kontakt befüllt (Name, Anschrift), nie aus dem Geodaten-Dienst.
 
 import { GESELLSCHAFT, SITE, abs } from "@/data/site";
+import { briefFuer } from "./serienbrief";
 
 const ha = (x) => `${(Math.round(Number(x) * 10) / 10).toLocaleString("de-DE")} ha`;
 
 export const DSGVO_HINWEIS =
   "Direktwerbung an Eigentümer nur per Brief und nur einmalig ohne Reaktion; Telefon/E-Mail erst nach Einwilligung (§ 174 TKG 2021). Datenquelle (Grundbuch) und Widerspruchsrecht im Brief nennen (Art. 14, Art. 21 DSGVO). Widersprüche sofort im CRM als Sperrvermerk erfassen. Die Vorlage vor dem ersten Einsatz von der Datenschutzberatung freigeben lassen.";
 
+export const DSGVO_HINWEIS_DE_CH =
+  "Direktwerbung an Eigentümer nur per Brief (Art. 6 Abs. 1 lit. f DSGVO, § 7 UWG); Telefon und E-Mail nur mit vorheriger ausdrücklicher Einwilligung (§ 7 Abs. 2 UWG). Datenquelle (Grundbuch – DE: § 12 GBO/§ 43a GBV, CH: Art. 970 ZGB) und Widerspruchsrecht im Brief nennen. Für Serienbriefe mit persönlichem Link, Sperrliste und Nachfassen: Akquise-Kampagnen.";
+
 /** Liefert { betreff, text, hinweis } für einen Kandidaten (Objekt aus dem Geodaten-Adapter) */
 export function anschreiben(k, { datum = new Date() } = {}) {
+  if (k.land && k.land !== "AT") {
+    // Deutschland/Schweiz (A1b): gleicher Brief wie der Serienbrief der Kampagnen, Platzhalter statt Eigentümerdaten
+    const b = briefFuer({ id: "Vorlage", name: "Anschreiben", land: k.land }, { ...k, id: k.id }, { anrede: "", vorname: "«Vorname»", nachname: "«Nachname»", strasse: "«Straße Hausnummer»", plz: "«PLZ»", ort: "«Ort»", code: "XXXXXXXXXX" }, { basisUrl: SITE.url, datum });
+    const text = [b.absenderZeile, "", ...b.anschrift, "", b.datum, "", b.betreff, "", b.text, "", b.keinInteresse, "", "Persönlicher Link (Einmalcode je Empfänger, nur in Kampagnen): " + b.link, "", ...b.gruss, "", b.widerspruch, "", "— Datenschutzinformation —", ...b.datenschutz].join("
+");
+    return { betreff: b.betreff, text, hinweis: DSGVO_HINWEIS_DE_CH, absender: SITE.firma };
+  }
   const grundstuecke = (k.parzellen || []).map((p) => `KG ${p.kgNr || "«KG»"}, Gst.-Nr. ${p.gstNr || "«Gst.-Nr.»"}`);
   const liste = grundstuecke.length > 4 ? `${grundstuecke.slice(0, 4).join("; ")} und ${grundstuecke.length - 4} weitere` : grundstuecke.join("; ");
   const d = datum.toLocaleDateString("de-AT", { day: "2-digit", month: "long", year: "numeric", timeZone: "Europe/Vienna" });

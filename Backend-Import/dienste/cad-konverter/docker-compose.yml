@@ -1,0 +1,45 @@
+# CAD-Konverter im internen Netz: kein Internetzugang (internal: true), Nicht-root, Dateisystem schreibgeschützt (nur /tmp
+# als tmpfs), keine Linux-Capabilities, keine Rechteausweitung, Speicher-/Prozess-Limits. Erreichbar nur für Frappe bzw.
+# den Next.js-Server im selben internen Netz (Port nicht nach außen veröffentlichen).
+#
+#   KONVERTER_TOKEN=$(openssl rand -hex 32) docker compose up -d --build
+#
+# Frappe:   bench --site <site> set-config cad_konverter_url http://cad-konverter:8080
+#           bench --site <site> set-config cad_konverter_token <Token>
+# Website:  CAD_KONVERTER_URL=http://cad-konverter:8080  CAD_KONVERTER_TOKEN=<Token>   (nur im Demo-Backend genutzt)
+
+services:
+  cad-konverter:
+    build:
+      context: .
+      args:
+        LIBREDWG_VERSION: "0.13.3"
+        LIBREDWG_SHA256: "${LIBREDWG_SHA256:-}"
+    image: oekoinvest/cad-konverter:latest
+    restart: unless-stopped
+    environment:
+      KONVERTER_TOKEN: "${KONVERTER_TOKEN:?KONVERTER_TOKEN setzen (mind. 32 Zeichen)}"
+      KONVERTER: "libredwg"
+      KONVERTER_MAX_MB: "30"
+      KONVERTER_ZEIT_S: "90"
+      KONVERTER_SPEICHER_MB: "1536"
+      KONVERTER_PARALLEL: "2"
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 2g
+    cpus: 2
+    expose:
+      - "8080"
+    networks:
+      - cad-intern
+
+networks:
+  cad-intern:
+    # kein Weg ins Internet; Frappe/Next.js-Container zusätzlich an dieses Netz hängen
+    internal: true

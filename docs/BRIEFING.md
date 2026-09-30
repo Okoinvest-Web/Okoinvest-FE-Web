@@ -77,3 +77,13 @@ Mehrere Teams arbeiten GLEICHZEITIG an der Plattform im selben Arbeitsverzeichni
 3. Visuelle Prüfungen bündeln (wenige, gezielte Aufnahmen statt Serien). Wenn der Server langsam ist (> 60 s): 5 Minuten warten statt erneut feuern.
 4. Timeouts großzügig (180 s), `waitUntil: "load"` statt `networkidle`.
 5. **Keine awaited Dateizugriffe (`fs.promises`) in Pfaden, die beim Rendern laufen** – React 19 übernimmt im Dev-Modus deren Rückgabewerte ins HTML (so war die komplette Demo-DB inkl. Passwort-Hashes öffentlich sichtbar). Synchron lesen (`readFileSync`) oder außerhalb des Renderns.
+
+## Ausbaustufe 4 – Frappe/ERPNext-Ökosystem (Stand nach Stufe 3: 724 Plattform-Prüfungen grün)
+
+Zielbild: **Frappe/`oekoinvest_app` = Kern**, **ERPNext** = Finanzen (Sales/Purchase Invoice, Payment Entry, Subscription), Projekte (Project/Task/Timesheet), Anlagenbuchhaltung (Asset); **HRMS** = Employee, Holiday List, Leave Application, Timesheet; **Frappe Drive** = Dokumentenablage; **Helpdesk** = HD Ticket; **Insights** = BI. Next.js bleibt das Portal für Externe.
+Regeln:
+- Jede Integration **optional**: nur aktiv, wenn die App installiert ist (`"erpnext" in frappe.get_installed_apps()` bzw. `hrms`, `drive`, `helpdesk`) und ein Schalter in `site_config` gesetzt ist. Ohne die App läuft alles wie bisher. Kein harter `required_apps`-Eintrag.
+- Nur dokumentierte Standard-DocTypes/Felder von Frappe v15 / ERPNext v15 / HRMS v15 verwenden; wo unsicher (v. a. Drive, Helpdesk), Zugriff über eine kleine Adapter-Schicht mit klarer Fehlermeldung kapseln und in der Doku als „vor Einsatz gegen installierte Version prüfen“ markieren.
+- Keine Bench vorhanden: Python mit `py_compile`, JSON mit `json.tool`, Logik soweit möglich als reine Funktionen mit `python -m unittest` (Frappe-Stub) testen; FrappeTestCase-Tests zusätzlich schreiben.
+- Demo-Backend bildet die neuen Funktionen realistisch nach (ohne ERPNext), damit das Portal vollständig vorführbar bleibt.
+- Weiterhin gelten alle Spielregeln und Ressourcenregeln oben. **Dev-Server sparsam**: erst Frappe/Logik, am Ende wenige gezielte Screenshots; den großen Test fährt der Koordinator.

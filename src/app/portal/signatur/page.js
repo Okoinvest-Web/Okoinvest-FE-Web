@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FileSignature, ShieldCheck } from "lucide-react";
 import { Hinweis, Karte, Leer, SeitenKopf } from "@/components/Portal/ui";
 import { VorgangZeile } from "@/components/Portal/Signatur/teile";
@@ -35,8 +36,8 @@ export default async function SignaturSeite({ searchParams }) {
       />
       {bo && (
         <nav aria-label="Ansicht" className="mb-5 flex gap-2">
-          <a href="/portal/signatur" className={`rounded-full px-4 py-2 text-[14px] font-semibold ${alle ? "bg-navy-900 text-white" : "bg-white text-ink-700 ring-1 ring-ink-200"}`}>Alle Vorgänge</a>
-          <a href="/portal/signatur?ansicht=meine" className={`rounded-full px-4 py-2 text-[14px] font-semibold ${!alle ? "bg-navy-900 text-white" : "bg-white text-ink-700 ring-1 ring-ink-200"}`}>Meine</a>
+          <Link href="/portal/signatur" className={`rounded-full px-4 py-2 text-[14px] font-semibold ${alle ? "bg-navy-900 text-white" : "bg-white text-ink-700 ring-1 ring-ink-200"}`}>Alle Vorgänge</Link>
+          <Link href="/portal/signatur?ansicht=meine" className={`rounded-full px-4 py-2 text-[14px] font-semibold ${!alle ? "bg-navy-900 text-white" : "bg-white text-ink-700 ring-1 ring-ink-200"}`}>Meine</Link>
         </nav>
       )}
       {meineOffen.length > 0 && (

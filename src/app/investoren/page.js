@@ -301,7 +301,7 @@ export default function InvestorenSeite() {
         items={[
           { href: "/projektboerse", titel: "Projektbörse", text: "Aktuelle Projekte im DACH-Raum – Exposé-Teaser öffentlich, Details nach NDA." },
           { href: "/rechner/solarpark", titel: "Solarpark-Renditerechner", text: "IRR, LCOE und DSCR über die gesamte Laufzeit durchrechnen." },
-          { href: "/grossspeicher", titel: "Großspeicher", text: "Co-Location und Stand-alone: Erlösquellen, Netz und Technik." },
+          { href: "/bestandsanlagen", titel: "Bestandsanlagen", text: "Laufende Parks kaufen: Ertragswert, Restlaufzeit EEG, technische Due Diligence." },
           { href: "/ratgeber/projektrechte-kaufen-due-diligence", titel: "Ratgeber Due Diligence", text: "Worauf es beim Kauf von Projektrechten im Detail ankommt." },
         ]}
       />

@@ -330,7 +330,7 @@ export default function FlaecheVerpachtenPage() {
         items={[
           { href: "/rechner/pacht", titel: "Pachtrechner", text: "Fest, indexiert oder Umsatzbeteiligung – Ihre Pacht über 30 Jahre im Vergleich zum Ackerbau." },
           { href: "/flaechencheck", titel: "Flächencheck", text: "Ampel, Leistung und Pachtspanne Ihrer Fläche in zwei Minuten." },
-          { href: "/freiflaeche", titel: "Freiflächen-PV", text: "Flächenkriterien, EEG-Kulisse, Genehmigung und Ökologie im Detail." },
+          { href: "/dachflaeche-verpachten", titel: "Dachfläche verpachten", text: "Gewerbe-, Hallen- und Stalldächer ab etwa 1.000 m² – Pacht, Dachstrom oder Sanierung als Gegenleistung." },
           { href: "/landwirte", titel: "Für Landwirte", text: "Verpachten, selbst investieren oder beteiligen – die vier Wege mit Agri-PV." },
         ]}
       />

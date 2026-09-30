@@ -39,6 +39,7 @@ export const NAVIGATION = [
         label: "Sie haben …",
         items: [
           { name: "Flächeneigentümer", href: "/flaeche-verpachten", icon: "MapPinned", text: "Fläche verpachten, sichere Pacht für 30+ Jahre" },
+          { name: "Dacheigentümer", href: "/dachflaeche-verpachten", icon: "Warehouse", text: "Gewerbe- und Hallendächer verpachten" },
           { name: "Landwirte", href: "/landwirte", icon: "Tractor", text: "Agri-PV: verpachten, selbst investieren oder beteiligen" },
           { name: "Projektentwickler", href: "/projektboerse/anbieten", icon: "FolderUp", text: "Projekte über die Börse vermarkten" },
         ],
@@ -65,7 +66,9 @@ export const NAVIGATION = [
           { name: "Projekte entdecken", href: "/projektboerse", icon: "LayoutGrid", text: "Von Projektrechten bis Bestandsanlage" },
           { name: "Projekt anbieten", href: "/projektboerse/anbieten", icon: "FolderUp", text: "Inserieren, prüfen lassen, verkaufen" },
           { name: "Für Investoren", href: "/investoren", icon: "LineChart", text: "Suchprofil, NDA, Datenraum" },
+          { name: "Bestandsanlagen", href: "/bestandsanlagen", icon: "Gauge", text: "Laufende Parks kaufen und verkaufen" },
           { name: "Projekt bewerten", href: "/rechner/projektbewertung", icon: "Scale", text: "Kaufpreis je kWp nach Projektphase" },
+          { name: "Bestand bewerten", href: "/rechner/bestandsanlage", icon: "LineChart", text: "Ertragswert nach DCF" },
         ],
       },
     ],
@@ -107,6 +110,7 @@ export const NAVIGATION = [
           { name: "Pachtrechner", href: "/rechner/pacht", icon: "HandCoins", text: "Pacht über 30 Jahre vs. Ackerbau" },
           { name: "Agri-PV-Rechner", href: "/rechner/agri-pv", icon: "Sprout", text: "Verpachten, investieren oder beteiligen" },
           { name: "Pachtangebot prüfen", href: "/rechner/pachtangebot-check", icon: "FileSearch", text: "Klausel-Check mit Ampel und Barwert" },
+          { name: "Dachpacht-Rechner", href: "/rechner/dachpacht", icon: "Warehouse", text: "Gewerbedach: Pacht, PPA oder Invest" },
           { name: "Netzanschluss-Check", href: "/rechner/netzanschluss", icon: "Cable", text: "Kosten, Zeitrahmen, Risiken" },
         ],
       },
@@ -151,6 +155,7 @@ export const NAVIGATION = [
         items: [
           { name: "Über ÖkoInvest", href: "/unternehmen", icon: "Building2", text: "Gruppe, Gesellschaften, Pipeline" },
           { name: "Referenzen", href: "/referenzen", icon: "BadgeCheck", text: "Seit 2012 eigene Solarparks – belegt" },
+          { name: "Warum ÖkoInvest", href: "/warum-oekoinvest", icon: "Scale", text: "Marktplatz, Makler oder Entwickler-Plattform?" },
           { name: "English", href: "/en", icon: "Globe", text: "For international investors" },
           { name: "Kontakt", href: "/kontakt", icon: "MessageCircle", text: "Anfrage an das Projektteam" },
           { name: "Login", href: "/login", icon: "LogIn", text: "Portal für Partner und Kunden" },

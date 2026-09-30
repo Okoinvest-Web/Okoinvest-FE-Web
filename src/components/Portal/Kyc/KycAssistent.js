@@ -18,6 +18,9 @@ import {
   KYC_DOKUMENTE, KYC_KONTOTYPEN, KYC_KONTROLLE_ARTEN, KYC_LAENDER, KYC_MITTEL_QUELLEN, KYC_REGISTER, KYC_SCHWAERZEN_HINWEIS, KYC_TICKETS, KYC_UPLOAD, ibanPruefen,
 } from "@/lib/plattform/kyc";
 import { Fortschritt, KycStatusBadge } from "./teile";
+import MrzEingabe from "./MrzEingabe"; // Eigene Identifizierung: MRZ abtippen (Schritt „Ausweis“)
+import VideoTermin from "./VideoTermin"; // Eigene Identifizierung: Videotermin mit der Compliance
+import MethodenWahl from "./MethodenWahl"; // Eigene Identifizierung: Wege mit Empfehlung
 
 const LAENDER_OPTIONEN = Object.entries(KYC_LAENDER);
 
@@ -184,6 +187,7 @@ export default function KycAssistent({ start, rollen = [] }) {
   const schritte = useMemo(() => [
     { id: "start", label: "Kontotyp" },
     { id: "person", label: "Person" },
+    { id: "weg", label: "Identifizierung" },
     { id: "ausweis", label: "Ausweis" },
     typ === "unternehmen" && { id: "firma", label: "Unternehmen" },
     typ === "unternehmen" && { id: "berechtigte", label: "Berechtigte & Vertreter" },
@@ -210,9 +214,10 @@ export default function KycAssistent({ start, rollen = [] }) {
 
   const idx = schritte.findIndex((s) => s.id === schritt);
   // Schritt erledigt = alle Pflichtpunkte seiner Gruppen erfüllt (nicht nur „schon besucht“)
-  const GRUPPEN = { start: ["Start"], person: ["Angaben"], ausweis: ["Unterlagen"], firma: ["Unternehmen"], berechtigte: ["Wirtschaftlich Berechtigte", "Vertretung"], erklaerungen: ["Erklärungen"], auszahlung: ["Auszahlung", "Eigentum"] };
+  const GRUPPEN = { start: ["Start"], person: ["Angaben"], ausweis: ["Unterlagen", "Identifizierung"], firma: ["Unternehmen"], berechtigte: ["Wirtschaftlich Berechtigte", "Vertretung"], erklaerungen: ["Erklärungen"], auszahlung: ["Auszahlung", "Eigentum"] };
   const schrittOk = (id) => {
     if (id === "einreichen") return !!fall && !fall.bearbeitbar;
+    if (id === "weg") return !!fall?.methode;
     const punkte = (daten.anforderungen || []).filter((a) => (GRUPPEN[id] || []).includes(a.gruppe));
     const pflicht = punkte.filter((a) => a.pflicht);
     return !!fall && (pflicht.length ? pflicht.every((a) => a.erfuellt) : punkte.some((a) => a.erfuellt));
@@ -397,6 +402,16 @@ export default function KycAssistent({ start, rollen = [] }) {
           </Karte>
         )}
 
+        {schritt === "weg" && (
+          <Karte titel="Wie möchten Sie sich identifizieren?" untertitel="Wir empfehlen den schnellsten Weg, der für Ihre Angaben zulässig ist.">
+            <MethodenWahl methoden={daten.methoden || []} gewaehlt={fall?.methode || ""} bearbeitbar={bearbeitbar} onGespeichert={(r) => { setDaten((d) => ({ ...d, ...r })); if (r.fall?.methode === "video_intern" && naechster) setSchritt(naechster); }} />
+            <div className="mt-6 flex flex-wrap justify-between gap-3">
+              {zurueck}
+              <Button onClick={() => setSchritt(naechster)} pfeil>Weiter</Button>
+            </div>
+          </Karte>
+        )}
+
         {schritt === "ausweis" && (
           <Karte titel="Ausweis hochladen" untertitel="PDF, JPG oder PNG, höchstens 10 MB je Datei. Ihre Dateien werden verschlüsselt gespeichert.">
             <Hinweis ton="info" titel="Bitte vor dem Hochladen schwärzen" className="mb-4">{KYC_SCHWAERZEN_HINWEIS}</Hinweis>
@@ -409,7 +424,9 @@ export default function KycAssistent({ start, rollen = [] }) {
                   <Unterlage art="ausweis_hinten" label={KYC_DOKUMENTE.ausweis_hinten.label} hinweis="Anschrift und ausstellende Behörde müssen lesbar sein." dokumente={dokumente} bearbeitbar={bearbeitbar} onGeaendert={neuLaden} />
                 </>
               )}
-              <Unterlage art="selfie" label={KYC_DOKUMENTE.selfie.label} pflicht={false} hinweis="Hilft beim Abgleich mit dem Ausweisfoto. Eine Video- oder Online-Identifizierung erfolgt – falls nötig – nur über einen zugelassenen Anbieter." dokumente={dokumente} bearbeitbar={bearbeitbar} onGeaendert={neuLaden} />
+              <Unterlage art="selfie" label={KYC_DOKUMENTE.selfie.label} pflicht={false} hinweis="Hilft beim Abgleich mit dem Ausweisfoto." dokumente={dokumente} bearbeitbar={bearbeitbar} onGeaendert={neuLaden} />
+              <MrzEingabe key={fall?.mrz?.am || "neu"} person={person} gespeichert={fall?.mrz || null} bearbeitbar={bearbeitbar} pflicht={fall?.methode === "video_intern"} onGespeichert={(r) => setDaten((d) => ({ ...d, ...r }))} />
+              {fall?.methode === "video_intern" && <VideoTermin onGeaendert={neuLaden} />}
             </div>
             <div className="mt-6 flex flex-wrap justify-between gap-3">
               {zurueck}

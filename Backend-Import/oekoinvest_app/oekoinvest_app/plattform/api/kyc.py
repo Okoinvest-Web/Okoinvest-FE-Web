@@ -18,10 +18,12 @@
 import base64
 import binascii
 import json
+import re
 
 import frappe
 from frappe.utils import add_months, cint, flt, getdate, nowdate
 
+from oekoinvest_app.plattform import kyc_ident_kern as ik  # Eigene Identifizierung: MRZ, Wege, Videoidentifizierung
 from oekoinvest_app.plattform import kyc_kern as k
 from oekoinvest_app.plattform import validierung as v
 from oekoinvest_app.plattform.benachrichtigung import anlegen as benachrichtigen
@@ -103,7 +105,69 @@ def fall_dict(f, mit_dokumenten=True):
 		"bank": {"iban": b.get("iban") or "", "bic": b.get("bic") or "", "kontoinhaber": b.get("kontoinhaber") or "", "geprueft": bool(b.get("geprueft"))} if b else {},
 		"risiko": aus_json(f.risiko_json, {}) or ({"stufe": f.risiko} if f.risiko else {}), "sanktionen": aus_json(f.sanktionen_json, {}) or {},
 		"dokumente": [{"id": d.name, "art": d.art, "status": d.status, "geloescht": cint(d.geloescht), "flaecheId": d.flaeche, "personId": d.person_id, "ausgestelltAm": str(d.ausgestellt_am) if d.ausgestellt_am else None} for d in _dokumente(f.name)] if mit_dokumenten else [],
+		# Eigene Identifizierung: Weg, MRZ-Befund (ohne Zeilen), Video-Sicht (mit Termin), externe Ergebnisse (eID/Anbieter)
+		"methode": f.get("methode") or "", "mrz": aus_json(f.get("mrz_befund_json"), None), "video": video_sicht(f),
+		"pruefergebnisse": aus_json(f.pruefergebnisse_json, []) or [],
 	}
+
+
+# ================================================================ Eigene Identifizierung (MRZ, Video-Sicht)
+
+
+def methoden_liste():
+	"""KYC_METHODEN mit tatsächlicher eID-Verfügbarkeit (Team „eID“: api/eid.py, laut site_config startbare Verfahren)."""
+	try:
+		from oekoinvest_app.plattform.api import eid as eid_api
+
+		eid_ok = bool(eid_api.ek.verfuegbar(eid_api._conf, demo_erlaubt=eid_api._demo_erlaubt(), produktion=not frappe.conf.get("developer_mode")))
+	except Exception:  # noqa: BLE001 – eID-Modul fehlt/fehlerhaft: Weg nicht anbieten
+		eid_ok = False
+	return [{**m, "verfuegbar": bool(m["verfuegbar"] and eid_ok)} if m["id"] == "eid" else dict(m) for m in ik.KYC_METHODEN]
+
+
+def _mrz_soll(f):
+	p = aus_json(f.person_json, {}) or {}
+	return {"vorname": p.get("vorname"), "nachname": p.get("nachname"), "geburtsdatum": p.get("geburtsdatum"), "staatsangehoerigkeit": p.get("staatsangehoerigkeit"), "ausweis": p.get("ausweis") or {}}
+
+
+def mrz_setzen(f, zeilen, von=None):
+	"""MRZ bewerten (kyc_ident_kern.mrz_befund) und die Zeilen AES-256-GCM-verschlüsselt am Fall ablegen."""
+	befund = {**ik.mrz_befund(zeilen, _mrz_soll(f)), "am": iso(jetzt()), "vonId": von}
+	f.mrz_befund_json = als_json(befund)
+	f.mrz_ampel = befund["ampel"]
+	f.mrz_chiffrat = base64.b64encode(k.verschluesseln(json.dumps(zeilen).encode(), f"{f.name}:mrz")).decode()
+	return befund
+
+
+def mrz_zeilen_lesen(f):
+	if not f.get("mrz_chiffrat"):
+		return None
+	try:
+		return json.loads(k.entschluesseln(base64.b64decode(f.mrz_chiffrat), f"{f.name}:mrz").decode())
+	except Exception:  # noqa: BLE001 – beschädigt/anderer Schlüssel: Befund bleibt, Zeilen nicht lesbar
+		frappe.log_error(title="KYC: MRZ nicht lesbar", message=f.name)
+		return None
+
+
+def mrz_neu_bewerten(f):
+	z = mrz_zeilen_lesen(f)
+	if z:
+		mrz_setzen(f, z, (aus_json(f.mrz_befund_json, {}) or {}).get("vonId"))
+
+
+def ident_termin(konto_id):
+	"""Aktiver Termin der Art „identifizierung“ des Kontos (egal über welchen Weg gebucht)."""
+	from oekoinvest_app.plattform.termine.slots import zeitraum_text
+
+	t = frappe.get_all("Plattform Termin", filters={"konto_id": konto_id, "art": "identifizierung", "status": ["in", ["gebucht", "bestaetigt"]]}, fields=["name", "start", "ende", "status", "mitarbeiter_id"], order_by="start asc", limit_page_length=1) if konto_id else []
+	if not t:
+		return None
+	t = t[0]
+	return {"id": t.name, "start": iso(t.start), "ende": iso(t.ende), "zeitraum": zeitraum_text(iso(t.start), iso(t.ende)), "status": t.status, "mitarbeiterId": t.mitarbeiter_id}
+
+
+def video_sicht(f):
+	return ik.video_sicht((aus_json(f.get("video_json"), {}) or {}).get("protokolle") or [], ident_termin(f.konto))
 
 
 def _konto_rollen(konto_id):
@@ -137,6 +201,7 @@ def fall_fuer_nutzer(f):
 		"verlauf": [{"status": "in_pruefung" if x.get("status") == "zweitpruefung" else x.get("status"), "am": x.get("am"), "kommentar": "" if x.get("rolle") == "nutzer" else x.get("kommentar", "")} for x in aus_json(f.verlauf_json, []) or [] if x.get("oeffentlich", True)],
 		"bearbeitbar": f.status in k.BEARBEITBAR,
 		"dokumente": [dokument_meta(x) for x in _dokumente(f.name)],
+		"methode": d["methode"], "mrz": {kk: vv for kk, vv in (d["mrz"] or {}).items() if kk != "vonId"} or None, "video": ik.video_fuer_nutzer(d["video"]),
 	}
 
 
@@ -181,6 +246,8 @@ def _spalten_setzen(f):
 	f.pep = 1 if (pep.get("istPep") or pep.get("naheStehend") or any(u.pep for u in f.get("ubos") or [])) else 0
 	if not f.email:
 		f.email = frappe.db.get_value("Plattform Konto", f.konto, "email")
+	f.mrz_ampel = (aus_json(f.get("mrz_befund_json"), {}) or {}).get("ampel") or ""
+	f.video_status = video_sicht(f)["status"] if f.name else ""
 
 
 def _speichern(f):
@@ -271,7 +338,9 @@ def fall(als_benutzer=None):
 	st = k.kyc_status(n.id, (n.get("organisation") or {}).get("id"))
 	e = k.einstellungen()
 	sicht = "in_pruefung" if st["status"] == "zweitpruefung" else st["status"]
+	methoden = k.methoden_fuer(fall_dict(f) if f else {"investorTyp": _investor_typ(n)}, e, methoden_liste())
 	return {
+		"methoden": [{kk: m.get(kk) for kk in ("id", "label", "kurz", "text", "verfuegbar", "zulaessig", "grund", "empfohlen")} for m in methoden], "videoLink": e.get("videoLink") or "",
 		"fall": fall_fuer_nutzer(f), "anforderungen": anf, "fortschritt": k.fortschritt(anf),
 		"status": {**st, "status": sicht, "statusLabel": k.STATUS.get(sicht, sicht), "risiko": None},
 		"flaechen": _flaechen(n.id),
@@ -312,7 +381,7 @@ def speichern(abschnitt=None, daten=None, als_benutzer=None):
 	n = nutzer(als_benutzer)
 	d = aus_json(daten, {}) or {}
 	f = _eigener_fall(n)
-	if abschnitt not in ("kontotyp", "person", "firma", "ubos", "vertreter", "pep", "mittelherkunft", "steuer", "bank"):
+	if abschnitt not in ("kontotyp", "person", "firma", "ubos", "vertreter", "pep", "mittelherkunft", "steuer", "bank", "methode", "mrz"):
 		ungueltig("Unbekannter Abschnitt.")
 	if not f:
 		if abschnitt != "kontotyp":
@@ -340,6 +409,19 @@ def speichern(abschnitt=None, daten=None, als_benutzer=None):
 			f.organisation = None
 	elif abschnitt == "person":
 		f.person_json = als_json(_person(d))
+		if f.get("mrz_chiffrat"):
+			mrz_neu_bewerten(f)  # Abgleich MRZ ↔ Personenangaben aktuell halten
+	elif abschnitt == "methode":
+		m = next((x for x in k.methoden_fuer(fall_dict(f), k.einstellungen(), methoden_liste()) if x["id"] == d.get("methode")), None)
+		v.pflicht(m, "Bitte wählen Sie einen Identifizierungsweg.")
+		if not m["zulaessig"]:
+			ungueltig(f"Dieser Weg ist {m['grund']}.")
+		f.methode = m["id"]
+	elif abschnitt == "mrz":
+		roh = d.get("zeilen")
+		zeilen = ik.mrz_zeilen([str(z or "")[:60] for z in roh[:3]] if isinstance(roh, list) else str(roh or "")[:200])
+		v.pflicht(len(zeilen) >= 2, "Bitte geben Sie alle Zeilen der maschinenlesbaren Zone ein.")
+		mrz_setzen(f, zeilen, n.id)
 	elif abschnitt == "firma":
 		fi = {"name": v.text(d.get("name"), 160), "rechtsform": v.text(d.get("rechtsform"), 60), "registernummer": v.text(d.get("registernummer"), 60), "registergericht": v.text(d.get("registergericht"), 120), "land": _land(d.get("land")), "sitz": v.text(d.get("sitz"), 160), "mehrstufig": v.wahr(d.get("mehrstufig")), "treuhand": v.wahr(d.get("treuhand"))}
 		if "einreicherVertretungsberechtigt" in d:
@@ -457,6 +539,8 @@ def einreichen(ip=None, als_benutzer=None):
 		ungueltig("Bitte beginnen Sie zuerst mit der Verifizierung.")
 	if f.status in k.BEARBEITBAR:
 		f.investor_typ = _investor_typ(n) or f.get("investor_typ") or ""
+	if f.get("mrz_chiffrat"):
+		mrz_neu_bewerten(f)  # Ablauf/Alter zum Einreichungstag
 	fp = k.fortschritt(_anforderungen(f))
 	if fp["fehlend"]:
 		ungueltig("Es fehlen noch: " + " · ".join(x["label"] for x in fp["fehlend"]))
@@ -618,6 +702,27 @@ def fall_detail(id=None, ip=None, als_benutzer=None):  # noqa: A002
 		"pruefergebnisse": list(reversed(aus_json(f.pruefergebnisse_json, []) or [])),
 		"zugriffe": [{"id": z.name, "am": iso(z.am), "aktion": z.aktion, "text": z.text, "nutzer": name_von(z.nutzer_id) or "System", "hash": z.get("entry_hash")} for z in zugriffe],
 		"beziehungEnde": str(f.beziehung_ende) if f.beziehung_ende else None, "loeschenAb": str(f.loeschen_ab) if f.loeschen_ab else None, "ichBinErstpruefer": f.erst_pruefer == n.id,
+		**_ident_detail(f, d, n, e),
+	}
+
+
+def _ident_detail(f, d, n, e):
+	"""Eigene Identifizierung im Falldetail der Compliance (wie identDetail in demo/kyc.js)."""
+	sicht = d["video"]
+
+	def mit_namen(p):
+		t = p.get("tan")
+		return {**p, "durchfuehrender": name_von(p.get("durchfuehrenderId")) or "", "tan": {"kanal": t.get("kanal"), "gesendetAm": t.get("gesendetAm"), "gueltigBis": t.get("gueltigBis"), "versuche": t.get("versuche"), "bestaetigt": bool(t.get("bestaetigt")), "bestaetigtAm": t.get("bestaetigtAm")} if t else None}
+
+	termin = sicht.get("termin")
+	return {
+		"methode": d["methode"],
+		"methoden": [{kk: m.get(kk) for kk in ("id", "label", "verfuegbar", "zulaessig", "grund", "empfohlen")} for m in k.methoden_fuer(d, e, methoden_liste())],
+		"mrz": {**(d["mrz"] or {}), "zeilen": mrz_zeilen_lesen(f)} if d["mrz"] else None,  # Klartext nur hier (Compliance, Einsicht protokolliert)
+		"video": {**sicht, "termin": {**termin, "mitarbeiter": name_von(termin.get("mitarbeiterId")) or ""} if termin else None, "protokolle": [mit_namen(p) for p in reversed(sicht["protokolle"])]},
+		"videoLink": e.get("videoLink") or "",
+		"identGruende": k.ident_gruende(d, e, methoden_liste()),
+		"ichDarfVideo": f.konto != n.id,
 	}
 
 
@@ -646,6 +751,9 @@ def desk_entscheidung_pruefen(f, von):
 	if f.status == "verifiziert":
 		_verifizieren_pruefen(f)
 		e = k.einstellungen()
+		ident = k.ident_gruende(fall_dict(f, mit_dokumenten=False), e, methoden_liste())  # Eigene Identifizierung (MRZ/Video/Weg)
+		if ident:
+			frappe.throw(" ".join(ident))
 		vier = vier_augen_noetig(f, e)
 		if vier and von != "zweitpruefung":
 			frappe.throw("Hohes Risiko: zuerst „Zweitprüfung“, die Freigabe erteilt eine andere Person.")
@@ -750,6 +858,12 @@ def aktion(id=None, daten=None, als_benutzer=None):  # noqa: A002
 			v.pflicht(len(grund) >= 5, "Bitte begründen Sie die Entscheidung.")
 		if ergebnis == "verifiziert":
 			_verifizieren_pruefen(f)
+			ident = k.ident_gruende(fall_dict(f, mit_dokumenten=False), e, methoden_liste())  # MRZ/Video/Weg (Eigene Identifizierung)
+			if ident:
+				konflikt(" ".join(ident))
+			durchfuehrende = [p.get("durchfuehrenderId") for p in (aus_json(f.get("video_json"), {}) or {}).get("protokolle") or [] if p.get("beendetAm") and p.get("ergebnis") == "bestanden"]
+			if art == "zweitfreigabe" and n.id in durchfuehrende:
+				konflikt("Vier-Augen-Prinzip: Wer die Videoidentifizierung durchgeführt hat, darf nicht zweitfreigeben.")
 		vier = vier_augen_noetig(f, e)
 		if ergebnis == "verifiziert" and art == "entscheiden" and vier:
 			f.erst_pruefer = n.id
@@ -799,7 +913,7 @@ def einstellungen(als_benutzer=None):
 	if not compliance_lesen(n):
 		verboten("Nur für die Compliance.")
 	e = k.einstellungen()
-	return {**e, "geltungWirksam": k.geltung(e, k._umgebung()), "geltungUmgebung": frappe.conf.get("oekoinvest_kyc_gating"), "schritte": {s: {"label": d[0], "hinweis": d[1]} for s, d in k.SCHRITTE.items()}, "pilotKonten": [{"id": x, "name": name_von(x), "email": frappe.db.get_value("Plattform Konto", x, "email") or ""} for x in e.get("pilotKonten") or []]}
+	return {**e, "methodenListe": [{kk: m[kk] for kk in ("id", "label", "kurz", "verfuegbar")} for m in methoden_liste()], "geltungWirksam": k.geltung(e, k._umgebung()), "geltungUmgebung": frappe.conf.get("oekoinvest_kyc_gating"), "schritte": {s: {"label": d[0], "hinweis": d[1]} for s, d in k.SCHRITTE.items()}, "pilotKonten": [{"id": x, "name": name_von(x), "email": frappe.db.get_value("Plattform Konto", x, "email") or ""} for x in e.get("pilotKonten") or []]}
 
 
 @frappe.whitelist(methods=["POST"])
@@ -821,6 +935,22 @@ def einstellungen_speichern(daten=None, als_benutzer=None):
 		e["trefferSchwelle"] = v.zahl(d["trefferSchwelle"], min=0.7, max=0.99, stellen=2) or e["trefferSchwelle"]
 	if isinstance(d.get("hochrisikoLaender"), list):
 		e["hochrisikoLaender"] = sorted({_land(x) for x in d["hochrisikoLaender"] if _land(x)})[:80]
+	# Eigene Identifizierung: zulässige Wege je Risiko/Investorentyp, Pflicht, Link zum Videokonferenz-Werkzeug
+	if isinstance(d.get("methoden"), dict):
+		ids = [m["id"] for m in ik.KYC_METHODEN]
+		m = {**ik.methoden_standard(), **(e.get("methoden") or {})}
+		for stufe_ in ("niedrig", "mittel", "hoch"):
+			if isinstance(d["methoden"].get(stufe_), list):
+				m[stufe_] = v.mehrfach(d["methoden"][stufe_], ids)
+		if isinstance(d["methoden"].get("investorTypen"), dict):
+			m["investorTypen"] = {typ: v.mehrfach(liste, ids) for typ, liste in list(d["methoden"]["investorTypen"].items())[:20] if k.investor_vorgaben(typ) and isinstance(liste, list) and liste}
+		e["methoden"] = m
+	if "identifizierungPflicht" in d:
+		e["identifizierungPflicht"] = v.wahr(d["identifizierungPflicht"])
+	if "videoLink" in d:
+		link = v.text(d["videoLink"], 300)
+		v.pflicht(not link or re.fullmatch(r"https://[^\s\"'<>]+", link), "Der Link zum Videokonferenz-Werkzeug muss mit https:// beginnen.")
+		e["videoLink"] = link
 	if isinstance(d.get("pilotKonto"), dict):
 		kid = v.kennung(d["pilotKonto"].get("id"))
 		if not kid or not frappe.db.exists("Plattform Konto", kid):

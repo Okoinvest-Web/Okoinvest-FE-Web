@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Angaben, Badge, Karte, SeitenKopf } from "@/components/Portal/ui";
 import { Fortschritt, KycStatusBadge, RisikoBadge } from "@/components/Portal/Kyc/teile";
 import CompliancePruefung from "@/components/Portal/Kyc/CompliancePruefung";
+import IdentPruefung from "@/components/Portal/Kyc/IdentPruefung"; // Eigene Identifizierung: MRZ, Weg, Videoidentifizierung
 import RegisterSuche from "@/components/Portal/Dienste/RegisterSuche"; // Dienste: Registerauszug im KYC-Fall hinterlegen
 import { portalNutzer, laden } from "@/lib/plattform/server/seite";
 import { kycBackend } from "@/lib/plattform/backend/kyc";
@@ -80,6 +81,7 @@ export default async function ComplianceFallSeite({ params }) {
               </ul>
             </Karte>
           )}
+          <IdentPruefung fall={JSON.parse(JSON.stringify(f))} ichId={n.id} />
           <CompliancePruefung fall={JSON.parse(JSON.stringify(f))} ichId={n.id} />
         </div>
 

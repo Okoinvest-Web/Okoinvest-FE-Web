@@ -42,6 +42,15 @@
   "pep_json",
   "mittelherkunft_json",
   "steuer_json",
+  "sec_ident",
+  "methode",
+  "mrz_ampel",
+  "video_status",
+  "cb_ident",
+  "mrz_befund_json",
+  "mrz_chiffrat",
+  "video_json",
+  "video_eintraege",
   "sec_pruefung",
   "eingereicht_am",
   "verifiziert_am",
@@ -298,6 +307,71 @@
    "read_only": 1
   },
   {
+   "fieldname": "sec_ident",
+   "fieldtype": "Section Break",
+   "label": "Identifizierung (Weg, MRZ, Video)",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "methode",
+   "fieldtype": "Select",
+   "label": "Identifizierungsweg",
+   "options": "\neid\nvideo_intern\nextern",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "mrz_ampel",
+   "fieldtype": "Select",
+   "label": "MRZ-Prüfung (Ampel)",
+   "options": "\ngruen\ngelb\nrot",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "video_status",
+   "fieldtype": "Select",
+   "label": "Videoidentifizierung",
+   "options": "\noffen\ngebucht\nlaufend\nbestanden\nabgebrochen\nverdacht",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb_ident",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mrz_befund_json",
+   "fieldtype": "Code",
+   "label": "MRZ-Befund (JSON)",
+   "options": "JSON",
+   "read_only": 1,
+   "description": "Befundliste mit Ampel (kyc_ident_kern.mrz_befund) – ohne die abgetippten Zeilen."
+  },
+  {
+   "fieldname": "mrz_chiffrat",
+   "fieldtype": "Long Text",
+   "label": "MRZ (verschlüsselt)",
+   "hidden": 1,
+   "read_only": 1,
+   "description": "AES-256-GCM (kyc_kern.verschluesseln, AAD „<Fall>:mrz“), Base64 – Klartext nur in der Compliance-Ansicht."
+  },
+  {
+   "fieldname": "video_json",
+   "fieldtype": "Code",
+   "label": "Videoidentifizierung (JSON)",
+   "options": "JSON",
+   "read_only": 1,
+   "description": "Protokolle (Checkliste, TAN-Status ohne Code, Ergebnis, Begründung, SHA-256) – Muster in Anlehnung an FMA Online-IDV / BaFin RS 3/2017 (GW)."
+  },
+  {
+   "fieldname": "video_eintraege",
+   "fieldtype": "Table",
+   "label": "Videoprotokoll (Verlauf)",
+   "options": "KYC Videoident Eintrag",
+   "read_only": 1
+  },
+  {
    "fieldname": "sec_pruefung",
    "fieldtype": "Section Break",
    "label": "Prüfung"
@@ -413,7 +487,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-30 12:00:00.000000",
+ "modified": "2026-09-30 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "KYC Fall",

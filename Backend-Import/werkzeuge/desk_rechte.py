@@ -160,6 +160,7 @@ MATRIX.update({
 # nur für Leitung/Transaktion bzw. Compliance (Ergebnisse vertraulich); Checkliste der Gründung schreibt Transaktion.
 MATRIX.update({
 	"Plattform Identitaetspruefung": {ADMIN: L, COMPLIANCE: L},
+	"Plattform eID Vorgang": {ADMIN: L, COMPLIANCE: L},  # staatliche eID (plattform/api/eid.py)
 	"Plattform Registerauskunft": {ADMIN: L, TRANSAKTION: L, COMPLIANCE: L, LESER: L},
 	"Plattform Bonitaetsauskunft": {ADMIN: L, TRANSAKTION: L, COMPLIANCE: L},
 	"Plattform Projektgesellschaft": {ADMIN: A, TRANSAKTION: S, BUCHHALTUNG: L, LESER: L},

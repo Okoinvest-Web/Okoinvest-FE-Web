@@ -32,6 +32,14 @@ import { jetzt, neueId, sha256 } from "./hilfen";
 import { kycEinstellungenDb, kycErgebnisAnhaengenDb, kycFallFuer, kycFreigabeDb, kycStatusDb } from "./kycRegeln";
 import { kycSeed } from "./kyc-seed";
 import { suchprofilFuer } from "./teams"; // Investorentyp aus dem (Konto- bzw. Team-)Suchprofil
+// Eigene Identifizierung (MRZ, Methodenwahl, Videoidentifizierung) – Regeln in kycIdent.js, Operationen in demo/kycIdent.js
+import { KYC_METHODEN, kycIdentGruende, kycMethodenFuer } from "../../kyc";
+import { mrzZeilen } from "../../kycIdent";
+import { fallMitIdent, mrzAusgabe, mrzNeuBewerten, mrzSetzen, mrzZeilenLesen, videoFuerNutzer, videoSicht } from "./kycIdentRegeln";
+import { eidVerfuegbar } from "../../dienste/eid/methoden"; // Team „eID“: tatsächlich startbare Verfahren (ohne Konfiguration in Produktion leer)
+
+/** KYC_METHODEN mit tatsächlicher eID-Verfügbarkeit */
+const methodenListe = () => KYC_METHODEN.map((m) => (m.id === "eid" ? { ...m, verfuegbar: m.verfuegbar && eidVerfuegbar(process.env).length > 0 } : m));
 
 const { benachrichtigen, protokoll, nutzerById, nameVon } = intern;
 
@@ -149,7 +157,7 @@ function kontextFuer(db, f) {
 
 function anforderungenVon(db, f, { nurGeprueft = false } = {}) {
   const docs = dokumenteVon(db, f).filter((d) => !nurGeprueft || d.status === "ok");
-  return kycAnforderungen({ ...f, dokumente: docs }, kontextFuer(db, f));
+  return kycAnforderungen({ ...fallMitIdent(db, f), dokumente: docs }, kontextFuer(db, f));
 }
 
 function verlauf(f, status, n, rolle, kommentar = "", { oeffentlich = true } = {}) {
@@ -207,6 +215,10 @@ function fallFuerNutzer(db, f) {
     verlauf: (f.verlauf || []).filter((x) => x.oeffentlich !== false).map((x) => ({ status: x.status === "zweitpruefung" ? "in_pruefung" : x.status, am: x.am, kommentar: x.rolle === "nutzer" ? "" : x.kommentar })),
     bearbeitbar: KYC_BEARBEITBAR.includes(f.status),
     dokumente: dokumenteVon(db, f).map((d) => dokumentMeta(d)),
+    // Eigene Identifizierung: gewählter Weg, MRZ-Befund (ohne Zeilen), Videotermin/-status (ohne „Verdacht“)
+    methode: f.methode || "",
+    mrz: f.mrz ? { ...mrzAusgabe(f.mrz), vonId: undefined } : null,
+    video: videoFuerNutzer(videoSicht(db, f)),
   };
 }
 
@@ -227,8 +239,12 @@ export async function kycFall(n) {
   const f = eigenerFall(db, n);
   const status = kycStatusDb(db, { kontoId: n.id, organisationId: n.organisation?.id || null });
   const kontext = { rollen: n.rollen || [], flaechen: flaechenVon(db, n.id), einstellungen: kycEinstellungenDb(db) };
-  const anforderungen = kycAnforderungen(f ? { ...f, dokumente: dokumenteVon(db, f) } : null, kontext);
+  const anforderungen = kycAnforderungen(f ? { ...fallMitIdent(db, f), dokumente: dokumenteVon(db, f) } : null, kontext);
+  const e = kontext.einstellungen;
   return {
+    // Identifizierungswege mit Zulässigkeit (Regel-Risiko des aktuellen Stands) und Empfehlung
+    methoden: kycMethodenFuer(f ? fallMitIdent(db, f) : { investorTyp: investorTypVon(db, n) }, e, methodenListe()).map(({ id, label, kurz, text, verfuegbar, zulaessig, grund, empfohlen }) => ({ id, label, kurz, text, verfuegbar, zulaessig, grund, empfohlen })),
+    videoLink: e.videoLink || "",
     fall: fallFuerNutzer(db, f),
     anforderungen,
     fortschritt: kycFortschritt(anforderungen),
@@ -267,6 +283,20 @@ const ABSCHNITTE = {
   },
   person: (d, f) => {
     f.person = personDaten(d);
+    if (f.mrz) mrzNeuBewerten(f); // Abgleich MRZ ↔ Personenangaben aktuell halten
+  },
+  // Identifizierungsweg (nur verfügbare und für den Fall zulässige Wege)
+  methode: (d, f, n, db) => {
+    const m = kycMethodenFuer(fallMitIdent(db, f), kycEinstellungenDb(db), methodenListe()).find((x) => x.id === d.methode);
+    v.pflicht(m, "Bitte wählen Sie einen Identifizierungsweg.");
+    if (!m.zulaessig) throw ungueltig(`Dieser Weg ist ${m.grund}.`);
+    f.methode = m.id;
+  },
+  // Maschinenlesbare Zone: Server prüft erneut (ICAO 9303) und legt die Zeilen verschlüsselt ab
+  mrz: (d, f, n) => {
+    const zeilen = mrzZeilen(Array.isArray(d.zeilen) ? d.zeilen.slice(0, 3).map((z) => String(z ?? "").slice(0, 60)) : String(d.zeilen || "").slice(0, 200));
+    v.pflicht(zeilen.length >= 2, "Bitte geben Sie alle Zeilen der maschinenlesbaren Zone ein.");
+    mrzSetzen(f, zeilen, { vonId: n.id });
   },
   firma: (d, f) => {
     f.firma = {
@@ -324,7 +354,7 @@ export async function kycSpeichern(n, { abschnitt, daten = {} } = {}) {
 
 function kycFallSync(db, n, f) {
   const kontext = { rollen: n.rollen || [], flaechen: flaechenVon(db, n.id), einstellungen: kycEinstellungenDb(db) };
-  const anforderungen = kycAnforderungen({ ...f, dokumente: dokumenteVon(db, f) }, kontext);
+  const anforderungen = kycAnforderungen({ ...fallMitIdent(db, f), dokumente: dokumenteVon(db, f) }, kontext);
   return { fall: fallFuerNutzer(db, f), anforderungen, fortschritt: kycFortschritt(anforderungen) };
 }
 
@@ -401,7 +431,8 @@ export async function kycEinreichen(n, { ip = "" } = {}) {
     const f = eigenerFall(db, n);
     if (!f) throw ungueltig("Bitte beginnen Sie zuerst mit der Verifizierung.");
     if (KYC_BEARBEITBAR.includes(f.status)) f.investorTyp = investorTypVon(db, n) || f.investorTyp || "";
-    const anf = kycAnforderungen({ ...f, dokumente: dokumenteVon(db, f) }, { rollen: n.rollen || [], flaechen: flaechenVon(db, n.id), einstellungen: kycEinstellungenDb(db) });
+    if (f.mrz) mrzNeuBewerten(f); // Ablauf/Alter zum Einreichungstag
+    const anf = kycAnforderungen({ ...fallMitIdent(db, f), dokumente: dokumenteVon(db, f) }, { rollen: n.rollen || [], flaechen: flaechenVon(db, n.id), einstellungen: kycEinstellungenDb(db) });
     const fp = kycFortschritt(anf);
     if (fp.fehlend.length) throw ungueltig(`Es fehlen noch: ${fp.fehlend.map((x) => x.label).join(" · ")}`);
     statusSetzen(db, f, "eingereicht", n, "nutzer", "Zur Prüfung eingereicht.");
@@ -552,8 +583,24 @@ export async function kycFallDetail(n, id, { ip = "" } = {}) {
       vierAugen: vierAugenNoetig(f, e),
       pruefergebnisse: [...(f.pruefergebnisse || [])].reverse(),
       zugriffe, beziehungEnde: f.beziehungEnde || null, loeschenAb: f.loeschenAb || null, ichBinErstpruefer: f.pruefung?.erstPrueferId === n.id,
+      ...identDetail(db, f, n, e),
     };
   });
+}
+
+/** Eigene Identifizierung im Falldetail der Compliance: MRZ (Befund + entschlüsselte Zeilen), Wege, Videoidentifizierung */
+function identDetail(db, f, n, e) {
+  const sicht = videoSicht(db, f);
+  const mitNamen = (p) => ({ ...p, durchfuehrender: nameVon(db, p.durchfuehrenderId) || "", tan: p.tan ? { kanal: p.tan.kanal, gesendetAm: p.tan.gesendetAm, gueltigBis: p.tan.gueltigBis, versuche: p.tan.versuche, bestaetigt: !!p.tan.bestaetigt, bestaetigtAm: p.tan.bestaetigtAm || null } : null });
+  return {
+    methode: f.methode || "",
+    methoden: kycMethodenFuer(fallMitIdent(db, f), e, methodenListe()).map(({ id, label, verfuegbar, zulaessig, grund, empfohlen }) => ({ id, label, verfuegbar, zulaessig, grund, empfohlen })),
+    mrz: f.mrz ? { ...mrzAusgabe(f.mrz), zeilen: mrzZeilenLesen(f) } : null, // Klartext nur hier (Compliance, Einsicht protokolliert)
+    video: { ...sicht, termin: sicht.termin ? { ...sicht.termin, mitarbeiter: nameVon(db, sicht.termin.mitarbeiterId) || "" } : null, protokolle: sicht.protokolle.map(mitNamen).reverse() },
+    videoLink: e.videoLink || "",
+    identGruende: kycIdentGruende(fallMitIdent(db, f), e, methodenListe(), { demoErlaubt: true }), // Demo-Backend: Demo-Nachweise zählen
+    ichDarfVideo: f.kontoId !== n.id,
+  };
 }
 
 const ERGEBNISSE = ["verifiziert", "nachgefordert", "abgelehnt"];
@@ -634,7 +681,11 @@ export async function kycAktion(n, id, daten = {}) {
       if (ergebnis === "abgelehnt") v.pflicht(grund.length >= 5, "Bitte begründen Sie die Ablehnung (intern).");
       if (ergebnis === "verifiziert") {
         if (["treffer_pruefen", "bestaetigt"].includes(f.sanktionen?.status)) throw konflikt("Offener oder bestätigter Sanktionstreffer – eine Verifizierung ist nicht möglich.");
-        const ungeprueft = dokumenteVon(db, f).filter((d) => d.status === "neu");
+        const ident = kycIdentGruende(fallMitIdent(db, f), e, methodenListe(), { demoErlaubt: true }); // MRZ/Video/Methode (Eigene Identifizierung)
+        if (ident.length) throw konflikt(ident.join(" "));
+        // Vier-Augen: wer die Videoidentifizierung durchgeführt hat, erteilt nicht die (Zweit-)Freigabe
+        const durchfuehrende = (f.video?.protokolle || []).filter((p) => p.beendetAm && p.ergebnis === "bestanden").map((p) => p.durchfuehrenderId);
+        if (aktion === "zweitfreigabe" && durchfuehrende.includes(n.id)) throw konflikt("Vier-Augen-Prinzip: Wer die Videoidentifizierung durchgeführt hat, darf nicht zweitfreigeben.");        const ungeprueft = dokumenteVon(db, f).filter((d) => d.status === "neu");
         if (ungeprueft.length) throw konflikt(`Bitte zuerst alle Unterlagen prüfen (Prüfliste): ${ungeprueft.map((d) => KYC_DOKUMENTE[d.art]?.label || d.art).join(", ")}`);
         const fp = kycFortschritt(anforderungenVon(db, f, { nurGeprueft: true }));
         if (fp.fehlend.length) throw konflikt(`Pflichtangaben/-unterlagen fehlen oder sind nicht geprüft: ${fp.fehlend.map((x) => x.label).join(" · ")}`);
@@ -700,7 +751,7 @@ export async function kycEinstellungen(n) {
   if (!complianceLesen(n)) throw verboten("Nur für die Compliance.");
   const db = await lesenBereit();
   const e = kycEinstellungenDb(db);
-  return { ...e, geltungWirksam: kycGeltung(e, process.env), geltungUmgebung: process.env.PLATTFORM_KYC_GATING || null, schritte: KYC_SCHRITTE, pilotKonten: (e.pilotKonten || []).map((id) => ({ id, name: nameVon(db, id), email: nutzerById(db, id)?.email || "" })) };
+  return { ...e, methodenListe: methodenListe().map(({ id, label, kurz, verfuegbar }) => ({ id, label, kurz, verfuegbar })), geltungWirksam: kycGeltung(e, process.env), geltungUmgebung: process.env.PLATTFORM_KYC_GATING || null, schritte: KYC_SCHRITTE, pilotKonten: (e.pilotKonten || []).map((id) => ({ id, name: nameVon(db, id), email: nutzerById(db, id)?.email || "" })) };
 }
 
 export async function kycEinstellungenSpeichern(n, daten = {}) {
@@ -713,6 +764,23 @@ export async function kycEinstellungenSpeichern(n, daten = {}) {
     if ("vierAugenImmer" in daten) e.vierAugenImmer = v.wahr(daten.vierAugenImmer);
     if ("trefferSchwelle" in daten) e.trefferSchwelle = v.zahl(daten.trefferSchwelle, { min: 0.7, max: 0.99, stellen: 2 }) ?? e.trefferSchwelle;
     if (Array.isArray(daten.hochrisikoLaender)) e.hochrisikoLaender = [...new Set(daten.hochrisikoLaender.map(land).filter(Boolean))].slice(0, 80);
+    // Eigene Identifizierung: zulässige Wege je Risiko/Investorentyp, Pflicht, Link zum Videokonferenz-Werkzeug
+    if (daten.methoden && typeof daten.methoden === "object") {
+      const ids = KYC_METHODEN.map((m) => m.id);
+      const m = { ...e.methoden };
+      for (const s of ["niedrig", "mittel", "hoch"]) if (Array.isArray(daten.methoden[s])) m[s] = v.mehrfach(daten.methoden[s], ids);
+      if (daten.methoden.investorTypen && typeof daten.methoden.investorTypen === "object") {
+        m.investorTypen = {};
+        for (const [typ, liste] of Object.entries(daten.methoden.investorTypen).slice(0, 20)) if (kycInvestorVorgaben(typ) && Array.isArray(liste) && liste.length) m.investorTypen[typ] = v.mehrfach(liste, ids);
+      }
+      e.methoden = m;
+    }
+    if ("identifizierungPflicht" in daten) e.identifizierungPflicht = v.wahr(daten.identifizierungPflicht);
+    if ("videoLink" in daten) {
+      const link = v.text(daten.videoLink, 300);
+      v.pflicht(!link || /^https:\/\/[^\s"'<>]+$/.test(link), "Der Link zum Videokonferenz-Werkzeug muss mit https:// beginnen.");
+      e.videoLink = link;
+    }
     if (daten.pilotKonto) {
       const u = nutzerById(db, v.kennung(daten.pilotKonto.id));
       if (!u) throw nichtGefunden("Konto nicht gefunden.");
@@ -826,3 +894,6 @@ export async function kycKurz(n, kontoIds = []) {
 }
 
 export { ibanMaskiert };
+
+/** Für demo/kycIdent.js (Videoidentifizierung) – gleiche Rechte, Transaktion und Meldungen wie hier */
+export const kycIntern = { lesenBereit, aendernBereit, angemeldet, complianceNoetig, istCompliance, fallById, eigenerFall, verlauf, complianceMelden, nutzerMelden, fallMitIdent };

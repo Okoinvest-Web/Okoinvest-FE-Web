@@ -19,6 +19,7 @@ import {
   icsErstellen, slotFrei, tagGueltig, tagPlus, zeitraumText,
 } from "../../termine";
 import { vertretungFinden } from "../../hr";
+import { unterrollen } from "../../rechte"; // Terminart „identifizierung“: nur Unterrolle Compliance
 import { gebietFuer } from "../../akquise";
 import { jetzt, neueId, sha256, zufallsToken } from "./hilfen";
 import { angemeldet, aendernBereit, boLesen, boSchreiben, backofficeKonten, kontoKurz, lesenBereit, mailAblegen, melden, nameVon, nutzerById, protokoll, schreibNoetig } from "./service-kern";
@@ -28,9 +29,11 @@ const LABEL = "Termine & Kalender";
 
 // ================================================================ Helfer
 
-/** Mitarbeiter, die eine Terminart anbieten (aktiv, mit Verfügbarkeit) */
+/** Mitarbeiter, die eine Terminart anbieten (aktiv, mit Verfügbarkeit; Terminart mit `unterrolle` nur diese Unterrolle) */
 function anbieter(db, art) {
+  const unterrolle = TERMIN_ARTEN[art]?.unterrolle;
   return backofficeKonten(db)
+    .filter((u) => !unterrolle || unterrollen(u).includes(unterrolle)) // z. B. Identifizierung nur durch die Compliance
     .map((u) => ({ u, vf: db.service.verfuegbarkeit[u.id] }))
     .filter(({ vf }) => vf && vf.aktiv !== false && (vf.terminarten || []).includes(art))
     .map(({ u, vf }) => ({ id: u.id, vf }));

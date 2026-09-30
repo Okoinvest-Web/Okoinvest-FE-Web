@@ -68,9 +68,12 @@ def _mitarbeiter(konto_id):
 
 def anbieter(art):
 	admins = set(aktive_admins())
+	nur_compliance = art == "identifizierung"  # KYC „Eigene Identifizierung“: nur Backoffice-Unterrolle Compliance
 	out = []
 	for m in frappe.get_all("Plattform Mitarbeiter", filters={"aktiv": 1, "termine_aktiv": 1}, fields=["konto_id", "terminarten_json", "arbeitszeiten_json"], limit_page_length=0):
 		if m.konto_id in admins and art in (aus_json(m.terminarten_json, []) or []):
+			if nur_compliance and "compliance" not in str(frappe.db.get_value("Plattform Konto", m.konto_id, "backoffice_rollen") or "").split(","):
+				continue
 			out.append(m)
 	return out
 

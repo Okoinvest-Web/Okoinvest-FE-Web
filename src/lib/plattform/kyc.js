@@ -9,11 +9,13 @@
 // Rechtlicher Rahmen (Kurzfassung, siehe docs/PLATTFORM.md „KYC/KYB“): Die Plattform ist so gebaut, dass die vollen
 // allgemeinen und verstärkten Sorgfaltspflichten (DE: §§ 10–15 GwG, AT: §§ 365m1 ff. GewO bzw. FM-GwG, CH: GwG) erfüllbar
 // sind. Ob ÖkoInvest für die Vermittlung von PV-Projektrechten/-gesellschaften Verpflichtete ist (z. B. Immobilienmakler
-// i. S. v. § 1 Abs. 11 / § 2 Abs. 1 Nr. 14 GwG), ist eine Auslegungsfrage und rechtlich zu klären. Die Plattform
-// behauptet keine Video- oder Online-Identifizierung – diese erfolgt nur über zugelassene Anbieter (Schnittstelle vorgesehen).
+// i. S. v. § 1 Abs. 11 / § 2 Abs. 1 Nr. 14 GwG), ist eine Auslegungsfrage und rechtlich zu klären. Online-Identifizierung
+// über zugelassene Anbieter (Schnittstelle vorgesehen) bzw. eID; die eigene Videoidentifizierung („video_intern“,
+// kycIdent.js) ist als Muster gebaut – ihre Zulässigkeit für ÖkoInvest ist vor dem Einsatz rechtlich zu klären.
 
 import { INVESTOR_TYPEN } from "./fach/suchprofil";
 import { heuteLokal } from "./format";
+import { kycMethodenBewerten, kycMethodenStandard } from "./kycIdent";
 
 // ================================================================ Grundbegriffe
 
@@ -156,8 +158,30 @@ export function kycEinstellungenStandard() {
     mittelherkunftNachweisAb: 1000000,
     aufbewahrungJahre: 5,
     erinnerungAusweisTage: 30,
+    // Eigene Identifizierung (kycIdent.js): zulässige Wege je Risiko/Investorentyp, Link zum Videokonferenz-Werkzeug
+    methoden: kycMethodenStandard(),
+    identifizierungPflicht: false, // true: „verifiziert“ nur mit abgeschlossenem, zulässigem Identifizierungsweg
+    videoLink: "", // Platzhalter, z. B. Besprechungsraum im eigenen Videokonferenz-Werkzeug
   };
 }
+
+// ================================================================ Identifizierungswege
+
+/**
+ * Wege der Identifizierung (Reihenfolge = Empfehlung). `verfuegbar` schaltet das jeweilige Team frei:
+ *   eid          – Team „eID“ (ID Austria / deutsche Online-Ausweisfunktion) setzt verfuegbar: true, sobald angebunden
+ *   video_intern – Ausweis hochladen + MRZ abtippen + Videogespräch mit der Compliance (Team „Eigene Identifizierung“)
+ *   extern       – zugelassener Identitätsanbieter (Team „Dienste“, „Online identifizieren“)
+ * Zulässigkeit je Risiko/Investorentyp: Einstellung „methoden“ (kycMethodenBewerten in kycIdent.js).
+ */
+export const KYC_METHODEN = [
+  // Team „eID“: angebunden (docs/EID.md). Tatsächlich startbar sind nur die Varianten aus GET /api/portal/dienste/eid → methoden
+  // (serverseitig eidVerfuegbar() aus dienste/eid/methoden.js; ohne Konfiguration in Produktion leer, sonst DEMO).
+  { id: "eid", label: "Online-Ausweis (eID / ID Austria)", kurz: "eID", verfuegbar: true, text: "Mit dem Personalausweis (Online-Ausweisfunktion) bzw. ID Austria – schnell und ohne Upload.", varianten: ["id_austria", "online_ausweis"], start: "/api/portal/dienste/eid" },
+  { id: "video_intern", label: "Ausweis hochladen + Videogespräch mit ÖkoInvest", kurz: "Video", verfuegbar: true, text: "Ausweis hochladen, maschinenlesbare Zeile abtippen und einen kurzen Videotermin mit unserer Compliance buchen." },
+  { id: "extern", label: "Externer Identifizierungsanbieter", kurz: "Anbieter", verfuegbar: true, text: "Identifizierung über einen zugelassenen Dienstleister (Weiterleitung, Ergebnis kommt automatisch zurück)." },
+];
+export const kycMethode = (id) => KYC_METHODEN.find((m) => m.id === id) || null;
 
 // ================================================================ IBAN
 
@@ -321,6 +345,15 @@ export function kycAnforderungen(fall, { rollen = [], flaechen = [], einstellung
     add({ id: "doc_ausweis_hinten", gruppe: "Unterlagen", label: KYC_DOKUMENTE.ausweis_hinten.label, dokumentArt: "ausweis_hinten", erfuellt: hat("ausweis_hinten") });
   }
   add({ id: "doc_selfie", gruppe: "Unterlagen", label: KYC_DOKUMENTE.selfie.label, dokumentArt: "selfie", pflicht: false, erfuellt: hat("selfie") });
+  // Identifizierungsweg (Team „Eigene Identifizierung“, kycIdent.js): Video intern = MRZ + gebuchter Videotermin
+  if (f.methode) {
+    const m = kycMethode(f.methode);
+    add({ id: "methode", gruppe: "Identifizierung", label: `Identifizierungsweg: ${m?.label || f.methode}`, pflicht: false, erfuellt: !!m });
+    if (f.methode === "video_intern") {
+      add({ id: "mrz", gruppe: "Identifizierung", label: "Maschinenlesbare Zone (MRZ) des Ausweises abgetippt", erfuellt: !!f.mrz?.ampel, hinweis: f.mrz?.ampel === "rot" ? "Die MRZ-Prüfung ist auffällig – bitte Eingabe und Angaben prüfen." : "Die zwei bzw. drei Zeilen mit „<“-Zeichen auf dem Ausweis bzw. der Passdatenseite." });
+      add({ id: "video", gruppe: "Identifizierung", label: "Videotermin mit der Compliance gebucht", erfuellt: ["gebucht", "laufend", "bestanden"].includes(f.video?.status), hinweis: f.video?.status === "abgebrochen" ? "Das letzte Gespräch wurde abgebrochen – bitte einen neuen Termin buchen." : "Das Gespräch kann auch nach dem Einreichen stattfinden." });
+    }
+  }
 
   if (typ === "unternehmen") {
     const fi = f.firma || {};
@@ -414,11 +447,54 @@ export function kycRisiko(fall, einstellungen = kycEinstellungenStandard()) {
   if (betrag > 5000000) plus(2, "Ticketgröße über 5 Mio. €");
   else if (betrag > 1000000) plus(1, "Ticketgröße über 1 Mio. €");
   if (f.sanktionen?.status === "treffer_pruefen" || f.sanktionen?.status === "bestaetigt") plus(4, "Möglicher Treffer im Sanktionslisten-Abgleich");
+  // Eigene Identifizierung (kycIdent.js): MRZ-Befund und Ergebnis der Videoidentifizierung als Hinweis
+  if (f.mrz?.ampel === "rot") plus(4, "MRZ-Prüfung auffällig (Prüfziffer bzw. Abweichung zu den Angaben)");
+  else if (f.mrz?.ampel === "gelb") plus(1, "MRZ-Prüfung mit Hinweisen");
+  if (f.video?.ergebnis === "verdacht") plus(4, "Videoidentifizierung: Verdacht");
   const stufe = punkte >= 4 ? "hoch" : punkte >= 2 ? "mittel" : "niedrig";
   return { stufe, punkte, gruende };
 }
 
 export const KYC_RISIKO = { niedrig: { label: "Niedrig", ton: "ok" }, mittel: { label: "Mittel", ton: "info" }, hoch: { label: "Hoch", ton: "warn" } };
+
+/** Wege für einen Fall bewerten (Regel-Risiko des Falls, Investorentyp, Einstellung „methoden“) */
+export function kycMethodenFuer(fall, einstellungen = kycEinstellungenStandard(), methoden = KYC_METHODEN) {
+  const f = fall || {};
+  const e = { ...kycEinstellungenStandard(), ...(einstellungen || {}) };
+  const risiko = f.risiko?.stufe || kycRisiko(f, e).stufe;
+  return kycMethodenBewerten(methoden, { regeln: e.methoden, risiko, investorTyp: f.investorTyp || "" });
+}
+
+/**
+ * Liegt ein Nachweis eines externen Wegs vor (eID bzw. Identitätsanbieter, über kycErgebnisAnhaengen)?
+ * eID: nur mit daten.identitaetBestaetigt (Regel des Teams „eID“, docs/EID.md) – ein bloßes „ok“ genügt nicht.
+ * Demo-Nachweise (daten.demo) zählen nur im Demo-Backend (demoErlaubt), nie im Echtbetrieb.
+ */
+export const kycIdentNachweis = (f, methode, { demoErlaubt = false } = {}) =>
+  (f?.pruefergebnisse || []).some((e) => {
+    if (e.ergebnis !== "ok" || (e.daten?.demo && !demoErlaubt)) return false;
+    if (methode === "eid") return /eid|id.?austria|ausweis/i.test(`${e.art} ${e.quelle}`) && e.daten?.identitaetBestaetigt === true;
+    return /ident/i.test(`${e.art} ${e.quelle}`);
+  });
+
+/**
+ * Gründe, die eine Verifizierung aus Sicht der eigenen Identifizierung verhindern (Compliance-Entscheidung „verifiziert“).
+ * Immer: Verdacht aus der Videoidentifizierung; gewählter Weg „video_intern“ ohne bestandenes Gespräch; gewählter Weg bei
+ * aktuellem Risiko nicht (mehr) zulässig. Mit Einstellung identifizierungPflicht zusätzlich: Weg gewählt und abgeschlossen.
+ */
+export function kycIdentGruende(fall, einstellungen = kycEinstellungenStandard(), methoden = KYC_METHODEN, { demoErlaubt = false } = {}) {
+  const f = fall || {};
+  const e = { ...kycEinstellungenStandard(), ...(einstellungen || {}) };
+  const g = [];
+  if (f.video?.ergebnis === "verdacht") g.push("Die Videoidentifizierung endete mit Verdacht – eine Verifizierung ist nicht möglich.");
+  if (f.methode) {
+    const m = kycMethodenFuer(f, e, methoden).find((x) => x.id === f.methode);
+    if (m && !m.zulaessig && m.verfuegbar) g.push(`Der gewählte Identifizierungsweg „${m.label}“ ist ${m.grund} – bitte einen anderen Weg nachfordern.`);
+    if (f.methode === "video_intern" && f.video?.ergebnis !== "bestanden" && f.video?.ergebnis !== "verdacht") g.push("Die Videoidentifizierung ist noch nicht bestanden.");
+    if (e.identifizierungPflicht && f.methode !== "video_intern" && !kycIdentNachweis(f, f.methode, { demoErlaubt })) g.push("Für den gewählten Identifizierungsweg liegt noch kein positives Ergebnis vor.");
+  } else if (e.identifizierungPflicht) g.push("Es wurde kein Identifizierungsweg gewählt bzw. abgeschlossen.");
+  return g;
+}
 
 // ================================================================ Gating
 

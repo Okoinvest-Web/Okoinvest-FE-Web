@@ -25,6 +25,8 @@ import re
 import unicodedata
 from datetime import date, datetime, timedelta
 
+from oekoinvest_app.plattform.kyc_ident_kern import KYC_METHODEN, methoden_bewerten, methoden_standard  # Eigene Identifizierung (rein)
+
 # ================================================================ Teil 1 – reine Regeln
 
 KONTOTYPEN = {"privat": "Privatperson", "unternehmen": "Unternehmen"}
@@ -127,6 +129,10 @@ def einstellungen_standard():
 		"mittelherkunftNachweisAb": 1000000,
 		"aufbewahrungJahre": 5,
 		"erinnerungAusweisTage": 30,
+		# Eigene Identifizierung (kyc_ident_kern): zulässige Wege je Risiko/Investorentyp, Pflicht, Link zum Videokonferenz-Werkzeug
+		"methoden": methoden_standard(),
+		"identifizierungPflicht": False,
+		"videoLink": "",
 	}
 
 
@@ -487,6 +493,15 @@ def anforderungen(fall, rollen=(), flaechen=(), einstellungen=None):
 		add(id="doc_ausweis_vorne", gruppe="Unterlagen", label=DOKUMENTE["ausweis_vorne"][0], dokumentArt="ausweis_vorne", erfuellt=hat("ausweis_vorne"))
 		add(id="doc_ausweis_hinten", gruppe="Unterlagen", label=DOKUMENTE["ausweis_hinten"][0], dokumentArt="ausweis_hinten", erfuellt=hat("ausweis_hinten"))
 	add(id="doc_selfie", gruppe="Unterlagen", label=DOKUMENTE["selfie"][0], dokumentArt="selfie", pflicht=False, erfuellt=hat("selfie"))
+	# Identifizierungsweg (Eigene Identifizierung): Video intern = MRZ + gebuchter Videotermin
+	if f.get("methode"):
+		m = next((x for x in KYC_METHODEN if x["id"] == f["methode"]), None)
+		add(id="methode", gruppe="Identifizierung", label=f"Identifizierungsweg: {m['label'] if m else f['methode']}", pflicht=False, erfuellt=bool(m))
+		if f["methode"] == "video_intern":
+			mrz = f.get("mrz") or {}
+			video = f.get("video") or {}
+			add(id="mrz", gruppe="Identifizierung", label="Maschinenlesbare Zone (MRZ) des Ausweises abgetippt", erfuellt=bool(mrz.get("ampel")), hinweis="Die MRZ-Prüfung ist auffällig – bitte Eingabe und Angaben prüfen." if mrz.get("ampel") == "rot" else "Die zwei bzw. drei Zeilen mit „<“-Zeichen auf dem Ausweis bzw. der Passdatenseite.")
+			add(id="video", gruppe="Identifizierung", label="Videotermin mit der Compliance gebucht", erfuellt=video.get("status") in ("gebucht", "laufend", "bestanden"), hinweis="Das letzte Gespräch wurde abgebrochen – bitte einen neuen Termin buchen." if video.get("status") == "abgebrochen" else "Das Gespräch kann auch nach dem Einreichen stattfinden.")
 	if typ == "unternehmen":
 		fi = f.get("firma") or {}
 		aktuell = lambda d: not d.get("ausgestelltAm") or (tage_bis(d.get("ausgestelltAm")) or 0) >= -REGISTERAUSZUG_MAX_TAGE  # noqa: E731
@@ -575,7 +590,63 @@ def risiko(fall, einstellungen=None):
 		plus(1, "Ticketgröße über 1 Mio. €")
 	if (f.get("sanktionen") or {}).get("status") in ("treffer_pruefen", "bestaetigt"):
 		plus(4, "Möglicher Treffer im Sanktionslisten-Abgleich")
+	# Eigene Identifizierung: MRZ-Befund und Ergebnis der Videoidentifizierung als Hinweis
+	ampel = (f.get("mrz") or {}).get("ampel")
+	if ampel == "rot":
+		plus(4, "MRZ-Prüfung auffällig (Prüfziffer bzw. Abweichung zu den Angaben)")
+	elif ampel == "gelb":
+		plus(1, "MRZ-Prüfung mit Hinweisen")
+	if (f.get("video") or {}).get("ergebnis") == "verdacht":
+		plus(4, "Videoidentifizierung: Verdacht")
 	return {"stufe": "hoch" if punkte >= 4 else "mittel" if punkte >= 2 else "niedrig", "punkte": punkte, "gruende": gruende}
+
+
+# ---------------------------------------------------------------- Eigene Identifizierung (Wege, Freigabe-Gründe)
+
+def methoden_fuer(fall, einstellungen=None, methoden=None):
+	"""Wie kycMethodenFuer(): Wege mit Zulässigkeit für den Fall (gespeichertes bzw. Regel-Risiko, Investorentyp)."""
+	e = {**einstellungen_standard(), **(einstellungen or {})}
+	f = fall or {}
+	stufe = (f.get("risiko") or {}).get("stufe") or risiko(f, e)["stufe"]
+	return methoden_bewerten(methoden if methoden is not None else KYC_METHODEN, e.get("methoden"), stufe, f.get("investorTyp") or "")
+
+
+def ident_nachweis(fall, methode, demo_erlaubt=False):
+	"""Wie kycIdentNachweis(): eID nur mit daten.identitaetBestaetigt (docs/EID.md); Demo-Nachweise (daten.demo) zählen im
+	Echtbetrieb (Frappe) nie."""
+	for x in (fall or {}).get("pruefergebnisse") or []:
+		d = x.get("daten") or {}
+		if x.get("ergebnis") != "ok" or (d.get("demo") and not demo_erlaubt):
+			continue
+		text = f"{x.get('art')} {x.get('quelle')}"
+		if methode == "eid":
+			if re.search(r"eid|id.?austria|ausweis", text, re.I) and d.get("identitaetBestaetigt") is True:
+				return True
+		elif re.search(r"ident", text, re.I):
+			return True
+	return False
+
+
+def ident_gruende(fall, einstellungen=None, methoden=None):
+	"""Wie kycIdentGruende(): Gründe gegen „verifiziert“ aus Sicht der eigenen Identifizierung."""
+	e = {**einstellungen_standard(), **(einstellungen or {})}
+	f = fall or {}
+	g = []
+	video = f.get("video") or {}
+	if video.get("ergebnis") == "verdacht":
+		g.append("Die Videoidentifizierung endete mit Verdacht – eine Verifizierung ist nicht möglich.")
+	m_id = f.get("methode")
+	if m_id:
+		m = next((x for x in methoden_fuer(f, e, methoden) if x["id"] == m_id), None)
+		if m and not m["zulaessig"] and m.get("verfuegbar"):
+			g.append(f"Der gewählte Identifizierungsweg „{m['label']}“ ist {m['grund']} – bitte einen anderen Weg nachfordern.")
+		if m_id == "video_intern" and video.get("ergebnis") not in ("bestanden", "verdacht"):
+			g.append("Die Videoidentifizierung ist noch nicht bestanden.")
+		if e.get("identifizierungPflicht") and m_id != "video_intern" and not ident_nachweis(f, m_id):
+			g.append("Für den gewählten Identifizierungsweg liegt noch kein positives Ergebnis vor.")
+	elif e.get("identifizierungPflicht"):
+		g.append("Es wurde kein Identifizierungsweg gewählt bzw. abgeschlossen.")
+	return g
 
 
 # ---------------------------------------------------------------- Gating

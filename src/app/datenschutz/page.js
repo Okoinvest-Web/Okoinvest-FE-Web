@@ -447,6 +447,23 @@ export default function DatenschutzPage() {
         freigeben. Eine automatisierte Entscheidung im Sinne von Art. 22 DSGVO findet nicht statt; der Sanktionsabgleich liefert nur
         Hinweise, entschieden wird durch Menschen.
       </p>
+      <p>
+        <strong>Prüfung der maschinenlesbaren Zone (MRZ):</strong> Im Schritt „Ausweis“ tippen Sie die Zeilen mit den „&lt;“-Zeichen
+        Ihres Ausweises bzw. Reisepasses ab (beim Weg „Ausweis und Videogespräch“ erforderlich, sonst freiwillig). Es findet keine
+        Bilderkennung statt. Wir prüfen die Prüfziffern, die Gültigkeit, die Volljährigkeit und den Abgleich mit Ihren Angaben; das Ergebnis
+        ist ein Hinweis für unsere Compliance und kann in die Risikoeinstufung einfließen. Die abgetippten Zeilen speichern wir verschlüsselt
+        beim KYC-Fall; Rechtsgrundlage, Empfänger und Speicherdauer wie oben.
+      </p>
+      <p>
+        <strong>Videogespräch mit unserer Compliance:</strong> Wählen Sie diesen Weg, buchen Sie einen Termin; das Gespräch führt eine
+        Mitarbeiterin bzw. ein Mitarbeiter unserer Compliance über das Videokonferenz-Werkzeug{" "}
+        <Platzhalter>Werkzeug, Anbieter und Speicherort noch festzulegen</Platzhalter>. Wir zeichnen weder Bild noch Ton auf. Protokolliert
+        werden die Prüfschritte (z. B. Abgleich mit dem Lichtbild, Sicherheitsmerkmale des Dokuments, Vorlesen der Dokumentnummer) mit Zeitpunkt
+        und Ergebnis, die durchführende Person und die Bestätigung eines Einmalcodes, den wir Ihnen während des Gesprächs per E-Mail senden
+        (gespeichert wird nur, ob der Code bestätigt wurde). Zu Beginn weisen wir Sie auf die Protokollierung hin und bitten um Ihr
+        Einverständnis; ohne dieses beenden wir das Gespräch, und Ihnen stehen die anderen Wege offen. Rechtsgrundlage, Empfänger und
+        Speicherdauer wie oben.
+      </p>
 
       <h2>8c. Online-Identifizierung über externe Anbieter</h2>
       <p>

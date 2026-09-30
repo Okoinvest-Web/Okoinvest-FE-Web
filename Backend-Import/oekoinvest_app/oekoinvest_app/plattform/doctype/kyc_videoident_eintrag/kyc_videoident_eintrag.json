@@ -1,0 +1,75 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 18:00:00.000000",
+ "description": "Verlauf der Videoidentifizierung (Kindtabelle des KYC-Falls): jeder Prüfschritt mit Zeitstempel und durchführender Person. Nur über plattform/api/kyc_ident.py geschrieben.",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "protokoll_id",
+  "am",
+  "von",
+  "schritt",
+  "ergebnis",
+  "text"
+ ],
+ "fields": [
+  {
+   "fieldname": "protokoll_id",
+   "fieldtype": "Data",
+   "label": "Protokoll",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "label": "Zeitpunkt",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "von",
+   "fieldtype": "Link",
+   "label": "Durchgeführt von",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "schritt",
+   "fieldtype": "Data",
+   "label": "Schritt",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "ergebnis",
+   "fieldtype": "Select",
+   "label": "Ergebnis",
+   "options": "\nok\nnicht_ok\ninfo",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "text",
+   "fieldtype": "Small Text",
+   "label": "Eintrag",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-30 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "KYC Videoident Eintrag",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

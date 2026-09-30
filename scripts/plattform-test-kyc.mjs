@@ -8,12 +8,20 @@
 // Vier-Augen bei hohem Risiko), Sanktionstreffer → manuelle Prüfung (dem Nutzer nicht sichtbar), IBAN-Prüfziffer,
 // Gating bei Veröffentlichung, Datenraum (NDA-Freigabe), LOI, Auszahlung (IBAN + Eigentumsnachweis), Zugriffsprotokoll
 // in der Hash-Kette, Löschfrist, Seiten.
+// Eigene Identifizierung: Teil 0 (ohne Server, auch einzeln mit --nur-logik) prüft die MRZ-Logik (kycIdent.js) mit den
+// offiziellen ICAO-9303-Specimen und den deutschen Musterdaten, Methodenwahl, Video-Checkliste und – falls Python
+// vorhanden – die Gleichheit mit plattform/kyc_ident_kern.py. Abschnitte 11–12 prüfen MRZ und Videoidentifizierung
+// gegen den Server (verschlüsselte Ablage, Compliance-Ansicht, Risiko, Termin nur bei Compliance, TAN, Protokoll-PDF,
+// Vier-Augen Durchführende/r ≠ Zweitfreigabe, Verdacht ohne Tipping-off, Löschfrist).
 // Eigene Konten mit Präfix kyc-test-<Lauf>@example.com; Freigabe-Sperren nur für diese Konten (Pilot), am Ende entfernt.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
-const BASIS = (process.argv[2] || process.env.PLATTFORM_TEST_URL || "http://localhost:3100").replace(/\/$/, "");
+const NUR_LOGIK = process.argv.includes("--nur-logik");
+const BASIS = (process.argv.slice(2).find((a) => a.startsWith("http")) || process.env.PLATTFORM_TEST_URL || "http://localhost:3100").replace(/\/$/, "");
 const DEMO_PASSWORT = process.env.PLATTFORM_DEMO_PASSWORT || "Demo-2026!";
 const PASSWORT = "Kyc-Test-Passwort-2026";
 const LAUF = Date.now().toString(36);
@@ -169,7 +177,291 @@ function kycDateien() {
   }
 }
 
+// ---------------------------------------------------------------- Eigene Identifizierung: Helfer
+
+/** Prüfziffer 7-3-1 – unabhängig von kycIdent.js, damit der Test die Implementierung wirklich prüft */
+const pz = (s) => [...s].reduce((a, c, i) => a + (c === "<" ? 0 : /\d/.test(c) ? Number(c) : c.charCodeAt(0) - 55) * [7, 3, 1][i % 3], 0) % 10;
+const jjmmtt = (iso) => `${iso.slice(2, 4)}${iso.slice(5, 7)}${iso.slice(8, 10)}`;
+/** Gültige TD1-MRZ (Ausweiskarte, Deutschland „D“) mit berechneten Prüfziffern */
+function td1({ nummer = "T22000129", geb, ablauf, nachname, vorname, staat = "D", aussteller = "D" }) {
+  const nr = nummer.padEnd(9, "<");
+  const a = `ID${aussteller.padEnd(3, "<")}${nr}${pz(nr)}`.padEnd(30, "<");
+  const b0 = `${jjmmtt(geb)}${pz(jjmmtt(geb))}F${jjmmtt(ablauf)}${pz(jjmmtt(ablauf))}${staat.padEnd(3, "<")}`.padEnd(29, "<");
+  const b = b0 + pz(a.slice(5, 30) + b0.slice(0, 7) + b0.slice(8, 15) + b0.slice(18, 29));
+  return [a, b, `${nachname}<<${vorname}`.toUpperCase().padEnd(30, "<")];
+}
+const nurBuchstaben = (s) => s.replace(/\d/g, (d) => "ABCDEFGHIJ"[d]).toUpperCase();
+
+async function logikTeil() {
+  abschnitt("0. Eigene Identifizierung – Logik ohne Server (MRZ ICAO 9303, Wege, Video-Checkliste)");
+  const m = await import(pathToFileURL(path.join(process.cwd(), "src/lib/plattform/kycIdent.js")).href);
+  const B = m.MRZ_BEISPIELE;
+  const h2010 = new Date("2010-01-01T12:00:00Z");
+  const ids = (b, ampel) => new Set(b.befunde.filter((x) => !ampel || x.ampel === ampel).map((x) => x.id));
+  pruefe(m.mrzPruefziffer("L898902C3") === 6 && m.mrzPruefziffer("740812") === 2 && m.mrzPruefziffer("T22000129") === 3 && pz("D23145890") === m.mrzPruefziffer("D23145890"), "Prüfziffer 7-3-1 (ICAO-Beispiele, deutsche Musterdaten)");
+  for (const [k, fmt] of [["icaoTd3", "TD3"], ["icaoTd1", "TD1"], ["icaoTd2", "TD2"], ["deTd1", "TD1"]]) {
+    const z = m.mrzZerlegen(B[k], { heute: h2010 });
+    pruefe(z.format === fmt && z.pruefziffern.length >= 4 && z.pruefziffern.every((x) => x.ok), `Specimen ${k}: Format ${fmt}, alle Prüfziffern korrekt`, z.pruefziffern);
+  }
+  const td3 = m.mrzZerlegen(B.icaoTd3, { heute: h2010 }).felder;
+  pruefe(td3.nachname === "ERIKSSON" && td3.vornamen === "ANNA MARIA" && td3.geburtsdatum === "1974-08-12" && td3.gueltigBis === "2012-04-15" && td3.dokumentart === "reisepass", "TD3 zerlegt: ERIKSSON ANNA MARIA, 1974-08-12, gültig bis 2012-04-15", td3);
+  const anna = m.mrzBefund(B.icaoTd3, { vorname: "Anna Maria", nachname: "Eriksson", geburtsdatum: "1974-08-12", staatsangehoerigkeit: "SE", ausweis: { art: "reisepass", nummer: "L898902C3" } }, { heute: h2010 });
+  pruefe(anna.ampel === "gelb" && ids(anna, "gelb").has("muster") && !ids(anna, "rot").size && ids(anna, "gruen").has("name_nachname") && ids(anna, "gruen").has("dokumentnummer"), "ICAO-Specimen: Abgleich grün, Musterdaten als Hinweis (gelb)", [...ids(anna, "gelb")]);
+  const erika = m.mrzBefund(B.deTd1, { vorname: "Erika", nachname: "Mustermann", geburtsdatum: "1964-08-12", staatsangehoerigkeit: "DE", ausweis: { art: "personalausweis", nummer: "T22000129", gueltigBis: "2020-10-31" } }, { heute: h2010 });
+  pruefe(!ids(erika, "rot").size && [...ids(erika, "gelb")].join() === "muster" && ids(erika, "gruen").has("staatsangehoerigkeit"), "Deutsche Musterdaten MUSTERMANN ERIKA: „D“ → DE, nur Hinweis „Muster“", [...ids(erika, "gelb")]);
+  const falsch = [...B.icaoTd3];
+  falsch[1] = `${falsch[1].slice(0, 9)}7${falsch[1].slice(10)}`;
+  const rot = m.mrzBefund(falsch, {}, { heute: h2010 });
+  pruefe(rot.ampel === "rot" && ids(rot, "rot").has("pz_dokumentnummer") && ids(rot, "rot").has("pz_gesamt"), "Prüfziffernfehler → rot (Dokumentnummer + Gesamt)");
+  pruefe(ids(m.mrzBefund(B.icaoTd3, {}, { heute: new Date("2026-09-30T12:00:00Z") }), "rot").has("abgelaufen"), "Ablauf in der Vergangenheit → rot");
+  const heute = new Date("2026-09-30T12:00:00Z");
+  const jung = td1({ geb: "2012-05-05", ablauf: "2030-05-05", nachname: "KLEIN", vorname: "MIA" });
+  pruefe(ids(m.mrzBefund(jung, {}, { heute }), "rot").has("minderjaehrig"), "Alter < 18 → rot");
+  const mueller = td1({ geb: "1980-02-03", ablauf: "2031-01-01", nachname: "MUELLER", vorname: "JOERG<PETER" });
+  const bm = m.mrzBefund(mueller, { vorname: "Jörg", nachname: "Müller", geburtsdatum: "1980-02-03", staatsangehoerigkeit: "DE", ausweis: { art: "personalausweis", nummer: "T22000129", gueltigBis: "2031-01-01" } }, { heute });
+  pruefe(bm.ampel === "gruen", "Umlaute/Transliteration tolerant (Müller ↔ MUELLER, Rufname Jörg)", bm.befunde.filter((x) => x.ampel !== "gruen"));
+  const gross = td1({ geb: "1980-02-03", ablauf: "2031-01-01", nachname: "GROSS", vorname: "ANNA" });
+  pruefe(ids(m.mrzBefund(gross, { nachname: "Groß", vorname: "Anna" }, { heute }), "gruen").has("name_nachname"), "ß → SS");
+  const abw = m.mrzBefund(mueller, { vorname: "Jürgen", nachname: "Maier", geburtsdatum: "1980-02-04", staatsangehoerigkeit: "AT", ausweis: { art: "reisepass", nummer: "X1", gueltigBis: "2031-01-02" } }, { heute });
+  pruefe([...ids(abw, "rot")].sort().join() === "dokumentnummer,geburtsdatum,name_nachname" && [...ids(abw, "gelb")].sort().join() === "dokumentart,gueltig_bis,name_vorname,staatsangehoerigkeit", "Abweichungen: Nachname/Geburtsdatum/Nummer rot, Vorname/Staat/Art/Gültigkeit gelb", { rot: [...ids(abw, "rot")], gelb: [...ids(abw, "gelb")] });
+  pruefe(m.mrzZeilen(B.icaoTd1.join("")).join("|") === B.icaoTd1.join("|") && m.mrzBefund(["ABC"], {}).ampel === "rot", "Einzeilige Eingabe wird aufgeteilt, unbekanntes Format rot");
+  const METH = [{ id: "eid", verfuegbar: false }, { id: "video_intern", verfuegbar: true }, { id: "extern", verfuegbar: true }];
+  const w1 = Object.fromEntries(m.kycMethodenBewerten(METH, { risiko: "mittel" }).map((x) => [x.id, x]));
+  const w2 = Object.fromEntries(m.kycMethodenBewerten(METH.map((x) => ({ ...x, verfuegbar: true })), { risiko: "hoch" }).map((x) => [x.id, x]));
+  pruefe(!w1.eid.zulaessig && w1.video_intern.empfohlen && w2.eid.empfohlen && !w2.extern.zulaessig, "Wege: eID erst nach Freischaltung, Empfehlung in Reihenfolge, extern bei Risiko hoch nicht zulässig");
+  const alle = Object.fromEntries(m.KYC_VIDEO_PUNKT_IDS.filter((x) => x !== "tan").map((x) => [x, { ok: true }]));
+  pruefe(m.videoAbschlussPruefen({ punkte: alle, tan: { bestaetigt: true } }, { ergebnis: "bestanden", begruendung: "Alle Merkmale geprüft." }).ok
+    && !m.videoAbschlussPruefen({ punkte: alle, tan: { bestaetigt: false } }, { ergebnis: "bestanden", begruendung: "Alle Merkmale geprüft." }).ok
+    && !m.videoAbschlussPruefen({}, { ergebnis: "abgebrochen", begruendung: "Verbindung abgerissen" }).ok
+    && !m.videoAbschlussPruefen({}, { ergebnis: "verdacht", begruendung: "kurz" }).ok, "Video: bestanden nur mit allen Pflichtpunkten + TAN, Abbruch mit Grund, jede Entscheidung begründet");
+  pruefe(m.KYC_VIDEO_CHECKLISTE.length >= 10 && ["einwilligung", "lichtbild", "hologramm", "rueckseite", "seriennummer", "plausibilitaet", "tan"].every((x) => m.KYC_VIDEO_PUNKT_IDS.includes(x)) && /Muster/.test(m.KYC_VIDEO_HINWEIS), "Pflicht-Checkliste vollständig und als Muster gekennzeichnet");
+  // Gleichheit mit Frappe (kyc_ident_kern.py), falls Python vorhanden
+  const faelle = { anna: [B.icaoTd3, { vorname: "Anna Maria", nachname: "Eriksson", geburtsdatum: "1974-08-12", staatsangehoerigkeit: "SE", ausweis: { art: "reisepass", nummer: "L898902C3" } }, "2010-01-01"], falsch: [falsch, {}, "2010-01-01"], mueller: [mueller, { vorname: "Jörg", nachname: "Müller", geburtsdatum: "1980-02-03", staatsangehoerigkeit: "DE", ausweis: { art: "personalausweis", nummer: "T22000129", gueltigBis: "2031-01-01" } }, "2026-09-30"], abw: [mueller, { vorname: "Jürgen", nachname: "Maier", geburtsdatum: "1980-02-04", staatsangehoerigkeit: "AT", ausweis: { art: "reisepass", nummer: "X1", gueltigBis: "2031-01-02" } }, "2026-09-30"], td2: [B.icaoTd2, {}, "2010-01-01"], jung: [jung, {}, "2026-09-30"] };
+  const py = spawnSync(process.env.PYTHON || "python", ["-c", "import sys,json,datetime;sys.path.insert(0,'Backend-Import/oekoinvest_app');from oekoinvest_app.plattform import kyc_ident_kern as ik;d=json.loads(sys.stdin.buffer.read().decode('utf-8'));print(json.dumps({k:[[b['id'],b['ampel']] for b in ik.mrz_befund(v[0],v[1],datetime.date.fromisoformat(v[2]))['befunde']] for k,v in d.items()}))"], { input: JSON.stringify(faelle), encoding: "utf8", timeout: 30000 });
+  if (py.status === 0) {
+    const pyErg = JSON.parse(py.stdout);
+    const js = Object.fromEntries(Object.entries(faelle).map(([k, [z, soll, tag]]) => [k, m.mrzBefund(z, soll, { heute: new Date(`${tag}T12:00:00Z`) }).befunde.map((b) => [b.id, b.ampel])]));
+    pruefe(JSON.stringify(js) === JSON.stringify(pyErg), "JS (kycIdent.js) und Python (kyc_ident_kern.py) liefern identische Befunde", Object.keys(js).filter((k) => JSON.stringify(js[k]) !== JSON.stringify(pyErg[k])));
+  } else console.log(`  – Python nicht verfügbar, Gleichheitsprüfung übersprungen (${(py.stderr || py.error?.message || "").slice(0, 120)})`);
+}
+
+async function identTeil({ comp, comp2, admin, gast }) {
+  let r;
+  abschnitt("11. MRZ im KYC-Fall (verschlüsselt, Live-Befund, Compliance-Ansicht, Risiko)");
+  const endung = nurBuchstaben(LAUF);
+  const mz = new Client("mrz");
+  await mz.registrieren("mrz", ["investor"], "Erika", `Probe${endung}`);
+  const nach = `Probe${endung}`;
+  const gueltig = inTagen(1500);
+  r = await mz.patch("/api/portal/kyc", { abschnitt: "kontotyp", daten: { kontotyp: "privat" } });
+  const fallMz = r.json.fall?.id;
+  await mz.patch("/api/portal/kyc", { abschnitt: "person", daten: person("Erika", nach, "1980-02-03") });
+  r = await mz.get("/api/portal/kyc");
+  const wege = Object.fromEntries((r.json.methoden || []).map((x) => [x.id, x]));
+  const empfohlen = (r.json.methoden || []).find((x) => x.empfohlen);
+  pruefe(wege.video_intern?.zulaessig && wege.eid && wege.extern && empfohlen?.id === (r.json.methoden || []).find((x) => x.verfuegbar && x.zulaessig)?.id && r.json.methoden[0].id === "eid", "Methodenwahl: drei Wege in fester Reihenfolge (eID → Video → Anbieter), Empfehlung = erster zulässige", r.json.methoden?.map((x) => `${x.id}:${x.verfuegbar}/${x.zulaessig}/${x.empfohlen}`));
+  if (!wege.eid?.verfuegbar) {
+    r = await mz.patch("/api/portal/kyc", { abschnitt: "methode", daten: { methode: "eid" } });
+    pruefe(r.status === 422, "Nicht verfügbarer Weg (eID) → 422", r.status);
+  }
+  r = await mz.post("/api/portal/kyc/video", { aktion: "buchen", start: new Date().toISOString() });
+  pruefe(r.status === 422, "Videotermin ohne gewählten Weg „Video“ → 422", r.status);
+  r = await mz.patch("/api/portal/kyc", { abschnitt: "methode", daten: { methode: "video_intern" } });
+  pruefe(r.status === 200 && r.json.fall?.methode === "video_intern" && r.json.anforderungen?.some((a) => a.id === "mrz" && a.pflicht && !a.erfuellt), "Weg „Ausweis + Video“ gewählt → MRZ und Videotermin werden Pflicht", r.json.fall?.methode);
+  const zeilen = td1({ geb: "1980-02-03", ablauf: gueltig, nachname: nach, vorname: "Erika" });
+  const kaputt = [...zeilen];
+  kaputt[1] = `${kaputt[1].slice(0, 6)}${(pz(kaputt[1].slice(0, 6)) + 1) % 10}${kaputt[1].slice(7)}`;
+  r = await mz.patch("/api/portal/kyc", { abschnitt: "mrz", daten: { zeilen: kaputt } });
+  pruefe(r.status === 200 && r.json.fall?.mrz?.ampel === "rot" && r.json.fall.mrz.befunde.some((b) => b.id === "pz_geburtsdatum" && b.ampel === "rot"), "Server prüft erneut: Prüfziffer Geburtsdatum falsch → rot", r.json.fall?.mrz?.befunde?.filter((b) => b.ampel !== "gruen"));
+  r = await mz.patch("/api/portal/kyc", { abschnitt: "mrz", daten: { zeilen } });
+  const mrzNutzer = r.json.fall?.mrz;
+  pruefe(r.status === 200 && mrzNutzer?.ampel === "gruen" && mrzNutzer.format === "TD1", "Korrekte MRZ (TD1) + Abgleich mit den Angaben → grün", mrzNutzer?.befunde?.filter((b) => b.ampel !== "gruen"));
+  pruefe(!JSON.stringify(r.json).includes(zeilen[1]) && !("chiffrat" in (mrzNutzer || {})) && !("zeilen" in (mrzNutzer || {})), "Antwort an den Nutzer ohne MRZ-Zeilen und ohne Chiffrat");
+  let roh = readFileSync(path.join(process.cwd(), ".data", "plattform.json"), "utf8");
+  pruefe(!roh.includes(zeilen[1]) && !roh.includes(zeilen[0]), "MRZ-Zeilen liegen nicht im Klartext in der Demo-Datenbank (verschlüsselt)");
+  r = await mz.patch("/api/portal/kyc", { abschnitt: "mrz", daten: { zeilen: ["P<ZU<KURZ"] } });
+  pruefe(r.status === 422, "Unvollständige MRZ → 422", r.status);
+  r = await mz.patch("/api/portal/kyc", { abschnitt: "person", daten: person("Erika", "Anders", "1980-02-03") });
+  pruefe(r.json.fall?.mrz?.ampel === "rot" && r.json.fall.mrz.befunde.some((b) => b.id === "name_nachname" && b.ampel === "rot"), "Geänderte Personenangaben → MRZ-Abgleich neu bewertet (Nachname rot)", r.json.fall?.mrz?.ampel);
+  await mz.patch("/api/portal/kyc", { abschnitt: "person", daten: person("Erika", nach, "1980-02-03") });
+  r = await comp.get(`/api/admin/compliance/${fallMz}`);
+  pruefe(r.status === 200 && r.json.fall?.mrz?.ampel === "gruen" && r.json.fall.mrz.zeilen?.join("|") === zeilen.join("|") && r.json.fall.methode === "video_intern", "Compliance sieht Befund, Ampel und entschlüsselte Zeilen", r.json.fall?.mrz?.ampel);
+  pruefe(Array.isArray(r.json.fall?.identGruende) && r.json.fall.identGruende.some((g) => /noch nicht bestanden/.test(g)), "Freigabe-Hinweis: Videoidentifizierung noch nicht bestanden", r.json.fall?.identGruende);
+  r = await admin.get(`/api/admin/compliance/${fallMz}`);
+  pruefe(r.status === 403, "Leitung ohne Unterrolle Compliance: keine MRZ (403)", r.status);
+
+  abschnitt("12. Videoidentifizierung durch die Compliance (Termin, Checkliste, TAN, Protokoll, Vier-Augen, Verdacht)");
+  r = await comp.get("/api/admin/compliance/einstellungen");
+  const vorher = { methoden: r.json.einstellungen?.methoden, videoLink: r.json.einstellungen?.videoLink || "", identifizierungPflicht: !!r.json.einstellungen?.identifizierungPflicht };
+  try {
+    r = await comp.put("/api/admin/compliance/einstellungen", { videoLink: "http://unsicher.example.org" });
+    pruefe(r.status === 422, "Videolink nur mit https:// (422)", r.status);
+    r = await comp.put("/api/admin/compliance/einstellungen", { videoLink: "https://meet.example.org/oekoinvest-kyc-demo" });
+    pruefe(r.status === 200 && r.json.einstellungen?.videoLink === "https://meet.example.org/oekoinvest-kyc-demo", "Compliance hinterlegt den Link zum Videokonferenz-Werkzeug (Platzhalter)", r.json);
+    r = await admin.put("/api/admin/compliance/einstellungen", { methoden: { niedrig: ["eid"] } });
+    pruefe(r.status === 403, "Zulässige Wege ändert nur die Compliance (403)", r.status);
+    r = await mz.get("/api/portal/kyc/video");
+    pruefe(r.status === 200 && r.json.buchbar === true && r.json.slots?.length > 0 && /kein Video auf/.test(r.json.datenschutz || ""), "Nutzer sieht freie Videotermine und den Datenschutzhinweis", { buchbar: r.json.buchbar, slots: r.json.slots?.length });
+    r = await admin.get("/api/portal/termine/slots?art=identifizierung");
+    const durchfuehrende = new Set((r.json.slots || []).flatMap((s) => (s.mitarbeiter || []).map((x) => x.id)));
+    pruefe(r.status === 200 && durchfuehrende.size > 0 && [...durchfuehrende].every((id) => [comp.nutzer.id, comp2.nutzer.id].includes(id)), "Terminart „Identifizierung“: nur Compliance-Mitarbeiter als Durchführende", [...durchfuehrende]);
+    const slots = (await mz.get("/api/portal/kyc/video")).json.slots || [];
+    r = await mz.post("/api/portal/kyc/video", { aktion: "buchen", start: slots[0]?.start });
+    pruefe(r.status === 200 && r.json.video?.status === "gebucht" && r.json.video.termin?.id && r.json.videoLink === "https://meet.example.org/oekoinvest-kyc-demo", "Videotermin gebucht (vorhandene Terminbuchung), Link sichtbar", r.json.video);
+    r = await mz.post("/api/portal/kyc/video", { aktion: "buchen", start: slots[1]?.start });
+    pruefe(r.status === 409, "Zweiter Termin → 409", r.status);
+    r = await mz.get("/api/portal/termine");
+    pruefe((r.json.termine || r.json.liste || []).some?.((t) => t.art === "identifizierung") ?? true, "Termin erscheint unter „Meine Termine“", Object.keys(r.json));
+    // Einreichen (Termin gebucht genügt), Verifizieren vor bestandenem Gespräch gesperrt
+    await hochladen(mz, pdfBytes("Ausweis vorne MRZ"), "vorne.pdf", { art: "ausweis_vorne" });
+    await hochladen(mz, pdfBytes("Ausweis hinten MRZ"), "hinten.pdf", { art: "ausweis_hinten" });
+    await mz.patch("/api/portal/kyc", { abschnitt: "pep", daten: { istPep: false, naheStehend: false } });
+    await mz.patch("/api/portal/kyc", { abschnitt: "mittelherkunft", daten: { ticket: "bis250k", quellen: ["eigenkapital"] } });
+    r = await mz.post("/api/portal/kyc/einreichen", {});
+    pruefe(r.status === 200 && r.json.fall?.status === "eingereicht", "Einreichen mit MRZ und gebuchtem Videotermin", r.json);
+    r = await verifizieren(comp, fallMz);
+    pruefe(r.status === 409 && /Videoidentifizierung/.test(r.json.error || ""), "Verifizieren vor bestandener Videoidentifizierung → 409", r.json);
+    // Gespräch
+    r = await mz.post(`/api/admin/compliance/${fallMz}/video`, { aktion: "start" });
+    pruefe(r.status === 403, "Nutzer kann kein Gespräch protokollieren (403)", r.status);
+    r = await admin.post(`/api/admin/compliance/${fallMz}/video`, { aktion: "start" });
+    pruefe(r.status === 403, "Leitung ohne Unterrolle Compliance → 403", r.status);
+    r = await comp.post(`/api/admin/compliance/${fallMz}/video`, { aktion: "start" });
+    pruefe(r.status === 200 && r.json.protokollId, "Compliance beginnt das Gespräch (Durchführende/r)", r.json);
+    const pid = r.json.protokollId;
+    r = await comp2.post(`/api/admin/compliance/${fallMz}/video`, { aktion: "punkt", punkt: "lichtbild", ok: true });
+    pruefe(r.status === 409, "Andere Compliance-Person kann das laufende Gespräch nicht protokollieren (409)", r.status);
+    r = await comp.post(`/api/admin/compliance/${fallMz}/video`, { aktion: "abschluss", ergebnis: "bestanden", begruendung: "Zu früh abgeschlossen – Test." });
+    pruefe(r.status === 422 && /Pflichtpunkte|Einmalcode/.test(r.json.error || ""), "„Bestanden“ ohne Pflichtpunkte/TAN → 422", r.json);
+    for (const p of ["einwilligung", "umgebung", "lichtbild", "vorderseite", "rueckseite", "hologramm", "schriftbild", "beschaedigung", "seriennummer", "plausibilitaet"]) {
+      r = await comp.post(`/api/admin/compliance/${fallMz}/video`, { aktion: "punkt", punkt: p, ok: true, notiz: p === "hologramm" ? "Kinegramm beim Kippen einwandfrei" : "" });
+      if (r.status !== 200) break;
+    }
+    pruefe(r.status === 200, "Alle Punkte der Pflicht-Checkliste mit Zeitstempel bestätigt", r.json);
+    r = await comp.post(`/api/admin/compliance/${fallMz}/video`, { aktion: "tan_senden", kanal: "sms" });
+    pruefe(r.status === 422 && /SMS/.test(r.json.error || ""), "SMS-Versand nicht eingerichtet → klare Meldung (422)", r.json);
+    r = await comp.post(`/api/admin/compliance/${fallMz}/video`, { aktion: "tan_senden", kanal: "email" });
+    pruefe(r.status === 200 && /gesendet/.test(r.json.hinweis || ""), "Einmalcode per E-Mail gesendet (Adresse maskiert)", r.json.hinweis);
+    r = await admin.get("/api/admin/postausgang?limit=60");
+    const mail = (r.json.mails || []).find((x) => x.an === mz.email && /Bestätigungscode/.test(x.betreff));
+    const code = mail?.text?.match(/\b(\d{6})\b/)?.[1];
+    pruefe(!!code, "E-Mail mit 6-stelligem Code im (Demo-)Postausgang", mail?.betreff);
+    r = await comp.post(`/api/admin/compliance/${fallMz}/video`, { aktion: "tan_pruefen", code: code === "000000" ? "111111" : "000000" });
+    pruefe(r.status === 422 && /noch 2 Versuche/.test(r.json.error || ""), "Falscher Code → 422, Versuch gezählt", r.json);
+    r = await comp.get(`/api/admin/compliance/${fallMz}`);
+    const lauf = (r.json.fall?.video?.protokolle || []).find((p) => p.id === pid);
+    pruefe(lauf?.tan?.versuche === 1 && !("hash" in (lauf?.tan || {})) && !JSON.stringify(r.json).includes(`"${code}"`), "Compliance-Ansicht: Fehlversuch gezählt, kein TAN-Hash/Code ausgegeben", lauf?.tan);
+    r = await comp.post(`/api/admin/compliance/${fallMz}/video`, { aktion: "tan_pruefen", code });
+    pruefe(r.status === 200 && /bestätigt/.test(r.json.hinweis || ""), "Vorgelesener Code bestätigt", r.json);
+    r = await comp.post(`/api/admin/compliance/${fallMz}/video`, { aktion: "abschluss", ergebnis: "bestanden", begruendung: "kurz" });
+    pruefe(r.status === 422, "Abschluss ohne ausreichende Begründung → 422", r.status);
+    r = await comp.post(`/api/admin/compliance/${fallMz}/video`, { aktion: "abschluss", ergebnis: "bestanden", begruendung: "Lichtbild, Sicherheitsmerkmale und Angaben stimmen, TAN bestätigt." });
+    pruefe(r.status === 200 && /bestanden/.test(r.json.hinweis || ""), "Videoidentifizierung bestanden", r.json);
+    r = await comp.get(`/api/admin/compliance/${fallMz}`);
+    const fertig = (r.json.fall?.video?.protokolle || []).find((p) => p.id === pid);
+    pruefe(r.json.fall?.video?.status === "bestanden" && /^[0-9a-f]{64}$/.test(fertig?.hash || "") && fertig.eintraege.length >= 14 && fertig.eintraege.every((e) => e.am && e.vonId) && fertig.durchfuehrender, "Protokoll mit Zeitstempeln, Durchführender und SHA-256", { status: r.json.fall?.video?.status, eintraege: fertig?.eintraege?.length });
+    pruefe((r.json.fall?.zugriffe || []).some((z) => z.aktion === "kyc_video"), "Gesprächsschritte im Revisionsprotokoll (Hash-Kette)");
+    r = await comp.get(`/api/admin/compliance/${fallMz}/video?protokoll=${pid}`, { roh: false });
+    pruefe(r.status === 200 && /application\/pdf/.test(r.headers.get("content-type") || "") && r.text.startsWith("%PDF") && /no-store/.test(r.headers.get("cache-control") || ""), "Protokoll als PDF (no-store)", r.status);
+    r = await mz.get(`/api/admin/compliance/${fallMz}/video?protokoll=${pid}`);
+    pruefe(r.status === 403, "Nutzer: kein Zugriff auf das Protokoll-PDF (403)", r.status);
+    r = await gast.get(`/api/admin/compliance/${fallMz}/video?protokoll=${pid}`);
+    pruefe(r.status === 401, "ohne Anmeldung → 401", r.status);
+    r = await mz.get("/api/portal/kyc");
+    pruefe(r.json.fall?.video?.status === "abgeschlossen" && !JSON.stringify(r.json.fall.video).includes("bestanden"), "Nutzer sieht „abgeschlossen“ (kein Ergebnisdetail)", r.json.fall?.video);
+    r = await verifizieren(comp, fallMz);
+    pruefe(r.status === 200 && r.json.status === "verifiziert", "Niedriges Risiko: Verifizierung nach bestandener Videoidentifizierung", r.json);
+
+    // Vier-Augen: hohes Risiko – wer das Gespräch geführt hat, gibt nicht zweitfrei; zuvor ein abgebrochenes Gespräch
+    const vh = new Client("video-hoch");
+    await vh.registrieren("vhoch", ["investor"], "Hanna", `Hoch${endung}`);
+    const kv = await kycPrivat(vh, { vorname: "Hanna", nachname: `Hoch${endung}`, investor: true, pep: true });
+    await vh.patch("/api/portal/kyc", { abschnitt: "methode", daten: { methode: "video_intern" } });
+    await vh.patch("/api/portal/kyc", { abschnitt: "mrz", daten: { zeilen: td1({ geb: "1980-02-03", ablauf: gueltig, nachname: `Hoch${endung}`, vorname: "Hanna" }) } });
+    const fallVh = kv.fall.id;
+    r = await vh.get("/api/portal/kyc");
+    pruefe(!(r.json.methoden || []).find((x) => x.id === "extern")?.zulaessig, "PEP → Risiko hoch: externer Anbieter laut Standard-Einstellung nicht zulässig", r.json.methoden?.map((x) => `${x.id}:${x.zulaessig}`));
+    let s2 = (await vh.get("/api/portal/kyc/video")).json.slots || [];
+    r = await vh.post("/api/portal/kyc/video", { aktion: "buchen", start: s2[2]?.start || s2[0]?.start });
+    pruefe(r.status === 200, "Zweites Konto bucht Videotermin", r.json);
+    await hochladen(vh, pdfBytes("Nachweis Mittelherkunft"), "mittel.pdf", { art: "mittelherkunft" }); // hohes Risiko (PEP) → Nachweis Pflicht
+    await vh.post("/api/portal/kyc/einreichen", {});
+    await comp.post(`/api/admin/compliance/${fallVh}/video`, { aktion: "start" });
+    r = await comp.post(`/api/admin/compliance/${fallVh}/video`, { aktion: "abschluss", ergebnis: "abgebrochen", begruendung: "Verbindung mehrfach abgerissen, Bild unscharf." });
+    pruefe(r.status === 422 && /Abbruchgrund/.test(r.json.error || ""), "Abbruch ohne Abbruchgrund → 422", r.json);
+    r = await comp.post(`/api/admin/compliance/${fallVh}/video`, { aktion: "abschluss", ergebnis: "abgebrochen", abbruchgrund: "technik", begruendung: "Verbindung mehrfach abgerissen, Bild unscharf." });
+    pruefe(r.status === 200, "Gespräch abgebrochen (Grund: Technik)", r.json);
+    r = await vh.get("/api/portal/kyc/video");
+    pruefe(r.json.video?.status === "abgebrochen" && r.json.buchbar === true && r.json.video.gespraeche === 1, "Nutzer: Gespräch abgebrochen, Termin als stattgefunden verbucht → neuer Termin buchbar", r.json.video);
+    r = await vh.get("/api/portal/kyc");
+    pruefe(r.json.anforderungen?.some((a) => a.id === "video" && !a.erfuellt && /neuen Termin/.test(a.hinweis || "")), "Anforderung „Videotermin“ wieder offen mit Hinweis", r.json.anforderungen?.find((a) => a.id === "video"));
+    s2 = (await vh.get("/api/portal/kyc/video")).json.slots || [];
+    r = await vh.post("/api/portal/kyc/video", { aktion: "buchen", start: s2[3]?.start || s2[0]?.start });
+    r = await vh.post("/api/portal/kyc/video", { aktion: "stornieren" });
+    pruefe(r.status === 200 && r.json.buchbar === true && !r.json.video?.termin, "Termin abgesagt (vorhandene Terminverwaltung) → wieder buchbar", r.json.video);
+    s2 = r.json.slots || [];
+    r = await vh.post("/api/portal/kyc/video", { aktion: "buchen", start: s2[3]?.start || s2[0]?.start });
+    pruefe(r.status === 200 && r.json.video?.status === "gebucht", "Neuer Termin gebucht", r.json.video);
+    await comp.post(`/api/admin/compliance/${fallVh}/video`, { aktion: "start" });
+    for (const p of ["einwilligung", "umgebung", "lichtbild", "vorderseite", "rueckseite", "hologramm", "schriftbild", "beschaedigung", "seriennummer", "plausibilitaet"]) await comp.post(`/api/admin/compliance/${fallVh}/video`, { aktion: "punkt", punkt: p, ok: true });
+    await comp.post(`/api/admin/compliance/${fallVh}/video`, { aktion: "tan_senden", kanal: "email" });
+    const code2 = ((await admin.get("/api/admin/postausgang?limit=60")).json.mails || []).find((x) => x.an === vh.email && /Bestätigungscode/.test(x.betreff))?.text?.match(/\b(\d{6})\b/)?.[1];
+    await comp.post(`/api/admin/compliance/${fallVh}/video`, { aktion: "tan_pruefen", code: code2 });
+    r = await comp.post(`/api/admin/compliance/${fallVh}/video`, { aktion: "abschluss", ergebnis: "bestanden", begruendung: "Alle Merkmale geprüft, Person eindeutig identifiziert." });
+    pruefe(r.status === 200, "Zweites Gespräch bestanden", r.json);
+    r = await verifizieren(comp2, fallVh);
+    pruefe(r.status === 200 && r.json.status === "zweitpruefung", "Risiko hoch: Erstprüfung durch die zweite Compliance-Person → Zweitfreigabe nötig", r.json);
+    r = await comp.post(`/api/admin/compliance/${fallVh}`, { aktion: "zweitfreigabe", ergebnis: "verifiziert", grund: "Zweitprüfung" });
+    pruefe(r.status === 409 && /Videoidentifizierung durchgeführt/.test(r.json.error || ""), "Vier-Augen: Durchführende/r des Gesprächs darf nicht zweitfreigeben (409)", r.json);
+
+    // Verdacht: Risiko hoch, Verifizierung gesperrt, Person erfährt nichts
+    const vd = new Client("video-verdacht");
+    await vd.registrieren("vvogel", ["investor"], "Veit", `Vogel${endung}`);
+    const kd = await kycPrivat(vd, { vorname: "Veit", nachname: `Vogel${endung}`, investor: true });
+    await vd.patch("/api/portal/kyc", { abschnitt: "methode", daten: { methode: "video_intern" } });
+    await vd.patch("/api/portal/kyc", { abschnitt: "mrz", daten: { zeilen: td1({ geb: "1980-02-03", ablauf: gueltig, nachname: `Vogel${endung}`, vorname: "Veit" }) } });
+    const s3 = (await vd.get("/api/portal/kyc/video")).json.slots || [];
+    await vd.post("/api/portal/kyc/video", { aktion: "buchen", start: s3[4]?.start || s3[0]?.start });
+    await vd.post("/api/portal/kyc/einreichen", {});
+    await comp.post(`/api/admin/compliance/${kd.fall.id}/video`, { aktion: "start" });
+    r = await comp.post(`/api/admin/compliance/${kd.fall.id}/video`, { aktion: "abschluss", ergebnis: "verdacht", begruendung: "Lichtbild weicht deutlich ab, Hologramm beim Kippen ohne Farbwechsel." });
+    pruefe(r.status === 200 && /nicht informiert/.test(r.json.hinweis || ""), "Verdacht dokumentiert (Hinweis: Person nicht informieren)", r.json);
+    r = await comp.get(`/api/admin/compliance/${kd.fall.id}`);
+    pruefe(r.json.fall?.risiko === "hoch" && r.json.fall.risikoRegel?.gruende?.some((g) => /Videoidentifizierung: Verdacht/.test(g)) && r.json.fall.video?.status === "verdacht", "Verdacht fließt in die Risikobewertung ein (hoch)", r.json.fall?.risikoRegel);
+    r = await verifizieren(comp2, kd.fall.id);
+    pruefe(r.status === 409 && /Verdacht/.test(r.json.error || ""), "Verifizierung bei Verdacht gesperrt (409)", r.json);
+    r = await vd.get("/api/portal/kyc");
+    pruefe(r.json.fall?.video?.status === "abgeschlossen" && !/verdacht/i.test(JSON.stringify(r.json)), "Nutzer sieht nur „abgeschlossen“ – kein Hinweis auf Verdacht (Tipping-off)", r.json.fall?.video);
+    r = await vd.get("/api/portal/benachrichtigungen");
+    pruefe(!JSON.stringify(r.json).includes("Verdacht –") && !/mit Verdacht/.test(JSON.stringify(r.json)), "Keine Benachrichtigung über den Verdacht an die Person");
+
+    // Löschfrist: MRZ und Videoprotokolle fallen mit dem Fall
+    r = await comp.post(`/api/admin/compliance/${fallMz}`, { aktion: "beziehungEnde", datum: "2020-03-31" });
+    r = await comp.post("/api/admin/compliance/fristen", { fallId: fallMz });
+    pruefe(r.status === 200 && r.json.geloescht === 1, "Löschfrist abgelaufen → Fall gelöscht", r.json);
+    r = await comp.get(`/api/admin/compliance/${fallMz}`);
+    pruefe(!r.json.fall?.mrz && !(r.json.fall?.video?.protokolle || []).length, "MRZ (verschlüsselt) und Videoprotokolle mitgelöscht", { mrz: r.json.fall?.mrz, video: r.json.fall?.video?.anzahl });
+    roh = readFileSync(path.join(process.cwd(), ".data", "plattform.json"), "utf8");
+    pruefe(!roh.includes(`"${fallMz}:mrz"`) && !roh.includes(zeilen[2]), "Keine MRZ-Reste in der Datenbank");
+
+    abschnitt("12b. Seiten mit Identifizierung");
+    for (const [c, pf] of [[vh, "/portal/verifizierung"], [comp, `/portal/admin/compliance/${fallVh}`], [comp, "/portal/admin/compliance"]]) {
+      r = await c.get(pf);
+      pruefe(r.status === 200 && !/Application error|Unhandled Runtime Error/.test(r.text), `${pf} (${c.name}) → 200`, r.status);
+    }
+    r = await vh.get("/portal/verifizierung");
+    pruefe(!r.text.includes(td1({ geb: "1980-02-03", ablauf: gueltig, nachname: `Hoch${endung}`, vorname: "Hanna" })[1]), "Verifizierungsseite enthält die MRZ nicht im Klartext");
+  } finally {
+    await comp.put("/api/admin/compliance/einstellungen", vorher.methoden ? { methoden: vorher.methoden, videoLink: vorher.videoLink, identifizierungPflicht: vorher.identifizierungPflicht } : { videoLink: vorher.videoLink }).catch(() => {});
+  }
+}
+
 async function main() {
+  await logikTeil();
+  if (NUR_LOGIK) {
+    console.log(`\n${ok} bestanden, ${fehler} fehlgeschlagen (nur Logik)`);
+    process.exit(fehler ? 1 : 0);
+  }
   console.log(`KYC/KYB-Test gegen ${BASIS} (Lauf ${LAUF})`);
   const gast = new Client("gast");
   const admin = new Client("admin");
@@ -457,6 +749,8 @@ async function main() {
     pruefe(r.status === 200 && r.json.fall?.investorTyp === "genossenschaft" && /genossenschaft/i.test(r.json.fall?.investorTypLabel || ""), "Compliance sieht den Investorentyp am Fall", r.json.fall?.investorTypLabel);
     r = await sank.get("/api/portal/kyc");
     pruefe(r.status === 200 && !r.json.investorVorgaben, "Ohne Investorentyp im Suchprofil kein Vorschlag", r.json.investorVorgaben);
+
+    await identTeil({ comp, comp2, admin, gast }); // Eigene Identifizierung: MRZ, Videoidentifizierung
 
     abschnitt("10. Seiten");
     for (const [c, p, erwartet] of [[inv, "/portal/verifizierung", 200], [comp, "/portal/admin/compliance", 200], [comp, `/portal/admin/compliance/${fallInv}`, 200], [admin, "/portal/admin/compliance", 200]]) {

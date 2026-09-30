@@ -33,6 +33,12 @@ export const TERMIN_ARTEN = {
     label: "Datenraum-Session", kurz: "Datenraum", dauer: 60, puffer: 15, kanal: "video", oeffentlich: false, rollen: ["investor"], vorlaufStunden: 24,
     text: "Geführte Durchsicht des Datenraums mit Fragen an das Transaktionsteam (nach NDA-Freigabe).",
   },
+  // KYC „Eigene Identifizierung“: Videogespräch zur Identitätsprüfung, durchgeführt nur von der Backoffice-Unterrolle Compliance
+  identifizierung: {
+    label: "Identifizierung per Video", kurz: "Identifizierung", dauer: 30, puffer: 15, kanal: "video", oeffentlich: false, vorlaufStunden: 4,
+    rollen: ["flaeche", "landwirt", "investor", "anbieter", "unternehmen", "mitglied", "kommune"], unterrolle: "compliance",
+    text: "Videogespräch mit unserer Compliance zur Identitätsprüfung – bitte den Ausweis bereithalten. Buchung am besten unter „Verifizierung“.",
+  },
 };
 export const TERMIN_ART_IDS = Object.keys(TERMIN_ARTEN);
 

@@ -91,6 +91,43 @@ export default function ComplianceWerkzeuge({ einstellungen }) {
         <p className="mt-2 text-[12.5px] text-ink-500">Hochrisiko-Drittländer: {(e.hochrisikoLaender || []).join(", ") || "–"} (EU-Liste in der jeweils geltenden Fassung pflegen)</p>
       </Karte>
 
+      <Karte titel="Identifizierungswege" untertitel="Welche Wege je Risikostufe zulässig sind (Eigene Identifizierung)">
+        <div className="-mx-1 overflow-x-auto px-1">
+          <table className="w-full min-w-[420px] text-left text-[13.5px]">
+            <thead>
+              <tr className="text-[12px] uppercase tracking-wider text-ink-500"><th className="py-2 pr-3 font-semibold">Weg</th>{["niedrig", "mittel", "hoch"].map((r) => <th key={r} className="px-2 py-2 font-semibold">Risiko {r}</th>)}</tr>
+            </thead>
+            <tbody className="divide-y divide-ink-100">
+              {(e.methodenListe || []).map((m) => (
+                <tr key={m.id}>
+                  <td className="py-2 pr-3 text-ink-800">{m.label}{!m.verfuegbar && <span className="block text-[12px] text-ink-500">derzeit nicht verfügbar</span>}</td>
+                  {["niedrig", "mittel", "hoch"].map((r) => {
+                    const an = (e.methoden?.[r] || []).includes(m.id);
+                    return (
+                      <td key={r} className="px-2 py-2">
+                        <input type="checkbox" className="h-4 w-4 accent-ov-600" aria-label={`${m.label} bei Risiko ${r}`} checked={an}
+                          onChange={(ev) => {
+                            const liste = ev.target.checked ? [...new Set([...(e.methoden?.[r] || []), m.id])] : (e.methoden?.[r] || []).filter((x) => x !== m.id);
+                            const methoden = { ...e.methoden, [r]: liste };
+                            setE({ ...e, methoden });
+                            speichern({ methoden });
+                          }} />
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Chip name="identpflicht" value="1" checked={!!e.identifizierungPflicht} onChange={(ev) => speichern({ identifizierungPflicht: ev.target.checked }) && setE({ ...e, identifizierungPflicht: ev.target.checked })}>„Verifiziert“ nur mit abgeschlossenem Weg</Chip>
+        </div>
+        <Feld id="c-videolink" label="Link zum Videokonferenz-Werkzeug" hinweis="Platzhalter, z. B. fester Besprechungsraum. Nur https. Datenschutz und Auftragsverarbeitung des Werkzeugs vorab prüfen." className="mt-4">
+          <input id="c-videolink" className={eingabe} inputMode="url" placeholder="https://…" defaultValue={e.videoLink || ""} onBlur={(ev) => ev.target.value !== (e.videoLink || "") && speichern({ videoLink: ev.target.value.trim() })} />
+        </Feld>
+      </Karte>
+
       <Karte titel="Einzelabgleich" untertitel="Name gegen die Sanktionsliste prüfen (wird protokolliert)">
         <form onSubmit={pruefen} className="space-y-3">
           <Feld id="s-name" label="Name bzw. Firma"><input id="s-name" className={eingabe} value={name} onChange={(ev) => setName(ev.target.value)} /></Feld>

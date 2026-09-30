@@ -104,9 +104,11 @@ def loeschen(f, n=None):
 		doc = frappe.get_doc(k.DT_ABGLEICH, a)
 		doc.flags.kyc_loeschen = True
 		doc.delete(ignore_permissions=True)
-	for feld in ("person_json", "firma_json", "vertreter_json", "pep_json", "mittelherkunft_json", "steuer_json", "pruefung_json", "risiko_json", "sanktionen_json", "pruefergebnisse_json", "verlauf_json", "erinnerungen_json", "vorname", "nachname", "geburtsdatum", "staatsangehoerigkeit", "wohnsitzland", "ausweis_gueltig_bis", "firma_name", "registernummer", "nachforderung", "email"):
+	for feld in ("person_json", "firma_json", "vertreter_json", "pep_json", "mittelherkunft_json", "steuer_json", "pruefung_json", "risiko_json", "sanktionen_json", "pruefergebnisse_json", "verlauf_json", "erinnerungen_json", "vorname", "nachname", "geburtsdatum", "staatsangehoerigkeit", "wohnsitzland", "ausweis_gueltig_bis", "firma_name", "registernummer", "nachforderung", "email",
+			"mrz_befund_json", "mrz_chiffrat", "mrz_ampel", "video_json", "video_status", "methode"):  # Eigene Identifizierung: MRZ (verschlüsselt) und Videoprotokolle
 		f.set(feld, None)
 	f.set("ubos", [])
+	f.set("video_eintraege", [])
 	f.bezeichnung = f"Gelöscht ({f.name})"
 	f.status = "geloescht"
 	f.flags.kyc_uebergang = True

@@ -15,6 +15,8 @@ TERMIN_ARTEN = {
 	"beratung_video": ("Beratung per Video", 45, 15, "video", True, None, 4),
 	"gemeinde": ("Gemeindetermin", 60, 30, "vor_ort", True, None, 72),
 	"datenraum": ("Datenraum-Session", 60, 15, "video", False, ["investor"], 24),
+	# KYC „Eigene Identifizierung“: Videogespräch, durchgeführt nur von der Backoffice-Unterrolle Compliance (api/termine.anbieter)
+	"identifizierung": ("Identifizierung per Video", 30, 15, "video", False, ["flaeche", "landwirt", "investor", "anbieter", "unternehmen", "mitglied", "kommune"], 4),
 }
 KANAELE = {"vor_ort": "Vor Ort", "telefon": "Telefon", "video": "Video"}
 TERMIN_STATUS = {"gebucht": "Gebucht", "bestaetigt": "Bestätigt", "storniert": "Storniert", "erledigt": "Stattgefunden", "nicht_erschienen": "Nicht erschienen"}

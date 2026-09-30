@@ -3,7 +3,7 @@
 Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach Unterbrechungen weitergearbeitet werden kann.
 
 ## Laufend (Stufe 4)
-- [ ] Go-live-Paket Backend (Backend-Import komplett: Desk, Rollen, Druckformate, Notifications, Workflows, Reports, Installation, GO-LIVE.md)
+- [x] Go-live-Paket Backend (Backend-Import komplett: Desk, Rollen, Druckformate, Notifications, Workflows, Reports, Installation, GO-LIVE.md)
 - [ ] KYC/KYB (manuelle Prüfung, Verschlüsselung, Sanktionsabgleich, Gating)
 - [ ] Projektentwicklung (Entwicklungsakte, Gantt, Risiken, Portfolio, Gutachter-Rolle)
 - [ ] ERPNext-Finanzen (Pacht, Contracting, Provisionsrechnung, Assets, Controlling)

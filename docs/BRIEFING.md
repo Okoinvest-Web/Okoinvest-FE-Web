@@ -76,3 +76,4 @@ Mehrere Teams arbeiten GLEICHZEITIG an der Plattform im selben Arbeitsverzeichni
 2. Höchstens EIN Playwright-Browser gleichzeitig pro Team, nach jedem Skript `browser.close()` (auch im Fehlerfall: try/finally). Keine Parallel-Screenshots.
 3. Visuelle Prüfungen bündeln (wenige, gezielte Aufnahmen statt Serien). Wenn der Server langsam ist (> 60 s): 5 Minuten warten statt erneut feuern.
 4. Timeouts großzügig (180 s), `waitUntil: "load"` statt `networkidle`.
+5. **Keine awaited Dateizugriffe (`fs.promises`) in Pfaden, die beim Rendern laufen** – React 19 übernimmt im Dev-Modus deren Rückgabewerte ins HTML (so war die komplette Demo-DB inkl. Passwort-Hashes öffentlich sichtbar). Synchron lesen (`readFileSync`) oder außerhalb des Renderns.

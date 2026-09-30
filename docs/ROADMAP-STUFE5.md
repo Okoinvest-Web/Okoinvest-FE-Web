@@ -5,11 +5,11 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 ## Laufend (Stufe 4)
 - [x] Go-live-Paket Backend (Backend-Import komplett: Desk, Rollen, Druckformate, Notifications, Workflows, Reports, Installation, GO-LIVE.md)
 - [x] KYC/KYB (manuelle Prüfung, Verschlüsselung, Sanktionsabgleich, Gating) – Testlauf zentral wiederholen
-- [ ] Projektentwicklung (Entwicklungsakte, Gantt, Risiken, Portfolio, Gutachter-Rolle)
+- [x] Projektentwicklung (Entwicklungsakte, Gantt, Risiken, Portfolio, Gutachter-Rolle)
 - [ ] ERPNext-Finanzen (Pacht, Contracting, Provisionsrechnung, Assets, Controlling)
 - [ ] Dokumente/Signatur/Termine/Helpdesk/HR
 - [x] Fachprüfung A (Fläche, Landwirt, Dach, Kommune) – offen: eigene Rolle `kommune` (→ B1), Menüpunkt /portal/kommune
-- [ ] Fachprüfung B (Investor, Anbieter, Unternehmen, Mitglied)
+- [x] Fachprüfung B (Investor, Anbieter, Unternehmen, Mitglied) + Anlagen-Eigentum ÖkoInvest/SPV, Kundensicht „Mein Solarstrom“
 
 ## Welle A (sofort, überwiegend Backend – wenig Dev-Server)
 - [ ] **A1 Geodaten & Akquise-Engine** – Österreich zuerst: Kataster (BEV DKM, OGD), INVEKOS-Schläge (AMA, OGD), Umspannwerke/Trafos (OpenStreetMap power=substation/transformer, ODbL; ggf. Netzbetreiber-Kapazitätskarten), Geländeneigung (DGM, OGD), Schutzgebiete (Natura 2000/Nationalparks/Landschaftsschutz), Siedlungsabstand; PostGIS-Pipeline in `Backend-Import/dienste/geodaten`; Flächen-Scoring + Leitungslänge/Netzanschlusskosten zum nächsten Umspannwerk; Akquise-Cockpit mit Karte (basemap.at, Leaflet) im Backoffice; später DE/CH.
@@ -22,7 +22,7 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 - [~] **B0b Dach-Contracting mit Dienstbarkeit** (läuft, zusammen mit B4) – Dachnutzungs-/Servitutsvertrag (AT Servitut, DE beschränkte persönliche Dienstbarkeit, CH Dienstbarkeit), Grundbuch-Eintragungsablauf (Vertrag, Beglaubigung/Notar, Grundbuchsgesuch, Rang, Rangrücktritt Bank, Eintragungsbestätigung), Fristen, Verknüpfung mit Contracting-Vertrag und Anlage
 - [~] **B1 Onboarding-Assistenten je Rolle und Unterrolle** (läuft) (+ eigene Rolle `kommune` mit Menü /portal/kommune) (Investor je Typ, Anbieter/Verkäufer Projekt & Bestandsanlage, Flächen-/Dach-Eigentümer, Landwirt, Contracting-Kunde, Reststrom-Kunde, Kommune, Gutachter, Backoffice je Unterrolle)
 - [ ] **B2 Investor-Finanzierungscockpit** – ROI je Projekt nach Login, Finanzierungsvergleich (Eigenkapital, Annuitätenkredit, Förderkredit KfW/aws/OeKB, Leasing, Mietkauf), Förder-Check je Land (EEG/EAG/Einmalvergütung/Investitionszuschüsse), Steuern (AfA), Szenarien speichern, PDF
-- [ ] **B3 Planungsdateien & Projektkosten** – DWG/DXF-Upload mit Vorschau (DXF im Browser, DWG → Konvertierungsdienst), Projektkostenkalkulation nach Gewerken inkl. Netzanschluss aus Akquise-Distanz, Anbindung Projektentwicklung/ERPNext
+- [~] **B3 Planungsdateien & Projektkosten** (läuft) – DWG/DXF-Upload mit Vorschau (DXF im Browser, DWG → Konvertierungsdienst), Projektkostenkalkulation nach Gewerken inkl. Netzanschluss aus Akquise-Distanz, Anbindung Projektentwicklung/ERPNext
 - [ ] **B4 Deal-Abschluss end-to-end** – Kaufvertrag-Vorlagen (SPA Asset/Share Deal), Signatur, Notartermin, Closing-Checkliste, Kaufpreiszahlung/Treuhand-Hinweis, automatische Provisionsrechnung, Übergabe
 
 ## Abschluss

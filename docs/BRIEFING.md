@@ -87,3 +87,8 @@ Regeln:
 - Keine Bench vorhanden: Python mit `py_compile`, JSON mit `json.tool`, Logik soweit möglich als reine Funktionen mit `python -m unittest` (Frappe-Stub) testen; FrappeTestCase-Tests zusätzlich schreiben.
 - Demo-Backend bildet die neuen Funktionen realistisch nach (ohne ERPNext), damit das Portal vollständig vorführbar bleibt.
 - Weiterhin gelten alle Spielregeln und Ressourcenregeln oben. **Dev-Server sparsam**: erst Frappe/Logik, am Ende wenige gezielte Screenshots; den großen Test fährt der Koordinator.
+
+### Stufe 4 – Ablage und Go-live
+- **Sämtlicher Backend-Code liegt in `Backend-Import/`** (Frappe-App `Backend-Import/oekoinvest_app/`, Dienste unter `Backend-Import/dienste/`). Der Kunde importiert diesen Ordner auf einen **eigenen Backend-Server** (getrennt vom Next.js-Frontend). Alles, was für den Livegang nötig ist, gehört dorthin: DocTypes, Controller, Hooks, Rollen, Role Profiles, Workspaces (Desk), Druckformate (Jinja), E-Mail-Vorlagen, Notifications, Workflows, Reports, Dashboards/Number Cards, Custom Fields für ERPNext/HRMS, Fixtures, Patches, Übersetzungen, Installations-/Migrationshelfer, Doku.
+- `hooks.py`, `fixtures`-Liste und `patches.txt` pflegt das Team „Go-live-Paket“; andere Teams tragen dort nur gezielt ihre Einträge ein (neu lesen, kleine Einfügung).
+- Neue Pflicht-Querschnittsfunktion **KYC/KYB** (Identität, Handelsregister/Firmenbuch, wirtschaftlich Berechtigte, Sanktions-/PEP-Prüfung, IBAN, Eigentumsnachweis) – andere Module prüfen den KYC-Status über die Funktion `kyc_status(konto)` bzw. JS `kycStatus(nutzer)` des KYC-Teams, bevor sie Datenraum, LOI/Zuschlag, Auszahlungen freigeben.

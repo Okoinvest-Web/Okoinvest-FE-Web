@@ -10,12 +10,15 @@ import { cn } from "@/components/ui/cn";
 import { senden } from "@/lib/plattform/client";
 import { datumZeit } from "@/lib/plattform/format";
 import { textbereich, FehlerBox } from "./felder";
+import KiNachrichtEntwurf from "./Ki/KiNachrichtEntwurf";
+import { KiKennzeichnung } from "./Ki/KiBausteine";
 
 export default function NachrichtenThread({ bezugArt, bezugId, nachrichten = [], leerText = "Noch keine Nachrichten. Schreiben Sie uns – wir antworten in der Regel innerhalb von zwei Werktagen.", platzhalter = "Ihre Nachricht …", hoehe = "max-h-[520px]" }) {
   const router = useRouter();
   const [text, setText] = useState("");
   const [laeuft, setLaeuft] = useState(false);
   const [fehler, setFehler] = useState("");
+  const [kiMarke, setKiMarke] = useState(null); // Kennzeichnung eines Assistenten-Entwurfs im Antwortfeld
   const listeRef = useRef(null);
 
   useEffect(() => {
@@ -31,6 +34,7 @@ export default function NachrichtenThread({ bezugArt, bezugId, nachrichten = [],
     try {
       await senden("/api/portal/nachrichten", { body: { bezugArt, bezugId, text } });
       setText("");
+      setKiMarke(null);
       router.refresh();
     } catch (err) {
       setFehler(err.message);
@@ -82,9 +86,11 @@ export default function NachrichtenThread({ bezugArt, bezugId, nachrichten = [],
           maxLength={5000}
           className={textbereich}
         />
-        <FehlerBox>{fehler}</FehlerBox>
+        <FehlerBox>{fehler || kiMarke?.fehler}</FehlerBox>
+        {kiMarke?.modus && text.trim() && <KiKennzeichnung modus={kiMarke.modus} hinweis={kiMarke.hinweis} />}
         <div className="flex items-center justify-between gap-3">
           <p className="hidden text-[12px] text-ink-400 sm:block">Strg + Enter zum Senden</p>
+          <KiNachrichtEntwurf bezugArt={bezugArt} bezugId={bezugId} text={text} setText={setText} onKennzeichnung={setKiMarke} />
           <button
             type="submit"
             disabled={laeuft || text.trim().length < 2}

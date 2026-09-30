@@ -84,6 +84,23 @@ export default function TypIllustration({ typ = "freiflaeche", className }) {
         </>
       )}
 
+      {typ === "dach" && (
+        <>
+          {/* Gewerbehalle mit flach geneigtem Dach und Modulreihen */}
+          <rect x="60" y="92" width="280" height="56" fill="#ffffff" stroke="#c4cad5" />
+          <polygon points="50,94 350,94 330,74 70,74" fill="#dfe3ea" />
+          {Array.from({ length: 3 }).map((_, r) =>
+            Array.from({ length: 9 }).map((__, i) => (
+              <polygon key={`${r}-${i}`} points={`${84 + i * 27 + r * 3},${90 - r * 6} ${106 + i * 27 + r * 3},${90 - r * 6} ${108 + i * 27 + r * 3},${86 - r * 6} ${86 + i * 27 + r * 3},${86 - r * 6}`} fill={i % 2 ? FARBEN.modul : FARBEN.modulHell} />
+            ))
+          )}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <rect key={i} x={84 + i * 62} y="108" width="34" height="16" rx="2" fill="#eef4fb" stroke="#c4cad5" />
+          ))}
+          <rect x="300" y="118" width="26" height="30" fill="#97a0b0" />
+        </>
+      )}
+
       {typ === "hybrid" && (
         <>
           <Reihen reihen={3} />

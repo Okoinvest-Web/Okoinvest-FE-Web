@@ -1,5 +1,5 @@
 // GET  /api/portal/dokumente[?bezug=art:id] – Dokumente (nur berechtigte)
-// POST /api/portal/dokumente – multipart: datei, bezugArt, bezugId, kategorie
+// POST /api/portal/dokumente – multipart: datei, bezugArt, bezugId, kategorie, checkliste? (Schlüssel eines Checklisten-Punkts)
 //      Kopfzeile X-Plattform-Upload: 1 (CSRF), PDF/JPG/PNG ≤ 10 MB, Typ an den ersten Bytes geprüft
 import { route } from "@/lib/plattform/server/route";
 import { rateLimit, grenze } from "@/lib/plattform/server/rateLimit";
@@ -36,6 +36,7 @@ export const POST = route({ upload: true }, async ({ backend, nutzer, request })
     bezugArt: String(fd.get("bezugArt") || ""),
     bezugId: String(fd.get("bezugId") || ""),
     kategorie: String(fd.get("kategorie") || "allgemein"),
+    checkliste: String(fd.get("checkliste") || "").slice(0, 40),
     name: datei.name || `dokument.${UPLOAD.typen[mime]}`,
     mime,
     daten,

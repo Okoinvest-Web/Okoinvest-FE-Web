@@ -57,31 +57,52 @@ def _n(konto):
 
 
 @frappe.whitelist(methods=["POST"])
-def anmelden(email=None, passwort=None):
-	"""Konto (ohne Geheimnisse) oder None bei falschen Daten/gesperrtem Konto."""
+def anmelden(email=None, passwort=None, ip=None, userAgent=None, land=None):
+	"""Konto (ohne Geheimnisse, + zweiFaktorAktiv) oder None bei falschen Daten/gesperrtem Konto.
+	Kontosperre mit exponentiellem Backoff (plattform/sicherheit.py): gesperrt → TooManyRequestsError (HTTP 429)."""
+	from oekoinvest_app.plattform import sicherheit
+
 	api_pruefen()
 	e = v.email(email)
 	konto = konto_suchen(e) if e else None
+	sicherheit.sperre_pruefen(e, konto)
 	ok = _passwort_ok(konto.user if konto else None, passwort)
 	if not konto or not ok or not cint(konto.aktiv):
+		sicherheit.fehlversuch_buchen(e, konto, v.text(ip, 64), v.text(userAgent, 400), v.text(land, 2), grund="gesperrt" if ok else "passwort")
 		return None
 	konto.letzter_login = jetzt()
 	konto.save(ignore_permissions=True)
 	verknuepfen(konto)
 	konto.reload()
 	protokoll(_n(konto), "login", "nutzer", konto.name, "Anmeldung")
-	return konto_json(konto)
+	return sicherheit.mit_zwei_faktor(konto)  # + zweiFaktorAktiv (steuert den 2FA-Schritt)
 
 
 @frappe.whitelist(methods=["POST"])
-def nutzer_fuer_sitzung(nutzerId=None):
-	"""Konto inkl. sitzungVersion/aktiv für die Sitzungsprüfung der Website – oder None."""
+def nutzer_fuer_sitzung(nutzerId=None, sitzungId=None):
+	"""Konto für die Sitzungsprüfung der Website – oder None.
+
+	Mit Sitzungskennung muss der Eintrag „Plattform Sitzung“ bestehen, nicht widerrufen/abgelaufen sein und die
+	Version der Sitzungsversion des Kontos entsprechen; ohne Kennung (Übergang) gilt nur die Sitzungsversion.
+	Angereichert um sitzung, organisation, organisationen, zweiFaktor…, komfort (wie nutzerAnreichern).
+	"""
+	from oekoinvest_app.plattform import sicherheit
+
 	api_pruefen()
 	kennung = v.kennung(nutzerId)
 	if not kennung or not frappe.db.exists("Plattform Konto", kennung):
 		return None
 	konto = frappe.get_doc("Plattform Konto", kennung)
-	return konto_json(konto) if cint(konto.aktiv) else None
+	if not cint(konto.aktiv):
+		return None
+	if not sitzungId:
+		return sicherheit.nutzer_anreichern(konto, None)
+	sid = v.kennung(sitzungId)
+	s = frappe.get_doc("Plattform Sitzung", sid) if sid and frappe.db.exists("Plattform Sitzung", sid) else None
+	if not sicherheit.sitzung_gueltig(s, konto):
+		return None
+	sicherheit.aktivitaet_merken(s)
+	return sicherheit.nutzer_anreichern(konto, s)
 
 
 @frappe.whitelist(methods=["POST"])

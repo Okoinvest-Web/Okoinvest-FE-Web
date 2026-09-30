@@ -10,6 +10,7 @@
   "hash",
   "art",
   "nutzer_id",
+  "neue_email",
   "ablauf",
   "benutzt"
  ],
@@ -27,7 +28,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Art",
-   "options": "email\nreset",
+   "options": "email\nreset\nmagic\nemail_neu",
    "read_only": 1,
    "reqd": 1
   },
@@ -39,6 +40,14 @@
    "options": "Plattform Konto",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "description": "Nur Art email_neu: neue Anmeldeadresse, wirksam nach Bestätigung.",
+   "fieldname": "neue_email",
+   "fieldtype": "Data",
+   "label": "Neue E-Mail-Adresse",
+   "options": "Email",
+   "read_only": 1
   },
   {
    "fieldname": "ablauf",

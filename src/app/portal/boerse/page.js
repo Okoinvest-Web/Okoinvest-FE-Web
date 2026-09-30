@@ -1,5 +1,5 @@
 import Button from "@/components/ui/Button";
-import BoerseListe from "@/components/Boerse/BoerseListe";
+import BoerseAnsicht from "@/components/Portal/Bedienung/Liste/BoerseAnsicht";
 import { Hinweis, SeitenKopf } from "@/components/Portal/ui";
 import { portalNutzer } from "@/lib/plattform/server/seite";
 import { backend } from "@/lib/plattform/backend";
@@ -29,7 +29,7 @@ export default async function PortalBoerse({ searchParams }) {
           Mit Größe, Phasen, Ländern und Ticket berechnen wir für jedes Projekt einen Matching-Score und sortieren passende Projekte nach oben.
         </Hinweis>
       )}
-      <BoerseListe projekte={daten.projekte} basisHref="/portal/boerse/" portal start={start} />
+      <BoerseAnsicht projekte={daten.projekte} start={start} />
     </div>
   );
 }

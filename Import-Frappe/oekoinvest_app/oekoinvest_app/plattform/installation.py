@@ -8,9 +8,9 @@
 
 import frappe
 
-from oekoinvest_app.plattform.konstanten import ROLLE_API, ROLLE_DESK_ADMIN, ROLLEN
+from oekoinvest_app.plattform.konstanten import ROLLE_ANLAGEN_DIENST, ROLLE_API, ROLLE_DESK_ADMIN, ROLLEN
 
-DESK_ROLLEN = {ROLLE_DESK_ADMIN: 1, ROLLE_API: 0}
+DESK_ROLLEN = {ROLLE_DESK_ADMIN: 1, ROLLE_API: 0, ROLLE_ANLAGEN_DIENST: 0}  # Anlagen-Dienst: Ingest-Dienst (MQTT → Frappe)
 
 
 def rollen_anlegen():

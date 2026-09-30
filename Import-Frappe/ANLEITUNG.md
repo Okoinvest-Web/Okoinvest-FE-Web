@@ -17,16 +17,18 @@ Import-Frappe/
     oekoinvest_app/
       __init__.py (__version__), hooks.py, modules.txt (Plattform), patches.txt
       fixtures/role.json            ← 9 Rollen (s. u.)
-      templates/emails/*.html       ← E-Mails (Bestätigung, Passwort, Hinweis)
+      templates/emails/*.html       ← E-Mails (Bestätigung, Passwort, Hinweis, Benachrichtigung)
       translations/de.csv
       plattform/
         konstanten.py, prozesse.py (Zustandsautomaten 1:1 aus prozesse.js), validierung.py,
         oeffentlich.py (Positivliste), matching.py, kern.py (Aufrufer/Rechte/Protokoll),
         ausgabe.py (JSON), ablauf.py (Statuswechsel + Nebenwirkungen), mail.py,
-        installation.py, aufgaben.py, basis.py (Controller-Basis)
+        benachrichtigung.py (Glocke + E-Mail je Einstellung), checkliste.py (Unterlagen je Phase, 1:1 aus checkliste.js),
+        installation.py, aufgaben.py (Scheduler: Tokens, Wiedervorlagen), basis.py (Controller-Basis)
         api/  auth · konto · anfrage · vorgang · flaeche · projekt · boerse · interesse · prozess · nachricht · dokument · admin
-        doctype/  14 DocTypes (s. u.)
-        tests/    test_prozesse · test_rechte · test_provision · test_aktivitaet
+              · benachrichtigung · aufgabe
+        doctype/  16 DocTypes (s. u.)
+        tests/    test_prozesse · test_rechte · test_provision · test_aktivitaet · test_benachrichtigung · test_aufgabe · test_checkliste
 ```
 
 | DocType | Inhalt |
@@ -43,8 +45,12 @@ Import-Frappe/
 | Plattform Aktivitaet | Protokoll, **append-only** |
 | Plattform Token | Einmal-Token (nur SHA-256-Hash) |
 | Plattform Statusverlauf | Kindtabelle Statusverlauf |
+| Plattform Benachrichtigung | Glocke im Portal (Statuswechsel, Nachrichten, NDA, Suchprofil-Treffer, Anfragen, Aufgaben); nach dem Anlegen nur „gelesen“ änderbar |
+| Plattform Aufgabe | Backoffice-Aufgaben/Wiedervorlagen mit Fälligkeit, Zuständigem und optionalem Bezug |
 
-Kennungen: `U-26-XXXXXX`, `V-…`, `F-…`, `P-…`, `I-…`, `PV-…`, `D-…`, `M-…`, `A-…` (zufällig, nicht fortlaufend).
+Neue Felder (Ausbaustufe 2): `Plattform Konto.mail_einstellungen` (JSON: je Ereignisart E-Mail ja/nein), `Plattform Dokument.checkliste` (Schlüssel des erfüllten Checklisten-Punkts). `bench migrate` legt sie an.
+
+Kennungen: `U-26-XXXXXX`, `V-…`, `F-…`, `P-…`, `I-…`, `PV-…`, `D-…`, `M-…`, `A-…`, `B-…` (Benachrichtigung), `AF-…` (Aufgabe) (zufällig, nicht fortlaufend).
 
 ---
 
@@ -133,6 +139,24 @@ SESSION_SECRET=<zufällig, ≥ 32 Zeichen: openssl rand -base64 48>
 
 Danach neu deployen. Ohne `PLATTFORM_BACKEND=frappe` antwortet die Plattform in Produktion mit 503 (keine stillen Demo-Daten).
 
+### Optional: KI-Assistent
+
+Der Assistent läuft vollständig auf der **Website**; der Schlüssel der Claude API gehört **nur** in die Website-Umgebung, **nie** in `site_config.json` oder einen DocType:
+
+```
+ANTHROPIC_API_KEY=<Schlüssel aus der Anthropic Console>   # ohne: regelbasierte Vorschläge
+KI_TAGESKONTINGENT=30                                      # optional, Aufrufe je Konto und Tag
+```
+
+Frappe speichert nur das Nutzungsprotokoll (DocType **Plattform KI Nutzung**, append-only, ohne Inhalte; Methoden `ki.nutzung_heute`, `ki.nutzung_protokollieren`). Optionale site_config-Schlüssel – überschreiben das Kontingent der Website:
+
+```bash
+bench --site <site> set-config oekoinvest_ki_tageskontingent 30
+bench --site <site> set-config oekoinvest_ki_tageskontingent_admin 150
+```
+
+Nach dem Update: `bench --site <site> migrate` (legt den DocType an). Aufbewahrung des Protokolls: Vorschlag 12 Monate, danach löschen (Löschkonzept).
+
 ## Schritt 6 – Test
 
 **Automatische Tests (nur Test-Site):**
@@ -166,6 +190,10 @@ Optional das End-to-End-Skript der Website gegen einen Server mit `PLATTFORM_BAC
 - **Statuswechsel** bitte im Portal-Backoffice auslösen. Im Desk erlaubt der Controller nur Admin-Schritte ohne Pflichtangaben (z. B. „Prüfung beginnen“); Ablehnungen (Begründung), Pachtangebote, Veröffentlichung (Provisionssatz) und Verkauf (Käufer, Kaufpreis) gehen nur über das Portal, weil dort Nachricht, Provision und Protokoll entstehen.
 - **Sperren** eines Kontos (Portal oder Desk: „Aktiv“ aus) beendet alle Website-Sitzungen sofort und deaktiviert den Frappe-User.
 - **Tokens** (E-Mail/Passwort) werden täglich aufgeräumt (`aufgaben.tokens_aufraeumen`).
+- **Wiedervorlagen**: täglich meldet `aufgaben.wiedervorlagen_erinnern` fällige offene Aufgaben einmalig in der Glocke des Zuständigen (und per E-Mail, falls nicht abbestellt); beim Öffnen der Glocke geschieht das zusätzlich sofort. Verschieben oder Neuzuweisen setzt die Erinnerung zurück.
+- **Benachrichtigungen/E-Mails**: Jede Nachricht bzw. jeder Statuswechsel erzeugt eine Benachrichtigung für die Seite, die sie noch nicht gelesen hat. Ob zusätzlich eine E-Mail (Vorlage `oekoinvest_benachrichtigung`, ohne Inhalte) versendet wird, legt jedes Konto im Portal unter „Benachrichtigungen“ fest. Suchprofil-Treffer nennen nur den öffentlichen Projekttitel und die Passung.
+- **Exposé-PDF**: Die Website erzeugt das PDF aus `boerse.expose` (Rechte: Backoffice, Anbieter, Investor mit freigegebenem Datenraum); jeder Abruf steht im Aktivitätsprotokoll (Aktion `expose`).
+- **CSV-Export** im Backoffice: die Website baut die Datei aus den Listen-Methoden und meldet jeden Export über `admin.protokoll_eintrag` (Aktion `export`).
 - **Dateien** liegen privat unter `sites/<site>/private/files`; Download im Portal nur für Berechtigte, jeder Zugriff wird protokolliert.
 
 ## Offene Punkte vor dem Livegang
@@ -176,3 +204,15 @@ Optional das End-to-End-Skript der Website gegen einen Server mit `PLATTFORM_BAC
 - [ ] 2FA für `ÖkoInvest Admin` (Rolle ist mit „Two Factor Auth“ angelegt – System Settings → „Enable Two Factor Auth“ aktivieren).
 - [ ] Kontaktadresse/Absender der E-Mails festlegen (noch nicht freigegeben – das Standard-E-Mail-Konto von Frappe wird verwendet).
 - [ ] Monitoring: Error Log (Titel „ÖkoInvest: …“) beobachten – dort landen fehlgeschlagene E-Mails ohne Inhalte.
+
+## Login, Sicherheit & Teams
+
+- **Module:** `plattform/api/sicherheit.py` (Sitzungen, Geräte, Anmeldehistorie, Zwei-Faktor/TOTP, E-Mail-Link, E-Mail ändern, Pflicht-2FA, Komfort, Datenexport, Konto löschen) und `plattform/api/organisation.py` (Organisationen, Einladungen, Teamrollen, Organisationswechsel, Objekt-Zuordnung). Helfer: `plattform/totp.py`, `plattform/geraet.py`, `plattform/sicherheit.py`, `plattform/organisation.py`. Tests: `test_sicherheit.py`, `test_organisation.py`.
+- **Neue DocTypes:** Plattform Organisation, Mitgliedschaft, Einladung, Sitzung, Geraet, Anmeldung (append-only), Zwei Faktor. Nach dem Einspielen `bench --site <site> migrate`.
+- **TOTP-Schlüssel** liegen in Password-Feldern (verschlüsselt mit `encryption_key` der `site_config.json` – diesen Schlüssel sichern, sonst sind alle 2FA-Einrichtungen verloren). Wiederherstellungscodes, Einladungs-, Geräte- und Link-Tokens nur als SHA-256.
+- **Pflicht-2FA je Rolle:** im Backoffice (Default `oekoinvest_2fa_pflicht`) und/oder fest in der `site_config.json`: `"plattform_2fa_pflicht": "admin"` (kommagetrennt oder Liste).
+- **Kontosperre:** ab 5 Fehlversuchen 30 s · 2^(n−5), höchstens 1 h (HTTP 429). Zurückgesetzt durch eine erfolgreiche Anmeldung (`sicherheit.sitzung_anlegen`) oder im Desk (Konto: „Fehlversuche“/„Anmeldung gesperrt bis“ – Felder sind schreibgeschützt, Zurücksetzen per `bench execute` bzw. Konsole).
+- **Sicherheitsmails** (neues Gerät, 2FA, E-Mail-Änderung, Sperre) gehen immer, unabhängig von Benachrichtigungs-Einstellungen (Vorlage `oekoinvest_sicherheit`); Links nur mit `plattform_basis_url`.
+- **Aktive Organisation:** Die Website sendet bei jedem Aufruf mit Nutzer `als_organisation`; `kern.nutzer()` prüft die Mitgliedschaft (ohne Mitgliedschaft still kein Kontext).
+- **Aufräumjob** (täglich, `sicherheit.aufraeumen`): widerrufene/abgelaufene Sitzungen und abgelaufene Einladungen nach 30 Tagen, Anmeldehistorie nach 180 Tagen.
+- **E-Mail ändern / Konto löschen** benennen den Frappe-User um (`User.name` = E-Mail); beim Löschen wird das Konto anonymisiert (`geloescht-<id>@geloescht.invalid`), Passwort entfernt, User deaktiviert.

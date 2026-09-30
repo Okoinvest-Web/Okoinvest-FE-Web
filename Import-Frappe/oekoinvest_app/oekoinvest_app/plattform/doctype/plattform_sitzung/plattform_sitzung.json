@@ -1,0 +1,187 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 08:00:00.000000",
+ "description": "Website-Sitzung (Kennung im signierten Cookie). Gültig nur, solange nicht widerrufen/abgelaufen und Version = Sitzungsversion des Kontos. Nur grobe Geräte-/Ortsangaben.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sec_sitzung",
+  "nutzer_id",
+  "version",
+  "ablauf",
+  "letzte_aktivitaet",
+  "methode",
+  "zwei_faktor",
+  "organisation_id",
+  "cb_sitzung",
+  "geraet",
+  "mobil",
+  "geraet_id",
+  "ip_grob",
+  "ort",
+  "user_agent",
+  "sec_widerruf",
+  "widerrufen_am",
+  "widerrufen_grund"
+ ],
+ "fields": [
+  {
+   "fieldname": "sec_sitzung",
+   "fieldtype": "Section Break",
+   "label": "Sitzung"
+  },
+  {
+   "fieldname": "nutzer_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "version",
+   "fieldtype": "Int",
+   "label": "Sitzungsversion",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ablauf",
+   "fieldtype": "Datetime",
+   "label": "Gültig bis",
+   "read_only": 1
+  },
+  {
+   "fieldname": "letzte_aktivitaet",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Letzte Aktivität",
+   "read_only": 1
+  },
+  {
+   "fieldname": "methode",
+   "fieldtype": "Data",
+   "label": "Anmeldemethode",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "zwei_faktor",
+   "fieldtype": "Check",
+   "label": "Mit Zwei-Faktor",
+   "read_only": 1
+  },
+  {
+   "fieldname": "organisation_id",
+   "fieldtype": "Link",
+   "label": "Aktive Organisation",
+   "options": "Plattform Organisation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_sitzung",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "geraet",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Gerät",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "mobil",
+   "fieldtype": "Check",
+   "label": "Mobil",
+   "read_only": 1
+  },
+  {
+   "description": "Bewusst kein Link: „Gerät vergessen“ löscht den Geräte-Eintrag, die Sitzung bleibt lesbar.",
+   "fieldname": "geraet_id",
+   "fieldtype": "Data",
+   "label": "Geräte-Kennung",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ip_grob",
+   "fieldtype": "Data",
+   "label": "IP (gekürzt)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ort",
+   "fieldtype": "Data",
+   "label": "Ort (grob)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "user_agent",
+   "fieldtype": "Small Text",
+   "label": "User-Agent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_widerruf",
+   "fieldtype": "Section Break",
+   "label": "Widerruf"
+  },
+  {
+   "fieldname": "widerrufen_am",
+   "fieldtype": "Datetime",
+   "label": "Widerrufen am",
+   "read_only": 1
+  },
+  {
+   "description": "abmeldung, abgemeldet (von anderer Sitzung), rotation, grenze",
+   "fieldname": "widerrufen_grund",
+   "fieldtype": "Data",
+   "label": "Grund",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Sitzung",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 0,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "letzte_aktivitaet",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

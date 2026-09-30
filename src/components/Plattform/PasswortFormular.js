@@ -7,6 +7,8 @@ import { Loader2, MailCheck } from "lucide-react";
 import { senden } from "@/lib/plattform/client";
 import { passwortFehler } from "@/lib/plattform/validierung";
 import { eingabe, Feld, FehlerBox } from "@/components/Portal/felder";
+import ZweiFaktorSchritt from "./ZweiFaktorSchritt";
+import PasswortStaerke from "@/components/Portal/Sicherheit/PasswortStaerke";
 
 const knopf =
   "inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold text-white shadow-[0_8px_24px_-8px_rgba(102,153,51,0.65)] transition-colors hover:bg-ov-700 disabled:opacity-60";
@@ -70,6 +72,7 @@ export function PasswortSetzen({ token }) {
   const [pw2, setPw2] = useState("");
   const [laeuft, setLaeuft] = useState(false);
   const [fehler, setFehler] = useState("");
+  const [zweiFaktor, setZweiFaktor] = useState(false);
 
   async function absenden(e) {
     e.preventDefault();
@@ -78,7 +81,11 @@ export function PasswortSetzen({ token }) {
     setLaeuft(true);
     setFehler("");
     try {
-      await senden("/api/auth/passwort-setzen", { body: { token, passwort: pw } });
+      const r = await senden("/api/auth/passwort-setzen", { body: { token, passwort: pw } });
+      if (r.zweiFaktor) {
+        setZweiFaktor(true); // Passwort ist gespeichert – Anmeldung erst nach dem zweiten Faktor
+        return;
+      }
       router.replace("/portal");
       router.refresh();
     } catch (err) {
@@ -87,10 +94,20 @@ export function PasswortSetzen({ token }) {
     }
   }
 
+  if (zweiFaktor) {
+    return (
+      <div className="space-y-4">
+        <p role="status" className="rounded-xl bg-ov-50 px-4 py-3 text-[14px] text-ov-900 ring-1 ring-ov-200">Ihr neues Passwort ist gespeichert. Bitte bestätigen Sie die Anmeldung mit Ihrem zweiten Faktor.</p>
+        <ZweiFaktorSchritt onErfolg={() => { router.replace("/portal"); router.refresh(); }} onAbbrechen={() => router.replace("/login?hinweis=passwort-gesetzt")} />
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={absenden} className="space-y-4">
       <Feld id={`${id}-1`} label="Neues Passwort" hinweis="Mindestens 10 Zeichen, Buchstaben und eine Ziffer oder ein Sonderzeichen.">
         <input id={`${id}-1`} type="password" required minLength={10} autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} className={eingabe} />
+        <PasswortStaerke passwort={pw} />
       </Feld>
       <Feld id={`${id}-2`} label="Passwort wiederholen">
         <input id={`${id}-2`} type="password" required minLength={10} autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} className={eingabe} />

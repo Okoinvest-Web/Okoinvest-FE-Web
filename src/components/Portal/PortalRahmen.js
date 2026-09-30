@@ -1,22 +1,33 @@
 "use client";
 
 // Rahmen des Portals: Seitenleiste (Desktop) bzw. Drawer (mobil), Kopfzeile mit
-// Brotkrumen, Nachrichten-Hinweis und Benutzer-Menü. Navigation je Rolle.
+// Brotkrumen, Benachrichtigungszentrale (Glocke) und Benutzer-Menü. Navigation je Rolle.
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   Bell, Building2, ChevronDown, ClipboardList, FileText, FolderKanban, Gauge, Handshake, Inbox, LandPlot, LayoutDashboard,
-  LogOut, Menu, MessagesSquare, Search, ShieldCheck, TrendingUp, UserRound, Users, X, ExternalLink, Coins,
+  ListTodo, LogOut, Mail, Menu, MessagesSquare, Search, ShieldCheck, TrendingUp, UserRound, Users, X, ExternalLink, Coins,
 } from "lucide-react";
+import { Gavel, SquareKanban } from "lucide-react"; // Deal-Room
+import Glocke from "./Glocke";
+import Bedienung from "./Bedienung/Bedienung";
+import SuchKnopf from "./Bedienung/SuchKnopf";
+import SprungLinks from "./Bedienung/SprungLinks";
 import Logo from "@/components/ui/Logo";
 import { cn } from "@/components/ui/cn";
 import useFokusFalle from "@/components/ui/useFokusFalle";
 import { rolleLabel } from "@/lib/plattform/konstanten";
 import { initialen } from "@/lib/plattform/format";
+import { darfLesen, seitenBereich } from "@/lib/plattform/rechte"; // Backoffice-Unterrollen: Menü je Leserecht
+import { BarChart3, Contact, KeyRound, LayoutTemplate, Link2, Target, Workflow } from "lucide-react"; // Backoffice-Ausbau
+import { Fingerprint, UsersRound } from "lucide-react"; // Login, Sicherheit & Teams
+import { SunMedium, TriangleAlert } from "lucide-react"; // Anlagen & Monitoring
+import OrgWechsler from "./Sicherheit/OrgWechsler";
+import { avatarKlasse } from "@/lib/plattform/organisation";
 
-function navigation(rollen) {
+function navigation(rollen, nutzer = { rollen }) {
   const hat = (...r) => r.some((x) => rollen.includes(x));
   const admin = rollen.includes("admin");
   const bereiche = [
@@ -28,9 +39,14 @@ function navigation(rollen) {
         hat("flaeche", "landwirt") && { href: "/portal/flaechen", label: "Flächen", icon: LandPlot },
         hat("anbieter") && { href: "/portal/projekte", label: "Meine Projekte", icon: FolderKanban },
         hat("investor") && { href: "/portal/boerse", label: "Projektbörse", icon: TrendingUp },
-        { href: "/portal/nachrichten", label: "Nachrichten", icon: MessagesSquare, zaehler: true },
+        hat("investor") && { href: "/portal/pipeline", label: "Deal-Pipeline", icon: SquareKanban }, // Deal-Room
+        hat("unternehmen") && { href: "/portal/anlagen", label: "Meine Anlagen", icon: SunMedium }, // Anlagen & Monitoring
+        { href: "/portal/nachrichten", label: "Nachrichten", icon: MessagesSquare, zaehler: "nachrichten" },
+        { href: "/portal/benachrichtigungen", label: "Benachrichtigungen", icon: Bell, zaehler: "hinweise" },
         { href: "/portal/dokumente", label: "Dokumente", icon: FileText },
         { href: "/portal/profil", label: hat("investor") ? "Profil & Suchprofil" : "Profil", icon: UserRound },
+        { href: "/portal/organisation", label: "Organisation & Team", icon: UsersRound }, // Login, Sicherheit & Teams
+        { href: "/portal/sicherheit", label: "Sicherheit", icon: Fingerprint },
       ].filter(Boolean),
     },
   ];
@@ -39,13 +55,30 @@ function navigation(rollen) {
       titel: "Backoffice",
       eintraege: [
         { href: "/portal/admin", label: "Cockpit", icon: Gauge, exakt: true },
+        { href: "/portal/admin/aufgaben", label: "Aufgaben", icon: ListTodo, zaehler: "aufgaben" },
         { href: "/portal/admin/vorgaenge", label: "Vorgänge", icon: ClipboardList },
         { href: "/portal/admin/flaechen", label: "Flächen-Pipeline", icon: LandPlot },
         { href: "/portal/admin/projekte", label: "Projekt-Freigabe", icon: ShieldCheck },
         { href: "/portal/admin/interessen", label: "NDA & LOI", icon: Handshake },
+        { href: "/portal/admin/dealroom", label: "Deal-Room", icon: Gavel }, // Deal-Room: Q&A-Moderation, Bieterverfahren
+        { href: "/portal/admin/anlagen", label: "Anlagen & Störungen", icon: TriangleAlert }, // Anlagen & Monitoring: Störungs-Leitstand
         { href: "/portal/admin/deals", label: "Deals & Provisionen", icon: Coins },
         { href: "/portal/admin/nutzer", label: "Nutzer & Protokoll", icon: Users },
-      ],
+        { href: "/portal/admin/postausgang", label: "E-Mail-Postausgang", icon: Mail },
+      ].filter((e) => darfLesen(nutzer, seitenBereich(e.href))),
+    });
+    // Backoffice-Ausbau: CRM, Akquise, Automationen, Vorlagen, Berichte, Revisionsprotokoll, Rechte
+    bereiche.push({
+      titel: "Steuerung",
+      eintraege: [
+        { href: "/portal/admin/crm", label: "CRM", icon: Contact },
+        { href: "/portal/admin/akquise", label: "Akquise & Gebiete", icon: Target },
+        { href: "/portal/admin/automationen", label: "Automationen", icon: Workflow },
+        { href: "/portal/admin/vorlagen", label: "Vorlagen", icon: LayoutTemplate },
+        { href: "/portal/admin/berichte", label: "Berichte", icon: BarChart3 },
+        { href: "/portal/admin/protokoll", label: "Revisionsprotokoll", icon: Link2 },
+        { href: "/portal/admin/rechte", label: "Rechte", icon: KeyRound },
+      ].filter((e) => darfLesen(nutzer, seitenBereich(e.href))),
     });
   }
   return bereiche;
@@ -66,6 +99,19 @@ const LABELS = {
   deals: "Deals & Provisionen",
   nutzer: "Nutzer",
   neu: "Neu",
+  benachrichtigungen: "Benachrichtigungen",
+  aufgaben: "Aufgaben",
+  postausgang: "Postausgang",
+  vergleich: "Vergleich",
+  sicherheit: "Sicherheit",
+  organisation: "Organisation & Team",
+  pipeline: "Deal-Pipeline",
+  dealroom: "Deal-Room",
+  anlagen: "Anlagen", // Anlagen & Monitoring
+  karte: "Karte",
+  hilfe: "Hilfe",
+  willkommen: "Einstieg",
+  crm: "CRM", akquise: "Akquise", automationen: "Automationen", vorlagen: "Vorlagen", berichte: "Berichte", protokoll: "Revisionsprotokoll", rechte: "Rechte", dubletten: "Dubletten", organisation: "Organisation", // Backoffice-Ausbau
 };
 
 function brotkrumen(pfad) {
@@ -77,14 +123,15 @@ function aktiv(pfad, e) {
   return e.exakt ? pfad === e.href : pfad === e.href || pfad.startsWith(e.href + "/");
 }
 
-export default function PortalRahmen({ nutzer, ungelesen = 0, demo = false, children }) {
+export default function PortalRahmen({ nutzer, ungelesen = 0, hinweise = { eintraege: [], ungelesen: 0 }, aufgabenFaellig = 0, demo = false, children }) {
   const pfad = usePathname() || "/portal";
   const router = useRouter();
   const [offen, setOffen] = useState(false);
   const [menue, setMenue] = useState(false);
   const drawerRef = useRef(null);
   const menueRef = useRef(null);
-  const bereiche = navigation(nutzer.rollen || []);
+  const bereiche = navigation(nutzer.rollen || [], nutzer);
+  const zaehler = { nachrichten: ungelesen, hinweise: hinweise?.ungelesen || 0, aufgaben: aufgabenFaellig };
 
   useFokusFalle(offen, drawerRef, { beiEscape: () => setOffen(false) });
 
@@ -135,10 +182,10 @@ export default function PortalRahmen({ nutzer, ungelesen = 0, demo = false, chil
                   >
                     <Icon aria-hidden="true" className={cn("h-[18px] w-[18px] shrink-0", ist ? "text-ov-300" : "text-white/45 group-hover:text-white/80")} />
                     <span className="min-w-0 flex-1 truncate">{e.label}</span>
-                    {e.zaehler && ungelesen > 0 && (
-                      <span className="ov-num rounded-full bg-ov-500 px-2 py-0.5 text-[11.5px] font-bold text-white">
-                        {ungelesen}
-                        <span className="sr-only"> ungelesen</span>
+                    {e.zaehler && zaehler[e.zaehler] > 0 && (
+                      <span className={cn("ov-num rounded-full px-2 py-0.5 text-[11.5px] font-bold", e.zaehler === "aufgaben" ? "bg-sun-400 text-navy-950" : "bg-ov-500 text-white")}>
+                        {zaehler[e.zaehler]}
+                        <span className="sr-only">{e.zaehler === "aufgaben" ? " fällig" : " ungelesen"}</span>
                       </span>
                     )}
                   </Link>
@@ -163,6 +210,10 @@ export default function PortalRahmen({ nutzer, ungelesen = 0, demo = false, chil
           Demo-Modus: Alle Daten sind fiktiv.
         </p>
       )}
+      {/* Organisationswechsel mobil (im Kopf ab sm) – Login, Sicherheit & Teams */}
+      <div className="px-6 pt-4 sm:hidden">
+        <OrgWechsler organisationen={nutzer.organisationen || []} aktiv={nutzer.organisation || null} />
+      </div>
       {nav}
       <div className="border-t border-white/10 p-3">
         <Link href="/" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] text-white/60 hover:bg-white/[0.05] hover:text-white">
@@ -180,9 +231,10 @@ export default function PortalRahmen({ nutzer, ungelesen = 0, demo = false, chil
       <a href="#portal-inhalt" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-ink-900 focus:shadow-lg">
         Zum Inhalt springen
       </a>
+      <SprungLinks />
 
       {/* Seitenleiste Desktop */}
-      <aside className="ov-noise fixed inset-y-0 left-0 z-30 hidden w-[272px] flex-col bg-navy-950 lg:flex">{seitenleiste}</aside>
+      <aside id="portal-navigation" className="ov-noise fixed inset-y-0 left-0 z-30 hidden w-[272px] flex-col bg-navy-950 lg:flex">{seitenleiste}</aside>
 
       {/* Drawer mobil */}
       <div className={cn("fixed inset-0 z-50 lg:hidden", offen ? "" : "pointer-events-none")} aria-hidden={!offen}>
@@ -227,15 +279,20 @@ export default function PortalRahmen({ nutzer, ungelesen = 0, demo = false, chil
               </ol>
             </nav>
             <div className="ml-auto flex items-center gap-1.5">
+              <div className="hidden sm:block">
+                <OrgWechsler organisationen={nutzer.organisationen || []} aktiv={nutzer.organisation || null} kompakt />
+              </div>
+              <SuchKnopf />
               {nutzer.rollen?.includes("investor") && (
                 <Link href="/portal/boerse" className="hidden h-10 items-center gap-2 rounded-full px-3 text-[13.5px] font-medium text-ink-600 hover:bg-ink-100 sm:flex">
                   <Search aria-hidden="true" className="h-4 w-4" /> Projekte finden
                 </Link>
               )}
-              <Link href="/portal/nachrichten" className="relative flex h-10 w-10 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100" aria-label={ungelesen ? `Nachrichten, ${ungelesen} ungelesen` : "Nachrichten"}>
-                <Bell aria-hidden="true" className="h-5 w-5" />
+              <Link href="/portal/nachrichten" className="relative hidden h-10 w-10 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100 sm:flex" aria-label={ungelesen ? `Nachrichten, ${ungelesen} ungelesen` : "Nachrichten"}>
+                <MessagesSquare aria-hidden="true" className="h-5 w-5" />
                 {ungelesen > 0 && <span aria-hidden="true" className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-ov-500 ring-2 ring-white" />}
               </Link>
+              <Glocke start={hinweise} />
               <div className="relative" ref={menueRef}>
                 <button
                   type="button"
@@ -244,7 +301,7 @@ export default function PortalRahmen({ nutzer, ungelesen = 0, demo = false, chil
                   aria-haspopup="menu"
                   className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2 hover:bg-ink-100"
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-navy-700 text-[12.5px] font-bold text-white">{initialen(nutzer)}</span>
+                  <span className={cn("flex h-8 w-8 items-center justify-center rounded-full text-[12.5px] font-bold", avatarKlasse(nutzer.komfort?.farbe))}>{initialen(nutzer)}</span>
                   <span className="hidden max-w-[160px] truncate text-[14px] font-semibold text-ink-800 sm:block">{name}</span>
                   <ChevronDown aria-hidden="true" className="h-4 w-4 text-ink-500" />
                 </button>
@@ -263,6 +320,9 @@ export default function PortalRahmen({ nutzer, ungelesen = 0, demo = false, chil
                     <Link role="menuitem" href="/portal/profil" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] text-ink-700 hover:bg-ink-50">
                       <UserRound aria-hidden="true" className="h-4 w-4" /> Profil & Passwort
                     </Link>
+                    <Link role="menuitem" href="/portal/sicherheit" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] text-ink-700 hover:bg-ink-50">
+                      <Fingerprint aria-hidden="true" className="h-4 w-4" /> Sicherheit & Sitzungen
+                    </Link>
                     <Link role="menuitem" href="/" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] text-ink-700 hover:bg-ink-50">
                       <Building2 aria-hidden="true" className="h-4 w-4" /> Zur Website
                     </Link>
@@ -279,7 +339,10 @@ export default function PortalRahmen({ nutzer, ungelesen = 0, demo = false, chil
         <div id="portal-inhalt" tabIndex={-1} className="mx-auto w-full max-w-[1320px] px-4 py-6 outline-none md:px-8 md:py-10">
           {children}
         </div>
+        {/* Platz für die mobile Bottom-Navigation */}
+        <div aria-hidden="true" className="h-20 lg:hidden" />
       </div>
+      <Bedienung nutzer={nutzer} ungelesen={ungelesen} />
     </div>
   );
 }

@@ -15,9 +15,11 @@ from oekoinvest_app.plattform.kern import (
 	nutzer,
 	protokoll,
 	rolle_noetig,
+	verboten,
 	verlauf,
 )
 from oekoinvest_app.plattform.konstanten import NDA_VERSION
+from oekoinvest_app.plattform.organisation import darf_team_schreiben_objekt, interesse_fuer, listen_filter, organisation_fuer_neu
 from oekoinvest_app.plattform.prozesse import BOERSE_STATUS, PROZESSE, pruefe_uebergang
 
 MAX_LISTE = 2000
@@ -31,13 +33,18 @@ def _projekt_sichtbar(projekt_id):
 	return p
 
 
-def _interesse(p, n, anlegen=True):
-	name = frappe.db.get_value("Plattform Interesse", {"projekt_id": p.name, "investor_id": n.id}, "name")
-	if name:
-		return frappe.get_doc("Plattform Interesse", name)
+def _interesse(p, n, anlegen=True, lesen_text=None):
+	# eigenes bzw. Interesse der aktiven Organisation; Team-Interesse ändern erst ab Teamrolle „Mitglied“
+	vorhanden = interesse_fuer(n, p.name)
+	if vorhanden and vorhanden.investor_id != n.id and not darf_team_schreiben_objekt(n, vorhanden):
+		verboten(lesen_text or "Mit der Rolle „Nur lesen“ können Sie die Merkliste des Teams nicht ändern.")
+	if vorhanden:
+		return vorhanden
 	if not anlegen:
 		return None
-	i = frappe.get_doc({"doctype": "Plattform Interesse", "projekt_id": p.name, "investor_id": n.id, "status": "gemerkt", "gemerkt": 0})
+	i = frappe.get_doc(
+		{"doctype": "Plattform Interesse", "projekt_id": p.name, "investor_id": n.id, "organisation_id": organisation_fuer_neu(n), "status": "gemerkt", "gemerkt": 0}
+	)
 	verlauf(i, "gemerkt", n, "eigentuemer", "")
 	i.insert(ignore_permissions=True)
 	return i
@@ -65,7 +72,7 @@ def nda_anfragen(projektId=None, akzeptiert=None, ip=None, userAgent=None, als_b
 	p = _projekt_sichtbar(projektId)
 	if p.anbieter_id == n.id:
 		konflikt("Für eigene Projekte ist keine NDA nötig.")
-	i = _interesse(p, n)
+	i = _interesse(p, n, lesen_text="Mit der Rolle „Nur lesen“ können Sie keine NDA für das Team anfragen.")
 	if i.status != "gemerkt":
 		return interesse_json(i, n)  # bereits angefragt – idempotent
 	extra = {"ndaAkzeptiert": v.wahr(akzeptiert)}
@@ -83,7 +90,7 @@ def liste(alle=None, status=None, projektId=None, als_benutzer=None):
 	alle = v.wahr(alle)
 	if alle:
 		admin_noetig(n)
-	filters = {} if alle else {"investor_id": n.id}
+	filters = {} if alle else listen_filter(n, "investor_id")  # eigene bzw. der aktiven Organisation
 	erlaubt = PROZESSE["interesse"]["status"]
 	if status:
 		st = [s for s in (status if isinstance(status, list) else [status]) if isinstance(s, str) and s in erlaubt]

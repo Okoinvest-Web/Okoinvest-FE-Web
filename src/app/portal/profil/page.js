@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { MailCheck, MailWarning } from "lucide-react";
-import { PasswortAendernFormular, StammdatenFormular, SuchprofilFormular } from "@/components/Portal/ProfilFormulare";
+import { StammdatenFormular, SuchprofilFormular } from "@/components/Portal/ProfilFormulare";
 import { Badge, Hinweis, Karte, SeitenKopf } from "@/components/Portal/ui";
 import { portalNutzer, hatRolle } from "@/lib/plattform/server/seite";
 import { backend, istDemo } from "@/lib/plattform/backend";
@@ -8,10 +8,12 @@ import { nutzerFuerBrowser } from "@/lib/plattform/server/route";
 import { LAENDER } from "@/lib/plattform/konstanten";
 import { mwp, preisText } from "@/lib/plattform/format";
 import { phaseById } from "@/lib/invest/markt";
+import { DatenUndLoeschung, EmailAendern, KomfortFormular, PasswortAendern } from "@/components/Portal/Sicherheit/Konto"; // Login, Sicherheit & Teams
 
 export const metadata = { title: "Profil" };
 
-export default async function Profil() {
+export default async function Profil({ searchParams }) {
+  const sp = await searchParams;
   const n = await portalNutzer();
   const investor = hatRolle(n, "investor") && n.rollen.includes("investor");
   const boerse = investor ? await backend().boerse(n, {}) : null;
@@ -20,6 +22,7 @@ export default async function Profil() {
   return (
     <div className="space-y-6">
       <SeitenKopf eyebrow="Konto" titel={investor ? "Profil & Suchprofil" : "Profil"} text="Ihre Stammdaten, Rollen und Sicherheit." />
+      {sp?.hinweis === "email-geaendert" && <Hinweis ton="ok" icon={MailCheck} titel="E-Mail-Adresse geändert">Ab sofort melden Sie sich mit {n.email} an.</Hinweis>}
       {n.emailBestaetigt ? (
         <Hinweis ton="ok" icon={MailCheck}>E-Mail-Adresse {n.email} ist bestätigt.</Hinweis>
       ) : (
@@ -33,14 +36,23 @@ export default async function Profil() {
         <Karte titel="Stammdaten & Rollen">
           <StammdatenFormular nutzer={nutzerFuerBrowser(n)} />
         </Karte>
-        <Karte titel="Passwort ändern">
-          <PasswortAendernFormular />
+        <Karte titel="Passwort ändern" untertitel="Zwei-Faktor, Sitzungen und Geräte unter „Sicherheit“">
+          <PasswortAendern email={n.email} name={`${n.vorname} ${n.nachname}`} />
+        </Karte>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <Karte titel="Darstellung & Benachrichtigungen" untertitel="Avatar, Sprache, Kanäle">
+          <KomfortFormular nutzer={nutzerFuerBrowser(n)} />
+        </Karte>
+        <Karte titel="E-Mail-Adresse ändern" untertitel="Wirksam nach Bestätigung der neuen Adresse">
+          <EmailAendern email={n.email} />
         </Karte>
       </div>
 
       {investor && (
         <div id="suchprofil" className="grid scroll-mt-24 gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-          <Karte titel="Suchprofil" untertitel="Grundlage für den Matching-Score in der Projektbörse">
+          <Karte titel={n.organisation ? `Team-Suchprofil · ${n.organisation.name}` : "Suchprofil"} untertitel={n.organisation ? "Gilt für alle Mitglieder der Organisation" : "Grundlage für den Matching-Score in der Projektbörse"}>
             <SuchprofilFormular profil={n.suchprofil} />
           </Karte>
           <Karte titel="Passende Projekte" untertitel={n.suchprofil ? "Nach Matching-Score" : "Suchprofil speichern, um Passung zu sehen"}>
@@ -65,6 +77,9 @@ export default async function Profil() {
           </Karte>
         </div>
       )}
+      <Karte titel="Ihre Daten" untertitel="Auskunft, Datenübertragbarkeit, Löschung (DSGVO)">
+        <DatenUndLoeschung />
+      </Karte>
     </div>
   );
 }

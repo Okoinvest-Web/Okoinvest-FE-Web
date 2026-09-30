@@ -21,7 +21,8 @@ from oekoinvest_app.plattform.kern import (
 	protokoll,
 	ungueltig,
 )
-from oekoinvest_app.plattform.konstanten import ALLE_ROLLEN_IDS
+from oekoinvest_app.plattform.api.aufgabe import kennzahlen as aufgaben_kennzahlen
+from oekoinvest_app.plattform.konstanten import ALLE_ROLLEN_IDS, PROTOKOLL_AKTIONEN
 from oekoinvest_app.plattform.prozesse import BOERSE_STATUS, OFFENE_STATUS, PROZESSE
 
 ZUWEISBAR = ("vorgang", "flaeche", "projekt", "interesse", "provision")
@@ -134,14 +135,15 @@ def provisionen(als_benutzer=None):
 
 
 @frappe.whitelist(methods=["POST"])
-def aktivitaeten(limit=None, objektId=None, als_benutzer=None):
+def aktivitaeten(limit=None, objektId=None, objektIds=None, als_benutzer=None):
 	n = nutzer(als_benutzer)
 	admin_noetig(n)
 	anzahl = v.zahl(limit, min=1, max=100000)
 	anzahl = min(500, int(anzahl)) if anzahl else 100
 	filters = {}
-	if objektId:
-		filters["objekt_id"] = v.text(objektId, 60)
+	ids = [x for x in [v.text(objektId, 60), *[v.text(i, 60) for i in (objektIds if isinstance(objektIds, list) else [])[:50]]] if x]
+	if ids:
+		filters["objekt_id"] = ("in", list(dict.fromkeys(ids)))
 	zeilen = frappe.get_all(
 		"Plattform Aktivitaet",
 		filters=filters,
@@ -260,4 +262,15 @@ def uebersicht(als_benutzer=None):
 		},
 		"nutzer": {"gesamt": frappe.db.count("Plattform Konto"), "rollen": dict(rollen)},
 		"nachrichten": {"ungelesen": frappe.db.count("Plattform Nachricht", {"gelesen_admin": 0})},
+		"aufgaben": aufgaben_kennzahlen(n),
 	}
+
+
+@frappe.whitelist(methods=["POST"])
+def protokoll_eintrag(aktion=None, objektArt=None, objektId=None, text=None, ip=None, als_benutzer=None):
+	"""Protokolleintrag für Vorgänge, die nur die Website sieht (z. B. CSV-Export). Nur Aktionen der Positivliste."""
+	n = nutzer(als_benutzer)
+	admin_noetig(n)
+	v.pflicht(aktion in PROTOKOLL_AKTIONEN, "Unbekannte Aktion.")
+	protokoll(n, aktion, v.text(objektArt, 40), v.text(objektId, 60), text, ip)
+	return {"ok": True}

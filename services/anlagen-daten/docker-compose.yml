@@ -1,0 +1,64 @@
+# Anlagen & Monitoring: MQTT-Broker (Mosquitto + go-auth) · TimescaleDB · Ingest-Dienst
+# Start: cp .env.example .env (Werte setzen!), Zertifikate nach ./zertifikate legen, dann `docker compose up -d`.
+# Veröffentlicht werden NUR 8883 (MQTT über TLS, Geräte) und 8443 (Abfrage-API, nur für den Website-Server freigeben).
+# Datenbank und Auth-Hook bleiben im internen Netz.
+
+name: oekoinvest-anlagen
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: anlagen
+      POSTGRES_USER: anlagen
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD setzen}
+    volumes:
+      - timescale-daten:/var/lib/postgresql/data
+    networks: [intern]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anlagen -d anlagen"]
+      interval: 10s
+      retries: 10
+
+  mosquitto:
+    # Mosquitto mit go-auth-Plugin (HTTP-Backend gegen den Dienst)
+    image: iegomez/mosquitto-go-auth:2.1.0-mosquitto_2.0.18
+    restart: unless-stopped
+    ports:
+      - "8883:8883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/etc/mosquitto/mosquitto.conf:ro
+      - ./zertifikate:/zertifikate:ro
+      - mosquitto-daten:/var/lib/mosquitto
+    networks: [intern]
+    depends_on: [anlagen-daten]
+
+  anlagen-daten:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://anlagen:${POSTGRES_PASSWORD}@timescaledb:5432/anlagen
+      MQTT_URL: mqtts://mosquitto:8883
+      MQTT_CA_DATEI: /zertifikate/ca.crt
+      HTTP_TLS_KEY_DATEI: /zertifikate/api.key
+      HTTP_TLS_CERT_DATEI: /zertifikate/api.crt
+    ports:
+      - "8443:8443"
+    volumes:
+      - ./zertifikate:/zertifikate:ro
+    networks: [intern]
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+networks:
+  intern: {}
+
+volumes:
+  timescale-daten: {}
+  mosquitto-daten: {}

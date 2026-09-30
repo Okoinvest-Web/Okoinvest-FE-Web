@@ -1,3 +1,5 @@
+import { FileSpreadsheet } from "lucide-react";
+import DateiLink from "@/components/Portal/DateiLink";
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import StatusAktionen from "@/components/Portal/StatusAktionen";
@@ -19,7 +21,7 @@ export default async function AdminProjekte() {
 
   return (
     <div className="space-y-6">
-      <SeitenKopf eyebrow="Backoffice" titel="Projekt-Freigabe" text="Eingereichte Projekte prüfen, veröffentlichen (mit Provisionssatz), zur Überarbeitung zurückgeben oder mit Begründung ablehnen." />
+      <SeitenKopf eyebrow="Backoffice" titel="Projekt-Freigabe" text="Eingereichte Projekte prüfen, veröffentlichen (mit Provisionssatz), zur Überarbeitung zurückgeben oder mit Begründung ablehnen." aktionen={<DateiLink href="/api/admin/export/projekte" icon={FileSpreadsheet}>CSV-Export</DateiLink>} />
 
       {pruefung.length ? (
         <div className="space-y-4">

@@ -10,6 +10,7 @@ from frappe.utils import cint, flt
 from oekoinvest_app.plattform.kern import aus_json, besitzer, ist_admin, iso, kurz, name_von, objekt_laden, verlauf_json, zahl_oder_null
 from oekoinvest_app.plattform.konstanten import VORGANG_TYPEN
 from oekoinvest_app.plattform.oeffentlich import projekt_oeffentlich
+from oekoinvest_app.plattform.organisation import zugriff_info
 
 # ================================================================ Vorgang
 
@@ -53,6 +54,7 @@ def flaeche_json(f):
 	return {
 		"id": f.name,
 		"nutzerId": f.nutzer_id or None,
+		"organisationId": f.get("organisation_id") or None,
 		"vorgangId": f.vorgang_id or None,
 		"bezeichnung": f.bezeichnung or "",
 		"land": f.land or "",
@@ -80,12 +82,30 @@ def anzahl_dokumente(art, kennung):
 	return frappe.db.count("Plattform Dokument", {"bezug_art": art, "bezug_id": kennung})
 
 
+def checkliste_dokumente(art, kennung):
+	"""Metadaten (id, name, am, checkliste) der Dokumente eines Objekts für die Checkliste."""
+	return [
+		{"id": d.name, "name": d.dateiname, "am": iso(d.am), "checkliste": d.checkliste or ""}
+		for d in frappe.get_all("Plattform Dokument", filters={"bezug_art": art, "bezug_id": kennung}, fields=["name", "dateiname", "am", "checkliste"], limit_page_length=0)
+	]
+
+
+def datenraum_qualitaet(pj):
+	from oekoinvest_app.plattform.checkliste import checkliste_projekt
+
+	return checkliste_projekt(pj, checkliste_dokumente("projekt", pj["id"]))["quote"]
+
+
 def flaeche_ausgabe(f, n):
+	from oekoinvest_app.plattform.checkliste import checkliste_flaeche
+
 	out = flaeche_json(f)
 	out["zustaendig"] = kurz(f.zustaendig_id)
 	out["dokumente"] = anzahl_dokumente("flaeche", f.name)
+	out["checkliste"] = checkliste_flaeche(out, checkliste_dokumente("flaeche", f.name))
 	if ist_admin(n):
 		out["eigentuemer"] = kurz(f.nutzer_id)
+	out.update(zugriff_info(n, f, f.nutzer_id))  # organisation {id, name}, meinZugriff
 	return out
 
 
@@ -98,6 +118,7 @@ def projekt_json(p):
 		"id": p.name,
 		"slug": p.slug or "",
 		"anbieterId": p.anbieter_id,
+		"organisationId": p.get("organisation_id") or None,
 		"titel": p.titel or "",
 		"typ": p.typ or "",
 		"land": p.land or "",
@@ -140,14 +161,18 @@ def projekt_statistik(p):
 
 
 def projekt_ausgabe(p, n):
+	from oekoinvest_app.plattform.checkliste import checkliste_projekt
+
 	out = projekt_json(p)
 	out["statistik"] = projekt_statistik(p)
 	out["dokumente"] = anzahl_dokumente("projekt", p.name)
+	out["checkliste"] = checkliste_projekt(out, checkliste_dokumente("projekt", p.name))
 	pv = frappe.db.get_value("Plattform Provision", {"projekt_id": p.name}, "name")
 	out["provision"] = provision_json(frappe.get_doc("Plattform Provision", pv)) if pv else None
 	if ist_admin(n):
 		out["anbieter"] = kurz(p.anbieter_id)
 		out["zustaendig"] = kurz(p.zustaendig_id)
+	out.update(zugriff_info(n, p, p.anbieter_id))  # organisation {id, name}, meinZugriff
 	return out
 
 
@@ -167,6 +192,7 @@ def interesse_json(i, n=None):
 		"id": i.name,
 		"projektId": i.projekt_id,
 		"investorId": i.investor_id,
+		"organisationId": i.get("organisation_id") or None,
 		"status": i.status,
 		"gemerkt": bool(cint(i.gemerkt)),
 		"statusVerlauf": verlauf_json(i),
@@ -192,6 +218,7 @@ def interesse_ausgabe(i, n):
 	if ist_admin(n):
 		out["investor"] = kurz(i.investor_id)
 		out["anbieter"] = kurz(p.anbieter_id) if p else None
+	out.update(zugriff_info(n, i, i.investor_id))  # organisation {id, name}, meinZugriff
 	return out
 
 
@@ -213,6 +240,29 @@ def provision_json(pv):
 		"ablehnGrund": pv.ablehn_grund or "",
 		"erstelltAm": iso(pv.creation),
 	}
+
+
+# ================================================================ Änderungsprotokoll
+
+# Bezeichnungen geänderter Felder (camelCase wie im Demo-Backend) für „wer hat was geändert“
+FELD_NAMEN_FLAECHE = {
+	"bezeichnung": "Bezeichnung", "land": "Land", "bundesland": "Bundesland", "plz": "PLZ", "ort": "Ort", "gemarkung": "Gemarkung",
+	"flurstuecke": "Flurstücke", "ha": "Größe", "nutzung": "Nutzung", "agri": "Agri-PV", "eigentum": "Eigentum", "hinweise": "Hinweise",
+}
+FELD_NAMEN_PROJEKT = {
+	"titel": "Titel", "typ": "Typ", "land": "Land", "bundesland": "Bundesland", "region": "Region", "mwp": "Leistung", "mwhSpeicher": "Speicher",
+	"flaecheHa": "Fläche", "phase": "Phase", "netzanschluss": "Netzanschluss", "codGeplant": "COD", "preisModus": "Preismodus", "preis": "Preis",
+	"preisProKwp": "Preis je kWp", "beschreibung": "Beschreibung", "highlights": "Highlights", "vertraulich": "vertrauliche Angaben",
+}
+
+
+def geaenderte_felder(alt, neu, namen):
+	import json
+
+	def norm(x):
+		return json.dumps(x, sort_keys=True, ensure_ascii=False, default=str)
+
+	return [label for k, label in namen.items() if norm(alt.get(k)) != norm(neu.get(k))]
 
 
 # ================================================================ Allgemein
@@ -242,6 +292,7 @@ def dokument_meta(d):
 		"mime": d.mime,
 		"groesse": cint(d.groesse),
 		"kategorie": d.kategorie,
+		"checkliste": d.get("checkliste") or "",
 		"am": iso(d.am),
 		"hochgeladenVon": d.hochgeladen_von or None,
 	}

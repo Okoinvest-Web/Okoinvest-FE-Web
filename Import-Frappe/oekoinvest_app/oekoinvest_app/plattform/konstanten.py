@@ -8,6 +8,7 @@
 
 ROLLE_API = "ÖkoInvest API"  # technischer API-Benutzer der Website (nur diese Rolle)
 ROLLE_DESK_ADMIN = "ÖkoInvest Admin"  # Pflege im Frappe-Desk (Leserechte/Korrekturen)
+ROLLE_ANLAGEN_DIENST = "ÖkoInvest Anlagen-Dienst"  # Anlagen & Monitoring: technischer Benutzer des Ingest-Dienstes (nur dienst_*-Methoden)
 
 # Website-Rollen-ID → (Frappe-Rolle, Bezeichnung, selbst wählbar)
 ROLLEN = {
@@ -61,6 +62,7 @@ PROJEKT_TYPEN = {
 	"carport": "Solarcarport / Parkplatz",
 	"speicher": "Batteriegroßspeicher",
 	"hybrid": "PV mit Speicher",
+	"dach": "Dach-PV (Gewerbe/Halle)",
 }
 
 LAENDER = {"DE": "Deutschland", "AT": "Österreich", "CH": "Schweiz"}
@@ -79,7 +81,7 @@ BUNDESLAENDER = {
 }
 
 NETZANSCHLUSS = ["offen", "angefragt", "zusage", "reserviert", "vorhanden"]
-FLAECHE_NUTZUNG = ["acker", "gruenland", "konversion", "gewerbe", "sonstige"]
+FLAECHE_NUTZUNG = ["acker", "gruenland", "konversion", "gewerbe", "sonstige", "dach"]
 EIGENTUM = ["eigentum", "miteigentum", "verwaltung"]
 PREIS_MODUS = ["gesamt", "proKwp", "anfrage"]
 
@@ -131,4 +133,95 @@ PRAEFIX = {
 	"Plattform Dokument": "D",
 	"Plattform Nachricht": "M",
 	"Plattform Aktivitaet": "A",
+	"Plattform Benachrichtigung": "B",
+	"Plattform Aufgabe": "AF",
+	# Login, Sicherheit & Teams
+	"Plattform Organisation": "O",
+	"Plattform Mitgliedschaft": "MG",
+	"Plattform Einladung": "EL",
+	"Plattform Sitzung": "S",  # 10 zufällige Zeichen (Kennung steht im Sitzungs-Cookie)
+	"Plattform Geraet": "G",
+	"Plattform Anmeldung": "AN",
+	# Deal-Room & Investoren
+	"Plattform Frage": "FR",
+	"Plattform Bieterverfahren": "BV",
+	"Plattform Gebot": "GB",
+	"Plattform Datenraum Eintrag": "DR",
+	"Plattform Zugriff": "ZG",
+	"Plattform Notiz": "NZ",
+	"Plattform Suchprofil": "SP",
+	"Plattform Kontaktfreigabe": "KF",
+	"Plattform Projektaufruf": "PA",
+	# Anlagen & Monitoring
+	"Plattform Anlage": "AL",
+	"Plattform Anlagenkomponente": "AK",
+	"Plattform Messpunkt": "MP",
+	"Plattform Geraetezugang": "GZ",
+	"Plattform Stoerungsfall": "ST",
+	"Plattform Wartung": "WA",
+	"Plattform Contracting Vertrag": "CV",
+	"Plattform Zaehlerstand Monatswert": "ZM",
 }
+
+# ---------------------------------------------------------------- Benachrichtigungen (Glocke) – wie BENACHRICHTIGUNG_ARTEN in konstanten.js
+# Art → (Bezeichnung, Standard „per E-Mail“, nur Backoffice, nur für Rollen)
+BENACHRICHTIGUNG_ARTEN = {
+	"status": ("Statuswechsel", True, False, None),
+	"nachricht": ("Neue Nachrichten", True, False, None),
+	"nda": ("NDA-Freigabe & Datenraum", True, False, ["investor"]),
+	"suchprofil": ("Neue passende Projekte", True, False, ["investor"]),
+	"anfrage": ("Neue Anfragen", True, True, None),
+	"aufgabe": ("Aufgaben & Wiedervorlagen", True, True, None),
+	# Login, Sicherheit & Teams: E-Mail immer (nicht abschaltbar, daher nicht in den Einstellungen – „fest“)
+	"sicherheit": ("Sicherheit & Anmeldungen", True, False, None),
+	# Anlagen & Monitoring: neue/behobene Störung an einer eigenen bzw. betreuten Anlage
+	"stoerung": ("Anlagenstörungen", True, False, ["unternehmen"]),
+}
+BENACHRICHTIGUNG_ART_IDS = list(BENACHRICHTIGUNG_ARTEN)
+BENACHRICHTIGUNG_FEST = ["sicherheit"]
+
+
+def mail_einstellungen_standard():
+	return {k: bool(a[1]) for k, a in BENACHRICHTIGUNG_ARTEN.items()}
+
+
+# ---------------------------------------------------------------- Aufgaben / Suchprofil-Alarm
+AUFGABE_STATUS = {"offen": "Offen", "erledigt": "Erledigt"}
+AUFGABE_BEZUG_ARTEN = ["vorgang", "flaeche", "projekt", "interesse"]
+SUCHPROFIL_SCHWELLE = {"standard": 70, "min": 50, "max": 100}
+PROTOKOLL_AKTIONEN = ["export"]
+
+# ---------------------------------------------------------------- Login, Sicherheit & Teams
+# (src/lib/plattform/organisation.js, backend/demo/sicherheit.js, src/lib/plattform/sitzung.js)
+
+# Organisationsarten → (Bezeichnung, Beschreibung)
+ORGANISATION_ARTEN = {
+	"investmenthaus": ("Investmenthaus / Investor", "Projekte prüfen, NDA und Datenraum im Team, gemeinsames Suchprofil."),
+	"projektentwickler": ("Projektentwickler", "Projekte gemeinsam in die Börse stellen und Interessenten betreuen."),
+	"stadtwerk": ("Stadtwerk / Kommune", "Flächen, Projekte und Beteiligungsmodelle im Team verfolgen."),
+	"betrieb": ("Betrieb / Unternehmen", "Flächen, Anfragen und Unterlagen des Betriebs an einem Ort."),
+}
+# Teamrollen → (Bezeichnung, Stufe, Beschreibung). lesen 1 · mitglied 2 (bearbeiten) · admin 3 (verwalten) · inhaber 4
+TEAM_ROLLEN = {
+	"inhaber": ("Inhaber", 4, "Volle Rechte, überträgt die Inhaberschaft, löscht die Organisation."),
+	"admin": ("Admin", 3, "Verwaltet Mitglieder und Einladungen, bearbeitet alles."),
+	"mitglied": ("Mitglied", 2, "Sieht und bearbeitet die Objekte der Organisation."),
+	"lesen": ("Nur lesen", 1, "Sieht die Objekte der Organisation, ändert nichts."),
+}
+EINLADUNG_ROLLEN = ["admin", "mitglied", "lesen"]  # Inhaber nur per Übertragung
+ORGANISATION_OBJEKTE = ["flaeche", "projekt", "interesse"]
+EINLADUNG_TAGE = 7
+MAX_MITGLIEDER = 200
+MAX_ORGANISATIONEN_JE_KONTO = 20
+
+# Konto-Komfort (Avatarfarbe = Token des Design-Systems, Sprache)
+AVATAR_FARBEN = ["navy", "gruen", "dunkelgruen", "sonne", "sand", "grau"]
+SPRACHEN = {"de": "Deutsch", "en": "English (in Vorbereitung)"}
+
+# Kontosperre mit exponentiellem Backoff: ab `schwelle` Fehlversuchen basis · 2^(fehl − schwelle) Sekunden, höchstens max
+SPERRE = {"schwelle": 5, "basisSekunden": 30, "maxSekunden": 3600}
+MAGIC_LINK_MINUTEN = 15
+GERAET_MERKEN_TAGE = 30
+SITZUNG_DAUER_S = 60 * 60 * 24 * 7  # wie SITZUNG_DAUER_S in src/lib/plattform/sitzung.js
+EINRICHTUNG_2FA_MINUTEN = 30
+MAX_SITZUNGEN_JE_KONTO = 30

@@ -7,7 +7,7 @@ import { senden } from "@/lib/plattform/client";
 import { LAENDER, PROJEKT_TYPEN, ROLLEN } from "@/lib/plattform/konstanten";
 import { passwortFehler } from "@/lib/plattform/validierung";
 import { PHASEN } from "@/lib/invest/markt";
-import { eingabe, Feld, FehlerBox, ErfolgBox, Chip } from "./felder";
+import { auswahlfeld, eingabe, Feld, FehlerBox, ErfolgBox, Chip } from "./felder";
 
 function useSpeichern() {
   const router = useRouter();
@@ -50,7 +50,7 @@ export function StammdatenFormular({ nutzer }) {
         <Feld id={`${id}-n`} label="Nachname" pflicht><input id={`${id}-n`} required className={eingabe} value={f.nachname} onChange={(e) => setze("nachname", e.target.value)} autoComplete="family-name" /></Feld>
         <Feld id={`${id}-f`} label="Unternehmen / Betrieb"><input id={`${id}-f`} className={eingabe} value={f.firma} onChange={(e) => setze("firma", e.target.value)} autoComplete="organization" /></Feld>
         <Feld id={`${id}-t`} label="Telefon"><input id={`${id}-t`} type="tel" className={eingabe} value={f.telefon} onChange={(e) => setze("telefon", e.target.value)} autoComplete="tel" /></Feld>
-        <Feld id={`${id}-e`} label="E-Mail-Adresse" hinweis="Änderung der Anmeldeadresse bitte per Nachricht an das Backoffice." className="sm:col-span-2">
+        <Feld id={`${id}-e`} label="E-Mail-Adresse" hinweis="Ändern unten unter „E-Mail-Adresse ändern“ (mit Bestätigung)." className="sm:col-span-2">
           <input id={`${id}-e`} disabled className={eingabe} value={nutzer.email} />
         </Feld>
       </div>
@@ -113,6 +113,7 @@ export function SuchprofilFormular({ profil }) {
     laender: profil?.laender || [],
     typen: profil?.typen || [],
     benachrichtigen: profil?.benachrichtigen ?? true,
+    schwelle: profil?.schwelle ?? 70,
   });
   const setze = (k, v) => setP((x) => ({ ...x, [k]: v }));
   const umschalten = (k, v) => setP((x) => ({ ...x, [k]: x[k].includes(v) ? x[k].filter((y) => y !== v) : [...x[k], v] }));
@@ -150,8 +151,17 @@ export function SuchprofilFormular({ profil }) {
       </div>
       <label className="flex items-start gap-3 text-[14px] text-ink-700">
         <input type="checkbox" checked={p.benachrichtigen} onChange={(e) => setze("benachrichtigen", e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#558227]" />
-        Bei neuen passenden Projekten im Portal benachrichtigen
+        Bei neuen passenden Projekten benachrichtigen (Glocke und – je nach Einstellung – E-Mail)
       </label>
+      {p.benachrichtigen && (
+        <Feld id={`${id}-s`} label="Benachrichtigen ab einer Passung von" hinweis="Nur Projekte mit mindestens diesem Matching-Score lösen einen Suchprofil-Alarm aus.">
+          <select id={`${id}-s`} className={auswahlfeld} value={p.schwelle} onChange={(e) => setze("schwelle", Number(e.target.value))}>
+            {[50, 60, 70, 80, 90, 100].map((w) => (
+              <option key={w} value={w}>{w} %{w === 70 ? " (Standard)" : ""}</option>
+            ))}
+          </select>
+        </Feld>
+      )}
       <FehlerBox>{s.fehler}</FehlerBox>
       <ErfolgBox>{s.erfolg}</ErfolgBox>
       <Button type="submit" disabled={s.laeuft}>{s.laeuft ? "Wird gespeichert …" : "Suchprofil speichern"}</Button>

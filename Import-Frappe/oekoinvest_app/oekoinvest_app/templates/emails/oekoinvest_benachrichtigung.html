@@ -1,0 +1,12 @@
+<div style="font-family: Inter, Arial, Helvetica, sans-serif; color: #1f2933; font-size: 15px; line-height: 1.6; max-width: 560px;">
+	<p style="font-family: Manrope, Arial, Helvetica, sans-serif; font-size: 18px; font-weight: 700; color: #436621; margin: 0 0 16px;">ÖkoInvest</p>
+	<p>Guten Tag{% if vorname %} {{ vorname | e }}{% endif %},</p>
+	{% if titel %}<p style="font-weight: 600; color: #151a24;">{{ titel | e }}</p>{% endif %}
+	<p>{{ text | e }}</p>
+	<p style="margin: 24px 0;">
+		<a href="{{ link | e }}" style="background: #558227; color: #ffffff; text-decoration: none; padding: 12px 22px; border-radius: 999px; font-weight: 600; display: inline-block;">Im Portal ansehen</a>
+	</p>
+	<p style="font-size: 13px; color: #52606d;">Aus Gründen der Vertraulichkeit enthält diese E-Mail keine Inhalte. Bitte melden Sie sich im Portal an.</p>
+	<p style="font-size: 13px; color: #52606d;">Welche Ereignisse wir Ihnen per E-Mail melden, legen Sie im Portal unter „Benachrichtigungen“ fest: <a href="{{ basis | e }}/portal/benachrichtigungen" style="color: #436621;">{{ basis | e }}/portal/benachrichtigungen</a></p>
+	<p style="font-size: 13px; color: #52606d; border-top: 1px solid #e4e7eb; padding-top: 12px; margin-top: 24px;">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich</p>
+</div>

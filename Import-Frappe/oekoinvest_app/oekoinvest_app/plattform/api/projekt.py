@@ -4,7 +4,7 @@
 import frappe
 
 from oekoinvest_app.plattform import validierung as v
-from oekoinvest_app.plattform.ausgabe import projekt_ausgabe
+from oekoinvest_app.plattform.ausgabe import FELD_NAMEN_PROJEKT, geaenderte_felder, projekt_ausgabe, projekt_json
 from oekoinvest_app.plattform.kern import (
 	admin_noetig,
 	als_json,
@@ -27,6 +27,13 @@ from oekoinvest_app.plattform.konstanten import (
 	PROJEKT_TYPEN,
 	PROVISION_TEXT,
 	PROVISION_VERSION,
+)
+from oekoinvest_app.plattform.organisation import (
+	darf_team_lesen_objekt,
+	darf_team_schreiben_objekt,
+	darf_team_verwalten_objekt,
+	listen_filter,
+	organisation_fuer_neu,
 )
 from oekoinvest_app.plattform.prozesse import PROZESSE
 
@@ -75,12 +82,13 @@ def projekt_daten(daten, basis=None):
 	}
 
 
-def _laden(n, kennung):
+def _laden(n, kennung, schreiben=False):
 	k = v.kennung(kennung)
 	if not k or not frappe.db.exists("Plattform Projekt", k):
 		nicht_gefunden("Projekt nicht gefunden.")
 	p = frappe.get_doc("Plattform Projekt", k)
-	if not ist_admin(n) and p.anbieter_id != n.id:
+	# Organisation: lesen mit jeder Teamrolle, schreiben ab „Mitglied“
+	if not ist_admin(n) and p.anbieter_id != n.id and not (darf_team_schreiben_objekt(n, p) if schreiben else darf_team_lesen_objekt(n, p)):
 		verboten()
 	return p
 
@@ -93,7 +101,7 @@ def liste(alle=None, status=None, als_benutzer=None):
 		admin_noetig(n)
 	else:
 		rolle_noetig(n, ["anbieter"], "Nur für Projektanbieter.")
-	filters = {} if alle else {"anbieter_id": n.id}
+	filters = {} if alle else listen_filter(n, "anbieter_id")  # eigene bzw. der aktiven Organisation
 	st = v.auswahl(status, PROZESSE["projekt"]["status"])
 	if st:
 		filters["status"] = st
@@ -113,7 +121,7 @@ def anlegen(daten=None, ip=None, als_benutzer=None):
 	rolle_noetig(n, ["anbieter"], "Projekte können Projektanbieter anlegen.")
 	werte = projekt_daten(daten)
 	v.pflicht(werte["titel"], "Bitte geben Sie einen Projekttitel an.")
-	p = frappe.get_doc({"doctype": "Plattform Projekt", "anbieter_id": n.id, "status": "entwurf", "aufrufe": 0, **werte})
+	p = frappe.get_doc({"doctype": "Plattform Projekt", "anbieter_id": n.id, "organisation_id": organisation_fuer_neu(n), "status": "entwurf", "aufrufe": 0, **werte})
 	verlauf(p, "entwurf", n, "eigentuemer", "")
 	p.insert(ignore_permissions=True)
 	protokoll(n, "anlegen", "projekt", p.name, f"Projekt „{p.titel}“ angelegt", ip)
@@ -123,14 +131,16 @@ def anlegen(daten=None, ip=None, als_benutzer=None):
 @frappe.whitelist(methods=["POST"])
 def aendern(id=None, daten=None, als_benutzer=None):  # noqa: A002
 	n = nutzer(als_benutzer)
-	p = _laden(n, id)
+	p = _laden(n, id, schreiben=True)
 	if not ist_admin(n) and p.status != "entwurf":
 		konflikt("Nur Entwürfe können bearbeitet werden. Nehmen Sie das Projekt ggf. zuerst von der Börse bzw. ziehen Sie die Einreichung zurück.")
 	werte = projekt_daten(daten, {"land": p.land})
 	v.pflicht(werte["titel"], "Bitte geben Sie einen Projekttitel an.")
+	alt = projekt_json(p)
 	p.update(werte)
 	p.save(ignore_permissions=True)  # Slug folgt dem Titel, solange nicht veröffentlicht (Controller)
-	protokoll(n, "aendern", "projekt", p.name, "Projekt bearbeitet")
+	felder = geaenderte_felder(alt, projekt_json(p), FELD_NAMEN_PROJEKT)
+	protokoll(n, "aendern", "projekt", p.name, f"Projekt bearbeitet: {', '.join(felder)}" if felder else "Projekt gespeichert (ohne Änderung)")
 	return projekt_ausgabe(p, n)
 
 
@@ -141,8 +151,8 @@ def provision_akzeptieren(id=None, ip=None, als_benutzer=None):  # noqa: A002
 	if not k or not frappe.db.exists("Plattform Projekt", k):
 		nicht_gefunden("Projekt nicht gefunden.")
 	p = frappe.get_doc("Plattform Projekt", k)
-	if p.anbieter_id != n.id:
-		verboten("Nur der Anbieter kann die Provisionsvereinbarung akzeptieren.")
+	if p.anbieter_id != n.id and not darf_team_verwalten_objekt(n, p):
+		verboten("Nur der Anbieter (bzw. Admin/Inhaber der Organisation) kann die Provisionsvereinbarung akzeptieren.")
 	ip_ = v.text(ip, 64)
 	p.provision_akzeptiert = als_json({"am": jetzt_iso(), "ip": ip_, "version": PROVISION_VERSION, "text": PROVISION_TEXT})
 	p.save(ignore_permissions=True)

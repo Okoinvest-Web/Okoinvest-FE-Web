@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-09-30 08:00:00.000000",
+ "description": "Runde eines Bieterverfahrens (Kindtabelle).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "nr",
+  "art",
+  "start",
+  "frist",
+  "beendet_am",
+  "erinnert_am",
+  "teilnehmer"
+ ],
+ "fields": [
+  {
+   "fieldname": "nr",
+   "fieldtype": "Int",
+   "label": "Runde",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "indikativ\nverbindlich",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "frist",
+   "fieldtype": "Datetime",
+   "label": "Frist",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "beendet_am",
+   "fieldtype": "Datetime",
+   "label": "Beendet am"
+  },
+  {
+   "fieldname": "erinnert_am",
+   "fieldtype": "Datetime",
+   "label": "Erinnert am"
+  },
+  {
+   "fieldname": "teilnehmer",
+   "fieldtype": "JSON",
+   "label": "Teilnehmer (Interesse-Kennungen)"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Bieterrunde",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1,
+ "editable_grid": 1,
+ "permissions": [],
+ "naming_rule": "Random"
+}

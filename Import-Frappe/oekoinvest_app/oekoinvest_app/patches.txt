@@ -3,3 +3,5 @@
 
 [post_model_sync]
 # Patches, die nach der Synchronisierung der DocTypes laufen
+# Backoffice: Hash-Kette des Aktivitätsprotokolls einführen
+oekoinvest_app.patches.hashkette_einfuehren

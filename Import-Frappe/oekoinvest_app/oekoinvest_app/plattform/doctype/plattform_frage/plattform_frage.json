@@ -1,0 +1,212 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 08:00:00.000000",
+ "description": "Frage eines Investors im Q&A des Deal-Rooms mit Moderation durch das Backoffice (Anonymisierung, Frist, Freigabe der Antwort).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "projekt_id",
+  "interesse_id",
+  "investor_id",
+  "kategorie",
+  "status",
+  "frist_am",
+  "cb_1",
+  "oeffentlich",
+  "oeffentlich_vorschlag",
+  "bereinigt",
+  "freigegeben_am",
+  "veroeffentlicht_am",
+  "sec_text",
+  "text",
+  "text_original",
+  "antwort",
+  "antwort_original",
+  "antwort_am",
+  "antwort_von",
+  "rueckfrage",
+  "ablehn_grund",
+  "verlauf"
+ ],
+ "fields": [
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Projekt",
+   "options": "Plattform Projekt",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "interesse_id",
+   "fieldtype": "Link",
+   "label": "Interesse",
+   "options": "Plattform Interesse",
+   "reqd": 1
+  },
+  {
+   "fieldname": "investor_id",
+   "fieldtype": "Link",
+   "label": "Investor",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "kategorie",
+   "fieldtype": "Select",
+   "label": "Kategorie",
+   "options": "technisch\nrechtlich\nkaufmaennisch\nnetz",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "eingereicht\nfreigegeben\nbeantwortet\nveroeffentlicht\nabgelehnt",
+   "default": "eingereicht",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "frist_am",
+   "fieldtype": "Datetime",
+   "label": "Antwortfrist"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "oeffentlich",
+   "fieldtype": "Check",
+   "label": "Antwort für alle NDA-Investoren"
+  },
+  {
+   "fieldname": "oeffentlich_vorschlag",
+   "fieldtype": "Check",
+   "label": "Vorschlag des Anbieters: für alle"
+  },
+  {
+   "fieldname": "bereinigt",
+   "fieldtype": "Check",
+   "label": "Kontaktangaben entfernt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "freigegeben_am",
+   "fieldtype": "Datetime",
+   "label": "Freigegeben am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "veroeffentlicht_am",
+   "fieldtype": "Datetime",
+   "label": "Antwort freigegeben am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_text",
+   "fieldtype": "Section Break",
+   "label": "Frage & Antwort"
+  },
+  {
+   "fieldname": "text",
+   "fieldtype": "Small Text",
+   "label": "Frage (anonymisiert)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "text_original",
+   "fieldtype": "Small Text",
+   "label": "Original (nur Backoffice)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "antwort",
+   "fieldtype": "Text",
+   "label": "Antwort"
+  },
+  {
+   "fieldname": "antwort_original",
+   "fieldtype": "Text",
+   "label": "Antwort Original (nur Backoffice)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "antwort_am",
+   "fieldtype": "Datetime",
+   "label": "Antwort am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "antwort_von",
+   "fieldtype": "Link",
+   "label": "Antwort von",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rueckfrage",
+   "fieldtype": "Small Text",
+   "label": "Rückfrage an den Anbieter"
+  },
+  {
+   "fieldname": "ablehn_grund",
+   "fieldtype": "Small Text",
+   "label": "Begründung (abgelehnt)"
+  },
+  {
+   "fieldname": "verlauf",
+   "fieldtype": "JSON",
+   "label": "Verlauf",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Frage",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "in_create": 0
+}

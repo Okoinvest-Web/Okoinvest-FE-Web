@@ -1,0 +1,107 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 08:00:00.000000",
+ "description": "Backoffice-Zusatzinfos je Objekt: Tags, Akquise-Priorität, Besonderheiten, Netzentfernung, ausgelöste Fristen",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "objekt_art",
+  "objekt_id",
+  "cb_oi",
+  "tags",
+  "prioritaet",
+  "besonderheiten",
+  "netz",
+  "fristen"
+ ],
+ "fields": [
+  {
+   "fieldname": "objekt_art",
+   "fieldtype": "Select",
+   "label": "Objektart",
+   "options": "\nvorgang\nflaeche\nprojekt\ninteresse\nprovision",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "objekt_id",
+   "fieldtype": "Data",
+   "label": "Objekt-ID",
+   "in_list_view": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "cb_oi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tags",
+   "fieldtype": "JSON",
+   "label": "Tags"
+  },
+  {
+   "fieldname": "prioritaet",
+   "fieldtype": "Select",
+   "label": "Priorität (manuell)",
+   "options": "\nA\nB\nC",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "besonderheiten",
+   "fieldtype": "JSON",
+   "label": "Besonderheiten"
+  },
+  {
+   "fieldname": "netz",
+   "fieldtype": "Data",
+   "label": "Netzentfernung"
+  },
+  {
+   "fieldname": "fristen",
+   "fieldtype": "JSON",
+   "label": "Ausgelöste Fristen"
+  }
+ ],
+ "in_create": 0,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Objekt Info",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

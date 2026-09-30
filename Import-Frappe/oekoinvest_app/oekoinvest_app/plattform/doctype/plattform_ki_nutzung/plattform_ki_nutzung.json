@@ -1,0 +1,147 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-09-30 08:00:00.000000",
+ "description": "Nutzungsprotokoll des KI-Assistenten (append-only): wer, wann, welcher Anwendungsfall, Modus, Tokens. Keine Inhalte (Fragen, Prompts, Antworten).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "am",
+  "tag",
+  "nutzer_id",
+  "anwendungsfall",
+  "cb_ki",
+  "modus",
+  "ergebnis",
+  "tokens_ein",
+  "tokens_aus",
+  "sec_objekt",
+  "objekt_art",
+  "objekt_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Zeitpunkt",
+   "read_only": 1
+  },
+  {
+   "description": "Kalendertag (Europe/Vienna) für das Tages-Kontingent",
+   "fieldname": "tag",
+   "fieldtype": "Date",
+   "label": "Tag",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "nutzer_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "anwendungsfall",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Anwendungsfall",
+   "options": "expose\ntriage\nfrage\nflaeche\nnachricht",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_ki",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "modus",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Modus",
+   "options": "ki\nregel",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ergebnis",
+   "fieldtype": "Data",
+   "label": "Ergebnis",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tokens_ein",
+   "fieldtype": "Int",
+   "label": "Tokens (Eingabe)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tokens_aus",
+   "fieldtype": "Int",
+   "label": "Tokens (Ausgabe)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_objekt",
+   "fieldtype": "Section Break",
+   "label": "Bezug"
+  },
+  {
+   "fieldname": "objekt_art",
+   "fieldtype": "Data",
+   "label": "Objektart",
+   "read_only": 1
+  },
+  {
+   "description": "Bewusst kein Link: das Protokoll bleibt lesbar, auch wenn das Objekt gelöscht wurde.",
+   "fieldname": "objekt_id",
+   "fieldtype": "Data",
+   "label": "Objekt-ID",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform KI Nutzung",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "am",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

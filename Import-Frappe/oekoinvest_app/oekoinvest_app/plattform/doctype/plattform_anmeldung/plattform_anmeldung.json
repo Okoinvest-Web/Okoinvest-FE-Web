@@ -1,0 +1,128 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 08:00:00.000000",
+ "description": "Anmeldehistorie (append-only), auch Fehlversuche. Nur grobe IP/Ort/Gerät. Aufbewahrung 180 Tage (täglicher Aufräumjob).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "am",
+  "nutzer_id",
+  "email",
+  "ok",
+  "methode",
+  "grund",
+  "cb_anmeldung",
+  "ip_grob",
+  "ort",
+  "geraet"
+ ],
+ "fields": [
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Zeitpunkt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "nutzer_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "E-Mail",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "ok",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Erfolgreich",
+   "read_only": 1
+  },
+  {
+   "fieldname": "methode",
+   "fieldtype": "Data",
+   "label": "Methode",
+   "read_only": 1
+  },
+  {
+   "fieldname": "grund",
+   "fieldtype": "Data",
+   "label": "Grund",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_anmeldung",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ip_grob",
+   "fieldtype": "Data",
+   "label": "IP (gekürzt)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ort",
+   "fieldtype": "Data",
+   "label": "Ort (grob)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "geraet",
+   "fieldtype": "Data",
+   "label": "Gerät",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Anmeldung",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "am",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

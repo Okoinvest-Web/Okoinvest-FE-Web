@@ -1,0 +1,201 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Störung an einer Anlage: vom Ingest-Dienst erkannt (offline, Fehlercode, Minderleistung, Zähler) oder manuell erfasst. Quittierung und Bearbeitung durch den Betrieb.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "anlage_id",
+  "geraet_id",
+  "regel",
+  "schwere",
+  "status",
+  "titel",
+  "text",
+  "cb_1",
+  "erkannt_am",
+  "zuletzt_am",
+  "anzahl",
+  "quittiert_am",
+  "quittiert_von",
+  "zustaendig_id",
+  "behoben_am",
+  "schluessel",
+  "sec_verlauf",
+  "kommentare",
+  "verlauf"
+ ],
+ "fields": [
+  {
+   "fieldname": "anlage_id",
+   "fieldtype": "Link",
+   "label": "Anlage",
+   "options": "Plattform Anlage",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "geraet_id",
+   "fieldtype": "Link",
+   "label": "Gerät",
+   "options": "Plattform Geraetezugang"
+  },
+  {
+   "fieldname": "regel",
+   "fieldtype": "Select",
+   "label": "Regel",
+   "options": "offline\nminderleistung\nfehlercode\nzaehler_rueckwaerts\nzaehler_sprung\nmanuell",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "schwere",
+   "fieldtype": "Select",
+   "label": "Schwere",
+   "options": "info\nniedrig\nmittel\nhoch\nkritisch",
+   "default": "mittel",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "offen\nin_arbeit\nbehoben",
+   "default": "offen",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Titel",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "text",
+   "fieldtype": "Small Text",
+   "label": "Beschreibung"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "erkannt_am",
+   "fieldtype": "Datetime",
+   "label": "Erkannt am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "zuletzt_am",
+   "fieldtype": "Datetime",
+   "label": "Zuletzt gemeldet",
+   "read_only": 1
+  },
+  {
+   "fieldname": "anzahl",
+   "fieldtype": "Int",
+   "label": "Anzahl Meldungen",
+   "default": "1",
+   "read_only": 1
+  },
+  {
+   "fieldname": "quittiert_am",
+   "fieldtype": "Datetime",
+   "label": "Quittiert am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "quittiert_von",
+   "fieldtype": "Link",
+   "label": "Quittiert von",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "zustaendig_id",
+   "fieldtype": "Link",
+   "label": "Zuständig",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "behoben_am",
+   "fieldtype": "Datetime",
+   "label": "Behoben am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "schluessel",
+   "fieldtype": "Data",
+   "label": "Ereignisschlüssel (Dienst)",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "sec_verlauf",
+   "fieldtype": "Section Break",
+   "label": "Kommentare und Verlauf"
+  },
+  {
+   "fieldname": "kommentare",
+   "fieldtype": "JSON",
+   "label": "Kommentare",
+   "read_only": 1
+  },
+  {
+   "fieldname": "verlauf",
+   "fieldtype": "JSON",
+   "label": "Verlauf",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Stoerungsfall",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "in_create": 0,
+ "title_field": "titel"
+}

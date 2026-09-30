@@ -42,7 +42,7 @@ export default function RegistrierFormular({ rolleStart, vorgang, weiter }) {
     setLaeuft(true);
     try {
       await senden("/api/auth/registrieren", { body: { ...f, rollen, vorgang: vorgang || undefined } });
-      router.replace(sicheresZiel(weiter, "/portal?hinweis=willkommen"));
+      router.replace(sicheresZiel(weiter, "/portal/willkommen")); // geführter Einstieg (Bedienung & Onboarding)
       router.refresh();
     } catch (err) {
       setFehler(err.message);

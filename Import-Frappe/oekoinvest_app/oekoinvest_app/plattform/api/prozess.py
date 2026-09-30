@@ -24,7 +24,10 @@ def status_wechsel(art=None, id=None, nach=None, als=None, extra=None, ip=None, 
 	if not o:
 		nicht_gefunden()
 	if als == "eigentuemer" and besitzer(art, o) != n.id:
-		verboten()
+		from oekoinvest_app.plattform.organisation import darf_team_schreiben_objekt
+
+		if not darf_team_schreiben_objekt(n, o):  # Organisation: Eigentümer-Schritte ab Teamrolle „Mitglied“
+			verboten()
 	if art == "interesse" and nach == "nda_angefragt":
 		ungueltig("Bitte nutzen Sie die NDA-Anfrage im Projekt.")
 	extra = extra if isinstance(extra, dict) else {}

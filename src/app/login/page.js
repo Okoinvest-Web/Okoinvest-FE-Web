@@ -29,7 +29,7 @@ export default async function Login({ searchParams }) {
 
   return (
     <AuthRahmen eyebrow="Portal" titel="Willkommen zurück" text="Melden Sie sich an, um Status, Dokumente und Nachrichten zu Ihren Vorgängen zu sehen.">
-      <LoginFormular weiter={weiter} hinweis={typeof sp?.hinweis === "string" ? sp.hinweis : ""} demoKonten={demoKonten} />
+      <LoginFormular weiter={weiter} hinweis={typeof sp?.hinweis === "string" ? sp.hinweis : ""} demoKonten={demoKonten} demo={istDemo()} />
     </AuthRahmen>
   );
 }

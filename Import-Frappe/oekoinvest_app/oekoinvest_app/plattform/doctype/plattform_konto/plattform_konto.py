@@ -34,6 +34,10 @@ class PlattformKonto(PlattformDokument):
 
 	def on_trash(self):
 		frappe.db.delete("Plattform Token", {"nutzer_id": self.name})
+		frappe.db.delete("Plattform Benachrichtigung", {"nutzer_id": self.name})
+		# Login, Sicherheit & Teams: kontobezogene Sicherheitsdaten entfallen mit dem Konto
+		for dt in ("Plattform Sitzung", "Plattform Geraet", "Plattform Anmeldung", "Plattform Zwei Faktor", "Plattform Mitgliedschaft"):
+			frappe.db.delete(dt, {"nutzer_id": self.name})
 
 	def benutzer_abgleichen(self):
 		"""Frappe-Rollen, Namen und Aktiv-Status des Users an das Konto angleichen."""

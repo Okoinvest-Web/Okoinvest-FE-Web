@@ -1,0 +1,134 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Komponente einer Anlage: Wechselrichter, Speicher, Zähler, Datenlogger, Module.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "anlage_id",
+  "art",
+  "hersteller",
+  "modell",
+  "seriennummer",
+  "cb_1",
+  "anzahl",
+  "leistung_kw",
+  "kapazitaet_kwh",
+  "inbetriebnahme",
+  "garantie_bis",
+  "bemerkung"
+ ],
+ "fields": [
+  {
+   "fieldname": "anlage_id",
+   "fieldtype": "Link",
+   "label": "Anlage",
+   "options": "Plattform Anlage",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "wechselrichter\nspeicher\nzaehler\ndatenlogger\nmodul\nsonstiges",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "hersteller",
+   "fieldtype": "Data",
+   "label": "Hersteller"
+  },
+  {
+   "fieldname": "modell",
+   "fieldtype": "Data",
+   "label": "Modell",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "seriennummer",
+   "fieldtype": "Data",
+   "label": "Seriennummer",
+   "search_index": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "anzahl",
+   "fieldtype": "Int",
+   "label": "Anzahl",
+   "default": "1"
+  },
+  {
+   "fieldname": "leistung_kw",
+   "fieldtype": "Float",
+   "label": "Leistung (kW)"
+  },
+  {
+   "fieldname": "kapazitaet_kwh",
+   "fieldtype": "Float",
+   "label": "Kapazität (kWh)"
+  },
+  {
+   "fieldname": "inbetriebnahme",
+   "fieldtype": "Date",
+   "label": "Inbetriebnahme"
+  },
+  {
+   "fieldname": "garantie_bis",
+   "fieldtype": "Date",
+   "label": "Garantie bis"
+  },
+  {
+   "fieldname": "bemerkung",
+   "fieldtype": "Small Text",
+   "label": "Bemerkung"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Anlagenkomponente",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "in_create": 0
+}

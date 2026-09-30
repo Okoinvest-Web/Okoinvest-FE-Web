@@ -1,0 +1,204 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Contracting-Anlage (PV, Speicher) mit Kunde/Organisation, Standort grob und Technik-Eckdaten. Messdaten liegen im Ingest-Dienst (TimescaleDB), nicht hier.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "titel",
+  "typ",
+  "status",
+  "inbetriebnahme",
+  "cb_1",
+  "kunde_id",
+  "organisation_id",
+  "sec_standort",
+  "land",
+  "bundesland",
+  "ort",
+  "region_id",
+  "cb_2",
+  "kwp",
+  "wechselrichter_anzahl",
+  "speicher_kwh",
+  "speicher_kw",
+  "lastprofil",
+  "last_jahr_kwh",
+  "sec_text",
+  "beschreibung"
+ ],
+ "fields": [
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Bezeichnung",
+   "reqd": 1,
+   "in_list_view": 1,
+   "bold": 1
+  },
+  {
+   "fieldname": "typ",
+   "fieldtype": "Select",
+   "label": "Typ",
+   "options": "freiflaeche\ndach\ncarport\nagri\nspeicher",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "planung\nbau\nbetrieb\nruhend\nrueckbau",
+   "default": "planung",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "inbetriebnahme",
+   "fieldtype": "Date",
+   "label": "Inbetriebnahme"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "kunde_id",
+   "fieldtype": "Link",
+   "label": "Kundenkonto",
+   "options": "Plattform Konto",
+   "search_index": 1
+  },
+  {
+   "fieldname": "organisation_id",
+   "fieldtype": "Link",
+   "label": "Organisation",
+   "options": "Plattform Organisation",
+   "search_index": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "sec_standort",
+   "fieldtype": "Section Break",
+   "label": "Standort (grob) und Technik"
+  },
+  {
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "label": "Land",
+   "options": "DE\nAT\nCH",
+   "default": "DE",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bundesland",
+   "fieldtype": "Data",
+   "label": "Bundesland / Kanton",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ort",
+   "fieldtype": "Data",
+   "label": "Standort grob (z. B. Raum Augsburg)"
+  },
+  {
+   "fieldname": "region_id",
+   "fieldtype": "Data",
+   "label": "Ertragsregion",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_2",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "kwp",
+   "fieldtype": "Float",
+   "label": "PV-Leistung (kWp)"
+  },
+  {
+   "fieldname": "wechselrichter_anzahl",
+   "fieldtype": "Int",
+   "label": "Anzahl Wechselrichter",
+   "default": "1"
+  },
+  {
+   "fieldname": "speicher_kwh",
+   "fieldtype": "Float",
+   "label": "Speicher (kWh)"
+  },
+  {
+   "fieldname": "speicher_kw",
+   "fieldtype": "Float",
+   "label": "Speicherleistung (kW)"
+  },
+  {
+   "fieldname": "lastprofil",
+   "fieldtype": "Select",
+   "label": "Verbraucher vor Ort",
+   "options": "gewerbe\nindustrie\nlandwirtschaft\nkeins",
+   "default": "gewerbe"
+  },
+  {
+   "fieldname": "last_jahr_kwh",
+   "fieldtype": "Float",
+   "label": "Verbrauch pro Jahr (kWh)"
+  },
+  {
+   "fieldname": "sec_text",
+   "fieldtype": "Section Break",
+   "label": ""
+  },
+  {
+   "fieldname": "beschreibung",
+   "fieldtype": "Small Text",
+   "label": "Beschreibung"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Anlage",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "in_create": 0,
+ "title_field": "titel"
+}

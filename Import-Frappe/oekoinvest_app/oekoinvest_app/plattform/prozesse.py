@@ -118,6 +118,7 @@ PROZESSE = {
 			_u(["loi_abgegeben"], "loi_angenommen", "admin", "LOI annehmen"),
 			_u(["loi_abgegeben", "nda_freigegeben"], "abgelehnt", "admin", "Ablehnen", ["grund"]),
 			_u(["loi_angenommen", "loi_abgegeben", "nda_freigegeben"], "abgeschlossen", "system", "Kauf abgeschlossen"),
+			_u(["nda_freigegeben", "loi_abgegeben"], "loi_angenommen", "system", "Zuschlag im Bieterverfahren"),  # Deal-Room (Bieterverfahren)
 			_u(["gemerkt", "nda_angefragt", "nda_freigegeben", "loi_abgegeben", "loi_angenommen"], "abgelehnt", "system", "Projekt anderweitig verkauft"),
 		],
 	},

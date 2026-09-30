@@ -12,6 +12,7 @@
   "bezug_doctype",
   "bezug_id",
   "kategorie",
+  "checkliste",
   "cb_dokument",
   "dateiname",
   "mime",
@@ -63,6 +64,14 @@
    "in_standard_filter": 1,
    "label": "Kategorie",
    "options": "allgemein\ndatenraum\nvertrag\nplan"
+  },
+  {
+   "description": "Schlüssel des erfüllten Checklisten-Punkts (plattform/checkliste.py), z. B. pacht, netzzusage, grundbuch.",
+   "fieldname": "checkliste",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Checklisten-Punkt",
+   "read_only": 1
   },
   {
    "fieldname": "cb_dokument",
@@ -128,7 +137,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-29 08:00:00.000000",
+ "modified": "2026-09-29 20:00:00.000000",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Plattform Dokument",

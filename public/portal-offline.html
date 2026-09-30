@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#03122b">
+<title>Offline | Portal ÖkoInvest</title>
+<link rel="icon" href="/icon.svg">
+<style>
+  :root { --ov-600:#558227; --ov-700:#436621; --ov-50:#f4f9ee; --navy-950:#03122b; --ink-900:#151a24; --ink-600:#4e5667; --ink-200:#dfe3ea; --sand-50:#fbfaf6; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:24px 16px; background:var(--sand-50); color:var(--ink-900);
+         font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  main { width:100%; max-width:520px; background:#fff; border-radius:28px; padding:32px 24px; box-shadow:0 0 0 1px var(--ink-200); text-align:center; }
+  h1 { font-family: Manrope, Inter, ui-sans-serif, system-ui, sans-serif; font-size:26px; line-height:1.2; margin:18px 0 8px; font-weight:800; letter-spacing:-0.01em; }
+  p { font-size:15.5px; line-height:1.6; color:var(--ink-600); margin:0 0 10px; }
+  .knopf { display:inline-flex; align-items:center; gap:8px; margin-top:16px; height:48px; padding:0 22px; border-radius:999px; border:0; background:var(--ov-600); color:#fff; font-weight:600; font-size:15px; cursor:pointer; text-decoration:none; }
+  .knopf:hover { background:var(--ov-700); }
+  .knopf:focus-visible, a:focus-visible { outline:3px solid var(--ov-600); outline-offset:3px; }
+  .hinweis { margin-top:22px; padding:12px 14px; border-radius:16px; background:var(--ov-50); font-size:13.5px; color:var(--ink-900); text-align:left; }
+  a.link { color:var(--ov-700); font-weight:600; }
+</style>
+</head>
+<body>
+<main>
+  <svg width="120" height="92" viewBox="0 0 120 92" role="img" aria-label="Solarmodul unter einer Wolke ohne Verbindung">
+    <rect x="6" y="62" width="108" height="8" rx="4" fill="#f5f3ea"/>
+    <g transform="translate(22 34)">
+      <path d="M6 30 L20 4 H70 L56 30 Z" fill="#041d42"/>
+      <path d="M22 8 H66 M16 16 H62 M11 24 H58 M34 4 L22 30 M50 4 L38 30" stroke="#7fa7d6" stroke-width="1.6" fill="none" opacity=".7"/>
+      <rect x="34" y="30" width="4" height="10" fill="#6b7486"/>
+    </g>
+    <g transform="translate(58 6)">
+      <path d="M14 28 a10 10 0 0 1 2-19.8 a13 13 0 0 1 24.6 3.6 a8.2 8.2 0 0 1-1.6 16.2 Z" fill="#fff" stroke="#dfe3ea" stroke-width="2"/>
+      <path d="M22 16 l10 8 M32 16 l-10 8" stroke="#558227" stroke-width="3" stroke-linecap="round"/>
+    </g>
+  </svg>
+  <h1>Sie sind gerade offline</h1>
+  <p>Das Portal braucht eine Internetverbindung, damit Ihre Daten aktuell und geschützt bleiben. Aus Sicherheitsgründen speichern wir keine vertraulichen Inhalte auf diesem Gerät.</p>
+  <button class="knopf" type="button" onclick="location.reload()">Erneut versuchen</button>
+  <p class="hinweis">Sobald die Verbindung wieder da ist, lädt die Seite automatisch neu. Nicht gespeicherte Eingaben bitte kurz notieren.</p>
+  <p style="margin-top:14px"><a class="link" href="/">Zur Website</a></p>
+</main>
+<script>window.addEventListener("online", function () { location.reload(); });</script>
+</body>
+</html>

@@ -8,13 +8,14 @@ import { redirect, notFound } from "next/navigation";
 import { backend } from "../backend";
 import { cookieName, tokenPruefen } from "../sitzung";
 import { PlattformFehler } from "../fehler";
+import { seitenRechtOk } from "./rechte"; // Backoffice-Unterrollen
 
 export async function aktuellerNutzer() {
   const token = (await cookies()).get(cookieName())?.value;
   if (!token) return null;
   const s = await tokenPruefen(token);
   if (!s) return null;
-  const u = await backend().nutzerFuerSitzung(s.nutzerId);
+  const u = await backend().nutzerFuerSitzung(s.nutzerId, { sitzungId: s.sitzungId }); // Sitzungseintrag muss bestehen
   if (!u || !u.aktiv || (u.sitzungVersion || 0) !== s.version) return null;
   return u;
 }
@@ -33,8 +34,11 @@ async function aktuellerPfad() {
 export async function portalNutzer({ rollen, admin } = {}) {
   const u = await aktuellerNutzer();
   if (!u) redirect(`/login?weiter=${encodeURIComponent(await aktuellerPfad())}`);
+  // Pflicht-2FA noch nicht eingerichtet → nur die Sicherheitsseite
+  if (u.zweiFaktorPflichtOffen && !(await aktuellerPfad()).startsWith("/portal/sicherheit")) redirect("/portal/sicherheit?pflicht=1");
   const istAdmin = u.rollen.includes("admin");
   if (admin && !istAdmin) notFound();
+  if (admin && istAdmin && !seitenRechtOk(u, await aktuellerPfad())) notFound(); // Bereich ohne Leserecht der Unterrolle
   if (rollen && !istAdmin && !rollen.some((r) => u.rollen.includes(r))) notFound();
   return u;
 }

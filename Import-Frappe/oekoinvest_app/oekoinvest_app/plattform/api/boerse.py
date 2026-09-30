@@ -7,25 +7,27 @@ import frappe
 from frappe.utils import cint
 
 from oekoinvest_app.plattform import validierung as v
-from oekoinvest_app.plattform.ausgabe import dokument_meta, interesse_json, projekt_json
-from oekoinvest_app.plattform.kern import aus_json, hat_rolle, ist_admin, nicht_gefunden, nutzer
+from oekoinvest_app.plattform.ausgabe import datenraum_qualitaet, dokument_meta, interesse_json, projekt_json
+from oekoinvest_app.plattform.kern import hat_rolle, ist_admin, jetzt_iso, name_von, nicht_gefunden, nutzer, protokoll, verboten
 from oekoinvest_app.plattform.konstanten import LAENDER, PHASEN_IDS, PROJEKT_TYPEN
 from oekoinvest_app.plattform.matching import matching
 from oekoinvest_app.plattform.oeffentlich import projekt_oeffentlich, projekt_vertraulich
+from oekoinvest_app.plattform.organisation import darf_team_lesen_objekt, datenraum_ueber_interesse, interesse_fuer, suchprofil_fuer
 from oekoinvest_app.plattform.prozesse import BOERSE_STATUS, DATENRAUM_STATUS
 
 
 def _suchprofil(n):
 	if not n:
 		return None
-	return aus_json(frappe.db.get_value("Plattform Konto", n.id, "suchprofil"))
+	return suchprofil_fuer(n)  # Konto- bzw. Team-Suchprofil der aktiven Organisation
 
 
 def boerse_eintrag(p, n, profil=None):
 	pj = projekt_json(p)
 	o = projekt_oeffentlich(pj)
+	o["datenraumQualitaet"] = datenraum_qualitaet(pj)  # nur die Kennzahl, keine Dokumentnamen
 	if n and hat_rolle(n, ["investor"]):
-		i = frappe.db.get_value("Plattform Interesse", {"projekt_id": p.name, "investor_id": n.id}, ["name", "status", "gemerkt"], as_dict=True)
+		i = interesse_fuer(n, p.name)  # eigenes bzw. Interesse der aktiven Organisation
 		o["meinInteresse"] = {"id": i.name, "status": i.status, "gemerkt": bool(cint(i.gemerkt))} if i else None
 		if profil:
 			o["matching"] = matching(pj, profil)
@@ -81,7 +83,7 @@ def detail(schluessel=None, zaehlen=None, als_benutzer=None):
 	if not name:
 		nicht_gefunden("Projekt nicht gefunden.")
 	p = frappe.get_doc("Plattform Projekt", name)
-	eigentuemer = bool(n) and p.anbieter_id == n.id
+	eigentuemer = bool(n) and (p.anbieter_id == n.id or darf_team_lesen_objekt(n, p))  # auch Team des Anbieters
 	admin = ist_admin(n)
 	if p.status not in BOERSE_STATUS and not eigentuemer and not admin:
 		nicht_gefunden("Projekt nicht gefunden.")
@@ -89,11 +91,13 @@ def detail(schluessel=None, zaehlen=None, als_benutzer=None):
 	if v.wahr(zaehlen) and not eigentuemer and not admin:
 		frappe.db.sql("update `tabPlattform Projekt` set aufrufe = aufrufe + 1 where name = %s", (p.name,))
 		p.aufrufe = cint(p.aufrufe) + 1
+		from oekoinvest_app.plattform.dealroom_kern import aufruf_zaehlen  # Deal-Room-Cockpit: Aufrufe je Tag
+
+		aufruf_zaehlen(p.name)
 
 	interesse = None
 	if n:
-		iname = frappe.db.get_value("Plattform Interesse", {"projekt_id": p.name, "investor_id": n.id}, "name")
-		interesse = frappe.get_doc("Plattform Interesse", iname) if iname else None
+		interesse = interesse_fuer(n, p.name)  # eigenes bzw. Interesse der aktiven Organisation
 	nda_frei = bool(interesse) and interesse.status in DATENRAUM_STATUS
 	zugriff = "admin" if admin else "eigentuemer" if eigentuemer else "nda" if nda_frei else "oeffentlich"
 
@@ -111,4 +115,47 @@ def detail(schluessel=None, zaehlen=None, als_benutzer=None):
 		if zugriff == "nda":
 			filters["kategorie"] = "datenraum"
 		out["dokumente"] = [dokument_meta(d) for d in frappe.get_all("Plattform Dokument", filters=filters, fields=["*"], order_by="am desc")]
+		if zugriff == "nda":  # Deal-Room: Stufe-2-Unterlagen erst nach LOI
+			from oekoinvest_app.plattform.dealroom_kern import stufe_ok
+
+			out["dokumente"] = [m for m in out["dokumente"] if stufe_ok(p.name, m["id"], interesse.investor_id)]  # ggf. Team-Interesse
 	return out
+
+
+@frappe.whitelist(methods=["POST"])
+def expose(id=None, ip=None, als_benutzer=None):  # noqa: A002
+	"""Daten für das vertrauliche Exposé-PDF (das PDF erzeugt die Website, src/lib/plattform/server/expose.js).
+
+	Berechtigt: Backoffice, Anbieter des Projekts, Investoren mit freigegebenem Datenraum (DATENRAUM_STATUS).
+	Jeder Abruf wird protokolliert (Aktion „expose“).
+	"""
+	n = nutzer(als_benutzer)
+	s = v.slug(id) or v.kennung(id)
+	name = None
+	if s:
+		name = frappe.db.get_value("Plattform Projekt", {"slug": s}, "name") or (s if frappe.db.exists("Plattform Projekt", s) else None)
+	if not name:
+		nicht_gefunden("Projekt nicht gefunden.")
+	p = frappe.get_doc("Plattform Projekt", name)
+	zugriff = "admin" if ist_admin(n) else "eigentuemer" if (p.anbieter_id == n.id or darf_team_lesen_objekt(n, p)) else None  # auch Team des Anbieters
+	if not zugriff:
+		if p.status not in (*BOERSE_STATUS, "verkauft"):
+			nicht_gefunden("Projekt nicht gefunden.")
+		if not datenraum_ueber_interesse(n, p.name, DATENRAUM_STATUS):  # eigenes oder Team-Interesse
+			verboten("Das vollständige Exposé steht nach Freigabe Ihrer NDA-Anfrage zur Verfügung.")
+		zugriff = "nda"
+	pj = projekt_json(p)
+	filters = {"bezug_art": "projekt", "bezug_id": p.name}
+	if zugriff == "nda":
+		filters["kategorie"] = "datenraum"
+	dokumente = [dokument_meta(d) for d in frappe.get_all("Plattform Dokument", filters=filters, fields=["*"], order_by="am desc")]
+	konto = frappe.db.get_value("Plattform Konto", n.id, ["email", "firma"], as_dict=True) or {}
+	protokoll(n, "expose", "projekt", p.name, f"Exposé-PDF abgerufen ({zugriff})", v.text(ip, 64))
+	return {
+		"projekt": {**projekt_oeffentlich(pj), "datenraumQualitaet": datenraum_qualitaet(pj)},
+		"vertraulich": projekt_vertraulich(pj),
+		"dokumente": dokumente,
+		"zugriff": zugriff,
+		"empfaenger": {"name": name_von(n.id), "firma": konto.get("firma") or "", "email": konto.get("email") or "", "rolle": "investor" if zugriff == "nda" else zugriff},
+		"erstelltAm": jetzt_iso(),
+	}

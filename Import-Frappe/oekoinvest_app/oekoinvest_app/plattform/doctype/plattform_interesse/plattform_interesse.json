@@ -10,6 +10,7 @@
   "sec_interesse",
   "projekt_id",
   "investor_id",
+  "organisation_id",
   "zustaendig_id",
   "cb_interesse",
   "status",
@@ -45,6 +46,15 @@
    "label": "Investor (Konto)",
    "options": "Plattform Konto",
    "reqd": 1
+  },
+  {
+   "description": "Organisation (Firmenkonto), der das Objekt gehört – leer = persönlich. Mitglieder der Organisation sehen das Objekt (jede Teamrolle) und bearbeiten es ab Teamrolle „Mitglied“.",
+   "fieldname": "organisation_id",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Organisation",
+   "options": "Plattform Organisation",
+   "search_index": 1
   },
   {
    "fieldname": "zustaendig_id",

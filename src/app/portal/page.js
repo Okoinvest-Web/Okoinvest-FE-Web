@@ -11,6 +11,7 @@ import { statusLabel } from "@/lib/plattform/prozesse";
 import { datum, ha, mwp, preisText, relativ } from "@/lib/plattform/format";
 import { fmt } from "@/lib/rechner/annahmen";
 import { phaseById } from "@/lib/invest/markt";
+import ErsteSchritte from "@/components/Portal/Bedienung/Onboarding/ErsteSchritte";
 
 export const metadata = { title: "Übersicht" };
 
@@ -97,6 +98,8 @@ export default async function PortalStart({ searchParams }) {
 
       {hinweis === "email-bestaetigt" && <Hinweis ton="ok" titel="E-Mail-Adresse bestätigt">Vielen Dank. Frühere Anfragen mit dieser Adresse sind jetzt Ihrem Konto zugeordnet.</Hinweis>}
       {hinweis === "willkommen" && <Hinweis ton="ok" titel="Willkommen im Portal">Ihr Konto ist angelegt. Hier verfolgen Sie ab sofort alle Schritte.</Hinweis>}
+      {hinweis === "einstieg-fertig" && <Hinweis ton="ok" titel="Einstieg abgeschlossen">Ihr Portal ist eingerichtet. Tipp: Mit Strg + K (Mac: ⌘ + K) finden Sie alles in Sekunden.</Hinweis>}
+      <ErsteSchritte nutzer={n} />
 
       <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${kacheln.length >= 4 ? "xl:grid-cols-4" : "lg:grid-cols-3"}`}>
         {kacheln.slice(0, 4).map((k) => (

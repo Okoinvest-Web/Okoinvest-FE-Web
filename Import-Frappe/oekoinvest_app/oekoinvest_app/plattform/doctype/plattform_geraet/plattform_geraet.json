@@ -1,0 +1,123 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 08:00:00.000000",
+ "description": "Bekanntes Gerät eines Kontos (Geräte-Cookie nur als SHA-256). „Gerät merken“ überspringt 30 Tage die Zwei-Faktor-Abfrage, solange die 2FA-Version passt.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "nutzer_id",
+  "label",
+  "mobil",
+  "hash",
+  "cb_geraet",
+  "erste_anmeldung",
+  "letzte_anmeldung",
+  "vertraut_bis",
+  "zwei_faktor_version"
+ ],
+ "fields": [
+  {
+   "fieldname": "nutzer_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Gerät",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "mobil",
+   "fieldtype": "Check",
+   "label": "Mobil",
+   "read_only": 1
+  },
+  {
+   "fieldname": "hash",
+   "fieldtype": "Data",
+   "label": "SHA-256 des Geräte-Cookies",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "cb_geraet",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "erste_anmeldung",
+   "fieldtype": "Datetime",
+   "label": "Erste Anmeldung",
+   "read_only": 1
+  },
+  {
+   "fieldname": "letzte_anmeldung",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Letzte Anmeldung",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vertraut_bis",
+   "fieldtype": "Datetime",
+   "label": "2FA gemerkt bis",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "zwei_faktor_version",
+   "fieldtype": "Int",
+   "label": "2FA-Version",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Geraet",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 0,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "letzte_anmeldung",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

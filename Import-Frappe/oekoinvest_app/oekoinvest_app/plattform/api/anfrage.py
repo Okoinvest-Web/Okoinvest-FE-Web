@@ -6,7 +6,7 @@ import re
 
 import frappe
 
-from oekoinvest_app.plattform import mail
+from oekoinvest_app.plattform import benachrichtigung
 from oekoinvest_app.plattform import validierung as v
 from oekoinvest_app.plattform.kern import als_json, jetzt_iso, nutzer, protokoll, verlauf
 from oekoinvest_app.plattform.konstanten import BUNDESLAENDER, FLAECHE_NUTZUNG, LAENDER, VORGANG_TYPEN
@@ -103,7 +103,7 @@ def anlegen(typ=None, kontakt=None, daten=None, herkunft=None, ip=None, einwilli
 				"plz": k["plz"],
 				"ort": k["ort"],
 				"ha": ha or 0,
-				"nutzung": v.auswahl(d.get("nutzung"), FLAECHE_NUTZUNG, "acker"),
+				"nutzung": "dach" if d.get("art") == "dach" else v.auswahl(d.get("nutzung"), FLAECHE_NUTZUNG, "acker"),  # /dachflaeche-verpachten
 				"agri": 1 if t == "agri" else 0,
 				"eigentum": "eigentum",
 				"hinweise": v.mehrzeilig(d.get("nachricht"), 2000),
@@ -116,6 +116,9 @@ def anlegen(typ=None, kontakt=None, daten=None, herkunft=None, ip=None, einwilli
 		vg.flaeche_id = f.name
 
 	protokoll(u, "anfrage", "vorgang", vg.name, f"Anfrage {VORGANG_TYPEN[t]} von {k['email']}", ip_)
-	mail.neue_anfrage(vg)
+	benachrichtigung.neue_anfrage(vg, k)
+	from oekoinvest_app.plattform.backoffice import backoffice_ereignis  # Backoffice: CRM-Lead + Automationen
+
+	backoffice_ereignis("vorgang_neu", "vorgang", vg)
 	return {"id": vg.name, "vorgang": {"id": vg.name, "typ": vg.typ, "status": vg.status, "flaecheId": vg.flaeche_id or None}}
 

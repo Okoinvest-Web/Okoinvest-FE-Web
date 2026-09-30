@@ -7,6 +7,7 @@ from frappe.utils import cint
 from oekoinvest_app.plattform import validierung as v
 from oekoinvest_app.plattform.ausgabe import ist_eigen, thread_info
 from oekoinvest_app.plattform.kern import darf_bezug, ist_admin, iso, nachricht_anlegen, name_von, nutzer, objekt_laden, protokoll
+from oekoinvest_app.plattform.organisation import darf_team_lesen_objekt
 
 MAX_THREADS = 500
 
@@ -30,7 +31,12 @@ def threads(nurUngelesen=None, als_benutzer=None):
 	bedingung = ""
 	if not admin:
 		teile = []
-		for i, (art, namen) in enumerate(eigene_bezuege(n).items()):
+		bezuege = eigene_bezuege(n)
+		from oekoinvest_app.plattform.organisation import team_bezuege
+
+		for art, namen in team_bezuege(n).items():  # auch Threads der Objekte eigener Teams
+			bezuege[art] = list(dict.fromkeys([*bezuege.get(art, []), *namen]))
+		for i, (art, namen) in enumerate(bezuege.items()):
 			if namen:
 				teile.append(f"(bezug_art = %(art{i})s and bezug_id in %(ids{i})s)")
 				werte[f"art{i}"] = art
@@ -58,7 +64,7 @@ def threads(nurUngelesen=None, als_benutzer=None):
 		o = objekt_laden(g.bezug_art, g.bezug_id)
 		if not o:
 			continue
-		eigen = ist_eigen(g.bezug_art, o, n)
+		eigen = ist_eigen(g.bezug_art, o, n) or darf_team_lesen_objekt(n, o)  # auch Threads der eigenen Teams
 		if not admin and not eigen:
 			continue
 		ungelesen = cint(g.offen_admin) if (admin and not eigen) else cint(g.offen_nutzer)
@@ -103,6 +109,10 @@ def liste(bezugArt=None, bezugId=None, markieren=None, als_benutzer=None):
 	markieren = True if markieren is None else v.wahr(markieren)
 	if markieren and offen:
 		frappe.db.sql(f"update `tabPlattform Nachricht` set `{feld}` = 1 where name in %(namen)s", {"namen": tuple(offen)})
+	if markieren:
+		from oekoinvest_app.plattform.benachrichtigung import fuer_objekt_gelesen
+
+		fuer_objekt_gelesen(n.id, bezugArt, o.name)
 	namen_cache = {}
 
 	def von_name(m):
@@ -137,7 +147,7 @@ def senden(bezugArt=None, bezugId=None, text=None, als_benutzer=None):
 	n = nutzer(als_benutzer)
 	t = v.mehrzeilig(text, 5000)
 	v.pflicht(len(t) >= 2, "Bitte geben Sie eine Nachricht ein.")
-	o = darf_bezug(n, bezugArt, bezugId)
+	o = darf_bezug(n, bezugArt, bezugId, schreiben=True)  # Team ab Teamrolle „Mitglied“
 	eigen = ist_eigen(bezugArt, o, n)
 	als_admin = ist_admin(n) and not eigen
 	m = nachricht_anlegen(

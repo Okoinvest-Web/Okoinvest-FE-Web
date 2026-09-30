@@ -1,3 +1,5 @@
+import { FileSpreadsheet } from "lucide-react";
+import DateiLink from "@/components/Portal/DateiLink";
 import Link from "next/link";
 import SchnellWeiter from "@/components/Portal/SchnellWeiter";
 import { SeitenKopf } from "@/components/Portal/ui";
@@ -22,6 +24,7 @@ export default async function AdminFlaechen() {
         eyebrow="Backoffice"
         titel="Flächen-Pipeline"
         text={`${fmt(flaechen.length)} Flächen mit ${ha(flaechen.filter((f) => f.status !== "abgelehnt").reduce((s, f) => s + (f.ha || 0), 0))}. Einfache Schritte direkt hier, Pachtangebot und Ablehnung in der Detailansicht.`}
+        aktionen={<DateiLink href="/api/admin/export/flaechen" icon={FileSpreadsheet}>CSV-Export</DateiLink>}
       />
       <div className="-mx-4 overflow-x-auto px-4 pb-4 md:-mx-8 md:px-8">
         <ol className="flex min-w-max gap-4">

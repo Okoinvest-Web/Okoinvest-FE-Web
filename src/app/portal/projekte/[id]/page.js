@@ -1,6 +1,11 @@
-import { Eye, ExternalLink, FileSignature, Heart, KeyRound, Pencil } from "lucide-react";
+import { Eye, ExternalLink, FileDown, FileSignature, Heart, KeyRound, Pencil } from "lucide-react";
+import Begriff from "@/components/Portal/Bedienung/Begriff";
+import Checkliste from "@/components/Portal/Checkliste";
+import DateiLink from "@/components/Portal/DateiLink";
+import { AktivitaetsFeed, AufgabenKarte } from "@/components/Portal/ObjektBackoffice";
 import Button from "@/components/ui/Button";
 import ProjektFormular from "@/components/Portal/ProjektFormular";
+import KiExpose from "@/components/Portal/Ki/KiExpose";
 import StatusAktionen from "@/components/Portal/StatusAktionen";
 import NachrichtenThread from "@/components/Portal/NachrichtenThread";
 import Zuweisung from "@/components/Portal/Zuweisung";
@@ -24,7 +29,7 @@ export default async function Projekt({ params, searchParams }) {
   const b = backend();
   const p = await laden(() => b.projekt(n, id));
   const admin = istAdmin(n);
-  const eigen = p.anbieterId === n.id;
+  const eigen = p.anbieterId === n.id || p.meinZugriff === "schreiben"; // Team: Teamrolle ≥ Mitglied bearbeitet wie der Eigentümer
   const [thread, dokumente, interessen, adminKonten] = await Promise.all([
     b.nachrichten(n, "projekt", id),
     b.dokumente(n, { bezugArt: "projekt", bezugId: id }),
@@ -51,6 +56,10 @@ export default async function Projekt({ params, searchParams }) {
               <Button href={`/projektboerse/${p.slug}`} size="sm" variant="secondary" icon={ExternalLink} target="_blank">
                 Öffentliche Ansicht
               </Button>
+            )}
+            <DateiLink href={`/api/portal/projekte/${p.id}/expose`} icon={FileDown}>Exposé (PDF)</DateiLink>
+            {["veroeffentlicht", "reserviert", "verkauft"].includes(p.status) && (
+              <Button href={`/portal/dealroom/${p.id}`} size="sm" variant="navy">Deal-Room & Cockpit</Button>
             )}
           </>
         }
@@ -80,7 +89,7 @@ export default async function Projekt({ params, searchParams }) {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-6">
           {!bearbeiten && (
-            <Karte titel="Exposé (öffentlicher Teaser)" aktion={eigen && p.status !== "entwurf" ? <span className="inline-flex items-center gap-1.5 text-[12.5px] text-ink-500"><Pencil aria-hidden="true" className="h-3.5 w-3.5" /> Bearbeiten nur im Entwurf</span> : null}>
+            <Karte titel="Exposé (öffentlicher Teaser)" aktion={eigen && p.status !== "entwurf" ? <span className="inline-flex items-center gap-1.5 text-[12.5px] text-ink-500"><Pencil aria-hidden="true" className="h-3.5 w-3.5" /> Bearbeiten nur im Entwurf</span> : admin ? <KiExpose projektId={p.id} knopfText="Exposé prüfen lassen" hinweisGespeichert={false} /> : null}>
               <Angaben
                 items={[
                   { label: "Phase", wert: phase?.label },
@@ -97,7 +106,7 @@ export default async function Projekt({ params, searchParams }) {
             </Karte>
           )}
           {!bearbeiten && (
-            <Karte titel="Vertrauliche Angaben" untertitel="Nur Backoffice und Investoren mit freigegebenem NDA">
+            <Karte titel={<>Vertrauliche Angaben <Begriff id="nda" nurIcon /></>} untertitel="Nur Backoffice und Investoren mit freigegebenem NDA">
               <Angaben items={Object.entries(VERTRAULICH_FELDER).map(([k, label]) => ({ label, wert: p.vertraulich?.[k] === undefined || p.vertraulich?.[k] === null ? "" : String(p.vertraulich[k]), breit: k === "details" }))} />
               {!Object.values(p.vertraulich || {}).some(Boolean) && <p className="text-[14px] text-ink-500">Keine vertraulichen Angaben hinterlegt.</p>}
             </Karte>
@@ -135,7 +144,11 @@ export default async function Projekt({ params, searchParams }) {
             </Karte>
           )}
 
-          <Karte titel="Datenraum & Dokumente" untertitel="Datenraum-Dokumente sehen nur Investoren mit freigegebenem NDA.">
+          <Karte titel="Unterlagen je Phase" untertitel={`Erwartet bis Phase „${phase?.kurz || "–"}“ – fließt als Datenraum-Qualität in die Börsenkarte ein.`}>
+            <Checkliste checkliste={p.checkliste} bezugArt="projekt" bezugId={p.id} kategorie="datenraum" darfHochladen={eigen || admin} hinweis="Uploads landen im Datenraum (nur nach NDA sichtbar)" />
+          </Karte>
+
+          <Karte titel={<>Datenraum & Dokumente <Begriff id="datenraum" nurIcon /></>} untertitel="Datenraum-Dokumente sehen nur Investoren mit freigegebenem NDA.">
             <DokumentListe dokumente={dokumente} nutzerId={n.id} admin={admin} leerText="Noch keine Unterlagen. Typisch: Lageplan, Netzzusage, B-Plan-Stand, Pachtverträge (geschwärzt), Ertragsgutachten." />
             {(eigen || admin) && (
               <div className="mt-4">
@@ -147,6 +160,9 @@ export default async function Projekt({ params, searchParams }) {
           <Karte titel="Verlauf">
             <Timeline art="projekt" verlauf={p.statusVerlauf} />
           </Karte>
+
+          {admin && <AufgabenKarte nutzer={n} bezugArt="projekt" bezugId={p.id} />}
+          {admin && <AktivitaetsFeed nutzer={n} objektId={p.id} weitereIds={interessen.map((i) => i.id)} />}
 
           {admin && interessen.length > 0 && (
             <Karte titel="Interessenten">

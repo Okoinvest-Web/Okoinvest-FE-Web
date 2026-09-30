@@ -7,7 +7,7 @@ from frappe.utils.password import check_password, update_password
 
 from oekoinvest_app.plattform import validierung as v
 from oekoinvest_app.plattform.kern import als_json, konto_json, nutzer, protokoll, rolle_noetig, ungueltig
-from oekoinvest_app.plattform.konstanten import LAENDER, PHASEN_IDS, PROJEKT_TYPEN, ROLLEN_IDS
+from oekoinvest_app.plattform.konstanten import LAENDER, PHASEN_IDS, PROJEKT_TYPEN, ROLLEN_IDS, SUCHPROFIL_SCHWELLE
 
 
 @frappe.whitelist(methods=["POST"])
@@ -64,11 +64,16 @@ def suchprofil_speichern(profil=None, als_benutzer=None):
 		"ticketMin": v.zahl(p.get("ticketMin"), min=0, max=1e10),
 		"ticketMax": v.zahl(p.get("ticketMax"), min=0, max=1e10),
 		"benachrichtigen": v.wahr(p.get("benachrichtigen")),
+		"schwelle": v.zahl(p.get("schwelle"), min=SUCHPROFIL_SCHWELLE["min"], max=SUCHPROFIL_SCHWELLE["max"], stellen=0) or SUCHPROFIL_SCHWELLE["standard"],
 	}
 	if sp["mwpMin"] is not None and sp["mwpMax"] is not None:
 		v.pflicht(sp["mwpMin"] <= sp["mwpMax"], "MWp: Minimum größer als Maximum.")
 	if sp["ticketMin"] is not None and sp["ticketMax"] is not None:
 		v.pflicht(sp["ticketMin"] <= sp["ticketMax"], "Ticket: Minimum größer als Maximum.")
+	from oekoinvest_app.plattform.organisation import team_suchprofil_setzen
+
+	if team_suchprofil_setzen(n, sp):  # aktive Organisation → Team-Suchprofil (Rolle ≥ Mitglied)
+		return sp
 	konto = frappe.get_doc("Plattform Konto", n.id)
 	konto.suchprofil = als_json(sp)
 	konto.save(ignore_permissions=True)

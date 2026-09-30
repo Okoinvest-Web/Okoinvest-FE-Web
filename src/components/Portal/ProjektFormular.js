@@ -15,6 +15,7 @@ import { VERTRAULICH_FELDER } from "@/lib/plattform/oeffentlich";
 import { PHASEN, PROVISION } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import { eingabe, textbereich, auswahlfeld, Feld, FehlerBox, ErfolgBox } from "./felder";
+import KiExpose from "./Ki/KiExpose";
 
 const SCHRITTE = ["Grunddaten", "Entwicklungsstand", "Preis & Exposé", "Vertrauliches", "Provision & Einreichen"];
 
@@ -218,6 +219,16 @@ export default function ProjektFormular({ projekt, schrittStart = 0 }) {
                 </Feld>
               )}
             </div>
+            {projekt && (
+              <div className="flex flex-col gap-3 rounded-2xl bg-ov-50/60 p-4 ring-1 ring-inset ring-ov-200/70 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-[13.5px] leading-relaxed text-ink-700">Beschreibung und Highlights aus Ihren Projektdaten entwerfen lassen – Sie prüfen und übernehmen.</p>
+                <KiExpose
+                  projektId={projekt.id}
+                  className="shrink-0"
+                  onUebernehmen={(t) => setP((x) => ({ ...x, ...(t.beschreibung !== undefined ? { beschreibung: t.beschreibung } : {}), ...(t.highlights ? { highlights: t.highlights.length ? t.highlights.slice(0, 6) : [""] } : {}) }))}
+                />
+              </div>
+            )}
             <Feld id={`${id}-d`} label="Beschreibung (öffentlich)" pflicht hinweis={`Mindestens 80 Zeichen – bisher ${p.beschreibung.length}. Stand, Besonderheiten, Zielgruppe. Keine genaue Lage.`}>
               <textarea id={`${id}-d`} rows={6} maxLength={4000} className={textbereich} value={p.beschreibung} onChange={(e) => setze("beschreibung", e.target.value)} />
             </Feld>

@@ -16,6 +16,7 @@ import { cookieName, cookieOptionen, tokenErstellen, tokenPruefen } from "../sit
 import { ipAdresse } from "@/lib/ipAdresse";
 import { SITE } from "@/data/site";
 import { grenze, rateLimit } from "./rateLimit";
+import { adminRechtPruefen } from "./rechte"; // Backoffice-Unterrollen (Rechte-Matrix)
 
 const KEIN_CACHE = { "Cache-Control": "no-store" };
 
@@ -81,14 +82,15 @@ export async function nutzerAusAnfrage(request, b = backend()) {
   if (!token) return null;
   const s = await tokenPruefen(token);
   if (!s) return null;
-  const u = await b.nutzerFuerSitzung(s.nutzerId);
+  // sitzungId: Sitzungseintrag muss bestehen (einzeln widerrufbar, siehe backend/demo/sicherheit.js)
+  const u = await b.nutzerFuerSitzung(s.nutzerId, { sitzungId: s.sitzungId });
   if (!u || !u.aktiv || (u.sitzungVersion || 0) !== s.version) return null;
   return u;
 }
 
-/** Sitzungscookie setzen */
-export async function sitzungSetzen(res, nutzer) {
-  const token = await tokenErstellen({ nutzerId: nutzer.id, version: nutzer.sitzungVersion || 0 });
+/** Sitzungscookie setzen (sitzungId aus sitzungAnlegen – Anmeldung läuft über server/anmeldung.js) */
+export async function sitzungSetzen(res, nutzer, { sitzungId = null } = {}) {
+  const token = await tokenErstellen({ nutzerId: nutzer.id, version: nutzer.sitzungVersion || 0, sitzungId: sitzungId || nutzer.sitzung?.id || null });
   res.cookies.set(cookieName(), token, cookieOptionen());
   return res;
 }
@@ -107,7 +109,9 @@ export function basisUrl(request) {
 /** Nutzer für die Antwort an den Browser (ohne interne Felder) */
 export function nutzerFuerBrowser(u) {
   if (!u) return null;
-  return { id: u.id, email: u.email, vorname: u.vorname, nachname: u.nachname, firma: u.firma, telefon: u.telefon, rollen: u.rollen, emailBestaetigt: !!u.emailBestaetigt, suchprofil: u.suchprofil || null };
+  return { id: u.id, email: u.email, vorname: u.vorname, nachname: u.nachname, firma: u.firma, telefon: u.telefon, rollen: u.rollen, emailBestaetigt: !!u.emailBestaetigt, suchprofil: u.suchprofil || null, mailEinstellungen: u.mailEinstellungen || null, backofficeRollen: u.backofficeRollen || null,
+    // Login, Sicherheit & Teams: Komfort (Avatarfarbe, Sprache), Organisationskontext, 2FA-Status
+    komfort: u.komfort || null, organisation: u.organisation || null, organisationen: u.organisationen || [], zweiFaktorAktiv: !!u.zweiFaktorAktiv, zweiFaktorPflichtOffen: !!u.zweiFaktorPflichtOffen };
 }
 
 /**
@@ -121,6 +125,7 @@ export function nutzerFuerBrowser(u) {
  *   json      true – JSON-Body lesen (Standard bei POST/PATCH/PUT/DELETE)
  *   upload    true – multipart statt JSON (eigene Kopfzeile Pflicht)
  *   maxBytes  Größe des JSON-Bodys
+ *   ohne2fa   true – auch erreichbar, solange eine Pflicht-2FA noch nicht eingerichtet ist (Sicherheits-APIs)
  */
 export function route(optionen, handler) {
   const o = { auth: true, ...optionen };
@@ -147,10 +152,15 @@ export function route(optionen, handler) {
           if (o.rollen && !admin && !o.rollen.some((r) => nutzer.rollen?.includes(r))) {
             throw new PlattformFehler(403, "Dafür fehlt Ihnen die passende Rolle.");
           }
+          // Pflicht-2FA (Rolle, z. B. Backoffice): bis zur Einrichtung nur Sicherheits-APIs
+          if (nutzer.zweiFaktorPflichtOffen && !o.ohne2fa && o.auth === true) {
+            throw new PlattformFehler(403, "Für Ihr Konto ist die Zwei-Faktor-Anmeldung Pflicht. Bitte richten Sie sie unter „Sicherheit“ ein.", "zwei_faktor_pflicht");
+          }
         }
       }
 
       const body = mutation && !o.upload && o.json !== false ? await jsonLesen(request, o.maxBytes) : undefined;
+      if (nutzer) adminRechtPruefen(nutzer, { request, body, params, recht: o.recht }); // feine Backoffice-Rechte für /api/admin/**
       const ergebnis = await handler({ request, params, nutzer, body, backend: b, ip, suche: request.nextUrl.searchParams });
       if (ergebnis instanceof Response) return ergebnis;
       return antwort(ergebnis === undefined ? { ok: true } : ergebnis);

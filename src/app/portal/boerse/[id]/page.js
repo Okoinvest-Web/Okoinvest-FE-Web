@@ -1,4 +1,7 @@
-import { Check, ExternalLink, FolderLock, Lock } from "lucide-react";
+import { Check, ExternalLink, FileDown, FolderLock, Gavel, Lock } from "lucide-react";
+import Begriff from "@/components/Portal/Bedienung/Begriff";
+import DateiLink from "@/components/Portal/DateiLink";
+import { QualitaetsBalken } from "@/components/Portal/ui";
 import Button from "@/components/ui/Button";
 import TypIllustration from "@/components/Boerse/TypIllustration";
 import { PhaseBadge } from "@/components/Boerse/ProjektKarte";
@@ -6,6 +9,7 @@ import MerkenKnopf from "@/components/Boerse/MerkenKnopf";
 import NdaAnfrage from "@/components/Boerse/NdaAnfrage";
 import StatusAktionen from "@/components/Portal/StatusAktionen";
 import NachrichtenThread from "@/components/Portal/NachrichtenThread";
+import KiFrage from "@/components/Portal/Ki/KiFrage";
 import { DokumentListe } from "@/components/Portal/Dokumente";
 import { Angaben, Badge, Hinweis, Karte, SeitenKopf, StatusBadge, Timeline } from "@/components/Portal/ui";
 import { portalNutzer, laden } from "@/lib/plattform/server/seite";
@@ -40,6 +44,14 @@ export default async function PortalExpose({ params }) {
           <>
             {i && i.status !== "gemerkt" && <StatusBadge art="interesse" status={i.status} className="text-[13px]" />}
             <MerkenKnopf projektId={p.id} gemerkt={!!i?.gemerkt} mitText />
+            {frei ? (
+              <>
+                <Button href={`/portal/dealroom/${p.id}`} size="sm" variant="navy" icon={Gavel}>Deal-Room</Button>
+                <DateiLink href={`/api/portal/projekte/${p.id}/expose`} icon={FileDown} variant="primary">Exposé (PDF)</DateiLink>
+              </>
+            ) : (
+              p.slug && <DateiLink href={`/api/boerse/${p.slug}/teaser`} icon={FileDown} neuesFenster>Teaser (PDF)</DateiLink>
+            )}
             {p.slug && <Button href={`/projektboerse/${p.slug}`} size="sm" variant="ghost" icon={ExternalLink}>Öffentlich</Button>}
           </>
         }
@@ -64,6 +76,11 @@ export default async function PortalExpose({ params }) {
                     <li key={h} className="flex items-start gap-2 text-[14px] text-ink-700"><Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" />{h}</li>
                   ))}
                 </ul>
+              )}
+              {typeof p.datenraumQualitaet === "number" && (
+                <div className="mt-5 max-w-sm">
+                  <QualitaetsBalken quote={p.datenraumQualitaet} />
+                </div>
               )}
               <div className="mt-6 border-t border-ink-100 pt-5">
                 <Angaben
@@ -96,8 +113,10 @@ export default async function PortalExpose({ params }) {
             )}
           </Karte>
 
+          {frei && <KiFrage projektId={p.id} />}
+
           {i && thread && (
-            <Karte titel="Nachrichten zu diesem Projekt" untertitel="Fragen zum Projekt beantwortet das Backoffice – der Anbieter bleibt bis zur Freigabe anonym.">
+            <Karte id="projekt-nachrichten" titel="Nachrichten zu diesem Projekt" untertitel="Fragen zum Projekt beantwortet das Backoffice – der Anbieter bleibt bis zur Freigabe anonym.">
               <NachrichtenThread bezugArt="interesse" bezugId={i.id} nachrichten={thread.nachrichten} />
             </Karte>
           )}
@@ -105,7 +124,7 @@ export default async function PortalExpose({ params }) {
 
         <div className="min-w-0 space-y-6">
           {(!i || i.status === "gemerkt") && (
-            <Karte titel="Datenraum anfragen">
+            <Karte titel={<>Datenraum anfragen <Begriff id="nda" nurIcon /></>}>
               {p.status === "reserviert" && <p className="mb-4 text-[13.5px] text-ink-600">Das Projekt ist reserviert. Sie können trotzdem Interesse anmelden – falls die Gespräche scheitern, melden wir uns.</p>}
               <NdaAnfrage projektId={p.id} />
             </Karte>
@@ -116,13 +135,13 @@ export default async function PortalExpose({ params }) {
             </Hinweis>
           )}
           {frei && (
-            <Karte titel="Datenraum" aktion={<FolderLock aria-hidden="true" className="h-5 w-5 text-ov-600" />}>
+            <Karte titel={<>Datenraum <Begriff id="datenraum" nurIcon /></>} aktion={<FolderLock aria-hidden="true" className="h-5 w-5 text-ov-600" />}>
               <DokumentListe dokumente={d.dokumente} nutzerId={n.id} leerText="Noch keine Unterlagen im Datenraum." />
-              <p className="mt-3 text-[12.5px] text-ink-500">Zugriffe werden protokolliert. Weitergabe nur gemäß NDA.</p>
+              <p className="mt-3 text-[12.5px] text-ink-500">Zugriffe werden protokolliert. Weitergabe nur gemäß NDA. Das Exposé-PDF enthält Ihren Namen als Empfänger.</p>
             </Karte>
           )}
           {i && ["nda_freigegeben", "loi_abgegeben", "loi_angenommen", "abgeschlossen", "abgelehnt"].includes(i.status) && (
-            <Karte titel="Absichtserklärung (LOI)">
+            <Karte titel={<>Absichtserklärung (LOI) <Begriff id="loi" nurIcon /></>}>
               {i.loi ? (
                 <Angaben
                   spalten={1}

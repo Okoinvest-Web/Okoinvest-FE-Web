@@ -122,6 +122,7 @@ export const PROZESSE = {
       { von: ["loi_abgegeben"], nach: "loi_angenommen", wer: "admin", aktion: "LOI annehmen" },
       { von: ["loi_abgegeben", "nda_freigegeben"], nach: "abgelehnt", wer: "admin", aktion: "Ablehnen", pflicht: ["grund"] },
       { von: ["loi_angenommen", "loi_abgegeben", "nda_freigegeben"], nach: "abgeschlossen", wer: "system", aktion: "Kauf abgeschlossen" },
+      { von: ["nda_freigegeben", "loi_abgegeben"], nach: "loi_angenommen", wer: "system", aktion: "Zuschlag im Bieterverfahren" }, // Deal-Room (Bieterverfahren)
       { von: ["gemerkt", "nda_angefragt", "nda_freigegeben", "loi_abgegeben", "loi_angenommen"], nach: "abgelehnt", wer: "system", aktion: "Projekt anderweitig verkauft" },
     ],
   },

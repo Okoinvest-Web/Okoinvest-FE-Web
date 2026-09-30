@@ -1,3 +1,5 @@
+import { FileSpreadsheet } from "lucide-react";
+import DateiLink from "@/components/Portal/DateiLink";
 import Link from "next/link";
 import { Coins, HandCoins, Receipt } from "lucide-react";
 import StatusAktionen from "@/components/Portal/StatusAktionen";
@@ -17,7 +19,7 @@ export default async function AdminDeals() {
 
   return (
     <div className="space-y-6">
-      <SeitenKopf eyebrow="Backoffice" titel="Deals & Provisionen" text={`Provisionen werden beim Statuswechsel „Verkauft“ automatisch berechnet (${PROVISION.verkaeufer.text}).`} />
+      <SeitenKopf eyebrow="Backoffice" titel="Deals & Provisionen" text={`Provisionen werden beim Statuswechsel „Verkauft“ automatisch berechnet (${PROVISION.verkaeufer.text}).`} aktionen={<DateiLink href="/api/admin/export/provisionen" icon={FileSpreadsheet}>CSV-Export</DateiLink>} />
       <div className="grid gap-4 sm:grid-cols-3">
         <Kennzahl label="Offen (noch keine Rechnung)" wert={eur(summe(["offen"]))} icon={Coins} />
         <Kennzahl label="In Rechnung" wert={eur(summe(["in_rechnung"]))} icon={Receipt} />

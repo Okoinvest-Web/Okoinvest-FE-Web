@@ -53,3 +53,4 @@ next-env.d.ts
 # Python
 __pycache__/
 *.pyc
+.data-alt-*/

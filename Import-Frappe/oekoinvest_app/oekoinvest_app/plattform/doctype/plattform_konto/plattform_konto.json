@@ -18,14 +18,21 @@
   "description",
   "sec_rollen",
   "rollen",
+  "backoffice_rollen",
   "sec_status",
   "aktiv",
   "email_bestaetigt",
   "cb_status",
   "sitzung_version",
   "letzter_login",
+  "fehlversuche",
+  "gesperrt_bis",
+  "geloescht_am",
   "sec_suche",
-  "suchprofil"
+  "suchprofil",
+  "mail_einstellungen",
+  "komfort",
+  "onboarding"
  ],
  "fields": [
   {
@@ -97,6 +104,13 @@
    "options": "Plattform Konto Rolle"
   },
   {
+   "fieldname": "backoffice_rollen",
+   "fieldtype": "Data",
+   "label": "Backoffice-Unterrollen",
+   "description": "Nur für Rolle admin, kommagetrennt: leitung, akquise, transaktion, buchhaltung, lesen (leer = leitung). Pflege über das Portal (Backoffice → Rechte).",
+   "read_only": 1
+  },
+  {
    "fieldname": "sec_status",
    "fieldtype": "Section Break",
    "label": "Zugang"
@@ -135,6 +149,26 @@
    "read_only": 1
   },
   {
+   "default": "0",
+   "description": "Fehlgeschlagene Anmeldeversuche seit der letzten erfolgreichen Anmeldung (Kontosperre mit exponentiellem Backoff).",
+   "fieldname": "fehlversuche",
+   "fieldtype": "Int",
+   "label": "Fehlversuche",
+   "read_only": 1
+  },
+  {
+   "fieldname": "gesperrt_bis",
+   "fieldtype": "Datetime",
+   "label": "Anmeldung gesperrt bis",
+   "read_only": 1
+  },
+  {
+   "fieldname": "geloescht_am",
+   "fieldtype": "Datetime",
+   "label": "Gelöscht am (anonymisiert)",
+   "read_only": 1
+  },
+  {
    "collapsible": 1,
    "fieldname": "sec_suche",
    "fieldtype": "Section Break",
@@ -144,11 +178,31 @@
    "fieldname": "suchprofil",
    "fieldtype": "JSON",
    "label": "Suchprofil"
+  },
+  {
+   "description": "Je Ereignisart (status, nachricht, nda, suchprofil, anfrage, aufgabe): per E-Mail benachrichtigen ja/nein. Fehlt ein Schlüssel, gilt der Standard (ja).",
+   "fieldname": "mail_einstellungen",
+   "fieldtype": "JSON",
+   "label": "E-Mail-Benachrichtigungen"
+  },
+  {
+   "description": "Konto-Komfort: { farbe, sprache, kanaele: { email, sicherheitEmail } }. kanaele.email = false unterdrückt Benachrichtigungs-E-Mails (Sicherheitsmeldungen gehen immer). Pflege nur über api/sicherheit.komfort_speichern.",
+   "fieldname": "komfort",
+   "fieldtype": "JSON",
+   "label": "Komfort",
+   "read_only": 1
+  },
+  {
+   "description": "Geführter Einstieg im Portal: { status: neu|laufend|erledigt|uebersprungen, schritt, erledigt: [profil, objekt, benachrichtigungen, bedienung, fertig], checklisteAus, aktualisiertAm }. Pflege nur über api/bedienung.py.",
+   "fieldname": "onboarding",
+   "fieldtype": "JSON",
+   "label": "Onboarding",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-29 08:00:00.000000",
+ "modified": "2026-09-29 20:00:00.000000",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Plattform Konto",

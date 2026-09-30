@@ -7,19 +7,27 @@
 
 import { PROVISION } from "@/lib/invest/markt";
 import {
-  BEZUG_ARTEN, DOKUMENT_KATEGORIEN, FLAECHE_NUTZUNG, LAENDER, NDA, NETZANSCHLUSS, PREIS_MODUS, PROJEKT_TYPEN,
-  ROLLE_FUER_TYP, ROLLEN_IDS, UPLOAD, VORGANG_TYPEN, BUNDESLAENDER,
+  AUFGABE_BEZUG_ARTEN, AUFGABE_STATUS, BENACHRICHTIGUNG_ARTEN, BENACHRICHTIGUNG_ART_IDS, BEZUG_ARTEN, DOKUMENT_KATEGORIEN, FLAECHE_NUTZUNG,
+  LAENDER, NDA, NETZANSCHLUSS, PREIS_MODUS, PROJEKT_TYPEN, ROLLE_FUER_TYP, ROLLEN_IDS, SUCHPROFIL_SCHWELLE, UPLOAD, VORGANG_TYPEN, BUNDESLAENDER,
+  mailEinstellungenStandard,
 } from "../konstanten";
 import { BOERSE_STATUS, DATENRAUM_STATUS, OFFENE_STATUS, PROZESSE, pruefeUebergang, statusLabel } from "../prozesse";
 import { PlattformFehler, konflikt, nichtGefunden, ungueltig, verboten } from "../fehler";
 import * as v from "../validierung";
 import { projektOeffentlich, projektVertraulich } from "../oeffentlich";
 import { matching } from "../matching";
+import { CHECKLISTE_IDS, checklisteFlaeche, checklisteProjekt } from "../checkliste";
 import { PHASEN } from "@/lib/invest/markt";
 import { passwortHash, passwortPruefen } from "../server/passwort";
 import { aendern, lesen, seedSetzen, uploadLesen, uploadLoeschen, uploadSchreiben } from "./demo/speicher";
 import { seedErstellen } from "./demo/seed";
 import { jetzt, neueId, sha256, slugify, zufallsToken } from "./demo/hilfen";
+import { aufrufVerlaufZaehlen, datenraumStufeOk } from "./demo/dealroomRegeln"; // Deal-Room: Aufrufe je Tag, Freigabestufen
+import * as org from "./demo/teams"; // Login, Sicherheit & Teams: Organisationsrechte
+import { sicherheitWerkzeugeSetzen } from "./demo/sicherheitWerkzeuge";
+import { fehlversuchBuchen, mitZweiFaktor, sitzungNutzer, sperrePruefen } from "./demo/sicherheit"; // Login, Sicherheit & Teams
+import { backofficeEreignis, protokollAnhaengen, werkzeugeSetzen } from "./demo/backoffice"; // Backoffice: CRM, Automationen, Hash-Kette
+export * from "./demo/crm-ops"; // Backoffice-Operationen (CRM, Akquise, Automationen, Vorlagen, Berichte, Rechte)
 
 seedSetzen(seedErstellen);
 
@@ -71,21 +79,27 @@ function bezugObjekt(db, art, id) {
   return objekt(db, art, id);
 }
 
-function darfBezug(db, n, art, id) {
+function darfBezug(db, n, art, id, { schreiben = false } = {}) {
   if (!BEZUG_ARTEN.includes(art)) throw ungueltig("Unbekannter Bezug");
   const o = bezugObjekt(db, art, id);
   if (!o) throw nichtGefunden();
   if (istAdmin(n)) return o;
-  if (besitzer(db, art, o) !== n.id) throw verboten();
+  // Organisation: Mitglieder sehen Objekte ihres Teams, schreiben ab Teamrolle „Mitglied“
+  if (besitzer(db, art, o) !== n.id && !(schreiben ? org.darfTeamSchreibenObjekt(db, n, o) : org.darfTeamLesenObjekt(db, n, o))) throw verboten();
   return o;
 }
 
 function protokoll(db, n, aktion, objektArt, objektId, text, ip = "") {
-  db.aktivitaeten.push({ id: neueId("A"), am: jetzt(), nutzerId: n?.id || null, aktion, objektArt, objektId, text: v.text(text, 300), ip: ip || "" });
-  if (db.aktivitaeten.length > 5000) db.aktivitaeten.splice(0, db.aktivitaeten.length - 5000);
+  // Hash-Kette (prevHash + hash, Archiv-Anker bei > 5000 Einträgen): backend/demo/kette.js
+  protokollAnhaengen(db, { id: neueId("A"), am: jetzt(), nutzerId: n?.id || null, aktion, objektArt, objektId, text: v.text(text, 300), ip: ip || "" });
 }
 
-function nachricht(db, { bezugArt, bezugId, vonId, vonAdmin = false, system = false, text }) {
+/**
+ * Nachricht im Thread (bezugArt, bezugId). Standard: gelesenNutzer = weder Admin noch System,
+ * gelesenAdmin = vom Admin. `melden` (true | "ohneMail" | false) erzeugt Benachrichtigungen für
+ * die Seite, die die Nachricht noch nicht gelesen hat (Glocke + ggf. E-Mail, siehe benachrichtigen).
+ */
+function nachricht(db, { bezugArt, bezugId, vonId, vonAdmin = false, system = false, text, gelesenNutzer, gelesenAdmin, ereignis, melden = true }) {
   const m = {
     id: neueId("M"),
     bezugArt,
@@ -95,11 +109,92 @@ function nachricht(db, { bezugArt, bezugId, vonId, vonAdmin = false, system = fa
     system,
     text: v.mehrzeilig(text, 5000),
     am: jetzt(),
-    gelesenNutzer: !vonAdmin && !system ? true : false,
-    gelesenAdmin: vonAdmin,
+    gelesenNutzer: gelesenNutzer ?? (!vonAdmin && !system),
+    gelesenAdmin: gelesenAdmin ?? !!vonAdmin,
   };
   db.nachrichten.push(m);
+  if (melden) nachrichtMelden(db, m, { ereignis, mail: melden !== "ohneMail" });
   return m;
+}
+
+// ================================================================ Benachrichtigungen & Postausgang
+
+const MAIL_VORLAGEN = {
+  status: { betreff: "Neuigkeiten zu Ihrem Vorgang – ÖkoInvest", text: "Der Status eines Ihrer Vorgänge hat sich geändert. Details finden Sie im Portal." },
+  nachricht: { betreff: "Neue Nachricht im Portal – ÖkoInvest", text: "Sie haben eine neue Nachricht im Portal von ÖkoInvest erhalten." },
+  nda: { betreff: "Neuigkeiten zu Ihrem Projektinteresse – ÖkoInvest", text: "Zu einem Projekt, für das Sie sich interessieren, gibt es Neuigkeiten (z. B. die Freigabe des Datenraums). Details finden Sie im Portal." },
+  suchprofil: { betreff: "Neues Projekt passend zu Ihrem Suchprofil – ÖkoInvest", text: "In der Projektbörse wurde ein Projekt veröffentlicht, das zu Ihrem Suchprofil passt." },
+  anfrage: { betreff: "Neue Anfrage über die Website – ÖkoInvest", text: "Über die Website ist eine neue Anfrage eingegangen." },
+  aufgabe: { betreff: "Aufgabe im Backoffice – ÖkoInvest", text: "Ihnen wurde eine Aufgabe zugewiesen bzw. eine Wiedervorlage ist fällig." },
+};
+const MAIL_HINWEIS = "Aus Gründen der Vertraulichkeit enthält diese E-Mail keine Inhalte. Bitte melden Sie sich im Portal an.";
+
+/** E-Mail, die Frappe versenden würde, im Demo-Postausgang ablegen (Vorschau im Backoffice) */
+function postausgangAnlegen(db, { an, anName = "", nutzerId = null, art, betreff, text, link, linkText = "Zum Portal", hinweis = MAIL_HINWEIS }) {
+  db.postausgang = db.postausgang || [];
+  const e = { id: neueId("E"), am: jetzt(), an, anName, nutzerId, art, betreff: v.text(betreff, 200), text: v.mehrzeilig(text, 2000), link: link || "/portal", linkText, hinweis };
+  db.postausgang.unshift(e);
+  if (db.postausgang.length > 500) db.postausgang.length = 500;
+  return e;
+}
+
+/** Nur interne Portal-Pfade als Ziel einer Benachrichtigung */
+const portalLink = (l) => (typeof l === "string" && l.startsWith("/portal") && !l.startsWith("//") ? l.slice(0, 300) : "/portal");
+
+/**
+ * Benachrichtigung für ein Konto anlegen und – je nach Einstellung des Kontos – eine E-Mail
+ * (ohne vertrauliche Inhalte, nur Hinweis + Link) in den Postausgang legen.
+ */
+function benachrichtigen(db, u, { art, titel, text, link, objektArt = null, objektId = null }, { mail = true, mailText, mailBetreff } = {}) {
+  if (!u || !u.aktiv || !BENACHRICHTIGUNG_ARTEN[art]) return null;
+  db.benachrichtigungen = db.benachrichtigungen || [];
+  const b = { id: neueId("B"), nutzerId: u.id, art, titel: v.text(titel, 160), text: v.text(text, 300), link: portalLink(link), objektArt, objektId, am: jetzt(), gelesen: false, mail: false };
+  db.benachrichtigungen.push(b);
+  if (db.benachrichtigungen.length > 5000) {
+    const idx = db.benachrichtigungen.findIndex((x) => x.gelesen);
+    db.benachrichtigungen.splice(idx >= 0 ? idx : 0, 1);
+  }
+  const einstellung = { ...mailEinstellungenStandard(), ...(u.mailEinstellungen || {}) };
+  if (mail && einstellung[art] && u.komfort?.kanaele?.email !== false) { // Kanal E-Mail global abschaltbar (Konto-Komfort)
+    const vorlage = MAIL_VORLAGEN[art];
+    postausgangAnlegen(db, {
+      an: u.email,
+      anName: [u.vorname, u.nachname].filter(Boolean).join(" "),
+      nutzerId: u.id,
+      art,
+      betreff: mailBetreff || vorlage.betreff,
+      text: mailText || vorlage.text,
+      link: b.link,
+    });
+    b.mail = true;
+  }
+  return b;
+}
+
+const aktiveAdmins = (db) => db.nutzer.filter((u) => u.aktiv && u.rollen.includes("admin"));
+
+/** Aus einer neuen Nachricht die Benachrichtigungen ableiten (Eigentümer bzw. Backoffice) */
+function nachrichtMelden(db, m, { ereignis, mail = true } = {}) {
+  const o = bezugObjekt(db, m.bezugArt, m.bezugId);
+  if (!o) return;
+  const statusText = m.system && m.text.startsWith("Status:");
+  const art = ereignis || (statusText ? (m.bezugArt === "interesse" ? "nda" : "status") : "nachricht");
+  const kurzText = m.text.replace(/\s+/g, " ").slice(0, 200);
+  const eigentuemerId = besitzer(db, m.bezugArt, o);
+  if (!m.gelesenNutzer && eigentuemerId && eigentuemerId !== m.vonId) {
+    const u = nutzerById(db, eigentuemerId);
+    const info = u ? threadInfo(db, m.bezugArt, m.bezugId, { ...u, rollen: u.rollen.filter((r) => r !== "admin") }) : null;
+    if (info) benachrichtigen(db, u, { art, titel: info.titel, text: statusText ? kurzText : `${m.vonAdmin ? "ÖkoInvest Backoffice" : nameVon(db, m.vonId) || "System"}: ${kurzText}`, link: info.link, objektArt: m.bezugArt, objektId: m.bezugId }, { mail });
+  }
+  if (!m.gelesenAdmin) {
+    const z = o.zustaendigId ? nutzerById(db, o.zustaendigId) : null;
+    const empfaenger = z && z.aktiv && z.rollen.includes("admin") ? [z] : aktiveAdmins(db);
+    for (const a of empfaenger) {
+      if (a.id === m.vonId || a.id === eigentuemerId) continue;
+      const info = threadInfo(db, m.bezugArt, m.bezugId, a);
+      if (info) benachrichtigen(db, a, { art: art === "nda" ? "status" : art, titel: info.titel, text: `${nameVon(db, m.vonId) || info.gegenueber || "Nutzer"}: ${kurzText}`, link: info.link, objektArt: m.bezugArt, objektId: m.bezugId }, { mail });
+    }
+  }
 }
 
 function verlaufEintrag(status, n, rolle, kommentar = "") {
@@ -163,29 +258,48 @@ function datenBereinigen(d, tiefe = 0) {
   return out;
 }
 
+/** Bezeichnungen geänderter Felder (für das Aktivitätsprotokoll „wer hat was geändert“) */
+const FELD_NAMEN_FLAECHE = {
+  bezeichnung: "Bezeichnung", land: "Land", bundesland: "Bundesland", plz: "PLZ", ort: "Ort", gemarkung: "Gemarkung", flurstuecke: "Flurstücke",
+  ha: "Größe", nutzung: "Nutzung", agri: "Agri-PV", eigentum: "Eigentum", hinweise: "Hinweise",
+};
+const FELD_NAMEN_PROJEKT = {
+  titel: "Titel", typ: "Typ", land: "Land", bundesland: "Bundesland", region: "Region", mwp: "Leistung", mwhSpeicher: "Speicher", flaecheHa: "Fläche",
+  phase: "Phase", netzanschluss: "Netzanschluss", codGeplant: "COD", preisModus: "Preismodus", preis: "Preis", preisProKwp: "Preis je kWp",
+  beschreibung: "Beschreibung", highlights: "Highlights", vertraulich: "vertrauliche Angaben",
+};
+function geaenderteFelder(alt, neu, namen) {
+  return Object.keys(namen).filter((k) => k in neu && JSON.stringify(alt[k] ?? null) !== JSON.stringify(neu[k] ?? null)).map((k) => namen[k]);
+}
+
 const nachDatum = (feld = "geaendertAm") => (a, b) => String(b[feld] || "").localeCompare(String(a[feld] || ""));
 
 // ================================================================ Konto
 
-export async function anmelden({ email, passwort }) {
+export async function anmelden({ email, passwort, ip = "", userAgent = "", land = "" }) {
   const e = v.email(email);
   const db = await lesen();
+  sperrePruefen(db, e); // Kontosperre mit exponentiellem Backoff (backend/demo/sicherheit.js) → 429
   const u = db.nutzer.find((x) => x.email === e);
   const ok = await passwortPruefen(String(passwort || ""), u?.passwortHash);
-  if (!u || !ok || !u.aktiv) return null;
+  if (!u || !ok || !u.aktiv) {
+    await aendern((db2) => fehlversuchBuchen(db2, { email: e, nutzer: u ? nutzerById(db2, u.id) : null, ip, userAgent, land, grund: ok ? "gesperrt" : "passwort" }));
+    return null;
+  }
   return aendern((db2) => {
     const x = nutzerById(db2, u.id);
     x.letzterLogin = jetzt();
     verknuepfen(db2, x);
     protokoll(db2, x, "login", "nutzer", x.id, "Anmeldung");
-    return ohneGeheimnis(x);
+    return mitZweiFaktor(db2, ohneGeheimnis(x)); // + zweiFaktorAktiv (steuert den 2FA-Schritt)
   });
 }
 
-export async function nutzerFuerSitzung(id) {
+/** kontext { sitzungId } (aus dem signierten Cookie): Sitzung muss bestehen – siehe backend/demo/sicherheit.js */
+export async function nutzerFuerSitzung(id, kontext = {}) {
   const db = await lesen();
   const u = nutzerById(db, id);
-  return u && u.aktiv ? ohneGeheimnis(u) : null;
+  return u && u.aktiv ? sitzungNutzer(db, ohneGeheimnis(u), kontext) : null;
 }
 
 export async function registrieren({ email, passwort, vorname, nachname, firma, telefon, rollen, vorgangId, basisUrl, ip }) {
@@ -237,7 +351,13 @@ export async function registrieren({ email, passwort, vorname, nachname, firma, 
       }
     }
     const token = tokenAnlegen(db, "email", u.id, 72);
-    linkZuDemo(db, "email", e, `${basisUrl}/api/auth/email-bestaetigen?token=${token}`);
+    const link = `${basisUrl}/api/auth/email-bestaetigen?token=${token}`;
+    linkZuDemo(db, "email", e, link);
+    postausgangAnlegen(db, {
+      an: e, anName: `${vn} ${nn}`, nutzerId: u.id, art: "bestaetigung", betreff: "Bitte bestätigen Sie Ihre E-Mail-Adresse – ÖkoInvest",
+      text: "vielen Dank für Ihre Registrierung im Portal von ÖkoInvest. Bitte bestätigen Sie Ihre E-Mail-Adresse – danach ordnen wir frühere Anfragen mit dieser Adresse automatisch Ihrem Konto zu. Der Link ist 72 Stunden gültig.",
+      link, linkText: "E-Mail-Adresse bestätigen", hinweis: "Sie haben sich nicht registriert? Dann ignorieren Sie diese E-Mail bitte.",
+    });
     protokoll(db, u, "registrierung", "nutzer", u.id, `Registrierung als ${r.join(", ")}`, ip);
     nachricht(db, {
       bezugArt: "nutzer",
@@ -245,6 +365,7 @@ export async function registrieren({ email, passwort, vorname, nachname, firma, 
       vonAdmin: true,
       system: true,
       text: "Willkommen im Portal von ÖkoInvest. Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link, den wir Ihnen gesendet haben – danach ordnen wir frühere Anfragen mit dieser Adresse automatisch Ihrem Konto zu.",
+      melden: "ohneMail",
     });
     return { nutzer: ohneGeheimnis(u), vorgangVerknuepft: verknuepft };
   });
@@ -267,7 +388,13 @@ export async function passwortVergessen({ email, basisUrl, ip }) {
     const u = db.nutzer.find((x) => x.email === e && x.aktiv);
     if (!u) return;
     const token = tokenAnlegen(db, "reset", u.id, 1);
-    linkZuDemo(db, "reset", e, `${basisUrl}/passwort-vergessen?token=${token}`);
+    const link = `${basisUrl}/passwort-vergessen?token=${token}`;
+    linkZuDemo(db, "reset", e, link);
+    postausgangAnlegen(db, {
+      an: e, anName: [u.vorname, u.nachname].filter(Boolean).join(" "), nutzerId: u.id, art: "passwort", betreff: "Neues Passwort festlegen – ÖkoInvest",
+      text: "Sie haben ein neues Passwort für Ihr Konto im Portal von ÖkoInvest angefordert. Über den folgenden Link legen Sie es fest. Der Link ist eine Stunde gültig und kann nur einmal verwendet werden.",
+      link, linkText: "Neues Passwort festlegen", hinweis: "Sie haben kein neues Passwort angefordert? Dann ignorieren Sie diese E-Mail – Ihr bisheriges Passwort bleibt gültig.",
+    });
     protokoll(db, u, "passwort_vergessen", "nutzer", u.id, "Passwort-Link angefordert", ip);
   });
   return { ok: true };
@@ -337,10 +464,12 @@ export async function suchprofilSpeichern(n, p) {
     ticketMin: v.zahl(p?.ticketMin, { min: 0, max: 1e10 }),
     ticketMax: v.zahl(p?.ticketMax, { min: 0, max: 1e10 }),
     benachrichtigen: v.wahr(p?.benachrichtigen),
+    schwelle: v.zahl(p?.schwelle, { min: SUCHPROFIL_SCHWELLE.min, max: SUCHPROFIL_SCHWELLE.max, stellen: 0 }) ?? SUCHPROFIL_SCHWELLE.standard,
   };
   if (profil.mwpMin !== null && profil.mwpMax !== null) v.pflicht(profil.mwpMin <= profil.mwpMax, "MWp: Minimum größer als Maximum.");
   if (profil.ticketMin !== null && profil.ticketMax !== null) v.pflicht(profil.ticketMin <= profil.ticketMax, "Ticket: Minimum größer als Maximum.");
   return aendern((db) => {
+    if (org.teamSuchprofilSetzen(db, n, profil)) return profil; // aktive Organisation → Team-Suchprofil
     const u = nutzerById(db, n.id);
     u.suchprofil = profil;
     protokoll(db, u, "suchprofil", "nutzer", u.id, "Suchprofil gespeichert");
@@ -403,7 +532,7 @@ export async function anfrageAnlegen({ typ, kontakt, daten, herkunft, ip, einwil
         gemarkung: "",
         flurstuecke: [],
         ha: haWert,
-        nutzung: v.auswahl(d.nutzung, FLAECHE_NUTZUNG, "acker"),
+        nutzung: d.art === "dach" ? "dach" : v.auswahl(d.nutzung, FLAECHE_NUTZUNG, "acker"), // /dachflaeche-verpachten sendet daten.art = "dach"
         agri: t === "agri",
         eigentum: "eigentum",
         hinweise: v.mehrzeilig(d.nachricht, 2000),
@@ -420,6 +549,10 @@ export async function anfrageAnlegen({ typ, kontakt, daten, herkunft, ip, einwil
     }
     db.vorgaenge.push(vg);
     protokoll(db, u, "anfrage", "vorgang", vg.id, `Anfrage ${VORGANG_TYPEN[t]} von ${k.email}`, ip);
+    backofficeEreignis(db, { typ: "vorgang_neu", art: "vorgang", objekt: vg }); // CRM-Lead + Automationen
+    for (const a of aktiveAdmins(db)) {
+      benachrichtigen(db, a, { art: "anfrage", titel: `Neue Anfrage: ${VORGANG_TYPEN[t]}`, text: `${k.vorname} ${k.nachname}${k.firma ? ` · ${k.firma}` : ""} · ${vg.id}`, link: `/portal/admin/vorgaenge/${vg.id}`, objektArt: "vorgang", objektId: vg.id });
+    }
     return { id: vg.id, vorgang: { id: vg.id, typ: vg.typ, status: vg.status, flaecheId: vg.flaecheId } };
   });
 }
@@ -499,8 +632,10 @@ function flaecheDaten(daten, basis = {}) {
 }
 
 function flaecheAusgabe(db, f, n) {
-  const out = { ...f, zustaendig: kurz(nutzerById(db, f.zustaendigId)), dokumente: db.dokumente.filter((d) => d.bezugArt === "flaeche" && d.bezugId === f.id).length };
+  const doks = db.dokumente.filter((d) => d.bezugArt === "flaeche" && d.bezugId === f.id);
+  const out = { ...f, zustaendig: kurz(nutzerById(db, f.zustaendigId)), dokumente: doks.length, checkliste: checklisteFlaeche(f, doks) };
   if (istAdmin(n)) out.eigentuemer = kurz(nutzerById(db, f.nutzerId));
+  Object.assign(out, org.zugriffInfo(db, n, f, f.nutzerId)); // organisation, meinZugriff
   return out;
 }
 
@@ -508,7 +643,7 @@ export async function flaechen(n, { alle = false, status } = {}) {
   if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
   if (alle) adminNoetig(n);
   const db = await lesen();
-  let liste = alle ? db.flaechen : db.flaechen.filter((f) => f.nutzerId === n.id);
+  let liste = alle ? db.flaechen : db.flaechen.filter(org.listenFilter(db, n, "nutzerId")); // eigene bzw. der aktiven Organisation
   if (status) liste = liste.filter((f) => f.status === status);
   return liste.sort(nachDatum()).map((f) => flaecheAusgabe(db, f, n));
 }
@@ -518,7 +653,7 @@ export async function flaeche(n, id) {
   const db = await lesen();
   const f = objekt(db, "flaeche", id);
   if (!f) throw nichtGefunden("Fläche nicht gefunden.");
-  if (!istAdmin(n) && f.nutzerId !== n.id) throw verboten();
+  if (!istAdmin(n) && f.nutzerId !== n.id && !org.darfTeamLesenObjekt(db, n, f)) throw verboten();
   return flaecheAusgabe(db, f, n);
 }
 
@@ -530,6 +665,7 @@ export async function flaecheAnlegen(n, daten, { ip } = {}) {
     const f = {
       id: neueId("F"),
       nutzerId: n.id,
+      organisationId: org.organisationFuerNeu(db, n), // aktive Organisation (Rolle ≥ Mitglied) oder null
       vorgangId: null,
       ...d,
       status: "entwurf",
@@ -558,12 +694,13 @@ export async function flaecheAendern(n, id, daten) {
     const f = objekt(db, "flaeche", id);
     if (!f) throw nichtGefunden("Fläche nicht gefunden.");
     const admin = istAdmin(n);
-    if (!admin && f.nutzerId !== n.id) throw verboten();
+    if (!admin && f.nutzerId !== n.id && !org.darfTeamSchreibenObjekt(db, n, f)) throw verboten();
     if (!admin && !["entwurf", "eingegangen"].includes(f.status)) throw konflikt("Die Fläche ist bereits in Bearbeitung – Änderungen bitte per Nachricht mitteilen.");
     const d = flaecheDaten(daten || {}, f);
     v.pflicht(d.bezeichnung, "Bitte geben Sie eine Bezeichnung an.");
+    const felder = geaenderteFelder(f, d, FELD_NAMEN_FLAECHE);
     Object.assign(f, d, { geaendertAm: jetzt() });
-    protokoll(db, n, "aendern", "flaeche", f.id, "Fläche bearbeitet");
+    protokoll(db, n, "aendern", "flaeche", f.id, felder.length ? `Fläche bearbeitet: ${felder.join(", ")}` : "Fläche gespeichert (ohne Änderung)");
     return flaecheAusgabe(db, f, n);
   });
 }
@@ -617,13 +754,17 @@ function projektStatistik(db, p) {
   };
 }
 
+const projektDokumente = (db, p) => db.dokumente.filter((d) => d.bezugArt === "projekt" && d.bezugId === p.id);
+
 function projektAusgabe(db, p, n) {
-  const out = { ...p, statistik: projektStatistik(db, p), dokumente: db.dokumente.filter((d) => d.bezugArt === "projekt" && d.bezugId === p.id).length };
+  const doks = projektDokumente(db, p);
+  const out = { ...p, statistik: projektStatistik(db, p), dokumente: doks.length, checkliste: checklisteProjekt(p, doks) };
   out.provision = db.provisionen.find((x) => x.projektId === p.id) || null;
   if (istAdmin(n)) {
     out.anbieter = kurz(nutzerById(db, p.anbieterId));
     out.zustaendig = kurz(nutzerById(db, p.zustaendigId));
   }
+  Object.assign(out, org.zugriffInfo(db, n, p, p.anbieterId)); // organisation, meinZugriff
   return out;
 }
 
@@ -632,7 +773,7 @@ export async function projekte(n, { alle = false, status } = {}) {
   if (alle) adminNoetig(n);
   else rolleNoetig(n, ["anbieter"], "Nur für Projektanbieter.");
   const db = await lesen();
-  let liste = alle ? db.projekte : db.projekte.filter((p) => p.anbieterId === n.id);
+  let liste = alle ? db.projekte : db.projekte.filter(org.listenFilter(db, n, "anbieterId")); // eigene bzw. der aktiven Organisation
   if (status) liste = liste.filter((p) => p.status === status);
   return liste.sort(nachDatum()).map((p) => projektAusgabe(db, p, n));
 }
@@ -642,7 +783,7 @@ export async function projekt(n, id) {
   const db = await lesen();
   const p = objekt(db, "projekt", id);
   if (!p) throw nichtGefunden("Projekt nicht gefunden.");
-  if (!istAdmin(n) && p.anbieterId !== n.id) throw verboten();
+  if (!istAdmin(n) && p.anbieterId !== n.id && !org.darfTeamLesenObjekt(db, n, p)) throw verboten();
   return projektAusgabe(db, p, n);
 }
 
@@ -655,6 +796,7 @@ export async function projektAnlegen(n, daten, { ip } = {}) {
       id: neueId("P"),
       slug: "",
       anbieterId: n.id,
+      organisationId: org.organisationFuerNeu(db, n), // aktive Organisation (Rolle ≥ Mitglied) oder null
       ...d,
       status: "entwurf",
       statusVerlauf: [verlaufEintrag("entwurf", n, "eigentuemer", "")],
@@ -680,13 +822,14 @@ export async function projektAendern(n, id, daten) {
     const p = objekt(db, "projekt", id);
     if (!p) throw nichtGefunden("Projekt nicht gefunden.");
     const admin = istAdmin(n);
-    if (!admin && p.anbieterId !== n.id) throw verboten();
+    if (!admin && p.anbieterId !== n.id && !org.darfTeamSchreibenObjekt(db, n, p)) throw verboten();
     if (!admin && p.status !== "entwurf") throw konflikt("Nur Entwürfe können bearbeitet werden. Nehmen Sie das Projekt ggf. zuerst von der Börse bzw. ziehen Sie die Einreichung zurück.");
     const d = projektDaten(daten || {}, p);
     v.pflicht(d.titel, "Bitte geben Sie einen Projekttitel an.");
+    const felder = geaenderteFelder(p, d, FELD_NAMEN_PROJEKT);
     Object.assign(p, d, { geaendertAm: jetzt() });
     if (!p.veroeffentlichtAm) p.slug = `${slugify(p.titel)}-${p.id.slice(-4).toLowerCase()}`;
-    protokoll(db, n, "aendern", "projekt", p.id, "Projekt bearbeitet");
+    protokoll(db, n, "aendern", "projekt", p.id, felder.length ? `Projekt bearbeitet: ${felder.join(", ")}` : "Projekt gespeichert (ohne Änderung)");
     return projektAusgabe(db, p, n);
   });
 }
@@ -696,7 +839,7 @@ export async function provisionAkzeptieren(n, id, { ip } = {}) {
   return aendern((db) => {
     const p = objekt(db, "projekt", id);
     if (!p) throw nichtGefunden("Projekt nicht gefunden.");
-    if (p.anbieterId !== n.id) throw verboten("Nur der Anbieter kann die Provisionsvereinbarung akzeptieren.");
+    if (p.anbieterId !== n.id && !org.darfTeamVerwaltenObjekt(db, n, p)) throw verboten("Nur der Anbieter (bzw. Admin/Inhaber der Organisation) kann die Provisionsvereinbarung akzeptieren.");
     p.provisionAkzeptiert = { am: jetzt(), ip: ip || "", version: "2026-09", text: PROVISION.verkaeufer.text };
     p.geaendertAm = jetzt();
     protokoll(db, n, "provision_akzeptiert", "projekt", p.id, "Provisionsvereinbarung akzeptiert", ip);
@@ -708,10 +851,11 @@ export async function provisionAkzeptieren(n, id, { ip } = {}) {
 
 function boerseEintrag(db, p, n) {
   const o = projektOeffentlich(p);
+  o.datenraumQualitaet = checklisteProjekt(p, projektDokumente(db, p)).quote;
   if (n && hatRolle(n, ["investor"])) {
-    const i = db.interessen.find((x) => x.projektId === p.id && x.investorId === n.id);
+    const i = org.interesseFuer(db, n, p.id); // eigenes bzw. Interesse der aktiven Organisation
     o.meinInteresse = i ? { id: i.id, status: i.status, gemerkt: i.gemerkt } : null;
-    const profil = nutzerById(db, n.id)?.suchprofil;
+    const profil = org.suchprofilFuer(db, n); // Konto- bzw. Team-Suchprofil
     if (profil) o.matching = matching(p, profil);
   }
   return o;
@@ -750,7 +894,7 @@ export async function boerseDetail(n, schluessel, { zaehlen = false } = {}) {
   let db = await lesen();
   let p = finden(db);
   if (!p) throw nichtGefunden("Projekt nicht gefunden.");
-  const eigentuemer = n && p.anbieterId === n.id;
+  const eigentuemer = n && (p.anbieterId === n.id || org.darfTeamLesenObjekt(db, n, p)); // auch Team des Anbieters
   const admin = istAdmin(n);
   if (!BOERSE_STATUS.includes(p.status) && !eigentuemer && !admin) throw nichtGefunden("Projekt nicht gefunden.");
 
@@ -758,19 +902,20 @@ export async function boerseDetail(n, schluessel, { zaehlen = false } = {}) {
     await aendern((d) => {
       const x = finden(d);
       if (x) x.aufrufe = (x.aufrufe || 0) + 1;
+      if (x) aufrufVerlaufZaehlen(d, x.id); // Deal-Room-Cockpit: Aufrufe über Zeit
     });
     db = await lesen();
     p = finden(db);
   }
 
-  const interesse = n ? db.interessen.find((i) => i.projektId === p.id && i.investorId === n.id) || null : null;
+  const interesse = n ? org.interesseFuer(db, n, p.id) : null; // eigenes bzw. Interesse der aktiven Organisation
   const ndaFrei = interesse && DATENRAUM_STATUS.includes(interesse.status);
   const zugriff = admin ? "admin" : eigentuemer ? "eigentuemer" : ndaFrei ? "nda" : "oeffentlich";
   const out = { projekt: boerseEintrag(db, p, n), zugriff, interesse, vertraulich: null, dokumente: [] };
   if (zugriff !== "oeffentlich") {
     out.vertraulich = projektVertraulich(p);
     out.dokumente = db.dokumente
-      .filter((d) => d.bezugArt === "projekt" && d.bezugId === p.id && (zugriff !== "nda" || d.kategorie === "datenraum"))
+      .filter((d) => d.bezugArt === "projekt" && d.bezugId === p.id && (zugriff !== "nda" || (d.kategorie === "datenraum" && datenraumStufeOk(db, d, interesse))))
       .map(dokumentMeta);
   }
   return out;
@@ -783,10 +928,12 @@ export async function merken(n, projektId, an = true) {
   return aendern((db) => {
     const p = objekt(db, "projekt", projektId);
     if (!p || !BOERSE_STATUS.includes(p.status)) throw nichtGefunden("Projekt nicht gefunden.");
-    let i = db.interessen.find((x) => x.projektId === p.id && x.investorId === n.id);
+    let i = org.interesseFuer(db, n, p.id); // eigenes bzw. Interesse der aktiven Organisation
+    if (i && i.investorId !== n.id && !org.darfTeamSchreibenObjekt(db, n, i)) throw verboten("Mit der Rolle „Nur lesen“ können Sie die Merkliste des Teams nicht ändern.");
     if (!i) {
       if (!an) return null;
       i = neuesInteresse(n, p);
+      i.organisationId = org.organisationFuerNeu(db, n);
       db.interessen.push(i);
     }
     i.gemerkt = !!an;
@@ -818,9 +965,11 @@ export async function ndaAnfragen(n, projektId, { akzeptiert, ip, userAgent } = 
     const p = objekt(db, "projekt", projektId);
     if (!p || !BOERSE_STATUS.includes(p.status)) throw nichtGefunden("Projekt nicht gefunden.");
     if (p.anbieterId === n.id) throw konflikt("Für eigene Projekte ist keine NDA nötig.");
-    let i = db.interessen.find((x) => x.projektId === p.id && x.investorId === n.id);
+    let i = org.interesseFuer(db, n, p.id); // eigenes bzw. Interesse der aktiven Organisation
+    if (i && i.investorId !== n.id && !org.darfTeamSchreibenObjekt(db, n, i)) throw verboten("Mit der Rolle „Nur lesen“ können Sie keine NDA für das Team anfragen.");
     if (!i) {
       i = neuesInteresse(n, p);
+      i.organisationId = org.organisationFuerNeu(db, n);
       db.interessen.push(i);
     }
     if (i.status !== "gemerkt") return i; // bereits angefragt – idempotent
@@ -841,6 +990,7 @@ function interesseAusgabe(db, i, n) {
     out.investor = kurz(nutzerById(db, i.investorId));
     out.anbieter = p ? kurz(nutzerById(db, p.anbieterId)) : null;
   } else if (out.nda) out.nda = { ...out.nda, ip: undefined, userAgent: undefined };
+  Object.assign(out, org.zugriffInfo(db, n, i, i.investorId)); // organisation, meinZugriff
   return out;
 }
 
@@ -848,7 +998,7 @@ export async function interessen(n, { alle = false, status, projektId } = {}) {
   if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
   if (alle) adminNoetig(n);
   const db = await lesen();
-  let liste = alle ? db.interessen : db.interessen.filter((i) => i.investorId === n.id);
+  let liste = alle ? db.interessen : db.interessen.filter(org.listenFilter(db, n, "investorId")); // eigene bzw. der aktiven Organisation
   if (status) {
     const st = Array.isArray(status) ? status : [status];
     liste = liste.filter((i) => st.includes(i.status));
@@ -924,12 +1074,7 @@ function uebergangAnwenden(db, n, art, o, nach, als, extra = {}, ip = "") {
 
   // Neu veröffentlicht → Investoren mit passendem Suchprofil benachrichtigen
   if (art === "projekt" && nach === "veroeffentlicht") {
-    for (const inv of db.nutzer.filter((x) => x.aktiv && x.rollen.includes("investor") && x.suchprofil?.benachrichtigen && x.id !== o.anbieterId)) {
-      const m = matching(o, inv.suchprofil);
-      if (m.score >= 70) {
-        nachricht(db, { bezugArt: "nutzer", bezugId: inv.id, vonAdmin: true, system: true, text: `Neues Projekt passend zu Ihrem Suchprofil (${m.score} % Passung): ${o.titel}. Zum Exposé: /portal/boerse/${o.id}` });
-      }
-    }
+    suchprofilAlarm(db, o);
   }
 
   // LOI angenommen → Projekt reserviert
@@ -940,16 +1085,46 @@ function uebergangAnwenden(db, n, art, o, nach, als, extra = {}, ip = "") {
 
   if (art !== "provision") {
     const text = `Status: „${statusLabel(art, von)}“ → „${statusLabel(art, nach)}“.${kommentar ? ` ${kommentar}` : ""}`;
-    const m = nachricht(db, { bezugArt: art, bezugId: o.id, vonId: n?.id, vonAdmin: als === "admin", system: true, text });
-    if (als === "eigentuemer") {
-      m.gelesenNutzer = true;
-      m.gelesenAdmin = false;
-    }
+    const eigen = als === "eigentuemer";
+    nachricht(db, { bezugArt: art, bezugId: o.id, vonId: n?.id, vonAdmin: als === "admin", system: true, text, ...(eigen ? { gelesenNutzer: true, gelesenAdmin: false } : {}) });
   }
   if (provision) {
     protokoll(db, n, "provision", "provision", provision.id, `Provision ${provision.betrag} € (${provision.satz * 100} %) für ${o.id}`, ip);
   }
   protokoll(db, n, "status", art, o.id, `${statusLabel(art, von)} → ${statusLabel(art, nach)}`, ip);
+  backofficeEreignis(db, { typ: "status", art, objekt: o, von, nach }); // Automationen
+}
+
+/**
+ * Suchprofil-Alarm: Projekt neu veröffentlicht → Investoren mit `suchprofil.benachrichtigen` und
+ * Matching-Score ≥ eigener Schwelle (Standard 70) erhalten Nachricht, Benachrichtigung und – je nach
+ * Einstellung – eine E-Mail (nur öffentlicher Titel und Passung, keine vertraulichen Angaben).
+ */
+function suchprofilAlarm(db, o) {
+  for (const inv of db.nutzer.filter((x) => x.aktiv && x.rollen.includes("investor") && x.suchprofil?.benachrichtigen && x.id !== o.anbieterId)) {
+    const m = matching(o, inv.suchprofil);
+    const schwelle = Number(inv.suchprofil.schwelle) || SUCHPROFIL_SCHWELLE.standard;
+    if (m.score < schwelle) continue;
+    nachricht(db, { bezugArt: "nutzer", bezugId: inv.id, vonAdmin: true, system: true, text: `Neues Projekt passend zu Ihrem Suchprofil (${m.score} % Passung): ${o.titel}. Zum Exposé: /portal/boerse/${o.id}`, melden: false });
+    benachrichtigen(
+      db,
+      inv,
+      { art: "suchprofil", titel: `Passendes Projekt: ${o.titel}`, text: `${m.score} % Passung${m.gruende.length ? ` · ${m.gruende.join(", ")}` : ""}`, link: `/portal/boerse/${o.id}`, objektArt: "projekt", objektId: o.id },
+      { mailText: `In der Projektbörse wurde ein Projekt veröffentlicht, das zu Ihrem Suchprofil passt (${m.score} % Passung): „${o.titel}“. Vertrauliche Angaben und Datenraum sehen Sie nach Klick-NDA im Portal.` }
+    );
+    protokoll(db, null, "suchprofil_treffer", "projekt", o.id, `Suchprofil-Treffer für ${inv.email} (${m.score} %)`);
+    backofficeEreignis(db, { typ: "suchprofil", art: "projekt", objekt: o, extra: { score: m.score, investorId: inv.id } }); // Automationen
+  }
+  // Team-Suchprofile der Organisationen (je Person höchstens ein Alarm)
+  const bereits = new Set(db.nutzer.filter((x) => x.aktiv && x.rollen.includes("investor") && x.suchprofil?.benachrichtigen && matching(o, x.suchprofil).score >= (Number(x.suchprofil.schwelle) || SUCHPROFIL_SCHWELLE.standard)).map((x) => x.id));
+  org.organisationsAlarm(db, o, {
+    matching, schwelleStandard: SUCHPROFIL_SCHWELLE.standard, bereits,
+    melden: (u, m, team) => {
+      benachrichtigen(db, u, { art: "suchprofil", titel: `Passendes Projekt: ${o.titel}`, text: `${m.score} % Passung (Team ${team.name})`, link: `/portal/boerse/${o.id}`, objektArt: "projekt", objektId: o.id },
+        { mailText: `In der Projektbörse wurde ein Projekt veröffentlicht, das zum Suchprofil Ihres Teams „${team.name}“ passt (${m.score} % Passung): „${o.titel}“.` });
+      protokoll(db, null, "suchprofil_treffer", "projekt", o.id, `Team-Suchprofil-Treffer für ${u.email} (${m.score} %, ${team.name})`);
+    },
+  });
 }
 
 function systemWechsel(db, art, o, nach, kommentar) {
@@ -961,6 +1136,7 @@ function systemWechsel(db, art, o, nach, kommentar) {
   o.geaendertAm = jetzt();
   if (art === "interesse" && nach === "abgelehnt") o.ablehnGrund = kommentar;
   nachricht(db, { bezugArt: art, bezugId: o.id, vonAdmin: true, system: true, text: `Status: „${statusLabel(art, von)}“ → „${statusLabel(art, nach)}“. ${kommentar}` });
+  backofficeEreignis(db, { typ: "status", art, objekt: o, von, nach }); // Automationen
 }
 
 export async function statusWechsel(n, { art, id, nach, als, extra = {}, ip = "" }) {
@@ -971,7 +1147,7 @@ export async function statusWechsel(n, { art, id, nach, als, extra = {}, ip = ""
   return aendern((db) => {
     const o = objekt(db, art, id);
     if (!o) throw nichtGefunden();
-    if (als === "eigentuemer" && besitzer(db, art, o) !== n.id) throw verboten();
+    if (als === "eigentuemer" && besitzer(db, art, o) !== n.id && !org.darfTeamSchreibenObjekt(db, n, o)) throw verboten();
     if (art === "interesse" && nach === "nda_angefragt") throw ungueltig("Bitte nutzen Sie die NDA-Anfrage im Projekt.");
     const p = pruefeUebergang(art, o, nach, als, extra || {});
     if (!p.ok) throw new PlattformFehler(p.status, p.fehler);
@@ -1024,7 +1200,7 @@ export async function nachrichtenThreads(n, { nurUngelesen = false } = {}) {
     const [art, id] = key.split(":");
     const o = bezugObjekt(db, art, id);
     if (!o) continue;
-    const eigen = besitzer(db, art, o) === n.id;
+    const eigen = besitzer(db, art, o) === n.id || org.darfTeamLesenObjekt(db, n, o); // auch Threads der eigenen Teams
     if (!admin && !eigen) continue;
     const info = threadInfo(db, art, id, n);
     const sortiert = liste.sort((a, b) => a.am.localeCompare(b.am));
@@ -1044,10 +1220,13 @@ export async function nachrichten(n, bezugArt, bezugId, { markieren = true } = {
   const alsAdmin = istAdmin(n) && !eigen;
   const liste = db.nachrichten.filter((m) => m.bezugArt === bezugArt && m.bezugId === bezugId).sort((a, b) => a.am.localeCompare(b.am));
   const offen = liste.filter((m) => (alsAdmin ? !m.gelesenAdmin : !m.gelesenNutzer));
-  if (markieren && offen.length) {
+  const hinweise = (db.benachrichtigungen || []).filter((b) => b.nutzerId === n.id && !b.gelesen && b.objektArt === bezugArt && b.objektId === bezugId && ["status", "nachricht", "nda"].includes(b.art));
+  if (markieren && (offen.length || hinweise.length)) {
     await aendern((d) => {
       const ids = new Set(offen.map((m) => m.id));
       for (const m of d.nachrichten) if (ids.has(m.id)) m[alsAdmin ? "gelesenAdmin" : "gelesenNutzer"] = true;
+      const bIds = new Set(hinweise.map((b) => b.id));
+      for (const b of d.benachrichtigungen || []) if (bIds.has(b.id)) b.gelesen = true;
     });
   }
   return {
@@ -1072,14 +1251,10 @@ export async function nachrichtSenden(n, { bezugArt, bezugId, text }) {
   const t = v.mehrzeilig(text, 5000);
   v.pflicht(t.length >= 2, "Bitte geben Sie eine Nachricht ein.");
   return aendern((db) => {
-    const o = darfBezug(db, n, bezugArt, bezugId);
+    const o = darfBezug(db, n, bezugArt, bezugId, { schreiben: true });
     const eigen = besitzer(db, bezugArt, o) === n.id;
     const alsAdmin = istAdmin(n) && !eigen;
-    const m = nachricht(db, { bezugArt, bezugId, vonId: n.id, vonAdmin: alsAdmin, text: t });
-    if (alsAdmin) {
-      m.gelesenAdmin = true;
-      m.gelesenNutzer = false;
-    }
+    const m = nachricht(db, { bezugArt, bezugId, vonId: n.id, vonAdmin: alsAdmin, text: t, gelesenAdmin: alsAdmin, gelesenNutzer: !alsAdmin });
     protokoll(db, n, "nachricht", bezugArt, bezugId, "Nachricht gesendet");
     return { id: m.id, am: m.am };
   });
@@ -1088,7 +1263,7 @@ export async function nachrichtSenden(n, { bezugArt, bezugId, text }) {
 // ================================================================ Dokumente
 
 function dokumentMeta(d) {
-  return { id: d.id, bezugArt: d.bezugArt, bezugId: d.bezugId, name: d.name, mime: d.mime, groesse: d.groesse, kategorie: d.kategorie, am: d.am, hochgeladenVon: d.hochgeladenVon };
+  return { id: d.id, bezugArt: d.bezugArt, bezugId: d.bezugId, name: d.name, mime: d.mime, groesse: d.groesse, kategorie: d.kategorie, checkliste: d.checkliste || "", am: d.am, hochgeladenVon: d.hochgeladenVon };
 }
 
 /** Darf n dieses Dokument sehen? */
@@ -1097,10 +1272,11 @@ function darfDokument(db, n, d) {
   if (d.hochgeladenVon === n.id) return true;
   const o = bezugObjekt(db, d.bezugArt, d.bezugId);
   if (!o) return false;
-  if (besitzer(db, d.bezugArt, o) === n.id) return true;
+  if (besitzer(db, d.bezugArt, o) === n.id || org.darfTeamLesenObjekt(db, n, o)) return true; // auch Team des Eigentümers
   if (d.bezugArt === "projekt" && d.kategorie === "datenraum" && BOERSE_STATUS.concat(["verkauft"]).includes(o.status)) {
-    const i = db.interessen.find((x) => x.projektId === o.id && x.investorId === n.id);
-    return !!i && DATENRAUM_STATUS.includes(i.status);
+    // eigenes Interesse oder – im Team – das Interesse der Organisation mit freigegebenem Datenraum
+    const i = db.interessen.find((x) => x.projektId === o.id && DATENRAUM_STATUS.includes(x.status) && (x.investorId === n.id || org.darfTeamLesenObjekt(db, n, x))) || db.interessen.find((x) => x.projektId === o.id && x.investorId === n.id);
+    return !!i && DATENRAUM_STATUS.includes(i.status) && datenraumStufeOk(db, d, i); // Deal-Room: Stufe 2 erst nach LOI
   }
   return false;
 }
@@ -1112,7 +1288,9 @@ export async function dokumente(n, { bezugArt, bezugId } = {}) {
   if (bezugArt) liste = liste.filter((d) => d.bezugArt === bezugArt && d.bezugId === bezugId);
   else if (!istAdmin(n)) {
     // Übersicht: nur Dokumente an eigenen Objekten bzw. eigene Uploads (kein Datenraum fremder Projekte)
-    liste = liste.filter((d) => d.hochgeladenVon === n.id || besitzer(db, d.bezugArt, bezugObjekt(db, d.bezugArt, d.bezugId)) === n.id);
+    // Im Organisationskontext zusätzlich die Dokumente an Objekten der aktiven Organisation
+    const aktivOrg = org.aktiveOrganisation(db, n);
+    liste = liste.filter((d) => d.hochgeladenVon === n.id || besitzer(db, d.bezugArt, bezugObjekt(db, d.bezugArt, d.bezugId)) === n.id || (aktivOrg && bezugObjekt(db, d.bezugArt, d.bezugId)?.organisationId === aktivOrg));
   }
   return liste
     .filter((d) => darfDokument(db, n, d))
@@ -1133,30 +1311,29 @@ export async function dokumentLesen(n, id) {
   return { meta: dokumentMeta(d), daten };
 }
 
-export async function dokumentSpeichern(n, { bezugArt, bezugId, name: dateiname, mime, daten, kategorie }) {
+export async function dokumentSpeichern(n, { bezugArt, bezugId, name: dateiname, mime, daten, kategorie, checkliste }) {
   if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
   if (!UPLOAD.typen[mime]) throw new PlattformFehler(415, "Erlaubt sind PDF, JPG und PNG.");
   if (!daten?.length || daten.length > UPLOAD.maxBytes) throw new PlattformFehler(413, "Die Datei ist leer oder größer als 10 MB.");
   const kat = v.auswahl(kategorie, DOKUMENT_KATEGORIEN, "allgemein");
   if (kat === "datenraum" && bezugArt !== "projekt") throw ungueltig("Datenraum-Dokumente gehören zu einem Projekt.");
+  const punkt = v.auswahl(checkliste, CHECKLISTE_IDS[bezugArt] || [], "");
   const sauber = v.text(dateiname, 120).replace(/[\\/:*?"<>|]/g, "_") || `dokument.${UPLOAD.typen[mime]}`;
   const datei = `${neueId("D")}-${sha256(Math.random() + sauber).slice(0, 16)}.${UPLOAD.typen[mime]}`;
   // Rechte vor dem Schreiben der Datei prüfen
   const db0 = await lesen();
-  darfBezug(db0, n, bezugArt, bezugId);
+  darfBezug(db0, n, bezugArt, bezugId, { schreiben: true });
   await uploadSchreiben(datei, daten);
   try {
     return await aendern((db) => {
-      const o = darfBezug(db, n, bezugArt, bezugId);
+      const o = darfBezug(db, n, bezugArt, bezugId, { schreiben: true });
       const eigen = besitzer(db, bezugArt, o) === n.id;
-      const d = { id: neueId("D"), bezugArt, bezugId, name: sauber, mime, groesse: daten.length, datei, kategorie: kat, hochgeladenVon: n.id, am: jetzt(), sha256: sha256(daten) };
+      const d = { id: neueId("D"), bezugArt, bezugId, name: sauber, mime, groesse: daten.length, datei, kategorie: kat, checkliste: punkt, hochgeladenVon: n.id, am: jetzt(), sha256: sha256(daten) };
       db.dokumente.push(d);
-      const m = nachricht(db, { bezugArt, bezugId, vonId: n.id, vonAdmin: istAdmin(n) && !eigen, system: true, text: `Dokument hochgeladen: ${sauber}` });
-      if (!(istAdmin(n) && !eigen)) {
-        m.gelesenNutzer = true;
-        m.gelesenAdmin = false;
-      }
+      const alsAdmin = istAdmin(n) && !eigen;
+      nachricht(db, { bezugArt, bezugId, vonId: n.id, vonAdmin: alsAdmin, system: true, text: `Dokument hochgeladen: ${sauber}`, ereignis: "nachricht", ...(alsAdmin ? {} : { gelesenNutzer: true, gelesenAdmin: false }) });
       protokoll(db, n, "upload", bezugArt, bezugId, `Dokument ${sauber} (${d.groesse} B)`);
+      backofficeEreignis(db, { typ: "dokument", art: bezugArt, objekt: o, extra: { kategorie: kat } }); // Automationen
       return dokumentMeta(d);
     });
   } catch (e) {
@@ -1249,11 +1426,12 @@ export async function provisionen(n) {
     .map((pv) => ({ ...pv, projekt: projektOeffentlich(objekt(db, "projekt", pv.projektId)), anbieter: kurz(nutzerById(db, pv.anbieterId)), investor: kurz(nutzerById(db, pv.investorId)) }));
 }
 
-export async function aktivitaeten(n, { limit = 100, objektId } = {}) {
+export async function aktivitaeten(n, { limit = 100, objektId, objektIds } = {}) {
   adminNoetig(n);
   const db = await lesen();
   let liste = db.aktivitaeten;
-  if (objektId) liste = liste.filter((a) => a.objektId === objektId);
+  const ids = new Set([objektId, ...(Array.isArray(objektIds) ? objektIds.slice(0, 50) : [])].filter(Boolean).map(String));
+  if (ids.size) liste = liste.filter((a) => ids.has(a.objektId));
   return liste
     .slice(-Math.min(500, limit))
     .reverse()
@@ -1323,5 +1501,294 @@ export async function adminUebersicht(n) {
     },
     nutzer: { gesamt: db.nutzer.length, rollen: db.nutzer.reduce((acc, u) => (u.rollen.forEach((r) => (acc[r] = (acc[r] || 0) + 1)), acc), {}) },
     nachrichten: { ungelesen: ungelesenAdmin },
+    aufgaben: aufgabenKennzahlen(db, n),
   };
 }
+
+// ================================================================ Benachrichtigungen (Glocke)
+
+const TZ = "Europe/Vienna";
+/** Heutiges Datum (JJJJ-MM-TT) in der Zeitzone des Backoffice */
+const heute = () => new Date().toLocaleDateString("sv-SE", { timeZone: TZ });
+const datumDe = (tag) => String(tag || "").split("-").reverse().join(".");
+
+/** Fällige Wiedervorlagen einmalig als Benachrichtigung melden (Frappe: täglicher Scheduler) */
+function wiedervorlagenMelden(db, u) {
+  const t = heute();
+  let neu = 0;
+  for (const a of db.aufgaben || []) {
+    if (a.status !== "offen" || a.zustaendigId !== u.id || !a.faelligAm || a.faelligAm > t || a.erinnertAm) continue;
+    a.erinnertAm = jetzt();
+    const info = a.bezugArt ? threadInfo(db, a.bezugArt, a.bezugId, u) : null;
+    benachrichtigen(db, u, { art: "aufgabe", titel: `Wiedervorlage fällig: ${a.titel}`, text: `Fällig am ${datumDe(a.faelligAm)}${info ? ` · ${info.titel}` : ""}`, link: "/portal/admin/aufgaben?ansicht=meine", objektArt: a.bezugArt || "aufgabe", objektId: a.bezugId || a.id });
+    neu++;
+  }
+  return neu;
+}
+
+export async function benachrichtigungen(n, { nurUngelesen = false, limit = 50 } = {}) {
+  if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
+  let db = await lesen();
+  if (istAdmin(n) && (db.aufgaben || []).some((a) => a.status === "offen" && a.zustaendigId === n.id && a.faelligAm && a.faelligAm <= heute() && !a.erinnertAm)) {
+    await aendern((d) => wiedervorlagenMelden(d, nutzerById(d, n.id)));
+    db = await lesen();
+  }
+  const eigene = (db.benachrichtigungen || []).filter((b) => b.nutzerId === n.id).sort((a, b) => b.am.localeCompare(a.am));
+  const liste = nurUngelesen ? eigene.filter((b) => !b.gelesen) : eigene;
+  const u = nutzerById(db, n.id);
+  return {
+    eintraege: liste.slice(0, Math.min(200, Math.max(1, Number(limit) || 50))),
+    ungelesen: eigene.filter((b) => !b.gelesen).length,
+    gesamt: eigene.length,
+    einstellungen: { ...mailEinstellungenStandard(), ...(u?.mailEinstellungen || {}) },
+  };
+}
+
+export async function benachrichtigungenGelesen(n, { ids, alle = false } = {}) {
+  if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
+  const auswahl = new Set(Array.isArray(ids) ? ids.slice(0, 200).map(v.kennung).filter(Boolean) : []);
+  v.pflicht(alle === true || auswahl.size, "Keine Benachrichtigung ausgewählt.");
+  return aendern((db) => {
+    let geaendert = 0;
+    for (const b of db.benachrichtigungen || []) {
+      if (b.nutzerId !== n.id || b.gelesen) continue;
+      if (alle === true || auswahl.has(b.id)) {
+        b.gelesen = true;
+        geaendert++;
+      }
+    }
+    return { geaendert, ungelesen: (db.benachrichtigungen || []).filter((b) => b.nutzerId === n.id && !b.gelesen).length };
+  });
+}
+
+export async function mailEinstellungenSpeichern(n, einstellungen = {}) {
+  if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
+  return aendern((db) => {
+    const u = nutzerById(db, n.id);
+    const neu = { ...mailEinstellungenStandard(), ...(u.mailEinstellungen || {}) };
+    for (const k of BENACHRICHTIGUNG_ART_IDS) if (typeof einstellungen?.[k] === "boolean") neu[k] = einstellungen[k];
+    u.mailEinstellungen = neu;
+    protokoll(db, u, "einstellungen", "nutzer", u.id, `E-Mail-Benachrichtigungen: ${Object.entries(neu).filter(([, x]) => x).map(([k]) => k).join(", ") || "keine"}`);
+    return neu;
+  });
+}
+
+// ================================================================ Postausgang (nur Demo)
+
+export async function postausgang(n, { limit = 100 } = {}) {
+  adminNoetig(n);
+  const db = await lesen();
+  return (db.postausgang || []).slice(0, Math.min(500, Math.max(1, Number(limit) || 100)));
+}
+
+// ================================================================ Aufgaben & Wiedervorlagen (Backoffice)
+
+const DATUM = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+const datumTag = (x) => {
+  const s = v.text(x, 10);
+  if (!DATUM.test(s)) return "";
+  const d = new Date(`${s}T12:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s ? s : ""; // 31.02. o. Ä. ablehnen
+};
+
+function aufgabeAusgabe(db, a, n) {
+  const t = heute();
+  const info = a.bezugArt ? threadInfo(db, a.bezugArt, a.bezugId, n) : null;
+  return {
+    ...a,
+    zustaendig: kurz(nutzerById(db, a.zustaendigId)),
+    erstelltVonName: nameVon(db, a.erstelltVon),
+    bezugTitel: info?.titel || "",
+    bezugLink: info?.link || null,
+    ueberfaellig: a.status === "offen" && !!a.faelligAm && a.faelligAm < t,
+    heuteFaellig: a.status === "offen" && a.faelligAm === t,
+  };
+}
+
+function aufgabenSortieren(a, b) {
+  if (a.status !== b.status) return a.status === "offen" ? -1 : 1;
+  if (a.status === "offen") return String(a.faelligAm || "9999").localeCompare(String(b.faelligAm || "9999"));
+  return String(b.erledigtAm || "").localeCompare(String(a.erledigtAm || ""));
+}
+
+function aufgabenKennzahlen(db, n) {
+  const t = heute();
+  const offen = (db.aufgaben || []).filter((a) => a.status === "offen");
+  const meine = offen.filter((a) => a.zustaendigId === n.id);
+  return {
+    offen: offen.length,
+    ueberfaellig: offen.filter((a) => a.faelligAm && a.faelligAm < t).length,
+    heute: offen.filter((a) => a.faelligAm === t).length,
+    meineOffen: meine.length,
+    meineUeberfaellig: meine.filter((a) => a.faelligAm && a.faelligAm < t).length,
+    meine: [...meine].sort(aufgabenSortieren).slice(0, 6).map((a) => aufgabeAusgabe(db, a, n)),
+  };
+}
+
+export async function aufgaben(n, { zustaendigId, status, bezugArt, bezugId, nurUeberfaellig = false } = {}) {
+  adminNoetig(n);
+  const db = await lesen();
+  let liste = db.aufgaben || [];
+  if (zustaendigId) liste = liste.filter((a) => a.zustaendigId === zustaendigId);
+  if (status && AUFGABE_STATUS[status]) liste = liste.filter((a) => a.status === status);
+  if (bezugArt) liste = liste.filter((a) => a.bezugArt === bezugArt && a.bezugId === bezugId);
+  if (nurUeberfaellig) liste = liste.filter((a) => a.status === "offen" && a.faelligAm && a.faelligAm < heute());
+  return [...liste].sort(aufgabenSortieren).slice(0, 500).map((a) => aufgabeAusgabe(db, a, n));
+}
+
+function zustaendigPruefen(db, id) {
+  const z = nutzerById(db, v.kennung(id));
+  v.pflicht(z && z.aktiv && z.rollen.includes("admin"), "Zuständig kann nur ein aktives Backoffice-Konto sein.");
+  return z;
+}
+
+function aufgabeMelden(db, n, a, z) {
+  if (!z || z.id === n.id) return;
+  benachrichtigen(
+    db,
+    z,
+    { art: "aufgabe", titel: `Neue Aufgabe: ${a.titel}`, text: `Von ${nameVon(db, n.id)} · fällig am ${datumDe(a.faelligAm)}`, link: "/portal/admin/aufgaben?ansicht=meine", objektArt: a.bezugArt || "aufgabe", objektId: a.bezugId || a.id },
+    { mailText: `Ihnen wurde im Backoffice eine Aufgabe zugewiesen (fällig am ${datumDe(a.faelligAm)}). Details finden Sie im Portal.` }
+  );
+}
+
+export async function aufgabeAnlegen(n, daten = {}) {
+  adminNoetig(n);
+  const titel = v.text(daten.titel, 160);
+  v.pflicht(titel.length >= 3, "Bitte geben Sie einen Titel an (mind. 3 Zeichen).");
+  const faelligAm = datumTag(daten.faelligAm);
+  v.pflicht(faelligAm, "Bitte geben Sie ein gültiges Fälligkeitsdatum an.");
+  const bezugArt = daten.bezugArt ? v.auswahl(daten.bezugArt, AUFGABE_BEZUG_ARTEN, "") : "";
+  if (daten.bezugArt) v.pflicht(bezugArt, "Unbekannter Bezug.");
+  return aendern((db) => {
+    const z = zustaendigPruefen(db, daten.zustaendigId || n.id);
+    let bezugId = null;
+    if (bezugArt) {
+      const o = objekt(db, bezugArt, v.kennung(daten.bezugId));
+      if (!o) throw nichtGefunden("Bezug nicht gefunden.");
+      bezugId = o.id;
+    }
+    db.aufgaben = db.aufgaben || [];
+    const a = {
+      id: neueId("AF"),
+      titel,
+      beschreibung: v.mehrzeilig(daten.beschreibung, 2000),
+      faelligAm,
+      zustaendigId: z.id,
+      bezugArt: bezugArt || null,
+      bezugId,
+      status: "offen",
+      erstelltVon: n.id,
+      erstelltAm: jetzt(),
+      erledigtAm: null,
+      erledigtVon: null,
+      erinnertAm: null,
+    };
+    db.aufgaben.push(a);
+    protokoll(db, n, "aufgabe", bezugArt || "aufgabe", bezugId || a.id, `Aufgabe „${titel}“ angelegt (fällig ${datumDe(faelligAm)}, zuständig ${nameVon(db, z.id)})`);
+    aufgabeMelden(db, n, a, z);
+    return aufgabeAusgabe(db, a, n);
+  });
+}
+
+export async function aufgabeAendern(n, id, daten = {}) {
+  adminNoetig(n);
+  return aendern((db) => {
+    const a = (db.aufgaben || []).find((x) => x.id === id);
+    if (!a) throw nichtGefunden("Aufgabe nicht gefunden.");
+    const aenderungen = [];
+    if (daten.titel !== undefined) {
+      const t = v.text(daten.titel, 160);
+      v.pflicht(t.length >= 3, "Bitte geben Sie einen Titel an (mind. 3 Zeichen).");
+      if (t !== a.titel) aenderungen.push("Titel");
+      a.titel = t;
+    }
+    if (daten.beschreibung !== undefined) {
+      const b = v.mehrzeilig(daten.beschreibung, 2000);
+      if (b !== a.beschreibung) aenderungen.push("Beschreibung");
+      a.beschreibung = b;
+    }
+    if (daten.faelligAm !== undefined) {
+      const f = datumTag(daten.faelligAm);
+      v.pflicht(f, "Bitte geben Sie ein gültiges Fälligkeitsdatum an.");
+      if (f !== a.faelligAm) {
+        a.faelligAm = f;
+        a.erinnertAm = null;
+        aenderungen.push(`fällig ${datumDe(f)}`);
+      }
+    }
+    let neuZustaendig = null;
+    if (daten.zustaendigId !== undefined && daten.zustaendigId !== a.zustaendigId) {
+      neuZustaendig = zustaendigPruefen(db, daten.zustaendigId);
+      a.zustaendigId = neuZustaendig.id;
+      a.erinnertAm = null;
+      aenderungen.push(`zuständig ${nameVon(db, neuZustaendig.id)}`);
+    }
+    if (daten.status !== undefined) {
+      const st = v.auswahl(daten.status, AUFGABE_STATUS, "");
+      v.pflicht(st, "Unbekannter Status.");
+      if (st !== a.status) {
+        a.status = st;
+        a.erledigtAm = st === "erledigt" ? jetzt() : null;
+        a.erledigtVon = st === "erledigt" ? n.id : null;
+        aenderungen.push(st === "erledigt" ? "erledigt" : "wieder geöffnet");
+      }
+    }
+    if (aenderungen.length) protokoll(db, n, "aufgabe", a.bezugArt || "aufgabe", a.bezugId || a.id, `Aufgabe „${a.titel}“: ${aenderungen.join(", ")}`);
+    if (neuZustaendig) aufgabeMelden(db, n, a, neuZustaendig);
+    return aufgabeAusgabe(db, a, n);
+  });
+}
+
+// ================================================================ Exposé (PDF-Daten)
+
+/**
+ * Daten für das vertrauliche Exposé-PDF. Berechtigt: Backoffice, Anbieter des Projekts und Investoren mit
+ * freigegebenem Datenraum (NDA). Jeder Abruf wird protokolliert. Das PDF selbst erzeugt die Website.
+ */
+export async function exposeDaten(n, id, { ip = "" } = {}) {
+  if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
+  const db = await lesen();
+  const p = db.projekte.find((x) => x.id === id || x.slug === id);
+  if (!p) throw nichtGefunden("Projekt nicht gefunden.");
+  const admin = istAdmin(n);
+  const eigen = p.anbieterId === n.id || org.darfTeamLesenObjekt(db, n, p); // auch Team des Anbieters
+  let zugriff = admin ? "admin" : eigen ? "eigentuemer" : null;
+  if (!zugriff) {
+    if (![...BOERSE_STATUS, "verkauft"].includes(p.status)) throw nichtGefunden("Projekt nicht gefunden.");
+    const i = db.interessen.find((x) => x.projektId === p.id && DATENRAUM_STATUS.includes(x.status) && (x.investorId === n.id || org.darfTeamLesenObjekt(db, n, x))) || db.interessen.find((x) => x.projektId === p.id && x.investorId === n.id);
+    if (!i || !DATENRAUM_STATUS.includes(i.status)) throw verboten("Das vollständige Exposé steht nach Freigabe Ihrer NDA-Anfrage zur Verfügung.");
+    zugriff = "nda";
+  }
+  const doks = projektDokumente(db, p);
+  const u = nutzerById(db, n.id);
+  await aendern((d) => protokoll(d, n, "expose", "projekt", p.id, `Exposé-PDF abgerufen (${zugriff})`, ip));
+  return {
+    projekt: { ...projektOeffentlich(p), datenraumQualitaet: checklisteProjekt(p, doks).quote },
+    vertraulich: projektVertraulich(p),
+    dokumente: doks.filter((d) => zugriff !== "nda" || d.kategorie === "datenraum").map(dokumentMeta),
+    zugriff,
+    empfaenger: { name: nameVon(db, n.id), firma: u?.firma || "", email: u?.email || "", rolle: zugriff === "nda" ? "investor" : zugriff },
+    erstelltAm: jetzt(),
+  };
+}
+
+// ================================================================ Protokoll (z. B. CSV-Export)
+
+const PROTOKOLL_AKTIONEN = ["export"];
+
+export async function protokollEintrag(n, { aktion, objektArt, objektId, text, ip = "" } = {}) {
+  adminNoetig(n);
+  v.pflicht(PROTOKOLL_AKTIONEN.includes(aktion), "Unbekannte Aktion.");
+  await aendern((db) => protokoll(db, n, aktion, v.text(objektArt, 40), v.text(objektId, 60), text, ip));
+  return { ok: true };
+}
+
+// ================================================================ Interne Helfer für Themen-Module (backend/demo/<thema>.js)
+// Nur serverseitig; kein Teil der Backend-Schnittstelle (OPERATIONEN).
+export const intern = { nachricht, benachrichtigen, protokoll, systemWechsel, darfDokument, dokumentMeta, nutzerById, kurz, nameVon, aktiveAdmins };
+// Login, Sicherheit & Teams (backend/demo/sicherheit.js, backend/demo/organisation.js)
+sicherheitWerkzeugeSetzen({ benachrichtigen, protokoll, postausgangAnlegen, ohneGeheimnis, tokenAnlegen, tokenEinloesen, verknuepfen });
+
+// Backoffice (backend/demo/backoffice.js): interne Helfer für CRM, Automationen, Vorlagen
+werkzeugeSetzen({ protokoll, nachricht, benachrichtigen, postausgangAnlegen, uebergangAnwenden, besitzer, nutzerById, aktiveAdmins });

@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { ClipboardList, Coins, FileSignature, KeyRound, LandPlot, MessagesSquare, ShieldCheck, TrendingUp, UserX } from "lucide-react";
+import { AlarmClock, ClipboardList, Coins, FileSignature, FileSpreadsheet, KeyRound, LandPlot, MessagesSquare, ShieldCheck, TrendingUp, UserX } from "lucide-react";
+import { AufgabenListe } from "@/components/Portal/Aufgaben";
+import DateiLink from "@/components/Portal/DateiLink";
+import { Hinweis } from "@/components/Portal/ui";
+import { EXPORTE } from "@/lib/plattform/csv";
 import { Karte, Kennzahl, PfeilLink, SeitenKopf } from "@/components/Portal/ui";
 import { portalNutzer } from "@/lib/plattform/server/seite";
 import { backend } from "@/lib/plattform/backend";
@@ -47,11 +51,19 @@ export default async function AdminCockpit() {
     { icon: ClipboardList, label: "Neue Vorgänge", wert: u.vorgaenge.status.eingegangen || 0, href: "/portal/admin/vorgaenge?status=eingegangen" },
     { icon: UserX, label: "Offen ohne Zuständigen", wert: u.vorgaenge.ohneZustaendig, href: "/portal/admin/vorgaenge?ohne=1" },
     { icon: MessagesSquare, label: "Ungelesene Nachrichten", wert: u.nachrichten.ungelesen, href: "/portal/nachrichten?filter=ungelesen" },
+    { icon: AlarmClock, label: "Überfällige Wiedervorlagen", wert: u.aufgaben?.ueberfaellig || 0, href: "/portal/admin/aufgaben?ansicht=ueberfaellig" },
   ];
+  const a = u.aufgaben || { meine: [], meineOffen: 0, meineUeberfaellig: 0 };
 
   return (
     <div className="space-y-6">
       <SeitenKopf eyebrow="Backoffice" titel="Cockpit" text="Pipeline, Trichter und alles, was heute entschieden werden muss." />
+
+      {a.meineUeberfaellig > 0 && (
+        <Hinweis ton="warn" icon={AlarmClock} titel={`${a.meineUeberfaellig} ${a.meineUeberfaellig === 1 ? "Wiedervorlage ist" : "Wiedervorlagen sind"} überfällig`}>
+          Bitte erledigen oder neu terminieren – <Link href="/portal/admin/aufgaben?ansicht=meine" className="font-semibold underline">zu meinen Aufgaben</Link>.
+        </Hinweis>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Kennzahl label="Vorgänge offen" wert={fmt(u.vorgaenge.offen)} hinweis={`${fmt(u.vorgaenge.neu7)} neu in 7 Tagen · ${fmt(u.vorgaenge.gesamt)} gesamt`} icon={ClipboardList} href="/portal/admin/vorgaenge" />
@@ -76,6 +88,22 @@ export default async function AdminCockpit() {
           })}
         </ul>
       </Karte>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <Karte titel="Meine Aufgaben" untertitel={`${a.meineOffen} offen · ${a.meineUeberfaellig} überfällig`} aktion={<PfeilLink href="/portal/admin/aufgaben">Alle Aufgaben</PfeilLink>}>
+          <AufgabenListe aufgaben={a.meine} leerText="Keine offenen Aufgaben." />
+        </Karte>
+        <Karte titel="Export (CSV)" untertitel="Excel-kompatibel: UTF-8, Semikolon, Dezimalkomma">
+          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+            {Object.entries(EXPORTE).map(([k, e]) => (
+              <li key={k}>
+                <DateiLink href={`/api/admin/export/${k}`} icon={FileSpreadsheet} className="w-full justify-start">{e.titel}</DateiLink>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-[12.5px] text-ink-500">Jeder Export wird im Aktivitätsprotokoll vermerkt. Personenbezogene Daten nur zweckgebunden verwenden.</p>
+        </Karte>
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
         <Karte titel="Anfragen-Trichter" untertitel="Vorgänge, die die Stufe erreicht haben · Quote zur Vorstufe" aktion={<PfeilLink href="/portal/admin/vorgaenge">Vorgänge</PfeilLink>}>

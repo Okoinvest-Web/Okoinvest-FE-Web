@@ -1,3 +1,5 @@
+import { FileSpreadsheet } from "lucide-react";
+import DateiLink from "@/components/Portal/DateiLink";
 import Link from "next/link";
 import { Handshake } from "lucide-react";
 import StatusAktionen from "@/components/Portal/StatusAktionen";
@@ -27,7 +29,7 @@ export default async function AdminInteressen({ searchParams }) {
 
   return (
     <div>
-      <SeitenKopf eyebrow="Backoffice" titel="NDA-Freigaben & LOIs" text="Klick-NDAs prüfen und Datenräume freischalten, Absichtserklärungen annehmen oder ablehnen. Jede Entscheidung erscheint beim Investor als Nachricht." />
+      <SeitenKopf eyebrow="Backoffice" titel="NDA-Freigaben & LOIs" text="Klick-NDAs prüfen und Datenräume freischalten, Absichtserklärungen annehmen oder ablehnen. Jede Entscheidung erscheint beim Investor als Nachricht." aktionen={<DateiLink href="/api/admin/export/interessen" icon={FileSpreadsheet}>CSV-Export</DateiLink>} />
       <nav aria-label="Ansicht" className="mb-5 flex flex-wrap gap-2">
         {Object.entries(ANSICHTEN).map(([k, a]) => (
           <Link key={k} href={`/portal/admin/interessen?ansicht=${k}`} aria-current={ansicht === k ? "page" : undefined} className={cn("inline-flex h-10 items-center gap-2 rounded-full px-4 text-[14px] font-semibold ring-1 ring-inset", ansicht === k ? "bg-navy-900 text-white ring-navy-900" : "bg-white text-ink-700 ring-ink-200 hover:ring-ink-300")}>

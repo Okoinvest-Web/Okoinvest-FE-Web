@@ -64,6 +64,18 @@ export const METHODEN = {
   aktivitaeten: "admin.aktivitaeten",
   adminKonten: "admin.admin_konten",
   adminUebersicht: "admin.uebersicht",
+  protokollEintrag: "admin.protokoll_eintrag",
+  benachrichtigungen: "benachrichtigung.liste",
+  benachrichtigungenGelesen: "benachrichtigung.gelesen",
+  mailEinstellungenSpeichern: "benachrichtigung.einstellungen_speichern",
+  aufgaben: "aufgabe.liste",
+  aufgabeAnlegen: "aufgabe.anlegen",
+  aufgabeAendern: "aufgabe.aendern",
+  exposeDaten: "boerse.expose",
+  // Bedienung & Onboarding (Adapter-Teil: backend/frappe/bedienung.js)
+  suchen: "bedienung.suchen",
+  onboarding: "bedienung.onboarding",
+  onboardingSpeichern: "bedienung.onboarding_speichern",
 };
 
 function meldung(daten) {
@@ -78,7 +90,7 @@ function meldung(daten) {
   return text.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 240);
 }
 
-async function aufruf(op, args = {}, nutzer = null) {
+export async function aufruf(op, args = {}, nutzer = null) {
   if (!isApiConfigured() || !process.env.SERVER) {
     throw new PlattformFehler(503, "Das Plattform-Backend (Frappe) ist nicht konfiguriert.");
   }
@@ -88,7 +100,8 @@ async function aufruf(op, args = {}, nutzer = null) {
     res = await fetch(url, {
       method: "POST",
       headers: getApiHeaders(),
-      body: JSON.stringify({ ...args, ...(nutzer ? { als_benutzer: nutzer.id } : {}) }),
+      // als_organisation: aktive Organisation der Sitzung – Frappe prüft die Mitgliedschaft selbst (kern.nutzer)
+      body: JSON.stringify({ ...args, ...(nutzer ? { als_benutzer: nutzer.id } : {}), ...(nutzer?.organisation?.id ? { als_organisation: nutzer.organisation.id } : {}) }),
       cache: "no-store",
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
@@ -115,14 +128,15 @@ async function aufruf(op, args = {}, nutzer = null) {
   if (res.status === 403 || /PermissionError/.test(typ)) throw new PlattformFehler(403, text || "Dafür fehlt Ihnen die Berechtigung.");
   if (res.status === 404 || /DoesNotExistError/.test(typ)) throw new PlattformFehler(404, text || "Nicht gefunden.");
   if (res.status === 409 || /DuplicateEntryError|TimestampMismatchError/.test(typ)) throw new PlattformFehler(409, text || "Konflikt – bitte neu laden.");
-  if (res.status === 429) throw new PlattformFehler(429, "Zu viele Anfragen – bitte warten Sie einen Moment.");
+  if (res.status === 429 || /TooManyRequestsError/.test(typ)) throw new PlattformFehler(429, text || "Zu viele Anfragen – bitte warten Sie einen Moment.", "gesperrt");
   if (/ValidationError|MandatoryError|LinkValidationError/.test(typ) || res.status === 417) throw new PlattformFehler(422, text || "Eingabe ungültig.");
   throw new PlattformFehler(502, "Der Server ist vorübergehend nicht erreichbar.");
 }
 
 // ---------------------------------------------------------------- Konto
-export const anmelden = ({ email, passwort }) => aufruf("anmelden", { email, passwort });
-export const nutzerFuerSitzung = (id) => aufruf("nutzerFuerSitzung", { nutzerId: id });
+export const anmelden = ({ email, passwort, ip, userAgent, land }) => aufruf("anmelden", { email, passwort, ip, userAgent, land });
+/** kontext { sitzungId } – Frappe prüft den Sitzungseintrag (Plattform Sitzung) */
+export const nutzerFuerSitzung = (id, kontext = {}) => aufruf("nutzerFuerSitzung", { nutzerId: id, sitzungId: kontext.sitzungId || null });
 export const registrieren = (daten) => aufruf("registrieren", daten);
 export const emailBestaetigen = ({ token }) => aufruf("emailBestaetigen", { token });
 export const passwortVergessen = ({ email, basisUrl, ip }) => aufruf("passwortVergessen", { email, basisUrl, ip });
@@ -176,5 +190,24 @@ export const aktivitaeten = (n, filter = {}) => aufruf("aktivitaeten", filter, n
 export const adminKonten = (n) => aufruf("adminKonten", {}, n);
 export const adminUebersicht = (n) => aufruf("adminUebersicht", {}, n);
 
+export const protokollEintrag = (n, daten) => aufruf("protokollEintrag", daten, n);
+
+// ---------------------------------------------------------------- Benachrichtigungen, Aufgaben, Exposé
+export const benachrichtigungen = (n, filter = {}) => aufruf("benachrichtigungen", filter, n);
+export const benachrichtigungenGelesen = (n, { ids, alle } = {}) => aufruf("benachrichtigungenGelesen", { ids, alle }, n);
+export const mailEinstellungenSpeichern = (n, einstellungen) => aufruf("mailEinstellungenSpeichern", { einstellungen }, n);
+export const aufgaben = (n, filter = {}) => aufruf("aufgaben", filter, n);
+export const aufgabeAnlegen = (n, daten) => aufruf("aufgabeAnlegen", { daten }, n);
+export const aufgabeAendern = (n, id, daten) => aufruf("aufgabeAendern", { id, daten }, n);
+export const exposeDaten = (n, id, { ip } = {}) => aufruf("exposeDaten", { id, ip }, n);
+
 /** Nur Demo: Links für Bestätigung/Passwort. In Frappe verschickt das Backend E-Mails. */
 export const demoLinks = async () => [];
+/** Nur Demo: Postausgang. In Frappe landen E-Mails in der Mail-Warteschlange (Email Queue) und werden versendet. */
+export const postausgang = async () => [];
+
+/** Für Themen-Adapter (backend/frappe/<thema>.js): Methodenaufruf mit derselben Fehlerbehandlung */
+export { aufruf as frappeAufruf };
+
+// Backoffice: CRM, Akquise, Automationen, Vorlagen, Berichte, Rechte, Hash-Kette (backend/frappe/backoffice.js)
+export * from "./frappe/backoffice";

@@ -1,0 +1,118 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Geplante oder durchgeführte Wartung einer Anlage (Inspektion, Reinigung, Prüfung, Thermografie, Reparatur).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "anlage_id",
+  "art",
+  "datum",
+  "status",
+  "cb_1",
+  "dienstleister",
+  "naechste_faelligkeit",
+  "kosten_eur",
+  "bericht"
+ ],
+ "fields": [
+  {
+   "fieldname": "anlage_id",
+   "fieldtype": "Link",
+   "label": "Anlage",
+   "options": "Plattform Anlage",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "inspektion\nreinigung\npruefung\nthermografie\nreparatur\nsoftware",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "datum",
+   "fieldtype": "Date",
+   "label": "Datum",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "geplant\nerledigt\nabgesagt",
+   "default": "geplant",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "dienstleister",
+   "fieldtype": "Data",
+   "label": "Dienstleister"
+  },
+  {
+   "fieldname": "naechste_faelligkeit",
+   "fieldtype": "Date",
+   "label": "Nächste Fälligkeit"
+  },
+  {
+   "fieldname": "kosten_eur",
+   "fieldtype": "Currency",
+   "label": "Kosten (intern)"
+  },
+  {
+   "fieldname": "bericht",
+   "fieldtype": "Small Text",
+   "label": "Bericht"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Wartung",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "in_create": 0
+}

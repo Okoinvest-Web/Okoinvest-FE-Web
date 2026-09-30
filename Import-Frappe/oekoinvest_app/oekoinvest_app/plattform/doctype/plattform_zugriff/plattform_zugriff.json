@@ -1,0 +1,114 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 08:00:00.000000",
+ "description": "Zugriffsprotokoll des Datenraums (append-only): Datenraum geöffnet, Dokument angesehen/heruntergeladen.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "am",
+  "projekt_id",
+  "nutzer_id",
+  "interesse_id",
+  "art",
+  "dokument_id",
+  "dokument_name",
+  "ip"
+ ],
+ "fields": [
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "label": "Zeitpunkt",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Projekt",
+   "options": "Plattform Projekt",
+   "reqd": 1,
+   "search_index": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "nutzer_id",
+   "fieldtype": "Link",
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "interesse_id",
+   "fieldtype": "Link",
+   "label": "Interesse",
+   "options": "Plattform Interesse"
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Aktion",
+   "options": "datenraum\nansehen\ndownload",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "dokument_id",
+   "fieldtype": "Link",
+   "label": "Dokument",
+   "options": "Plattform Dokument"
+  },
+  {
+   "fieldname": "dokument_name",
+   "fieldtype": "Data",
+   "label": "Dokumentname"
+  },
+  {
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "label": "IP"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Zugriff",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "in_create": 0
+}

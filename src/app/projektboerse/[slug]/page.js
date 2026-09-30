@@ -119,6 +119,12 @@ export default async function Expose({ params }) {
                 )}
                 {!nutzer && <Button href={`/login?weiter=${encodeURIComponent(portalLink)}`} size="lg" variant="secondary">Ich habe ein Konto</Button>}
               </div>
+              <p className="mt-4 text-[14px] text-ink-600">
+                <a href={`/api/boerse/${p.slug}/teaser`} target="_blank" rel="noopener" className="font-semibold text-ov-700 underline decoration-ov-300 underline-offset-4 hover:text-ov-800">
+                  Teaser als PDF
+                </a>{" "}
+                – öffentliche Eckdaten zum Weitergeben, ohne vertrauliche Angaben.
+              </p>
             </div>
             <div className="min-w-0">
               <div className="overflow-hidden rounded-[2rem] bg-white shadow-[0_30px_80px_-40px_rgba(3,18,43,0.45)] ring-1 ring-ink-200/70">

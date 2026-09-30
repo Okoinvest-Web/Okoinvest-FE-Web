@@ -4,7 +4,8 @@
 #  - Links immer auf `plattform_basis_url` aus site_config – nie aus dem Request-Host.
 #    Nur mit developer_mode darf ersatzweise die von der Website übergebene basisUrl genutzt werden.
 #  - Benachrichtigungen enthalten KEINE Inhalte (Nachrichtentext, vertrauliche Projektdaten),
-#    nur Hinweis + Link ins Portal.
+#    nur Hinweis + Link ins Portal. Ob gesendet wird, entscheidet benachrichtigung.py anhand der
+#    E-Mail-Einstellungen des Kontos (mail_einstellungen).
 #  - Ein Fehler beim Versand bricht den fachlichen Vorgang nie ab (nur Fehlerprotokoll ohne Inhalte).
 
 import re
@@ -12,7 +13,6 @@ import re
 import frappe
 from frappe.utils import cint
 
-from oekoinvest_app.plattform.konstanten import DOCTYPE
 
 URL = re.compile(r"^https?://[A-Za-z0-9.-]+(:\d{1,5})?$")
 
@@ -108,42 +108,17 @@ def neue_anfrage(vorgang):
 		hinweis(adresse, "", f"Neue Anfrage {vorgang.name} – ÖkoInvest", "Über die Website ist eine neue Anfrage eingegangen.", f"/portal/admin/vorgaenge/{vorgang.name}")
 
 
-def nachricht_benachrichtigung(m):
-	"""Nach einer neuen (System-)Nachricht: Nutzer bzw. Backoffice per E-Mail auf das Portal hinweisen."""
-	try:
-		dt = DOCTYPE.get(m.bezug_art)
-		if not dt:
-			return
-		o = frappe.get_doc(dt, m.bezug_id)
-		from oekoinvest_app.plattform.kern import besitzer
+def benachrichtigung(konto, betreff, titel, text, pfad):
+	"""E-Mail zu einer Benachrichtigung (plattform/benachrichtigung.py) – nur Hinweis, Titel (öffentlich/intern) und Link.
 
-		eigentuemer = besitzer(m.bezug_art, o)
-		ist_status = cint(m.system) and (m.text or "").startswith("Status:")
-		betreff = "Neuigkeiten zu Ihrem Vorgang – ÖkoInvest" if ist_status else "Neue Nachricht im Portal – ÖkoInvest"
-		text = (
-			"Der Status eines Ihrer Vorgänge hat sich geändert. Details finden Sie im Portal."
-			if ist_status
-			else "Sie haben eine neue Nachricht im Portal von ÖkoInvest erhalten."
-		)
-		if not cint(m.gelesen_nutzer) and eigentuemer and eigentuemer != m.von_id:
-			k = _konto(eigentuemer)
-			if k and cint(k.aktiv):
-				hinweis(k.email, k.vorname, betreff, text, _pfad_nutzer(m.bezug_art, o))
-		if not cint(m.gelesen_admin):
-			adresse, vorname = _backoffice_empfaenger(o.get("zustaendig_id"))
-			if adresse:
-				hinweis(adresse, vorname, f"Portal: neue Aktivität ({m.bezug_art} {m.bezug_id})", "Im Portal gibt es eine neue Nachricht bzw. Statusänderung.", f"/portal/nachrichten?bezug={m.bezug_art}:{m.bezug_id}")
-	except Exception:
-		frappe.log_error(title="ÖkoInvest: Benachrichtigung fehlgeschlagen", message=f"Nachricht {m.name}")
-
-
-def _pfad_nutzer(art, o):
-	if art == "vorgang":
-		return f"/portal/anfragen/{o.name}"
-	if art == "flaeche":
-		return f"/portal/flaechen/{o.name}"
-	if art == "projekt":
-		return f"/portal/projekte/{o.name}"
-	if art == "interesse":
-		return f"/portal/boerse/{o.projekt_id}"
-	return f"/portal/nachrichten?bezug=nutzer:{o.name}"
+	Vorlage oekoinvest_benachrichtigung; die Entscheidung, OB gesendet wird (mail_einstellungen), trifft der Aufrufer.
+	"""
+	basis = basis_url()
+	if not basis or not konto or not konto.get("email"):
+		return False
+	return _senden(
+		konto.email,
+		betreff,
+		"oekoinvest_benachrichtigung",
+		{"vorname": konto.get("vorname") or "", "titel": titel or "", "text": text, "link": f"{basis}{pfad or '/portal'}", "basis": basis},
+	)

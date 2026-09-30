@@ -1,0 +1,99 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 08:00:00.000000",
+ "description": "Einordnung eines Projekt-Dokuments im Datenraum: Ordner (Standard-Index), Freigabestufe, Vorversion.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "dokument_id",
+  "projekt_id",
+  "ordner",
+  "stufe",
+  "version_von"
+ ],
+ "fields": [
+  {
+   "fieldname": "dokument_id",
+   "fieldtype": "Link",
+   "label": "Dokument",
+   "options": "Plattform Dokument",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Projekt",
+   "options": "Plattform Projekt",
+   "reqd": 1,
+   "search_index": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "ordner",
+   "fieldtype": "Select",
+   "label": "Ordner",
+   "options": "flaeche\nplanung\nnetz\ntechnik\nertrag\nvertraege\nfinanzen\nallgemein",
+   "default": "allgemein",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "stufe",
+   "fieldtype": "Select",
+   "label": "Freigabestufe",
+   "options": "1\n2",
+   "default": "1",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "version_von",
+   "fieldtype": "Link",
+   "label": "Neuere Version von",
+   "options": "Plattform Dokument"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Datenraum Eintrag",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "in_create": 0
+}

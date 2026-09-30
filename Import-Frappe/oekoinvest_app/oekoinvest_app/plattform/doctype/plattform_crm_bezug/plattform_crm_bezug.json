@@ -1,0 +1,68 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 08:00:00.000000",
+ "description": "Beziehung eines CRM-Kontakts zu Vorgang, Fläche, Projekt oder Interesse",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "art",
+  "bezug_doctype",
+  "bezug_id",
+  "rolle",
+  "am"
+ ],
+ "fields": [
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Objektart",
+   "options": "\nvorgang\nflaeche\nprojekt\ninteresse",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "bezug_doctype",
+   "fieldtype": "Link",
+   "label": "DocType",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bezug_id",
+   "fieldtype": "Dynamic Link",
+   "label": "Objekt",
+   "options": "bezug_doctype",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "rolle",
+   "fieldtype": "Data",
+   "label": "Rolle",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "label": "Seit"
+  }
+ ],
+ "in_create": 0,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform CRM Bezug",
+ "naming_rule": "",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "istable": 1,
+ "editable_grid": 1
+}

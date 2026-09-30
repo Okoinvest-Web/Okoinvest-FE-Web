@@ -55,6 +55,7 @@ export const PROJEKT_TYPEN = {
   carport: "Solarcarport / Parkplatz",
   speicher: "Batteriegroßspeicher",
   hybrid: "PV mit Speicher",
+  dach: "Dach-PV (Gewerbe/Halle)",
 };
 export const PROJEKT_TYP_IDS = Object.keys(PROJEKT_TYPEN);
 
@@ -88,6 +89,7 @@ export const FLAECHE_NUTZUNG = {
   konversion: "Konversionsfläche",
   gewerbe: "Gewerbe- / Parkfläche",
   sonstige: "Sonstige",
+  dach: "Dachfläche",
 };
 
 export const PREIS_MODUS = {
@@ -130,3 +132,45 @@ export const NDA = {
 export const PROVISIONS_VEREINBARUNG = {
   version: "2026-09",
 };
+
+/**
+ * Benachrichtigungen (Glocke im Portal-Kopf) – Ereignisarten.
+ * `mail`: Standard für den E-Mail-Versand (je Konto änderbar), `admin`: nur für das Backoffice relevant.
+ */
+export const BENACHRICHTIGUNG_ARTEN = {
+  status: { label: "Statuswechsel", text: "Ihr Vorgang, Ihre Fläche oder Ihr Projekt hat einen neuen Status.", mail: true },
+  nachricht: { label: "Neue Nachrichten", text: "Das Backoffice hat Ihnen geschrieben oder ein Dokument bereitgestellt.", mail: true },
+  nda: { label: "NDA-Freigabe & Datenraum", text: "Ihr Datenraum wurde freigegeben oder Ihre LOI beantwortet.", mail: true, rollen: ["investor"] },
+  suchprofil: { label: "Neue passende Projekte", text: "Ein neu veröffentlichtes Projekt passt zu Ihrem Suchprofil.", mail: true, rollen: ["investor"] },
+  anfrage: { label: "Neue Anfragen", text: "Über die Website ist eine neue Anfrage eingegangen.", mail: true, admin: true },
+  aufgabe: { label: "Aufgaben & Wiedervorlagen", text: "Ihnen wurde eine Aufgabe zugewiesen oder eine Wiedervorlage ist fällig.", mail: true, admin: true },
+  // Login, Sicherheit & Teams: E-Mail immer (nicht abschaltbar, daher nicht in den Einstellungen)
+  sicherheit: { label: "Sicherheit & Anmeldungen", text: "Anmeldung von einem neuen Gerät, Zwei-Faktor, E-Mail-Änderung, Kontosperre.", mail: true, fest: true },
+  // Anlagen & Monitoring: neue Störung an einer eigenen Anlage (Kunde) bzw. an einer betreuten Anlage (Backoffice)
+  stoerung: { label: "Anlagenstörungen", text: "An einer Ihrer PV-Anlagen oder Speicher wurde eine Störung erkannt.", mail: true, rollen: ["unternehmen"] },
+};
+export const BENACHRICHTIGUNG_ART_IDS = Object.keys(BENACHRICHTIGUNG_ARTEN);
+
+/** Standard-Einstellungen „per E-Mail benachrichtigen“ je Ereignisart */
+export function mailEinstellungenStandard() {
+  return Object.fromEntries(Object.entries(BENACHRICHTIGUNG_ARTEN).map(([k, a]) => [k, !!a.mail]));
+}
+
+/** Ereignisarten, die für ein Konto mit diesen Rollen sichtbar/einstellbar sind */
+export function benachrichtigungArtenFuer(rollen = []) {
+  const admin = rollen.includes("admin");
+  return BENACHRICHTIGUNG_ART_IDS.filter((k) => {
+    const a = BENACHRICHTIGUNG_ARTEN[k];
+    if (a.fest) return false; // immer per E-Mail, nicht einstellbar
+    if (a.admin) return admin;
+    if (a.rollen) return admin || a.rollen.some((r) => rollen.includes(r));
+    return true;
+  });
+}
+
+/** Aufgaben / Wiedervorlagen im Backoffice */
+export const AUFGABE_STATUS = { offen: "Offen", erledigt: "Erledigt" };
+export const AUFGABE_BEZUG_ARTEN = ["vorgang", "flaeche", "projekt", "interesse"];
+
+/** Suchprofil-Alarm: Standard-Schwelle des Matching-Scores (Investor kann 50–100 wählen) */
+export const SUCHPROFIL_SCHWELLE = { standard: 70, min: 50, max: 100 };

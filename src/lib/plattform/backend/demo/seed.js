@@ -7,6 +7,7 @@
 // den Spannen in src/lib/invest/markt.js ab (Mitte der Phasen-Spanne).
 
 import { PACHT, PHASEN, PROVISION } from "@/lib/invest/markt";
+import { matching } from "../../matching";
 import { passwortHash } from "../../server/passwort";
 import { demoPdf } from "./pdf";
 import { neueId, sha256, slugify, vorTagen } from "./hilfen";
@@ -74,6 +75,7 @@ export async function seedErstellen() {
     ticketMin: 500000,
     ticketMax: 15000000,
     benachrichtigen: true,
+    schwelle: 70,
   };
 
   // ---------------------------------------------------------------- Projekte
@@ -366,14 +368,25 @@ export async function seedErstellen() {
 
   // ---------------------------------------------------------------- Dokumente (erzeugte Demo-PDFs)
   const dokumente = [];
-  async function doc(bezugArt, bezugId, name, kategorie, titel, zeilen, vonId, tage) {
+  async function doc(bezugArt, bezugId, name, kategorie, titel, zeilen, vonId, tage, checkliste = "") {
     const daten = demoPdf(titel, zeilen);
     const datei = `${neueId("D")}-${sha256(name + Math.random()).slice(0, 12)}.pdf`;
     await uploadSchreiben(datei, daten);
-    dokumente.push({ id: neueId("D"), bezugArt, bezugId, name, mime: "application/pdf", groesse: daten.length, datei, kategorie, hochgeladenVon: vonId, am: vorTagen(tage), sha256: sha256(daten) });
+    dokumente.push({ id: neueId("D"), bezugArt, bezugId, name, mime: "application/pdf", groesse: daten.length, datei, kategorie, checkliste, hochgeladenVon: vonId, am: vorTagen(tage), sha256: sha256(daten) });
   }
   await doc("projekt", p1.id, "Demo-Exposé Niederbayern.pdf", "datenraum", "Exposé Freiflächen-PV 24 MWp", ["Projektsteckbrief (fiktiv)", "Leistung: 24 MWp", "Phase: Satzungsbeschluss", "Netz: Zusage liegt vor"], n.anbieter.id, 40);
-  await doc("projekt", p1.id, "Demo-Lageplan.pdf", "datenraum", "Lageplan (Demo)", ["Übersichtsplan – fiktiv"], n.anbieter.id, 40);
+  await doc("projekt", p1.id, "Demo-Lageplan.pdf", "datenraum", "Lageplan (Demo)", ["Übersichtsplan – fiktiv"], n.anbieter.id, 40, "lageplan");
+  await doc("projekt", p1.id, "Demo-Pachtverträge geschwärzt.pdf", "datenraum", "Pachtverträge (Demo, geschwärzt)", ["Laufzeit 30 Jahre + Option (fiktiv)"], n.anbieter.id, 40, "pacht");
+  await doc("projekt", p1.id, "Demo-Netzanschlusszusage.pdf", "datenraum", "Netzanschlusszusage (Demo)", ["Verknüpfungspunkt UW Musterfeld, 20 kV (fiktiv)"], n.anbieter.id, 39, "netzzusage");
+  await doc("projekt", p1.id, "Demo-Aufstellungsbeschluss.pdf", "datenraum", "Aufstellungsbeschluss (Demo)", ["Gemeinderatsbeschluss – fiktiv"], n.anbieter.id, 39, "aufstellung");
+  await doc("projekt", p1.id, "Demo-Satzungsbeschluss.pdf", "datenraum", "Satzungsbeschluss B-Plan (Demo)", ["Bekanntmachung – fiktiv"], n.anbieter.id, 38, "satzung");
+  await doc("projekt", p1.id, "Demo-Artenschutzgutachten.pdf", "datenraum", "Fachgutachten Artenschutz (Demo)", ["Keine erheblichen Beeinträchtigungen – fiktiv"], n.anbieter.id, 38, "gutachten");
+  await doc("projekt", p2.id, "Demo-Nutzungsverträge.pdf", "datenraum", "Nutzungsverträge (Demo)", ["Grünland, Weidebetrieb bleibt – fiktiv"], n.anbieter.id, 25, "pacht");
+  await doc("projekt", p2.id, "Demo-Lageplan Agri-PV.pdf", "datenraum", "Lageplan Agri-PV (Demo)", ["Reihenabstand 10 m – fiktiv"], n.anbieter.id, 25, "lageplan");
+  await doc("projekt", p4.id, "Demo-Widmung und Baubewilligung.pdf", "datenraum", "Widmung Grünland-PV (Demo)", ["Bescheid – fiktiv"], n.anbieter.id, 55, "satzung");
+  await doc("projekt", p4.id, "Demo-Netzreservierung.pdf", "datenraum", "Netzreservierung (Demo)", ["Kapazität reserviert – fiktiv"], n.anbieter.id, 55, "netzzusage");
+  await doc("projekt", p6.id, "Demo-Betriebsdaten.pdf", "datenraum", "Betriebsdaten (Demo)", ["Spezifischer Ertrag 1.010 kWh/kWp – fiktiv"], n.anbieter.id, 30, "betrieb");
+  await doc("flaeche", f1.id, "Demo-Grundbuchauszug.pdf", "allgemein", "Grundbuchauszug (Demo)", ["Flurstücke 211, 212 – fiktiv"], n.flaeche.id, 27, "grundbuch");
   await doc("projekt", p1.id, "Demo-Projektsteckbrief öffentlich.pdf", "allgemein", "Projektsteckbrief (Demo)", ["Nur interne Ablage des Anbieters"], n.anbieter.id, 41);
   await doc("flaeche", f1.id, "Demo-Pachtangebot.pdf", "vertrag", "Pachtangebot (Demo)", [`Pacht: ${PACHT.freiflaecheProHa.mittel} € je ha und Jahr`, `Laufzeit: ${PACHT.laufzeit} Jahre, ${PACHT.verlaengerung}`], admin, 3);
   await doc("vorgang", vorgaenge[5].id, "Demo-Angebot Reststrom-Pool.pdf", "vertrag", "Angebot Reststrom-Pool (Demo)", ["Indikatives Angebot – fiktiv"], admin, 4);
@@ -383,6 +396,49 @@ export async function seedErstellen() {
     { id: neueId("A"), am: vorTagen(3), nutzerId: admin, aktion: "status", objektArt: "flaeche", objektId: f1.id, text: "Pachtangebot gesendet", ip: "" },
     { id: neueId("A"), am: vorTagen(1), nutzerId: n.investor.id, aktion: "nda", objektArt: "interesse", objektId: interessen[2].id, text: "NDA akzeptiert", ip: "" },
   ];
+
+  // ---------------------------------------------------------------- Aufgaben & Wiedervorlagen
+  const tag = (offset) => new Date(Date.now() + offset * 86400e3).toLocaleDateString("sv-SE", { timeZone: "Europe/Vienna" });
+  const A = (x) => ({ id: neueId("AF"), beschreibung: "", zustaendigId: admin, status: "offen", erstelltVon: admin, erstelltAm: vorTagen(5), erledigtAm: null, erledigtVon: null, erinnertAm: null, ...x });
+  const aufgaben = [
+    A({ titel: "Rückruf Flächeneigentümer (Demo-Heide)", beschreibung: "Größe und Zuwegung klären, Flurstücke erfragen.", faelligAm: tag(-2), bezugArt: "vorgang", bezugId: vorgaenge[8].id }),
+    A({ titel: "Pachtvertrag-Entwurf vorbereiten", beschreibung: "Nach Rückmeldung zum Pachtangebot Entwurf an Frau Musterfrau senden.", faelligAm: tag(0), bezugArt: "flaeche", bezugId: f1.id }),
+    A({ titel: "Baubewilligung Carport anfordern", faelligAm: tag(4), bezugArt: "projekt", bezugId: projekte[6].id }),
+    A({ titel: "Datenraum-Freigabe Uckermark prüfen", faelligAm: tag(1), bezugArt: "interesse", bezugId: interessen[2].id }),
+    A({ titel: "Rechnung Provision Schwaben nachhalten", faelligAm: tag(-6), status: "erledigt", erledigtAm: vorTagen(3), erledigtVon: admin, bezugArt: "projekt", bezugId: p9.id }),
+  ];
+
+  // ---------------------------------------------------------------- Benachrichtigungen (Glocke) & Postausgang
+  const B = (nutzerId, art, titel, textInhalt, link, tage, gelesen = false, objektArt = null, objektId = null) => ({ id: neueId("B"), nutzerId, art, titel, text: textInhalt, link, objektArt, objektId, am: vorTagen(tage), gelesen, mail: true });
+  const benachrichtigungen = [
+    B(n.flaeche.id, "status", `Fläche: ${f1.bezeichnung}`, "Status: „Standortanalyse“ → „Pachtangebot“. Pachtangebot im Dokumentenbereich.", `/portal/flaechen/${f1.id}`, 3, false, "flaeche", f1.id),
+    B(n.flaeche.id, "nachricht", `Fläche: ${f1.bezeichnung}`, "ÖkoInvest Backoffice: Guten Tag Frau Musterfrau, anbei unser Pachtangebot. (Demo)", `/portal/flaechen/${f1.id}`, 3, false, "flaeche", f1.id),
+    B(n.flaeche.id, "status", `Fläche: ${flaechen[1].bezeichnung}`, "Status: „Eingegangen“ → „Vorprüfung“.", `/portal/flaechen/${flaechen[1].id}`, 4, true, "flaeche", flaechen[1].id),
+    B(n.investor.id, "nda", `Interesse: ${p1.titel}`, "Status: „NDA angefragt“ → „Datenraum frei“. Datenraum freigeschaltet.", `/portal/boerse/${p1.id}`, 19, true, "interesse", interessen[0].id),
+    B(n.investor.id, "status", `Interesse: ${p4.titel}`, "Status: „LOI abgegeben“ → „LOI angenommen“. Exklusivität 8 Wochen.", `/portal/boerse/${p4.id}`, 6, true, "interesse", interessen[3].id),
+    B(n.unternehmen.id, "status", `Anfrage Reststrom-Pool · ${vorgaenge[5].id}`, "Status: „Qualifiziert“ → „Angebot / Gespräch“. Angebot für den Reststrom-Pool liegt im Dokumentenbereich.", `/portal/anfragen/${vorgaenge[5].id}`, 4, false, "vorgang", vorgaenge[5].id),
+    B(n.anbieter.id, "nachricht", `Projekt: ${p1.titel}`, "ÖkoInvest Backoffice: Ihr Projekt wurde 184-mal aufgerufen, ein Investor hat den Datenraum erhalten. (Demo)", `/portal/projekte/${p1.id}`, 8, true, "projekt", p1.id),
+    B(admin, "anfrage", "Neue Anfrage: Fläche verpachten", `Friedrich Fiktiv (Demo) · ${vorgaenge[8].id}`, `/portal/admin/vorgaenge/${vorgaenge[8].id}`, 2, false, "vorgang", vorgaenge[8].id),
+    B(admin, "anfrage", "Neue Anfrage: Allgemeine Anfrage", `Klara Kontakt (Demo) · ${vorgaenge[11].id}`, `/portal/admin/vorgaenge/${vorgaenge[11].id}`, 0, false, "vorgang", vorgaenge[11].id),
+    B(admin, "nachricht", `Fläche: ${f3.bezeichnung}`, "Josef Beispiel (Demo): Können wir die Reihenabstände an unsere Maschinenbreite anpassen? (Demo)", `/portal/flaechen/${f3.id}`, 7, false, "flaeche", f3.id),
+    B(admin, "nachricht", `Interesse: ${p6.titel}`, "Clara Probe (Demo): Wir haben ein indikatives Angebot abgegeben und freuen uns auf Rückmeldung. (Demo)", `/portal/admin/interessen?id=${interessen[4].id}`, 2, false, "interesse", interessen[4].id),
+  ];
+  for (const p of projekte.filter((x) => x.status === "veroeffentlicht")) {
+    const m = matching(p, n.investor.suchprofil);
+    if (m.score >= n.investor.suchprofil.schwelle) {
+      benachrichtigungen.push(B(n.investor.id, "suchprofil", `Passendes Projekt: ${p.titel}`, `${m.score} % Passung${m.gruende.length ? ` · ${m.gruende.join(", ")}` : ""}`, `/portal/boerse/${p.id}`, Math.max(0, Math.round((Date.now() - new Date(p.veroeffentlichtAm).getTime()) / 86400e3)), p !== projekte[2], "projekt", p.id));
+    }
+  }
+  const E = (u, art, betreff, textInhalt, link, tage, linkText = "Zum Portal") => ({
+    id: neueId("E"), am: vorTagen(tage, 1), an: u.email, anName: `${u.vorname} ${u.nachname}`, nutzerId: u.id, art, betreff, text: textInhalt, link, linkText,
+    hinweis: "Aus Gründen der Vertraulichkeit enthält diese E-Mail keine Inhalte. Bitte melden Sie sich im Portal an.",
+  });
+  const postausgang = [
+    E(n.flaeche, "status", "Neuigkeiten zu Ihrem Vorgang – ÖkoInvest", "Der Status eines Ihrer Vorgänge hat sich geändert. Details finden Sie im Portal.", `/portal/flaechen/${f1.id}`, 3),
+    E(n.unternehmen, "status", "Neuigkeiten zu Ihrem Vorgang – ÖkoInvest", "Der Status eines Ihrer Vorgänge hat sich geändert. Details finden Sie im Portal.", `/portal/anfragen/${vorgaenge[5].id}`, 4),
+    E(n.investor, "suchprofil", "Neues Projekt passend zu Ihrem Suchprofil – ÖkoInvest", `In der Projektbörse wurde ein Projekt veröffentlicht, das zu Ihrem Suchprofil passt: „${p1.titel}“. Vertrauliche Angaben und Datenraum sehen Sie nach Klick-NDA im Portal.`, `/portal/boerse/${p1.id}`, 40),
+    E(n.admin, "anfrage", "Neue Anfrage über die Website – ÖkoInvest", "Über die Website ist eine neue Anfrage eingegangen.", `/portal/admin/vorgaenge/${vorgaenge[8].id}`, 2),
+  ].sort((a, b) => b.am.localeCompare(a.am));
 
   return {
     erstelltAm: new Date().toISOString(),
@@ -398,5 +454,8 @@ export async function seedErstellen() {
     aktivitaeten,
     tokens: [],
     demoLinks: [],
+    benachrichtigungen,
+    postausgang,
+    aufgaben,
   };
 }

@@ -29,11 +29,13 @@ from oekoinvest_app.plattform.kern import (
 	ungueltig,
 	verboten,
 )
-from oekoinvest_app.plattform.konstanten import BEZUG_ARTEN, DOCTYPE, DOKUMENT_KATEGORIEN, UPLOAD_MAX_BYTES, UPLOAD_TYPEN
+from oekoinvest_app.plattform.konstanten import BEZUG_ARTEN, DOCTYPE, DOKUMENT_KATEGORIEN, ORGANISATION_OBJEKTE, UPLOAD_MAX_BYTES, UPLOAD_TYPEN
+from oekoinvest_app.plattform.organisation import aktive_organisation, darf_team_lesen_objekt, datenraum_interesse
+from oekoinvest_app.plattform.checkliste import CHECKLISTE_IDS
 from oekoinvest_app.plattform.prozesse import BOERSE_STATUS, DATENRAUM_STATUS
 
 MAX_BASE64 = (UPLOAD_MAX_BYTES + 2) // 3 * 4 + 16
-FELDER = ["name", "bezug_art", "bezug_id", "dateiname", "mime", "groesse", "kategorie", "am", "hochgeladen_von", "datei_id"]
+FELDER = ["name", "bezug_art", "bezug_id", "dateiname", "mime", "groesse", "kategorie", "checkliste", "am", "hochgeladen_von", "datei_id"]
 
 
 def mime_aus_bytes(b):
@@ -55,11 +57,16 @@ def darf_dokument(n, d):
 	o = objekt_laden(d.bezug_art, d.bezug_id)
 	if not o:
 		return False
-	if besitzer(d.bezug_art, o) == n.id:
+	if besitzer(d.bezug_art, o) == n.id or darf_team_lesen_objekt(n, o):  # auch Team des Eigentümers
 		return True
 	if d.bezug_art == "projekt" and d.kategorie == "datenraum" and o.status in (*BOERSE_STATUS, "verkauft"):
-		status = frappe.db.get_value("Plattform Interesse", {"projekt_id": o.name, "investor_id": n.id}, "status")
-		return status in DATENRAUM_STATUS
+		# eigenes Interesse oder – im Team – das Interesse der Organisation mit freigegebenem Datenraum
+		i = datenraum_interesse(n, o.name, DATENRAUM_STATUS)
+		if not i:
+			return False
+		from oekoinvest_app.plattform.dealroom_kern import stufe_ok  # Deal-Room: Stufe 2 erst nach LOI
+
+		return stufe_ok(o.name, d.name, i.investor_id)
 	return False
 
 
@@ -91,6 +98,14 @@ def liste(bezugArt=None, bezugId=None, als_benutzer=None):
 			if namen:
 				for d in frappe.get_all("Plattform Dokument", filters={"bezug_art": art, "bezug_id": ("in", namen)}, fields=FELDER, limit_page_length=0):
 					gesehen[d.name] = d
+		# Im Organisationskontext zusätzlich die Dokumente an Objekten der aktiven Organisation
+		aktiv = aktive_organisation(n)
+		if aktiv:
+			for art in ORGANISATION_OBJEKTE:
+				namen = frappe.get_all(DOCTYPE[art], filters={"organisation_id": aktiv}, pluck="name", limit_page_length=0)
+				if namen:
+					for d in frappe.get_all("Plattform Dokument", filters={"bezug_art": art, "bezug_id": ("in", namen)}, fields=FELDER, limit_page_length=0):
+						gesehen[d.name] = d
 		kandidaten = list(gesehen.values())
 	erlaubt = [d for d in kandidaten if darf_dokument(n, d)]
 	erlaubt.sort(key=lambda d: str(d.am or ""), reverse=True)
@@ -121,7 +136,7 @@ def lesen(id=None, als_benutzer=None):  # noqa: A002
 
 
 @frappe.whitelist(methods=["POST"])
-def speichern(bezugArt=None, bezugId=None, name=None, mime=None, kategorie=None, inhaltBase64=None, als_benutzer=None):
+def speichern(bezugArt=None, bezugId=None, name=None, mime=None, kategorie=None, inhaltBase64=None, checkliste=None, als_benutzer=None):
 	n = nutzer(als_benutzer)
 	if mime not in UPLOAD_TYPEN:
 		ungueltig("Erlaubt sind PDF, JPG und PNG.")
@@ -139,10 +154,11 @@ def speichern(bezugArt=None, bezugId=None, name=None, mime=None, kategorie=None,
 	kat = v.auswahl(kategorie, DOKUMENT_KATEGORIEN, "allgemein")
 	if kat == "datenraum" and bezugArt != "projekt":
 		ungueltig("Datenraum-Dokumente gehören zu einem Projekt.")
+	punkt = v.auswahl(checkliste, CHECKLISTE_IDS.get(bezugArt, []), "")
 	endung = UPLOAD_TYPEN[mime]
 	sauber = re.sub(r'[\\/:*?"<>|]', "_", v.text(name, 120)) or f"dokument.{endung}"
 
-	o = darf_bezug(n, bezugArt, bezugId)  # Rechte vor dem Schreiben der Datei
+	o = darf_bezug(n, bezugArt, bezugId, schreiben=True)  # Rechte vor dem Schreiben der Datei (Team ab „Mitglied“)
 	eigen = ist_eigen(bezugArt, o, n)
 	als_admin = ist_admin(n) and not eigen
 
@@ -156,6 +172,7 @@ def speichern(bezugArt=None, bezugId=None, name=None, mime=None, kategorie=None,
 			"mime": mime,
 			"groesse": len(daten),
 			"kategorie": kat,
+			"checkliste": punkt,
 			"hochgeladen_von": n.id,
 			"am": jetzt(),
 			"sha256": sha256(daten),
@@ -186,8 +203,12 @@ def speichern(bezugArt=None, bezugId=None, name=None, mime=None, kategorie=None,
 		text=f"Dokument hochgeladen: {sauber}",
 		gelesen_nutzer=None if als_admin else True,
 		gelesen_admin=None if als_admin else False,
+		ereignis="nachricht",
 	)
 	protokoll(n, "upload", bezugArt, o.name, f"Dokument {sauber} ({len(daten)} B)")
+	from oekoinvest_app.plattform.backoffice import backoffice_ereignis  # Backoffice: Automationen
+
+	backoffice_ereignis("dokument", bezugArt, o, extra={"kategorie": kat})
 	return dokument_meta(d)
 
 

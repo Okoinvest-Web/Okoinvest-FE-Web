@@ -1,0 +1,197 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 08:00:00.000000",
+ "description": "CRM-Aktivität (Anruf, Termin, E-Mail, Notiz) – optional mit Wiedervorlage (Plattform Aufgabe)",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sec_akt",
+  "typ",
+  "betreff",
+  "am",
+  "dauer_min",
+  "ergebnis",
+  "cb_akt",
+  "kontakt_id",
+  "organisation_id",
+  "bezug_art",
+  "bezug_doctype",
+  "bezug_id",
+  "sec_text",
+  "text",
+  "sec_meta",
+  "von_id",
+  "system",
+  "cb_meta",
+  "aufgabe_id",
+  "wiedervorlage_am",
+  "vorlage_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "sec_akt",
+   "fieldtype": "Section Break",
+   "label": "Aktivität"
+  },
+  {
+   "fieldname": "typ",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "\nanruf\ntermin\nemail\nnotiz",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "betreff",
+   "fieldtype": "Data",
+   "label": "Betreff",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "label": "Zeitpunkt",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "dauer_min",
+   "fieldtype": "Int",
+   "label": "Dauer (Min.)"
+  },
+  {
+   "fieldname": "ergebnis",
+   "fieldtype": "Data",
+   "label": "Ergebnis"
+  },
+  {
+   "fieldname": "cb_akt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "kontakt_id",
+   "fieldtype": "Link",
+   "label": "Kontakt",
+   "options": "Plattform CRM Kontakt",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "organisation_id",
+   "fieldtype": "Link",
+   "label": "Organisation",
+   "options": "Plattform CRM Organisation"
+  },
+  {
+   "fieldname": "bezug_art",
+   "fieldtype": "Select",
+   "label": "Objektart",
+   "options": "\nvorgang\nflaeche\nprojekt\ninteresse"
+  },
+  {
+   "fieldname": "bezug_doctype",
+   "fieldtype": "Link",
+   "label": "DocType",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bezug_id",
+   "fieldtype": "Dynamic Link",
+   "label": "Objekt",
+   "options": "bezug_doctype"
+  },
+  {
+   "fieldname": "sec_text",
+   "fieldtype": "Section Break",
+   "label": "Inhalt"
+  },
+  {
+   "fieldname": "text",
+   "fieldtype": "Small Text",
+   "label": "Notiz"
+  },
+  {
+   "fieldname": "sec_meta",
+   "fieldtype": "Section Break",
+   "label": "Nachweis"
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "label": "Von",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "system",
+   "fieldtype": "Check",
+   "label": "Automatisch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_meta",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "aufgabe_id",
+   "fieldtype": "Link",
+   "label": "Wiedervorlage",
+   "options": "Plattform Aufgabe",
+   "read_only": 1
+  },
+  {
+   "fieldname": "wiedervorlage_am",
+   "fieldtype": "Date",
+   "label": "Wiedervorlage am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vorlage_id",
+   "fieldtype": "Link",
+   "label": "Vorlage",
+   "options": "Plattform Vorlage",
+   "read_only": 1
+  }
+ ],
+ "in_create": 0,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform CRM Aktivitaet",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "sort_field": "am",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

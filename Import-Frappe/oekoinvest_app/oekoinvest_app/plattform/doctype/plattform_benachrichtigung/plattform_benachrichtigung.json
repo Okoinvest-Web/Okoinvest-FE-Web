@@ -1,0 +1,154 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-29 08:00:00.000000",
+ "description": "Benachrichtigung (Glocke im Portal): Statuswechsel, Nachrichten, NDA-Freigabe, Suchprofil-Treffer, neue Anfragen, Aufgaben. E-Mail je nach Einstellung des Kontos – ohne Inhalte.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sec_benachrichtigung",
+  "nutzer_id",
+  "art",
+  "am",
+  "cb_benachrichtigung",
+  "gelesen",
+  "mail",
+  "objekt_art",
+  "objekt_id",
+  "sec_inhalt",
+  "titel",
+  "text",
+  "link"
+ ],
+ "fields": [
+  {
+   "fieldname": "sec_benachrichtigung",
+   "fieldtype": "Section Break",
+   "label": "Benachrichtigung"
+  },
+  {
+   "fieldname": "nutzer_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Art",
+   "options": "status\nnachricht\nnda\nsuchprofil\nanfrage\naufgabe\nsicherheit",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Zeitpunkt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_benachrichtigung",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "gelesen",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Gelesen"
+  },
+  {
+   "default": "0",
+   "fieldname": "mail",
+   "fieldtype": "Check",
+   "label": "Per E-Mail gemeldet",
+   "read_only": 1
+  },
+  {
+   "fieldname": "objekt_art",
+   "fieldtype": "Data",
+   "label": "Objektart",
+   "read_only": 1
+  },
+  {
+   "description": "Bewusst kein Link: bleibt lesbar, auch wenn das Objekt gelöscht wurde.",
+   "fieldname": "objekt_id",
+   "fieldtype": "Data",
+   "label": "Objekt-ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "sec_inhalt",
+   "fieldtype": "Section Break",
+   "label": "Inhalt"
+  },
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Titel",
+   "read_only": 1
+  },
+  {
+   "fieldname": "text",
+   "fieldtype": "Small Text",
+   "label": "Text",
+   "read_only": 1
+  },
+  {
+   "description": "Nur interne Portal-Pfade (/portal/…).",
+   "fieldname": "link",
+   "fieldtype": "Data",
+   "label": "Link",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-29 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Benachrichtigung",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 0,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "am",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

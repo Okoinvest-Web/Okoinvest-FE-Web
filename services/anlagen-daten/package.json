@@ -1,0 +1,20 @@
+{
+  "name": "oekoinvest-anlagen-daten",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ingest-Dienst Anlagen & Monitoring: MQTT → Validierung/Plausibilisierung → TimescaleDB, Störungsregeln → Frappe, Abfrage-API + SSE, Broker-Auth-Hook",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "check": "node scripts-check.mjs",
+    "test": "node --test test/schema.test.mjs test/regeln.test.mjs"
+  },
+  "dependencies": {
+    "mqtt": "^5.10.0",
+    "pg": "^8.13.0"
+  }
+}

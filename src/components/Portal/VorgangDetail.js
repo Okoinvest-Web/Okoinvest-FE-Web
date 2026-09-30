@@ -11,7 +11,7 @@ import { VORGANG_TYPEN, LAENDER } from "@/lib/plattform/konstanten";
 import { statusInfo } from "@/lib/plattform/prozesse";
 import { datumZeit, feldLabel, wertText } from "@/lib/plattform/format";
 
-export default function VorgangDetail({ vorgang: v, thread, dokumente, nutzer, admin = false, adminKonten = [] }) {
+export default function VorgangDetail({ vorgang: v, thread, dokumente, nutzer, admin = false, adminKonten = [], zusatz = null }) {
   const k = v.kontakt || {};
   const daten = Object.entries(v.daten || {}).filter(([, x]) => x !== "" && x !== null && x !== undefined);
   return (
@@ -90,6 +90,8 @@ export default function VorgangDetail({ vorgang: v, thread, dokumente, nutzer, a
               <DokumentUpload bezugArt="vorgang" bezugId={v.id} kategorien={admin ? ["vertrag", "allgemein"] : ["allgemein"]} />
             </div>
           </Karte>
+
+          {admin && zusatz}
 
           {!admin && v.status === "abgelehnt" && (
             <Hinweis ton="neutral" titel="Warum abgelehnt?">

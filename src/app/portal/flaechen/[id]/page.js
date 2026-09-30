@@ -1,8 +1,12 @@
 import Link from "next/link";
+import Begriff from "@/components/Portal/Bedienung/Begriff";
 import { FileSignature, MessageSquareText } from "lucide-react";
 import FlaecheFormular from "@/components/Portal/FlaecheFormular";
+import Checkliste from "@/components/Portal/Checkliste";
+import { AktivitaetsFeed, AufgabenKarte } from "@/components/Portal/ObjektBackoffice";
 import StatusAktionen from "@/components/Portal/StatusAktionen";
 import NachrichtenThread from "@/components/Portal/NachrichtenThread";
+import KiFlaeche from "@/components/Portal/Ki/KiFlaeche";
 import Zuweisung from "@/components/Portal/Zuweisung";
 import { DokumentListe, DokumentUpload } from "@/components/Portal/Dokumente";
 import { Angaben, Hinweis, Karte, SeitenKopf, StatusBadge, Stepper, Timeline } from "@/components/Portal/ui";
@@ -21,7 +25,7 @@ export default async function Flaeche({ params }) {
   const b = backend();
   const f = await laden(() => b.flaeche(n, id));
   const admin = istAdmin(n);
-  const eigen = f.nutzerId === n.id;
+  const eigen = f.nutzerId === n.id || f.meinZugriff === "schreiben"; // Team: Teamrolle ≥ Mitglied bearbeitet wie der Eigentümer
   const [thread, dokumente, adminKonten] = await Promise.all([
     b.nachrichten(n, "flaeche", id),
     b.dokumente(n, { bezugArt: "flaeche", bezugId: id }),
@@ -55,7 +59,7 @@ export default async function Flaeche({ params }) {
               </p>
               <dl className="mt-4 grid gap-5 sm:grid-cols-3">
                 <div>
-                  <dt className="text-[12.5px] text-white/60">Pacht je Hektar und Jahr</dt>
+                  <dt className="text-[12.5px] text-white/60">Pacht je Hektar und Jahr <Begriff id="flaechenpacht" nurIcon /></dt>
                   <dd className="ov-num mt-1 font-display text-[28px] font-extrabold">{eur(pa.euroProHaJahr)}</dd>
                 </div>
                 <div>
@@ -84,6 +88,8 @@ export default async function Flaeche({ params }) {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-6">
+          {eigen && <KiFlaeche flaecheId={f.id} agri={!!f.agri} />}
+
           <Karte titel="Nachrichten" id="nachrichten" untertitel="Rückfragen und Abstimmung zu dieser Fläche">
             <NachrichtenThread bezugArt="flaeche" bezugId={f.id} nachrichten={thread.nachrichten} />
           </Karte>
@@ -143,12 +149,21 @@ export default async function Flaeche({ params }) {
             <Timeline art="flaeche" verlauf={f.statusVerlauf} />
           </Karte>
 
+          {(admin || eigen) && (
+            <Karte titel="Unterlagen zur Fläche" untertitel="Damit wir schnell und verbindlich prüfen können">
+              <Checkliste checkliste={f.checkliste} bezugArt="flaeche" bezugId={f.id} kategorie="allgemein" kategorieJePunkt={{ flurkarte: "plan" }} darfHochladen={admin || eigen} />
+            </Karte>
+          )}
+
           <Karte titel="Dokumente" untertitel="Grundbuchauszug, Lageplan, Pachtangebot">
             <DokumentListe dokumente={dokumente} nutzerId={n.id} admin={admin} leerText="Noch keine Dokumente." />
             <div className="mt-4">
               <DokumentUpload bezugArt="flaeche" bezugId={f.id} kategorien={admin ? ["vertrag", "plan", "allgemein"] : ["allgemein", "plan"]} />
             </div>
           </Karte>
+
+          {admin && <AufgabenKarte nutzer={n} bezugArt="flaeche" bezugId={f.id} />}
+          {admin && <AktivitaetsFeed nutzer={n} objektId={f.id} weitereIds={f.vorgangId ? [f.vorgangId] : []} />}
 
           {f.agri && (
             <Hinweis ton="ok" titel="Agri-PV">

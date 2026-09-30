@@ -4,16 +4,18 @@
 // (SEO), Filter und Sortierung laufen im Browser und stehen in der URL.
 
 import { useEffect, useMemo, useState } from "react";
-import { SlidersHorizontal, X, SearchX } from "lucide-react";
+import Link from "next/link";
+import { Columns3, SlidersHorizontal, X, SearchX, List, Map as KarteIcon } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import ProjektKarte from "./ProjektKarte";
 import MerkenKnopf from "./MerkenKnopf";
+import KarteDach from "./KarteDach"; // Deal-Room-Team: Kartenansicht (Filter synchron)
 import { LAENDER, PROJEKT_TYPEN } from "@/lib/plattform/konstanten";
 import { statusInfo } from "@/lib/plattform/prozesse";
 import { PHASEN } from "@/lib/invest/markt";
 import { eingabe, auswahlfeld } from "@/components/Portal/felder";
 
-const LEER = { typ: "", land: "", phase: "", mwpMin: "", mwpMax: "", sortierung: "neu", ansicht: "alle" };
+const LEER = { typ: "", land: "", phase: "", mwpMin: "", mwpMax: "", sortierung: "neu", ansicht: "alle", darstellung: "liste", region: "" };
 
 function chipKlasse(aktiv) {
   return cn(
@@ -22,7 +24,7 @@ function chipKlasse(aktiv) {
   );
 }
 
-export default function BoerseListe({ projekte = [], basisHref = "/projektboerse/", portal = false, start = {} }) {
+export default function BoerseListe({ projekte = [], basisHref = "/projektboerse/", portal = false, start = {}, karte = true }) {
   const [f, setF] = useState({ ...LEER, ...start });
   const [offen, setOffen] = useState(false);
   const setze = (k, v) => setF((x) => ({ ...x, [k]: v }));
@@ -34,7 +36,7 @@ export default function BoerseListe({ projekte = [], basisHref = "/projektboerse
     window.history.replaceState(window.history.state, "", url);
   }, [f]);
 
-  const liste = useMemo(() => {
+  const basisListe = useMemo(() => {
     const num = (v) => (v === "" ? null : Number(String(v).replace(",", ".")));
     const min = num(f.mwpMin);
     const max = num(f.mwpMax);
@@ -53,8 +55,11 @@ export default function BoerseListe({ projekte = [], basisHref = "/projektboerse
     else if (f.sortierung === "phase") l = [...l].sort((a, b) => PHASEN.findIndex((x) => x.id === b.phase) - PHASEN.findIndex((x) => x.id === a.phase));
     return l;
   }, [projekte, f]);
+  // Region (Bundesland/Kanton) aus der Karte – wirkt auf die Liste, die Karte zeigt alle übrigen Treffer
+  const liste = useMemo(() => (f.region ? basisListe.filter((p) => p.bundesland === f.region) : basisListe), [basisListe, f.region]);
 
-  const aktiveFilter = ["typ", "land", "phase", "mwpMin", "mwpMax"].filter((k) => f[k]).length;
+  const aktiveFilter = ["typ", "land", "phase", "mwpMin", "mwpMax", "region"].filter((k) => f[k]).length;
+  const gemerkt = projekte.filter((p) => p.meinInteresse?.gemerkt).length;
 
   const filter = (
     <div className="space-y-5">
@@ -108,7 +113,8 @@ export default function BoerseListe({ projekte = [], basisHref = "/projektboerse
   return (
     <div>
       {portal && (
-        <div className="mb-5 flex flex-wrap gap-2" role="group" aria-label="Ansicht">
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Ansicht">
           {[
             ["alle", "Alle Projekte"],
             ["merkliste", "Merkliste"],
@@ -116,6 +122,12 @@ export default function BoerseListe({ projekte = [], basisHref = "/projektboerse
           ].map(([k, v]) => (
             <button key={k} type="button" className={chipKlasse(f.ansicht === k)} aria-pressed={f.ansicht === k} onClick={() => setze("ansicht", k)}>{v}</button>
           ))}
+        </div>
+          {gemerkt >= 2 && (
+            <Link href="/portal/boerse/vergleich" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-ov-600 px-3.5 text-[13.5px] font-semibold text-white hover:bg-ov-700 sm:ml-auto">
+              <Columns3 aria-hidden="true" className="h-4 w-4" /> Merkliste vergleichen ({Math.min(4, gemerkt)})
+            </Link>
+          )}
         </div>
       )}
 
@@ -130,12 +142,34 @@ export default function BoerseListe({ projekte = [], basisHref = "/projektboerse
         <div className="mt-4 hidden items-center justify-between border-t border-ink-100 pt-4 md:flex">
           <p className="text-[14px] text-ink-600" aria-live="polite"><span className="ov-num font-semibold text-ink-900">{liste.length}</span> {liste.length === 1 ? "Projekt" : "Projekte"} gefunden</p>
           {aktiveFilter > 0 && (
-            <button type="button" onClick={() => setF((x) => ({ ...LEER, sortierung: x.sortierung, ansicht: x.ansicht }))} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-ink-600 hover:text-ink-900">
+            <button type="button" onClick={() => setF((x) => ({ ...LEER, sortierung: x.sortierung, ansicht: x.ansicht, darstellung: x.darstellung }))} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-ink-600 hover:text-ink-900">
               <X aria-hidden="true" className="h-4 w-4" /> Filter zurücksetzen
             </button>
           )}
         </div>
       </div>
+
+      {karte && (
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-full bg-white p-1 ring-1 ring-inset ring-ink-200" role="group" aria-label="Darstellung">
+            {[["liste", "Liste", List], ["karte", "Karte", KarteIcon]].map(([k, label, Icon]) => (
+              <button key={k} type="button" aria-pressed={f.darstellung === k} onClick={() => setze("darstellung", k)} className={cn("inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-semibold transition-colors", f.darstellung === k ? "bg-navy-900 text-white" : "text-ink-700 hover:bg-ink-50")}>
+                <Icon aria-hidden="true" className="h-4 w-4" /> {label}
+              </button>
+            ))}
+          </div>
+          {f.region && (
+            <button type="button" onClick={() => setze("region", "")} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-ov-50 px-3.5 text-[13.5px] font-semibold text-ov-800 ring-1 ring-inset ring-ov-200 hover:bg-ov-100">
+              Region: {f.region} <X aria-hidden="true" className="h-3.5 w-3.5" /><span className="sr-only">entfernen</span>
+            </button>
+          )}
+        </div>
+      )}
+      {karte && f.darstellung === "karte" && (
+        <div className="mb-8">
+          <KarteDach projekte={basisListe} region={f.region} onRegion={(r) => setze("region", r)} />
+        </div>
+      )}
 
       {liste.length ? (
         <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">

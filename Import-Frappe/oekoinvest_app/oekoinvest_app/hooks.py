@@ -22,6 +22,7 @@ fixtures = [
 				[
 					"ÖkoInvest Admin",
 					"ÖkoInvest API",
+					"ÖkoInvest Anlagen-Dienst",  # Anlagen & Monitoring: Ingest-Dienst
 					"Plattform Flächeneigentümer",
 					"Plattform Landwirt",
 					"Plattform Investor",
@@ -40,10 +41,16 @@ after_install = "oekoinvest_app.plattform.installation.nach_installation"
 after_migrate = ["oekoinvest_app.plattform.installation.nach_migration"]
 
 # Das Aktivitätsprotokoll und Tokens verhindern das Löschen von Konten nicht (Protokoll bleibt lesbar).
-ignore_links_on_delete = ["Plattform Aktivitaet", "Plattform Token"]
+ignore_links_on_delete = ["Plattform Aktivitaet", "Plattform Token", "Plattform Anmeldung", "Plattform Sitzung"]
 
 scheduler_events = {
 	"daily": [
 		"oekoinvest_app.plattform.aufgaben.tokens_aufraeumen",
+		"oekoinvest_app.plattform.aufgaben.wiedervorlagen_erinnern",
+		"oekoinvest_app.plattform.backoffice.fristen_taeglich",  # Automationen: Regeln „Frist überschritten“
+		# Login, Sicherheit & Teams: alte Sitzungen, abgelaufene Einladungen, Anmeldehistorie > 180 Tage
+		"oekoinvest_app.plattform.sicherheit.aufraeumen",
 	],
+	# Deal-Room: Erinnerung 48 h vor Ende einer Angebotsfrist
+	"hourly": ["oekoinvest_app.plattform.api.bieter.erinnerungen_senden"],
 }

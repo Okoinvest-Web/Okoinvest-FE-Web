@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowUpRight, MapPin, Zap } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import TypIllustration from "./TypIllustration";
+import { QualitaetsBalken } from "@/components/Portal/ui";
 import { LAENDER, NETZANSCHLUSS, PROJEKT_TYPEN } from "@/lib/plattform/konstanten";
 import { mwp, preisText } from "@/lib/plattform/format";
 import { statusLabel } from "@/lib/plattform/prozesse";
@@ -64,6 +65,11 @@ export default function ProjektKarte({ projekt: p, href, extra, aktion, classNam
           <Zap aria-hidden="true" className="-mt-0.5 mr-1 inline h-3.5 w-3.5 text-ov-600" />{NETZANSCHLUSS[p.netzanschluss] || "Netzanschluss offen"}
           {p.codGeplant && <span className="text-ink-400"> · COD {p.codGeplant}</span>}
         </p>
+        {typeof p.datenraumQualitaet === "number" && (
+          <div className="mt-3">
+            <QualitaetsBalken quote={p.datenraumQualitaet} klein />
+          </div>
+        )}
         {extra && <div className="mt-3">{extra}</div>}
         <div className="mt-auto flex items-center justify-between gap-3 pt-5">
           <span className="inline-flex items-center gap-1 text-[14px] font-semibold text-ov-700">

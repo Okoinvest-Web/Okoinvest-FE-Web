@@ -1,0 +1,70 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 08:00:00.000000",
+ "description": "Version einer E-Mail-/Nachrichtenvorlage (unveränderlich)",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "version",
+  "betreff",
+  "text",
+  "am",
+  "von_id",
+  "kommentar"
+ ],
+ "fields": [
+  {
+   "fieldname": "version",
+   "fieldtype": "Int",
+   "label": "Version",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "betreff",
+   "fieldtype": "Data",
+   "label": "Betreff",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "text",
+   "fieldtype": "Long Text",
+   "label": "Text"
+  },
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "label": "Am",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "label": "Von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "kommentar",
+   "fieldtype": "Data",
+   "label": "Notiz",
+   "in_list_view": 1
+  }
+ ],
+ "in_create": 0,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Vorlage Version",
+ "naming_rule": "",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "istable": 1,
+ "editable_grid": 1
+}

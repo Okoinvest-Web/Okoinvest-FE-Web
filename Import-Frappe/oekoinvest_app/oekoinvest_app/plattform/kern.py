@@ -162,14 +162,20 @@ def konto_json(konto):
 		"erstelltAm": iso(konto.creation),
 		"letzterLogin": iso(konto.letzter_login),
 		"suchprofil": aus_json(konto.suchprofil),
+		"mailEinstellungen": aus_json(konto.get("mail_einstellungen")),
+		"backofficeRollen": [r for r in str(konto.get("backoffice_rollen") or "").split(",") if r] or None,  # Backoffice-Unterrollen (plattform/rechte.py)
+		"komfort": aus_json(konto.get("komfort")),
 	}
 
 
-def nutzer(als_benutzer, pflicht=True):
+def nutzer(als_benutzer, pflicht=True, als_organisation=None):
 	"""API-Aufrufer prüfen und in den genannten Nutzer wechseln.
 
 	Liefert den Nutzer (frappe._dict im camelCase-Format, `n` in allen Methoden) oder None,
 	wenn `pflicht=False` und kein Nutzer genannt ist. Unbekannte/gesperrte Konten → 401.
+	`n.organisation` = aktive Organisation {id, name, art, rolle} aus `als_organisation` (sendet die Website bei
+	jedem Aufruf mit Nutzer; Methoden müssen es nicht deklarieren – gelesen aus frappe.form_dict) bzw. None,
+	wenn keine Mitgliedschaft besteht (still, kein Fehler).
 	"""
 	api_pruefen()
 	if not als_benutzer:
@@ -183,7 +189,13 @@ def nutzer(als_benutzer, pflicht=True):
 		# Konten mit technischen/administrativen Frappe-Rollen werden nie über die Website gesteuert.
 		verboten("Dieses Konto kann nicht über die Website verwendet werden.")
 	frappe.set_user(konto.user)
-	return frappe._dict(konto_json(konto))
+	n = frappe._dict(konto_json(konto))
+	if als_organisation is None:
+		als_organisation = (getattr(frappe.local, "form_dict", None) or {}).get("als_organisation")
+	from oekoinvest_app.plattform.organisation import kontext
+
+	n.organisation = kontext(konto.name, als_organisation) if als_organisation else None
+	return n
 
 
 def ist_admin(n):
@@ -251,8 +263,11 @@ def besitzer(art, o):
 	return None
 
 
-def darf_bezug(n, art, kennung_):
-	"""Bezug eines Threads/Dokuments laden und Eigentum (oder Admin) prüfen."""
+def darf_bezug(n, art, kennung_, schreiben=False):
+	"""Bezug eines Threads/Dokuments laden und Eigentum (oder Admin) prüfen.
+
+	Organisation: Mitglieder sehen Objekte ihres Teams (jede Teamrolle), schreiben ab Teamrolle „Mitglied“.
+	"""
 	if art not in BEZUG_ARTEN:
 		ungueltig("Unbekannter Bezug.")
 	o = objekt_laden(art, kennung_)
@@ -261,7 +276,10 @@ def darf_bezug(n, art, kennung_):
 	if ist_admin(n):
 		return o
 	if besitzer(art, o) != n.id:
-		verboten()
+		from oekoinvest_app.plattform.organisation import darf_team_lesen_objekt, darf_team_schreiben_objekt
+
+		if not (darf_team_schreiben_objekt(n, o) if schreiben else darf_team_lesen_objekt(n, o)):
+			verboten()
 	return o
 
 
@@ -304,9 +322,11 @@ def verlauf_json(doc):
 	]
 
 
-def nachricht_anlegen(bezug_art, bezug_id, von_id=None, von_admin=False, system=False, text="", gelesen_nutzer=None, gelesen_admin=None, mail=True):
+def nachricht_anlegen(bezug_art, bezug_id, von_id=None, von_admin=False, system=False, text="", gelesen_nutzer=None, gelesen_admin=None, mail=True, melden=True, ereignis=None):
 	"""Nachricht im Thread (bezug_art, bezug_id). Standard wie im Demo-Backend:
-	gelesen_nutzer = nicht vom Admin und keine Systemnachricht; gelesen_admin = vom Admin."""
+	gelesen_nutzer = nicht vom Admin und keine Systemnachricht; gelesen_admin = vom Admin.
+	`melden`: Benachrichtigungen (Glocke) für die Seite erzeugen, die die Nachricht noch nicht gelesen hat;
+	`mail=False` unterdrückt dabei die E-Mail (z. B. Willkommensnachricht). `ereignis` überschreibt die Art."""
 	gn = (not von_admin and not system) if gelesen_nutzer is None else gelesen_nutzer
 	ga = bool(von_admin) if gelesen_admin is None else gelesen_admin
 	doc = frappe.get_doc(
@@ -324,10 +344,10 @@ def nachricht_anlegen(bezug_art, bezug_id, von_id=None, von_admin=False, system=
 			"gelesen_admin": 1 if ga else 0,
 		}
 	).insert(ignore_permissions=True)
-	if mail:
-		from oekoinvest_app.plattform import mail as plattform_mail
+	if melden:
+		from oekoinvest_app.plattform import benachrichtigung
 
-		plattform_mail.nachricht_benachrichtigung(doc)
+		benachrichtigung.aus_nachricht(doc, ereignis=ereignis, mail=mail)
 	return doc
 
 

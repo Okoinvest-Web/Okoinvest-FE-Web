@@ -24,10 +24,15 @@
 //   Nachricht: nachrichtenThreads(n) · nachrichten(n,bezugArt,bezugId,{markieren}) · nachrichtSenden(n,{bezugArt,bezugId,text})
 //   Dokument:  dokumente(n,{bezugArt,bezugId}) · dokumentLesen(n,id) · dokumentSpeichern(n,{...,daten}) · dokumentLoeschen(n,id)
 //   Admin:     zuweisen · nutzerListe · nutzerAendern · provisionen · aktivitaeten · adminKonten · adminUebersicht · demoLinks
+//   Hinweise:  benachrichtigungen(n,{nurUngelesen,limit}) · benachrichtigungenGelesen(n,{ids,alle}) · mailEinstellungenSpeichern(n,einstellungen)
+//   Aufgaben:  aufgaben(n,{zustaendigId,status,bezugArt,bezugId,nurUeberfaellig}) · aufgabeAnlegen(n,daten) · aufgabeAendern(n,id,daten)
+//   Exposé:    exposeDaten(n,id,{ip}) (Rechte + Protokoll, PDF erzeugt die Website) · protokollEintrag(n,{aktion,objektArt,objektId,text,ip})
+//   Nur Demo:  postausgang(n,{limit}) (E-Mails, die Frappe versenden würde; im Frappe-Adapter [])
 
 import * as demo from "./demo";
 import * as frappe from "./frappe";
 import { PlattformFehler } from "../fehler";
+import { BACKOFFICE_OPERATIONEN } from "./frappe/backoffice";
 
 export const OPERATIONEN = [
   "anmelden", "nutzerFuerSitzung", "registrieren", "emailBestaetigen", "passwortVergessen", "passwortSetzen", "passwortAendern",
@@ -35,7 +40,9 @@ export const OPERATIONEN = [
   "flaecheAendern", "projekte", "projekt", "projektAnlegen", "projektAendern", "provisionAkzeptieren", "boerse", "boerseDetail",
   "merken", "ndaAnfragen", "interessen", "statusWechsel", "nachrichtenThreads", "nachrichten", "nachrichtSenden", "dokumente",
   "dokumentLesen", "dokumentSpeichern", "dokumentLoeschen", "zuweisen", "nutzerListe", "nutzerAendern", "provisionen",
-  "aktivitaeten", "adminKonten", "adminUebersicht", "demoLinks",
+  "aktivitaeten", "adminKonten", "adminUebersicht", "demoLinks", "benachrichtigungen", "benachrichtigungenGelesen",
+  "mailEinstellungenSpeichern", "postausgang", "aufgaben", "aufgabeAnlegen", "aufgabeAendern", "exposeDaten", "protokollEintrag",
+  ...BACKOFFICE_OPERATIONEN, // Backoffice: CRM, Akquise, Automationen, Vorlagen, Berichte, Rechte (backend/frappe/backoffice.js)
 ];
 
 if (process.env.NODE_ENV !== "production") {

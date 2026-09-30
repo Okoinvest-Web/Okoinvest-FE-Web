@@ -1,4 +1,6 @@
 import VorgangDetail from "@/components/Portal/VorgangDetail";
+import { AktivitaetsFeed, AufgabenKarte } from "@/components/Portal/ObjektBackoffice";
+import KiTriage from "@/components/Portal/Ki/KiTriage";
 import { portalNutzer, laden } from "@/lib/plattform/server/seite";
 import { backend } from "@/lib/plattform/backend";
 
@@ -14,5 +16,21 @@ export default async function AdminVorgang({ params }) {
     b.dokumente(n, { bezugArt: "vorgang", bezugId: id }),
     b.adminKonten(n),
   ]);
-  return <VorgangDetail vorgang={vorgang} thread={thread} dokumente={dokumente} nutzer={n} admin adminKonten={adminKonten} />;
+  return (
+    <VorgangDetail
+      vorgang={vorgang}
+      thread={thread}
+      dokumente={dokumente}
+      nutzer={n}
+      admin
+      adminKonten={adminKonten}
+      zusatz={
+        <>
+          <KiTriage vorgangId={vorgang.id} typ={vorgang.typ} />
+          <AufgabenKarte nutzer={n} bezugArt="vorgang" bezugId={vorgang.id} />
+          <AktivitaetsFeed nutzer={n} objektId={vorgang.id} weitereIds={vorgang.flaecheId ? [vorgang.flaecheId] : []} />
+        </>
+      }
+    />
+  );
 }

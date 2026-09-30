@@ -34,6 +34,11 @@ export const GRENZEN = {
   passwort: [5, 60 * 60e3],
   upload: [60, 60 * 60e3],
   nachricht: [120, 60 * 60e3],
+  // Login, Sicherheit & Teams
+  magicLink: [5, 60 * 60e3],
+  zweiFaktor: [10, 15 * 60e3],
+  einladung: [30, 60 * 60e3],
+  export: [10, 60 * 60e3],
 };
 
 /**

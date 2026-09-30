@@ -126,6 +126,9 @@ def uebergang_anwenden(n, art, o, nach, als, extra=None, ip=""):
 			nachricht_anlegen(art, o.name, von_id=n.get("id") if n else None, von_admin=(als == "admin"), system=True, text=text)
 
 	protokoll(n, "status", art, o.name, f"{status_label(art, von)} → {status_label(art, nach)}", ip)
+	from oekoinvest_app.plattform.backoffice import backoffice_ereignis  # Backoffice: Automationen
+
+	backoffice_ereignis("status", art, o, von=von, nach=nach)
 	return o
 
 
@@ -142,6 +145,9 @@ def system_wechsel(art, o, nach, kommentar):
 	o.flags.plattform_uebergang = (von, nach)
 	o.save(ignore_permissions=True)
 	nachricht_anlegen(art, o.name, von_admin=True, system=True, text=f"Status: „{status_label(art, von)}“ → „{status_label(art, nach)}“. {kommentar}")
+	from oekoinvest_app.plattform.backoffice import backoffice_ereignis  # Backoffice: Automationen
+
+	backoffice_ereignis("status", art, o, von=von, nach=nach)
 	return True
 
 
@@ -188,7 +194,11 @@ def verkauf_abschliessen(projekt):
 
 
 def investoren_benachrichtigen(p):
-	"""Neu veröffentlicht → Investoren mit passendem Suchprofil (Score ≥ 70) erhalten eine System-Nachricht."""
+	"""Suchprofil-Alarm: neu veröffentlicht → Investoren mit `benachrichtigen` und Score ≥ eigener Schwelle (Standard 70)
+	erhalten System-Nachricht, Benachrichtigung (Glocke) und – je nach Einstellung – eine E-Mail (öffentlicher Titel + Passung)."""
+	from oekoinvest_app.plattform import benachrichtigung
+	from oekoinvest_app.plattform.konstanten import SUCHPROFIL_SCHWELLE
+
 	from oekoinvest_app.plattform.ausgabe import projekt_json
 
 	pj = projekt_json(p)
@@ -199,6 +209,7 @@ def investoren_benachrichtigen(p):
 		limit_page_length=0,
 	)
 	investoren = set(frappe.get_all("Plattform Konto Rolle", filters={"rolle": "investor", "parenttype": "Plattform Konto"}, pluck="parent"))
+	bereits = set()  # je Person höchstens ein Alarm (persönlich vor Team-Suchprofil)
 	for k in konten:
 		if k.name not in investoren:
 			continue
@@ -206,14 +217,36 @@ def investoren_benachrichtigen(p):
 		if not profil.get("benachrichtigen"):
 			continue
 		m = matching(pj, profil)
-		if m["score"] >= 70:
-			nachricht_anlegen(
-				"nutzer",
-				k.name,
-				von_admin=True,
-				system=True,
-				text=f"Neues Projekt passend zu Ihrem Suchprofil ({m['score']} % Passung): {p.titel}. Zum Exposé: /portal/boerse/{p.name}",
-			)
+		schwelle = v.zahl(profil.get("schwelle"), min=SUCHPROFIL_SCHWELLE["min"], max=SUCHPROFIL_SCHWELLE["max"]) or SUCHPROFIL_SCHWELLE["standard"]
+		if m["score"] < schwelle:
+			continue
+		bereits.add(k.name)
+		nachricht_anlegen(
+			"nutzer",
+			k.name,
+			von_admin=True,
+			system=True,
+			text=f"Neues Projekt passend zu Ihrem Suchprofil ({m['score']} % Passung): {p.titel}. Zum Exposé: /portal/boerse/{p.name}",
+			melden=False,
+		)
+		benachrichtigung.anlegen(
+			k.name,
+			"suchprofil",
+			f"Passendes Projekt: {p.titel}",
+			f"{m['score']} % Passung" + (f" · {', '.join(m['gruende'])}" if m.get("gruende") else ""),
+			f"/portal/boerse/{p.name}",
+			"projekt",
+			p.name,
+			mail_text=f"In der Projektbörse wurde ein Projekt veröffentlicht, das zu Ihrem Suchprofil passt ({m['score']} % Passung): „{p.titel}“. Vertrauliche Angaben und Datenraum sehen Sie nach Klick-NDA im Portal.",
+		)
+		protokoll(None, "suchprofil_treffer", "projekt", p.name, f"Suchprofil-Treffer für {k.name} ({m['score']} %)")
+		from oekoinvest_app.plattform.backoffice import backoffice_ereignis  # Backoffice: Automationen
+
+		backoffice_ereignis("suchprofil", "projekt", p, extra={"score": m["score"], "investorId": k.name})
+	# Team-Suchprofile der Organisationen (Login, Sicherheit & Teams)
+	from oekoinvest_app.plattform.organisation import organisations_alarm
+
+	organisations_alarm(p, pj, bereits)
 
 
 # ================================================================ Konto-Verknüpfung

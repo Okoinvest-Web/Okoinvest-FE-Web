@@ -232,6 +232,10 @@ async def kapazitaet_setzen(knoten_id: str, request: Request):
 	quelle = str(d.get("quelle") or "").strip()[:200]
 	if not quelle:
 		raise HTTPException(422, "Quelle der Kapazitätsangabe fehlt")
+	frei_mw = d.get("freiMw")
+	if frei_mw is not None:
+		if isinstance(frei_mw, bool) or not isinstance(frei_mw, (int, float)) or not (0 <= frei_mw <= 10000):
+			raise HTTPException(422, "freiMw: Zahl zwischen 0 und 10000 oder leer")
 	with pool.connection() as conn:
 		if not conn.execute("SELECT 1 FROM geo.netzknoten WHERE id = %s", (knoten_id[:80],)).fetchone():
 			raise HTTPException(404, "Netzknoten nicht gefunden")
@@ -239,7 +243,7 @@ async def kapazitaet_setzen(knoten_id: str, request: Request):
 			"""INSERT INTO geo.netzkapazitaet (knoten_id, kapazitaet, frei_mw, quelle, stand, gepflegt_von) VALUES (%s,%s,%s,%s,%s,%s)
 			   ON CONFLICT (knoten_id) DO UPDATE SET kapazitaet=EXCLUDED.kapazitaet, frei_mw=EXCLUDED.frei_mw, quelle=EXCLUDED.quelle, stand=EXCLUDED.stand,
 			     gepflegt_von=EXCLUDED.gepflegt_von, gepflegt_am=now()""",
-			(knoten_id, kap, d.get("freiMw"), quelle, d.get("stand") or None, str(d.get("gepflegtVon") or "")[:60]))
+			(knoten_id, kap, frei_mw, quelle, d.get("stand") or None, str(d.get("gepflegtVon") or "")[:60]))
 	# Neuberechnung der betroffenen Kandidaten: nächtlicher Lauf bzw. `cli ableiten --umkreis <knoten>` (siehe README)
 	return {"ok": True}
 

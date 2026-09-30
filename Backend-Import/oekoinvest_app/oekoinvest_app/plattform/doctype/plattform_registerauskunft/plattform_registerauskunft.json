@@ -1,0 +1,184 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 20:00:00.000000",
+ "description": "Abruf aus Firmenbuch (AT), Handelsregister (DE) oder Zefix (CH) mit Abrufdatum, Quelle und Zweck; optional als Hinweis im KYC-Fall hinterlegt.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "firma",
+  "land",
+  "nummer",
+  "cb1",
+  "register_status",
+  "quelle",
+  "abruf_am",
+  "sec_zweck",
+  "von_id",
+  "zweck",
+  "kyc_fall_id",
+  "sec_daten",
+  "daten"
+ ],
+ "fields": [
+  {
+   "fieldname": "firma",
+   "fieldtype": "Data",
+   "label": "Firma",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "label": "Land",
+   "options": "AT\nDE\nCH",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "nummer",
+   "fieldtype": "Data",
+   "label": "Registernummer",
+   "in_list_view": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "register_status",
+   "fieldtype": "Data",
+   "label": "Status laut Register",
+   "read_only": 1
+  },
+  {
+   "fieldname": "quelle",
+   "fieldtype": "Select",
+   "label": "Quelle",
+   "options": "zefix\nfirmenbuch\nhandelsregister\ndemo",
+   "read_only": 1
+  },
+  {
+   "fieldname": "abruf_am",
+   "fieldtype": "Datetime",
+   "label": "Abgerufen am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_zweck",
+   "fieldtype": "Section Break",
+   "label": "Zweck"
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "label": "Abgerufen von",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "zweck",
+   "fieldtype": "Data",
+   "label": "Zweck",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kyc_fall_id",
+   "fieldtype": "Data",
+   "label": "KYC-Fall",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_daten",
+   "fieldtype": "Section Break",
+   "label": "Registerdaten"
+  },
+  {
+   "fieldname": "daten",
+   "fieldtype": "JSON",
+   "label": "Firmendaten (normalisiert)",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Registerauskunft",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Transaktion"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Compliance"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  }
+ ],
+ "sort_field": "abruf_am",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "firma",
+ "track_changes": 1
+}

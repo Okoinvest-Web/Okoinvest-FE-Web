@@ -1,0 +1,77 @@
+{#- ÖkoInvest – gemeinsamer Belegkörper für Pachtabrechnung/Gutschrift, Contracting-Rechnung (mit Zählerständen) und
+    Provisionsrechnung. Erwartet `b` (Beleg im Format der Plattform: plattform/finanzen/druck.py → oekoinvest_abrechnung
+    bzw. oekoinvest_beleg_erpnext). Pflichtangaben: § 14 Abs. 4 UStG (DE) / § 11 Abs. 1 UStG 1994 (AT); Gutschrift
+    § 14 Abs. 2 UStG bzw. § 11 Abs. 7 UStG 1994 (Bezeichnung „Gutschrift“). -#}
+{%- set gutschrift = b.beleg == "gutschrift" -%}
+{%- set a = b.aussteller or {} -%}
+{%- set p = b.partei or {} -%}
+{%- set st = b.steuer or {} -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">{{ "Gutschrift" if gutschrift else "Rechnung" }}</div>
+	<div class="oi-titel">{{ b.titel | e }}</div>
+	<div class="oi-untertitel">Nr. {{ b.nummer | e }} · ausgestellt am {{ oekoinvest_datum(b.rechnungsdatum) }}</div>
+</div>
+{% if b.status == "storniert" %}<div class="oi-muster-stempel">Storniert{% if b.stornoGrund %}: {{ b.stornoGrund | e }}{% endif %}</div>{% endif %}
+
+<table class="oi-daten">
+	<tr>
+		<td class="oi-feld">{{ "Leistender / Gutschriftsempfänger" if gutschrift else "Rechnungsempfänger" }}</td>
+		<td><b>{{ p.name | e }}</b>{% if p.zuHaenden %}<br>z. H. {{ p.zuHaenden | e }}{% endif %}{% if p.anschrift %}<br>{{ p.anschrift | e }}{% endif %}{% if p.uid %}<br>UID {{ p.uid | e }}{% endif %}</td>
+	</tr>
+	<tr>
+		<td class="oi-feld">{{ "Aussteller (Leistungsempfänger)" if gutschrift else "Rechnungssteller" }}</td>
+		<td><b>{{ a.name | e }}</b>{% if a.anschrift %}<br>{{ a.anschrift | e }}{% endif %}{% if a.uid %}<br>UID {{ a.uid | e }}{% endif %}{% if a.firmenbuch %}<br><span class="oi-klein">{{ a.firmenbuch | e }}</span>{% endif %}</td>
+	</tr>
+	<tr><td class="oi-feld">Leistungszeitraum</td><td>{{ oekoinvest_datum(b.zeitraum.von) }} – {{ oekoinvest_datum(b.zeitraum.bis) }}</td></tr>
+	<tr><td class="oi-feld">{{ "Auszahlung bis" if gutschrift else "Zahlbar bis" }}</td><td>{{ oekoinvest_datum(b.faelligAm) }}</td></tr>
+	{% if b.bezugText %}<tr><td class="oi-feld">Bezug</td><td>{{ b.bezugText | e }}</td></tr>{% endif %}
+</table>
+
+<div class="oi-abschnitt">Positionen</div>
+<table class="oi-tabelle">
+	<thead><tr><th style="width:6%">Pos.</th><th>Beschreibung</th><th class="oi-zahl" style="width:13%">Menge</th><th style="width:9%">Einheit</th><th class="oi-zahl" style="width:14%">Einzelpreis</th><th class="oi-zahl" style="width:14%">Betrag</th></tr></thead>
+	<tbody>
+	{% for pos in b.positionen or [] %}
+		<tr>
+			<td>{{ loop.index }}</td>
+			<td>{{ pos.text | e }}</td>
+			<td class="oi-zahl">{{ oekoinvest_zahl(pos.menge, 0 if pos.einheit == "kWh" else 4) }}</td>
+			<td>{{ pos.einheit | e }}</td>
+			<td class="oi-zahl">{% if pos.einheit == "kWh" %}{{ oekoinvest_zahl((pos.preis or 0) * 100, 3) }} ct{% else %}{{ oekoinvest_eur(pos.preis, 2) }}{% endif %}</td>
+			<td class="oi-zahl"><b>{{ oekoinvest_eur(pos.betrag, 2) }}</b></td>
+		</tr>
+	{% endfor %}
+	</tbody>
+</table>
+<table class="oi-daten" style="width:48%; margin-left:52%">
+	<tr><td class="oi-feld">Summe netto</td><td class="oi-zahl">{{ oekoinvest_eur(b.netto, 2) }}</td></tr>
+	<tr><td class="oi-feld">Umsatzsteuer{% if st.satz %} {{ oekoinvest_zahl((st.satz or 0) * 100, 1) }} %{% endif %}</td><td class="oi-zahl">{{ oekoinvest_eur(st.betrag or 0, 2) if st.betrag else "0,00 €" }}</td></tr>
+	<tr><td class="oi-feld"><b>{{ "Auszahlungsbetrag" if gutschrift else "Rechnungsbetrag" }}</b></td><td class="oi-zahl"><b>{{ oekoinvest_eur(b.brutto, 2) }}</b></td></tr>
+</table>
+{% if st.text %}<p class="oi-absatz"><b>Steuerlicher Hinweis:</b> {{ st.text | e }}</p>{% endif %}
+
+{% if b.zaehlerstaende %}
+<div class="oi-abschnitt">Zählerstände (geeichte Messstellen, Monatswerte des Messstellenbetreibers)</div>
+<table class="oi-tabelle">
+	<thead><tr><th>Zähler</th><th>Register</th><th class="oi-zahl">Anfangsstand</th><th class="oi-zahl">Endstand</th><th class="oi-zahl">Menge (kWh)</th></tr></thead>
+	<tbody>
+	{% for z in b.zaehlerstaende %}
+		<tr><td>{{ z.zaehlernummer | e }}</td><td>{{ "2.8.0 (Lieferung)" if z.register == "2.8.0" else "1.8.0 (Bezug)" }}</td><td class="oi-zahl">{{ oekoinvest_zahl(z.anfang, 1) }}</td><td class="oi-zahl">{{ oekoinvest_zahl(z.ende, 1) }}</td><td class="oi-zahl">{{ oekoinvest_zahl(z.menge, 1) }}</td></tr>
+	{% endfor %}
+	</tbody>
+</table>
+{% if b.kennzahlen and b.kennzahlen.gelieferteKwh is not none %}<p class="oi-absatz"><b>Gelieferter PV-Strom:</b> {{ oekoinvest_zahl(b.kennzahlen.gelieferteKwh) }} kWh (Erzeugung abzüglich Einspeisung).</p>{% endif %}
+{% endif %}
+
+{% if b.erklaerung %}
+<div class="oi-abschnitt">Erläuterung</div>
+<ul>{% for z in b.erklaerung %}<li>{{ z | e }}</li>{% endfor %}</ul>
+{% endif %}
+
+<div class="oi-abschnitt">Zahlung</div>
+{% if gutschrift %}
+<p class="oi-absatz">Wir überweisen den Auszahlungsbetrag bis {{ oekoinvest_datum(b.faelligAm) }}{% if b.auszahlung and b.auszahlung.ibanMaskiert %} auf Ihr Konto {{ b.auszahlung.ibanMaskiert }}{% endif %}. Voraussetzung ist die abgeschlossene Verifizierung mit geprüfter Bankverbindung. Diese Gutschrift gilt als Abrechnung über Ihre Leistung (Pacht); sie wurde mit Ihnen vereinbart.</p>
+{% else %}
+<p class="oi-absatz">Bitte überweisen Sie den Rechnungsbetrag bis {{ oekoinvest_datum(b.faelligAm) }} unter Angabe der Rechnungsnummer {{ b.nummer | e }}{% if b.bankverbindung %} auf das Konto {{ b.bankverbindung.name | e }}, IBAN {{ b.bankverbindung.iban | e }}{% if b.bankverbindung.bic %}, BIC {{ b.bankverbindung.bic | e }}{% endif %}{% endif %}.</p>
+{% endif %}

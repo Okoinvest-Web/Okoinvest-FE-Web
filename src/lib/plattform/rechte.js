@@ -21,6 +21,9 @@ export const BACKOFFICE_ROLLEN = {
   buchhaltung: { label: "Buchhaltung", text: "Provisionen und Rechnungsstatus, Berichte und Exporte." },
   lesen: { label: "Nur lesen", text: "Sieht alle Bereiche außer der Rechteverwaltung, ändert nichts." },
   betrieb: { label: "Betrieb", text: "Anlagen & Monitoring: Störungs-Leitstand, Anlagen, Geräte, Zähler und Wartung." }, // Anlagen & Monitoring
+  compliance: { label: "Compliance", text: "KYC/KYB: Verifizierungen prüfen, Unterlagen einsehen, Sanktionsabgleich, Risikoeinstufung." }, // KYC/KYB
+  projektleitung: { label: "Projektleitung", text: "Projektentwicklung: Entwicklungsprojekte, Meilensteine, Risiken, Kosten, Gutachter; CRM und Aufgaben." }, // Projektentwicklung
+  energie: { label: "Energie", text: "Energiebeschaffung: Handelsdesk, Terminkurve, Pool-Portfolio, Kundenanalyse, Ausschreibungen, Lieferantenstamm." }, // Energiebeschaffung
 };
 export const BACKOFFICE_ROLLEN_IDS = Object.keys(BACKOFFICE_ROLLEN);
 
@@ -43,7 +46,16 @@ export const BEREICHE = {
   protokoll: "Protokoll",
   rechte: "Rechte",
   anlagen: "Anlagen & Monitoring", // Anlagen & Monitoring
+  compliance: "Compliance (KYC/KYB)", // KYC/KYB
+  entwicklung: "Projektentwicklung", // Projektentwicklung
+  finanzen: "Finanzen & Abrechnung", // ERPNext-Finanzen & Abrechnung
+  finanzierung: "Finanzierung & Banken", // Bankfinanzierung Eigenbetrieb, Covenants, Geschäftsmodell
+  signatur: "Elektronische Unterschrift", kalender: "Termine & Kalender", support: "Service & Support", team: "Team & HR", wissen: "Wissensdatenbank", // Dokumente, Signatur, Termine, Service & HR
+  gesellschaften: "Gesellschaften & SPV-Gründung", bonitaet: "Bonitätsauskünfte", register: "Registerauskünfte", // Dienste: Firmen, Bonität, Identität
+  geodaten: "Geodaten & Akquise-Karte", // Geodaten & Akquise-Engine
   sonstiges: "Weitere Admin-Funktionen",
+  energie: "Energiebeschaffung", // Energiebeschaffung & Versorger-Ausschreibung
+  grundbuch: "Grundbuch & Dienstbarkeiten", closing: "Deal-Abschluss (Closing)", // Grundbuch & Closing
 };
 export const BEREICH_IDS = Object.keys(BEREICHE);
 
@@ -67,12 +79,42 @@ const M = {
   protokoll: [2, 1, 1, 1, 1],
   rechte: [2, 0, 0, 0, 0],
   anlagen: [2, 0, 0, 1, 1], // Anlagen & Monitoring (Buchhaltung: Verträge/Zähler lesen)
+  entwicklung: [2, 1, 1, 1, 1], // Projektentwicklung (Akquise/Transaktion/Buchhaltung/Lesen: nur lesen)
+  compliance: [1, 0, 0, 0, 0], // KYC/KYB: Leitung sieht Warteschlange/Status (keine Unterlagen), sonst nur Unterrolle „compliance“
+  finanzen: [2, 0, 1, 2, 1, 0, 0, 1], // ERPNext-Finanzen & Abrechnung: Buchhaltung/Leitung schreiben (Läufe, SEPA), Transaktion/Lesen/Projektleitung lesen
+  finanzierung: [2, 0, 2, 2, 1, 0, 0, 1], // Bankfinanzierung: Leitung/Transaktion/Buchhaltung schreiben (Entscheidung nur Leitung), Lesen/Projektleitung lesen
+  // Signatur, Termine, Service & HR – alle 8 Spalten (leitung, akquise, transaktion, buchhaltung, lesen, betrieb, compliance, projektleitung)
+  signatur: [2, 2, 2, 1, 1, 0, 1, 1],
+  kalender: [2, 2, 2, 1, 1, 2, 1, 2],
+  support: [2, 1, 1, 1, 1, 2, 1, 1],
+  team: [2, 1, 1, 1, 1, 1, 1, 1],
+  wissen: [2, 2, 2, 2, 1, 2, 2, 2],
+  // Dienste – alle 8 Spalten (leitung, akquise, transaktion, buchhaltung, lesen, betrieb, compliance, projektleitung)
+  gesellschaften: [2, 0, 2, 1, 1, 0, 0, 1], // SPV-Gründung: Leitung/Transaktion schreiben
+  bonitaet: [2, 0, 2, 0, 0, 0, 2, 0], // Bonität: nur Leitung, Transaktion, Compliance (Ergebnisse vertraulich)
+  register: [2, 1, 2, 1, 1, 0, 2, 1], // Registerabruf (Firmenbuch/Handelsregister/Zefix)
+  geodaten: [2, 2, 0, 0, 0, 0, 0, 0], // Geodaten & Akquise-Karte: nur Leitung und Akquise (Flächenkandidaten, Export, Übernahme)
+  // Grundbuch & Closing – 8 Spalten (leitung, akquise, transaktion, buchhaltung, lesen, betrieb, compliance, projektleitung)
+  grundbuch: [2, 2, 2, 1, 1, 1, 0, 2], // Dienstbarkeiten: Akquise/Transaktion/Projektleitung schreiben, Betrieb (Anlagen) lesen
+  closing: [2, 0, 2, 1, 1, 0, 1, 1], // Deal-Abschluss: Leitung/Transaktion schreiben, Buchhaltung/Compliance/Projektleitung lesen
   sonstiges: [2, 1, 1, 1, 1],
 };
 // Anlagen & Monitoring: Spalte „betrieb“ (6.) – nur Anlagen schreiben, Cockpit/Aufgaben/Nutzer lesen bzw. Aufgaben schreiben
 const BETRIEB_SPALTE = { cockpit: 1, aufgaben: 2, anlagen: 2, nutzer: 1 };
 for (const [b, z] of Object.entries(M)) if (z.length < 6) z[5] = BETRIEB_SPALTE[b] ?? 0;
-const SPALTE = { leitung: 0, akquise: 1, transaktion: 2, buchhaltung: 3, lesen: 4, betrieb: 5 };
+// KYC/KYB: Spalte „compliance“ (7.) – Compliance schreiben, Cockpit/Nutzer/Protokoll lesen, Aufgaben schreiben
+const COMPLIANCE_SPALTE = { cockpit: 1, aufgaben: 2, nutzer: 1, protokoll: 1, compliance: 2 };
+for (const [b, z] of Object.entries(M)) if (z.length < 7) { if (z.length < 6) z[5] = 0; z[6] = COMPLIANCE_SPALTE[b] ?? 0; }
+// Projektentwicklung: Spalte „projektleitung“ (8.) – Entwicklung und CRM schreiben, Aufgaben schreiben, übrige Kernbereiche lesen
+const PROJEKTLEITUNG_SPALTE = { cockpit: 1, aufgaben: 2, flaechen: 1, akquise: 1, projekte: 1, crm: 2, vorlagen: 1, berichte: 1, nutzer: 1, entwicklung: 2 };
+for (const [b, z] of Object.entries(M)) if (z.length < 8) { while (z.length < 7) z.push(0); z[7] = PROJEKTLEITUNG_SPALTE[b] ?? 0; }
+// Energiebeschaffung: Bereich „energie“ (Leitung schreiben, Buchhaltung/Lesen lesen) und Spalte „energie“ – Energie
+// schreiben, CRM/Aufgaben schreiben, Cockpit/Nutzer/Berichte/Vorgänge lesen. Spalte = nächste freie Position.
+M.energie = M.energie || [2, 0, 0, 1, 1];
+const ENERGIE_SPALTE = { cockpit: 1, vorgaenge: 1, aufgaben: 2, crm: 2, vorlagen: 1, berichte: 1, nutzer: 1, energie: 2, kalender: 2, wissen: 1 };
+const SPALTE = { leitung: 0, akquise: 1, transaktion: 2, buchhaltung: 3, lesen: 4, betrieb: 5, compliance: 6, projektleitung: 7, energie: 8 };
+for (const z of Object.values(M)) { while (z.length < 8) z.push(0); }
+for (const [b, z] of Object.entries(M)) z[8] = ENERGIE_SPALTE[b] ?? 0; // Energiebeschaffung
 
 /** Rechte-Matrix { bereich: { rolle: stufe } } – für Anzeige und Prüfung */
 export const RECHTE_MATRIX = Object.fromEntries(
@@ -135,6 +177,15 @@ const API_BEREICH = {
   dealroom: "interessen", // Deal-Room (Q&A, Datenraum) – Transaktion
   bieter: "interessen", // Bieterverfahren – Transaktion
   anlagen: "anlagen", // Anlagen & Monitoring
+  compliance: "compliance", // KYC/KYB
+  entwicklung: "entwicklung", // Projektentwicklung
+  finanzen: "finanzen", // ERPNext-Finanzen & Abrechnung
+  finanzierung: "finanzierung", // Bankfinanzierung Eigenbetrieb
+  signatur: "signatur", termine: "kalender", support: "support", hr: "team", wissen: "wissen", // Signatur, Termine, Service & HR
+  gesellschaften: "gesellschaften", bonitaet: "bonitaet", register: "register", // Dienste: Firmen, Bonität, Identität
+  geodaten: "geodaten", // Geodaten & Akquise-Engine
+  energie: "energie", // Energiebeschaffung & Versorger-Ausschreibung
+  grundbuch: "grundbuch", closing: "closing", // Grundbuch & Closing
 };
 
 /**
@@ -188,11 +239,20 @@ const SEITEN_BEREICH = {
   protokoll: "protokoll",
   rechte: "rechte",
   anlagen: "anlagen", // Anlagen & Monitoring
+  compliance: "compliance", // KYC/KYB
+  entwicklung: "entwicklung", // Projektentwicklung
+  finanzen: "finanzen", // ERPNext-Finanzen & Abrechnung
+  finanzierung: "finanzierung", // Bankfinanzierung Eigenbetrieb
+  kalender: "kalender", support: "support", team: "team", wissen: "wissen", // Termine, Service & HR
+  gesellschaften: "gesellschaften", bonitaet: "bonitaet", // Dienste: Firmen, Bonität, Identität
+  energie: "energie", // Energiebeschaffung
+  grundbuch: "grundbuch", closing: "closing", // Grundbuch & Closing
 };
 
 export function seitenBereich(pfad) {
   const teile = String(pfad || "").split("?")[0].split("/").filter(Boolean); // ["portal","admin",teil]
   if (teile[0] !== "portal" || teile[1] !== "admin") return null;
+  if (teile[2] === "akquise" && teile[3] === "karte") return "geodaten"; // Geodaten & Akquise-Karte
   return SEITEN_BEREICH[teile[2] || ""] || "sonstiges";
 }
 

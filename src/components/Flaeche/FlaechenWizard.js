@@ -474,6 +474,9 @@ function Ergebnis({ e, eingaben, onNeu, onAendern }) {
                 </li>
               ))}
             </ol>
+            <Link href="/termin?herkunft=flaechencheck&art=beratung_video" className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-ov-600 px-5 text-[14.5px] font-semibold text-white hover:bg-ov-700">
+              Beratungstermin buchen
+            </Link>
           </div>
         </div>
       </div>

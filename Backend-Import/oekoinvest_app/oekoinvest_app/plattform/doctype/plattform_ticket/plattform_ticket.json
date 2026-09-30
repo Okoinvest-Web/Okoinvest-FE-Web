@@ -1,0 +1,248 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 14:00:00.000000",
+ "description": "Support-Ticket (Kundenanfrage oder Anlagen-Störung) mit SLA; optional gespiegelt nach Frappe Helpdesk.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "betreff",
+  "kategorie",
+  "prioritaet",
+  "status",
+  "cb_1",
+  "konto_id",
+  "organisation_id",
+  "anlage_id",
+  "stoerung_id",
+  "zustaendig_id",
+  "herkunft",
+  "helpdesk",
+  "sb_1",
+  "sla_reaktion_bis",
+  "sla_loesung_bis",
+  "cb_2",
+  "erste_reaktion_am",
+  "geloest_am",
+  "gelesen_kunde",
+  "gelesen_backoffice",
+  "sla_gemeldet",
+  "sb_2",
+  "nachrichten_json",
+  "anhaenge_json",
+  "verlauf_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "betreff",
+   "fieldtype": "Data",
+   "label": "Betreff",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "kategorie",
+   "fieldtype": "Select",
+   "label": "Kategorie",
+   "options": "stoerung\nabrechnung\nvertrag\nportal\nprojekt\nsonstiges",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "prioritaet",
+   "fieldtype": "Select",
+   "label": "Priorität",
+   "options": "niedrig\nnormal\nhoch\nkritisch",
+   "default": "normal",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "neu\nin_arbeit\nwartet_kunde\ngeloest\ngeschlossen",
+   "default": "neu",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "konto_id",
+   "fieldtype": "Link",
+   "label": "Kunde",
+   "options": "Plattform Konto",
+   "search_index": 1
+  },
+  {
+   "fieldname": "organisation_id",
+   "fieldtype": "Data",
+   "label": "Organisation"
+  },
+  {
+   "fieldname": "anlage_id",
+   "fieldtype": "Data",
+   "label": "Anlage"
+  },
+  {
+   "fieldname": "stoerung_id",
+   "fieldtype": "Data",
+   "label": "Störung",
+   "search_index": 1
+  },
+  {
+   "fieldname": "zustaendig_id",
+   "fieldtype": "Link",
+   "label": "Zuständig",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "herkunft",
+   "fieldtype": "Data",
+   "label": "Herkunft"
+  },
+  {
+   "fieldname": "helpdesk",
+   "fieldtype": "Data",
+   "label": "HD Ticket",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": "SLA"
+  },
+  {
+   "fieldname": "sla_reaktion_bis",
+   "fieldtype": "Datetime",
+   "label": "Reaktion bis"
+  },
+  {
+   "fieldname": "sla_loesung_bis",
+   "fieldtype": "Datetime",
+   "label": "Lösung bis"
+  },
+  {
+   "fieldname": "cb_2",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "erste_reaktion_am",
+   "fieldtype": "Datetime",
+   "label": "Erste Reaktion"
+  },
+  {
+   "fieldname": "geloest_am",
+   "fieldtype": "Datetime",
+   "label": "Gelöst am"
+  },
+  {
+   "fieldname": "gelesen_kunde",
+   "fieldtype": "Check",
+   "label": "Gelesen (Kunde)"
+  },
+  {
+   "fieldname": "gelesen_backoffice",
+   "fieldtype": "Check",
+   "label": "Gelesen (Backoffice)"
+  },
+  {
+   "fieldname": "sla_gemeldet",
+   "fieldtype": "Check",
+   "label": "SLA-Verletzung gemeldet",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_2",
+   "fieldtype": "Section Break",
+   "label": "Verlauf"
+  },
+  {
+   "fieldname": "nachrichten_json",
+   "fieldtype": "Long Text",
+   "label": "Nachrichten (JSON)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "anhaenge_json",
+   "fieldtype": "Long Text",
+   "label": "Anhänge (JSON)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "verlauf_json",
+   "fieldtype": "Long Text",
+   "label": "Verlauf (JSON)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 06:08:21.086770",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Ticket",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "in_create": 0,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Betrieb",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "title_field": "betreff",
+ "show_title_field_in_link": 0
+}

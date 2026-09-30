@@ -1,0 +1,40 @@
+{#- ÖkoInvest – Exposé VERTRAULICH (Plattform Projekt): alle Eckdaten inkl. vertraulicher Angaben. Nur Backoffice/Anbieter bzw. nach NDA. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set hl = oekoinvest_json(doc.highlights, []) -%}
+{%- set vt = oekoinvest_vertraulich(doc) -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Projektbörse · Exposé</div>
+	<div class="oi-titel">{{ doc.titel | e }}</div>
+	<div class="oi-untertitel">{{ oekoinvest_label("projekt_typ", doc.typ) }} · {{ doc.region | e }}{% if doc.bundesland %}, {{ doc.bundesland | e }}{% endif %} · {{ oekoinvest_label("land", doc.land) }} · Projekt {{ doc.name }}</div>
+</div>
+<p><span class="oi-vertraulich">Vertraulich – nur für Empfänger mit akzeptierter Vertraulichkeitsvereinbarung</span></p>
+
+<table class="oi-kacheln"><tr>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl(doc.mwp, 1) }}</div><div class="oi-bez">MWp Leistung</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl(doc.flaeche_ha, 1) if doc.flaeche_ha else "–" }}</div><div class="oi-bez">Hektar</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl(doc.mwh_speicher, 1) if doc.mwh_speicher else "–" }}</div><div class="oi-bez">MWh Speicher</div></td>
+	<td class="oi-kachel"><div class="oi-wert" style="font-size:11pt">{{ oekoinvest_label("phase", doc.phase) }}</div><div class="oi-bez">Entwicklungsphase</div></td>
+</tr></table>
+
+<div class="oi-abschnitt">Eckdaten</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Netzanschluss</td><td>{{ oekoinvest_label("netzanschluss", doc.netzanschluss) }}</td></tr>
+	<tr><td class="oi-feld">Geplante Inbetriebnahme</td><td>{{ (doc.cod_geplant or "–") | e }}</td></tr>
+	<tr><td class="oi-feld">Preisvorstellung</td><td>{% if doc.preis_modus == "gesamt" and doc.preis %}{{ oekoinvest_eur(doc.preis) }}{% elif doc.preis_modus == "proKwp" and doc.preis_pro_kwp %}{{ oekoinvest_eur(doc.preis_pro_kwp, 2) }} je kWp{% else %}auf Anfrage{% endif %}</td></tr>
+	<tr><td class="oi-feld">Status</td><td>{{ oekoinvest_status("projekt", doc.status) }}{% if doc.veroeffentlicht_am %} · veröffentlicht am {{ oekoinvest_datum(doc.veroeffentlicht_am) }}{% endif %}</td></tr>
+</table>
+
+{% if doc.beschreibung %}<div class="oi-abschnitt">Projektbeschreibung</div><p class="oi-text">{{ doc.beschreibung | e }}</p>{% endif %}
+{% if hl %}<div class="oi-abschnitt">Highlights</div><ul>{% for h in hl %}<li>{{ h | e }}</li>{% endfor %}</ul>{% endif %}
+
+<div class="oi-abschnitt">Vertrauliche Angaben</div>
+{% if vt %}
+<table class="oi-tabelle">
+	{% for z in vt %}<tr><td style="width:38%">{{ z.label }}</td><td class="oi-text">{{ z.wert | e }}</td></tr>{% endfor %}
+</table>
+{% else %}<p class="oi-klein">Keine vertraulichen Angaben hinterlegt.</p>{% endif %}
+
+<div class="oi-hinweis">Unterlagen im Datenraum des Portals. Für Investoren ist die Projektbörse kostenfrei; eine Provision zahlt nur der Anbieter bei erfolgreichem Abschluss. Alle Angaben beruhen auf Informationen des Anbieters und sind ohne Gewähr – eine eigene Prüfung (Due Diligence) ersetzen sie nicht.</div>
+<p class="oi-klein">Erstellt für {{ frappe.session.user | e }} am {{ oekoinvest_datum(frappe.utils.now_datetime(), true) }}. Weitergabe nur im Rahmen der Vertraulichkeitsvereinbarung.</p>
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · {{ f.gericht }}</div>

@@ -1,0 +1,46 @@
+// src/lib/plattform/energie/texte.js
+//
+// Texte der Energiebeschaffung: Beschaffungsvollmacht (versioniert), Teilnahmebedingungen für Lieferanten,
+// Rechtshinweise (Vergaberecht, Datenschutz/Geschäftsgeheimnis, Lieferantenwechsel DE/AT). Vor dem Livegang
+// juristisch prüfen lassen – Formulierungen bewusst vorsichtig („in der Regel“, „nach aktuellem Stand“).
+
+export const VOLLMACHT_VERSION = "2026-09";
+
+export const VOLLMACHT_TEXT = `Beschaffungsvollmacht (Version ${VOLLMACHT_VERSION})
+
+Ich bevollmächtige die ÖkoInvest GmbH, Ostermiething (Österreich), für das von mir vertretene Unternehmen
+
+1. Angebote von Energieversorgern für die Stromlieferung der benannten Abnahmestellen einzuholen (Angebotsanfrage, auch gebündelt mit anderen Kunden im Reststrom-Pool) und die Angebote auszuwerten;
+2. dafür anonymisierte Verbrauchsdaten (Jahresmenge, Lastprofil als gerundete Kennzahlen und normiertes Wochenprofil, Spannungsebene, Land) an die eingeladenen Versorger weiterzugeben – ohne Firmenname, Anschrift sowie Markt- oder Messlokations-ID;
+3. nach meiner ausdrücklichen Freigabe im Portal den Zuschlag an den ausgewählten Versorger zu übermitteln und den Lieferantenwechsel einschließlich Kündigung des bisherigen Vertrags in meinem Namen einzuleiten; erst dann dürfen Name, Anschrift und Lokations-IDs an den bezuschlagten Versorger übermittelt werden.
+
+Ohne meine Freigabe im Portal kommt kein Liefervertrag zustande. Die Vollmacht kann ich jederzeit im Portal widerrufen; bereits erteilte Zuschläge bleiben davon unberührt. Die Vergütung der ÖkoInvest GmbH richtet sich nach der gesondert vereinbarten Servicevereinbarung.`;
+
+export const LIEFERANT_BEDINGUNGEN = `Teilnahmebedingungen für Energieversorger
+
+- Die Angebotsanfrage ist kein förmliches Vergabeverfahren. ÖkoInvest behandelt alle eingeladenen Versorger gleich: gleiche Unterlagen, gleiche Fristen, Antworten auf Fragen gehen anonymisiert an alle Bieter.
+- Angebote sind verdeckt: Kein Bieter sieht Angebote oder Namen anderer Bieter. In einer Folgerunde kann – je nach vorab bekanntgegebener Regel – ein Rang, ein Abstand oder der beste Preis ohne Namen mitgeteilt werden.
+- Nach Ablauf der Angebotsfrist sind Angebote gesperrt. Maßgeblich ist das zuletzt abgegebene Angebot je Runde.
+- Angebote sind bis zur angegebenen Bindefrist verbindlich. Der Zuschlag setzt die Freigabe durch den Kunden voraus.
+- Die Verbrauchsdaten sind anonymisiert und vertraulich; eine Nutzung außerhalb dieser Anfrage ist nicht gestattet.`;
+
+export const RECHTSHINWEISE = {
+  vergaberecht:
+    "Öffentliche Auftraggeber (z. B. Kommunen, Zweckverbände, kommunale Unternehmen) unterliegen bei der Strombeschaffung dem Vergaberecht – in Deutschland GWB/VgV bzw. unterhalb der Schwellenwerte UVgO und Landesrecht, in Österreich dem BVergG 2018. Ab dem EU-Schwellenwert für Liefer- und Dienstleistungsaufträge (für 2026/2027: 216.000 € netto bei subzentralen Auftraggebern) ist ein EU-weites Verfahren erforderlich; maßgeblich ist der geschätzte Gesamtauftragswert über die Laufzeit. Die Angebotsanfrage dieser Plattform ersetzt kein förmliches Vergabeverfahren – für Kommunen nur als Markterkundung oder mit einem Vergabedienstleister nutzen.",
+  privat:
+    "Für private Unternehmen ist die Angebotsanfrage eine freie Verhandlung. Die Spielregeln (Fristen, Runden, Bestpreis-Hinweis, Zuschlagskriterien) werden allen Bietern vorab mitgeteilt und gleich angewendet.",
+  datenschutz:
+    "Lastgänge von Unternehmen sind in der Regel keine personenbezogenen Daten, können es aber bei Einzelunternehmen oder Personengesellschaften sein (DSGVO); in jedem Fall sind sie Geschäftsgeheimnisse. Deshalb erhalten Versorger nur ein Los-Kennzeichen und gerundete Kennzahlen – Name, Anschrift und Lokations-IDs erst nach Zuschlag und Kundenfreigabe.",
+  wechselDe:
+    "Deutschland: Der technische Lieferantenwechsel dauert seit 6. Juni 2025 höchstens 24 Stunden und ist an jedem Werktag möglich (Festlegung der Bundesnetzagentur, GPKE) – vertragliche Kündigungsfristen bleiben unberührt. Maßgeblich ist daher der Kündigungsstichtag des laufenden Vertrags.",
+  wechselAt:
+    "Österreich: Nach der Wechsel-Verordnung der E-Control dauert das Wechselverfahren nach aktuellem Stand höchstens drei Wochen; der neue Lieferant stellt die Wechselanfrage über die Plattform der Marktkommunikation. Vertragliche Bindungen und Kündigungsfristen von Unternehmensverträgen sind im Einzelfall zu prüfen.",
+  zonen:
+    "Seit 1. Oktober 2018 sind Deutschland (DE-LU) und Österreich (AT) getrennte Gebotszonen. Für österreichische Abnahmestellen gelten der österreichische Day-Ahead-Preis und österreichische Terminprodukte.",
+  terminmarkt:
+    "Terminmarktdaten der EEX (Cal/Q/M Base/Peak) sind lizenzpflichtig. Eingespielt werden dürfen nur Werte aus einem lizenzierten Feed (EEX Group DataSource bzw. Datenanbieter) oder öffentlich zitierte Schlusskurse mit Quellenangabe. Jeder Eintrag trägt Quelle und Handelstag; Demo-Werte sind gekennzeichnet.",
+  spotmarkt:
+    "Day-Ahead-Preise DE-LU und AT: Energy-Charts (Fraunhofer ISE), Daten der Bundesnetzagentur | SMARD.de, Lizenz CC BY 4.0 – Quellenangabe an jeder Darstellung.",
+  verguetung:
+    "Die Vergütung von ÖkoInvest (Servicefee je MWh und/oder Erfolgshonorar) wird je Kunde vereinbart; die hinterlegten Parameter dienen nur der Berechnung und Darstellung.",
+};

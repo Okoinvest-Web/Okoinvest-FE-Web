@@ -1,0 +1,1563 @@
+// src/lib/plattform/fach/datenblatt-schema.js
+//
+// Schema des Standard-Projektdatenblatts (als JS-Modul, damit Next.js und Node-Tests es ohne JSON-Importattribute laden).
+// Identische Kopie als JSON: Backend-Import/oekoinvest_app/oekoinvest_app/plattform/fach/datenblatt_schema.json
+// (scripts/plattform-test-fach-kapital.mjs prüft die Gleichheit). Änderungen immer in beiden Dateien.
+
+const SCHEMA = {
+  "version": "2026-09",
+  "hinweis": "Standard-Projektdatenblatt der Projektbörse. Identische Kopie: Backend-Import/oekoinvest_app/oekoinvest_app/plattform/fach/datenblatt_schema.json (Test prüft Gleichheit). Felder mit pfad=vertraulich liegen im bestehenden Objekt projekt.vertraulich.",
+  "phasen": [
+    "flaeche",
+    "netz",
+    "aufstellung",
+    "satzung",
+    "rtb",
+    "cod"
+  ],
+  "dd": {
+    "technisch": {
+      "label": "Technik",
+      "text": "Anlagenkonzept, Komponenten, Betrieb und Wartung"
+    },
+    "rechtlich": {
+      "label": "Recht & Flächensicherung",
+      "text": "Pacht- und Nutzungsverträge, Dienstbarkeiten, Gesellschaft"
+    },
+    "netz": {
+      "label": "Netzanschluss",
+      "text": "Zusage, Kapazität, Befristung, Kosten, Einspeisebegrenzung"
+    },
+    "genehmigung": {
+      "label": "Genehmigung",
+      "text": "Planungsrecht, Baugenehmigung, Fristen"
+    },
+    "ertrag": {
+      "label": "Ertrag",
+      "text": "Ertragsgutachten P50/P75/P90, Datenbasis, Plausibilität"
+    },
+    "kaufmaennisch": {
+      "label": "Kaufmännisch & Vermarktung",
+      "text": "EEG/PPA/Merchant, Capex, Opex, Ist-Erträge"
+    },
+    "steuern": {
+      "label": "Steuern",
+      "text": "Transaktionsstruktur, Grunderwerbsteuer, Umsatzsteuer"
+    },
+    "umwelt": {
+      "label": "Umwelt & Natur",
+      "text": "UVP, Artenschutz, Schutzgebiete, Ausgleich"
+    }
+  },
+  "bereiche": [
+    {
+      "id": "technik",
+      "titel": "Technik",
+      "text": "Geplante Auslegung – bei Bestandsanlagen die tatsächlich verbauten Komponenten.",
+      "felder": [
+        {
+          "id": "mwac",
+          "label": "AC-Leistung (Wechselrichter)",
+          "typ": "zahl",
+          "einheit": "MWac",
+          "min": 0.01,
+          "max": 5000,
+          "stellen": 2,
+          "ab": "netz",
+          "pflicht": true,
+          "dd": "technisch",
+          "lex": "dc-ac-verhaeltnis",
+          "hilfe": "Summe der Wechselrichter-Nennleistung. Zusammen mit der DC-Leistung (MWp) ergibt sich das DC/AC-Verhältnis."
+        },
+        {
+          "id": "aufstaenderung",
+          "label": "Aufständerung",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "sued",
+              "Süd, fest"
+            ],
+            [
+              "ostWest",
+              "Ost/West, fest"
+            ],
+            [
+              "tracker",
+              "Einachsig nachgeführt (Tracker)"
+            ],
+            [
+              "agriVertikal",
+              "Agri-PV vertikal, bifazial"
+            ],
+            [
+              "agriHoch",
+              "Agri-PV hoch aufgeständert"
+            ],
+            [
+              "dach",
+              "Dach"
+            ],
+            [
+              "carport",
+              "Carport / Überdachung"
+            ],
+            [
+              "schwimmend",
+              "Schwimmend (Floating)"
+            ]
+          ],
+          "ab": "flaeche",
+          "pflicht": true,
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "technisch",
+          "lex": "tracker"
+        },
+        {
+          "id": "modulTyp",
+          "label": "Modultyp (geplant)",
+          "typ": "text",
+          "laenge": 120,
+          "ab": "satzung",
+          "pflicht": true,
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "technisch",
+          "hilfe": "Hersteller, Serie, Technologie (z. B. TOPCon, bifazial)."
+        },
+        {
+          "id": "modulWp",
+          "label": "Modulleistung",
+          "typ": "zahl",
+          "einheit": "Wp",
+          "min": 100,
+          "max": 900,
+          "stellen": 0,
+          "ab": "satzung",
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "technisch"
+        },
+        {
+          "id": "bifazial",
+          "label": "Bifaziale Module",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "ja",
+              "Ja"
+            ],
+            [
+              "nein",
+              "Nein"
+            ]
+          ],
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "technisch",
+          "lex": "bifazial"
+        },
+        {
+          "id": "wrKonzept",
+          "label": "Wechselrichter-Konzept",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "string",
+              "String-Wechselrichter"
+            ],
+            [
+              "zentral",
+              "Zentral-Wechselrichter"
+            ]
+          ],
+          "ab": "satzung",
+          "pflicht": true,
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "technisch"
+        },
+        {
+          "id": "wrTyp",
+          "label": "Wechselrichter (Hersteller/Typ)",
+          "typ": "text",
+          "laenge": 120,
+          "ab": "rtb",
+          "pflicht": true,
+          "dd": "technisch"
+        },
+        {
+          "id": "speicherMw",
+          "label": "Speicher-Leistung",
+          "typ": "zahl",
+          "einheit": "MW",
+          "min": 0,
+          "max": 5000,
+          "stellen": 2,
+          "ab": "netz",
+          "pflicht": true,
+          "nurTypen": [
+            "speicher",
+            "hybrid"
+          ],
+          "dd": "technisch",
+          "lex": "grossspeicher"
+        },
+        {
+          "id": "speicherMwh",
+          "label": "Speicher-Kapazität",
+          "typ": "zahl",
+          "einheit": "MWh",
+          "min": 0,
+          "max": 20000,
+          "stellen": 1,
+          "ab": "netz",
+          "pflicht": true,
+          "nurTypen": [
+            "speicher",
+            "hybrid"
+          ],
+          "dd": "technisch"
+        },
+        {
+          "id": "speicherKopplung",
+          "label": "Speicher-Kopplung",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "ac",
+              "AC-gekoppelt"
+            ],
+            [
+              "dc",
+              "DC-gekoppelt"
+            ],
+            [
+              "standalone",
+              "Eigenständig am Netz"
+            ]
+          ],
+          "nurTypen": [
+            "speicher",
+            "hybrid"
+          ],
+          "dd": "technisch"
+        }
+      ]
+    },
+    {
+      "id": "ertrag",
+      "titel": "Ertrag",
+      "text": "Spezifischer Ertrag im ersten Betriebsjahr. P-Werte aus einem unabhängigen Ertragsgutachten (Überschreitungswahrscheinlichkeit, 1-Jahres-Werte).",
+      "felder": [
+        {
+          "id": "ertragKwhKwp",
+          "pfad": "vertraulich",
+          "label": "Spezifischer Ertrag P50",
+          "typ": "zahl",
+          "einheit": "kWh/kWp",
+          "min": 0,
+          "max": 3000,
+          "stellen": 0,
+          "ab": "aufstellung",
+          "pflicht": true,
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "ertrag",
+          "lex": "spezifischer-ertrag"
+        },
+        {
+          "id": "ertragP75",
+          "label": "Spezifischer Ertrag P75",
+          "typ": "zahl",
+          "einheit": "kWh/kWp",
+          "min": 0,
+          "max": 3000,
+          "stellen": 0,
+          "ab": "satzung",
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "ertrag",
+          "lex": "p50-p90"
+        },
+        {
+          "id": "ertragP90",
+          "label": "Spezifischer Ertrag P90 (1 Jahr)",
+          "typ": "zahl",
+          "einheit": "kWh/kWp",
+          "min": 0,
+          "max": 3000,
+          "stellen": 0,
+          "ab": "satzung",
+          "pflicht": true,
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "ertrag",
+          "lex": "p50-p90",
+          "hilfe": "Banken dimensionieren das Darlehen in der Regel auf P90 (1 Jahr)."
+        },
+        {
+          "id": "ertragGutachter",
+          "label": "Gutachter",
+          "typ": "text",
+          "laenge": 120,
+          "ab": "satzung",
+          "pflicht": true,
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "ertrag",
+          "lex": "ertragsgutachten",
+          "hilfe": "Unabhängiges Büro; Eigenberechnung des Anbieters ausdrücklich so angeben."
+        },
+        {
+          "id": "ertragDatenbasis",
+          "label": "Datenbasis Einstrahlung",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "pvgis",
+              "PVGIS"
+            ],
+            [
+              "meteonorm",
+              "Meteonorm"
+            ],
+            [
+              "solargis",
+              "Solargis"
+            ],
+            [
+              "satellit",
+              "sonstige Satellitendaten"
+            ],
+            [
+              "messung",
+              "Standortmessung"
+            ],
+            [
+              "eigen",
+              "Eigenberechnung Anbieter"
+            ]
+          ],
+          "ab": "satzung",
+          "pflicht": true,
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "ertrag"
+        },
+        {
+          "id": "ertragDatum",
+          "label": "Datum des Gutachtens",
+          "typ": "datum",
+          "ab": "satzung",
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "ertrag"
+        }
+      ]
+    },
+    {
+      "id": "netz",
+      "titel": "Netz",
+      "text": "Netzanschluss nach Zusage des Netzbetreibers. Befristung, Kosten und Einspeisebegrenzung sind für Investoren oft kaufentscheidend.",
+      "felder": [
+        {
+          "id": "netzbetreiber",
+          "pfad": "vertraulich",
+          "label": "Netzbetreiber",
+          "typ": "text",
+          "laenge": 120,
+          "ab": "netz",
+          "pflicht": true,
+          "dd": "netz"
+        },
+        {
+          "id": "spannungsebene",
+          "label": "Spannungsebene",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "ns",
+              "Niederspannung"
+            ],
+            [
+              "ms",
+              "Mittelspannung (Leitung)"
+            ],
+            [
+              "ms_uw",
+              "Mittelspannung (Sammelschiene Umspannwerk)"
+            ],
+            [
+              "hs",
+              "Hochspannung 110 kV"
+            ],
+            [
+              "hoes",
+              "Höchstspannung"
+            ]
+          ],
+          "ab": "netz",
+          "pflicht": true,
+          "dd": "netz",
+          "lex": "umspannwerk"
+        },
+        {
+          "id": "einspeisepunkt",
+          "pfad": "vertraulich",
+          "label": "Netzverknüpfungspunkt / Umspannwerk",
+          "typ": "text",
+          "laenge": 160,
+          "ab": "netz",
+          "pflicht": true,
+          "dd": "netz",
+          "lex": "netzverknuepfungspunkt"
+        },
+        {
+          "id": "entfernungNetzKm",
+          "pfad": "vertraulich",
+          "label": "Entfernung zum Netzverknüpfungspunkt",
+          "typ": "zahl",
+          "einheit": "km",
+          "min": 0,
+          "max": 500,
+          "stellen": 1,
+          "ab": "netz",
+          "pflicht": true,
+          "dd": "netz"
+        },
+        {
+          "id": "zusageDatum",
+          "label": "Netzzusage vom",
+          "typ": "datum",
+          "ab": "netz",
+          "pflicht": true,
+          "ohneBestand": true,
+          "dd": "netz",
+          "lex": "netzanschlusszusage"
+        },
+        {
+          "id": "zusageMw",
+          "label": "Zugesagte Einspeiseleistung",
+          "typ": "zahl",
+          "einheit": "MW",
+          "min": 0,
+          "max": 5000,
+          "stellen": 2,
+          "ab": "netz",
+          "pflicht": true,
+          "dd": "netz"
+        },
+        {
+          "id": "zusageBefristetBis",
+          "label": "Zusage befristet bis",
+          "typ": "datum",
+          "ab": "netz",
+          "ohneBestand": true,
+          "dd": "netz",
+          "hilfe": "Reservierungen verfallen häufig, wenn bis zu einem Stichtag kein Baubeginn oder keine Genehmigung nachgewiesen wird."
+        },
+        {
+          "id": "bkzEur",
+          "label": "Baukostenzuschuss (BKZ)",
+          "typ": "zahl",
+          "einheit": "€",
+          "min": 0,
+          "max": 100000000,
+          "stellen": 0,
+          "ab": "netz",
+          "dd": "netz",
+          "lex": "baukostenzuschuss"
+        },
+        {
+          "id": "netzkostenEur",
+          "label": "Netzanschlusskosten laut Kostenvoranschlag",
+          "typ": "zahl",
+          "einheit": "€",
+          "min": 0,
+          "max": 500000000,
+          "stellen": 0,
+          "ab": "netz",
+          "dd": "netz"
+        },
+        {
+          "id": "einspeiseLimitMw",
+          "label": "Einspeisebegrenzung",
+          "typ": "zahl",
+          "einheit": "MW",
+          "min": 0,
+          "max": 5000,
+          "stellen": 2,
+          "dd": "netz",
+          "lex": "flexible-netzanschlussvereinbarung",
+          "hilfe": "Nur ausfüllen, wenn die Einspeisung vertraglich oder technisch begrenzt ist (z. B. flexible Netzanschlussvereinbarung)."
+        },
+        {
+          "id": "ueberbauung",
+          "label": "Überbauung des Anschlusses (DC > Anschlussleistung) geplant",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "ja",
+              "Ja"
+            ],
+            [
+              "nein",
+              "Nein"
+            ]
+          ],
+          "ab": "netz",
+          "dd": "netz"
+        },
+        {
+          "id": "cablePooling",
+          "label": "Cable Pooling (gemeinsamer Anschluss, z. B. mit Wind)",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "ja",
+              "Ja"
+            ],
+            [
+              "nein",
+              "Nein"
+            ],
+            [
+              "pruefung",
+              "In Prüfung"
+            ]
+          ],
+          "dd": "netz",
+          "lex": "cable-pooling"
+        }
+      ]
+    },
+    {
+      "id": "genehmigung",
+      "titel": "Genehmigung",
+      "text": "Planungsrechtlicher Weg und Stand je Meilenstein mit Datum.",
+      "felder": [
+        {
+          "id": "genehmigungsweg",
+          "label": "Genehmigungsweg",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "bplan",
+              "Bebauungsplan (DE)"
+            ],
+            [
+              "par35",
+              "Privilegiert nach § 35 BauGB (DE)"
+            ],
+            [
+              "baugenehmigung",
+              "Nur Baugenehmigung/-anzeige (Dach, Carport)"
+            ],
+            [
+              "umwidmung_at",
+              "Umwidmung Grünland-PV (AT)"
+            ],
+            [
+              "nutzungsplan_ch",
+              "Nutzungsplanung / Baubewilligung (CH)"
+            ]
+          ],
+          "ab": "flaeche",
+          "pflicht": true,
+          "dd": "genehmigung",
+          "lex": "bebauungsplan"
+        },
+        {
+          "id": "mAufstellung",
+          "label": "Aufstellungsbeschluss bzw. Einleitung Widmung",
+          "typ": "datum",
+          "ab": "aufstellung",
+          "pflicht": true,
+          "wenn": {
+            "feld": "genehmigungsweg",
+            "in": [
+              "bplan",
+              "umwidmung_at",
+              "nutzungsplan_ch"
+            ]
+          },
+          "dd": "genehmigung",
+          "lex": "aufstellungsbeschluss"
+        },
+        {
+          "id": "mBeteiligung",
+          "label": "Frühzeitige Beteiligung abgeschlossen",
+          "typ": "datum",
+          "wenn": {
+            "feld": "genehmigungsweg",
+            "in": [
+              "bplan"
+            ]
+          },
+          "dd": "genehmigung",
+          "lex": "fruehzeitige-beteiligung"
+        },
+        {
+          "id": "mOffenlage",
+          "label": "Öffentliche Auslegung (Offenlage)",
+          "typ": "datum",
+          "wenn": {
+            "feld": "genehmigungsweg",
+            "in": [
+              "bplan",
+              "umwidmung_at",
+              "nutzungsplan_ch"
+            ]
+          },
+          "dd": "genehmigung"
+        },
+        {
+          "id": "mSatzung",
+          "label": "Satzungsbeschluss bzw. Widmung rechtskräftig",
+          "typ": "datum",
+          "ab": "satzung",
+          "pflicht": true,
+          "wenn": {
+            "feld": "genehmigungsweg",
+            "in": [
+              "bplan",
+              "umwidmung_at",
+              "nutzungsplan_ch"
+            ]
+          },
+          "dd": "genehmigung",
+          "lex": "satzungsbeschluss"
+        },
+        {
+          "id": "fnp",
+          "label": "Flächennutzungsplan",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "nicht_noetig",
+              "Keine Änderung nötig"
+            ],
+            [
+              "parallel",
+              "Änderung im Parallelverfahren"
+            ],
+            [
+              "wirksam",
+              "Änderung wirksam"
+            ]
+          ],
+          "wenn": {
+            "feld": "genehmigungsweg",
+            "in": [
+              "bplan"
+            ]
+          },
+          "dd": "genehmigung",
+          "lex": "flaechennutzungsplan"
+        },
+        {
+          "id": "mBaugenehmigung",
+          "label": "Baugenehmigung / Baubewilligung erteilt",
+          "typ": "datum",
+          "ab": "rtb",
+          "pflicht": true,
+          "dd": "genehmigung"
+        },
+        {
+          "id": "genehmigungBestandskraft",
+          "label": "Bestandskraft (Widerspruchs-/Klagefrist abgelaufen)",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "ja",
+              "Ja"
+            ],
+            [
+              "nein",
+              "Nein"
+            ],
+            [
+              "offen",
+              "Frist läuft"
+            ]
+          ],
+          "ab": "rtb",
+          "pflicht": true,
+          "dd": "genehmigung"
+        }
+      ]
+    },
+    {
+      "id": "flaeche",
+      "titel": "Fläche & Sicherung",
+      "text": "Flächensicherung über Pacht- bzw. Nutzungsverträge. Für Investoren zählt die Laufzeit inklusive Verlängerung und die dingliche Sicherung.",
+      "felder": [
+        {
+          "id": "eigentuemerAnzahl",
+          "label": "Anzahl Eigentümer",
+          "typ": "zahl",
+          "min": 0,
+          "max": 500,
+          "stellen": 0,
+          "ab": "flaeche",
+          "pflicht": true,
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "rechtlich"
+        },
+        {
+          "id": "gesichertPct",
+          "label": "Fläche vertraglich gesichert",
+          "typ": "zahl",
+          "einheit": "%",
+          "min": 0,
+          "max": 100,
+          "stellen": 0,
+          "ab": "flaeche",
+          "pflicht": true,
+          "dd": "rechtlich",
+          "lex": "flaechenpacht"
+        },
+        {
+          "id": "pachtLaufzeitJahre",
+          "label": "Pachtlaufzeit fest",
+          "typ": "zahl",
+          "einheit": "Jahre",
+          "min": 0,
+          "max": 60,
+          "stellen": 0,
+          "ab": "flaeche",
+          "pflicht": true,
+          "dd": "rechtlich"
+        },
+        {
+          "id": "pachtVerlaengerungJahre",
+          "label": "Verlängerungsoptionen gesamt",
+          "typ": "zahl",
+          "einheit": "Jahre",
+          "min": 0,
+          "max": 40,
+          "stellen": 0,
+          "dd": "rechtlich"
+        },
+        {
+          "id": "pachtEurHa",
+          "label": "Pacht",
+          "typ": "zahl",
+          "einheit": "€/ha·a",
+          "min": 0,
+          "max": 50000,
+          "stellen": 0,
+          "ab": "flaeche",
+          "pflicht": true,
+          "ohneTypen": [
+            "carport",
+            "dach",
+            "speicher"
+          ],
+          "dd": "kaufmaennisch"
+        },
+        {
+          "id": "pachtIndexiert",
+          "label": "Pacht indexiert",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "vpi",
+              "Ja, Verbraucherpreisindex"
+            ],
+            [
+              "fest",
+              "Nein, fest"
+            ],
+            [
+              "umsatz",
+              "Umsatzbeteiligung"
+            ]
+          ],
+          "dd": "kaufmaennisch"
+        },
+        {
+          "id": "dinglich",
+          "label": "Dingliche Sicherung (Dienstbarkeit im Grundbuch)",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "eingetragen",
+              "Eingetragen"
+            ],
+            [
+              "bewilligt",
+              "Bewilligt, Eintragung läuft"
+            ],
+            [
+              "nein",
+              "Noch nicht"
+            ]
+          ],
+          "ab": "satzung",
+          "pflicht": true,
+          "dd": "rechtlich",
+          "lex": "dienstbarkeit"
+        },
+        {
+          "id": "flaechenkulisse",
+          "label": "EEG-Flächenkulisse",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "randstreifen",
+              "Randstreifen Autobahn/Schiene"
+            ],
+            [
+              "benachteiligt",
+              "Benachteiligtes Gebiet (Länderöffnung)"
+            ],
+            [
+              "konversion",
+              "Konversionsfläche"
+            ],
+            [
+              "versiegelt",
+              "Versiegelte Fläche"
+            ],
+            [
+              "agri",
+              "Besondere Solaranlage (Agri-PV, Moor, Floating, Parkplatz)"
+            ],
+            [
+              "keine",
+              "Keine / sonstige Vermarktung"
+            ]
+          ],
+          "ab": "flaeche",
+          "pflicht": true,
+          "land": "DE",
+          "ohneTypen": [
+            "dach",
+            "speicher"
+          ],
+          "dd": "rechtlich",
+          "lex": "flaechenkulisse"
+        }
+      ]
+    },
+    {
+      "id": "vermarktung",
+      "titel": "Vermarktung",
+      "text": "EEG-Zuschlag, PPA oder Merchant – bei Bestandsanlagen die laufenden Verträge.",
+      "felder": [
+        {
+          "id": "vermarktung",
+          "label": "Vermarktungsmodell",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "eeg",
+              "EEG-Zuschlag / Marktprämie"
+            ],
+            [
+              "eag",
+              "EAG-Marktprämie (AT)"
+            ],
+            [
+              "ppa",
+              "PPA"
+            ],
+            [
+              "merchant",
+              "Merchant (Marktwert)"
+            ],
+            [
+              "gemischt",
+              "Kombination"
+            ],
+            [
+              "offen",
+              "Noch offen"
+            ]
+          ],
+          "ab": "satzung",
+          "pflicht": true,
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "kaufmaennisch",
+          "lex": "direktvermarktung"
+        },
+        {
+          "id": "eegZuschlagCt",
+          "label": "Zuschlagswert",
+          "typ": "zahl",
+          "einheit": "ct/kWh",
+          "min": 0,
+          "max": 30,
+          "stellen": 2,
+          "pflicht": true,
+          "wenn": {
+            "feld": "vermarktung",
+            "in": [
+              "eeg",
+              "eag",
+              "gemischt"
+            ]
+          },
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "kaufmaennisch",
+          "lex": "zuschlagswert"
+        },
+        {
+          "id": "eegZuschlagDatum",
+          "label": "Zuschlag vom (Gebotstermin)",
+          "typ": "datum",
+          "pflicht": true,
+          "wenn": {
+            "feld": "vermarktung",
+            "in": [
+              "eeg",
+              "eag",
+              "gemischt"
+            ]
+          },
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "kaufmaennisch",
+          "lex": "gebotstermin"
+        },
+        {
+          "id": "eegRealisierungsfrist",
+          "label": "Realisierungsfrist",
+          "typ": "datum",
+          "pflicht": true,
+          "wenn": {
+            "feld": "vermarktung",
+            "in": [
+              "eeg",
+              "eag",
+              "gemischt"
+            ]
+          },
+          "ohneBestand": true,
+          "ohneTypen": [
+            "speicher"
+          ],
+          "dd": "kaufmaennisch",
+          "lex": "realisierungsfrist"
+        },
+        {
+          "id": "ppaPartnerTyp",
+          "label": "PPA-Abnehmer",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "industrie",
+              "Industrie / Gewerbe (Corporate)"
+            ],
+            [
+              "evu",
+              "Energieversorger"
+            ],
+            [
+              "stadtwerk",
+              "Stadtwerk"
+            ],
+            [
+              "haendler",
+              "Händler / Aggregator"
+            ]
+          ],
+          "pflicht": true,
+          "wenn": {
+            "feld": "vermarktung",
+            "in": [
+              "ppa",
+              "gemischt"
+            ]
+          },
+          "dd": "kaufmaennisch",
+          "lex": "ppa"
+        },
+        {
+          "id": "ppaStatus",
+          "label": "PPA-Stand",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "unterschrieben",
+              "Unterschrieben"
+            ],
+            [
+              "termsheet",
+              "Term Sheet"
+            ],
+            [
+              "verhandlung",
+              "In Verhandlung"
+            ]
+          ],
+          "pflicht": true,
+          "wenn": {
+            "feld": "vermarktung",
+            "in": [
+              "ppa",
+              "gemischt"
+            ]
+          },
+          "dd": "kaufmaennisch"
+        },
+        {
+          "id": "ppaLaufzeitJahre",
+          "label": "PPA-Laufzeit",
+          "typ": "zahl",
+          "einheit": "Jahre",
+          "min": 0,
+          "max": 30,
+          "stellen": 0,
+          "pflicht": true,
+          "wenn": {
+            "feld": "vermarktung",
+            "in": [
+              "ppa",
+              "gemischt"
+            ]
+          },
+          "dd": "kaufmaennisch"
+        },
+        {
+          "id": "ppaStruktur",
+          "label": "PPA-Preisstruktur",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "pap",
+              "Pay-as-produced, Festpreis"
+            ],
+            [
+              "baseload",
+              "Baseload / Profil"
+            ],
+            [
+              "floor",
+              "Floor mit Erlösbeteiligung"
+            ],
+            [
+              "collar",
+              "Collar (Floor/Cap)"
+            ],
+            [
+              "indexiert",
+              "Indexiert"
+            ]
+          ],
+          "pflicht": true,
+          "wenn": {
+            "feld": "vermarktung",
+            "in": [
+              "ppa",
+              "gemischt"
+            ]
+          },
+          "dd": "kaufmaennisch"
+        },
+        {
+          "id": "ppaPreisCt",
+          "label": "PPA-Preis",
+          "typ": "zahl",
+          "einheit": "ct/kWh",
+          "min": 0,
+          "max": 30,
+          "stellen": 2,
+          "wenn": {
+            "feld": "vermarktung",
+            "in": [
+              "ppa",
+              "gemischt"
+            ]
+          },
+          "dd": "kaufmaennisch"
+        },
+        {
+          "id": "merchantPct",
+          "label": "Merchant-Anteil der Erzeugung",
+          "typ": "zahl",
+          "einheit": "%",
+          "min": 0,
+          "max": 100,
+          "stellen": 0,
+          "wenn": {
+            "feld": "vermarktung",
+            "in": [
+              "merchant",
+              "gemischt"
+            ]
+          },
+          "dd": "kaufmaennisch"
+        }
+      ]
+    },
+    {
+      "id": "wirtschaft",
+      "titel": "Wirtschaftlichkeit (Anbieterangabe)",
+      "text": "Angaben des Anbieters, von ÖkoInvest nicht geprüft. Investoren rechnen mit eigenen Annahmen im Bewertungswerkzeug nach.",
+      "felder": [
+        {
+          "id": "capexEurKwp",
+          "label": "Capex-Budget (EPC, ohne Netz)",
+          "typ": "zahl",
+          "einheit": "€/kWp",
+          "min": 0,
+          "max": 5000,
+          "stellen": 0,
+          "ab": "satzung",
+          "pflicht": true,
+          "ohneBestand": true,
+          "dd": "kaufmaennisch",
+          "lex": "epc"
+        },
+        {
+          "id": "opexEurKwp",
+          "label": "Opex ohne Pacht",
+          "typ": "zahl",
+          "einheit": "€/kWp·a",
+          "min": 0,
+          "max": 100,
+          "stellen": 1,
+          "ab": "satzung",
+          "pflicht": true,
+          "dd": "kaufmaennisch",
+          "lex": "o-und-m"
+        },
+        {
+          "id": "irrPct",
+          "label": "Erwartete Rendite (IRR)",
+          "typ": "zahl",
+          "einheit": "%",
+          "min": -20,
+          "max": 50,
+          "stellen": 1,
+          "dd": "kaufmaennisch",
+          "lex": "irr"
+        },
+        {
+          "id": "irrBasis",
+          "label": "Rendite-Basis",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "projekt",
+              "Projekt-IRR vor Steuern"
+            ],
+            [
+              "ek_vor",
+              "Eigenkapital-IRR vor Steuern"
+            ],
+            [
+              "ek_nach",
+              "Eigenkapital-IRR nach Steuern"
+            ]
+          ],
+          "wenn": {
+            "feld": "irrPct",
+            "gesetzt": true
+          },
+          "pflicht": true,
+          "dd": "kaufmaennisch"
+        }
+      ]
+    },
+    {
+      "id": "transaktion",
+      "titel": "Transaktionsstruktur",
+      "text": "Wie soll das Projekt übertragen werden?",
+      "felder": [
+        {
+          "id": "struktur",
+          "label": "Struktur",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "asset",
+              "Asset Deal (Projektrechte/Anlage)"
+            ],
+            [
+              "share",
+              "Share Deal (Projektgesellschaft/SPV)"
+            ],
+            [
+              "beides",
+              "Beides möglich"
+            ]
+          ],
+          "ab": "flaeche",
+          "pflicht": true,
+          "dd": "rechtlich",
+          "lex": "share-deal"
+        },
+        {
+          "id": "spvRechtsform",
+          "label": "Projektgesellschaft (Rechtsform)",
+          "typ": "text",
+          "laenge": 80,
+          "pflicht": true,
+          "wenn": {
+            "feld": "struktur",
+            "in": [
+              "share",
+              "beides"
+            ]
+          },
+          "dd": "steuern",
+          "lex": "spv",
+          "hilfe": "z. B. GmbH & Co. KG. Bitte ohne Firmenname (Anonymität bis zur Freigabe)."
+        },
+        {
+          "id": "spvGrundbesitz",
+          "label": "Projektgesellschaft hält Grundstücke",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "nein",
+              "Nein (nur Pacht/Dienstbarkeit)"
+            ],
+            [
+              "ja",
+              "Ja"
+            ]
+          ],
+          "pflicht": true,
+          "wenn": {
+            "feld": "struktur",
+            "in": [
+              "share",
+              "beides"
+            ]
+          },
+          "dd": "steuern",
+          "hilfe": "Relevant für Grunderwerbsteuer beim Anteilskauf."
+        },
+        {
+          "id": "umfang",
+          "label": "Angebotener Umfang",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "voll",
+              "100 %"
+            ],
+            [
+              "mehrheit",
+              "Mehrheit"
+            ],
+            [
+              "minderheit",
+              "Minderheit"
+            ],
+            [
+              "codev",
+              "Co-Development-Partnerschaft"
+            ]
+          ],
+          "ab": "flaeche",
+          "pflicht": true,
+          "dd": "rechtlich",
+          "lex": "co-development"
+        },
+        {
+          "id": "zahlung",
+          "label": "Zahlungsstruktur",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "einmal",
+              "Einmalzahlung bei Closing"
+            ],
+            [
+              "meilensteine",
+              "Meilensteinzahlungen"
+            ],
+            [
+              "earnout",
+              "Mit Earn-out"
+            ]
+          ],
+          "ab": "flaeche",
+          "pflicht": true,
+          "dd": "kaufmaennisch",
+          "lex": "earn-out"
+        },
+        {
+          "id": "meilensteine",
+          "label": "Meilensteine / Earn-out-Regel",
+          "typ": "text",
+          "laenge": 300,
+          "pflicht": true,
+          "wenn": {
+            "feld": "zahlung",
+            "in": [
+              "meilensteine",
+              "earnout"
+            ]
+          },
+          "dd": "kaufmaennisch",
+          "hilfe": "z. B. 30 % bei Signing, 40 % bei Satzungsbeschluss, 30 % bei RTB."
+        },
+        {
+          "id": "exklusivitaetWochen",
+          "label": "Exklusivität für Käufer möglich",
+          "typ": "zahl",
+          "einheit": "Wochen",
+          "min": 0,
+          "max": 52,
+          "stellen": 0,
+          "dd": "rechtlich"
+        }
+      ]
+    },
+    {
+      "id": "umwelt",
+      "titel": "Umwelt",
+      "text": "Umweltprüfung, Artenschutz und Schutzgebiete.",
+      "felder": [
+        {
+          "id": "uvp",
+          "label": "Umweltverträglichkeitsprüfung",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "nein",
+              "Nicht erforderlich"
+            ],
+            [
+              "vorpruefung",
+              "Vorprüfung"
+            ],
+            [
+              "ja",
+              "UVP erforderlich / durchgeführt"
+            ]
+          ],
+          "ab": "aufstellung",
+          "pflicht": true,
+          "ohneTypen": [
+            "dach",
+            "carport"
+          ],
+          "dd": "umwelt",
+          "lex": "uvp"
+        },
+        {
+          "id": "artenschutz",
+          "label": "Artenschutz",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "nicht_noetig",
+              "Nicht erforderlich"
+            ],
+            [
+              "ausstehend",
+              "Kartierung ausstehend"
+            ],
+            [
+              "liegt_vor",
+              "Gutachten liegt vor"
+            ],
+            [
+              "massnahmen",
+              "Gutachten mit CEF-/Ausgleichsmaßnahmen"
+            ]
+          ],
+          "ab": "aufstellung",
+          "pflicht": true,
+          "ohneTypen": [
+            "dach",
+            "carport"
+          ],
+          "dd": "umwelt",
+          "lex": "cef-massnahme"
+        },
+        {
+          "id": "schutzgebiet",
+          "label": "Schutzgebiete",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "keins",
+              "Keine Betroffenheit"
+            ],
+            [
+              "lsg",
+              "Landschaftsschutzgebiet"
+            ],
+            [
+              "natura2000",
+              "Natura 2000 in der Nähe"
+            ],
+            [
+              "wasser",
+              "Wasserschutzgebiet"
+            ]
+          ],
+          "ab": "flaeche",
+          "pflicht": true,
+          "ohneTypen": [
+            "dach",
+            "carport"
+          ],
+          "dd": "umwelt"
+        },
+        {
+          "id": "ausgleichHa",
+          "label": "Ausgleichsfläche",
+          "typ": "zahl",
+          "einheit": "ha",
+          "min": 0,
+          "max": 10000,
+          "stellen": 1,
+          "dd": "umwelt",
+          "lex": "ausgleichsflaechen"
+        }
+      ]
+    },
+    {
+      "id": "bestand",
+      "titel": "Bestandsanlage",
+      "text": "Nur für Anlagen in Betrieb: Ist-Daten, Verträge und Restlaufzeiten.",
+      "felder": [
+        {
+          "id": "codDatum",
+          "label": "Inbetriebnahme (COD)",
+          "typ": "datum",
+          "pflicht": true,
+          "nurBestand": true,
+          "dd": "technisch",
+          "lex": "cod"
+        },
+        {
+          "id": "ertraege",
+          "label": "Ist-Erträge je Jahr vs. Prognose",
+          "typ": "tabelle",
+          "spalten": [
+            [
+              "jahr",
+              "Jahr"
+            ],
+            [
+              "istMwh",
+              "Ist (MWh)"
+            ],
+            [
+              "prognoseMwh",
+              "Prognose (MWh)"
+            ]
+          ],
+          "pflicht": true,
+          "nurBestand": true,
+          "dd": "kaufmaennisch"
+        },
+        {
+          "id": "verfuegbarkeitPct",
+          "label": "Technische Verfügbarkeit (Mittel)",
+          "typ": "zahl",
+          "einheit": "%",
+          "min": 0,
+          "max": 100,
+          "stellen": 1,
+          "pflicht": true,
+          "nurBestand": true,
+          "dd": "technisch",
+          "lex": "verfuegbarkeit"
+        },
+        {
+          "id": "omVertrag",
+          "label": "O&M-Vertrag (Leistungsumfang, Laufzeit)",
+          "typ": "text",
+          "laenge": 200,
+          "pflicht": true,
+          "nurBestand": true,
+          "dd": "technisch",
+          "lex": "o-und-m"
+        },
+        {
+          "id": "direktvermarkter",
+          "label": "Direktvermarkter (Vertrag bis)",
+          "typ": "text",
+          "laenge": 160,
+          "pflicht": true,
+          "nurBestand": true,
+          "dd": "kaufmaennisch",
+          "lex": "direktvermarktung"
+        },
+        {
+          "id": "versicherung",
+          "label": "Versicherung (Allgefahren, BU)",
+          "typ": "text",
+          "laenge": 160,
+          "pflicht": true,
+          "nurBestand": true,
+          "dd": "rechtlich",
+          "lex": "betriebsunterbrechungsversicherung"
+        },
+        {
+          "id": "wrTausch",
+          "label": "Wechselrichtertausch",
+          "typ": "auswahl",
+          "optionen": [
+            [
+              "erfolgt",
+              "Bereits erfolgt"
+            ],
+            [
+              "geplant",
+              "Geplant / Rücklage gebildet"
+            ],
+            [
+              "offen",
+              "Noch nicht geplant"
+            ]
+          ],
+          "pflicht": true,
+          "nurBestand": true,
+          "dd": "technisch"
+        },
+        {
+          "id": "eegEnde",
+          "label": "Ende der Förderung (EEG/EAG)",
+          "typ": "datum",
+          "nurBestand": true,
+          "dd": "kaufmaennisch"
+        },
+        {
+          "id": "pachtEnde",
+          "label": "Ende der Pacht (inkl. Optionen)",
+          "typ": "datum",
+          "pflicht": true,
+          "nurBestand": true,
+          "ohneTypen": [
+            "dach"
+          ],
+          "dd": "rechtlich"
+        }
+      ]
+    }
+  ]
+};
+
+export default SCHEMA;

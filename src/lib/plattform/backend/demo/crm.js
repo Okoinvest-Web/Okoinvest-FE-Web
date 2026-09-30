@@ -137,7 +137,7 @@ export function crmAusVorgang(db, vg) {
   if (vg.typ === "kommune" && kt.firma && !k.organisationId) {
     let org = orgFinden(db, kt.firma);
     if (!org) {
-      org = { id: neueId("KO"), ...orgDaten({ name: kt.firma, art: "gemeinde", plz: kt.plz, ort: kt.ort, land: kt.land || "DE" }), erstelltAm: jetzt(), geaendertAm: jetzt() };
+      org = { id: neueId("KO"), ...orgDaten({ name: kt.firma, art: vg.daten?.absender === "stadtwerk" ? "stadtwerk" : "gemeinde", plz: kt.plz, ort: kt.ort, land: kt.land || "DE" }), erstelltAm: jetzt(), geaendertAm: jetzt() };
       db.bo.organisationen.push(org);
     }
     k.organisationId = org.id;

@@ -1,0 +1,154 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 09:00:00.000000",
+ "description": "Terminmarktkurs (Cal/Q/M, Base/Peak) je Handelstag – nur aus lizenziertem Feed oder zitierter Quelle; Quelle Pflicht.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "handelstag",
+  "zone",
+  "produkt",
+  "typ",
+  "preis_eur_mwh",
+  "quelle",
+  "demo",
+  "erfasst_von"
+ ],
+ "fields": [
+  {
+   "fieldname": "handelstag",
+   "fieldtype": "Date",
+   "label": "Handelstag",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "zone",
+   "fieldtype": "Select",
+   "label": "Zone",
+   "options": "DE\nAT",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "produkt",
+   "fieldtype": "Data",
+   "label": "Produkt (Cal-27, Q1-27, M11-26)",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "typ",
+   "fieldtype": "Select",
+   "label": "Typ",
+   "options": "base\npeak",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "preis_eur_mwh",
+   "fieldtype": "Float",
+   "label": "Preis (€/MWh)",
+   "reqd": 1,
+   "in_list_view": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "quelle",
+   "fieldtype": "Data",
+   "label": "Quelle",
+   "reqd": 1
+  },
+  {
+   "fieldname": "demo",
+   "fieldtype": "Check",
+   "label": "Demo-Wert"
+  },
+  {
+   "fieldname": "erfasst_von",
+   "fieldtype": "Link",
+   "label": "Erfasst von",
+   "options": "Plattform Konto",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Marktpreis Termin",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Energie"
+  }
+ ]
+}

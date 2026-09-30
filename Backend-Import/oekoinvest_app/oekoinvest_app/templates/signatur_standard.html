@@ -1,0 +1,31 @@
+{#- Standard-Erklärung zur elektronischen Unterschrift (NDA bzw. Provisionsvereinbarung) – gerendert mit frappe.utils.pdf.get_pdf.
+    Texte wie die Klick-Variante (druck.oekoinvest_nda / oekoinvest_provision). Keine vertraulichen Projektangaben. -#}
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8">
+<style>
+body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 11pt; color: #1f2933; line-height: 1.5; }
+.kopf { background: #03122b; color: #fff; padding: 18px 24px; font-weight: 800; font-size: 18pt; }
+.kopf span { float: right; font-size: 8pt; color: #aed083; letter-spacing: 1px; padding-top: 8px; }
+h1 { color: #041d42; font-size: 18pt; margin: 28px 0 4px; }
+.unter { color: #6b7486; font-size: 9.5pt; margin-bottom: 20px; }
+ol li { margin-bottom: 10px; }
+.fuss { margin-top: 28px; font-size: 8.5pt; color: #6b7486; border-top: 1px solid #dfe3ea; padding-top: 8px; }
+</style></head>
+<body>
+<div class="kopf">ÖkoInvest <span>ZUR ELEKTRONISCHEN UNTERSCHRIFT</span></div>
+{% if art == "nda" %}
+<h1>Vertraulichkeitsvereinbarung</h1>
+<div class="unter">Projekt {{ projekt.name }} · Version {{ nda.version }}</div>
+<ol>{% for a in nda.absaetze %}<li>{{ a | e }}</li>{% endfor %}</ol>
+{% else %}
+<h1>Provisionsvereinbarung für Anbieter</h1>
+<div class="unter">Projekt {{ projekt.name }} · „{{ projekt.titel | e }}“ · Version {{ provision.version }}</div>
+<ol>
+<li>Für die Vermittlung über die Projektbörse zahlt der Anbieter an die ÖkoInvest GmbH eine Provision von {{ provision.text | e }}.</li>
+<li>Die Provision wird erst mit Abschluss des Kaufvertrags (Signing) fällig; ohne Abschluss entstehen keine Kosten.</li>
+<li>Der Provisionssatz wird bei der Freigabe des Projekts im Backoffice festgelegt und dem Anbieter mitgeteilt.</li>
+</ol>
+{% endif %}
+<p><strong>Erklärende Partei:</strong> {{ ((konto.vorname or "") ~ " " ~ (konto.nachname or "")) | e }} ({{ konto.email | e }})</p>
+<div class="fuss">{{ hinweis | e }} Unterschrift und Prüfprotokoll folgen auf der angehängten Prüfseite. ÖkoInvest GmbH · Ostermiething (AT)</div>
+</body></html>

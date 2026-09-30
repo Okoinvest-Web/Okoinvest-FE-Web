@@ -178,6 +178,41 @@ export const FINANZIERUNG = {
    * (marktübliche Spanne, eigene Einschätzung).
    */
   dscrZiel: 1.15,
+  /*
+   * ---- Ergänzung Finanzierungscockpit & Bankfinanzierung (Stand September 2026, Herleitung docs/FINANZIERUNG.md) ----
+   * Marktübliche Spannen der Projektfinanzierung PV im DACH-Raum – eigene Einschätzung aus veröffentlichten
+   * Branchenberichten und Term-Sheet-Übersichten, KEINE Bankkonditionen. Zinsen tagesaktuell anfragen.
+   *  dscrP50/dscrP90  Sizing-DSCR, auf den die Bank das Darlehen bemisst (EEG/Marktprämie; PPA/Merchant höher)
+   *  dscrLockup       Ausschüttungssperre (Lock-up), dscrDefault Kündigungsgrund (Event of Default)
+   *  fkMaxQuote       Obergrenze Fremdkapital (Gearing) bei Non-Recourse, laufzeitJahre Tenor (Tail zur Förder-/Pachtdauer)
+   *  dsraMonate       Schuldendienstreservekonto (Debt Service Reserve Account) in Monaten Schuldendienst
+   *  referenzzinsPct  EUR-Swapsatz 10–15 Jahre, Größenordnung 2025/26; margePct Kreditmarge; bearbeitungPct einmalige Gebühr
+   */
+  projekt: { dscrP50: 1.2, dscrP90: 1.1, dscrLockup: 1.1, dscrDefault: 1.05, fkMaxQuote: 0.85, laufzeitJahre: 18, dsraMonate: 6, referenzzinsPct: 2.7, margePct: 1.8, bearbeitungPct: 1.0 },
+  /**
+   * Förderkredit je Land (Rechenwerte fürs Cockpit). DE: KfW Erneuerbare Energien – Standard (270): bis 100 % der
+   * Investitionskosten, bis 150 Mio. € je Vorhaben, Laufzeit bis 30 Jahre, bis 5 tilgungsfreie Anlaufjahre, danach gleich
+   * hohe Raten, risikogerechter Zins (kfw.de/270, abgerufen 09/2026). Zins = eigene Annahme für eine gute Preisklasse.
+   * AT/CH: kein dem KfW-270 vergleichbarer Standardkredit für PV-Parks → Rechenwert = Bankkredit (Hinweise im Förder-Check).
+   */
+  foerderkredit: {
+    DE: { zins: 0.041, laufzeit: 20, anlaufJahre: 3, anteilMax: 1, tilgung: "linear" },
+    AT: { zins: 0.045, laufzeit: 15, anlaufJahre: 1, anteilMax: 0.8, tilgung: "annuitaet" },
+    CH: { zins: 0.03, laufzeit: 15, anlaufJahre: 1, anteilMax: 0.8, tilgung: "annuitaet" },
+  },
+  /** Anlagenleasing / Mietkauf PV (eigene Annahme): Aufschlag auf den Bankzins, Laufzeit, Restwert bzw. Sonder-/Anzahlung */
+  leasing: { zinsAufschlag: 0.01, laufzeit: 15, restwert: 0.1, sonderzahlung: 0.1 },
+  mietkauf: { zinsAufschlag: 0.0075, laufzeit: 15, anzahlung: 0.1 },
+  /**
+   * Steuern (Näherung, mit Steuerberatung prüfen): Ertragsteuersatz Kapitalgesellschaft DE ~30 % (KSt sinkt ab 2028 schrittweise
+   * auf 10 % im Jahr 2032, Gesetz für ein steuerliches Investitionssofortprogramm 2025), AT 23 % KöSt, CH je Kanton ~12–21 %.
+   * Degressive AfA DE 30 % (max. 3 × linear) für Anschaffungen 1.7.2025–31.12.2027; AT § 7 Abs. 1a EStG bis 30 %.
+   * AT Investitionsfreibetrag (IFB, § 11 EStG): 10 % bzw. 15 % ökologisch, befristet 11/2025–12/2026 20 % bzw. 22 %,
+   * Bemessung höchstens 1 Mio. € je Wirtschaftsjahr (WKO, abgerufen 09/2026).
+   */
+  steuerLand: { DE: 0.3, AT: 0.23, CH: 0.18 },
+  afaDegressiv: { DE: 0.3, AT: 0.3, CH: 0 },
+  ifbAt: { satz: 0.22, regulaer: 0.15, maxBemessung: 1000000, befristetBis: "2026-12-31" },
 };
 
 /* ------------------------------------------------------------------ */
@@ -726,4 +761,69 @@ export const BESTAND = {
   ],
   /** Abweichung Ist-Ertrag zu Prognose, ab der eine technische Prüfung dringend ist */
   minderertragWarnung: 0.9,
+};
+
+/* ------------------------------------------------------------------ */
+/* Projektentwicklung (internes Entwicklungsmanagement, Portfolio)     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Planannahmen der Projektentwicklung (Backoffice /portal/admin/entwicklung).
+ *  zielMwpJahr        Neuentwicklung pro Jahr laut Unternehmensangabe (docs/BRIEFING.md, „rund 50 MWp pro Jahr“)
+ *  wahrscheinlichkeit Erfolgswahrscheinlichkeit bis zur Inbetriebnahme je erreichter Phase (PHASEN-id; „akquise“ = vor
+ *                     Flächensicherung). Grobe, interne Planannahme zur Gewichtung des Pipeline-Werts (übliche
+ *                     Größenordnungen aus Projektbörsen/Branchengesprächen) – KEINE belegte Quote, je Projekt überschreibbar.
+ *  preisBasis         Pipeline-Wert = MWp × 1000 × Mitte der Phasenspanne PHASEN.preisProKwp × Wahrscheinlichkeit
+ */
+export const ENTWICKLUNG = {
+  zielMwpJahr: 50,
+  wahrscheinlichkeit: { akquise: 0.05, flaeche: 0.15, netz: 0.25, aufstellung: 0.4, satzung: 0.65, rtb: 0.85, cod: 1 },
+  preisBasis: "mitte",
+};
+
+/**
+ * Projektkostenkalkulation (Backoffice /portal/admin/entwicklung/[id]?reiter=kalkulation) – Vorschlagswerte je Gewerk.
+ * Grundlage sind die Spannen oben (FREIFLAECHE, AGRI, CARPORT, DACH, SPEICHER, PACHT, FINANZIERUNG); die Aufteilung der
+ * schlüsselfertigen Errichtung (EPC) auf Gewerke ist eine EIGENE EINSCHÄTZUNG aus Projektpraxis und veröffentlichten
+ * Kostenaufstellungen (Größenordnung 2025/26) – Orientierung, keine Angebotspreise. Jede Zahl ist in der Kalkulation
+ * überschreibbar; mit fortschreitendem Kostenstand ersetzen Angebote/Vergaben die Vorschläge.
+ *  epcAnteile        Anteil am EPC-Preis (capexProKwp.mittel des Typs) je Gewerk; Summe = 1. Zaun und Wege werden, sobald
+ *                    Zaunlänge bzw. Fläche bekannt sind, stattdessen über zaunProM/wegeProHa berechnet
+ *                    (bos = Monitoring, Blitz-/Überspannungsschutz, Kommunikation, Beschilderung, Inbetriebnahme)
+ *  zaunProM          Zaun 2,0–2,4 m mit Übersteigschutz inkl. Tore, €/m; kameraProHa Videoüberwachung/Einbruchmeldung €/ha
+ *  wegeProHa         Wege, Stellflächen, Erdarbeiten €/ha Anlagenfläche
+ *  trasseProM        MS-Kabeltrasse je Verlegeart inkl. Tiefbau und Kabel (ein System), €/m – „graben“ = FREIFLAECHE.kabelProMeter
+ *  querung           Sonderbauwerke je Querung (Spülbohrung/Pressung inkl. Genehmigung), €
+ *  dienstbarkeitProM Entschädigung Leitungsrecht (beschränkte persönliche Dienstbarkeit) je Trassenmeter, einmalig
+ *  notarJeFlaeche    Notar/Grundbuch je Grundstücksvorgang (Dienstbarkeit, Vormerkung)
+ *  entwicklungAnteile Aufteilung der Entwicklungskosten (FREIFLAECHE.entwicklungProKwp) ohne Gutachten
+ *  gutachtenEur      Gutachten je Art (Vorlage-Schlüssel der Projektentwicklung), Orientierungswert € je Gutachten
+ *  ausgleichProHa    Ausgleichs-/Ökomaßnahmen (Ansaat, Hecken, Pflege in der Herstellungsphase) €/ha
+ *  versicherungBau   Bauleistungs-/Montageversicherung (CAR/EAR) in % der Bausumme
+ *  contingency       Unvorhergesehenes je Kostenstand (Anteil an Bau + Netz) – übliche Reserve sinkt mit Planungstiefe
+ *  bauzeitMonate     typische Bauzeit je Typ (Monate) für Bauzeitzinsen; mittlere Inanspruchnahme 50 %
+ */
+export const PROJEKTKOSTEN = {
+  epcAnteile: {
+    standard: { module: 0.24, wechselrichter: 0.07, unterkonstruktion: 0.3, dc: 0.08, ac: 0.06, bos: 0.08, bauleitung: 0.1, zaun: 0.03, wege: 0.04 },
+    carport: { module: 0.15, wechselrichter: 0.05, unterkonstruktion: 0.53, dc: 0.05, ac: 0.05, bos: 0.03, bauleitung: 0.1, zaun: 0, wege: 0.04 },
+    dach: { module: 0.3, wechselrichter: 0.09, unterkonstruktion: 0.2, dc: 0.1, ac: 0.08, bos: 0.1, bauleitung: 0.13, zaun: 0, wege: 0 },
+  },
+  zaunProM: 55,
+  kameraProHa: 1500,
+  wegeProHa: 12000,
+  trasseProM: { graben: 120, pflug: 85, bankett: 160, asphalt: 230, spuelbohrung: 280 },
+  querung: { strasse: 15000, bahn: 60000, gewaesser: 25000 },
+  dienstbarkeitProM: 5,
+  notarJeFlaeche: 2500,
+  entwicklungAnteile: { pacht: 0, planung: 0.45, gebuehren: 0.15, recht: 0.2, netzpruefung: 0.2 },
+  gutachtenEur: {
+    gutachten_artenschutz: 25000, gutachten_ffh: 8000, gutachten_landschaft: 7000, gutachten_blendung: 4000, gutachten_schall: 5000,
+    gutachten_entwaesserung: 7000, gutachten_archaeologie: 12000, gutachten_boden: 18000, gutachten_kampfmittel: 9000, umweltbericht: 20000,
+    nutzungskonzept_agri: 6000, gutachten_nvp: 15000, statik: 8000, standard: 8000,
+  },
+  ausgleichProHa: 2000,
+  versicherungBau: 0.003,
+  contingency: { schaetzung: 0.15, kostenrahmen: 0.1, kostenberechnung: 0.07, angebote: 0.05, vergabe: 0.03, abrechnung: 0 },
+  bauzeitMonate: { freiflaeche: 6, agri: 8, carport: 6, dach: 4, speicher: 9, hybrid: 8 },
 };

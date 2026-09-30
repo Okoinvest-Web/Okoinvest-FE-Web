@@ -11,12 +11,19 @@ export const ROLLEN = [
   { id: "anbieter", label: "Projektentwickler / Anbieter", kurz: "Anbieter", text: "Projekte in die Börse stellen – geprüft, vertraulich, Provision nur bei Abschluss." },
   { id: "unternehmen", label: "Unternehmen", kurz: "Unternehmen", text: "Reststrom-Pool, Solarcarport oder Speicher: Anfragen und Angebote an einem Ort." },
   { id: "mitglied", label: "Mitglied / Bürger", kurz: "Mitglied", text: "Genossenschaft und Energiegemeinschaften: Beteiligung und Status einsehen." },
+  { id: "kommune", label: "Kommune / Gemeinde", kurz: "Kommune", text: "Projekte im Gemeindegebiet ab Planung, Beteiligungsmodelle und Bauleitplanung begleiten." }, // Onboarding B1: eigene Rolle (vorher „unternehmen“)
 ];
 
 export const ROLLE_ADMIN = { id: "admin", label: "Backoffice", kurz: "Admin" };
 export const ROLLEN_IDS = ROLLEN.map((r) => r.id);
 export const ALLE_ROLLEN_IDS = [...ROLLEN_IDS, "admin"];
-export const rolleLabel = (id) => (id === "admin" ? ROLLE_ADMIN.label : ROLLEN.find((r) => r.id === id)?.label || id);
+export const rolleLabel = (id) => (id === "admin" ? ROLLE_ADMIN.label : id === ROLLE_GUTACHTER.id ? ROLLE_GUTACHTER.label : id === ROLLE_LIEFERANT.id ? ROLLE_LIEFERANT.label : id === "bank" ? "Bank / Finanzierungspartner" : ROLLEN.find((r) => r.id === id)?.label || id);
+/** Projektentwicklung: externe Rolle „Gutachter / Planer“ – nicht selbst wählbar, nur per Einladung zu einem Entwicklungsprojekt */
+export const ROLLE_GUTACHTER = { id: "gutachter", label: "Gutachter / Planer", kurz: "Gutachter" };
+/** Energiebeschaffung: externe Rolle „Energieversorger / Lieferant“ – nicht selbst wählbar, nur per Einladung aus dem Lieferantenstamm */
+export const ROLLE_LIEFERANT = { id: "lieferant", label: "Energieversorger / Lieferant", kurz: "Lieferant" };
+/** Bankfinanzierung Eigenbetrieb: externe Rolle „Bank“ – nicht selbst wählbar, nur per Einladung zu einer Finanzierungsanfrage (sieht nur das freigegebene Bankenpaket) */
+export const ROLLE_BANK = { id: "bank", label: "Bank / Finanzierungspartner", kurz: "Bank" };
 
 /** Anfragetypen laut Formularvertrag (docs/BRIEFING.md) */
 export const VORGANG_TYPEN = {
@@ -43,7 +50,7 @@ export const ROLLE_FUER_TYP = {
   reststrom: "unternehmen",
   carport: "unternehmen",
   speicher: "unternehmen",
-  kommune: "unternehmen",
+  kommune: "kommune", // Onboarding B1: eigene Rolle Kommune
   genossenschaft: "mitglied",
   energiegemeinschaft: "mitglied",
   kontakt: "flaeche",
@@ -148,6 +155,18 @@ export const BENACHRICHTIGUNG_ARTEN = {
   sicherheit: { label: "Sicherheit & Anmeldungen", text: "Anmeldung von einem neuen Gerät, Zwei-Faktor, E-Mail-Änderung, Kontosperre.", mail: true, fest: true },
   // Anlagen & Monitoring: neue Störung an einer eigenen Anlage (Kunde) bzw. an einer betreuten Anlage (Backoffice)
   stoerung: { label: "Anlagenstörungen", text: "An einer Ihrer PV-Anlagen oder Speicher wurde eine Störung erkannt.", mail: true, rollen: ["unternehmen"] },
+  // Projektentwicklung: Fortschritt „Wo steht mein Projekt?“ (Eigentümer, Co-Investoren), Fristen und Gutachten-Aufträge
+  entwicklung: { label: "Projektentwicklung", text: "Fortschritt Ihres Projekts, fällige Fristen und zugewiesene Gutachten.", mail: true, rollen: ["flaeche", "landwirt", "investor", "gutachter"] },
+  // Dokumente, Signatur, Termine, Service & HR
+  signatur: { label: "Elektronische Unterschrift", text: "Ein Dokument liegt zur Unterschrift bereit, wurde unterschrieben oder widerrufen.", mail: true },
+  termin: { label: "Termine", text: "Terminbestätigung, Umbuchung, Absage und Erinnerung.", mail: true },
+  ticket: { label: "Support-Anfragen", text: "Antworten und Statuswechsel zu Ihren Support-Tickets.", mail: true },
+  // ERPNext-Finanzen & Abrechnung: neue Pachtabrechnung/Rechnung, Zahlung ausgeführt bzw. eingegangen, Zahlungserinnerung
+  abrechnung: { label: "Abrechnungen & Zahlungen", text: "Neue Pachtabrechnung, Rechnung, Zahlungseingang oder Zahlungserinnerung.", mail: true, rollen: ["flaeche", "landwirt", "unternehmen", "anbieter"] },
+  // Energiebeschaffung: Fristen des Stromvertrags, Ausschreibung/Freigabe (Kunde), Angebotsanfragen und Ergebnisse (Lieferant)
+  energie: { label: "Energiebeschaffung", text: "Kündigungsfristen, Angebotsvergleich zur Freigabe, Angebotsanfragen, Fristen und Zuschläge.", mail: true, rollen: ["unternehmen", "lieferant"] },
+  // Finanzierung: Bankfinanzierung (Anfrage, Term Sheet, Entscheidung, Covenant-Ampel) – Bank und Backoffice
+  finanzierung: { label: "Finanzierung & Banken", text: "Finanzierungsanfragen, Term Sheets, Entscheidungen und Covenant-Frühwarnungen.", mail: true, rollen: ["bank", "investor"] },
 };
 export const BENACHRICHTIGUNG_ART_IDS = Object.keys(BENACHRICHTIGUNG_ARTEN);
 

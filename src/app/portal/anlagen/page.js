@@ -6,7 +6,7 @@ import { portalNutzer, laden } from "@/lib/plattform/server/seite";
 import { anlagenMitStatus } from "@/lib/plattform/messdaten/auswertung";
 import { darfLesen } from "@/lib/plattform/rechte";
 
-export const metadata = { title: "Anlagen & Monitoring" };
+export const metadata = { title: "Solarstrom & Anlagen" };
 
 export default async function AnlagenSeite() {
   const n = await portalNutzer();
@@ -15,12 +15,12 @@ export default async function AnlagenSeite() {
   return (
     <>
       <SeitenKopf
-        eyebrow="Anlagen & Monitoring"
-        titel={backoffice ? "Alle Anlagen" : "Meine Anlagen"}
+        eyebrow={backoffice ? "Anlagen & Monitoring" : "Stromlieferung vor Ort"}
+        titel={backoffice ? "Alle Anlagen" : "Mein Solarstrom"}
         text={
           backoffice
             ? "Alle Contracting-Anlagen mit Live-Leistung, Erträgen und Zustand. Störungen bearbeiten Sie im Störungs-Leitstand."
-            : "Ihre PV-Anlagen und Speicher aus dem Contracting mit ÖkoInvest: Leistung jetzt, Erträge, Eigenverbrauch und Zustand auf einen Blick."
+            : "Solarstrom, den ÖkoInvest mit eigenen Anlagen an Ihrem Standort erzeugt und an Sie liefert: gelieferte Mengen, Deckungsanteil, Reststrom aus dem Netz und Kosten nach Vertrag. Die Anlagen stehen im Eigentum und Betrieb von ÖkoInvest bzw. einer ÖkoInvest-Projektgesellschaft."
         }
         aktionen={backoffice ? <Button href="/portal/admin/anlagen" size="sm" variant="navy">Störungs-Leitstand</Button> : null}
       />
@@ -29,8 +29,8 @@ export default async function AnlagenSeite() {
       ) : (
         <Leer
           icon={SunMedium}
-          titel="Noch keine Anlagen zugeordnet"
-          text="Sobald ÖkoInvest eine Contracting-Anlage für Ihr Unternehmen in Betrieb nimmt, erscheint sie hier mit Live-Werten, Erträgen und Störungsmeldungen."
+          titel="Noch keine Stromlieferung vor Ort"
+          text="Sobald ÖkoInvest an Ihrem Standort eine Anlage in Betrieb nimmt und Sie mit Solarstrom beliefert, erscheinen hier gelieferte Mengen, Kosten und Störungsmeldungen."
           aktion={<Button href="/portal/nachrichten" size="sm" variant="secondary">Nachricht an ÖkoInvest</Button>}
         />
       )}

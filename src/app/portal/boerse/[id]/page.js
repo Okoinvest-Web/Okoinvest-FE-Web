@@ -20,6 +20,13 @@ import { statusInfo } from "@/lib/plattform/prozesse";
 import { datumZeit, eur, mwp, preisText } from "@/lib/plattform/format";
 import { fmt } from "@/lib/rechner/annahmen";
 import { phaseById } from "@/lib/invest/markt";
+import KycHinweisServer from "@/components/Portal/Kyc/KycHinweisServer"; // KYC/KYB: Hinweis vor Datenraum-Freigabe
+// Fachprüfung Kapitalseite: Datenblatt, Due-Diligence-Index, Bewertungswerkzeug, strukturierte LOI, Suchprofil-Passung
+import { Calculator } from "lucide-react";
+import { DatenblattAnzeige, DdIndexKarte } from "@/components/Portal/Fach/DdIndex";
+import LoiFormular from "@/components/Portal/Fach/LoiFormular";
+import { loiZeilen } from "@/lib/plattform/fach/loi";
+import { passungHinweise } from "@/lib/plattform/fach/suchprofil";
 
 export const metadata = { title: "Exposé" };
 
@@ -47,6 +54,8 @@ export default async function PortalExpose({ params }) {
             {frei ? (
               <>
                 <Button href={`/portal/dealroom/${p.id}`} size="sm" variant="navy" icon={Gavel}>Deal-Room</Button>
+                <Button href={`/portal/boerse/${p.id}/bewertung`} size="sm" variant="secondary" icon={Calculator}>Bewerten</Button>
+                <Button href={`/portal/finanzierung?projekt=${p.id}`} size="sm" variant="secondary" icon={Calculator}>Finanzierung</Button>{/* Finanzierungscockpit */}
                 <DateiLink href={`/api/portal/projekte/${p.id}/expose`} icon={FileDown} variant="primary">Exposé (PDF)</DateiLink>
               </>
             ) : (
@@ -113,6 +122,8 @@ export default async function PortalExpose({ params }) {
             )}
           </Karte>
 
+          {frei && <DatenblattAnzeige projekt={{ ...p, vertraulich: d.vertraulich || {}, datenblatt: d.datenblatt || {} }} untertitel="Angaben des Anbieters – Wirtschaftlichkeit ungeprüft" />}
+
           {frei && <KiFrage projektId={p.id} />}
 
           {i && thread && (
@@ -123,6 +134,19 @@ export default async function PortalExpose({ params }) {
         </div>
 
         <div className="min-w-0 space-y-6">
+          {!frei && <KycHinweisServer schritt="nda" nutzer={n} />}
+          {(() => {
+            const h = passungHinweise(p, n.suchprofil, frei ? d.datenblatt : null);
+            return h.passt.length || h.pruefen.length ? (
+              <Karte titel="Passung zu Ihrem Suchprofil" untertitel={p.matching ? `Matching-Score ${p.matching.score} %` : undefined}>
+                <ul className="space-y-1.5 text-[14px]">
+                  {h.passt.map((x) => <li key={x} className="flex items-start gap-2 text-ink-800"><Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" />{x}</li>)}
+                  {h.pruefen.map((x) => <li key={x} className="flex items-start gap-2 text-ink-700"><span aria-hidden="true" className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sun-400" />{x}</li>)}
+                </ul>
+              </Karte>
+            ) : null;
+          })()}
+          {frei && d.ddIndex && <DdIndexKarte index={d.ddIndex} kompakt aktion={<Button href={`/portal/boerse/${p.id}/bewertung`} size="sm" variant="ghost" icon={Calculator}>Bewerten</Button>} />}
           {(!i || i.status === "gemerkt") && (
             <Karte titel={<>Datenraum anfragen <Begriff id="nda" nurIcon /></>}>
               {p.status === "reserviert" && <p className="mb-4 text-[13.5px] text-ink-600">Das Projekt ist reserviert. Sie können trotzdem Interesse anmelden – falls die Gespräche scheitern, melden wir uns.</p>}
@@ -143,19 +167,17 @@ export default async function PortalExpose({ params }) {
           {i && ["nda_freigegeben", "loi_abgegeben", "loi_angenommen", "abgeschlossen", "abgelehnt"].includes(i.status) && (
             <Karte titel={<>Absichtserklärung (LOI) <Begriff id="loi" nurIcon /></>}>
               {i.loi ? (
-                <Angaben
-                  spalten={1}
-                  items={[
-                    { label: "Abgegeben", wert: datumZeit(i.loi.am) },
-                    { label: "Indikativer Kaufpreis", wert: i.loi.betrag ? eur(i.loi.betrag) : "" },
-                    { label: "Inhalt", wert: i.loi.text },
-                    { label: "Bedingungen", wert: i.loi.bedingungen },
-                  ]}
-                />
+                <Angaben spalten={1} items={[{ label: "Abgegeben", wert: datumZeit(i.loi.am) }, ...loiZeilen(i.loi)]} />
+              ) : i.status === "nda_freigegeben" ? (
+                <>
+                  <p className="mb-4 text-[14px] leading-relaxed text-ink-600">Nach Prüfung des Datenraums geben Sie hier eine unverbindliche Absichtserklärung ab – mit Preisbasis, Struktur, Bedingungen und Exklusivität wie im Markt üblich. Tipp: Rechnen Sie Ihr Angebot vorher im <a href={`/portal/boerse/${p.id}/bewertung`} className="font-semibold text-ov-700 hover:text-ov-800">Bewertungswerkzeug</a>.</p>
+                  <KycHinweisServer schritt="loi" nutzer={n} />
+                  <LoiFormular interesseId={i.id} mwp={p.mwp} vorschlag={p.preisModus === "proKwp" ? { preisProKwp: p.preisProKwp } : p.preisModus === "gesamt" ? { betrag: p.preis } : null} />
+                </>
               ) : (
                 <p className="mb-4 text-[14px] leading-relaxed text-ink-600">Nach Prüfung des Datenraums können Sie hier eine unverbindliche Absichtserklärung abgeben.</p>
               )}
-              <StatusAktionen art="interesse" id={i.id} status={i.status} als="eigentuemer" className={i.loi ? "mt-4" : ""} />
+              {i.status !== "nda_freigegeben" && <StatusAktionen art="interesse" id={i.id} status={i.status} als="eigentuemer" className={i.loi ? "mt-4" : ""} />}
               <p className="mt-4 text-[13.5px] text-ink-500">{statusInfo("interesse", i.status).text}</p>
             </Karte>
           )}

@@ -1,0 +1,833 @@
+{
+ "hinweis": "Automatisch erzeugt von faelle_erzeugen.mjs – nicht von Hand ändern.",
+ "version": "2026-09-30.1",
+ "knoten": [
+  {
+   "id": "uw-a",
+   "name": "UW A",
+   "art": "uw110",
+   "kapazitaet": "unbekannt",
+   "lon": 13.08,
+   "lat": 48.25
+  },
+  {
+   "id": "tr-b",
+   "name": "Trafo B",
+   "art": "trafo",
+   "kapazitaet": "unbekannt",
+   "lon": 13.02,
+   "lat": 48.21
+  },
+  {
+   "id": "uw-c",
+   "name": "UW C",
+   "art": "uw110",
+   "kapazitaet": "knapp",
+   "lon": 13,
+   "lat": 48.2
+  },
+  {
+   "id": "uew-d",
+   "name": "UW D",
+   "art": "uew",
+   "kapazitaet": "frei",
+   "lon": 13.3,
+   "lat": 48.3
+  }
+ ],
+ "bewertung": [
+  {
+   "name": "Idealfläche nahe Trafo",
+   "eingabe": {
+    "ha": 12,
+    "kompaktheit": 0.92,
+    "neigungGrad": 2.5,
+    "exposition": "S",
+    "nutzung": {
+     "acker": 12,
+     "gruenland": 0,
+     "sonstige": 0
+    },
+    "schutz": [],
+    "siedlungAbstandM": 450,
+    "bundesland": "Oberösterreich",
+    "land": "AT",
+    "widmung": {
+     "status": "zone"
+    },
+    "netz": {
+     "knoten": {
+      "id": "tr-b",
+      "name": "Trafo B",
+      "art": "trafo",
+      "kapazitaet": "unbekannt",
+      "lon": 13.02,
+      "lat": 48.21
+     },
+     "luftlinieM": 926,
+     "trasseM": 1158,
+     "kosten": {
+      "ebene": "msLeitung",
+      "summe": 600460,
+      "min": 480368,
+      "max": 840644,
+      "proKwp": 55,
+      "anteil": 0.117,
+      "ampel": "pruefen",
+      "monate": [
+       9,
+       30
+      ]
+     },
+     "ebene": "msLeitung"
+    }
+   },
+   "erwartet": {
+    "score": 97,
+    "ampel": "gruen",
+    "ko": [],
+    "punkte": {
+     "groesse": 20,
+     "form": 8,
+     "neigung": 12,
+     "nutzung": 8,
+     "siedlung": 8,
+     "netz": 21.7,
+     "kosten": 6.4,
+     "widmung": 10,
+     "einstrahlung": 2.6
+    },
+    "mwp": 10.9
+   }
+  },
+  {
+   "name": "Groß, UW nötig, Priorität 2",
+   "eingabe": {
+    "ha": 38,
+    "kompaktheit": 0.7,
+    "neigungGrad": 6,
+    "exposition": "SO",
+    "nutzung": {
+     "acker": 12,
+     "gruenland": 0,
+     "sonstige": 0
+    },
+    "schutz": [],
+    "siedlungAbstandM": 450,
+    "bundesland": "Oberösterreich",
+    "land": "AT",
+    "widmung": {
+     "status": "angrenzend"
+    },
+    "netz": {
+     "knoten": {
+      "id": "uw-a",
+      "name": "UW A",
+      "art": "uw110",
+      "kapazitaet": "unbekannt",
+      "lon": 13.08,
+      "lat": 48.25
+     },
+     "luftlinieM": 3144,
+     "trasseM": 3929,
+     "kosten": {
+      "ebene": "uwMs",
+      "summe": 2994756,
+      "min": 2395805,
+      "max": 4192658,
+      "proKwp": 87,
+      "anteil": 0.185,
+      "ampel": "pruefen",
+      "monate": [
+       12,
+       42
+      ]
+     },
+     "ebene": "uwMs"
+    }
+   },
+   "erwartet": {
+    "score": 79,
+    "ampel": "gruen",
+    "ko": [],
+    "punkte": {
+     "groesse": 20,
+     "form": 4.4,
+     "neigung": 10,
+     "nutzung": 8,
+     "siedlung": 8,
+     "netz": 15.7,
+     "kosten": 4,
+     "widmung": 6,
+     "einstrahlung": 2.6
+    },
+    "mwp": 34.5
+   }
+  },
+  {
+   "name": "Zu klein",
+   "eingabe": {
+    "ha": 1.4,
+    "kompaktheit": 0.92,
+    "neigungGrad": 2.5,
+    "exposition": "S",
+    "nutzung": {
+     "acker": 12,
+     "gruenland": 0,
+     "sonstige": 0
+    },
+    "schutz": [],
+    "siedlungAbstandM": 450,
+    "bundesland": "Oberösterreich",
+    "land": "AT",
+    "widmung": {
+     "status": "zone"
+    },
+    "netz": {
+     "knoten": {
+      "id": "tr-b",
+      "name": "Trafo B",
+      "art": "trafo",
+      "kapazitaet": "unbekannt",
+      "lon": 13.02,
+      "lat": 48.21
+     },
+     "luftlinieM": 926,
+     "trasseM": 1158,
+     "kosten": {
+      "ebene": "msLeitung",
+      "summe": 264460,
+      "min": 211568,
+      "max": 370244,
+      "proKwp": 203,
+      "anteil": 0.433,
+      "ampel": "kritisch",
+      "monate": [
+       9,
+       30
+      ]
+     },
+     "ebene": "msLeitung"
+    }
+   },
+   "erwartet": {
+    "score": 25,
+    "ampel": "rot",
+    "ko": [
+     "groesse"
+    ],
+    "punkte": {
+     "groesse": 0,
+     "form": 8,
+     "neigung": 12,
+     "nutzung": 8,
+     "siedlung": 8,
+     "netz": 21.7,
+     "kosten": 0.2,
+     "widmung": 10,
+     "einstrahlung": 2.6
+    },
+    "mwp": 1.3
+   }
+  },
+  {
+   "name": "Natura 2000",
+   "eingabe": {
+    "ha": 20,
+    "kompaktheit": 0.92,
+    "neigungGrad": 2.5,
+    "exposition": "S",
+    "nutzung": {
+     "acker": 12,
+     "gruenland": 0,
+     "sonstige": 0
+    },
+    "schutz": [
+     {
+      "art": "natura2000",
+      "anteil": 0.4,
+      "abstandM": 0
+     }
+    ],
+    "siedlungAbstandM": 450,
+    "bundesland": "Oberösterreich",
+    "land": "AT",
+    "widmung": {
+     "status": "unklar"
+    },
+    "netz": {
+     "knoten": {
+      "id": "uw-a",
+      "name": "UW A",
+      "art": "uw110",
+      "kapazitaet": "unbekannt",
+      "lon": 13.08,
+      "lat": 48.25
+     },
+     "luftlinieM": 5372,
+     "trasseM": 6715,
+     "kosten": {
+      "ebene": "uwMs",
+      "summe": 2426280,
+      "min": 1941024,
+      "max": 3396792,
+      "proKwp": 133,
+      "anteil": 0.284,
+      "ampel": "pruefen",
+      "monate": [
+       15,
+       51
+      ]
+     },
+     "ebene": "uwMs"
+    }
+   },
+   "erwartet": {
+    "score": 15,
+    "ampel": "rot",
+    "ko": [
+     "schutz_natura2000"
+    ],
+    "punkte": {
+     "groesse": 20,
+     "form": 8,
+     "neigung": 12,
+     "nutzung": 8,
+     "schutz_natura2000": -10,
+     "siedlung": 8,
+     "netz": 9.6,
+     "kosten": 1.7,
+     "widmung": 4,
+     "einstrahlung": 2.6
+    },
+    "mwp": 18.2
+   }
+  },
+  {
+   "name": "Steil, Nordhang, nah Siedlung, LSG",
+   "eingabe": {
+    "ha": 7,
+    "kompaktheit": 0.92,
+    "neigungGrad": 16.5,
+    "exposition": "N",
+    "nutzung": {
+     "acker": 2,
+     "gruenland": 5,
+     "sonstige": 0
+    },
+    "schutz": [
+     {
+      "art": "landschaftsschutz",
+      "anteil": 0.3,
+      "abstandM": 0
+     },
+     {
+      "art": "naturschutz",
+      "anteil": 0,
+      "abstandM": 120
+     }
+    ],
+    "siedlungAbstandM": 60,
+    "bundesland": "Oberösterreich",
+    "land": "AT",
+    "widmung": {
+     "status": "ausserhalb"
+    },
+    "netz": {
+     "knoten": {
+      "id": "tr-b",
+      "name": "Trafo B",
+      "art": "trafo",
+      "kapazitaet": "unbekannt",
+      "lon": 13.02,
+      "lat": 48.21
+     },
+     "luftlinieM": 926,
+     "trasseM": 1158,
+     "kosten": {
+      "ebene": "msLeitung",
+      "summe": 442960,
+      "min": 354368,
+      "max": 620144,
+      "proKwp": 69,
+      "anteil": 0.147,
+      "ampel": "pruefen",
+      "monate": [
+       9,
+       30
+      ]
+     },
+     "ebene": "msLeitung"
+    }
+   },
+   "erwartet": {
+    "score": 20,
+    "ampel": "rot",
+    "ko": [
+     "neigung"
+    ],
+    "punkte": {
+     "groesse": 20,
+     "form": 8,
+     "neigung": 0,
+     "nutzung": 7.3,
+     "schutz_landschaftsschutz": -4.8,
+     "schutz_naturschutz": -5,
+     "siedlung": 0,
+     "netz": 21.7,
+     "kosten": 5.1,
+     "widmung": 2,
+     "einstrahlung": 2.6
+    },
+    "mwp": 6.4
+   }
+  },
+  {
+   "name": "NÖ außerhalb Zone > 2 ha",
+   "eingabe": {
+    "ha": 9,
+    "kompaktheit": 0.92,
+    "neigungGrad": 2.5,
+    "exposition": "S",
+    "nutzung": {
+     "acker": 12,
+     "gruenland": 0,
+     "sonstige": 0
+    },
+    "schutz": [],
+    "siedlungAbstandM": 450,
+    "bundesland": "Niederösterreich",
+    "land": "AT",
+    "widmung": {
+     "status": "angrenzend"
+    },
+    "netz": {
+     "knoten": {
+      "id": "tr-b",
+      "name": "Trafo B",
+      "art": "trafo",
+      "kapazitaet": "unbekannt",
+      "lon": 13.02,
+      "lat": 48.21
+     },
+     "luftlinieM": 926,
+     "trasseM": 1158,
+     "kosten": {
+      "ebene": "msLeitung",
+      "summe": 505960,
+      "min": 404768,
+      "max": 708344,
+      "proKwp": 62,
+      "anteil": 0.131,
+      "ampel": "pruefen",
+      "monate": [
+       9,
+       30
+      ]
+     },
+     "ebene": "msLeitung"
+    }
+   },
+   "erwartet": {
+    "score": 45,
+    "ampel": "gelb",
+    "ko": [
+     "widmung"
+    ],
+    "punkte": {
+     "groesse": 20,
+     "form": 8,
+     "neigung": 12,
+     "nutzung": 8,
+     "siedlung": 8,
+     "netz": 21.7,
+     "kosten": 5.8,
+     "widmung": 6,
+     "einstrahlung": 3.8
+    },
+    "mwp": 8.2
+   }
+  },
+  {
+   "name": "Kein Netz im Umkreis",
+   "eingabe": {
+    "ha": 5.5,
+    "kompaktheit": 0.92,
+    "neigungGrad": 2.5,
+    "exposition": "S",
+    "nutzung": {
+     "acker": 12,
+     "gruenland": 0,
+     "sonstige": 0
+    },
+    "schutz": [],
+    "siedlungAbstandM": 450,
+    "bundesland": "Kärnten",
+    "land": "AT",
+    "netz": null,
+    "widmung": {
+     "status": "unklar"
+    }
+   },
+   "erwartet": {
+    "score": 61,
+    "ampel": "gelb",
+    "ko": [],
+    "punkte": {
+     "groesse": 20,
+     "form": 8,
+     "neigung": 12,
+     "nutzung": 8,
+     "siedlung": 8,
+     "netz": 0,
+     "kosten": 0,
+     "widmung": 4,
+     "widmung_max": -3,
+     "einstrahlung": 4
+    },
+    "mwp": 5
+   }
+  },
+  {
+   "name": "Sehr groß, 110 kV",
+   "eingabe": {
+    "ha": 70,
+    "kompaktheit": 0.92,
+    "neigungGrad": 2.5,
+    "exposition": "S",
+    "nutzung": {
+     "acker": 12,
+     "gruenland": 0,
+     "sonstige": 0
+    },
+    "schutz": [],
+    "siedlungAbstandM": 450,
+    "bundesland": "Oberösterreich",
+    "land": "AT",
+    "widmung": {
+     "status": "zone"
+    },
+    "netz": {
+     "knoten": {
+      "id": "uew-d",
+      "name": "UW D",
+      "art": "uew",
+      "kapazitaet": "frei",
+      "lon": 13.3,
+      "lat": 48.3
+     },
+     "luftlinieM": 4316,
+     "trasseM": 5395,
+     "kosten": {
+      "ebene": "hs",
+      "summe": 13783500,
+      "min": 11026800,
+      "max": 19296900,
+      "proKwp": 217,
+      "anteil": 0.461,
+      "ampel": "kritisch",
+      "monate": [
+       27,
+       57
+      ]
+     },
+     "ebene": "hs"
+    }
+   },
+   "erwartet": {
+    "score": 80,
+    "ampel": "gruen",
+    "ko": [],
+    "punkte": {
+     "groesse": 16,
+     "form": 8,
+     "neigung": 12,
+     "nutzung": 8,
+     "siedlung": 8,
+     "netz": 12.2,
+     "kapazitaet": 3,
+     "kosten": 0,
+     "widmung": 10,
+     "einstrahlung": 2.6
+    },
+    "mwp": 63.6
+   }
+  }
+ ],
+ "netzkosten": [
+  {
+   "mwp": 5,
+   "km": 1,
+   "ebene": "auto",
+   "kapazitaet": "unbekannt",
+   "erwartet": {
+    "ebene": "msLeitung",
+    "summe": 375000,
+    "min": 300000,
+    "max": 525000,
+    "proKwp": 75,
+    "anteil": 0.16,
+    "ampel": "pruefen",
+    "monate": [
+     9,
+     30
+    ]
+   }
+  },
+  {
+   "mwp": 10,
+   "km": 2,
+   "ebene": "auto",
+   "kapazitaet": "frei",
+   "erwartet": {
+    "ebene": "msLeitung",
+    "summe": 670000,
+    "min": 536000,
+    "max": 938000,
+    "proKwp": 67,
+    "anteil": 0.143,
+    "ampel": "gut",
+    "monate": [
+     9,
+     18
+    ]
+   }
+  },
+  {
+   "mwp": 30,
+   "km": 3,
+   "ebene": "auto",
+   "kapazitaet": "unbekannt",
+   "erwartet": {
+    "ebene": "uwMs",
+    "summe": 2592000,
+    "min": 2073600,
+    "max": 3628800,
+    "proKwp": 86,
+    "anteil": 0.184,
+    "ampel": "pruefen",
+    "monate": [
+     12,
+     42
+    ]
+   }
+  },
+  {
+   "mwp": 80,
+   "km": 4,
+   "ebene": "auto",
+   "kapazitaet": "knapp",
+   "erwartet": {
+    "ebene": "hs",
+    "summe": 13200000,
+    "min": 10560000,
+    "max": 18480000,
+    "proKwp": 165,
+    "anteil": 0.351,
+    "ampel": "kritisch",
+    "monate": [
+     48,
+     108
+    ]
+   }
+  },
+  {
+   "mwp": 8,
+   "km": 6.5,
+   "ebene": "msLeitung",
+   "kapazitaet": "unbekannt",
+   "erwartet": {
+    "ebene": "msLeitung",
+    "summe": 1140000,
+    "min": 912000,
+    "max": 1596000,
+    "proKwp": 143,
+    "anteil": 0.303,
+    "ampel": "kritisch",
+    "monate": [
+     12,
+     39
+    ]
+   }
+  }
+ ],
+ "bester": [
+  {
+   "punkt": [
+    13.03,
+    48.215
+   ],
+   "mwp": 3,
+   "erwartet": {
+    "id": "tr-b",
+    "luftlinieM": 926,
+    "trasseM": 1158,
+    "summe": 323960
+   }
+  },
+  {
+   "punkt": [
+    13.05,
+    48.23
+   ],
+   "mwp": 30,
+   "erwartet": {
+    "id": "uw-a",
+    "luftlinieM": 3144,
+    "trasseM": 3929,
+    "summe": 2837256
+   }
+  },
+  {
+   "punkt": [
+    13.25,
+    48.28
+   ],
+   "mwp": 45,
+   "erwartet": {
+    "id": "uew-d",
+    "luftlinieM": 4316,
+    "trasseM": 5395,
+    "summe": 12388500
+   }
+  }
+ ],
+ "distanz": [
+  {
+   "a": [
+    13.0346,
+    48.2566
+   ],
+   "b": [
+    13.4886,
+    48.2107
+   ],
+   "erwartetM": 34011.241
+  },
+  {
+   "a": [
+    12.83,
+    48.05
+   ],
+   "b": [
+    13.04,
+    48.253
+   ],
+   "erwartetM": 27426.69
+  },
+  {
+   "a": [
+    16.3738,
+    48.2082
+   ],
+   "b": [
+    13.0457,
+    47.8095
+   ],
+   "erwartetM": 251498.328
+  }
+ ],
+ "kompaktheit": [
+  {
+   "geo": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       13,
+       48
+      ],
+      [
+       13.004,
+       48
+      ],
+      [
+       13.004,
+       48.0027
+      ],
+      [
+       13,
+       48.0027
+      ],
+      [
+       13,
+       48
+      ]
+     ]
+    ]
+   },
+   "flaecheM2": 89350,
+   "erwartet": 1
+  },
+  {
+   "geo": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       13,
+       48
+      ],
+      [
+       13.02,
+       48
+      ],
+      [
+       13.02,
+       48.0004
+      ],
+      [
+       13,
+       48.0004
+      ],
+      [
+       13,
+       48
+      ]
+     ]
+    ]
+   },
+   "flaecheM2": 66186.6,
+   "erwartet": 0
+  },
+  {
+   "geo": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       13,
+       48
+      ],
+      [
+       13.006,
+       48
+      ],
+      [
+       13.006,
+       48.001
+      ],
+      [
+       13.001,
+       48.001
+      ],
+      [
+       13.001,
+       48.004
+      ],
+      [
+       13,
+       48.004
+      ],
+      [
+       13,
+       48
+      ]
+     ]
+    ]
+   },
+   "flaecheM2": 74457.4,
+   "erwartet": 0.545
+  }
+ ]
+}

@@ -32,7 +32,10 @@ import { jetzt, neueId, sha256 } from "./hilfen";
 import { teamRolle } from "./teams";
 import { anlagenSeed } from "./anlagen-seed";
 import { zaehlerMonat } from "../../messdaten/simulator";
+import { kycSperre } from "./kycRegeln"; // KYC/KYB: Contracting-Vertrag nur mit verifiziertem Kunden
 import { randomBytes } from "node:crypto";
+import { BETRIEBSFUEHRER_STANDARD, DIENSTBARKEIT_STATUS, ENDSCHAFT, INDEX_BASIS } from "../../anlagen"; // Eigentum/Betrieb/Dienstbarkeit, Vertragsdetails
+import { eigentumErgaenzen } from "./anlagen-eigentum"; // Demo: Eigentümergesellschaften einmalig ergänzen
 
 const { benachrichtigen, protokoll, nutzerById, nameVon } = intern;
 
@@ -60,14 +63,19 @@ function leer() {
 
 async function lesenBereit() {
   const db = await lesen();
-  if (db.anlagen?.v) return db;
+  if (db.anlagen?.v && db.anlagen.eigentum) return db;
   await aendern(async (d) => {
-    if (d.anlagen?.v) return;
-    d.anlagen = leer();
-    try {
-      await anlagenSeed(d, { melden: (dd, s) => stoerungMelden(dd, s, "neu", { mail: false }) });
-    } catch (e) {
-      console.warn("[plattform-demo] Anlagen-Demodaten nicht ergänzt:", e?.message);
+    if (!d.anlagen?.v) {
+      d.anlagen = leer();
+      try {
+        await anlagenSeed(d, { melden: (dd, s) => stoerungMelden(dd, s, "neu", { mail: false }) });
+      } catch (e) {
+        console.warn("[plattform-demo] Anlagen-Demodaten nicht ergänzt:", e?.message);
+      }
+    }
+    if (!d.anlagen.eigentum) {
+      eigentumErgaenzen(d); // Eigentümergesellschaft, Betriebsführer, Dachgeber, Dienstbarkeit (Bestandsdaten)
+      d.anlagen.eigentum = 1;
     }
   });
   return lesen();
@@ -157,6 +165,12 @@ function anlageAusgabe(db, n, a, { detail = false } = {}) {
     // Demo: Szenario des Simulators (offline, Teilausfall, Minderleistung) – Frappe kennt das Feld nicht
     simulation: a.simulation || null,
     ...kundeAusgabe(db, a),
+    // Eigentum & Betrieb: Anlage gehört ÖkoInvest bzw. einer Projektgesellschaft, der Kunde ist Stromabnehmer
+    eigentuemer: a.eigentuemer || "", eigentuemerId: a.eigentuemerId || null, betriebsfuehrer: a.betriebsfuehrer || BETRIEBSFUEHRER_STANDARD,
+    dachgeber: a.dachgeberIstKunde ? (orgName(db, a.organisationId) || kundeAusgabe(db, a).kunde?.firma || "Stromabnehmer") : a.dachgeber || "", dachgeberIstKunde: !!a.dachgeberIstKunde,
+    dienstbarkeitStatus: a.dienstbarkeitStatus || "", dienstbarkeitStatusLabel: DIENSTBARKEIT_STATUS[a.dienstbarkeitStatus]?.label || "",
+    dienstbarkeitDatum: a.dienstbarkeitDatum || "", dienstbarkeitDokumentId: a.dienstbarkeitDokumentId || null, dienstbarkeitHinweis: a.dienstbarkeitHinweis || "",
+    finanziertDurch: zg === "backoffice" ? a.finanziertDurch || "" : undefined,
     offeneStoerungen: offen.map((s) => ({ id: s.id, schwere: s.schwere, status: s.status, titel: s.titel, regel: s.regel })),
     vertrag: vertrag ? { strompreisCt: vertrag.strompreisCt, grundgebuehrMonat: vertrag.grundgebuehrMonat, status: vertrag.status } : null,
     meinZugriff: zg,
@@ -168,8 +182,9 @@ function anlageAusgabe(db, n, a, { detail = false } = {}) {
   return {
     ...basis,
     vertrag: vertragAusgabe(vertrag),
-    komponenten: db.anlagen.komponenten.filter((k) => k.anlageId === a.id).map((k) => ({ ...k, artLabel: KOMPONENTEN_ARTEN[k.art] || k.art })),
-    messpunkte: db.anlagen.messpunkte.filter((m) => m.anlageId === a.id).map((m) => ({ ...m, artLabel: MESSPUNKT_ARTEN[m.art]?.label || m.art, messstelleLabel: MESSSTELLEN[m.messstelle] || m.messstelle })),
+    // Technische Tiefe (Komponenten, Monitoring-Messpunkte) nur fürs Backoffice; Kunden sehen die abrechnungsrelevanten Zähler
+    komponenten: bo ? db.anlagen.komponenten.filter((k) => k.anlageId === a.id).map((k) => ({ ...k, artLabel: KOMPONENTEN_ARTEN[k.art] || k.art })) : undefined,
+    messpunkte: db.anlagen.messpunkte.filter((m) => m.anlageId === a.id && (bo || m.abrechnungsrelevant)).map((m) => ({ ...m, artLabel: MESSPUNKT_ARTEN[m.art]?.label || m.art, messstelleLabel: MESSSTELLEN[m.messstelle] || m.messstelle })),
     wartungen: db.anlagen.wartungen.filter((w) => w.anlageId === a.id).sort((x, y) => String(y.datum).localeCompare(String(x.datum))).map((w) => ({ ...w, artLabel: WARTUNG_ARTEN[w.art] || w.art, statusLabel: WARTUNG_STATUS[w.status] || w.status, ...(bo ? {} : { kostenEur: undefined }) })),
     stoerungen: db.anlagen.stoerungen.filter((s) => s.anlageId === a.id).sort((x, y) => String(y.erkanntAm).localeCompare(String(x.erkanntAm))).map((s) => stoerungAusgabe(db, n, s, zg)),
     geraete: bo ? db.anlagen.zugaenge.filter((z) => z.anlageId === a.id).map(zugangAusgabe) : undefined,
@@ -188,7 +203,7 @@ export async function anlagen(n, { q = "", typ = "", status = "" } = {}) {
     .filter((a) => zugriff(db, n, a))
     .filter((a) => !typ || a.typ === typ)
     .filter((a) => !status || a.status === status)
-    .filter((a) => !such || [a.name, a.ort, a.bundesland, a.id, orgName(db, a.organisationId)].join(" ").toLowerCase().includes(such))
+    .filter((a) => !such || [a.name, a.ort, a.bundesland, a.id, orgName(db, a.organisationId), a.eigentuemer].join(" ").toLowerCase().includes(such))
     .sort((x, y) => x.name.localeCompare(y.name, "de"))
     .map((a) => anlageAusgabe(db, n, a));
 }
@@ -207,6 +222,8 @@ export async function anlagenKunden(n) {
     konten: db.nutzer.filter((u) => u.aktiv && u.rollen.includes("unternehmen")).map((u) => ({ id: u.id, name: nameVon(db, u.id), firma: u.firma || "", email: u.email })).sort((a, b) => a.name.localeCompare(b.name, "de")),
     organisationen: (db.organisationen || []).map((o) => ({ id: o.id, name: o.name, art: o.art })).sort((a, b) => a.name.localeCompare(b.name, "de")),
     betrieb: db.nutzer.filter((u) => u.aktiv && u.rollen.includes("admin") && darfLesen(u, "anlagen")).map((u) => ({ id: u.id, name: nameVon(db, u.id) })),
+    // Eigentümergesellschaften aus dem Gesellschaftsverzeichnis (falls vorhanden)
+    gesellschaften: (db.dienste?.gesellschaften || []).filter((g) => g.status !== "aufgeloest").map((g) => ({ id: g.id, name: g.name, status: g.status })).sort((a, b) => a.name.localeCompare(b.name, "de")),
   };
 }
 
@@ -239,7 +256,28 @@ function anlageFelder(db, d, alt = {}) {
     if (o && !(db.organisationen || []).some((x) => x.id === o)) throw ungueltig("Organisation nicht gefunden.");
     f.organisationId = o || null;
   }
+  // Eigentum & Betrieb (Pflicht: Eigentümergesellschaft – ÖkoInvest GmbH oder Projektgesellschaft/SPV)
+  if (has("eigentuemer") || !alt.id) f.eigentuemer = v.text(d.eigentuemer, 160);
+  if (has("eigentuemerId")) {
+    // Gesellschaftsverzeichnis (db.dienste.gesellschaften, Team Dienste): Kennung prüfen, Name übernehmen
+    f.eigentuemerId = v.kennung(d.eigentuemerId) || null;
+    if (f.eigentuemerId) {
+      const g = (db.dienste?.gesellschaften || []).find((x) => x.id === f.eigentuemerId);
+      if (!g) throw ungueltig("Gesellschaft nicht im Gesellschaftsverzeichnis gefunden.");
+      f.eigentuemer = g.name;
+    }
+  }
+  if (has("betriebsfuehrer") || !alt.id) f.betriebsfuehrer = v.text(d.betriebsfuehrer, 160) || alt.betriebsfuehrer || BETRIEBSFUEHRER_STANDARD;
+  if (has("dachgeberIstKunde")) f.dachgeberIstKunde = v.wahr(d.dachgeberIstKunde);
+  if (has("dachgeber")) f.dachgeber = v.text(d.dachgeber, 160);
+  if (has("dienstbarkeitStatus")) f.dienstbarkeitStatus = v.auswahl(d.dienstbarkeitStatus, DIENSTBARKEIT_STATUS, "");
+  if (has("dienstbarkeitDatum")) f.dienstbarkeitDatum = /^20\d\d-\d\d-\d\d$/.test(String(d.dienstbarkeitDatum || "")) ? d.dienstbarkeitDatum : "";
+  if (has("dienstbarkeitDokumentId")) f.dienstbarkeitDokumentId = v.kennung(d.dienstbarkeitDokumentId) || null;
+  if (has("dienstbarkeitHinweis")) f.dienstbarkeitHinweis = v.text(d.dienstbarkeitHinweis, 200);
+  if (has("finanziertDurch")) f.finanziertDurch = v.text(d.finanziertDurch, 160);
   const neu = { ...alt, ...f };
+  v.pflicht((neu.eigentuemer || "").length >= 3, "Bitte geben Sie die Eigentümergesellschaft an (ÖkoInvest GmbH oder Projektgesellschaft).");
+  if (["beantragt", "eingetragen"].includes(neu.dienstbarkeitStatus)) v.pflicht(!!neu.dienstbarkeitDatum, "Bitte geben Sie das Datum des Antrags bzw. der Eintragung der Dienstbarkeit an.");
   v.pflicht(neu.name?.length >= 3, "Bitte geben Sie eine Bezeichnung an (mind. 3 Zeichen).");
   v.pflicht(!!neu.typ, "Bitte wählen Sie den Anlagentyp.");
   v.pflicht(!!neu.bundesland, "Bitte wählen Sie Bundesland bzw. Kanton.");
@@ -329,6 +367,12 @@ const EINTRAG = {
         strompreisCt: v.zahl(d.strompreisCt, { min: 0, max: 100, stellen: 3 }), grundgebuehrMonat: v.zahl(d.grundgebuehrMonat, { min: 0, max: 1000000, stellen: 2 }),
         indexierungPct: v.zahl(d.indexierungPct, { min: 0, max: 10, stellen: 2 }) ?? 0, kuendigungsfristMonate: Math.round(v.zahl(d.kuendigungsfristMonate, { min: 0, max: 36 }) ?? 6),
         status: v.auswahl(d.status, ["aktiv", "gekuendigt", "beendet"], "aktiv"), bemerkung: v.text(d.bemerkung, 300),
+        // Vertragsdetails: Preisgleitung, Mindestabnahme (Take-or-Pay), Endschaftsregelung/Kaufoption
+        indexBasis: v.auswahl(d.indexBasis, INDEX_BASIS, Number(d.indexierungPct) > 0 ? "prozent" : "fest"),
+        mindestabnahmeKwhJahr: v.zahl(d.mindestabnahmeKwhJahr, { min: 0, max: 1e9, stellen: 0 }),
+        endschaft: v.auswahl(d.endschaft, ENDSCHAFT, ""),
+        kaufoptionEur: v.zahl(d.kaufoptionEur, { min: 0, max: 1e9, stellen: 0 }),
+        endschaftText: v.text(d.endschaftText, 300),
       };
       v.pflicht(!!c.beginn, "Bitte geben Sie den Vertragsbeginn an.");
       v.pflicht(c.laufzeitJahre > 0, "Bitte geben Sie die Laufzeit in Jahren an (1–40).");
@@ -363,6 +407,7 @@ export async function anlageEintragSpeichern(n, anlageId, { art, id, daten = {} 
     const a = anlageLaden(db, n, anlageId);
     const liste = db.anlagen[def.sammlung];
     const felder = def.felder(daten || {}, db, a);
+    if (art === "vertrag" && felder.status === "aktiv" && (a.kundeId || a.organisationId) && !db.anlagen.vertraege.some((x) => x.anlageId === a.id && x.status === "aktiv")) kycSperre(db, "contracting", { kontoId: a.kundeId || null, organisationId: a.organisationId || null, text: "Contracting-Vertrag nicht möglich: Der Kunde ist noch nicht verifiziert (KYB)." }); // KYC/KYB
     let e = def.einzeln ? liste.find((x) => x.anlageId === a.id) : id ? liste.find((x) => x.id === v.kennung(id) && x.anlageId === a.id) : null;
     if (id && !e && !def.einzeln) throw nichtGefunden("Eintrag nicht gefunden.");
     if (art === "monatswert" && !e) e = liste.find((x) => x.messpunktId === felder.messpunktId && x.register === felder.register && x.monat === felder.monat) || null;

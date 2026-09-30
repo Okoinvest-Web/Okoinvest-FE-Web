@@ -8,6 +8,7 @@ import { cn } from "@/components/ui/cn";
 import { portalNutzer } from "@/lib/plattform/server/seite";
 import { backend } from "@/lib/plattform/backend";
 import { datumZeit, eur, mwp, relativ } from "@/lib/plattform/format";
+import { loiZeilen } from "@/lib/plattform/fach/loi"; // Fachprüfung Kapitalseite: strukturierte LOI
 
 export const metadata = { title: "NDA & LOI" };
 
@@ -54,8 +55,7 @@ export default async function AdminInteressen({ searchParams }) {
                       { label: "NDA akzeptiert", wert: i.nda ? `${datumZeit(i.nda.am)} · Fassung ${i.nda.version}${i.nda.ip ? ` · IP ${i.nda.ip}` : ""}` : "" },
                       { label: "Browser", wert: i.nda?.userAgent ? i.nda.userAgent.slice(0, 90) : "" },
                       { label: "LOI", wert: i.loi ? `${datumZeit(i.loi.am)}${i.loi.betrag ? ` · ${eur(i.loi.betrag)}` : ""}` : "" },
-                      { label: "Inhalt der LOI", wert: i.loi?.text, breit: true },
-                      { label: "Bedingungen", wert: i.loi?.bedingungen, breit: true },
+                      ...loiZeilen(i.loi).map((z) => ({ ...z, breit: ["Inhalt", "Bedingungen", "Zahlungsstruktur"].includes(z.label) })),
                       { label: "Anbieter", wert: i.anbieter ? `${i.anbieter.firma || `${i.anbieter.vorname} ${i.anbieter.nachname}`}` : "" },
                       { label: "Zuletzt geändert", wert: relativ(i.geaendertAm) },
                     ]}

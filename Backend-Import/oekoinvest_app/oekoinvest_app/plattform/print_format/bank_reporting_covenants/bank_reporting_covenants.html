@@ -1,0 +1,57 @@
+{#- ÖkoInvest – Bank-Reporting (Plattform Finanzierungsfall): Covenant-Status (DSCR rollierend 12 Monate, LLCR, Ampel),
+    Prüftermine, Monatswerte aus der Zählererfassung, Kreditvertrag und Berichtspflichten. Vertraulich. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set c = oekoinvest_json(doc.covenant) -%}
+{%- set e = oekoinvest_json(doc.eingaben) -%}
+{%- set kvn = frappe.db.get_value("Plattform Kreditvertrag", {"fall_id": doc.name}, "name") -%}
+{%- set kv = frappe.get_doc("Plattform Kreditvertrag", kvn) if kvn else None -%}
+{%- set ampel = (c.get("ampel") or {}) -%}
+{%- set labels = {"gruen": "Covenant eingehalten", "gelb": "Frühwarnung", "rot": "Lock-up / Covenant verletzt", "grau": "Keine Daten"} -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Bank-Reporting · Covenants</div>
+	<div class="oi-titel">{{ doc.titel | e }}</div>
+	<div class="oi-untertitel">{{ (doc.spv or "Projektgesellschaft") | e }}{% if kv %} · Kreditvertrag {{ kv.nummer | e }}{% endif %} · Stand {{ oekoinvest_datum(frappe.utils.nowdate()) }}</div>
+</div>
+<span class="oi-vertraulich">Vertraulich – nur für den Finanzierungspartner</span>
+
+<table class="oi-kacheln"><tr>
+	<td class="oi-kachel"><div class="oi-wert" style="font-size:11pt"><span class="oi-badge {% if ampel.get('id') == 'rot' %}oi-rot{% elif ampel.get('id') == 'gelb' %}oi-gelb{% endif %}">{{ labels.get(ampel.get("id") or "grau") }}</span></div><div class="oi-bez">Ampel</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl((c.get("letzte") or {}).get("dscr"), 2) }}</div><div class="oi-bez">DSCR (12 Monate)</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{% if kv %}{{ oekoinvest_zahl(kv.dscr_lockup, 2) }} / {{ oekoinvest_zahl(kv.dscr_covenant, 2) }}{% else %}–{% endif %}</div><div class="oi-bez">Lock-up / Covenant</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl(c.get("llcr"), 2) }}</div><div class="oi-bez">LLCR</div></td>
+	<td class="oi-kachel"><div class="oi-wert" style="font-size:12pt">{{ oekoinvest_eur(c.get("restschuld")) }}</div><div class="oi-bez">Restschuld</div></td>
+</tr></table>
+{% if ampel.get("grund") %}<div class="{% if ampel.get('id') in ('gelb', 'rot') %}oi-warnung{% else %}oi-hinweis{% endif %}">{{ ampel.get("grund") | e }}</div>{% endif %}
+
+<div class="oi-abschnitt">DSCR je Prüftermin (rollierend 12 Monate)</div>
+<table class="oi-tabelle">
+	<tr><th>Periode</th><th class="oi-zahl">CFADS</th><th class="oi-zahl">Schuldendienst</th><th class="oi-zahl">DSCR</th><th>Ampel</th></tr>
+	{% for p in (c.get("pruefungen") or [])[-8:] %}
+	<tr><td>{{ p.periode }}</td><td class="oi-zahl">{{ oekoinvest_eur(p.cfads) }}</td><td class="oi-zahl">{{ oekoinvest_eur(p.schuldendienst) }}</td><td class="oi-zahl"><b>{{ oekoinvest_zahl(p.dscr, 2) }}</b></td><td>{{ labels.get((p.ampel or {}).get("id") or "grau") }}</td></tr>
+	{% else %}
+	<tr><td colspan="5">Noch keine 12 vollständigen Monate an Zählerwerten.</td></tr>
+	{% endfor %}
+</table>
+
+{% if c.get("monate") %}
+<div class="oi-abschnitt">Monatswerte aus der Zählererfassung</div>
+<table class="oi-tabelle">
+	<tr><th>Monat</th><th class="oi-zahl">Erzeugung kWh</th><th class="oi-zahl">Einspeisung kWh</th><th class="oi-zahl">CFADS</th><th class="oi-zahl">Schuldendienst</th></tr>
+	{% for m in c.get("monate")[-12:] %}
+	<tr><td>{{ m.monat }}</td><td class="oi-zahl">{{ oekoinvest_zahl(m.erzeugung) }}</td><td class="oi-zahl">{{ oekoinvest_zahl(m.einspeisung) }}</td><td class="oi-zahl">{{ oekoinvest_eur(m.cfads) }}</td><td class="oi-zahl">{{ oekoinvest_eur(m.schuldendienst) }}</td></tr>
+	{% endfor %}
+</table>
+{% endif %}
+
+{% if kv %}
+<div class="oi-abschnitt">Kreditvertrag und Berichtspflichten</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Betrag / Zins / Laufzeit</td><td>{{ oekoinvest_eur(kv.betrag) }} · {{ oekoinvest_zahl(kv.zins_pct, 2) }} % p. a. · {{ kv.laufzeit_jahre }} Jahre ({{ kv.tilgungsprofil }})</td></tr>
+	<tr><td class="oi-feld">Unterzeichnet / Auszahlung</td><td>{{ oekoinvest_datum(kv.unterzeichnet_am) }} / {{ oekoinvest_datum(kv.auszahlung_am) }}</td></tr>
+	<tr><td class="oi-feld">DSRA</td><td>{{ kv.dsra_monate }} Monate Schuldendienst</td></tr>
+	<tr><td class="oi-feld">Berichtspflichten</td><td class="oi-text">{{ (kv.berichtspflichten or "") | e }}</td></tr>
+</table>
+{% endif %}
+<div class="oi-hinweis">Grundlage sind die abrechnungsrelevanten Zählerstände der Anlage und die vertraglichen Preise; Betriebskosten und Pacht planmäßig angesetzt. Geprüfte Jahresabschlüsse gehen vor.</div>
+<div class="oi-fuss">{{ f.name }} · Bank-Reporting · {{ frappe.session.user | e }}</div>

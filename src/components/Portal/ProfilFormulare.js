@@ -8,6 +8,7 @@ import { LAENDER, PROJEKT_TYPEN, ROLLEN } from "@/lib/plattform/konstanten";
 import { passwortFehler } from "@/lib/plattform/validierung";
 import { PHASEN } from "@/lib/invest/markt";
 import { auswahlfeld, eingabe, Feld, FehlerBox, ErfolgBox, Chip } from "./felder";
+import SuchprofilFachFelder, { suchprofilFachStart } from "./Fach/SuchprofilFachFelder"; // Fachprüfung Kapitalseite
 
 function useSpeichern() {
   const router = useRouter();
@@ -114,6 +115,7 @@ export function SuchprofilFormular({ profil }) {
     typen: profil?.typen || [],
     benachrichtigen: profil?.benachrichtigen ?? true,
     schwelle: profil?.schwelle ?? 70,
+    ...suchprofilFachStart(profil), // Investorentyp, Regionen, Rendite-Ziel, Deal-Struktur, ESG …
   });
   const setze = (k, v) => setP((x) => ({ ...x, [k]: v }));
   const umschalten = (k, v) => setP((x) => ({ ...x, [k]: x[k].includes(v) ? x[k].filter((y) => y !== v) : [...x[k], v] }));
@@ -149,6 +151,7 @@ export function SuchprofilFormular({ profil }) {
         <Feld id={`${id}-t1`} label="Ticket von (€)"><input id={`${id}-t1`} inputMode="decimal" className={eingabe} value={p.ticketMin} onChange={(e) => setze("ticketMin", e.target.value)} /></Feld>
         <Feld id={`${id}-t2`} label="Ticket bis (€)"><input id={`${id}-t2`} inputMode="decimal" className={eingabe} value={p.ticketMax} onChange={(e) => setze("ticketMax", e.target.value)} /></Feld>
       </div>
+      <SuchprofilFachFelder p={p} setze={setze} umschalten={umschalten} />
       <label className="flex items-start gap-3 text-[14px] text-ink-700">
         <input type="checkbox" checked={p.benachrichtigen} onChange={(e) => setze("benachrichtigen", e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#558227]" />
         Bei neuen passenden Projekten benachrichtigen (Glocke und – je nach Einstellung – E-Mail)

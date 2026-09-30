@@ -1,0 +1,316 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 20:00:00.000000",
+ "description": "Internes Entwicklungsprojekt (Freifläche, Agri-PV, Carport/Dach, Speicher) mit Phase aus Meilensteinen, Pipeline-Wert, Übergabe an Börse bzw. Bau/Betrieb.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "titel",
+  "typ",
+  "status",
+  "projektleiter_id",
+  "cb_1",
+  "land",
+  "bundesland",
+  "gemeinde",
+  "landkreis",
+  "sec_technik",
+  "mwp",
+  "mwh",
+  "nvp",
+  "cb_2",
+  "netzbetreiber",
+  "ziel_cod",
+  "vermarktung",
+  "sec_plan",
+  "start",
+  "wahrscheinlichkeit",
+  "phase",
+  "pipeline_wert",
+  "cb_3",
+  "boerse_projekt_id",
+  "anlage_id",
+  "erp_projekt",
+  "sec_text",
+  "beschreibung"
+ ],
+ "fields": [
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Titel",
+   "reqd": 1,
+   "in_list_view": 1,
+   "bold": 1
+  },
+  {
+   "fieldname": "typ",
+   "fieldtype": "Select",
+   "label": "Typ",
+   "options": "freiflaeche\nagri\ncarport\ndach\nspeicher\nhybrid",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "aktiv\npausiert\nboerse\nbau\nabgebrochen",
+   "default": "aktiv",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "projektleiter_id",
+   "fieldtype": "Link",
+   "label": "Projektleitung",
+   "options": "Plattform Konto",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "label": "Land",
+   "options": "DE\nAT\nCH",
+   "default": "DE",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "bundesland",
+   "fieldtype": "Data",
+   "label": "Bundesland / Kanton",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gemeinde",
+   "fieldtype": "Data",
+   "label": "Gemeinde"
+  },
+  {
+   "fieldname": "landkreis",
+   "fieldtype": "Data",
+   "label": "Landkreis / Bezirk"
+  },
+  {
+   "fieldname": "sec_technik",
+   "fieldtype": "Section Break",
+   "label": "Technik & Netz"
+  },
+  {
+   "fieldname": "mwp",
+   "fieldtype": "Float",
+   "label": "Leistung (MWp bzw. MW)",
+   "precision": "2",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "mwh",
+   "fieldtype": "Float",
+   "label": "Speicher (MWh)",
+   "precision": "1"
+  },
+  {
+   "fieldname": "nvp",
+   "fieldtype": "Data",
+   "label": "Netzverknüpfungspunkt"
+  },
+  {
+   "fieldname": "cb_2",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "netzbetreiber",
+   "fieldtype": "Data",
+   "label": "Netzbetreiber"
+  },
+  {
+   "fieldname": "ziel_cod",
+   "fieldtype": "Data",
+   "label": "Ziel-Inbetriebnahme (JJJJ-MM)"
+  },
+  {
+   "fieldname": "vermarktung",
+   "fieldtype": "Select",
+   "label": "Vermarktung",
+   "options": "eeg\nppa\nmerchant",
+   "default": "eeg"
+  },
+  {
+   "fieldname": "sec_plan",
+   "fieldtype": "Section Break",
+   "label": "Planung & Bewertung"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Date",
+   "label": "Projektstart"
+  },
+  {
+   "fieldname": "wahrscheinlichkeit",
+   "fieldtype": "Float",
+   "label": "Wahrscheinlichkeit (0–1, leer = nach Phase)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "phase",
+   "fieldtype": "Select",
+   "label": "Phase (berechnet)",
+   "options": "\nflaeche\nnetz\naufstellung\nsatzung\nrtb\ncod",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "pipeline_wert",
+   "fieldtype": "Currency",
+   "label": "Pipeline-Wert (berechnet)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_3",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "boerse_projekt_id",
+   "fieldtype": "Link",
+   "label": "Börsen-Projekt",
+   "options": "Plattform Projekt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "anlage_id",
+   "fieldtype": "Link",
+   "label": "Anlage (Bau/Betrieb)",
+   "options": "Plattform Anlage",
+   "read_only": 1
+  },
+  {
+   "fieldname": "erp_projekt",
+   "fieldtype": "Data",
+   "label": "ERPNext-Projekt (optional)",
+   "read_only": 1,
+   "description": "Name des ERPNext-Projects, falls ERPNext installiert und oekoinvest_erpnext_entwicklung aktiv ist."
+  },
+  {
+   "fieldname": "sec_text",
+   "fieldtype": "Section Break",
+   "label": "Beschreibung"
+  },
+  {
+   "fieldname": "beschreibung",
+   "fieldtype": "Text",
+   "label": "Beschreibung"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Entwicklungsprojekt",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Akquise"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Transaktion"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Projektleitung"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "in_create": 1,
+ "title_field": "titel"
+}

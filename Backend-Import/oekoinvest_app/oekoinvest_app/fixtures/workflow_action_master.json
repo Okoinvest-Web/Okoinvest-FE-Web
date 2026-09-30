@@ -1,0 +1,97 @@
+[
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Ablehnen",
+  "workflow_action_name": "Ablehnen"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Abschließen",
+  "workflow_action_name": "Abschließen"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Als eingegangen übernehmen",
+  "workflow_action_name": "Als eingegangen übernehmen"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Als qualifiziert markieren",
+  "workflow_action_name": "Als qualifiziert markieren"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Als reserviert markieren",
+  "workflow_action_name": "Als reserviert markieren"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Angebot / Gespräch",
+  "workflow_action_name": "Angebot / Gespräch"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Angebot angenommen (erfasst)",
+  "workflow_action_name": "Angebot angenommen (erfasst)"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Baubeginn",
+  "workflow_action_name": "Baubeginn"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Inbetriebnahme",
+  "workflow_action_name": "Inbetriebnahme"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Pachtangebot senden",
+  "workflow_action_name": "Pachtangebot senden"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Planung & Genehmigung starten",
+  "workflow_action_name": "Planung & Genehmigung starten"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Prüfung beginnen",
+  "workflow_action_name": "Prüfung beginnen"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Reservierung aufheben",
+  "workflow_action_name": "Reservierung aufheben"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Standortanalyse starten",
+  "workflow_action_name": "Standortanalyse starten"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Verkauf abschließen",
+  "workflow_action_name": "Verkauf abschließen"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Veröffentlichen",
+  "workflow_action_name": "Veröffentlichen"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Vorprüfung starten",
+  "workflow_action_name": "Vorprüfung starten"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Wieder aufnehmen",
+  "workflow_action_name": "Wieder aufnehmen"
+ },
+ {
+  "doctype": "Workflow Action Master",
+  "name": "Zur Überarbeitung zurückgeben",
+  "workflow_action_name": "Zur Überarbeitung zurückgeben"
+ }
+]

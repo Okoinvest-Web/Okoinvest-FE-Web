@@ -45,7 +45,7 @@ class TestAnlagen(FrappeTestCase):
 		cls.fremd = konto(["unternehmen"], vorname="Fremd")
 		cls.akquise = konto(["admin"], vorname="Akquise")
 		frappe.db.set_value("Plattform Konto", cls.akquise, "backoffice_rollen", "akquise")
-		r = aufruf(anlagen.anlegen, daten={"name": "Testdach (Test)", "typ": "dach", "status": "betrieb", "land": "DE", "bundesland": "Hessen", "kwp": 240, "inbetriebnahme": "2025-04-01", "kundeId": cls.kunde}, als_benutzer=cls.admin)
+		r = aufruf(anlagen.anlegen, daten={"name": "Testdach (Test)", "typ": "dach", "status": "betrieb", "land": "DE", "bundesland": "Hessen", "kwp": 240, "inbetriebnahme": "2025-04-01", "kundeId": cls.kunde, "eigentuemer": "ÖkoInvest GmbH", "dachgeberIstKunde": True}, als_benutzer=cls.admin)
 		cls.aid = r["id"]
 
 	def tearDown(self):
@@ -64,10 +64,19 @@ class TestAnlagen(FrappeTestCase):
 		d = aufruf(anlagen.holen, id=self.aid, als_benutzer=self.kunde)
 		self.assertIsNone(d["geraete"])
 		self.assertEqual(d["meinZugriff"], "kunde")
+		# Eigentum & Betrieb: Kunde ist Stromabnehmer, sieht Eigentümer, aber keine Komponenten-Interna/Finanzierung
+		self.assertEqual(d["eigentuemer"], "ÖkoInvest GmbH")
+		self.assertIsNone(d["komponenten"])
+		self.assertIsNone(d["finanziertDurch"])
 		with self.assertRaises(frappe.PermissionError):
 			aufruf(anlagen.anlegen, daten={"name": "X", "typ": "dach"}, als_benutzer=self.kunde)
 		with self.assertRaises(frappe.PermissionError):
 			aufruf(anlagen.leitstand, als_benutzer=self.akquise)
+
+	def test_eigentuemer_pflicht(self):
+		# Fachprüfung Kapitalseite: Eigentümergesellschaft ist Pflicht
+		with self.assertRaises(frappe.ValidationError):
+			aufruf(anlagen.anlegen, daten={"name": "Ohne Eigentümer (Test)", "typ": "dach", "status": "planung", "land": "DE", "bundesland": "Hessen", "kwp": 50}, als_benutzer=self.admin)
 
 	def test_geraet_passwort_nur_einmal(self):
 		with self.assertRaises(frappe.PermissionError):

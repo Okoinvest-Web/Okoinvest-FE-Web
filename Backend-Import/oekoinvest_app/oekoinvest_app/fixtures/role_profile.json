@@ -1,0 +1,156 @@
+[
+ {
+  "doctype": "Role Profile",
+  "name": "ÖkoInvest Leitung",
+  "role_profile": "ÖkoInvest Leitung",
+  "roles": [
+   {
+    "doctype": "Has Role",
+    "parent": "ÖkoInvest Leitung",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "ÖkoInvest Admin"
+   },
+   {
+    "doctype": "Has Role",
+    "parent": "ÖkoInvest Leitung",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "ÖkoInvest Compliance"
+   }
+  ]
+ },
+ {
+  "doctype": "Role Profile",
+  "name": "ÖkoInvest Akquise",
+  "role_profile": "ÖkoInvest Akquise",
+  "roles": [
+   {
+    "doctype": "Has Role",
+    "parent": "ÖkoInvest Akquise",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "ÖkoInvest Akquise"
+   }
+  ]
+ },
+ {
+  "doctype": "Role Profile",
+  "name": "ÖkoInvest Transaktion",
+  "role_profile": "ÖkoInvest Transaktion",
+  "roles": [
+   {
+    "doctype": "Has Role",
+    "parent": "ÖkoInvest Transaktion",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "ÖkoInvest Transaktion"
+   }
+  ]
+ },
+ {
+  "doctype": "Role Profile",
+  "name": "ÖkoInvest Buchhaltung",
+  "role_profile": "ÖkoInvest Buchhaltung",
+  "roles": [
+   {
+    "doctype": "Has Role",
+    "parent": "ÖkoInvest Buchhaltung",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "ÖkoInvest Buchhaltung"
+   }
+  ]
+ },
+ {
+  "doctype": "Role Profile",
+  "name": "ÖkoInvest Betrieb",
+  "role_profile": "ÖkoInvest Betrieb",
+  "roles": [
+   {
+    "doctype": "Has Role",
+    "parent": "ÖkoInvest Betrieb",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "ÖkoInvest Betrieb"
+   }
+  ]
+ },
+ {
+  "doctype": "Role Profile",
+  "name": "ÖkoInvest Compliance",
+  "role_profile": "ÖkoInvest Compliance",
+  "roles": [
+   {
+    "doctype": "Has Role",
+    "parent": "ÖkoInvest Compliance",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "ÖkoInvest Compliance"
+   },
+   {
+    "doctype": "Has Role",
+    "parent": "ÖkoInvest Compliance",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "ÖkoInvest Leser"
+   }
+  ]
+ },
+ {
+  "doctype": "Role Profile",
+  "name": "ÖkoInvest Nur lesen",
+  "role_profile": "ÖkoInvest Nur lesen",
+  "roles": [
+   {
+    "doctype": "Has Role",
+    "parent": "ÖkoInvest Nur lesen",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "ÖkoInvest Leser"
+   }
+  ]
+ },
+ {
+  "doctype": "Role Profile",
+  "name": "ÖkoInvest API-Benutzer",
+  "role_profile": "ÖkoInvest API-Benutzer",
+  "roles": [
+   {
+    "doctype": "Has Role",
+    "parent": "ÖkoInvest API-Benutzer",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "ÖkoInvest API"
+   }
+  ]
+ },
+ {
+  "doctype": "Role Profile",
+  "name": "ÖkoInvest Anlagen-Dienst",
+  "role_profile": "ÖkoInvest Anlagen-Dienst",
+  "roles": [
+   {
+    "doctype": "Has Role",
+    "parent": "ÖkoInvest Anlagen-Dienst",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "ÖkoInvest Anlagen-Dienst"
+   }
+  ]
+ },
+ {
+  "doctype": "Role Profile",
+  "name": "ÖkoInvest Energie",
+  "role_profile": "ÖkoInvest Energie",
+  "roles": [
+   {
+    "doctype": "Has Role",
+    "parent": "ÖkoInvest Energie",
+    "parentfield": "roles",
+    "parenttype": "Role Profile",
+    "role": "ÖkoInvest Energie"
+   }
+  ]
+ }
+]

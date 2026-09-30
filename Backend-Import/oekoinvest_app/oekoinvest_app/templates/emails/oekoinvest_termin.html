@@ -1,0 +1,8 @@
+{% extends "templates/emails/oekoinvest_basis.html" %}
+{#- Terminbestätigung, -änderung, -absage und -erinnerung. Kalenderdatei (ICS) als Anhang. -#}
+{% block inhalt %}
+<p>Guten Tag{% if name %} {{ name | e }}{% endif %},</p>
+<p style="white-space:pre-line;">{{ text | e }}</p>
+{% if link %}<p style="margin:24px 0;"><a href="{{ link | e }}" style="background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;">{{ linktext | e }}</a></p>{% endif %}
+<p style="font-size:13px;color:#52606d;">Die Kalenderdatei (termin.ics) ist angehängt. Umbuchen oder absagen können Sie über den Link – bis zum Beginn des Termins.</p>
+{% endblock %}

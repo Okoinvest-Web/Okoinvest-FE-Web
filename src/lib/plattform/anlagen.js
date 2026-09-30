@@ -277,3 +277,48 @@ export const kwpText = (v) => {
   if (!Number.isFinite(n) || n <= 0) return "–";
   return n >= 1000 ? `${(n / 1000).toLocaleString("de-DE", { maximumFractionDigits: 2 })} MWp` : `${n.toLocaleString("de-DE", { maximumFractionDigits: 1 })} kWp`;
 };
+
+// ================================================================ Eigentum, Betrieb, Dienstbarkeit, Vertragsdetails
+// (Fachprüfung Kapitalseite: Die Anlagen sind klassische Contracting-Anlagen im Eigentum von ÖkoInvest bzw. einer
+// ÖkoInvest-Projektgesellschaft (SPV). ÖkoInvest verkauft den Strom an den Kunden – der Kunde ist Stromabnehmer und
+// ggf. Dachgeber, NICHT Eigentümer.)
+
+/** Standard für Eigentümer und Betriebsführer (Vorbelegung im Formular) */
+export const EIGENTUEMER_STANDARD = "ÖkoInvest GmbH";
+export const BETRIEBSFUEHRER_STANDARD = "ÖkoInvest GmbH";
+
+/** Dienstbarkeit/Servitut für Dach bzw. Grundstück (vollständiger Grundbuch-Ablauf folgt als eigenes Modul) */
+export const DIENSTBARKEIT_STATUS = {
+  nicht_erforderlich: { label: "Nicht erforderlich", ton: "neutral" },
+  vorbereitung: { label: "In Vorbereitung", ton: "warn" },
+  beantragt: { label: "Beim Grundbuch beantragt", ton: "info" },
+  eingetragen: { label: "Im Grundbuch eingetragen", ton: "ok" },
+};
+
+/** Preisgleitung im Contracting-Vertrag */
+export const INDEX_BASIS = {
+  fest: "Fester Preis (keine Gleitung)",
+  prozent: "Feste Steigerung (% p. a.)",
+  vpi: "Verbraucherpreisindex (VPI)",
+  strompreis: "Strompreisindex (z. B. Destatis Erzeugerpreise Strom)",
+};
+
+/** Endschaftsregelung am Vertragsende */
+export const ENDSCHAFT = {
+  kaufoption: "Kaufoption des Kunden zum vereinbarten Restwert",
+  uebergang: "Unentgeltlicher Übergang an den Kunden",
+  verlaengerung: "Verlängerung des Vertrags",
+  rueckbau: "Rückbau durch ÖkoInvest",
+};
+
+/**
+ * Mindestabnahme (Take-or-Pay) anteilig für einen Zeitraum: Menge, Ist und Fehlmenge × Arbeitspreis (Ausgleich).
+ * Liefert null ohne Mindestabnahme im Vertrag.
+ */
+export function mindestabnahme(vertrag, { eigenverbrauchKwh = 0, monate = 12 } = {}) {
+  const jahr = Number(vertrag?.mindestabnahmeKwhJahr) || 0;
+  if (!jahr) return null;
+  const soll = (jahr * monate) / 12;
+  const fehl = Math.max(0, soll - (Number(eigenverbrauchKwh) || 0));
+  return { sollKwh: soll, istKwh: Number(eigenverbrauchKwh) || 0, quote: soll ? (Number(eigenverbrauchKwh) || 0) / soll : null, fehlKwh: fehl, ausgleichEur: (fehl * (Number(vertrag.strompreisCt) || 0)) / 100 };
+}

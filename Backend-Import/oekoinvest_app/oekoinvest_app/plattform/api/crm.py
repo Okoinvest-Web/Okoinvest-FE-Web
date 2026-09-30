@@ -18,7 +18,7 @@ from oekoinvest_app.plattform.prozesse import status_label
 from oekoinvest_app.plattform.rechte import recht_noetig
 
 KONTAKT_ROLLEN = ["eigentuemer", "landwirt", "investor", "anbieter", "unternehmen", "mitglied", "gemeinde", "netzbetreiber", "gutachter", "bank", "behoerde", "berater", "sonstige"]
-ORG_ARTEN = ["gemeinde", "netzbetreiber", "gutachter", "bank", "investor", "entwickler", "unternehmen", "landwirtschaft", "behoerde", "verband", "sonstige"]
+ORG_ARTEN = ["gemeinde", "netzbetreiber", "gutachter", "bank", "investor", "entwickler", "unternehmen", "landwirtschaft", "behoerde", "verband", "sonstige", "stadtwerk"]  # stadtwerk: Fachprüfung Kommunen
 AKTIVITAET_TYPEN = {"anruf": "Anruf", "termin": "Termin", "email": "E-Mail", "notiz": "Notiz"}
 BEZUG_ROLLEN = ["Anfragender", "Eigentümer", "Ansprechpartner", "Gemeinde", "Netzbetreiber", "Gutachter", "Finanzierer", "Investor", "Anbieter", "Sonstige"]
 CRM_ROLLE_FUER_TYP = {"flaeche": "eigentuemer", "agri": "landwirt", "investor": "investor", "projekt": "anbieter", "reststrom": "unternehmen", "carport": "unternehmen", "speicher": "unternehmen", "kommune": "gemeinde", "genossenschaft": "mitglied", "energiegemeinschaft": "mitglied", "kontakt": "sonstige"}
@@ -169,7 +169,7 @@ def aus_vorgang(vg):
 	if vg.typ == "kommune" and kt.get("firma") and not k.organisation_id:
 		org = next((o.name for o in frappe.get_all("Plattform CRM Organisation", fields=["name", "bezeichnung"]) if norm_text(o.bezeichnung) == norm_text(kt["firma"])), None)
 		if not org:
-			org = frappe.get_doc({"doctype": "Plattform CRM Organisation", "bezeichnung": kt["firma"], "art": "gemeinde", "plz": kt.get("plz"), "ort": kt.get("ort"), "land": kt.get("land") or "DE", "tags": "[]"}).insert(ignore_permissions=True).name
+			org = frappe.get_doc({"doctype": "Plattform CRM Organisation", "bezeichnung": kt["firma"], "art": "stadtwerk" if (aus_json(vg.daten) or {}).get("absender") == "stadtwerk" else "gemeinde", "plz": kt.get("plz"), "ort": kt.get("ort"), "land": kt.get("land") or "DE", "tags": "[]"}).insert(ignore_permissions=True).name
 		k.organisation_id = org
 	_bezug_hinzu(k, "vorgang", vg.name, "Anfragender")
 	if vg.get("flaeche_id"):

@@ -2,14 +2,19 @@
  "actions": [],
  "allow_rename": 0,
  "creation": "2026-09-29 08:00:00.000000",
- "description": "Flurstück einer Fläche (Kindtabelle).",
+ "description": "Flurstück einer Fläche (Kindtabelle): DE Gemarkung/Flur/Flurstück, AT KG/Grundstücksnummer/EZ, CH Gemeinde/Parzelle/E-GRID.",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "gemarkung",
   "flur",
-  "nummer"
+  "nummer",
+  "gemarkung_nr",
+  "grundbuch",
+  "blatt",
+  "egrid",
+  "m2"
  ],
  "fields": [
   {
@@ -29,12 +34,39 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Flurstücksnummer"
+  },
+  {
+   "fieldname": "gemarkung_nr",
+   "fieldtype": "Data",
+   "label": "Gemarkungs-/KG-/BFS-Nr."
+  },
+  {
+   "fieldname": "grundbuch",
+   "fieldtype": "Data",
+   "label": "Grundbuch(bezirk/kreis)"
+  },
+  {
+   "fieldname": "blatt",
+   "fieldtype": "Data",
+   "label": "Grundbuchblatt / Einlagezahl"
+  },
+  {
+   "fieldname": "egrid",
+   "fieldtype": "Data",
+   "label": "E-GRID (CH)"
+  },
+  {
+   "fieldname": "m2",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Fläche lt. Kataster (m²)",
+   "precision": "0"
   }
  ],
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-09-29 08:00:00.000000",
+ "modified": "2026-09-30 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Plattform Flurstueck",

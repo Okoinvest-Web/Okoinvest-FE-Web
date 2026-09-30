@@ -1,0 +1,29 @@
+{#- ÖkoInvest – Exposé ÖFFENTLICH (Teaser) für ein Plattform Projekt: ausschließlich Felder der Positivliste (oeffentlich.py). -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set o = oekoinvest_oeffentlich(doc) -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Projektbörse · Kurzexposé</div>
+	<div class="oi-titel">{{ o.titel | e }}</div>
+	<div class="oi-untertitel">{{ oekoinvest_label("projekt_typ", o.typ) }} · Region {{ o.region | e }}{% if o.bundesland %}, {{ o.bundesland | e }}{% endif %} · {{ oekoinvest_label("land", o.land) }}</div>
+</div>
+
+<table class="oi-kacheln"><tr>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl(o.mwp, 1) }}</div><div class="oi-bez">MWp Leistung</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl(o.flaecheHa, 1) if o.flaecheHa else "–" }}</div><div class="oi-bez">Hektar</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl(o.mwhSpeicher, 1) if o.mwhSpeicher else "–" }}</div><div class="oi-bez">MWh Speicher</div></td>
+	<td class="oi-kachel"><div class="oi-wert" style="font-size:11pt">{{ oekoinvest_label("phase", o.phase) }}</div><div class="oi-bez">Entwicklungsphase</div></td>
+</tr></table>
+
+<div class="oi-abschnitt">Eckdaten</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Netzanschluss</td><td>{{ oekoinvest_label("netzanschluss", o.netzanschluss) }}</td></tr>
+	<tr><td class="oi-feld">Geplante Inbetriebnahme</td><td>{{ (o.codGeplant or "–") | e }}</td></tr>
+	<tr><td class="oi-feld">Preisvorstellung</td><td>{% if o.preisModus == "gesamt" and o.preis %}{{ oekoinvest_eur(o.preis) }}{% elif o.preisModus == "proKwp" and o.preisProKwp %}{{ oekoinvest_eur(o.preisProKwp, 2) }} je kWp{% else %}auf Anfrage{% endif %}</td></tr>
+	<tr><td class="oi-feld">Kennung</td><td>{{ o.id }}</td></tr>
+</table>
+{% if o.beschreibung %}<div class="oi-abschnitt">Projektbeschreibung</div><p class="oi-text">{{ o.beschreibung | e }}</p>{% endif %}
+{% if o.highlights %}<div class="oi-abschnitt">Highlights</div><ul>{% for h in o.highlights %}<li>{{ h | e }}</li>{% endfor %}</ul>{% endif %}
+
+<div class="oi-hinweis">Anonymisierter Teaser: Standort, Flurstücke, Netzbetreiber und Anbieter werden erst nach Registrierung und Annahme der Vertraulichkeitsvereinbarung im Portal freigegeben.{% if f.web and o.slug %} Exposé online: {{ f.web | e }}/projektboerse/{{ o.slug | e }}{% endif %}</div>
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · {{ f.gericht }} · Angaben ohne Gewähr, Stand {{ oekoinvest_datum(frappe.utils.nowdate()) }}</div>

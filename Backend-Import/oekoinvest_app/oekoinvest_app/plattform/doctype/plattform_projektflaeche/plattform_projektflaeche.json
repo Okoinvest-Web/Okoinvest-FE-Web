@@ -1,0 +1,170 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 20:00:00.000000",
+ "description": "Fläche eines Entwicklungsprojekts (optional verknüpft mit einer Plattform-Fläche des Eigentümers) mit Pachtstatus.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "projekt_id",
+  "flaeche_id",
+  "bezeichnung",
+  "eigentuemer_name",
+  "ha",
+  "cb_1",
+  "pacht_status",
+  "pacht_beginn",
+  "pacht_ende",
+  "pacht_eur_ha",
+  "notiz"
+ ],
+ "fields": [
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Entwicklungsprojekt",
+   "options": "Plattform Entwicklungsprojekt",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "flaeche_id",
+   "fieldtype": "Link",
+   "label": "Plattform-Fläche",
+   "options": "Plattform Flaeche",
+   "search_index": 1
+  },
+  {
+   "fieldname": "bezeichnung",
+   "fieldtype": "Data",
+   "label": "Bezeichnung",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "eigentuemer_name",
+   "fieldtype": "Data",
+   "label": "Eigentümer (intern)"
+  },
+  {
+   "fieldname": "ha",
+   "fieldtype": "Float",
+   "label": "Fläche (ha)",
+   "precision": "2",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "pacht_status",
+   "fieldtype": "Select",
+   "label": "Pachtstatus",
+   "options": "angefragt\nverhandlung\noption\npachtvertrag\nabgelehnt",
+   "default": "angefragt",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "pacht_beginn",
+   "fieldtype": "Date",
+   "label": "Pacht ab"
+  },
+  {
+   "fieldname": "pacht_ende",
+   "fieldtype": "Date",
+   "label": "Pacht bis"
+  },
+  {
+   "fieldname": "pacht_eur_ha",
+   "fieldtype": "Currency",
+   "label": "Pacht €/ha·a"
+  },
+  {
+   "fieldname": "notiz",
+   "fieldtype": "Small Text",
+   "label": "Notiz (intern)"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Projektflaeche",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Akquise"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Projektleitung"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "in_create": 1,
+ "title_field": "bezeichnung"
+}

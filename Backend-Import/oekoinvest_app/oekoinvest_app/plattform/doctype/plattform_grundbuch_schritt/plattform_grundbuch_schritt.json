@@ -1,0 +1,110 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-30 21:00:00.000000",
+ "description": "Schritt einer Grundbuch-Akte (Kindtabelle): Status, Datum, Frist, Nachweis, Signaturvorgang.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "schluessel",
+  "reihenfolge",
+  "label",
+  "status",
+  "datum",
+  "frist",
+  "nachweis_wert",
+  "dokument",
+  "signatur_id",
+  "notiz",
+  "von_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "schluessel",
+   "fieldtype": "Data",
+   "label": "Schlüssel",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "reihenfolge",
+   "fieldtype": "Int",
+   "label": "Reihenfolge",
+   "read_only": 1
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "label": "Schritt",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "offen\nin_arbeit\nerledigt\nentfaellt",
+   "default": "offen",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "datum",
+   "fieldtype": "Date",
+   "label": "Erledigt am",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "frist",
+   "fieldtype": "Date",
+   "label": "Frist (manuell)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "nachweis_wert",
+   "fieldtype": "Data",
+   "label": "Nachweis (Aktenzeichen, TZ, lfd. Nr.)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dokument",
+   "fieldtype": "Attach",
+   "label": "Nachweis-Dokument",
+   "read_only": 1
+  },
+  {
+   "fieldname": "signatur_id",
+   "fieldtype": "Data",
+   "label": "Signaturvorgang",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notiz",
+   "fieldtype": "Small Text",
+   "label": "Notiz",
+   "read_only": 1
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "label": "Bearbeitet von",
+   "options": "Plattform Konto",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 21:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Grundbuch Schritt",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "istable": 1,
+ "editable_grid": 0
+}

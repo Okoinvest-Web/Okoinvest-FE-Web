@@ -1,0 +1,53 @@
+{#- ÖkoInvest – Provisionsvereinbarung (Plattform Projekt). Nachweis der Klick-Annahme im Portal (Zeitpunkt, IP, Textfassung). -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set pa = oekoinvest_json(doc.provision_akzeptiert) -%}
+{%- set pv = oekoinvest_provision() -%}
+{%- set anb = oekoinvest_konto(doc.anbieter_id) -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Projektbörse · Vereinbarung</div>
+	<div class="oi-titel">Provisionsvereinbarung</div>
+	<div class="oi-untertitel">Projekt {{ doc.name }} · {{ doc.titel | e }}</div>
+</div>
+<div class="oi-muster-stempel">Entwurf der Vertragsfassung {{ pv.version }} – Wortlaut vor dem Livegang anwaltlich prüfen lassen.</div>
+
+<div class="oi-abschnitt">Vertragsparteien</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Anbieter (Auftraggeber)</td><td><b>{{ (anb.firma or anb.name) | e }}</b>{% if anb.firma %}<br>{{ anb.name | e }}{% endif %}<br>{{ anb.email | e }}<br><span class="oi-klein">Konto {{ anb.id | e }}</span></td></tr>
+	<tr><td class="oi-feld">Vermittlerin</td><td><b>{{ f.name }}</b><br>{{ f.strasse }}, {{ f.ort }}, {{ f.land }}<br><span class="oi-klein">{{ f.fn }} · {{ f.gericht }}</span></td></tr>
+</table>
+
+<div class="oi-abschnitt">Projekt</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Bezeichnung</td><td>{{ doc.titel | e }}</td></tr>
+	<tr><td class="oi-feld">Projektart</td><td>{{ oekoinvest_label("projekt_typ", doc.typ) }}</td></tr>
+	<tr><td class="oi-feld">Region</td><td>{{ doc.region | e }}{% if doc.bundesland %}, {{ doc.bundesland | e }}{% endif %} ({{ oekoinvest_label("land", doc.land) }})</td></tr>
+	<tr><td class="oi-feld">Leistung</td><td>{{ oekoinvest_zahl(doc.mwp, 1) }} MWp{% if doc.mwh_speicher %} · Speicher {{ oekoinvest_zahl(doc.mwh_speicher, 1) }} MWh{% endif %}</td></tr>
+	<tr><td class="oi-feld">Entwicklungsphase</td><td>{{ oekoinvest_label("phase", doc.phase) }}</td></tr>
+</table>
+
+<div class="oi-abschnitt">Vereinbarung</div>
+<p class="oi-absatz"><b>1. Gegenstand.</b> Der Anbieter stellt das oben genannte Projekt über die Projektbörse der {{ f.name }} potenziellen Investoren vor. Die Vermittlerin prüft das Projekt vor der Veröffentlichung, veröffentlicht es anonymisiert und begleitet Vertraulichkeitsvereinbarung, Datenraum und Absichtserklärungen.</p>
+<p class="oi-absatz"><b>2. Provision.</b> {{ pv.text }}. Der konkrete Satz wird bei der Veröffentlichung festgelegt{% if doc.provision_satz %} und beträgt für dieses Projekt <b>{{ oekoinvest_prozent(doc.provision_satz) }}</b>{% endif %}. Bemessungsgrundlage ist der vereinbarte Kaufpreis.</p>
+<p class="oi-absatz"><b>3. Entstehen und Fälligkeit.</b> Der Anspruch entsteht nur bei erfolgreichem Abschluss mit einem Käufer, der über die Projektbörse vermittelt wurde. Kommt kein Abschluss zustande, fällt keine Provision an. Für Investoren und Flächeneigentümer ist die Nutzung der Projektbörse kostenfrei.</p>
+<p class="oi-absatz"><b>4. Nachweis.</b> Die Annahme erfolgte elektronisch im Portal; Zeitpunkt, IP-Adresse und Textfassung sind unten protokolliert und im Aktivitätsprotokoll der Plattform (Hash-Kette) gesichert.</p>
+{% if doc.kaufpreis %}
+<div class="oi-abschnitt">Abschluss</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Kaufpreis</td><td>{{ oekoinvest_eur(doc.kaufpreis) }}</td></tr>
+	<tr><td class="oi-feld">Provisionssatz</td><td>{{ oekoinvest_prozent(doc.provision_satz) }}</td></tr>
+	<tr><td class="oi-feld">Provision (rechnerisch)</td><td>{{ oekoinvest_eur((doc.kaufpreis or 0) * (doc.provision_satz or 0)) }} zzgl. gesetzlicher Umsatzsteuer, sofern anfallend</td></tr>
+</table>
+{% endif %}
+
+<div class="oi-abschnitt">Protokoll der Annahme</div>
+{% if pa.am %}
+<table class="oi-tabelle">
+	<tr><th>Angenommen am</th><th>IP-Adresse</th><th>Version</th></tr>
+	<tr><td>{{ oekoinvest_datum(pa.am, true) }}</td><td>{{ pa.ip | e }}</td><td>{{ pa.version | e }}</td></tr>
+</table>
+<p class="oi-klein">Angenommene Textfassung: „{{ pa.text | e }}“</p>
+{% else %}
+<div class="oi-warnung">Für dieses Projekt liegt noch keine Annahme der Provisionsvereinbarung vor. Ohne Annahme kann das Projekt nicht zur Prüfung eingereicht werden.</div>
+{% endif %}
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · {{ f.gericht }} · Geschäftsführung: {{ f.gf }} · Druck vom {{ oekoinvest_datum(frappe.utils.now_datetime(), true) }}</div>

@@ -1,0 +1,87 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 18:00:00.000000",
+ "description": "Mitglied: Vormerkung Genossenschaft (im Aufbau) bzw. Teilnahmedaten Energiegemeinschaft DE/AT/CH.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "konto_id",
+  "art",
+  "status",
+  "daten",
+  "bestaetigt_am",
+  "bestaetigt_ip"
+ ],
+ "fields": [
+  {
+   "fieldname": "konto_id",
+   "fieldtype": "Link",
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "search_index": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "geno\neg",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "vorgemerkt\nkontaktiert\nbeigetreten\nabgesagt",
+   "default": "vorgemerkt",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "daten",
+   "fieldtype": "JSON",
+   "label": "Angaben"
+  },
+  {
+   "fieldname": "bestaetigt_am",
+   "fieldtype": "Datetime",
+   "label": "Hinweise bestätigt am"
+  },
+  {
+   "fieldname": "bestaetigt_ip",
+   "fieldtype": "Data",
+   "label": "IP bei Bestätigung"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Beteiligung Interesse",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "in_create": 0
+}

@@ -1,0 +1,280 @@
+{
+ "charts": [
+  {
+   "chart_name": "ÖkoInvest Störungen je Monat",
+   "label": "Störungen je Monat"
+  },
+  {
+   "chart_name": "ÖkoInvest Offene Störungen nach Schwere",
+   "label": "Offene Störungen nach Schwere"
+  }
+ ],
+ "content": "[{\"id\": \"bQmzvr3e9X\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Anlagen & Betrieb</b></span>\", \"col\": 12}}, {\"id\": \"rwPGzR1Iv8\", \"type\": \"paragraph\", \"data\": {\"text\": \"<span style=\\\"color:var(--text-muted)\\\">Contracting-Anlagen, Monitoring-Störungen, Wartung und Zählerstände. Messdaten liefert der Ingest-Dienst, nicht Frappe.</span>\", \"col\": 12}}, {\"id\": \"bh4qlL9qcg\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Anlagen in Betrieb\", \"col\": 3}}, {\"id\": \"MBwUYuBMGh\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest kWp in Betrieb\", \"col\": 3}}, {\"id\": \"y5KmqcTBaH\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Störungen offen\", \"col\": 3}}, {\"id\": \"7ZIRU8VVQm\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Kritische Störungen\", \"col\": 3}}, {\"id\": \"xBe8Q6vNuQ\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"2hU5tGtQAu\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Schnellzugriff</b></span>\", \"col\": 12}}, {\"id\": \"zSsJimAQ8y\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Offene Störungen\", \"col\": 3}}, {\"id\": \"RV5lNKtzJ1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Anlagen\", \"col\": 3}}, {\"id\": \"atsnBYLMPu\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Wartung geplant\", \"col\": 3}}, {\"id\": \"DCCRnGEY59\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Anlagen-Verfügbarkeit\", \"col\": 3}}, {\"id\": \"YVkQfsGQON\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"vf08WpRtoZ\", \"type\": \"chart\", \"data\": {\"chart_name\": \"ÖkoInvest Störungen je Monat\", \"col\": 6}}, {\"id\": \"mjbcpEN2Xe\", \"type\": \"chart\", \"data\": {\"chart_name\": \"ÖkoInvest Offene Störungen nach Schwere\", \"col\": 6}}, {\"id\": \"DA4OKmTSyF\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"zpjPSa5W3X\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Bereiche</b></span>\", \"col\": 12}}, {\"id\": \"4gXBolZ9SH\", \"type\": \"card\", \"data\": {\"card_name\": \"Anlagen\", \"col\": 4}}, {\"id\": \"DdJp62hDiZ\", \"type\": \"card\", \"data\": {\"card_name\": \"Betrieb\", \"col\": 4}}, {\"id\": \"DQHJMu8W5C\", \"type\": \"card\", \"data\": {\"card_name\": \"Verträge & Abrechnung\", \"col\": 4}}, {\"id\": \"N0U5GB16JC\", \"type\": \"card\", \"data\": {\"card_name\": \"Auswertung\", \"col\": 4}}]",
+ "creation": "2026-09-30 08:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "assets",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "Anlagen & Betrieb",
+ "links": [
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Anlagen",
+   "link_count": 4,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Anlage",
+   "link_count": 0,
+   "link_to": "Plattform Anlage",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Komponente",
+   "link_count": 0,
+   "link_to": "Plattform Anlagenkomponente",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Messpunkt",
+   "link_count": 0,
+   "link_to": "Plattform Messpunkt",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Gerätezugang (MQTT)",
+   "link_count": 0,
+   "link_to": "Plattform Geraetezugang",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Betrieb",
+   "link_count": 2,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Störungsfall",
+   "link_count": 0,
+   "link_to": "Plattform Stoerungsfall",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Wartung",
+   "link_count": 0,
+   "link_to": "Plattform Wartung",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Verträge & Abrechnung",
+   "link_count": 2,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Contracting-Vertrag",
+   "link_count": 0,
+   "link_to": "Plattform Contracting Vertrag",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Zählerstand (Monatswert)",
+   "link_count": 0,
+   "link_to": "Plattform Zaehlerstand Monatswert",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Auswertung",
+   "link_count": 2,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Anlagen-Verfügbarkeit",
+   "link_count": 0,
+   "link_to": "Anlagen Verfuegbarkeit",
+   "link_type": "Report",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Offene Störungen",
+   "link_count": 0,
+   "link_to": "Offene Stoerungen",
+   "link_type": "Report",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Anlagen & Betrieb",
+ "number_cards": [
+  {
+   "label": "Anlagen in Betrieb",
+   "number_card_name": "ÖkoInvest Anlagen in Betrieb"
+  },
+  {
+   "label": "kWp in Betrieb",
+   "number_card_name": "ÖkoInvest kWp in Betrieb"
+  },
+  {
+   "label": "Störungen offen",
+   "number_card_name": "ÖkoInvest Störungen offen"
+  },
+  {
+   "label": "Kritische Störungen",
+   "number_card_name": "ÖkoInvest Kritische Störungen"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "role": "ÖkoInvest Betrieb"
+  },
+  {
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "role": "ÖkoInvest Leser"
+  }
+ ],
+ "sequence_id": 4.0,
+ "shortcuts": [
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "format": "{} offen",
+   "label": "Offene Störungen",
+   "link_to": "Plattform Stoerungsfall",
+   "stats_filter": "[[\"Plattform Stoerungsfall\", \"status\", \"in\", [\"offen\", \"in_arbeit\"], false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "{} in Betrieb",
+   "label": "Anlagen",
+   "link_to": "Plattform Anlage",
+   "stats_filter": "[[\"Plattform Anlage\", \"status\", \"=\", \"betrieb\", false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": "{} geplant",
+   "label": "Wartung geplant",
+   "link_to": "Plattform Wartung",
+   "stats_filter": "[[\"Plattform Wartung\", \"status\", \"=\", \"geplant\", false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Grey",
+   "doc_view": "",
+   "format": null,
+   "label": "Anlagen-Verfügbarkeit",
+   "link_to": "Anlagen Verfuegbarkeit",
+   "report_ref_doctype": "Plattform Anlage",
+   "stats_filter": null,
+   "type": "Report",
+   "url": null
+  }
+ ],
+ "title": "Anlagen & Betrieb"
+}

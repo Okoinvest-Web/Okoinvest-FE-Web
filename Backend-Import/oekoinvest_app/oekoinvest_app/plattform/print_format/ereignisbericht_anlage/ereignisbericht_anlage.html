@@ -1,0 +1,42 @@
+{#- ÖkoInvest – Störungsbericht (Plattform Stoerungsfall). Interne Kommentare nur, wenn „mit_intern“ nicht ausgeschaltet ist: Druck ist Backoffice-intern. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set a = oekoinvest_anlage_kurz(doc.anlage_id) -%}
+{%- set kommentare = oekoinvest_json(doc.kommentare, []) -%}
+{%- set verlauf = oekoinvest_json(doc.verlauf, []) -%}
+{%- set farbe = {"kritisch": "oi-rot", "hoch": "oi-rot", "mittel": "oi-gelb"}.get(doc.schwere, "oi-navy") -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Anlagen & Betrieb · Störung {{ doc.name }}</div>
+	<div class="oi-titel">Störungsbericht: {{ doc.titel | e }}</div>
+	<div class="oi-untertitel">Anlage {{ a.id | e }} · {{ a.titel | e }}{% if a.ort %} · {{ a.ort | e }}{% endif %}</div>
+</div>
+<p><span class="oi-badge {{ farbe }}">Schwere: {{ oekoinvest_label("schwere", doc.schwere) }}</span> <span class="oi-badge">{{ oekoinvest_label("stoerung_status", doc.status) }}</span></p>
+
+<div class="oi-abschnitt">Ereignis</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Erkennungsregel</td><td>{{ oekoinvest_label("regel", doc.regel) }}</td></tr>
+	<tr><td class="oi-feld">Erkannt am</td><td>{{ oekoinvest_datum(doc.erkannt_am, true) }}</td></tr>
+	<tr><td class="oi-feld">Zuletzt gemeldet</td><td>{{ oekoinvest_datum(doc.zuletzt_am, true) }} · {{ doc.anzahl or 1 }} Meldung(en)</td></tr>
+	<tr><td class="oi-feld">Quittiert</td><td>{% if doc.quittiert_am %}{{ oekoinvest_datum(doc.quittiert_am, true) }} durch {{ oekoinvest_konto(doc.quittiert_von).name | e }}{% else %}noch nicht quittiert{% endif %}</td></tr>
+	<tr><td class="oi-feld">Behoben</td><td>{{ oekoinvest_datum(doc.behoben_am, true) if doc.behoben_am else "offen" }}</td></tr>
+	<tr><td class="oi-feld">Zuständig</td><td>{{ oekoinvest_konto(doc.zustaendig_id).name | e if doc.zustaendig_id else "–" }}</td></tr>
+	{% if a.kwp %}<tr><td class="oi-feld">Anlagenleistung</td><td>{{ oekoinvest_zahl(a.kwp, 1) }} kWp{% if a.speicher_kwh %} · Speicher {{ oekoinvest_zahl(a.speicher_kwh, 0) }} kWh{% endif %}</td></tr>{% endif %}
+</table>
+{% if doc.text %}<div class="oi-abschnitt">Beschreibung</div><p class="oi-text">{{ doc.text | e }}</p>{% endif %}
+
+{% if kommentare %}
+<div class="oi-abschnitt">Kommentare</div>
+<table class="oi-tabelle">
+	<tr><th style="width:22%">Zeitpunkt</th><th style="width:22%">von</th><th>Text</th></tr>
+	{% for k in kommentare %}<tr><td>{{ oekoinvest_datum(k.am, true) }}</td><td>{{ (k.vonName or "–") | e }}{% if k.intern %} <span class="oi-badge oi-navy">intern</span>{% endif %}</td><td class="oi-text">{{ k.text | e }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+{% if verlauf %}
+<div class="oi-abschnitt">Verlauf</div>
+<table class="oi-tabelle">
+	<tr><th style="width:22%">Zeitpunkt</th><th>Ereignis</th></tr>
+	{% for v in verlauf %}<tr><td>{{ oekoinvest_datum(v.am, true) }}</td><td>{{ v.text | e }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+<div class="oi-hinweis">Interner Bericht des Betriebs. Werte aus dem Monitoring (MQTT) sind nicht eichrechtskonform; maßgeblich für Abrechnungen sind die geeichten Zähler.</div>
+<div class="oi-fuss">{{ f.name }} · {{ f.fn }} · Erstellt am {{ oekoinvest_datum(frappe.utils.now_datetime(), true) }} durch {{ frappe.session.user | e }}</div>

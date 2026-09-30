@@ -1,0 +1,22 @@
+{#- ÖkoInvest – Information der betroffenen Person über eine Bonitätsauskunft (Art. 13/14 DSGVO) – OHNE Ergebnis. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set anbieter = {"ksv1870": "KSV1870", "creditreform": "Creditreform", "crif": "CRIF", "dnb": "Dun & Bradstreet"} -%}
+{%- set grundlage = {"berechtigtes_interesse": "Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Prüfung der Zahlungsfähigkeit)", "vorvertraglich": "Art. 6 Abs. 1 lit. b DSGVO (vorvertragliche Maßnahmen)", "einwilligung": "Art. 6 Abs. 1 lit. a DSGVO (Einwilligung)"} -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Datenschutz · Information</div>
+	<div class="oi-titel">Information über eine Bonitätsauskunft</div>
+	<div class="oi-untertitel">{{ doc.subjekt_name | e }} · Unser Zeichen {{ doc.name }}</div>
+</div>
+<p class="oi-absatz">Sehr geehrte Damen und Herren,</p>
+<p class="oi-absatz">wir haben am {{ oekoinvest_datum(doc.auskunft_am) }} zur Prüfung der Zahlungsfähigkeit von „{{ doc.subjekt_name | e }}“ eine Bonitätsauskunft bei {{ anbieter.get(doc.anbieter) or "einer Auskunftei" }} eingeholt.</p>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Verantwortliche</td><td>{{ f.name }}, {{ f.strasse }}, {{ f.ort }}</td></tr>
+	<tr><td class="oi-feld">Zweck</td><td>Prüfung vor Eintritt in Kaufverhandlungen über Projektrechte bzw. Projektgesellschaften (Absichtserklärung, Bieterverfahren)</td></tr>
+	<tr><td class="oi-feld">Rechtsgrundlage</td><td>{{ grundlage.get(doc.rechtsgrundlage) or grundlage.berechtigtes_interesse }}</td></tr>
+	<tr><td class="oi-feld">Empfänger</td><td>Nur ein kleiner, berechtigter Personenkreis (Leitung, Transaktion, Compliance); keine Weitergabe an Anbieter oder andere Investoren</td></tr>
+	<tr><td class="oi-feld">Speicherdauer</td><td>Bis zum Ende der Aufbewahrungsfrist nach unserem Löschkonzept</td></tr>
+</table>
+<p class="oi-absatz">Eine automatisierte Entscheidung im Sinne von Art. 22 DSGVO findet nicht statt – ein Mensch bewertet die Auskunft. Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung und Widerspruch (Art. 15–21 DSGVO) sowie auf Beschwerde bei der Datenschutzbehörde. Über die bei der Auskunftei gespeicherten Daten gibt auch die Auskunftei selbst Auskunft.</p>
+<p class="oi-absatz">Mit freundlichen Grüßen<br>{{ f.name }}</p>
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · {{ f.gericht }}</div>

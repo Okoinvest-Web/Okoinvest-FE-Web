@@ -19,5 +19,12 @@ class PlattformFlaeche(StatusDokument):
 			frappe.throw("Bundesland / Kanton passt nicht zum Land.")
 		if len(self.get("flurstuecke") or []) > 50:
 			frappe.throw("Höchstens 50 Flurstücke je Fläche.")
+		# Fachprüfung Flächen: Flurstücksformate je Land auch bei Pflege im Desk (Fehlernummer bezieht sich auf die neuen Zeilen)
+		from oekoinvest_app.plattform.ausgabe import flurstueck_json
+		from oekoinvest_app.plattform.flaeche_fach import flurstuecke_pruefen
+
+		_, fehler = flurstuecke_pruefen([flurstueck_json(x) for x in self.get("flurstuecke") or [] if x.is_new()], self.land or "DE")  # nur neue Zeilen – Altbestand blockiert keine Statuswechsel
+		if fehler:
+			frappe.throw(f"Flurstück {fehler[0]['index'] + 1}: {fehler[0]['text']}.")
 		if self.status == "pachtangebot" and not self.pachtangebot:
 			frappe.throw("Für den Status „Pachtangebot“ muss ein Pachtangebot vorliegen.")

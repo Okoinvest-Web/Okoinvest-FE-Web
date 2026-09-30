@@ -1,0 +1,325 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Beleg der Plattform: Pacht-Gutschrift, Contracting- oder Provisionsrechnung. Mit ERPNext verknüpft mit Purchase/Sales Invoice; ohne ERPNext maßgeblicher Beleg. Positionen und Snapshots als JSON.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "nummer",
+  "art",
+  "beleg",
+  "titel",
+  "gesellschaft_id",
+  "status",
+  "cb_1",
+  "empfaenger_id",
+  "organisation_id",
+  "pachtvertrag_id",
+  "anlage_id",
+  "provision_id",
+  "projekt_id",
+  "schluessel",
+  "sb_1",
+  "zeitraum_von",
+  "zeitraum_bis",
+  "rechnungsdatum",
+  "faellig_am",
+  "bezahlt_am",
+  "cb_2",
+  "netto",
+  "steuer_vorlage",
+  "steuer_satz",
+  "steuer_betrag",
+  "brutto",
+  "sb_2",
+  "zahlungslauf_id",
+  "lauf_id",
+  "erpnext_doctype",
+  "erpnext_name",
+  "cb_3",
+  "storno_grund",
+  "daten"
+ ],
+ "fields": [
+  {
+   "fieldname": "nummer",
+   "fieldtype": "Data",
+   "label": "Nummer",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "pacht\ncontracting\nprovision",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "beleg",
+   "fieldtype": "Select",
+   "label": "Beleg",
+   "options": "gutschrift\nrechnung",
+   "reqd": 1
+  },
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Titel"
+  },
+  {
+   "fieldname": "gesellschaft_id",
+   "fieldtype": "Data",
+   "label": "Gesellschaft (Aussteller)",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "offen\nangewiesen\nbezahlt\nstorniert",
+   "default": "offen",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "empfaenger_id",
+   "fieldtype": "Link",
+   "label": "Empfänger (Konto)",
+   "options": "Plattform Konto",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "organisation_id",
+   "fieldtype": "Link",
+   "label": "Organisation",
+   "options": "Plattform Organisation"
+  },
+  {
+   "fieldname": "pachtvertrag_id",
+   "fieldtype": "Link",
+   "label": "Pachtvertrag",
+   "options": "Plattform Pachtvertrag"
+  },
+  {
+   "fieldname": "anlage_id",
+   "fieldtype": "Link",
+   "label": "Anlage",
+   "options": "Plattform Anlage"
+  },
+  {
+   "fieldname": "provision_id",
+   "fieldtype": "Link",
+   "label": "Provision",
+   "options": "Plattform Provision"
+  },
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Projekt",
+   "options": "Plattform Projekt"
+  },
+  {
+   "fieldname": "schluessel",
+   "fieldtype": "Data",
+   "label": "Periodenschlüssel",
+   "description": "Je Periode höchstens ein nicht stornierter Beleg"
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": "Beträge und Fristen"
+  },
+  {
+   "fieldname": "zeitraum_von",
+   "fieldtype": "Date",
+   "label": "Leistung von"
+  },
+  {
+   "fieldname": "zeitraum_bis",
+   "fieldtype": "Date",
+   "label": "Leistung bis"
+  },
+  {
+   "fieldname": "rechnungsdatum",
+   "fieldtype": "Date",
+   "label": "Ausgestellt am"
+  },
+  {
+   "fieldname": "faellig_am",
+   "fieldtype": "Date",
+   "label": "Fällig am",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "bezahlt_am",
+   "fieldtype": "Date",
+   "label": "Bezahlt am"
+  },
+  {
+   "fieldname": "cb_2",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "netto",
+   "fieldtype": "Currency",
+   "label": "Netto"
+  },
+  {
+   "fieldname": "steuer_vorlage",
+   "fieldtype": "Data",
+   "label": "Steuervorlage"
+  },
+  {
+   "fieldname": "steuer_satz",
+   "fieldtype": "Float",
+   "label": "Steuersatz",
+   "precision": "3"
+  },
+  {
+   "fieldname": "steuer_betrag",
+   "fieldtype": "Currency",
+   "label": "Steuer"
+  },
+  {
+   "fieldname": "brutto",
+   "fieldtype": "Currency",
+   "label": "Brutto",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sb_2",
+   "fieldtype": "Section Break",
+   "label": "Verknüpfungen"
+  },
+  {
+   "fieldname": "zahlungslauf_id",
+   "fieldtype": "Link",
+   "label": "Zahlungslauf",
+   "options": "Plattform Zahlungslauf"
+  },
+  {
+   "fieldname": "lauf_id",
+   "fieldtype": "Link",
+   "label": "Abrechnungslauf",
+   "options": "Plattform Abrechnungslauf"
+  },
+  {
+   "fieldname": "erpnext_doctype",
+   "fieldtype": "Link",
+   "label": "ERPNext-Beleg (Typ)",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "erpnext_name",
+   "fieldtype": "Dynamic Link",
+   "label": "ERPNext-Beleg",
+   "options": "erpnext_doctype"
+  },
+  {
+   "fieldname": "cb_3",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "storno_grund",
+   "fieldtype": "Small Text",
+   "label": "Stornogrund"
+  },
+  {
+   "fieldname": "daten",
+   "fieldtype": "JSON",
+   "label": "Beleg-Daten (Positionen, Parteien, Steuer, Erläuterung, Zählerstände, Mahnungen)"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 0,
+ "links": [],
+ "modified": "2026-09-30 05:54:25.035814",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Abrechnung",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Transaktion",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "in_create": 0,
+ "title_field": "nummer",
+ "show_title_field_in_link": 1
+}

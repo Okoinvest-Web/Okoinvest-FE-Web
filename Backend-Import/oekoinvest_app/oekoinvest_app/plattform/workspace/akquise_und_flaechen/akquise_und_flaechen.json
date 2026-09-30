@@ -1,0 +1,201 @@
+{
+ "charts": [
+  {
+   "chart_name": "ÖkoInvest Flächen nach Status",
+   "label": "Flächen nach Status"
+  },
+  {
+   "chart_name": "ÖkoInvest Anfragen nach Typ",
+   "label": "Anfragen nach Typ"
+  }
+ ],
+ "content": "[{\"id\": \"UF0eWIXiiQ\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Akquise & Flächen</b></span>\", \"col\": 12}}, {\"id\": \"E8JkqH3MB9\", \"type\": \"paragraph\", \"data\": {\"text\": \"<span style=\\\"color:var(--text-muted)\\\">Anfragen aus der Website, Flächenakquise und Standortprüfung bis zum Pachtvertrag.</span>\", \"col\": 12}}, {\"id\": \"n7IWUSmTtz\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Unbearbeitete Anfragen\", \"col\": 3}}, {\"id\": \"QPxC5HChpo\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Anfragen diesen Monat\", \"col\": 3}}, {\"id\": \"evbLJoLoae\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Flächen in Pipeline\", \"col\": 3}}, {\"id\": \"TOdoe5c3ve\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Hektar in Pipeline\", \"col\": 3}}, {\"id\": \"GprQFnIiU7\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"4KKEpYEZAm\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Schnellzugriff</b></span>\", \"col\": 12}}, {\"id\": \"ggQBwBAD3U\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Anfragen\", \"col\": 3}}, {\"id\": \"dRPPgdzUvZ\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Flächen\", \"col\": 3}}, {\"id\": \"3gpmmICiBl\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Pipeline Flächen\", \"col\": 3}}, {\"id\": \"rDp37eCZ32\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"JgdPI1af7W\", \"type\": \"chart\", \"data\": {\"chart_name\": \"ÖkoInvest Flächen nach Status\", \"col\": 6}}, {\"id\": \"2pkAFEn3z5\", \"type\": \"chart\", \"data\": {\"chart_name\": \"ÖkoInvest Anfragen nach Typ\", \"col\": 6}}, {\"id\": \"dkyayq7YYD\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"sBS9UYJQTF\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Bereiche</b></span>\", \"col\": 12}}, {\"id\": \"jmsn9dLVId\", \"type\": \"card\", \"data\": {\"card_name\": \"Anfragen\", \"col\": 4}}, {\"id\": \"VuddLEG62H\", \"type\": \"card\", \"data\": {\"card_name\": \"Flächen\", \"col\": 4}}, {\"id\": \"kd9Gf2leMe\", \"type\": \"card\", \"data\": {\"card_name\": \"Auswertung\", \"col\": 4}}]",
+ "creation": "2026-09-30 08:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "sell",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "Akquise & Flächen",
+ "links": [
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Anfragen",
+   "link_count": 2,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Vorgang",
+   "link_count": 0,
+   "link_to": "Plattform Vorgang",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Objekt-Infos (Priorität, Tags)",
+   "link_count": 0,
+   "link_to": "Plattform Objekt Info",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Flächen",
+   "link_count": 2,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fläche",
+   "link_count": 0,
+   "link_to": "Plattform Flaeche",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Gebiet",
+   "link_count": 0,
+   "link_to": "Plattform Gebiet",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Auswertung",
+   "link_count": 1,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Pipeline Flächen",
+   "link_count": 0,
+   "link_to": "Pipeline Flaechen",
+   "link_type": "Report",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Akquise & Flächen",
+ "number_cards": [
+  {
+   "label": "Unbearbeitete Anfragen",
+   "number_card_name": "ÖkoInvest Unbearbeitete Anfragen"
+  },
+  {
+   "label": "Anfragen diesen Monat",
+   "number_card_name": "ÖkoInvest Anfragen diesen Monat"
+  },
+  {
+   "label": "Flächen in Pipeline",
+   "number_card_name": "ÖkoInvest Flächen in Pipeline"
+  },
+  {
+   "label": "Hektar in Pipeline",
+   "number_card_name": "ÖkoInvest Hektar in Pipeline"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "role": "ÖkoInvest Akquise"
+  },
+  {
+   "role": "ÖkoInvest Transaktion"
+  },
+  {
+   "role": "ÖkoInvest Leser"
+  },
+  {
+   "role": "ÖkoInvest Compliance"
+  }
+ ],
+ "sequence_id": 2.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": "{} offen",
+   "label": "Anfragen",
+   "link_to": "Plattform Vorgang",
+   "stats_filter": "[[\"Plattform Vorgang\", \"status\", \"in\", [\"eingegangen\", \"in_pruefung\", \"qualifiziert\", \"angebot\"], false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "{} in Pipeline",
+   "label": "Flächen",
+   "link_to": "Plattform Flaeche",
+   "stats_filter": "[[\"Plattform Flaeche\", \"status\", \"in\", [\"eingegangen\", \"vorpruefung\", \"standortanalyse\", \"pachtangebot\", \"vertrag\", \"planung\"], false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Grey",
+   "doc_view": "",
+   "format": null,
+   "label": "Pipeline Flächen",
+   "link_to": "Pipeline Flaechen",
+   "report_ref_doctype": "Plattform Flaeche",
+   "stats_filter": null,
+   "type": "Report",
+   "url": null
+  }
+ ],
+ "title": "Akquise & Flächen"
+}

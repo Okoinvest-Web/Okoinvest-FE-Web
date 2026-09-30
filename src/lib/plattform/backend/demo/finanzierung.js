@@ -1,0 +1,862 @@
+// src/lib/plattform/backend/demo/finanzierung.js
+//
+// Finanzierung im Demo-Backend – Referenz für plattform/api/finanzierung.py (Vertrag: docs/API.md, Abschnitt „Finanzierung“).
+//  1. Investoren-Finanzierungscockpit: Vorbelegung je Börsenprojekt (nur mit freigegebenem Datenraum bzw. als Anbieter/Admin,
+//     angedockt an das Bewertungswerkzeug fach/bewertung.js), freies Werkzeug, Szenarien speichern/löschen/als PDF.
+//  2. Bankfinanzierung Eigenbetrieb (Backoffice, Bereich „finanzierung“): Finanzierungsfall mit Projekt-/SPV-Bezug, Bankenstamm,
+//     Anfrage an mehrere Banken (E-Mail mit Einladungslink), Bankenpaket mit Freigabe je Baustein, Term Sheets und Vergleich,
+//     Entscheidung (nur Unterrolle Leitung), Kreditvertrag, Auszahlungsvoraussetzungen (CPs), Covenant-Monitoring aus den
+//     Zählerwerten der Anlage (DSCR rollierend 12 Monate, Ampel, Frühwarnung), Bank-Reporting, Geschäftsmodell-Entscheidung.
+//  3. Bank (externe Rolle `bank`, nur per Einladung): sieht ausschließlich Anfragen IHRER Bank und darin nur freigegebene
+//     Bausteine; gibt Term Sheet ab oder sagt ab.
+//
+// Daten unter db.finanzierung (eigene Sammlung, beim ersten Zugriff mit Demo-Daten ergänzt – finanzierung-seed.js).
+
+import { PlattformFehler, konflikt, nichtGefunden, ungueltig, verboten } from "../../fehler";
+import * as v from "../../validierung";
+import { darfLesen, darfSchreiben, unterrollen } from "../../rechte";
+import { UPLOAD } from "../../konstanten";
+import { FREIFLAECHE, DACH, ERLOESE } from "@/lib/invest/markt";
+import { vorbelegungAusProjekt } from "../../finanzierung/vorbelegung";
+import { rechneCockpit, cockpitBereinigen, cockpitStandard, ergebnisKurz, tilgungsplan, betriebsJahre, TYPEN_FZ } from "../../finanzierung/kern";
+import { BANKENPAKET, BANKENPAKET_IDS, CP_STANDARD, FALL_STATUS, termsheetBereinigen, termsheetVergleich, termsheetKennzahlen, covenantPruefung, allInZins, BankFehler } from "../../finanzierung/bank";
+import { geschaeftsmodellVergleich, GESCHAEFTSMODELLE } from "../../finanzierung/geschaeftsmodell";
+import { boerseDetail, intern } from "../demo";
+import { aendern, lesen, uploadLesen, uploadSchreiben } from "./speicher";
+import { jetzt, neueId, sha256, zufallsToken } from "./hilfen";
+import { internSicherheit } from "./sicherheitWerkzeuge";
+import { finanzierungSeed } from "./finanzierung-seed";
+import * as anlagenDemo from "./anlagen";
+
+/** Glocke + ggf. E-Mail (eigener Betreff/Text – ohne vertrauliche Inhalte, nur Hinweis + Link) */
+const benachrichtigen = (db, u, b, o = {}) => intern.benachrichtigen(db, u, b, { mailBetreff: `ÖkoInvest: ${b.titel}`, mailText: "Es gibt Neuigkeiten zu einer Finanzierung. Details sehen Sie nach der Anmeldung im Portal.", ...o });
+const protokoll = (...a) => intern.protokoll(...a);
+const nutzerById = (...a) => intern.nutzerById(...a);
+const nameVon = (...a) => intern.nameVon(...a);
+const aktiveAdmins = (...a) => intern.aktiveAdmins(...a);
+const postausgangAnlegen = (...a) => internSicherheit.postausgangAnlegen(...a);
+
+const EINLADUNG_TAGE = 14;
+/** Schema der Sammlung db.finanzierung – bei Änderung der Demo-Daten erhöhen (die Sammlung wird dann neu befüllt, übrige Daten bleiben) */
+const FZ_SCHEMA = 5;
+const MAX_SZENARIEN = 30;
+/** Systemleser für die Covenant-Prüfung (liest nur Zählerwerte der verknüpften Anlage, Ergebnis nur im Bereich „finanzierung“) */
+const SYSTEM_LESER = { id: "system-finanzierung", rollen: ["admin"], backofficeRollen: ["leitung"] };
+
+const istAdmin = (n) => !!n?.rollen?.includes("admin");
+const boLesen = (n) => istAdmin(n) && darfLesen(n, "finanzierung");
+const boSchreiben = (n) => istAdmin(n) && darfSchreiben(n, "finanzierung");
+const istLeitung = (n) => istAdmin(n) && unterrollen(n).includes("leitung");
+
+function angemeldet(n) {
+  if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
+}
+function leseNoetig(n) {
+  angemeldet(n);
+  if (!boLesen(n)) throw verboten("Nur für das Backoffice (Finanzierung).");
+}
+function schreibNoetig(n) {
+  angemeldet(n);
+  if (!boSchreiben(n)) throw verboten(istAdmin(n) ? "Ihre Backoffice-Rolle erlaubt im Bereich „Finanzierung & Banken“ kein Schreiben." : "Nur für das Backoffice (Finanzierung).");
+}
+function fach(fn) {
+  try {
+    return fn();
+  } catch (e) {
+    if (e instanceof BankFehler || (e?.status === 422 && !(e instanceof PlattformFehler))) throw ungueltig(e.message);
+    throw e;
+  }
+}
+
+// ================================================================ Datenbestand
+
+function leer() {
+  return { v: FZ_SCHEMA, banken: [], faelle: [], anfragen: [], termsheets: [], dokumente: [], einladungen: [], szenarien: [], covenantLaufAm: null };
+}
+
+async function lesenBereit() {
+  const db = await lesen();
+  if ((db.finanzierung?.v || 0) >= FZ_SCHEMA) return db; // nie „zurück“ befüllen (ältere Modulstände im Dev-Server)
+  // Demo-Daten der Anlagen und Projektentwicklung vorher ergänzen (eigene Transaktionen, nicht verschachteln)
+  await anlagenDemo.anlagen(SYSTEM_LESER).catch(() => null);
+  await import("./entwicklung").then((m) => m.entwicklungAuswahl(SYSTEM_LESER)).catch(() => null);
+  await aendern(async (d) => {
+    if ((d.finanzierung?.v || 0) >= FZ_SCHEMA) return;
+    d.finanzierung = leer();
+    try {
+      await finanzierungSeed(d);
+    } catch (e) {
+      console.warn("[plattform-demo] Finanzierungs-Demodaten nicht ergänzt:", e?.message);
+    }
+  });
+  return lesen();
+}
+async function aendernBereit(fn) {
+  await lesenBereit();
+  return aendern(fn);
+}
+const F = (db) => db.finanzierung;
+
+// ================================================================ 1. Investoren-Cockpit
+
+const COCKPIT_ROLLEN = ["investor", "anbieter"];
+
+async function cockpitZugriff(n, projektId) {
+  angemeldet(n);
+  if (!istAdmin(n) && !COCKPIT_ROLLEN.some((r) => n.rollen?.includes(r))) throw verboten("Das Finanzierungscockpit mit Projektdaten steht Investoren und Anbietern zur Verfügung.");
+  const d = await boerseDetail(n, projektId);
+  if (d.zugriff === "oeffentlich") throw verboten("Das Cockpit mit Projektdaten ist nach Freigabe des Datenraums (NDA) möglich.");
+  return d;
+}
+
+
+/** Liste: Projekte mit Cockpit-Zugriff (NDA frei, eigene als Anbieter) + eigene Szenarien */
+export async function fzCockpitListe(n) {
+  angemeldet(n);
+  const db = await lesenBereit();
+  const ids = new Set();
+  for (const i of db.interessen || []) if (i.investorId === n.id && ["nda_freigegeben", "loi_abgegeben", "loi_angenommen", "abgeschlossen"].includes(i.status)) ids.add(i.projektId);
+  if (n.rollen?.includes("anbieter")) for (const p of db.projekte || []) if (p.anbieterId === n.id && p.status === "veroeffentlicht") ids.add(p.id);
+  const projekte = [];
+  for (const id of [...ids].slice(0, 40)) {
+    try {
+      const d = await boerseDetail(n, id);
+      if (d.zugriff !== "oeffentlich") projekte.push({ id: d.projekt.id, titel: d.projekt.titel, mwp: d.projekt.mwp, land: d.projekt.land, typ: d.projekt.typ, phase: d.projekt.phase, zugriff: d.zugriff });
+    } catch {
+      /* nicht mehr sichtbar */
+    }
+  }
+  const szenarien = F(db).szenarien.filter((s) => s.nutzerId === n.id).sort((a, b) => String(b.am).localeCompare(String(a.am))).map(szenarioAusgabe);
+  return { projekte, szenarien };
+}
+
+/** Cockpit für ein Börsenprojekt: Vorbelegung (mit Quellen) – nur mit Berechtigung */
+export async function fzCockpitProjekt(n, projektId) {
+  const d = await cockpitZugriff(n, projektId);
+  const vb = vorbelegungAusProjekt(d);
+  const db = await lesenBereit();
+  const szenarien = F(db).szenarien.filter((s) => s.nutzerId === n.id && s.projektId === d.projekt.id).map(szenarioAusgabe);
+  return { projekt: { id: d.projekt.id, titel: d.projekt.titel, mwp: d.projekt.mwp, land: d.projekt.land, typ: d.projekt.typ, phase: d.projekt.phase }, zugriff: d.zugriff, vorbelegung: vb, szenarien };
+}
+
+function szenarioAusgabe(s) {
+  return { id: s.id, name: s.name, projektId: s.projektId, projektTitel: s.projektTitel || "", fokus: s.fokus, eingaben: s.eingaben, ergebnis: s.ergebnis, am: s.am };
+}
+
+export async function fzSzenarioSpeichern(n, { projektId = "", name, eingaben = {}, fokus = "skulptiert" } = {}) {
+  angemeldet(n);
+  const titel = v.text(name, 80);
+  v.pflicht(titel.length >= 2, "Bitte geben Sie dem Szenario einen Namen.");
+  let projekt = null;
+  if (projektId) projekt = (await cockpitZugriff(n, projektId)).projekt;
+  const e = cockpitBereinigen(eingaben || {});
+  const r = rechneCockpit(e);
+  return aendernBereit((db) => {
+    const eigene = F(db).szenarien.filter((s) => s.nutzerId === n.id);
+    if (eigene.length >= MAX_SZENARIEN) throw ungueltig(`Höchstens ${MAX_SZENARIEN} Szenarien – bitte ältere löschen.`);
+    const s = { id: neueId("FS"), nutzerId: n.id, projektId: projekt?.id || null, projektTitel: projekt?.titel || "", name: titel, fokus: ["ek", "annuitaet", "skulptiert", "foerder", "leasing", "mietkauf", "misch"].includes(fokus) ? fokus : "skulptiert", eingaben: r.eingaben, ergebnis: ergebnisKurz(r), am: jetzt() };
+    F(db).szenarien.push(s);
+    protokoll(db, n, "szenario", projekt ? "projekt" : "finanzierung", projekt?.id || s.id, `Finanzierungsszenario „${titel}“ gespeichert`);
+    return szenarioAusgabe(s);
+  });
+}
+
+export async function fzSzenarioLoeschen(n, id) {
+  angemeldet(n);
+  return aendernBereit((db) => {
+    const s = F(db).szenarien.find((x) => x.id === v.kennung(id));
+    if (!s) throw nichtGefunden("Szenario nicht gefunden.");
+    if (s.nutzerId !== n.id) throw verboten();
+    F(db).szenarien = F(db).szenarien.filter((x) => x.id !== s.id);
+    return { ok: true };
+  });
+}
+
+/** Szenario für das PDF: nur eigene; mit Projektbezug wird die Berechtigung erneut geprüft */
+export async function fzSzenario(n, id, { ip = "" } = {}) {
+  angemeldet(n);
+  const db = await lesenBereit();
+  const s = F(db).szenarien.find((x) => x.id === v.kennung(id));
+  if (!s) throw nichtGefunden("Szenario nicht gefunden.");
+  if (s.nutzerId !== n.id) throw verboten();
+  if (s.projektId) await cockpitZugriff(n, s.projektId);
+  await aendern((d) => protokoll(d, n, "szenario_pdf", "finanzierung", s.id, `Szenario-PDF „${s.name}“ erzeugt`, ip));
+  return { ...szenarioAusgabe(s), empfaenger: { name: nameVon(db, n.id), email: n.email } };
+}
+
+// ================================================================ 2. Backoffice: Fälle, Banken, Anfragen
+
+function fallLaden(db, id) {
+  const f = F(db).faelle.find((x) => x.id === v.kennung(id));
+  if (!f) throw nichtGefunden("Finanzierungsfall nicht gefunden.");
+  return f;
+}
+const bankVon = (db, id) => F(db).banken.find((b) => b.id === id) || null;
+
+function bezugInfo(db, f) {
+  if (f.bezugArt === "entwicklung") {
+    const p = (db.entwicklung?.projekte || []).find((x) => x.id === f.bezugId);
+    return p ? { art: "entwicklung", id: p.id, titel: p.titel, link: `/portal/admin/entwicklung/${p.id}` } : null;
+  }
+  if (f.bezugArt === "anlage") {
+    const a = (db.anlagen?.anlagen || []).find((x) => x.id === f.bezugId);
+    return a ? { art: "anlage", id: a.id, titel: a.name, link: `/portal/admin/anlagen/${a.id}` } : null;
+  }
+  return null;
+}
+
+function paketStatus(db, f, kyb = null) {
+  const doks = F(db).dokumente.filter((d) => d.fallId === f.id);
+  return BANKENPAKET.map((b) => {
+    const dokumente = doks.filter((d) => d.baustein === b.id).map(dokumentAusgabe);
+    const vorhanden = b.quelle === "auto" ? true : b.quelle === "kyb" ? kyb?.status === "verifiziert" || dokumente.length > 0 : dokumente.length > 0;
+    return { ...b, vorhanden, freigegeben: (f.paketFreigabe || []).includes(b.id), dokumente, kyb: b.quelle === "kyb" ? kyb : undefined };
+  });
+}
+
+const dokumentAusgabe = (d) => ({ id: d.id, baustein: d.baustein, name: d.name, mime: d.mime, groesse: d.groesse, am: d.am });
+
+function anfrageAusgabe(db, a, { intern: i = true } = {}) {
+  const b = bankVon(db, a.bankId);
+  const ts = F(db).termsheets.filter((t) => t.anfrageId === a.id).sort((x, y) => String(y.am).localeCompare(String(x.am)));
+  return {
+    id: a.id, fallId: a.fallId, bankId: a.bankId, bank: b?.name || "", ansprechpartner: i ? b?.ansprechpartner || "" : undefined, status: a.status, frist: a.frist, gesendetAm: a.gesendetAm,
+    nachricht: a.nachricht || "", termsheet: ts[0] ? { id: ts[0].id, am: ts[0].am, von: ts[0].von, version: ts.length, daten: ts[0].termsheet } : null,
+    verlauf: i ? a.verlauf || [] : (a.verlauf || []).filter((x) => x.fuerBank),
+    einladungOffen: i ? F(db).einladungen.some((e) => e.anfrageId === a.id && e.status === "offen" && new Date(e.ablauf) > new Date()) : undefined,
+  };
+}
+
+function kreditPlan(kv, T = 40) {
+  return tilgungsplan({ betrag: kv.betrag, zins: kv.zinsPct / 100, jahre: kv.laufzeitJahre, profil: kv.tilgungsprofil === "skulptiert" ? "annuitaet" : kv.tilgungsprofil, anlauf: kv.tilgungsfreiJahre || 0, T });
+}
+
+function fallAusgabe(db, f, { voll = false, kyb = null } = {}) {
+  const e = f.eingaben;
+  const aus = {
+    id: f.id, titel: f.titel, spv: f.spv, spvOrganisationId: f.spvOrganisationId || null, land: e.land, typ: e.typ, mwp: e.mwp, capex: e.capex, betragWunsch: f.betragWunsch,
+    status: f.status, statusLabel: FALL_STATUS[f.status]?.label || f.status, bezug: bezugInfo(db, f), geschaeftsmodell: f.geschaeftsmodell || null,
+    anfragenAnzahl: F(db).anfragen.filter((a) => a.fallId === f.id).length, termsheetsAnzahl: F(db).anfragen.filter((a) => a.fallId === f.id && ["termsheet", "ausgewaehlt"].includes(a.status)).length,
+    covenant: f.covenant ? { ampel: f.covenant.ampel, letzte: f.covenant.letzte, llcr: f.covenant.llcr, geprueftAm: f.covenant.geprueftAm } : null,
+    kreditvertrag: f.kreditvertrag || null, reporting: f.reporting || null, erstelltAm: f.erstelltAm, geaendertAm: f.geaendertAm,
+  };
+  if (!voll) return aus;
+  const anfragen = F(db).anfragen.filter((a) => a.fallId === f.id).map((a) => anfrageAusgabe(db, a));
+  const mitTs = anfragen.filter((a) => a.termsheet);
+  const vergleich = mitTs.length ? fach(() => termsheetVergleich(mitTs.map((a) => ({ anfrageId: a.id, bank: a.bank, termsheet: a.termsheet.daten })), e)) : { zeilen: [], empfehlung: "" };
+  const cockpit = rechneCockpit(e, { varianten: ["ek", "annuitaet", "skulptiert", "foerder", "misch"] });
+  return {
+    ...aus, eingaben: e, notiz: f.notiz || "", paket: paketStatus(db, f, kyb), paketFreigabe: f.paketFreigabe || [], cps: f.cps || [], entscheidung: f.entscheidung || null,
+    anfragen, vergleich, covenantDetail: f.covenant || null, verlauf: (f.verlauf || []).slice(-40).reverse(),
+    modell: { projekt: cockpit.projekt, varianten: cockpit.varianten.map(({ reihen: _r, ...x }) => x) },
+    dokumente: F(db).dokumente.filter((d) => d.fallId === f.id).map(dokumentAusgabe),
+  };
+}
+
+function verlauf(f, n, db, text) {
+  f.verlauf ||= [];
+  f.verlauf.push({ am: jetzt(), von: n ? nameVon(db, n.id) || "Backoffice" : "System", text: v.text(text, 300) });
+}
+
+/** Übersicht Backoffice: Fälle, Banken, Kennzahlen, Covenant-Ampeln (führt die tägliche Prüfung nach, falls fällig) */
+export async function fzUebersicht(n) {
+  leseNoetig(n);
+  let db = await lesenBereit();
+  const letzte = F(db).covenantLaufAm ? new Date(F(db).covenantLaufAm).getTime() : 0;
+  if (Date.now() - letzte > 20 * 3600e3) {
+    await fzCovenantLauf(null).catch((e) => console.warn("[plattform-demo] Covenant-Lauf:", e?.message));
+    db = await lesen();
+  }
+  const faelle = F(db).faelle.map((f) => fallAusgabe(db, f)).sort((a, b) => String(b.geaendertAm).localeCompare(String(a.geaendertAm)));
+  const aktiv = faelle.filter((f) => f.status !== "abgebrochen");
+  return {
+    faelle,
+    banken: F(db).banken.map((b) => bankAusgabe(db, b)),
+    kennzahlen: {
+      faelleAktiv: aktiv.length,
+      volumenAngefragt: aktiv.filter((f) => ["angefragt", "termsheets", "entschieden"].includes(f.status)).reduce((s, f) => s + (f.betragWunsch || 0), 0),
+      kreditvolumen: aktiv.filter((f) => f.kreditvertrag).reduce((s, f) => s + (f.kreditvertrag.betrag || 0), 0),
+      ampelRot: aktiv.filter((f) => f.covenant?.ampel?.id === "rot").length,
+      ampelGelb: aktiv.filter((f) => f.covenant?.ampel?.id === "gelb").length,
+      reportingFaellig: aktiv.filter((f) => f.reporting?.naechsteFrist && f.reporting.naechsteFrist <= new Date(Date.now() + 14 * 86400e3).toISOString().slice(0, 10)).length,
+    },
+    covenantLaufAm: F(db).covenantLaufAm,
+    darfSchreiben: boSchreiben(n),
+    leitung: istLeitung(n),
+  };
+}
+
+const bankAusgabe = (db, b) => ({ id: b.id, name: b.name, land: b.land, art: b.art, ansprechpartner: b.ansprechpartner, email: b.email, telefon: b.telefon || "", schwerpunkt: b.schwerpunkt || "", notiz: b.notiz || "", portalKonten: (b.nutzerIds || []).length, anfragen: F(db).anfragen.filter((a) => a.bankId === b.id).length });
+
+export async function fzFall(n, id) {
+  leseNoetig(n);
+  const db = await lesenBereit();
+  const f = fallLaden(db, id);
+  let kyb = null;
+  if (f.spvOrganisationId) {
+    try {
+      const { kycStatus } = await import("../kyc");
+      kyb = await kycStatus({ organisationId: f.spvOrganisationId });
+    } catch {
+      kyb = null;
+    }
+  }
+  return { ...fallAusgabe(db, f, { voll: true, kyb }), banken: F(db).banken.map((b) => bankAusgabe(db, b)), darfSchreiben: boSchreiben(n), leitung: istLeitung(n) };
+}
+
+/** Auswahl für „Fall anlegen“: Entwicklungsprojekte und Anlagen */
+export async function fzAuswahl(n) {
+  leseNoetig(n);
+  const db = await lesenBereit();
+  return {
+    entwicklung: (db.entwicklung?.projekte || []).filter((p) => p.status !== "abgebrochen").map((p) => ({ id: p.id, titel: p.titel, mwp: p.mwp, land: p.land, typ: p.typ })),
+    anlagen: (db.anlagen?.anlagen || []).filter((a) => a.kwp > 0).map((a) => ({ id: a.id, titel: a.name, kwp: a.kwp, land: a.land, typ: a.typ })),
+  };
+}
+
+/** Eingaben eines neuen Falls aus dem Bezug (Entwicklungsprojekt: Leistung, Land, Typ, Entwicklungsbudget; Anlage: Contracting) */
+function eingabenAusBezug(db, bezugArt, bezugId, basis = {}) {
+  if (bezugArt === "entwicklung") {
+    const p = (db.entwicklung?.projekte || []).find((x) => x.id === bezugId);
+    if (!p) throw nichtGefunden("Entwicklungsprojekt nicht gefunden.");
+    const s = cockpitStandard({ land: p.land, typ: p.typ === "agri" ? "agri" : p.typ === "speicher" ? "speicher" : "freiflaeche", mwp: p.mwp || 10 });
+    const budget = (db.entwicklung.budget || []).filter((b) => b.projektId === p.id).reduce((x, b) => x + Math.max(Number(b.planEur) || 0, Number(b.istEur) || 0), 0);
+    return { e: cockpitBereinigen({ ...s, capex: s.capex + budget, ...basis }), titel: p.titel };
+  }
+  if (bezugArt === "anlage") {
+    const a = (db.anlagen?.anlagen || []).find((x) => x.id === bezugId);
+    if (!a) throw nichtGefunden("Anlage nicht gefunden.");
+    const c = (db.anlagen.vertraege || []).find((x) => x.anlageId === a.id);
+    const mwp = (a.kwp || 0) / 1000;
+    const dach = ["dach", "carport"].includes(a.typ);
+    const s = cockpitStandard({ land: a.land, typ: TYPEN_FZ[a.typ] ? a.typ : "freiflaeche", mwp });
+    const capexKwp = dach ? DACH.capexProKwp.mittel : FREIFLAECHE.capexProKwp.mittel;
+    return {
+      e: cockpitBereinigen({ ...s, capex: Math.round(a.kwp * capexKwp * 1.1), modell: "contracting", preisCt: c?.strompreisCt || s.preisCt, lieferAnteil: 0.6, indexierung: (c?.indexierungPct || 0) / 100, vertragJahre: c?.laufzeitJahre || 20, opexKwp: dach ? DACH.opexProKwp : FREIFLAECHE.opexProKwp, pachtJahr: dach ? 0 : s.pachtJahr, ...basis }),
+      titel: a.name,
+    };
+  }
+  return { e: cockpitBereinigen(basis), titel: "" };
+}
+
+export async function fzFallAnlegen(n, daten = {}) {
+  schreibNoetig(n);
+  const bezugArt = v.auswahl(daten.bezugArt, ["entwicklung", "anlage", "frei"], "frei");
+  const bezugId = bezugArt === "frei" ? null : v.kennung(daten.bezugId);
+  if (bezugArt !== "frei" && !bezugId) throw ungueltig("Bitte das Projekt bzw. die Anlage wählen.");
+  return aendernBereit((db) => {
+    const { e, titel } = eingabenAusBezug(db, bezugArt, bezugId, daten.eingaben || {});
+    const t = v.text(daten.titel, 120) || titel;
+    v.pflicht(t.length >= 3, "Bitte einen Titel angeben.");
+    const f = {
+      id: neueId("FF"), titel: t, spv: v.text(daten.spv, 160), spvOrganisationId: v.kennung(daten.spvOrganisationId) || null, bezugArt, bezugId, eingaben: e,
+      betragWunsch: Math.round(v.zahl(daten.betragWunsch, { min: 0, max: 5e9 }) || e.capex * e.fkQuote), status: "vorbereitung", paketFreigabe: ["steckbrief", "financial_model"],
+      cps: CP_STANDARD.map((c) => ({ ...c, erledigt: false, am: null, von: null, nachweis: "" })), notiz: v.mehrzeilig(daten.notiz, 2000), erstelltVon: n.id, erstelltAm: jetzt(), geaendertAm: jetzt(), verlauf: [],
+    };
+    verlauf(f, n, db, "Finanzierungsfall angelegt");
+    F(db).faelle.push(f);
+    protokoll(db, n, "anlegen", "finanzierung", f.id, `Finanzierungsfall „${f.titel}“ angelegt`);
+    return fallAusgabe(db, f);
+  });
+}
+
+export async function fzFallAendern(n, id, daten = {}) {
+  schreibNoetig(n);
+  return aendernBereit((db) => {
+    const f = fallLaden(db, id);
+    if (daten.titel !== undefined) f.titel = v.text(daten.titel, 120) || f.titel;
+    if (daten.spv !== undefined) f.spv = v.text(daten.spv, 160);
+    if (daten.spvOrganisationId !== undefined) f.spvOrganisationId = v.kennung(daten.spvOrganisationId) || null;
+    if (daten.notiz !== undefined) f.notiz = v.mehrzeilig(daten.notiz, 2000);
+    if (daten.betragWunsch !== undefined) f.betragWunsch = Math.round(v.zahl(daten.betragWunsch, { min: 0, max: 5e9 }) || 0);
+    if (daten.eingaben) {
+      f.eingaben = cockpitBereinigen({ ...f.eingaben, ...daten.eingaben }, f.eingaben);
+      verlauf(f, n, db, "Financial Model aktualisiert");
+    }
+    if (daten.status !== undefined) {
+      const s = v.auswahl(daten.status, ["abgebrochen", "vorbereitung"], "");
+      if (!s) throw ungueltig("Status nur über die Aktionen ändern (abbrechen bzw. wieder aufnehmen).");
+      if (s === "abgebrochen") v.pflicht(v.text(daten.begruendung, 500).length >= 5, "Bitte eine Begründung angeben.");
+      f.status = s;
+      verlauf(f, n, db, s === "abgebrochen" ? `Abgebrochen: ${v.text(daten.begruendung, 300)}` : "Wieder aufgenommen");
+    }
+    f.geaendertAm = jetzt();
+    protokoll(db, n, "aendern", "finanzierung", f.id, "Finanzierungsfall geändert");
+    return fallAusgabe(db, f);
+  });
+}
+
+export async function fzBankSpeichern(n, daten = {}) {
+  schreibNoetig(n);
+  const name = v.text(daten.name, 160);
+  v.pflicht(name.length >= 3, "Bitte den Namen der Bank angeben.");
+  const email = v.email(daten.email);
+  v.pflicht(email, "Bitte eine gültige E-Mail-Adresse der Ansprechperson angeben.");
+  return aendernBereit((db) => {
+    let b = daten.id ? F(db).banken.find((x) => x.id === v.kennung(daten.id)) : null;
+    if (daten.id && !b) throw nichtGefunden("Bank nicht gefunden.");
+    if (!b) {
+      b = { id: neueId("FB"), nutzerIds: [], erstelltAm: jetzt() };
+      F(db).banken.push(b);
+    }
+    Object.assign(b, {
+      name, email, land: v.auswahl(daten.land, ["DE", "AT", "CH"], "DE"), art: v.auswahl(daten.art, ["geschaeftsbank", "foerderbank", "sparkasse", "genossenschaft", "leasing", "sonstige"], "geschaeftsbank"),
+      ansprechpartner: v.text(daten.ansprechpartner, 120), telefon: v.text(daten.telefon, 40), schwerpunkt: v.text(daten.schwerpunkt, 200), notiz: v.mehrzeilig(daten.notiz, 1000), geaendertAm: jetzt(),
+    });
+    protokoll(db, n, "aendern", "bank", b.id, `Bankenstamm: ${b.name}`);
+    return bankAusgabe(db, b);
+  });
+}
+
+// ---------------------------------------------------------------- Aktionen am Fall
+
+function neueEinladung(db, n, a, email, basisUrl) {
+  const token = zufallsToken();
+  for (const x of F(db).einladungen) if (x.anfrageId === a.id && x.status === "offen") x.status = "ersetzt";
+  const e = { id: neueId("FE"), anfrageId: a.id, bankId: a.bankId, email, hash: sha256(token), status: "offen", ablauf: new Date(Date.now() + EINLADUNG_TAGE * 86400e3).toISOString(), vonId: n.id, am: jetzt() };
+  F(db).einladungen.push(e);
+  return { e, link: `${basisUrl}/einladung/bank/${token}` };
+}
+
+export async function fzAktion(n, fallId, daten = {}) {
+  const aktion = v.auswahl(daten.aktion, ["anfragen", "paket", "termsheet", "entscheidung", "kreditvertrag", "cp", "covenant", "geschaeftsmodell", "einladung_neu", "anfrage_zurueck"], "");
+  if (!aktion) throw ungueltig("Unbekannte Aktion.");
+  if (aktion === "covenant") {
+    schreibNoetig(n);
+    await covenantFall(fallId, n);
+    return fzFall(n, fallId);
+  }
+  schreibNoetig(n);
+  let demoLinks = [];
+  const r = await aendernBereit((db) => {
+    const f = fallLaden(db, fallId);
+    if (f.status === "abgebrochen" && aktion !== "geschaeftsmodell") throw konflikt("Der Fall ist abgebrochen.");
+    const basisUrl = String(daten.basisUrl || "").replace(/\/$/, "");
+    if (aktion === "anfragen") {
+      const ids = [...new Set((Array.isArray(daten.bankIds) ? daten.bankIds : []).map((x) => v.kennung(x)).filter(Boolean))];
+      v.pflicht(ids.length >= 1 && ids.length <= 15, "Bitte eine bis 15 Banken wählen.");
+      const frist = /^\d{4}-\d{2}-\d{2}$/.test(String(daten.frist || "")) ? daten.frist : new Date(Date.now() + 21 * 86400e3).toISOString().slice(0, 10);
+      v.pflicht(frist > jetzt().slice(0, 10), "Die Frist muss in der Zukunft liegen.");
+      let neu = 0;
+      for (const bid of ids) {
+        const b = bankVon(db, bid);
+        if (!b) throw nichtGefunden("Bank nicht gefunden.");
+        if (F(db).anfragen.some((a) => a.fallId === f.id && a.bankId === b.id && !["abgesagt", "zurueckgezogen"].includes(a.status))) continue;
+        const a = { id: neueId("FA"), fallId: f.id, bankId: b.id, status: "offen", frist, nachricht: v.mehrzeilig(daten.nachricht, 2000), gesendetAm: jetzt(), verlauf: [{ am: jetzt(), text: "Anfrage gesendet", fuerBank: true }] };
+        F(db).anfragen.push(a);
+        const { link } = neueEinladung(db, n, a, b.email, basisUrl);
+        const konto = (b.nutzerIds || []).map((id) => nutzerById(db, id)).find((u) => u?.aktiv);
+        postausgangAnlegen(db, {
+          an: b.email, anName: b.ansprechpartner || b.name, nutzerId: konto?.id || null, art: "finanzierung",
+          betreff: `Finanzierungsanfrage „${f.titel}“ – ÖkoInvest`,
+          text: `ÖkoInvest bittet um ein indikatives Finanzierungsangebot (Term Sheet) für das Vorhaben „${f.titel}“ (${String(f.eingaben.mwp).replace(".", ",")} MWp, Finanzierungsbedarf rund ${Math.round((f.betragWunsch || 0) / 1000).toLocaleString("de-DE")} T€). Frist: ${frist.split("-").reverse().join(".")}. Das Bankenpaket steht im gesicherten Datenraum bereit – der Link ist persönlich, ${EINLADUNG_TAGE} Tage gültig und nur mit Anmeldung nutzbar.`,
+          link, linkText: "Bankenpaket öffnen", hinweis: "Vertraulich – nur für den adressierten Finanzierungspartner. Bitte nicht weiterleiten.",
+        });
+        if (konto) benachrichtigen(db, konto, { art: "finanzierung", titel: "Neue Finanzierungsanfrage", text: `„${f.titel}“ – Frist ${frist.split("-").reverse().join(".")}`, link: `/portal/bank/${a.id}`, objektArt: "finanzierung", objektId: a.id }, { mail: false });
+        if (process.env.NODE_ENV !== "production") {
+          db.demoLinks ||= [];
+          db.demoLinks.unshift({ am: jetzt(), art: "einladung", email: b.email, link });
+          demoLinks.push({ bankId: b.id, link });
+        }
+        neu++;
+      }
+      v.pflicht(neu > 0, "Alle gewählten Banken sind bereits angefragt.");
+      if (f.status === "vorbereitung") f.status = "angefragt";
+      verlauf(f, n, db, `${neu} Bank(en) angefragt, Frist ${frist}`);
+    } else if (aktion === "einladung_neu") {
+      const a = F(db).anfragen.find((x) => x.id === v.kennung(daten.anfrageId) && x.fallId === f.id);
+      if (!a) throw nichtGefunden("Anfrage nicht gefunden.");
+      const b = bankVon(db, a.bankId);
+      const { link } = neueEinladung(db, n, a, b.email, basisUrl);
+      postausgangAnlegen(db, { an: b.email, anName: b.ansprechpartner || b.name, art: "finanzierung", betreff: `Neuer Zugang: Finanzierungsanfrage „${f.titel}“`, text: "Ihr Zugangslink zum Bankenpaket wurde erneuert. Ältere Links sind ungültig.", link, linkText: "Bankenpaket öffnen" });
+      if (process.env.NODE_ENV !== "production") demoLinks.push({ bankId: b.id, link });
+      verlauf(f, n, db, `Zugangslink für ${b.name} erneuert`);
+    } else if (aktion === "anfrage_zurueck") {
+      const a = F(db).anfragen.find((x) => x.id === v.kennung(daten.anfrageId) && x.fallId === f.id);
+      if (!a) throw nichtGefunden("Anfrage nicht gefunden.");
+      a.status = "zurueckgezogen";
+      for (const x of F(db).einladungen) if (x.anfrageId === a.id && x.status === "offen") x.status = "widerrufen";
+      a.verlauf.push({ am: jetzt(), text: "Anfrage von ÖkoInvest zurückgezogen", fuerBank: true });
+      verlauf(f, n, db, `Anfrage an ${bankVon(db, a.bankId)?.name} zurückgezogen`);
+    } else if (aktion === "paket") {
+      const frei = v.mehrfach(daten.freigabe, BANKENPAKET_IDS);
+      f.paketFreigabe = frei;
+      verlauf(f, n, db, `Bankenpaket freigegeben: ${frei.length} von ${BANKENPAKET.length} Bausteinen`);
+    } else if (aktion === "termsheet") {
+      const a = F(db).anfragen.find((x) => x.id === v.kennung(daten.anfrageId) && x.fallId === f.id);
+      if (!a) throw nichtGefunden("Anfrage nicht gefunden.");
+      const t = fach(() => termsheetBereinigen(daten.termsheet || {}));
+      termsheetAblegen(db, n, f, a, t, "backoffice");
+    } else if (aktion === "entscheidung") {
+      if (!istLeitung(n)) throw verboten("Die Bankentscheidung trifft die Leitung.");
+      const a = F(db).anfragen.find((x) => x.id === v.kennung(daten.anfrageId) && x.fallId === f.id);
+      if (!a) throw nichtGefunden("Anfrage nicht gefunden.");
+      const ts = F(db).termsheets.filter((t) => t.anfrageId === a.id).sort((x, y) => String(y.am).localeCompare(String(x.am)))[0];
+      if (!ts) throw konflikt("Für diese Bank liegt kein Term Sheet vor.");
+      const begruendung = v.mehrzeilig(daten.begruendung, 1500);
+      v.pflicht(begruendung.length >= 10, "Bitte die Entscheidung begründen (mind. 10 Zeichen).");
+      const k = termsheetKennzahlen(ts.termsheet, f.eingaben);
+      f.entscheidung = { anfrageId: a.id, termsheetId: ts.id, bankId: a.bankId, bank: bankVon(db, a.bankId)?.name || "", begruendung, am: jetzt(), vonId: n.id, von: nameVon(db, n.id), kennzahlen: { ekIrr: k.ekIrr, dscrMinP90: k.dscrMinP90, zinsAllIn: k.zinsAllIn, kapitalbedarfEk: k.kapitalbedarfEk } };
+      for (const x of F(db).anfragen.filter((y) => y.fallId === f.id)) {
+        if (x.id === a.id) x.status = "ausgewaehlt";
+        else if (["offen", "in_pruefung", "termsheet"].includes(x.status)) x.status = "nicht_ausgewaehlt";
+        x.verlauf.push({ am: jetzt(), text: x.id === a.id ? "Ihr Angebot wurde ausgewählt – ÖkoInvest meldet sich zur Dokumentation." : "Vielen Dank – wir haben uns für ein anderes Angebot entschieden.", fuerBank: true });
+        const b = bankVon(db, x.bankId);
+        for (const id of b?.nutzerIds || []) {
+          const u = nutzerById(db, id);
+          if (u) benachrichtigen(db, u, { art: "finanzierung", titel: x.id === a.id ? "Angebot ausgewählt" : "Finanzierungsanfrage entschieden", text: `„${f.titel}“`, link: `/portal/bank/${x.id}`, objektArt: "finanzierung", objektId: x.id });
+        }
+      }
+      f.status = "entschieden";
+      verlauf(f, n, db, `Entscheidung: ${f.entscheidung.bank}`);
+    } else if (aktion === "kreditvertrag") {
+      if (!f.entscheidung) throw konflikt("Bitte zuerst eine Bank auswählen.");
+      const ts = F(db).termsheets.find((t) => t.id === f.entscheidung.termsheetId)?.termsheet || {};
+      const d = daten.kreditvertrag || {};
+      const kv = {
+        nummer: v.text(d.nummer, 60), unterzeichnetAm: /^\d{4}-\d{2}-\d{2}$/.test(String(d.unterzeichnetAm || "")) ? d.unterzeichnetAm : "",
+        auszahlungAm: /^\d{4}-\d{2}-\d{2}$/.test(String(d.auszahlungAm || "")) ? d.auszahlungAm : "",
+        bank: f.entscheidung.bank, betrag: Math.round(v.zahl(d.betrag, { min: 1, max: 5e9 }) || ts.betrag || 0),
+        zinsPct: v.zahl(d.zinsPct, { min: 0, max: 20, stellen: 4 }) ?? Math.round(allInZins(ts) * 1e6) / 1e4,
+        laufzeitJahre: v.zahl(d.laufzeitJahre, { min: 1, max: 35, stellen: 0 }) || ts.laufzeitJahre || 18,
+        tilgungsprofil: ["annuitaet", "linear", "skulptiert", "endfaellig"].includes(d.tilgungsprofil) ? d.tilgungsprofil : ts.tilgungsprofil || "annuitaet",
+        tilgungsfreiJahre: v.zahl(d.tilgungsfreiJahre, { min: 0, max: 5, stellen: 0 }) ?? ts.tilgungsfreiJahre ?? 0,
+        dscrCovenant: v.zahl(d.dscrCovenant, { min: 1, max: 3, stellen: 3 }) || ts.dscrCovenant || 1.05,
+        dscrLockup: v.zahl(d.dscrLockup, { min: 1, max: 3, stellen: 3 }) || ts.dscrLockup || 1.1,
+        llcrCovenant: v.zahl(d.llcrCovenant, { min: 1, max: 3, stellen: 3 }) || ts.llcrCovenant || null,
+        dsraMonate: v.zahl(d.dsraMonate, { min: 0, max: 24, stellen: 0 }) ?? ts.dsraMonate ?? 6,
+        berichtspflichten: v.textListe(d.berichtspflichten, { max: 10, laenge: 160 }),
+      };
+      v.pflicht(kv.nummer.length >= 2, "Bitte die Vertragsnummer angeben.");
+      v.pflicht(kv.unterzeichnetAm, "Bitte das Unterzeichnungsdatum angeben.");
+      if (!kv.berichtspflichten.length) kv.berichtspflichten = ["Quartalsbericht mit DSCR (rollierend 12 Monate) binnen 45 Tagen nach Quartalsende", "Jahresabschluss der SPV binnen 6 Monaten", "Jährlicher technischer Betriebsbericht", "Versicherungsnachweis jährlich"];
+      f.kreditvertrag = kv;
+      f.reporting = { intervall: "quartal", naechsteFrist: naechsteReportingFrist(), zuletzt: f.reporting?.zuletzt || null };
+      f.status = kv.auszahlungAm ? "auszahlung" : "vertrag";
+      verlauf(f, n, db, `Kreditvertrag ${kv.nummer} erfasst (${Math.round(kv.betrag / 1000).toLocaleString("de-DE")} T€)`);
+    } else if (aktion === "cp") {
+      const cp = (f.cps || []).find((c) => c.id === v.text(daten.cpId, 40));
+      if (!cp) throw nichtGefunden("Auszahlungsvoraussetzung nicht gefunden.");
+      cp.erledigt = v.wahr(daten.erledigt);
+      cp.am = cp.erledigt ? jetzt() : null;
+      cp.von = cp.erledigt ? nameVon(db, n.id) : null;
+      cp.nachweis = v.text(daten.nachweis, 200);
+      verlauf(f, n, db, `CP „${cp.label}“ ${cp.erledigt ? "erledigt" : "wieder offen"}`);
+    } else if (aktion === "geschaeftsmodell") {
+      const g = v.auswahl(daten.gewaehlt, Object.keys(GESCHAEFTSMODELLE), "");
+      v.pflicht(g, "Bitte ein Geschäftsmodell wählen.");
+      if (!istLeitung(n)) throw verboten("Die Entscheidung zum Geschäftsmodell trifft die Leitung (Geschäftsführung).");
+      const vgl = geschaeftsmodellVergleich(f.eingaben, daten.annahmen || {});
+      f.geschaeftsmodell = { gewaehlt: g, label: GESCHAEFTSMODELLE[g].label, begruendung: v.mehrzeilig(daten.begruendung, 1500), annahmen: vgl.annahmen, werte: vgl.zeilen.map((z) => ({ id: z.id, barwert: Math.round(z.barwert), kapitalbindung: Math.round(z.kapitalbindung), irr: z.irr })), am: jetzt(), von: nameVon(db, n.id) };
+      verlauf(f, n, db, `Geschäftsmodell: ${GESCHAEFTSMODELLE[g].label}`);
+    }
+    f.geaendertAm = jetzt();
+    protokoll(db, n, `finanzierung_${aktion}`, "finanzierung", f.id, `Finanzierung: ${aktion}`);
+    return { ok: true };
+  });
+  const fall = await fzFall(n, fallId);
+  return { ...r, fall, ...(demoLinks.length ? { demoLinks } : {}) };
+}
+
+function naechsteReportingFrist(heute = new Date()) {
+  const m = heute.getUTCMonth();
+  const qEnde = new Date(Date.UTC(heute.getUTCFullYear(), Math.floor(m / 3) * 3 + 3, 0));
+  return new Date(qEnde.getTime() + 45 * 86400e3).toISOString().slice(0, 10);
+}
+
+function termsheetAblegen(db, n, f, a, t, von) {
+  if (["zurueckgezogen", "nicht_ausgewaehlt"].includes(a.status)) throw konflikt("Die Anfrage ist nicht mehr offen.");
+  if (f.entscheidung) throw konflikt("Die Bankentscheidung ist bereits gefallen.");
+  const ts = { id: neueId("FT"), anfrageId: a.id, fallId: f.id, bankId: a.bankId, von, vonId: n.id, am: jetzt(), termsheet: t };
+  F(db).termsheets.push(ts);
+  a.status = "termsheet";
+  a.verlauf.push({ am: jetzt(), text: von === "bank" ? "Term Sheet von der Bank eingereicht" : "Term Sheet durch ÖkoInvest erfasst", fuerBank: true });
+  if (["vorbereitung", "angefragt"].includes(f.status)) f.status = "termsheets";
+  verlauf(f, n, db, `Term Sheet ${bankVon(db, a.bankId)?.name || ""} (${Math.round(t.betrag / 1000).toLocaleString("de-DE")} T€, ${t.laufzeitJahre} J.)`);
+  return ts;
+}
+
+// ---------------------------------------------------------------- Dokumente (Bankenpaket)
+
+export async function fzDokumentSpeichern(n, { fallId, baustein, name, mime, daten } = {}) {
+  schreibNoetig(n);
+  if (!UPLOAD.typen[mime]) throw new PlattformFehler(415, "Erlaubt sind PDF, JPG und PNG.");
+  const b = BANKENPAKET.find((x) => x.id === baustein && x.quelle !== "auto");
+  if (!b) throw ungueltig("Bitte einen Baustein des Bankenpakets wählen.");
+  const db0 = await lesenBereit();
+  fallLaden(db0, fallId);
+  const datei = `${neueId("FD")}-${zufallsToken().slice(0, 12)}.${UPLOAD.typen[mime]}`;
+  await uploadSchreiben(datei, daten);
+  return aendern((db) => {
+    const f = fallLaden(db, fallId);
+    const d = { id: neueId("FD"), fallId: f.id, baustein: b.id, name: v.text(String(name || "").replace(/[\\/]/g, "_"), 160) || `dokument.${UPLOAD.typen[mime]}`, mime, groesse: daten.length, datei, sha256: sha256(daten), vonId: n.id, am: jetzt() };
+    F(db).dokumente.push(d);
+    verlauf(f, n, db, `Dokument „${d.name}“ → ${b.label}`);
+    protokoll(db, n, "dokument", "finanzierung", f.id, `Bankenpaket: ${d.name}`);
+    return dokumentAusgabe(d);
+  });
+}
+
+/** Download: Backoffice (lesen) oder Bank mit Anfrage zu diesem Fall und freigegebenem Baustein */
+export async function fzDokumentLesen(n, id, { anfrageId = "", ip = "" } = {}) {
+  angemeldet(n);
+  const db = await lesenBereit();
+  const d = F(db).dokumente.find((x) => x.id === v.kennung(id));
+  if (!d) throw nichtGefunden("Dokument nicht gefunden.");
+  if (!boLesen(n)) {
+    const { f } = bankAnfrageLaden(db, n, anfrageId);
+    if (f.id !== d.fallId || !(f.paketFreigabe || []).includes(d.baustein)) throw verboten("Dieses Dokument ist für Ihre Bank nicht freigegeben.");
+  }
+  await aendern((x) => protokoll(x, n, "download", "finanzierung", d.fallId, `Bankenpaket-Download: ${d.name}`, ip));
+  return { name: d.name, mime: d.mime, daten: await uploadLesen(d.datei) };
+}
+
+/** Daten für Projektsteckbrief / Financial Model (PDF, CSV) – Backoffice oder Bank mit freigegebenem Baustein */
+export async function fzModellDaten(n, fallId, { anfrageId = "", baustein = "financial_model", ip = "" } = {}) {
+  angemeldet(n);
+  const db = await lesenBereit();
+  let f;
+  if (boLesen(n)) f = fallLaden(db, fallId);
+  else {
+    const x = bankAnfrageLaden(db, n, anfrageId);
+    f = x.f;
+    if (!(f.paketFreigabe || []).includes(baustein)) throw verboten("Dieser Baustein ist für Ihre Bank nicht freigegeben.");
+  }
+  const r = rechneCockpit(f.eingaben, { varianten: ["skulptiert", "annuitaet"] });
+  await aendern((x) => protokoll(x, n, "download", "finanzierung", f.id, `${baustein === "steckbrief" ? "Projektsteckbrief" : "Financial Model"} abgerufen`, ip));
+  return {
+    fall: { id: f.id, titel: f.titel, spv: f.spv, betragWunsch: f.betragWunsch, bezug: bezugInfo(db, f)?.titel || "" },
+    eingaben: f.eingaben, projekt: r.projekt, jahre: r.jahre, varianten: r.varianten, empfaenger: { name: nameVon(db, n.id) || n.email, email: n.email, bank: boLesen(n) ? "" : bankVon(db, bankAnfrageLaden(db, n, anfrageId).a.bankId)?.name || "" },
+  };
+}
+
+// ================================================================ Covenant-Monitoring
+
+/** Monatliche CFADS und Schuldendienst aus den Zählerwerten der Anlage (fehlende Monate: Prognose, gekennzeichnet) */
+async function monatsreihe(db, f) {
+  const a = (db.anlagen?.anlagen || []).find((x) => x.id === f.bezugId);
+  if (!a || !f.kreditvertrag) return [];
+  const vertrag = (db.anlagen.vertraege || []).find((x) => x.anlageId === a.id);
+  const mps = new Map((db.anlagen.messpunkte || []).map((m) => [m.id, m]));
+  let zeilen = [];
+  try {
+    zeilen = await anlagenDemo.zaehlerMonatswerte(SYSTEM_LESER, a.id);
+  } catch {
+    zeilen = [];
+  }
+  const monate = new Map();
+  for (const z of zeilen) {
+    const mp = mps.get(z.messpunktId);
+    const m = monate.get(z.monat) || { erzeugung: 0, einspeisung: 0 };
+    if (mp?.art === "erzeugung" && mp.abrechnungsrelevant) m.erzeugung += Number(z.menge) || 0;
+    if (mp?.art === "zweirichtung" && z.register === "2.8.0") m.einspeisung += Number(z.menge) || 0;
+    monate.set(z.monat, m);
+  }
+  const e = f.eingaben;
+  const kv = f.kreditvertrag;
+  const plan = kreditPlan(kv);
+  const start = kv.auszahlungAm || kv.unterzeichnetAm;
+  const aktuell = new Date().toISOString().slice(0, 7);
+  const reihe = [];
+  for (const [monat, m] of [...monate.entries()].sort()) {
+    if (monat >= aktuell) continue; // laufender Monat unvollständig
+    const eigen = Math.max(0, m.erzeugung - m.einspeisung);
+    const erloes = (eigen * (vertrag?.strompreisCt || e.preisCt)) / 100 + (Number(vertrag?.grundgebuehrMonat) || 0) + (m.einspeisung * (e.merchantCt || ERLOESE.merchantCt)) / 100;
+    const kosten = (e.mwp * 1000 * e.opexKwp) / 12 + (e.pachtJahr || 0) / 12;
+    const jahrIdx = Math.max(0, Math.floor((new Date(`${monat}-15`) - new Date(start)) / (365.25 * 86400e3)));
+    const ds = monat < start.slice(0, 7) ? 0 : (plan.dienst[jahrIdx] || 0) / 12;
+    reihe.push({ monat, erzeugung: m.erzeugung, einspeisung: m.einspeisung, erloes, kosten, cfads: erloes - kosten, schuldendienst: ds, quelle: "zaehler" });
+  }
+  return reihe;
+}
+
+async function covenantFall(fallId, n = null) {
+  const db = await lesenBereit();
+  const f = fallLaden(db, fallId);
+  if (!f.kreditvertrag) throw konflikt("Ohne Kreditvertrag gibt es keine Covenants.");
+  if (f.bezugArt !== "anlage") throw konflikt("Covenant-Monitoring braucht eine verknüpfte Anlage (Messdaten).");
+  const reihe = await monatsreihe(db, f);
+  const kv = f.kreditvertrag;
+  const plan = kreditPlan(kv);
+  const start = new Date(kv.auszahlungAm || kv.unterzeichnetAm);
+  const jahrIdx = Math.max(0, Math.floor((Date.now() - start) / (365.25 * 86400e3)));
+  const restschuld = jahrIdx > 0 ? plan.rest[jahrIdx - 1] : kv.betrag;
+  const planCfads = betriebsJahre(f.eingaben).slice(jahrIdx, kv.laufzeitJahre).map((j) => j.cfads90);
+  const ergebnis = covenantPruefung({ monate: reihe, lockup: kv.dscrLockup, covenant: kv.dscrCovenant, llcrCovenant: kv.llcrCovenant, restschuld, planCfads, zins: kv.zinsPct / 100 });
+  return aendern((d) => {
+    const ff = fallLaden(d, fallId);
+    const vorher = ff.covenant?.ampel?.id || null;
+    ff.covenant = { ...ergebnis, monate: reihe.slice(-24), restschuld, geprueftAm: jetzt() };
+    if (vorher !== ergebnis.ampel.id && ["gelb", "rot"].includes(ergebnis.ampel.id)) {
+      for (const u of aktiveAdmins(d).filter((x) => darfLesen(x, "finanzierung"))) {
+        benachrichtigen(d, u, { art: "finanzierung", titel: ergebnis.ampel.id === "rot" ? "Covenant: Lock-up bzw. Verletzung" : "Covenant-Frühwarnung", text: `${ff.titel}: ${ergebnis.ampel.grund}`, link: `/portal/admin/finanzierung/${ff.id}?tab=covenants`, objektArt: "finanzierung", objektId: ff.id });
+      }
+    }
+    if (vorher !== ergebnis.ampel.id) verlauf(ff, n, d, `Covenant-Ampel: ${ergebnis.ampel.id} – ${ergebnis.ampel.grund}`);
+    return ff.covenant;
+  });
+}
+
+/** Tägliche Covenant-Prüfung aller Fälle mit Kreditvertrag und Anlage (Frappe: Scheduler täglich) + Reporting-Fristen */
+export async function fzCovenantLauf(n = null) {
+  if (n) schreibNoetig(n);
+  const db = await lesenBereit();
+  const ids = F(db).faelle.filter((f) => f.kreditvertrag && f.bezugArt === "anlage" && f.status !== "abgebrochen").map((f) => f.id);
+  const ergebnisse = [];
+  for (const id of ids) {
+    try {
+      const c = await covenantFall(id, n);
+      ergebnisse.push({ fallId: id, ampel: c.ampel.id });
+    } catch (e) {
+      ergebnisse.push({ fallId: id, fehler: e.message });
+    }
+  }
+  await aendern((d) => {
+    F(d).covenantLaufAm = jetzt();
+    const heute = jetzt().slice(0, 10);
+    for (const f of F(d).faelle) {
+      if (f.reporting?.naechsteFrist && f.reporting.naechsteFrist < heute && !f.reporting.gemahnt) {
+        f.reporting.gemahnt = true;
+        for (const u of aktiveAdmins(d).filter((x) => darfSchreiben(x, "finanzierung"))) benachrichtigen(d, u, { art: "finanzierung", titel: "Bank-Reporting überfällig", text: f.titel, link: `/portal/admin/finanzierung/${f.id}?tab=covenants`, objektArt: "finanzierung", objektId: f.id });
+      }
+    }
+  });
+  return { geprueft: ergebnisse.length, ergebnisse };
+}
+
+/** Daten für den Quartalsbericht an die Bank (PDF); markiert das Reporting als erstellt */
+export async function fzReportingDaten(n, fallId, { ip = "" } = {}) {
+  leseNoetig(n);
+  const db = await lesenBereit();
+  const f = fallLaden(db, fallId);
+  if (!f.kreditvertrag) throw konflikt("Ohne Kreditvertrag gibt es kein Bank-Reporting.");
+  await aendern((d) => {
+    const ff = fallLaden(d, fallId);
+    ff.reporting = { ...(ff.reporting || {}), zuletzt: jetzt(), naechsteFrist: naechsteReportingFrist(new Date(Date.now() + 50 * 86400e3)), gemahnt: false };
+    protokoll(d, n, "download", "finanzierung", ff.id, "Bank-Reporting (PDF) erzeugt", ip);
+  });
+  return { fall: fallAusgabe(db, f), kreditvertrag: f.kreditvertrag, covenant: f.covenant || null, eingaben: f.eingaben, bezug: bezugInfo(db, f), ersteller: nameVon(db, n.id) };
+}
+
+/** Geschäftsmodell-Vergleich (frei oder für einen Fall) – nur Rechnung, gespeichert wird über fzAktion „geschaeftsmodell“ */
+export async function fzGeschaeftsmodell(n, { fallId = "", eingaben = {}, annahmen = {} } = {}) {
+  leseNoetig(n);
+  let e = eingaben;
+  if (fallId) e = fallLaden(await lesenBereit(), fallId).eingaben;
+  return geschaeftsmodellVergleich(e, annahmen);
+}
+
+// ================================================================ 3. Bank (externe Rolle)
+
+function bankenDesNutzers(db, n) {
+  if (!n?.rollen?.includes("bank")) return [];
+  return F(db).banken.filter((b) => (b.nutzerIds || []).includes(n.id));
+}
+
+function bankAnfrageLaden(db, n, anfrageId) {
+  const a = F(db).anfragen.find((x) => x.id === v.kennung(anfrageId));
+  if (!a) throw nichtGefunden("Anfrage nicht gefunden.");
+  if (!bankenDesNutzers(db, n).some((b) => b.id === a.bankId)) throw verboten("Diese Anfrage richtet sich an eine andere Bank.");
+  if (a.status === "zurueckgezogen") throw verboten("Die Anfrage wurde zurückgezogen.");
+  return { a, f: fallLaden(db, a.fallId) };
+}
+
+export async function fzBankEinladungInfo(token) {
+  const db = await lesenBereit();
+  const e = (F(db).einladungen || []).find((x) => x.hash === sha256(String(token || "")));
+  if (!e || e.status !== "offen" || new Date(e.ablauf) < new Date()) return { gueltig: false };
+  const b = bankVon(db, e.bankId);
+  return { gueltig: true, email: e.email, bank: b?.name || "", ablauf: e.ablauf };
+}
+
+export async function fzBankEinladungAnnehmen(n, token) {
+  angemeldet(n);
+  return aendernBereit((db) => {
+    const e = (F(db).einladungen || []).find((x) => x.hash === sha256(String(token || "")));
+    if (!e || e.status !== "offen" || new Date(e.ablauf) < new Date()) throw ungueltig("Die Einladung ist ungültig, abgelaufen oder wurde widerrufen.");
+    const u = nutzerById(db, n.id);
+    if (u.email !== e.email) throw verboten("Diese Einladung gilt für eine andere E-Mail-Adresse. Bitte melden Sie sich mit der eingeladenen Adresse an.");
+    if (u.rollen.includes("admin")) throw konflikt("Backoffice-Konten brauchen keine Bank-Einladung.");
+    if (!u.rollen.includes("bank")) u.rollen.push("bank");
+    const b = bankVon(db, e.bankId);
+    b.nutzerIds ||= [];
+    if (!b.nutzerIds.includes(u.id)) b.nutzerIds.push(u.id);
+    e.status = "angenommen";
+    e.angenommenAm = jetzt();
+    const a = F(db).anfragen.find((x) => x.id === e.anfrageId);
+    if (a && a.status === "offen") {
+      a.status = "in_pruefung";
+      a.verlauf.push({ am: jetzt(), text: "Bankenpaket geöffnet", fuerBank: true });
+    }
+    protokoll(db, u, "bank_einladung", "finanzierung", e.anfrageId, `Bank-Zugang angenommen (${b.name})`);
+    return { anfrageId: e.anfrageId };
+  });
+}
+
+/** Anfragen der eigenen Bank(en) */
+export async function fzBankMeine(n) {
+  angemeldet(n);
+  if (!n.rollen?.includes("bank")) throw verboten("Nur für Finanzierungspartner.");
+  const db = await lesenBereit();
+  const ids = new Set(bankenDesNutzers(db, n).map((b) => b.id));
+  return {
+    banken: bankenDesNutzers(db, n).map((b) => ({ id: b.id, name: b.name })),
+    anfragen: F(db).anfragen.filter((a) => ids.has(a.bankId) && a.status !== "zurueckgezogen").map((a) => {
+      const f = fallLaden(db, a.fallId);
+      return { id: a.id, titel: f.titel, land: f.eingaben.land, mwp: f.eingaben.mwp, betragWunsch: f.betragWunsch, status: a.status, frist: a.frist, gesendetAm: a.gesendetAm };
+    }),
+  };
+}
+
+/** Eine Anfrage aus Sicht der Bank: nur freigegebene Bausteine, eigene Term Sheets, keine anderen Banken */
+export async function fzBankAnfrage(n, anfrageId) {
+  angemeldet(n);
+  const db = await lesenBereit();
+  const { a, f } = bankAnfrageLaden(db, n, anfrageId);
+  const frei = f.paketFreigabe || [];
+  const e = f.eingaben;
+  return {
+    anfrage: anfrageAusgabe(db, a, { intern: false }),
+    vorhaben: { titel: f.titel, spv: f.spv, land: e.land, typ: e.typ, mwp: e.mwp, capex: e.capex, betragWunsch: f.betragWunsch, modell: e.modell, vertragJahre: e.vertragJahre },
+    paket: BANKENPAKET.filter((b) => frei.includes(b.id)).map((b) => ({ id: b.id, label: b.label, quelle: b.quelle, text: b.text, dokumente: F(db).dokumente.filter((d) => d.fallId === f.id && d.baustein === b.id).map(dokumentAusgabe) })),
+    nichtFreigegeben: BANKENPAKET.filter((b) => !frei.includes(b.id)).length,
+    darfTermsheet: ["offen", "in_pruefung", "termsheet"].includes(a.status) && !f.entscheidung,
+  };
+}
+
+export async function fzBankAktion(n, anfrageId, daten = {}) {
+  angemeldet(n);
+  const aktion = v.auswahl(daten.aktion, ["termsheet", "absage", "rueckfrage"], "");
+  if (!aktion) throw ungueltig("Unbekannte Aktion.");
+  return aendernBereit((db) => {
+    const { a, f } = bankAnfrageLaden(db, n, anfrageId);
+    const b = bankVon(db, a.bankId);
+    if (aktion === "termsheet") {
+      const t = fach(() => termsheetBereinigen(daten.termsheet || {}));
+      termsheetAblegen(db, n, f, a, t, "bank");
+    } else {
+      const text = v.mehrzeilig(daten.text, 1500);
+      v.pflicht(text.length >= 5, aktion === "absage" ? "Bitte kurz begründen." : "Bitte Ihre Frage eingeben.");
+      if (aktion === "absage") {
+        if (["ausgewaehlt", "nicht_ausgewaehlt"].includes(a.status)) throw konflikt("Die Anfrage ist bereits entschieden.");
+        a.status = "abgesagt";
+      }
+      a.verlauf.push({ am: jetzt(), text: `${aktion === "absage" ? "Absage" : "Rückfrage"} der Bank: ${text}`, fuerBank: true });
+      verlauf(f, n, db, `${b.name}: ${aktion === "absage" ? "Absage" : "Rückfrage"}`);
+    }
+    for (const u of aktiveAdmins(db).filter((x) => darfLesen(x, "finanzierung"))) {
+      benachrichtigen(db, u, { art: "finanzierung", titel: aktion === "termsheet" ? "Term Sheet eingegangen" : aktion === "absage" ? "Bank hat abgesagt" : "Rückfrage einer Bank", text: `${b.name} – ${f.titel}`, link: `/portal/admin/finanzierung/${f.id}?tab=banken`, objektArt: "finanzierung", objektId: f.id }, { mail: aktion !== "rueckfrage" });
+    }
+    f.geaendertAm = jetzt();
+    protokoll(db, n, `bank_${aktion}`, "finanzierung", a.id, `Bank: ${aktion}`);
+    return { ok: true, status: a.status };
+  });
+}
+
+/** Zähler für die Portal-Navigation der Bank */
+export async function fzBankZaehler(n) {
+  if (!n?.rollen?.includes("bank")) return { offen: 0 };
+  const db = await lesenBereit();
+  const ids = new Set(bankenDesNutzers(db, n).map((b) => b.id));
+  return { offen: F(db).anfragen.filter((a) => ids.has(a.bankId) && ["offen", "in_pruefung"].includes(a.status)).length };
+}

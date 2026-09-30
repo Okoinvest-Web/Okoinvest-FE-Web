@@ -100,7 +100,7 @@ export default function AnlagenUebersicht({ initial }) {
       .filter((a) => !typ || a.typ === typ)
       .filter((a) => !ampel || a.ampel?.id === ampel)
       .filter((a) => !region || `${a.land}|${a.bundesland}` === region)
-      .filter((a) => !s || [a.name, a.ort, a.bundesland, a.typLabel, a.organisation?.name, a.kunde?.firma].join(" ").toLowerCase().includes(s));
+      .filter((a) => !s || [a.name, a.ort, a.bundesland, a.typLabel, a.organisation?.name, a.kunde?.firma, a.eigentuemer].join(" ").toLowerCase().includes(s)); // auch nach Eigentümergesellschaft
   }, [alle, q, typ, ampel, region]);
   const typen = useMemo(() => [...new Set(alle.map((a) => a.typ))], [alle]);
   const s = daten.summe || {};

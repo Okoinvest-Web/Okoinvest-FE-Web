@@ -14,6 +14,7 @@ import { BUNDESLAENDER, LAENDER } from "@/lib/plattform/konstanten";
 import {
   ANLAGE_STATUS, ANLAGE_TYPEN, KOMPONENTEN_ARTEN, LASTPROFILE, MESSPUNKT_ARTEN, MESSSTELLEN, STOERUNG_SCHWERE, WARTUNG_ARTEN, WARTUNG_STATUS, kwpText, prognoseJahrKwh, kwh, regionFuer,
 } from "@/lib/plattform/anlagen";
+import { BETRIEBSFUEHRER_STANDARD, DIENSTBARKEIT_STATUS, EIGENTUEMER_STANDARD, ENDSCHAFT, INDEX_BASIS } from "@/lib/plattform/anlagen"; // Eigentum & Vertragsdetails
 
 const opt = (obj) => Object.entries(obj).map(([id, v]) => [id, typeof v === "string" ? v : v.label]);
 
@@ -36,6 +37,17 @@ export function anlageSchema(kunden, land) {
     { name: "lastJahrKwh", label: "Verbrauch pro Jahr (kWh)", typ: "zahl", hinweis: "Für Plausibilisierung und Eigenverbrauchsprognose." },
     { name: "kundeId", label: "Kundenkonto (Ansprechpartner)", typ: "auswahl", optionen: (kunden?.konten || []).map((k) => [k.id, `${k.name}${k.firma ? ` – ${k.firma}` : ""}`]), leer: "– kein Konto –" },
     { name: "organisationId", label: "Organisation (Team des Kunden)", typ: "auswahl", optionen: (kunden?.organisationen || []).map((o) => [o.id, o.name]), leer: "– keine Organisation –", hinweis: "Alle Mitglieder der Organisation sehen die Anlage." },
+    // Eigentum & Betrieb: Anlage im Eigentum von ÖkoInvest bzw. einer Projektgesellschaft; Kunde = Stromabnehmer
+    { name: "eigentuemerId", label: "Eigentümergesellschaft aus dem Verzeichnis", typ: "auswahl", optionen: (kunden?.gesellschaften || []).map((g) => [g.id, g.name]), leer: "– nicht verknüpft –", hinweis: "Bei Auswahl wird der Name übernommen." },
+    { name: "eigentuemer", label: "Eigentümergesellschaft (Name)", typ: "text", pflicht: true, hinweis: "ÖkoInvest GmbH oder Projektgesellschaft (SPV)." },
+    { name: "betriebsfuehrer", label: "Betriebsführer", typ: "text" },
+    { name: "finanziertDurch", label: "Finanziert durch (intern)", typ: "text", hinweis: "Bank/Finanzierung; Covenants folgen in einem eigenen Modul." },
+    { name: "dachgeberIstKunde", label: "Dachgeber bzw. Grundstückseigentümer ist der Stromabnehmer", typ: "check" },
+    { name: "dachgeber", label: "Dachgeber / Grundstückseigentümer (falls abweichend)", typ: "text" },
+    { name: "dienstbarkeitStatus", label: "Dienstbarkeit / Servitut", typ: "auswahl", optionen: opt(DIENSTBARKEIT_STATUS), leer: "– noch nicht geklärt –" },
+    { name: "dienstbarkeitDatum", label: "Datum Antrag bzw. Eintragung", typ: "datum" },
+    { name: "dienstbarkeitHinweis", label: "Grundbuch-Hinweis", typ: "text", hinweis: "z. B. Abteilung II, lfd. Nr. – bzw. AT: EZ/KG" },
+    { name: "dienstbarkeitDokumentId", label: "Dokument (Grundbuchauszug, Kennung D-…)", typ: "text" },
     { name: "beschreibung", label: "Beschreibung", typ: "textarea", breit: true },
   ];
 }
@@ -82,6 +94,11 @@ export const EINTRAG_SCHEMA = {
     { name: "indexierungPct", label: "Indexierung (% p. a.)", typ: "zahl" },
     { name: "kuendigungsfristMonate", label: "Kündigungsfrist (Monate)", typ: "zahl" },
     { name: "status", label: "Status", typ: "auswahl", optionen: [["aktiv", "Aktiv"], ["gekuendigt", "Gekündigt"], ["beendet", "Beendet"]] },
+    { name: "indexBasis", label: "Preisgleitung", typ: "auswahl", optionen: opt(INDEX_BASIS) },
+    { name: "mindestabnahmeKwhJahr", label: "Mindestabnahme (kWh/Jahr)", typ: "zahl", hinweis: "Take-or-Pay: Fehlmengen werden zum Arbeitspreis ausgeglichen." },
+    { name: "endschaft", label: "Endschaftsregelung", typ: "auswahl", optionen: opt(ENDSCHAFT), leer: "– offen –" },
+    { name: "kaufoptionEur", label: "Kaufoption / Restwert (€ netto)", typ: "zahl" },
+    { name: "endschaftText", label: "Endschaft – Details", typ: "text", breit: true },
     { name: "bemerkung", label: "Bemerkung", typ: "text", breit: true },
   ],
 };
@@ -153,14 +170,14 @@ const ohneLeere = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => 
 const SCHRITTE = [
   { id: "grund", titel: "Anlage", felder: ["name", "typ", "status", "inbetriebnahme"] },
   { id: "standort", titel: "Standort & Technik", felder: ["land", "bundesland", "ort", "kwp", "wechselrichterAnzahl", "speicherKwh", "speicherKw", "lastprofil", "lastJahrKwh"] },
-  { id: "kunde", titel: "Kunde", felder: ["kundeId", "organisationId", "beschreibung"] },
+  { id: "kunde", titel: "Eigentum & Kunde", felder: ["eigentuemer", "betriebsfuehrer", "finanziertDurch", "kundeId", "organisationId", "dachgeberIstKunde", "dachgeber", "dienstbarkeitStatus", "dienstbarkeitDatum", "dienstbarkeitHinweis", "beschreibung"] },
   { id: "vertrag", titel: "Vertrag", felder: [] },
 ];
 
 export function AnlageAssistent({ kunden }) {
   const router = useRouter();
   const [schritt, setSchritt] = useState(0);
-  const [werte, setWerte] = useState({ typ: "dach", status: "betrieb", land: "DE", bundesland: "Bayern", lastprofil: "gewerbe", wechselrichterAnzahl: "1", speicherKwh: "0", speicherKw: "0" });
+  const [werte, setWerte] = useState({ typ: "dach", status: "betrieb", land: "DE", bundesland: "Bayern", lastprofil: "gewerbe", wechselrichterAnzahl: "1", speicherKwh: "0", speicherKw: "0", eigentuemer: EIGENTUEMER_STANDARD, betriebsfuehrer: BETRIEBSFUEHRER_STANDARD, dachgeberIstKunde: true });
   const [vertrag, setVertrag] = useState({ laufzeitJahre: "20", indexierungPct: "0", kuendigungsfristMonate: "6", status: "aktiv" });
   const [mitVertrag, setMitVertrag] = useState(true);
   const [fehler, setFehler] = useState("");
@@ -174,6 +191,7 @@ export function AnlageAssistent({ kunden }) {
     if (s.id === "grund" && werte.status === "betrieb" && !werte.inbetriebnahme) return "Für Anlagen in Betrieb ist das Inbetriebnahmedatum Pflicht.";
     if (s.id === "standort" && werte.typ !== "speicher" && !(Number(String(werte.kwp || "").replace(",", ".")) > 0)) return "Bitte geben Sie die PV-Leistung in kWp an.";
     if (s.id === "standort" && werte.typ === "speicher" && !(Number(String(werte.speicherKwh || "").replace(",", ".")) > 0)) return "Ein Batteriespeicher braucht eine Kapazität in kWh.";
+    if (s.id === "kunde" && String(werte.eigentuemer || "").trim().length < 3) return "Bitte geben Sie die Eigentümergesellschaft an (ÖkoInvest GmbH oder Projektgesellschaft).";
     return "";
   }
 
@@ -249,7 +267,9 @@ export function AnlageAssistent({ kunden }) {
 
 // ---------------------------------------------------------------- Stammdaten
 
-const FELDER_ANLAGE = ["name", "typ", "status", "inbetriebnahme", "land", "bundesland", "ort", "kwp", "wechselrichterAnzahl", "speicherKwh", "speicherKw", "lastprofil", "lastJahrKwh", "kundeId", "organisationId", "beschreibung"];
+const FELDER_ANLAGE = ["name", "typ", "status", "inbetriebnahme", "land", "bundesland", "ort", "kwp", "wechselrichterAnzahl", "speicherKwh", "speicherKw", "lastprofil", "lastJahrKwh", "kundeId", "organisationId",
+  "eigentuemer", "betriebsfuehrer", "finanziertDurch", "dachgeberIstKunde", "dachgeber", "dienstbarkeitStatus", "dienstbarkeitDatum", "dienstbarkeitHinweis", "dienstbarkeitDokumentId", // Eigentum & Betrieb
+  "beschreibung"];
 
 export function StammdatenFormular({ anlage, kunden }) {
   const router = useRouter();

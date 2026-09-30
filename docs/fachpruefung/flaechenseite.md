@@ -1,0 +1,56 @@
+# Fachprüfung Team A – Flächenseite (Flächeneigentümer, Landwirt, Dach, Kommune)
+
+Stand: 30.09.2026 · Prüfer: Fachprüfung Team A (PV-Projektentwicklung Freifläche/Agri-PV, Agrarberatung, Grundbuch/Liegenschaften, Bauleitplanung, Kommunalberatung, Dachstatik).
+Rollenreise: öffentliche Einstiege `/flaeche-verpachten`, `/landwirte`, `/dachflaeche-verpachten`, `/kommunen`, `/flaechencheck` → Anfrage → Registrierung → Portal → Fläche anlegen → Pipeline → Pachtangebot → Dokumente → Nachrichten (Demo-Konten `flaeche@`, `landwirt@`, neu `kommune@example.com`, Passwort `Demo-2026!`).
+
+Priorität: **A** = Profi bricht ab / fachlich falsch · **B** = wichtige Lücke · **C** = Verbesserung.
+Status: **umgesetzt** · **teilweise** · **offen** (mit Zuständigkeit).
+
+## Befunde
+
+| # | Prio | Befund | Warum fachlich wichtig | Umsetzung | Status |
+|---|---|---|---|---|---|
+| 1 | A | Flurstücke nur als Freitext „Gemarkung / Flur / Nr.“, gleich für DE, AT, CH; keine Formatprüfung | In AT gibt es keine Flur, sondern KG-Nr. (5-stellig), Grundstücksnummer (Bauflächen mit Punkt) und EZ; in CH Parzelle und E-GRID. Falsche Bezeichnungen machen Grundbuch- und Widmungsabfragen unmöglich. | Flurstückseditor je Land (`FLURSTUECK_FELDER`), Formatprüfung Client + Server (422 mit Nummer des Flurstücks), Grundbuchbezirk/-blatt bzw. EZ, Katasterfläche m² (Tausenderpunkt) | umgesetzt |
+| 2 | A | Demo-Fläche in Bayern mit „Flur 3“ | In Bayern gibt es keine Fluren – für Ortskundige sofort unglaubwürdig | Demo-Ergänzung entfernt die Flur, Hinweis im Formular („in Bayern leer lassen“) | umgesetzt |
+| 3 | A | Keine Plausibilisierung angegebene ha vs. Kataster | Verpachtet werden kann nur, was man besitzt; Teilflächen müssen markiert/vermessen werden | `summenPruefung`: > 10 % über Kataster blockiert das Einreichen, > 2 % Warnung, Teilfläche Hinweis | umgesetzt |
+| 4 | A | Pachtangebot nur „€/ha, Laufzeit, Verlängerung, Text“ | Entscheidend für Eigentümer sind Indexierung, Reservierungsprämie, späteste Frist bis Baubeginn, Nichtbau-Regel, Rückbausicherheit (Art/Höhe/ab wann), Dienstbarkeit/Rang, Nebenflächen, Anwaltskosten, Steuern | Backoffice-Formular mit allen Punkten (`PachtangebotFelder`), Server-Positivliste (`pachtangebotBereinigen`), Angebotsbogen im Portal mit Ampel je Punkt nach Logik des Pachtangebot-Checks, „nicht geregelt“-Markierung, Fragenliste, Rückbaukosten-Schätzung, Steuerhinweis je Land | umgesetzt |
+| 5 | A | Eigentum nur „Allein / Miteigentum-Erbengemeinschaft / Verwaltung“, keine Vertretung | Erbengemeinschaft (§ 2040 BGB) und Miteigentum (§ 747 BGB) verfügen nur gemeinschaftlich; GbR braucht seit 2024 eGbR-Eintragung für Grundbuchvorgänge | Eigentumsformen erweitert (Erbengemeinschaft, Gesellschaft), Pflichtangabe „Wer unterschreibt“ bei Mehrheit, Hinweise je Form; Checkliste verlangt Vollmacht | umgesetzt |
+| 6 | A | Belastungen im Grundbuch nicht abgefragt | Grundschulden erfordern Rangrücktritt (sonst keine Finanzierung), Nießbrauch/Altenteil/Vormerkung/Flurbereinigung können das Projekt blockieren | Abt. II/III bzw. C-Blatt als Auswahl, Prüfhinweise mit Risiko-Ampel, Frage „Wer holt den Rangrücktritt ein?“ im Angebotsbogen | umgesetzt |
+| 7 | A | Dachflächen ohne Asbest-/Statik-/Brandschutzabfrage | Asbestzement darf nicht belegt werden; Statik-Reserve und Brandwände entscheiden über Machbarkeit | Pflicht: Dachart, Asbest, Nutzer; dazu Alter/Restnutzungsdauer, Statik-Reserve kN/m² (Soll 0,15/0,25), Brandwände, Blitzschutz, Netz/Trafo, Mieter/Dachstrom, Denkmal | umgesetzt |
+| 8 | B | Agri-PV nur als Häkchen | DIN SPEC 91434 (Kategorie, lichte Höhe ≥ 2,10 m, 66 %-Regel, Referenzertrag), GAP 85 %, Privilegierung ≤ 2,5 ha mit Hofbezug | Agri-PV-Bereich (nur bei Agri-Interesse): Kategorie, Bauweise, Kultur (Pflicht), Arbeitsbreite, Durchfahrtshöhe, Gasse, Referenzertrag + Einheit + Quelle, Nachweis 66 %, GAP, Hofbezug; Prüfungen (Höhe Kat. I, Gasse vs. Arbeitsbreite, Privilegierung, EAG § 33 AT, RPV CH) | umgesetzt |
+| 9 | B | Laufende Landpacht und Förderbindungen fehlen | Fläche muss zum Baubeginn frei sein (§ 594a BGB, CH-LPG Mindestdauern); AUKM/ÖPUL-Ausstieg kann Rückforderungen auslösen | Bewirtschaftung (Pächter, Ende, Kündigungsfrist – Pflicht bei „verpachtet“), GAP, AUKM/ÖPUL/BFF mit Ende; Hinweise + Fragen im Angebotsbogen | umgesetzt |
+| 10 | B | Bodengüte, Schutzgebiete, Lage nicht erfasst | Ackerzahl/Bodenklimazahl steuern Regional- und Kriterienkataloge; Natura 2000, NSG/LSG, WSG-Zonen, § 78 WHG, Bodendenkmal, Hang/Exposition, Zufahrt, Wald, Leitungen, Netzentfernung sind Ausschluss- oder Kostenkriterien | Bereiche „Boden“ und „Schutzgebiete & Lage“, Prüfhinweise mit Ampel, EEG-Kulisse-Hinweis (DE) | umgesetzt |
+| 11 | B | Pipeline-Stufen ohne Erklärung | Eigentümer wollen wissen: was passiert, wie lange, was wird gebraucht – je Land verschieden (B-Plan / Umwidmung Grünland-PV / Nutzungsplanung) | `PIPELINE_ERKLAERUNG` je Status und Land unter dem Stepper, mit Lexikonbegriffen, Dauer als Erfahrungswert | umgesetzt |
+| 12 | B | Kommune: Anfrage nur mit drei Chips | Gemeinden brauchen strukturierte Aufnahme: Gemeinde, AGS/Kennziffer, Funktion, gemeindeeigene Flächen, § 6 EEG, Bürgerbeteiligung, Planungsstand, Kriterienkatalog | Strukturierte Anfrage `KommuneAnfrage` auf `/kommunen`, Server-Positivliste + Gemeindeschlüssel je Land (422), CRM-Organisationsart „Stadtwerk“ | umgesetzt |
+| 13 | B | Keine Portal-Sicht für Kommunen | Gemeinde begleitet Bauleitplanung, erhält § 6 EEG und Gewerbesteuer – braucht Überblick | `/portal/kommune`: Projekte im Gemeindegebiet ab Planung (vereinfacht, ohne Eigentümer/Flurstücke/Pacht), § 6-Schätzung (Platzhalter bis Finanzmodul), Ansprechpartner; nur nach Prüfung des Anliegens durch das Backoffice | umgesetzt |
+| 14 | B | Kommunen erhalten bei Registrierung die Rolle „Unternehmen“ | Menü zeigt „Mein Solarstrom“, „Energie & Lastgang“ – fachlich falsch für eine Gemeinde | Eigene Rolle `kommune` (konstanten, Registrierung, Menü, Frappe-Rolle) – gemeinsame Dateien, Koordinator | **offen (Koordinator)** |
+| 15 | B | Gemeinde-Sicht im Menü nicht verlinkt | Auffindbarkeit | Link aus der kommunalen Anfrage („Gemeinde-Sicht öffnen“); Menüpunkt + Brotkrumen-Label „Gemeinde“ in `PortalRahmen.js` | **teilweise (Menü: Koordinator)** |
+| 16 | B | Fachbegriffe ohne Erklärung | Laien brauchen Kontexthilfe, Profis Präzision | 15 neue Lexikonbegriffe (Flurstück, KG/EZ, E-GRID, Grundbuch Abt. II/III, Nießbrauch, Bodenschätzung, AUKM/ÖPUL, Referenzertrag, Natura 2000, WSG, Reservierungsprämie, Wertsicherung, Landpachtvertrag, Kriterienkatalog, Statik-Reserve); „?“-Popover im Formular, Prüfhinweisen, Pipeline, Angebotsbogen | umgesetzt |
+| 17 | C | Dachflächen-Anfrage übernimmt Chips nicht in die Fläche | Doppelte Erfassung | Dachart/Dachfläche/Dachstrom aus `/dachflaeche-verpachten` landen in `fach.dach` | umgesetzt |
+| 18 | C | Nutzungsarten unvollständig | Dauerkultur, Brache, Deponie sind planerisch eigene Fälle (Konversion/Deponie bevorzugt) | `FLAECHE_NUTZUNG` ergänzt (dauerkultur, brache, deponie) | umgesetzt |
+| 19 | C | Pachtangebot: keine Befristung/Gültigkeit | Angebote sind befristet | `gueltigBis` im Angebot und Bogen | umgesetzt |
+| 20 | B | Gutachter/Planer (Rolle `gutachter` des Projektentwicklungs-Teams, nur geprüft laut API.md § 11) | Umfang und Rechte sind schlüssig (nur zugewiesene Meilensteine, „eingereicht“ erst nach Upload, nie „erledigt“). Fachlich fehlen in der DE-Vorlage typische Gutachten: Baugrund/Rammtests, Kampfmittel, Bodendenkmal/Prospektion, Schall (Trafo/Wechselrichter), Entwässerung/Hydrologie, FFH-Vorprüfung, Landschaftsbild/Sichtbarkeit, Netzverträglichkeit, bei Agri-PV das landwirtschaftliche Nutzungskonzept (66 %-Nachweis). Qualifikation des Gutachters (z. B. öffentlich bestellt, Fachkunde Artenschutz) wird nicht erfasst. | Vorlagen ergänzen, Feld „Qualifikation/Nachweis“ am Gutachter | **offen – an Koordinator/Projektentwicklung gemeldet** |
+| 21 | C | Automatische Schutzgebiets-/Kulissenprüfung per Geodaten (WFS der Länder, BfN, ÖREB) | Selbstauskunft ersetzt keine GIS-Prüfung | Schnittstelle zu Geodiensten | offen (später) |
+| 22 | C | Angebotsbogen als PDF | Eigentümer geben ihn an Anwalt/Steuerberater | PDF über `server/pdf.js` | offen |
+
+## Neue Daten (Vertrag)
+
+- Fläche: `flurstuecke[]` je Land mit `gemarkung, gemarkungNr, flur (DE), nummer, grundbuch, blatt, egrid (CH), m2`; `fach {boden, bewirtschaftung, foerderung, schutz, lage, eigentum, agri, dach}` (Positivliste `fachBereinigen`); `eigentum` + `erbengemeinschaft`, `gesellschaft`; `nutzung` + `dauerkultur`, `brache`, `deponie`.
+- Pachtangebot: `modell, euroProHaJahr, umsatzProzent, mindestProHa, indexierung, indexSatzProzent, reservierungProHaJahr, laufzeitJahre, laufzeitBeginn, verlaengerungJahre, verlaengerung, optionsfristJahre, vorlaufJahre, bewirtschaftung, nichtbau, nichtbauEuroProHa, kuendigung, rueckbau, rueckbauAb, rueckbauEuro, dienstbarkeit, rangruecktritt, nebenflaechen, nebenflaechenText, anwalt, anwaltEuro, steuerhinweis, gueltigBis, text, am` – nur gesetzte Werte gespeichert; Altangebote bleiben lesbar.
+- Anfrage `kommune`: `daten {land, absender, gemeinde, gemeindeSchluessel, rolle, gemeindeFlaechenHa, interesse6, buergerbeteiligung[], bauleitplanung, kriterienkatalog, themen[]}`.
+- Einreichen (`flaecheVollstaendig`) zusätzlich: Dach (Dachart, Asbest, Nutzer), Agri-PV (Kultur), Vertretung bei Mehrheit/Verwaltung, Ende/Kündigungsfrist bei laufender Pacht, Größe ≤ 110 % der Katasterfläche.
+
+Code: `src/lib/plattform/{flaecheFach,flaecheErklaerung,kommune}.js`, `backend/{kommune,demo/flaecheFach,frappe/kommune}.js`, `src/components/Portal/Flaeche/*`, `src/components/Kommune/KommuneAnfrage.js`, `src/app/portal/kommune`, `src/app/api/portal/kommune`; Frappe `plattform/flaeche_fach.py`, `plattform/api/kommune.py`, DocTypes Plattform Flaeche (`fach` JSON, Optionen) und Plattform Flurstueck (neue Felder).
+
+## Tests
+
+- `node scripts/plattform-test-fach-flaeche.mjs` – 94 Prüfungen grün (Formate DE/AT/CH, Summenfläche, Pflicht je Nutzung, Agri-PV, Fachangaben-Positivliste, Rechte 401/403/409/CSRF, Pachtangebot, Kommune-Sicht ohne vertrauliche Daten, Seiten).
+- Frappe: `python -m unittest oekoinvest_app.plattform.tests.test_flaeche_fach_logik` (14 grün, ohne Bench); `tests/test_flaeche_fach.py` (FrappeTestCase, auf der Bench laufen lassen). `py_compile`, `json.tool`, `ruff` grün.
+
+## Rechts- und Fachhinweise zur Prüfung (vor Livegang)
+
+1. Aussagen zu § 594a BGB, § 747/§ 2040 BGB, eGbR-Voreintragung, § 34 FlurbG, § 78 WHG, Natura-2000-Ausschluss aus der EEG-Kulisse, § 35 Abs. 1 Nr. 9 BauGB, GAPDZV (85 %), § 33 EAG, CH-LPG-Mindestpachtdauer, RPV (Agri-PV CH), Art. 732 ZGB (Beurkundung Dienstbarkeit) juristisch gegenlesen lassen.
+2. Steuerhinweise (BewG § 158, AT Einheitswert/Pauschalierung, CH) sind bewusst vorsichtig – Steuerberatung prüfen lassen.
+3. Dauern in der Pipeline sind Erfahrungswerte, keine Zusagen (im UI so gekennzeichnet).
+4. Gemeinde-Sicht: Freischaltung nur nach unabhängiger Bestätigung der Gemeinde (Rückruf über die Verwaltung) – Prozess im Backoffice festlegen; Datenschutz: nur aggregierte, anonymisierte Projektdaten ab Bauleitplanung.
+5. Grenzwerte (Statik 0,15/0,25 kN/m², Restnutzungsdauer ≥ 25 J., Hang > 15 %, Ackerzahl ≥ 50) sind fachliche Orientierung.

@@ -1,0 +1,3 @@
+{#- ÖkoInvest – Druckformat für ERPNext (provisionsrechnung). Legt finanzen/einrichtung.py an (nur mit ERPNext). Inhalt: templates/finanzen/beleg.html; Daten aus dem verknüpften Plattform-Beleg (oi_abrechnung) bzw. den ERPNext-Feldern. -#}
+{%- set b = oekoinvest_beleg_erpnext(doc) -%}
+{% include "oekoinvest_app/templates/finanzen/beleg.html" %}

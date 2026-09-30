@@ -1,0 +1,4 @@
+# Nur für setuptools-basierte Werkzeuge – gebaut wird mit flit (pyproject.toml), das alle Paketdateien übernimmt.
+include README.md pyproject.toml
+graft oekoinvest_app
+global-exclude __pycache__ *.pyc

@@ -341,6 +341,9 @@ def aktion(id=None, daten=None, als_benutzer=None):  # noqa: A002, C901
 		v.pflicht(g and g.verfahren_id == vf.name and g.status == "abgegeben", "Bitte wählen Sie ein gültiges Gebot.")
 		i = frappe.get_doc("Plattform Interesse", g.interesse_id)
 		v.pflicht(i.status in ("nda_freigegeben", "loi_abgegeben", "loi_angenommen"), "Der Bieter hat keinen gültigen Datenraum-Status mehr.")
+		from oekoinvest_app.plattform.kyc_kern import kyc_sperre  # KYC/KYB
+
+		kyc_sperre("zuschlag", konto_id=i.investor_id, organisation_id=i.get("organisation_id"), text="Zuschlag nicht möglich: Der Bieter ist noch nicht verifiziert (KYC/KYB).")
 		if p.status not in ("veroeffentlicht", "reserviert"):
 			konflikt("Das Projekt ist nicht mehr in der Börse.")
 		gesamt = gebot_gesamt(g.preis_modus, g.preis, g.preis_pro_kwp, p.mwp)
@@ -411,6 +414,12 @@ def gebot_abgeben(daten=None, als_benutzer=None):
 	r = _runde(vf)
 	if interesse.name not in _teilnehmer(r):
 		verboten("Sie sind für diese Runde nicht zugelassen.")
+	from oekoinvest_app.plattform.kyc_kern import kyc_sperre  # KYC/KYB: Gebot nur verifiziert
+
+	kyc_sperre("gebot", konto_id=interesse.investor_id, organisation_id=interesse.get("organisation_id"))
+	from oekoinvest_app.plattform.dienste_kern import bonitaet_sperre  # Dienste: Gebot nur mit gültiger Bonitätsauskunft
+
+	bonitaet_sperre("gebot", konto_id=interesse.investor_id, organisation_id=interesse.get("organisation_id"))
 	if verfahren_status(vf) != "laufend" or not _offen(r):
 		konflikt("Die Angebotsfrist ist abgelaufen – Gebote sind nicht mehr möglich.")
 	modus = v.auswahl(d.get("preisModus"), ["gesamt", "proKwp"], "gesamt")

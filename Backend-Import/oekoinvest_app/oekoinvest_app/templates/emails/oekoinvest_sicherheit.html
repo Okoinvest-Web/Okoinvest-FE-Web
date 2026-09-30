@@ -1,12 +1,9 @@
-<div style="font-family: Inter, Arial, Helvetica, sans-serif; color: #1f2933; font-size: 15px; line-height: 1.6; max-width: 560px;">
-	<p style="font-family: Manrope, Arial, Helvetica, sans-serif; font-size: 18px; font-weight: 700; color: #436621; margin: 0 0 16px;">ÖkoInvest</p>
-	<p>Guten Tag{% if vorname %} {{ vorname | e }}{% endif %},</p>
-	<p>{{ text | e }}</p>
-	<p style="margin: 24px 0;">
-		<a href="{{ link | e }}" style="background: #558227; color: #ffffff; text-decoration: none; padding: 12px 22px; border-radius: 999px; font-weight: 600; display: inline-block;">{{ link_text | e }}</a>
-	</p>
-	<p style="font-size: 13px; color: #52606d;">Falls der Knopf nicht funktioniert, kopieren Sie diese Adresse in Ihren Browser:<br><span style="word-break: break-all;">{{ link | e }}</span></p>
-	{% if hinweis %}<p style="font-size: 13px; color: #52606d;">{{ hinweis | e }}</p>{% endif %}
-	{% if sicherheit %}<p style="font-size: 13px; color: #52606d;">Diese E-Mail betrifft die Sicherheit Ihres Kontos und wird deshalb unabhängig von Ihren Benachrichtigungs-Einstellungen versendet.</p>{% endif %}
-	<p style="font-size: 13px; color: #52606d; border-top: 1px solid #e4e7eb; padding-top: 12px; margin-top: 24px;">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich</p>
-</div>
+{% extends "templates/emails/oekoinvest_basis.html" %}
+{% block inhalt %}
+<p>Guten Tag{% if vorname %} {{ vorname | e }}{% endif %},</p>
+<p>{{ text | e }}</p>
+<p style="margin:24px 0;"><a href="{{ link | e }}" style="background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;">{{ link_text | e }}</a></p>
+<p style="font-size:13px;color:#52606d;">Falls die Schaltfläche nicht funktioniert, kopieren Sie diese Adresse in Ihren Browser:<br><span style="word-break: break-all;">{{ link | e }}</span></p>
+{% if hinweis %}<p style="font-size:13px;color:#52606d;">{{ hinweis | e }}</p>{% endif %}
+{% if sicherheit %}<p style="font-size:13px;color:#52606d;">Diese E-Mail betrifft die Sicherheit Ihres Kontos und wird deshalb unabhängig von Ihren Benachrichtigungs-Einstellungen versendet.</p>{% endif %}
+{% endblock %}

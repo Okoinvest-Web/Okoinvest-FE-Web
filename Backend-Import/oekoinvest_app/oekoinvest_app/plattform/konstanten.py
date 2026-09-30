@@ -8,6 +8,7 @@
 
 ROLLE_API = "ÖkoInvest API"  # technischer API-Benutzer der Website (nur diese Rolle)
 ROLLE_DESK_ADMIN = "ÖkoInvest Admin"  # Pflege im Frappe-Desk (Leserechte/Korrekturen)
+ROLLE_PROJEKTLEITUNG = "ÖkoInvest Projektleitung"  # Projektentwicklung: Desk-Rolle (Entwicklungsprojekte pflegen, 2FA)
 ROLLE_ANLAGEN_DIENST = "ÖkoInvest Anlagen-Dienst"  # Anlagen & Monitoring: technischer Benutzer des Ingest-Dienstes (nur dienst_*-Methoden)
 
 # Website-Rollen-ID → (Frappe-Rolle, Bezeichnung, selbst wählbar)
@@ -19,9 +20,12 @@ ROLLEN = {
 	"unternehmen": ("Plattform Unternehmen", "Unternehmen", 1),
 	"mitglied": ("Plattform Mitglied", "Mitglied / Bürger", 1),
 	"admin": ("Plattform Backoffice", "Backoffice", 0),
+	"gutachter": ("ÖkoInvest Gutachter", "Gutachter / Planer", 0),  # Projektentwicklung: Website-Rolle, nur per Einladung
+	"lieferant": ("Plattform Lieferant", "Energieversorger / Lieferant", 0),  # Energiebeschaffung: Website-Rolle, nur per Einladung
+	"bank": ("ÖkoInvest Bank", "Bank / Finanzierungspartner", 0),  # Finanzierung: Website-Rolle, nur per Einladung zu einer Finanzierungsanfrage
 }
 ROLLEN_IDS = ["flaeche", "landwirt", "investor", "anbieter", "unternehmen", "mitglied"]
-ALLE_ROLLEN_IDS = ROLLEN_IDS + ["admin"]
+ALLE_ROLLEN_IDS = ROLLEN_IDS + ["admin", "gutachter", "lieferant", "bank"]  # gutachter: Projektentwicklung, lieferant: Energiebeschaffung, bank: Finanzierung (nur per Einladung)
 FRAPPE_ROLLEN = [r[0] for r in ROLLEN.values()]
 
 # ---------------------------------------------------------------- Anfragen
@@ -81,8 +85,8 @@ BUNDESLAENDER = {
 }
 
 NETZANSCHLUSS = ["offen", "angefragt", "zusage", "reserviert", "vorhanden"]
-FLAECHE_NUTZUNG = ["acker", "gruenland", "konversion", "gewerbe", "sonstige", "dach"]
-EIGENTUM = ["eigentum", "miteigentum", "verwaltung"]
+FLAECHE_NUTZUNG = ["acker", "gruenland", "konversion", "gewerbe", "sonstige", "dach", "dauerkultur", "brache", "deponie"]  # + Fachprüfung Flächen
+EIGENTUM = ["eigentum", "miteigentum", "verwaltung", "erbengemeinschaft", "gesellschaft"]  # + Fachprüfung Flächen
 PREIS_MODUS = ["gesamt", "proKwp", "anfrage"]
 
 # Phasen aus src/lib/invest/markt.js (Reihenfolge ist relevant für das Matching)
@@ -161,6 +165,68 @@ PRAEFIX = {
 	"Plattform Wartung": "WA",
 	"Plattform Contracting Vertrag": "CV",
 	"Plattform Zaehlerstand Monatswert": "ZM",
+	# KYC/KYB
+	"KYC Fall": "KY",
+	"KYC Dokument": "KD",
+	"KYC Sanktionsabgleich": "KA",
+	"KYC Bankverbindung": "KB",
+	# ERPNext-Finanzen & Abrechnung
+	"Plattform Pachtvertrag": "PT",
+	"Plattform Abrechnung": "AR",
+	"Plattform Klaerfall": "KL",
+	"Plattform Zahlungslauf": "ZL",
+	"Plattform Abrechnungslauf": "LA",
+	"Plattform Anlagen Aktivierung": "AA",
+	# Projektentwicklung
+	"Plattform Entwicklungsprojekt": "EP",
+	"Plattform Entwicklung Meilenstein": "MS",
+	"Plattform Meilenstein Vorlage": "MV",
+	"Plattform Entwicklung Risiko": "RK",
+	"Plattform Entwicklung Entscheidung": "EN",
+	"Plattform Budgetposition": "BP",
+	"Plattform Projektflaeche": "PF",
+	"Plattform Entwicklung Kontakt": "EK",
+	"Plattform Entwicklung Freigabe": "FG",
+	"Plattform Entwicklung Dokument": "ED",
+	"Plattform Entwicklung Rueckfrage": "RF",
+	"Plattform Gutachter Einladung": "GE",
+	"Plattform Gutachter Profil": "GP",
+	"Plattform Projektkosten": "PK",
+	"Plattform Kostentraeger": "KT",
+	# Fachprüfung Kapitalseite
+	"Plattform Abnahmestelle": "AS",
+	"Plattform Lastgang": "LG",
+	"Plattform Bewertung Szenario": "SZ",
+	"Plattform Beteiligung Interesse": "BI",
+	# Dokumente, Signatur, Termine, Service & HR
+	"Plattform Signaturvorgang": "SV",
+	"Plattform Termin": "TE",
+	"Plattform Mitarbeiter": "MA",
+	"Plattform Abwesenheit": "AB",
+	"Plattform Zeiteintrag": "ZE",
+	"Plattform Ticket": "TK",
+	"Plattform Wissensartikel": "WI",
+	# Energiebeschaffung & Versorger-Ausschreibung
+	"Plattform Marktpreis Spot": "SX",
+	"Plattform Marktpreis Termin": "TP",
+	"Plattform Energie Vertrag": "EV",
+	"Plattform Ausschreibung": "EA",
+	"Plattform Lieferantenangebot": "LO",
+	"Plattform Lieferant": "LF",
+	"Plattform Lieferant Einladung": "LE",
+	"Plattform Beschaffungstranche": "BT",
+	"Plattform Wechselanalyse": "WN",
+	"Plattform Beschaffungsvollmacht": "VM",
+	# Finanzierung: Cockpit-Szenarien, Bankfinanzierung Eigenbetrieb, Covenants, Förder-Check
+	"Plattform Finanzierungsszenario": "FS",
+	"Plattform Finanzierungsfall": "FF",
+	"Plattform Bank": "FB",
+	"Plattform Finanzierungsanfrage": "FA",
+	"Plattform Term Sheet": "FT",
+	"Plattform Kreditvertrag": "KV",
+	"Plattform Covenant Pruefung": "CO",
+	"Plattform Finanzierungsdokument": "FD",
+	"Plattform Foerderprogramm": "FP",
 }
 
 # ---------------------------------------------------------------- Benachrichtigungen (Glocke) – wie BENACHRICHTIGUNG_ARTEN in konstanten.js
@@ -176,6 +242,18 @@ BENACHRICHTIGUNG_ARTEN = {
 	"sicherheit": ("Sicherheit & Anmeldungen", True, False, None),
 	# Anlagen & Monitoring: neue/behobene Störung an einer eigenen bzw. betreuten Anlage
 	"stoerung": ("Anlagenstörungen", True, False, ["unternehmen"]),
+	# ERPNext-Finanzen & Abrechnung: neue Gutschrift/Rechnung, Zahlung, Zahlungserinnerung
+	"abrechnung": ("Abrechnungen & Zahlungen", True, False, ["flaeche", "landwirt", "unternehmen", "anbieter"]),
+	# Projektentwicklung: Fortschritt (Eigentümer, Co-Investoren), Fristen, Gutachten-Aufträge
+	"entwicklung": ("Projektentwicklung", True, False, ["flaeche", "landwirt", "investor", "gutachter"]),
+	# Energiebeschaffung: Kündigungsfristen, Angebotsvergleich zur Freigabe (Kunde); Angebotsanfragen, Fristen, Zuschläge (Versorger)
+	"energie": ("Energiebeschaffung", True, False, ["unternehmen", "lieferant"]),
+	# Finanzierung: Anfragen, Term Sheets, Entscheidungen (Bank) und Covenant-Frühwarnungen (Backoffice)
+	"finanzierung": ("Finanzierung & Banken", True, False, ["bank", "investor"]),
+	# Dokumente, Signatur, Termine, Service & HR
+	"signatur": ("Elektronische Unterschrift", True, False, None),
+	"termin": ("Termine", True, False, None),
+	"ticket": ("Support-Anfragen", True, False, None),
 }
 BENACHRICHTIGUNG_ART_IDS = list(BENACHRICHTIGUNG_ARTEN)
 BENACHRICHTIGUNG_FEST = ["sicherheit"]

@@ -88,7 +88,7 @@ export default function KontaktPage() {
         points={["Antwort in der Regel binnen 2 Werktagen", "Fester Ansprechpartner", "Status im Portal", "Kostenlos und unverbindlich"]}
         actions={[
           { label: "Anfrage schreiben", href: "#formular" },
-          { label: "Zum Portal", href: "/login" },
+          { label: "Termin buchen", href: "/termin?herkunft=kontakt" },
         ]}
       />
 

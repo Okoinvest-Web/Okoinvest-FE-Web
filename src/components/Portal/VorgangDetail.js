@@ -31,6 +31,11 @@ export default function VorgangDetail({ vorgang: v, thread, dokumente, nutzer, a
             Zugehörige Fläche öffnen <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
           </Link>
         )}
+        {v.typ === "kommune" && (
+          <Link href={admin ? `/portal/kommune?vorgang=${v.id}` : "/portal/kommune"} className="mt-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-ov-700 hover:text-ov-800">
+            Gemeinde-Sicht öffnen <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
+          </Link>
+        )}
       </Karte>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">

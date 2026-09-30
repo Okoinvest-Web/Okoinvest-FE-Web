@@ -1,0 +1,176 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Aussteller- und Bankdaten der ÖkoInvest GmbH, Zahlungsziele und ERPNext-Zuordnung (Company, Steuervorlagen, Kostenstellen). ERPNext wird nur genutzt, wenn installiert UND site_config oekoinvest_erpnext gesetzt ist.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "firma",
+  "anschrift",
+  "land",
+  "firmenbuch",
+  "uid",
+  "cb_1",
+  "iban",
+  "bic",
+  "zahlungsziel_tage",
+  "vorlauf_tage",
+  "sb_1",
+  "erpnext_company",
+  "erpnext_autobuchen",
+  "erpnext_subscription",
+  "cb_2",
+  "steuerzuordnung",
+  "kostenstellen"
+ ],
+ "fields": [
+  {
+   "fieldname": "firma",
+   "fieldtype": "Data",
+   "label": "Firma",
+   "default": "ÖkoInvest GmbH"
+  },
+  {
+   "fieldname": "anschrift",
+   "fieldtype": "Small Text",
+   "label": "Anschrift",
+   "default": "Gewerbegebiet 10, 5121 Ostermiething, Österreich"
+  },
+  {
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "label": "Sitzland",
+   "options": "AT\nDE\nCH",
+   "default": "AT"
+  },
+  {
+   "fieldname": "firmenbuch",
+   "fieldtype": "Data",
+   "label": "Firmenbuch",
+   "default": "FN 541505g, LG Ried im Innkreis"
+  },
+  {
+   "fieldname": "uid",
+   "fieldtype": "Data",
+   "label": "UID-Nummer",
+   "description": "Pflichtangabe auf Rechnungen – vor dem Livegang eintragen"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "iban",
+   "fieldtype": "Data",
+   "label": "IBAN Geschäftskonto (SEPA-Auftraggeber)"
+  },
+  {
+   "fieldname": "bic",
+   "fieldtype": "Data",
+   "label": "BIC"
+  },
+  {
+   "fieldname": "zahlungsziel_tage",
+   "fieldtype": "Int",
+   "label": "Zahlungsziel Rechnungen (Tage)",
+   "default": "14"
+  },
+  {
+   "fieldname": "vorlauf_tage",
+   "fieldtype": "Int",
+   "label": "Vorlauf Gutschriften vorschüssig (Tage)",
+   "default": "14"
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": "ERPNext"
+  },
+  {
+   "fieldname": "erpnext_company",
+   "fieldtype": "Data",
+   "label": "Company (ÖkoInvest GmbH)",
+   "default": "ÖkoInvest GmbH"
+  },
+  {
+   "fieldname": "erpnext_autobuchen",
+   "fieldtype": "Check",
+   "label": "Belege in ERPNext sofort buchen (submit)"
+  },
+  {
+   "fieldname": "erpnext_subscription",
+   "fieldtype": "Check",
+   "label": "Grundgebühr über ERPNext Subscription"
+  },
+  {
+   "fieldname": "cb_2",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "steuerzuordnung",
+   "fieldtype": "JSON",
+   "label": "Steuervorlage → ERPNext-Template"
+  },
+  {
+   "fieldname": "kostenstellen",
+   "fieldtype": "JSON",
+   "label": "Kostenstellen je Bereich"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-09-30 05:54:25.238669",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Finanzen Einstellungen",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "in_create": 0
+}

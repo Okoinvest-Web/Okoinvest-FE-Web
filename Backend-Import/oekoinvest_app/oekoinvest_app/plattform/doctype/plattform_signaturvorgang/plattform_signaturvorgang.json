@@ -1,0 +1,289 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 14:00:00.000000",
+ "description": "Elektronische Unterschrift (EES): PDF, Unterzeichner in Reihenfolge, Protokoll, SHA-256 vorher/nachher.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "titel",
+  "art",
+  "status",
+  "ersteller_id",
+  "frist",
+  "reihenfolge",
+  "cb_1",
+  "bezug_art",
+  "bezug_id",
+  "standard_art",
+  "standard_projekt",
+  "nachricht",
+  "sb_1",
+  "dokument_name",
+  "datei_id",
+  "groesse",
+  "seiten",
+  "sha256_original",
+  "cb_2",
+  "datei_signiert_id",
+  "groesse_signiert",
+  "seiten_signiert",
+  "sha256_signiert",
+  "abgeschlossen_am",
+  "sb_2",
+  "unterzeichner",
+  "sb_3",
+  "protokoll_json",
+  "widerruf_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Titel",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Dokumentart",
+   "options": "nda\nprovision\npacht_loi\ngutachter\nsonstiges",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "laufend\nabgeschlossen\nabgelehnt\nwiderrufen\nabgelaufen",
+   "default": "laufend",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "ersteller_id",
+   "fieldtype": "Link",
+   "label": "Bereitgestellt von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "frist",
+   "fieldtype": "Date",
+   "label": "Frist"
+  },
+  {
+   "fieldname": "reihenfolge",
+   "fieldtype": "Check",
+   "label": "Feste Reihenfolge",
+   "default": "1"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "bezug_art",
+   "fieldtype": "Select",
+   "label": "Bezugsart",
+   "options": "\nvorgang\nflaeche\nprojekt\ninteresse\nnutzer"
+  },
+  {
+   "fieldname": "bezug_id",
+   "fieldtype": "Data",
+   "label": "Bezug"
+  },
+  {
+   "fieldname": "standard_art",
+   "fieldtype": "Data",
+   "label": "Standard-Erklärung (nda/provision)"
+  },
+  {
+   "fieldname": "standard_projekt",
+   "fieldtype": "Data",
+   "label": "Projekt der Standard-Erklärung",
+   "search_index": 1
+  },
+  {
+   "fieldname": "nachricht",
+   "fieldtype": "Small Text",
+   "label": "Nachricht"
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": "Dokument"
+  },
+  {
+   "fieldname": "dokument_name",
+   "fieldtype": "Data",
+   "label": "Originaldatei"
+  },
+  {
+   "fieldname": "datei_id",
+   "fieldtype": "Data",
+   "label": "File (Original)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "groesse",
+   "fieldtype": "Int",
+   "label": "Größe (Byte)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "seiten",
+   "fieldtype": "Int",
+   "label": "Seiten",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sha256_original",
+   "fieldtype": "Data",
+   "label": "SHA-256 Original",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_2",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "datei_signiert_id",
+   "fieldtype": "Data",
+   "label": "File (signiert)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "groesse_signiert",
+   "fieldtype": "Int",
+   "label": "Größe signiert",
+   "read_only": 1
+  },
+  {
+   "fieldname": "seiten_signiert",
+   "fieldtype": "Int",
+   "label": "Seiten signiert",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sha256_signiert",
+   "fieldtype": "Data",
+   "label": "SHA-256 signiert",
+   "read_only": 1
+  },
+  {
+   "fieldname": "abgeschlossen_am",
+   "fieldtype": "Datetime",
+   "label": "Abgeschlossen am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_2",
+   "fieldtype": "Section Break",
+   "label": "Unterzeichner"
+  },
+  {
+   "fieldname": "unterzeichner",
+   "fieldtype": "Table",
+   "label": "Unterzeichner",
+   "options": "Plattform Signatur Unterzeichner"
+  },
+  {
+   "fieldname": "sb_3",
+   "fieldtype": "Section Break",
+   "label": "Protokoll"
+  },
+  {
+   "fieldname": "protokoll_json",
+   "fieldtype": "Long Text",
+   "label": "Protokoll (JSON, append-only)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "widerruf_json",
+   "fieldtype": "Small Text",
+   "label": "Widerruf (JSON)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 06:08:21.073557",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Signaturvorgang",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "in_create": 0,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Akquise",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Transaktion",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Compliance",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "title_field": "titel",
+ "show_title_field_in_link": 0
+}

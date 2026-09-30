@@ -45,7 +45,8 @@ class TestCheckliste(FrappeTestCase):
 		self.assertFalse(ids["satzung"]["erwartet"])
 		self.assertEqual(ids["aufstellung"]["label"], "Einleitung Umwidmung (Grünland-PV)")
 		self.assertEqual(c["erwartet"], 5)
-		self.assertEqual(c["quote"], 20)
+		self.assertEqual(c["quoteUnterlagen"], 20)  # Fachprüfung Kapitalseite: Qualität = 70 % Unterlagen + 30 % Datenblatt
+		self.assertEqual(c["quote"], int(0.7 * 20 + 0.3 * c["datenblatt"]["quote"] + 0.5))
 		self.assertNotIn("ertrag", {p["id"] for p in checkliste_projekt({"typ": "speicher", "phase": "cod"}, [])["punkte"]})
 		f = checkliste_flaeche({"eigentum": "miteigentum", "land": "DE"}, [])
 		self.assertTrue(next(p for p in f["punkte"] if p["id"] == "vollmacht")["erwartet"])

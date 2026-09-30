@@ -157,6 +157,17 @@ class Seite {
     return yy - zh;
   }
 
+  /**
+   * Bild (aus server/png.js → pngLesen) in das Rechteck x/y (oben links), Breite b, Höhe h zeichnen.
+   * Elektronische Unterschrift: gezeichnete Signatur auf der Prüfseite.
+   */
+  bild(x, y, b, h, bild) {
+    if (!bild?.daten) return this;
+    const name = this.dok.bildName(bild);
+    this.ops.push(`q ${zahl(b)} 0 0 ${zahl(h)} ${zahl(x)} ${this.y(y + h)} cm /${name} Do Q`);
+    return this;
+  }
+
   inhalt() {
     return this.ops.join("\n");
   }
@@ -170,6 +181,14 @@ export class PdfDokument {
     this.autor = autor;
     this.thema = thema;
     this.seiten = [];
+    this.bilder = []; // Bilder (Image-XObjects) für Seite.bild()
+  }
+
+  /** Ressourcenname eines Bildes (jedes Bild wird einmal eingebettet) */
+  bildName(bild) {
+    let i = this.bilder.indexOf(bild);
+    if (i < 0) i = this.bilder.push(bild) - 1;
+    return `Im${i + 1}`;
   }
 
   seite() {
@@ -187,12 +206,23 @@ export class PdfDokument {
     const seitenbaum = neu(null);
     const f1 = neu("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
     const f2 = neu("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+    // Bilder (Seite.bild) als Image-XObjects: FlateDecode, Alphakanal als weiche Maske (SMask)
+    const bildRefs = (this.bilder || []).map((b, i) => {
+      const maske = b.alpha
+        ? neu(`<< /Type /XObject /Subtype /Image /Width ${b.breite} /Height ${b.hoehe} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode /Length ${b.alpha.length} >>\nstream\n${b.alpha.toString("latin1")}\nendstream`)
+        : null;
+      const nr = neu(
+        `<< /Type /XObject /Subtype /Image /Width ${b.breite} /Height ${b.hoehe} /ColorSpace /${b.farben === 1 ? "DeviceGray" : "DeviceRGB"} /BitsPerComponent 8 /Filter /FlateDecode${maske ? ` /SMask ${maske} 0 R` : ""} /Length ${b.daten.length} >>\nstream\n${b.daten.toString("latin1")}\nendstream`
+      );
+      return `/Im${i + 1} ${nr} 0 R`;
+    });
+    const xobjekte = bildRefs.length ? ` /XObject << ${bildRefs.join(" ")} >>` : "";
     const kinder = [];
     for (const s of this.seiten) {
       const inhalt = s.inhalt();
       const strom = neu(`<< /Length ${Buffer.byteLength(inhalt, "latin1")} >>\nstream\n${inhalt}\nendstream`);
       kinder.push(
-        neu(`<< /Type /Page /Parent ${seitenbaum} 0 R /MediaBox [0 0 ${zahl(this.breite)} ${zahl(this.hoehe)}] /Resources << /Font << /F1 ${f1} 0 R /F2 ${f2} 0 R >> >> /Contents ${strom} 0 R >>`)
+        neu(`<< /Type /Page /Parent ${seitenbaum} 0 R /MediaBox [0 0 ${zahl(this.breite)} ${zahl(this.hoehe)}] /Resources << /Font << /F1 ${f1} 0 R /F2 ${f2} 0 R >>${xobjekte} >> /Contents ${strom} 0 R >>`)
       );
     }
     objekte[katalog - 1] = `<< /Type /Catalog /Pages ${seitenbaum} 0 R >>`;

@@ -1,0 +1,13 @@
+[
+ {
+  "content": "{%- set f = oekoinvest_firma() -%}\n<table style=\"width:100%;border-collapse:collapse;border-bottom:3px solid #669933;margin-bottom:10px;font-family:Inter,'Helvetica Neue',Arial,sans-serif;\">\n<tr>\n<td style=\"vertical-align:bottom;padding-bottom:6px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:22px;font-weight:800;color:#003473;\">Öko<span style=\"color:#669933;\">Invest</span></span><br><span style=\"font-size:8px;color:#52606d;letter-spacing:.1em;text-transform:uppercase;\">{{ f.gruppe }}</span></td>\n<td style=\"text-align:right;vertical-align:bottom;padding-bottom:6px;font-size:8.5px;color:#52606d;line-height:1.45;\">{{ f.name }}<br>{{ f.strasse }} · {{ f.ort }} · {{ f.land }}{% if f.telefon %}<br>Tel. {{ f.telefon }}{% endif %}{% if f.email %}<br>{{ f.email }}{% endif %}{% if f.web %}<br>{{ f.web }}{% endif %}</td>\n</tr>\n</table>",
+  "disabled": 0,
+  "doctype": "Letter Head",
+  "footer": "{%- set f = oekoinvest_firma() -%}\n<div style=\"border-top:1px solid #d9e2d0;padding-top:4px;font-family:Inter,'Helvetica Neue',Arial,sans-serif;font-size:7.5px;color:#7b8794;text-align:center;\">{{ f.name }} · Sitz: {{ f.ort }} · {{ f.fn }} · {{ f.gericht }} · Geschäftsführung: {{ f.gf }}{% if f.uid %} · UID {{ f.uid }}{% endif %}</div>",
+  "footer_source": "HTML",
+  "is_default": 0,
+  "letter_head_name": "ÖkoInvest",
+  "name": "ÖkoInvest",
+  "source": "HTML"
+ }
+]

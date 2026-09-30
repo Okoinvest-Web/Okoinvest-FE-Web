@@ -249,7 +249,24 @@ def flaeche_vollstaendig(f):
 	ha = zahl(_wert(f, "ha"))
 	if not (ha is not None and ha > 0):
 		fehlt.append("Größe in Hektar")
+	# Fachprüfung Flächen: Pflichtangaben je Nutzung (Dach, Agri-PV, Eigentum, Pacht, Katasterfläche)
+	from oekoinvest_app.plattform.flaeche_fach import fach_pflicht_fehlt
+
+	fehlt.extend(fach_pflicht_fehlt(_flaeche_fachsicht(f)))
 	return fehlt
+
+
+def _flaeche_fachsicht(f):
+	"""Fläche (Document oder dict) als dict mit den Feldern, die fach_pflicht_fehlt braucht."""
+	fs = _wert(f, "flurstuecke") or []
+	return {
+		"nutzung": _wert(f, "nutzung"),
+		"agri": bool(_wert(f, "agri")),
+		"eigentum": _wert(f, "eigentum"),
+		"ha": _wert(f, "ha"),
+		"fach": _json(_wert(f, "fach")) or {},
+		"flurstuecke": [{"m2": (x.get("m2") if hasattr(x, "get") else getattr(x, "m2", None))} for x in fs],
+	}
 
 
 BEDINGUNGEN = {"projektEinreichbar": projekt_einreichbar, "flaecheVollstaendig": flaeche_vollstaendig}

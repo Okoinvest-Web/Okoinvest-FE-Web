@@ -1,0 +1,246 @@
+{
+ "charts": [
+  {
+   "chart_name": "ÖkoInvest CRM-Aktivitäten je Monat",
+   "label": "CRM-Aktivitäten je Monat"
+  }
+ ],
+ "content": "[{\"id\": \"5kV3ECqWp1\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>ÖkoInvest CRM</b></span>\", \"col\": 12}}, {\"id\": \"OrXXHFOprC\", \"type\": \"paragraph\", \"data\": {\"text\": \"<span style=\\\"color:var(--text-muted)\\\">Kontakte und Organisationen aus Anfragen und Portal, Aktivitäten, Wiedervorlagen, Vorlagen und Automationen.</span>\", \"col\": 12}}, {\"id\": \"eTsprvu5If\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Aufgaben überfällig\", \"col\": 3}}, {\"id\": \"ijoySjTneA\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Neue Konten (30 Tage)\", \"col\": 3}}, {\"id\": \"AvIDAdn1Ay\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"5XL8Sb24WK\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Schnellzugriff</b></span>\", \"col\": 12}}, {\"id\": \"yEa8wtWy25\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Kontakte\", \"col\": 3}}, {\"id\": \"91AIVVIZM5\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Organisationen\", \"col\": 3}}, {\"id\": \"oForBFbyvQ\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Aktivitäten\", \"col\": 3}}, {\"id\": \"RZzUk1D6iN\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Aufgaben offen\", \"col\": 3}}, {\"id\": \"Ib6zLKQbfP\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"Bi3Dldqyun\", \"type\": \"chart\", \"data\": {\"chart_name\": \"ÖkoInvest CRM-Aktivitäten je Monat\", \"col\": 6}}, {\"id\": \"DuvW4yrW81\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"Aq1fEbVId8\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Bereiche</b></span>\", \"col\": 12}}, {\"id\": \"woPeX9PcWb\", \"type\": \"card\", \"data\": {\"card_name\": \"Kontakte\", \"col\": 4}}, {\"id\": \"8pm1bNjpiE\", \"type\": \"card\", \"data\": {\"card_name\": \"Arbeit\", \"col\": 4}}, {\"id\": \"QhK8nDSqXx\", \"type\": \"card\", \"data\": {\"card_name\": \"Automationen\", \"col\": 4}}, {\"id\": \"kMM9VThX0k\", \"type\": \"card\", \"data\": {\"card_name\": \"Auswertung\", \"col\": 4}}]",
+ "creation": "2026-09-30 08:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "crm",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "ÖkoInvest CRM",
+ "links": [
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kontakte",
+   "link_count": 3,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kontakt",
+   "link_count": 0,
+   "link_to": "Plattform CRM Kontakt",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Organisation",
+   "link_count": 0,
+   "link_to": "Plattform CRM Organisation",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Aktivität",
+   "link_count": 0,
+   "link_to": "Plattform CRM Aktivitaet",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Arbeit",
+   "link_count": 2,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Aufgabe",
+   "link_count": 0,
+   "link_to": "Plattform Aufgabe",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Vorlage",
+   "link_count": 0,
+   "link_to": "Plattform Vorlage",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Automationen",
+   "link_count": 2,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Regel",
+   "link_count": 0,
+   "link_to": "Plattform Automation Regel",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Ausführungsprotokoll",
+   "link_count": 0,
+   "link_to": "Plattform Automation Lauf",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Auswertung",
+   "link_count": 1,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Aktivitäten je Mitarbeiter",
+   "link_count": 0,
+   "link_to": "Aktivitaeten je Mitarbeiter",
+   "link_type": "Report",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "ÖkoInvest CRM",
+ "number_cards": [
+  {
+   "label": "Aufgaben überfällig",
+   "number_card_name": "ÖkoInvest Aufgaben überfällig"
+  },
+  {
+   "label": "Neue Konten (30 Tage)",
+   "number_card_name": "ÖkoInvest Neue Konten (30 Tage)"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "role": "ÖkoInvest Akquise"
+  },
+  {
+   "role": "ÖkoInvest Transaktion"
+  },
+  {
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "role": "ÖkoInvest Leser"
+  }
+ ],
+ "sequence_id": 5.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": null,
+   "label": "Kontakte",
+   "link_to": "Plattform CRM Kontakt",
+   "stats_filter": null,
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": null,
+   "label": "Organisationen",
+   "link_to": "Plattform CRM Organisation",
+   "stats_filter": null,
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": null,
+   "label": "Aktivitäten",
+   "link_to": "Plattform CRM Aktivitaet",
+   "stats_filter": null,
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "{} offen",
+   "label": "Aufgaben offen",
+   "link_to": "Plattform Aufgabe",
+   "stats_filter": "[[\"Plattform Aufgabe\", \"status\", \"=\", \"offen\", false]]",
+   "type": "DocType",
+   "url": null
+  }
+ ],
+ "title": "ÖkoInvest CRM"
+}

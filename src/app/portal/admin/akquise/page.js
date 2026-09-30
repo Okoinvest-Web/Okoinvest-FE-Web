@@ -8,7 +8,7 @@ import { portalNutzer } from "@/lib/plattform/server/seite";
 import { backend } from "@/lib/plattform/backend";
 import { LAENDER } from "@/lib/plattform/konstanten";
 import { PROZESSE } from "@/lib/plattform/prozesse";
-import { darfSchreiben } from "@/lib/plattform/rechte";
+import { darfLesen, darfSchreiben } from "@/lib/plattform/rechte"; // darfLesen: Akquise-Karte (Geodaten)
 import { fmt } from "@/lib/rechner/annahmen";
 
 export const metadata = { title: "Akquise & Gebiete" };
@@ -32,6 +32,16 @@ export default async function AdminAkquise({ searchParams }) {
   return (
     <div className="space-y-6">
       <SeitenKopf eyebrow="Backoffice" titel="Akquise-Pipeline Flächen" text="Score aus dem Flächencheck, Priorität, Zuständigkeit nach Gebiet und SLA-Ampel für den Erstkontakt (innerhalb von 2 Werktagen)." />
+      {darfLesen(n, "geodaten") && ( // Geodaten & Akquise-Engine: Einstieg in die Akquise-Karte
+        <Link href="/portal/admin/akquise/karte" className="ov-card-hover flex items-center gap-4 rounded-3xl bg-navy-900 p-5 text-white ring-1 ring-navy-800">
+          <MapPinned aria-hidden="true" className="h-8 w-8 shrink-0 text-ov-400" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-[17px] font-bold">Akquise-Karte: neue Flächen finden</span>
+            <span className="block text-[13.5px] text-white/75">Kandidatenflächen mit Score, Umspannwerke, Trassenlänge und Netzanschlusskosten, Schutzgebiete – übernehmen mit einem Klick.</span>
+          </span>
+          <span className="hidden rounded-full bg-ov-600 px-4 py-2 text-[14px] font-semibold sm:inline">Karte öffnen</span>
+        </Link>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Kennzahl label="Offene Flächen" wert={fmt(k.anzahl)} hinweis={`${fmt(k.ha)} ha · ≈ ${fmt(k.mwp)} MWp Potenzial`} icon={LandPlot} />

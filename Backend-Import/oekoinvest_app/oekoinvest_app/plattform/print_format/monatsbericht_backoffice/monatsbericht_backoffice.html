@@ -1,0 +1,33 @@
+{#- ÖkoInvest – Monatsbericht Backoffice (Plattform Monatsbericht, Single). Nur Kennzahlen, keine personenbezogenen Daten. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set b = oekoinvest_monatsbericht(doc.monat) -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Backoffice · Bericht</div>
+	<div class="oi-titel">Monatsbericht {{ b.monat }}</div>
+	<div class="oi-untertitel">Vergleich mit {{ b.vormonat }} · erstellt am {{ b.erstellt }}</div>
+</div>
+
+<table class="oi-kacheln"><tr>
+	<td class="oi-kachel"><div class="oi-wert">{{ b.stand.anfragen_offen }}</div><div class="oi-bez">Anfragen offen</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ b.stand.projekte_boerse }}</div><div class="oi-bez">Projekte in der Börse</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ b.stand.stoerungen_offen }}</div><div class="oi-bez">Störungen offen</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ b.stand.aufgaben_ueberfaellig }}</div><div class="oi-bez">Aufgaben überfällig</div></td>
+	<td class="oi-kachel"><div class="oi-wert" style="font-size:12pt">{{ oekoinvest_eur(b.stand.provision_offen_eur) }}</div><div class="oi-bez">Provision offen</div></td>
+</tr></table>
+
+<div class="oi-abschnitt">Kennzahlen des Monats</div>
+<table class="oi-tabelle">
+	<tr><th>Bereich</th><th>Kennzahl</th><th class="oi-zahl">{{ b.monat }}</th><th class="oi-zahl">{{ b.vormonat }}</th><th class="oi-zahl">Veränderung</th></tr>
+	{% for z in b.zeilen %}
+	<tr>
+		<td>{% if loop.first or z.bereich != b.zeilen[loop.index0 - 1].bereich %}<b>{{ z.bereich }}</b>{% endif %}</td>
+		<td>{{ z.kennzahl }}</td>
+		<td class="oi-zahl"><b>{{ oekoinvest_eur(z.wert) if z.eur else oekoinvest_zahl(z.wert) }}</b></td>
+		<td class="oi-zahl">{{ oekoinvest_eur(z.vormonat) if z.eur else oekoinvest_zahl(z.vormonat) }}</td>
+		<td class="oi-zahl">{% if z.delta > 0 %}+{% endif %}{{ oekoinvest_zahl(z.delta) }}</td>
+	</tr>
+	{% endfor %}
+</table>
+<div class="oi-hinweis">Zählweise: Statuswechsel laut Statusverlauf im Monat; neue Anfragen/Konten/Störungen nach Anlagedatum. Provisionen ohne stornierte Fälle. Stand-Kacheln zeigen den Zeitpunkt der Erstellung.</div>
+<div class="oi-fuss">{{ f.name }} · interner Bericht · {{ frappe.session.user | e }}</div>

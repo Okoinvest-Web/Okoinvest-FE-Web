@@ -4,12 +4,20 @@ authors = [{ name = "ÖkoInvest GmbH" }]
 description = "Plattform-Backend der ÖkoInvest-Website (Portal, Projektbörse, Backoffice)"
 requires-python = ">=3.10"
 readme = "README.md"
+license = { text = "Proprietär" }
 dynamic = ["version"]
+# Keine Python-Abhängigkeiten außer Frappe (kommt aus der Bench). ERPNext, HRMS, Drive und Helpdesk sind
+# OPTIONAL und werden weder hier noch in hooks.required_apps verlangt.
 dependencies = []
 
 [build-system]
 requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
+
+# flit nimmt alle Dateien unterhalb von oekoinvest_app/ in das Paket auf (JSON, HTML, JS, CSS, CSV, TXT) –
+# Fixtures, Workspaces, Berichte, Druckformate und Übersetzungen sind damit Paketdaten.
+[tool.flit.sdist]
+exclude = ["**/__pycache__", "**/*.pyc"]
 
 [tool.bench.frappe-dependencies]
 frappe = ">=15.0.0,<16.0.0"

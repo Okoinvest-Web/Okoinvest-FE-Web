@@ -44,6 +44,8 @@ def profil_speichern(daten=None, als_benutzer=None):
 		v.pflicht(len(r) > 0, "Bitte wählen Sie mindestens eine Rolle.")
 		if "admin" in n.rollen:  # … bleibt aber erhalten
 			r.append("admin")
+		if "gutachter" in n.rollen:  # Projektentwicklung: Gutachter-Rolle (per Einladung) bleibt erhalten
+			r.append("gutachter")
 		konto.set("rollen", [{"rolle": x} for x in r])
 	konto.save(ignore_permissions=True)
 	protokoll(n, "profil", "nutzer", konto.name, "Profil aktualisiert")
@@ -66,6 +68,11 @@ def suchprofil_speichern(profil=None, als_benutzer=None):
 		"benachrichtigen": v.wahr(p.get("benachrichtigen")),
 		"schwelle": v.zahl(p.get("schwelle"), min=SUCHPROFIL_SCHWELLE["min"], max=SUCHPROFIL_SCHWELLE["max"], stellen=0) or SUCHPROFIL_SCHWELLE["standard"],
 	}
+	# Fachprüfung Kapitalseite: Investorentyp, Regionen, Rendite-Ziel, Deal-Struktur, Co-Development, ESG, Finanzierung
+	from oekoinvest_app.plattform.fach.suchprofil import suchprofil_erweiterung
+	from oekoinvest_app.plattform.konstanten import BUNDESLAENDER
+
+	sp.update(suchprofil_erweiterung(p, [b for liste in BUNDESLAENDER.values() for b in liste]))
 	if sp["mwpMin"] is not None and sp["mwpMax"] is not None:
 		v.pflicht(sp["mwpMin"] <= sp["mwpMax"], "MWp: Minimum größer als Maximum.")
 	if sp["ticketMin"] is not None and sp["ticketMax"] is not None:

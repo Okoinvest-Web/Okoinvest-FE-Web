@@ -1,0 +1,260 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Kandidatenfläche aus der Geodaten-Akquise, als Akquise-Ziel übernommen (Geometrie, Score, Umspannwerk-Bezug).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "titel",
+  "status",
+  "kandidat_id",
+  "flaeche_id",
+  "aufgabe_id",
+  "uebernommen_von",
+  "demo",
+  "cb_ziel",
+  "score",
+  "flaeche_ha",
+  "mwp",
+  "bundesland",
+  "bezirk",
+  "gemeinde",
+  "sb_netz",
+  "umspannwerk_id",
+  "umspannwerk_name",
+  "umspannwerk_art",
+  "cb_netz",
+  "trasse_m",
+  "netzkosten_min",
+  "netzkosten_max",
+  "sb_geo",
+  "parzellen",
+  "geometrie",
+  "notiz",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Titel",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "offen\nin_kontakt\ngesichert\nverworfen",
+   "default": "offen",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "kandidat_id",
+   "fieldtype": "Data",
+   "label": "Kandidat (Geodaten-Dienst)",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "flaeche_id",
+   "fieldtype": "Link",
+   "label": "Fläche (Akquise-Pipeline)",
+   "options": "Plattform Flaeche",
+   "search_index": 1
+  },
+  {
+   "fieldname": "aufgabe_id",
+   "fieldtype": "Link",
+   "label": "Aufgabe „Eigentümer ermitteln“",
+   "options": "Plattform Aufgabe"
+  },
+  {
+   "fieldname": "uebernommen_von",
+   "fieldtype": "Link",
+   "label": "Übernommen von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "demo",
+   "fieldtype": "Check",
+   "label": "Demo-Daten"
+  },
+  {
+   "fieldname": "cb_ziel",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "score",
+   "fieldtype": "Int",
+   "label": "Score",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "flaeche_ha",
+   "fieldtype": "Float",
+   "label": "Fläche (ha)",
+   "precision": "2",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "mwp",
+   "fieldtype": "Float",
+   "label": "Leistung möglich (MWp)",
+   "precision": "1"
+  },
+  {
+   "fieldname": "bundesland",
+   "fieldtype": "Data",
+   "label": "Bundesland",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "bezirk",
+   "fieldtype": "Data",
+   "label": "Bezirk",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "gemeinde",
+   "fieldtype": "Data",
+   "label": "Gemeinde",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sb_netz",
+   "fieldtype": "Section Break",
+   "label": "Netzanschluss (Umspannwerk-Bezug)"
+  },
+  {
+   "fieldname": "umspannwerk_id",
+   "fieldtype": "Data",
+   "label": "Netzknoten-ID (Geodaten-Dienst)"
+  },
+  {
+   "fieldname": "umspannwerk_name",
+   "fieldtype": "Data",
+   "label": "Netzknoten"
+  },
+  {
+   "fieldname": "umspannwerk_art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "\nuew\nuw110\nms\ntrafo"
+  },
+  {
+   "fieldname": "cb_netz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "trasse_m",
+   "fieldtype": "Int",
+   "label": "Geschätzte Trasse (m)"
+  },
+  {
+   "fieldname": "netzkosten_min",
+   "fieldtype": "Currency",
+   "label": "Netzanschluss min (€)"
+  },
+  {
+   "fieldname": "netzkosten_max",
+   "fieldtype": "Currency",
+   "label": "Netzanschluss max (€)"
+  },
+  {
+   "fieldname": "sb_geo",
+   "fieldtype": "Section Break",
+   "label": "Geometrie & Grundstücke"
+  },
+  {
+   "fieldname": "parzellen",
+   "fieldtype": "JSON",
+   "label": "Grundstücke (KG, Gst.-Nr., ha)"
+  },
+  {
+   "fieldname": "geometrie",
+   "fieldtype": "Long Text",
+   "label": "Geometrie (GeoJSON, WGS84)",
+   "description": "MultiPolygon als GeoJSON-Text – Anzeige im Portal (Akquise-Karte)."
+  },
+  {
+   "fieldname": "notiz",
+   "fieldtype": "Small Text",
+   "label": "Notiz"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Beschreibung",
+   "hidden": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Akquise Ziel",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Akquise",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "titel",
+ "track_changes": 1
+}

@@ -160,6 +160,7 @@ export const NAVIGATION = [
           { name: "Warum ÖkoInvest", href: "/warum-oekoinvest", icon: "Scale", text: "Marktplatz, Makler oder Entwickler-Plattform?" },
           { name: "English", href: "/en", icon: "Globe", text: "For international investors" },
           { name: "Kontakt", href: "/kontakt", icon: "MessageCircle", text: "Anfrage an das Projektteam" },
+          { name: "Termin buchen", href: "/termin", icon: "CalendarDays", text: "Besichtigung, Telefon- oder Videoberatung" },
           { name: "Login", href: "/login", icon: "LogIn", text: "Portal für Partner und Kunden" },
         ],
       },

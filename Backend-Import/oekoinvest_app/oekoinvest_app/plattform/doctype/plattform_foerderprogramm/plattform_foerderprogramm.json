@@ -1,0 +1,200 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Förderprogramme für den Förder-Check (Hinweise mit Quelle, keine Zusagen) – im Desk pflegbar; Standardliste in src/lib/plattform/finanzierung/foerder.js.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "programm_id",
+  "programm_name",
+  "land",
+  "art",
+  "aktiv",
+  "cb1",
+  "traeger",
+  "typen",
+  "kwp_min",
+  "kwp_max",
+  "stand",
+  "sb1",
+  "kurz",
+  "hinweise",
+  "quelle_titel",
+  "quelle_url"
+ ],
+ "fields": [
+  {
+   "fieldname": "programm_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Kennung",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "programm_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Programm",
+   "reqd": 1
+  },
+  {
+   "default": "DE",
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Land",
+   "options": "DE\nAT\nCH"
+  },
+  {
+   "default": "kredit",
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "kredit\nzuschuss\nmarktpraemie\ngarantie\nsteuer"
+  },
+  {
+   "default": "1",
+   "fieldname": "aktiv",
+   "fieldtype": "Check",
+   "label": "Aktiv"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "traeger",
+   "fieldtype": "Data",
+   "label": "Träger"
+  },
+  {
+   "fieldname": "typen",
+   "fieldtype": "Small Text",
+   "label": "Anlagentypen (kommagetrennt)"
+  },
+  {
+   "fieldname": "kwp_min",
+   "fieldtype": "Float",
+   "label": "Ab kWp"
+  },
+  {
+   "fieldname": "kwp_max",
+   "fieldtype": "Float",
+   "label": "Bis kWp"
+  },
+  {
+   "fieldname": "stand",
+   "fieldtype": "Data",
+   "label": "Recherchestand"
+  },
+  {
+   "fieldname": "sb1",
+   "fieldtype": "Section Break",
+   "label": "Inhalt"
+  },
+  {
+   "fieldname": "kurz",
+   "fieldtype": "Small Text",
+   "label": "Kurzbeschreibung"
+  },
+  {
+   "fieldname": "hinweise",
+   "fieldtype": "Text",
+   "label": "Hinweise"
+  },
+  {
+   "fieldname": "quelle_titel",
+   "fieldtype": "Data",
+   "label": "Quelle"
+  },
+  {
+   "fieldname": "quelle_url",
+   "fieldtype": "Data",
+   "label": "Quelle (URL)",
+   "options": "URL"
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 06:29:55.132913",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Foerderprogramm",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Transaktion",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "search_fields": "programm_name",
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "programm_name",
+ "track_changes": 1
+}

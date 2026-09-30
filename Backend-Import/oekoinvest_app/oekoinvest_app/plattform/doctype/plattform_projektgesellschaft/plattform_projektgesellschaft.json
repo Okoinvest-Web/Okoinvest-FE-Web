@@ -1,0 +1,356 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 20:00:00.000000",
+ "description": "Projektgesellschaft (SPV) bzw. Gruppengesellschaft: Gründung aus einem Entwicklungsprojekt mit Checkliste (Notar, Bank, Register, Steuern, Transparenzregister/WiEReG, Projektrechte), Dokumentenpaket (Muster) und Fristen.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "firma",
+  "rechtsform",
+  "land",
+  "status",
+  "cb1",
+  "registernummer",
+  "gericht",
+  "uid",
+  "steuernummer",
+  "herkunft",
+  "sec_sitz",
+  "sitz",
+  "bundesland",
+  "anschrift",
+  "cb2",
+  "stammkapital",
+  "einzahlung",
+  "waehrung",
+  "bilanzstichtag",
+  "musterprotokoll",
+  "sec_ges",
+  "gesellschafter",
+  "geschaeftsfuehrung",
+  "komplementaer",
+  "gegenstand",
+  "sec_projekt",
+  "entwicklungsprojekt",
+  "projekt_json",
+  "namenspruefung",
+  "erp_company",
+  "cb3",
+  "gegruendet_am",
+  "eingetragen_am",
+  "erstellt_von",
+  "demo",
+  "sec_schritte",
+  "schritte",
+  "verlauf"
+ ],
+ "fields": [
+  {
+   "fieldname": "firma",
+   "fieldtype": "Data",
+   "label": "Firma",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "rechtsform",
+   "fieldtype": "Select",
+   "label": "Rechtsform",
+   "options": "at_gmbh\nde_gmbh\nde_ug\nde_gmbh_co_kg\nch_gmbh",
+   "reqd": 1,
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "label": "Land",
+   "options": "AT\nDE\nCH",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "entwurf\nin_gruendung\neingetragen\naktiv\nbestand\naufgeloest",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "registernummer",
+   "fieldtype": "Data",
+   "label": "Registernummer",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "gericht",
+   "fieldtype": "Data",
+   "label": "Registergericht / -amt"
+  },
+  {
+   "fieldname": "uid",
+   "fieldtype": "Data",
+   "label": "UID / USt-IdNr.",
+   "read_only": 1
+  },
+  {
+   "fieldname": "steuernummer",
+   "fieldtype": "Data",
+   "label": "Steuernummer"
+  },
+  {
+   "fieldname": "herkunft",
+   "fieldtype": "Select",
+   "label": "Herkunft",
+   "options": "assistent\nstammdaten",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_sitz",
+   "fieldtype": "Section Break",
+   "label": "Sitz und Kapital"
+  },
+  {
+   "fieldname": "sitz",
+   "fieldtype": "Data",
+   "label": "Sitz"
+  },
+  {
+   "fieldname": "bundesland",
+   "fieldtype": "Data",
+   "label": "Bundesland / Kanton"
+  },
+  {
+   "fieldname": "anschrift",
+   "fieldtype": "Small Text",
+   "label": "Geschäftsanschrift"
+  },
+  {
+   "fieldname": "cb2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "stammkapital",
+   "fieldtype": "Float",
+   "label": "Stammkapital",
+   "read_only": 1
+  },
+  {
+   "fieldname": "einzahlung",
+   "fieldtype": "Float",
+   "label": "Bei Gründung eingezahlt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "waehrung",
+   "fieldtype": "Data",
+   "label": "Währung",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bilanzstichtag",
+   "fieldtype": "Data",
+   "label": "Bilanzstichtag (MM-TT)",
+   "default": "12-31"
+  },
+  {
+   "fieldname": "musterprotokoll",
+   "fieldtype": "Check",
+   "label": "Musterprotokoll (DE)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_ges",
+   "fieldtype": "Section Break",
+   "label": "Gesellschafter und Organe"
+  },
+  {
+   "fieldname": "gesellschafter",
+   "fieldtype": "JSON",
+   "label": "Gesellschafter",
+   "read_only": 1
+  },
+  {
+   "fieldname": "geschaeftsfuehrung",
+   "fieldtype": "JSON",
+   "label": "Geschäftsführung",
+   "read_only": 1
+  },
+  {
+   "fieldname": "komplementaer",
+   "fieldtype": "JSON",
+   "label": "Komplementärin (KG)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "gegenstand",
+   "fieldtype": "Small Text",
+   "label": "Unternehmensgegenstand",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_projekt",
+   "fieldtype": "Section Break",
+   "label": "Projekt"
+  },
+  {
+   "fieldname": "entwicklungsprojekt",
+   "fieldtype": "Link",
+   "label": "Entwicklungsprojekt",
+   "options": "Plattform Entwicklungsprojekt",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "projekt_json",
+   "fieldtype": "JSON",
+   "label": "Projekt (Schnappschuss)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "namenspruefung",
+   "fieldtype": "JSON",
+   "label": "Namensprüfung",
+   "read_only": 1
+  },
+  {
+   "fieldname": "erp_company",
+   "fieldtype": "Data",
+   "label": "ERPNext-Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gegruendet_am",
+   "fieldtype": "Date",
+   "label": "Beurkundet am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "eingetragen_am",
+   "fieldtype": "Date",
+   "label": "Eingetragen am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "erstellt_von",
+   "fieldtype": "Link",
+   "label": "Angelegt von",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "demo",
+   "fieldtype": "Check",
+   "label": "Demo",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_schritte",
+   "fieldtype": "Section Break",
+   "label": "Gründungs-Checkliste"
+  },
+  {
+   "fieldname": "schritte",
+   "fieldtype": "Table",
+   "label": "Schritte",
+   "options": "Plattform Gruendungsschritt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "verlauf",
+   "fieldtype": "JSON",
+   "label": "Verlauf",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Projektgesellschaft",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Transaktion"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "firma",
+ "track_changes": 1
+}

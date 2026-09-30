@@ -1,0 +1,382 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Pachtvertrag Fläche/Dach: Eigentümer (Konto, KYC), Modell fest/indexiert/Umsatzbeteiligung, Reservierungsprämie, Laufzeit, Fälligkeit. Gutschriften entstehen je Fälligkeit im Abrechnungslauf.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "eigentuemer_id",
+  "bezeichnung",
+  "objekt_art",
+  "land",
+  "flaeche_ha",
+  "cb_1",
+  "flaeche_id",
+  "anlage_id",
+  "gesellschaft_id",
+  "status",
+  "sb_1",
+  "modell",
+  "pacht_jahr",
+  "reservierung_jahr",
+  "cb_2",
+  "index_reihe",
+  "index_basis_jahr",
+  "index_basis_wert",
+  "index_schwelle_pct",
+  "index_anteil_pct",
+  "index_nur_erhoehung",
+  "cb_3",
+  "umsatz_anteil",
+  "umsatz_erloes_ct",
+  "umsatz_mindest_jahr",
+  "sb_2",
+  "vertragsdatum",
+  "beginn_art",
+  "beginn",
+  "laufzeit_jahre",
+  "cb_4",
+  "faelligkeit",
+  "zahlweise",
+  "zahlungsziel_tage",
+  "sb_3",
+  "steuervorlage",
+  "steuer_option",
+  "kleinunternehmer",
+  "cb_5",
+  "bemerkung",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "eigentuemer_id",
+   "fieldtype": "Link",
+   "label": "Eigentümer (Konto)",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "bezeichnung",
+   "fieldtype": "Data",
+   "label": "Bezeichnung",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "objekt_art",
+   "fieldtype": "Select",
+   "label": "Objekt",
+   "options": "flaeche\ndach",
+   "default": "flaeche"
+  },
+  {
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "label": "Land der Fläche",
+   "options": "AT\nDE\nCH",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "flaeche_ha",
+   "fieldtype": "Float",
+   "label": "Fläche (ha)",
+   "precision": "4"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "flaeche_id",
+   "fieldtype": "Link",
+   "label": "Fläche (Portal)",
+   "options": "Plattform Flaeche"
+  },
+  {
+   "fieldname": "anlage_id",
+   "fieldtype": "Link",
+   "label": "Anlage (Umsatzbeteiligung)",
+   "options": "Plattform Anlage"
+  },
+  {
+   "fieldname": "gesellschaft_id",
+   "fieldtype": "Data",
+   "label": "Pächter-Gesellschaft",
+   "description": "Leer = ÖkoInvest GmbH bzw. Eigentümergesellschaft der verknüpften Anlage (Gesellschaftsverzeichnis)"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "entwurf\naktiv\ngekuendigt\nbeendet",
+   "default": "entwurf",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": "Pachtmodell"
+  },
+  {
+   "fieldname": "modell",
+   "fieldtype": "Select",
+   "label": "Modell",
+   "options": "fest\nindexiert\numsatz",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "pacht_jahr",
+   "fieldtype": "Currency",
+   "label": "Jahrespacht (€)"
+  },
+  {
+   "fieldname": "reservierung_jahr",
+   "fieldtype": "Currency",
+   "label": "Reservierungsprämie (€/Jahr)"
+  },
+  {
+   "fieldname": "cb_2",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "index_reihe",
+   "fieldtype": "Select",
+   "label": "Index-Reihe",
+   "options": "VPI-AT-2020\nVPI-DE-2020\nLIK-CH-2020",
+   "depends_on": "eval:doc.modell=='indexiert'"
+  },
+  {
+   "fieldname": "index_basis_jahr",
+   "fieldtype": "Int",
+   "label": "Basisjahr",
+   "depends_on": "eval:doc.modell=='indexiert'"
+  },
+  {
+   "fieldname": "index_basis_wert",
+   "fieldtype": "Float",
+   "label": "Basisindex (optional)",
+   "precision": "3",
+   "depends_on": "eval:doc.modell=='indexiert'"
+  },
+  {
+   "fieldname": "index_schwelle_pct",
+   "fieldtype": "Float",
+   "label": "Schwelle (%)",
+   "depends_on": "eval:doc.modell=='indexiert'"
+  },
+  {
+   "fieldname": "index_anteil_pct",
+   "fieldtype": "Float",
+   "label": "Weitergabe (%)",
+   "default": "100",
+   "depends_on": "eval:doc.modell=='indexiert'"
+  },
+  {
+   "fieldname": "index_nur_erhoehung",
+   "fieldtype": "Check",
+   "label": "Nur Erhöhungen",
+   "depends_on": "eval:doc.modell=='indexiert'"
+  },
+  {
+   "fieldname": "cb_3",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "umsatz_anteil",
+   "fieldtype": "Float",
+   "label": "Umsatzanteil (Dezimal, 0,05 = 5 %)",
+   "precision": "5",
+   "depends_on": "eval:doc.modell=='umsatz'"
+  },
+  {
+   "fieldname": "umsatz_erloes_ct",
+   "fieldtype": "Float",
+   "label": "Erlös (ct/kWh)",
+   "precision": "3",
+   "depends_on": "eval:doc.modell=='umsatz'"
+  },
+  {
+   "fieldname": "umsatz_mindest_jahr",
+   "fieldtype": "Currency",
+   "label": "Mindestpacht (€/Jahr)",
+   "depends_on": "eval:doc.modell=='umsatz'"
+  },
+  {
+   "fieldname": "sb_2",
+   "fieldtype": "Section Break",
+   "label": "Laufzeit und Zahlung"
+  },
+  {
+   "fieldname": "vertragsdatum",
+   "fieldtype": "Date",
+   "label": "Vertragsdatum",
+   "reqd": 1
+  },
+  {
+   "fieldname": "beginn_art",
+   "fieldtype": "Select",
+   "label": "Pachtbeginn ab",
+   "options": "baubeginn\ninbetriebnahme\nvertrag",
+   "default": "inbetriebnahme"
+  },
+  {
+   "fieldname": "beginn",
+   "fieldtype": "Date",
+   "label": "Pachtbeginn"
+  },
+  {
+   "fieldname": "laufzeit_jahre",
+   "fieldtype": "Int",
+   "label": "Laufzeit (Jahre)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb_4",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "faelligkeit",
+   "fieldtype": "Select",
+   "label": "Fälligkeit",
+   "options": "jaehrlich\nhalbjaehrlich\nquartalsweise\nmonatlich",
+   "default": "jaehrlich"
+  },
+  {
+   "fieldname": "zahlweise",
+   "fieldtype": "Select",
+   "label": "Zahlweise",
+   "options": "vorschuessig\nnachschuessig",
+   "default": "vorschuessig"
+  },
+  {
+   "fieldname": "zahlungsziel_tage",
+   "fieldtype": "Int",
+   "label": "Zahlungsziel (Tage)",
+   "default": "14"
+  },
+  {
+   "fieldname": "sb_3",
+   "fieldtype": "Section Break",
+   "label": "Umsatzsteuer (Vorschlag – mit Steuerberatung abstimmen)"
+  },
+  {
+   "fieldname": "steuervorlage",
+   "fieldtype": "Data",
+   "label": "Steuervorlage (leer = Vorschlag)"
+  },
+  {
+   "fieldname": "steuer_option",
+   "fieldtype": "Check",
+   "label": "Eigentümer optiert zur Steuerpflicht"
+  },
+  {
+   "fieldname": "kleinunternehmer",
+   "fieldtype": "Check",
+   "label": "Kleinunternehmer"
+  },
+  {
+   "fieldname": "cb_5",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "bemerkung",
+   "fieldtype": "Small Text",
+   "label": "Bemerkung"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Interne Notiz"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 0,
+ "links": [],
+ "modified": "2026-09-30 05:54:25.403903",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Pachtvertrag",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Akquise",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "in_create": 0,
+ "title_field": "bezeichnung",
+ "show_title_field_in_link": 1
+}

@@ -1,0 +1,46 @@
+{#- ÖkoInvest – Angebotsvergleich einer Strom-Ausschreibung (Plattform Ausschreibung), normiert auf das Profil des Loses. Intern/Kunde. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set vg = oekoinvest_energie_vergleich(doc.name) -%}
+{%- set kunden = oekoinvest_json(doc.kunden, []) -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Energiebeschaffung · Angebotsvergleich · vertraulich</div>
+	<div class="oi-titel">{{ doc.titel | e }}</div>
+	<div class="oi-untertitel">{{ vg.los }} · Lieferbeginn {{ doc.lieferbeginn }} · Gebotszone {{ "Österreich (AT)" if doc.zone == "AT" else "Deutschland (DE-LU)" }} · Stand {{ oekoinvest_datum(frappe.utils.now(), true) }}</div>
+</div>
+<table class="oi-kacheln"><tr>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl((vg.ctx.kwh or 0) / 1000, 0) }} MWh</div><div class="oi-bez">Menge (Normierung)</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl(vg.ctx.baseEurMwh or 0, 2) }} €/MWh</div><div class="oi-bez">Terminpreis Base</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ vg.zeilen | length }}</div><div class="oi-bez">Angebotspositionen</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ kunden | length }}</div><div class="oi-bez">{{ "Kunden (Pool)" if kunden | length > 1 else "Kunde" }}</div></td>
+</tr></table>
+<div class="oi-abschnitt">Ranking (Energiekosten pro Jahr, erstes Lieferjahr)</div>
+<table class="oi-tabelle">
+	<tr><th>Rang</th><th>Versorger</th><th>Produkt</th><th>Runde</th><th class="oi-zahl">ct/kWh</th><th class="oi-zahl">€/Jahr</th><th class="oi-zahl">Abstand</th></tr>
+	{% for z in vg.zeilen[:40] %}
+	<tr><td>{{ z.rang }}</td><td>{{ z.lieferant | e }}</td><td>{{ z.produkt | e }}</td><td>{{ z.runde }}</td><td class="oi-zahl">{{ oekoinvest_zahl(z.ctKwh, 3) }}</td><td class="oi-zahl">{{ oekoinvest_eur(z.eurJahr) }}</td><td class="oi-zahl">{{ oekoinvest_zahl(z.abstandProzent, 2) }} %</td></tr>
+	{% else %}
+	<tr><td colspan="7">Noch keine Angebote.</td></tr>
+	{% endfor %}
+</table>
+{% if vg.zeilen %}
+<div class="oi-abschnitt">Sensitivität bei Marktbewegung (€/Jahr)</div>
+<table class="oi-tabelle">
+	<tr><th>Versorger / Produkt</th>{% for s in vg.szenarien %}<th class="oi-zahl">{{ "+" if s > 0 else "" }}{{ s }} %</th>{% endfor %}</tr>
+	{% for z in vg.zeilen[:10] %}
+	<tr><td>{{ z.lieferant | e }} – {{ z.produkt | e }}</td>{% for s in vg.szenarien %}<td class="oi-zahl">{{ oekoinvest_eur(z.sensitivitaet[s | string]) }}</td>{% endfor %}</tr>
+	{% endfor %}
+</table>
+{% endif %}
+{% if vg.zuschlag %}
+<div class="oi-abschnitt">Zuschlag{{ "" if vg.zuschlag.am else "svorschlag" }}</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Versorger</td><td>{{ vg.zuschlag.lieferant | e }}</td></tr>
+	<tr><td class="oi-feld">Begründung</td><td>{{ (vg.zuschlag.begruendung or "–") | e }}</td></tr>
+	<tr><td class="oi-feld">Bindefrist</td><td>{{ oekoinvest_datum(vg.zuschlag.bindefrist, true) }}</td></tr>
+	<tr><td class="oi-feld">Kundenfreigaben</td><td>{% for k, fr in (vg.zuschlag.kundenFreigaben or {}).items() %}{{ oekoinvest_konto(k).firma or oekoinvest_konto(k).name }}: {{ fr.entscheidung }} ({{ oekoinvest_datum(fr.am, true) }}){% if not loop.last %}; {% endif %}{% else %}ausstehend{% endfor %}</td></tr>
+</table>
+{% endif %}
+<div class="oi-hinweis">Normierung: Festpreis × Menge; Spot-Index und Tranchen mit dem lastgewichteten Terminpreis (Peak/Offpeak je Monat) zuzüglich Aufschlag; jeweils zuzüglich Grundpreis × 12 und Herkunftsnachweisen. Netzentgelte, Umlagen, Abgaben und Steuern sind nicht enthalten. Sensitivität: Festpreis 0 %, Tranchen ca. 50 %, Spot 100 % der Marktbewegung.</div>
+{% if doc.kommune %}<div class="oi-warnung">Öffentlicher Auftraggeber: Diese Angebotsanfrage ersetzt kein förmliches Vergabeverfahren (GWB/VgV bzw. BVergG 2018; EU-Schwellenwert Liefer-/Dienstleistungen 2026/2027: 216.000 € netto).</div>{% endif %}
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · {{ f.gericht }} · Geschäftsführung: {{ f.gf }}</div>

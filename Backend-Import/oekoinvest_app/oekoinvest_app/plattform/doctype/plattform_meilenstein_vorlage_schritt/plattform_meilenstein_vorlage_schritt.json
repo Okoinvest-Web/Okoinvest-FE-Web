@@ -1,0 +1,89 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-30 20:00:00.000000",
+ "description": "Schritt einer Meilenstein-Vorlage (Kindtabelle).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "schluessel",
+  "titel",
+  "kategorie",
+  "dauer_monate",
+  "nach",
+  "phase",
+  "dokument_pflicht",
+  "extern_titel",
+  "gutachten"
+ ],
+ "fields": [
+  {
+   "fieldname": "schluessel",
+   "fieldtype": "Data",
+   "label": "Schlüssel",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Titel",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "kategorie",
+   "fieldtype": "Select",
+   "label": "Kategorie",
+   "options": "flaeche\nnetz\ngemeinde\ngutachten\ngenehmigung\nvermarktung\nfinanzierung\nbau",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "dauer_monate",
+   "fieldtype": "Float",
+   "label": "Dauer (Monate)",
+   "precision": "2",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "nach",
+   "fieldtype": "Small Text",
+   "label": "Vorgänger (Schlüssel, kommagetrennt)"
+  },
+  {
+   "fieldname": "phase",
+   "fieldtype": "Select",
+   "label": "Erreicht Phase",
+   "options": "\nflaeche\nnetz\naufstellung\nsatzung\nrtb\ncod"
+  },
+  {
+   "fieldname": "dokument_pflicht",
+   "fieldtype": "Small Text",
+   "label": "Dokumentenpflicht (eine je Zeile)"
+  },
+  {
+   "fieldname": "extern_titel",
+   "fieldtype": "Data",
+   "label": "Titel für Eigentümer"
+  },
+  {
+   "fieldname": "gutachten",
+   "fieldtype": "Check",
+   "label": "Gutachten-/Planungsauftrag"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Meilenstein Vorlage Schritt",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "istable": 1,
+ "editable_grid": 1
+}

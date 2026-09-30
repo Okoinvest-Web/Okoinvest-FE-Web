@@ -3,14 +3,14 @@
 import { useId, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Eye, EyeOff, Factory, FolderKanban, LandPlot, Loader2, Tractor, TrendingUp, Users } from "lucide-react";
+import { Check, Eye, EyeOff, Factory, FolderKanban, Landmark, LandPlot, Loader2, Tractor, TrendingUp, Users } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { senden, sicheresZiel } from "@/lib/plattform/client";
 import { ROLLEN } from "@/lib/plattform/konstanten";
 import { passwortFehler } from "@/lib/plattform/validierung";
 import { eingabe, Feld, FehlerBox } from "@/components/Portal/felder";
 
-const ICONS = { flaeche: LandPlot, landwirt: Tractor, investor: TrendingUp, anbieter: FolderKanban, unternehmen: Factory, mitglied: Users };
+const ICONS = { flaeche: LandPlot, landwirt: Tractor, investor: TrendingUp, anbieter: FolderKanban, unternehmen: Factory, mitglied: Users, kommune: Landmark };
 
 function staerke(pw) {
   let s = 0;

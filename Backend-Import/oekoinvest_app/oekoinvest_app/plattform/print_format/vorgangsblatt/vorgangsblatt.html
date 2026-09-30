@@ -1,0 +1,53 @@
+{#- ÖkoInvest – Vorgangsübersicht (Plattform Vorgang): Anfrage, Kontakt, Angaben, Einwilligung, Statusverlauf. Interner Ausdruck. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set k = oekoinvest_json(doc.kontakt) -%}
+{%- set daten = oekoinvest_json(doc.daten) -%}
+{%- set ew = oekoinvest_json(doc.einwilligung) -%}
+{%- set rolle_label = {"admin": "Backoffice", "eigentuemer": "Kunde", "system": "System"} -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Anfragen · Vorgangsübersicht</div>
+	<div class="oi-titel">{{ oekoinvest_label("vorgang_typ", doc.typ) }} – {{ doc.name }}</div>
+	<div class="oi-untertitel">Eingegangen am {{ oekoinvest_datum(doc.creation, true) }} · Status {{ oekoinvest_status("vorgang", doc.status) }}</div>
+</div>
+
+<div class="oi-abschnitt">Kontakt</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Name</td><td>{{ (k.anrede or "") | e }} {{ (k.vorname or "") | e }} {{ (k.nachname or "") | e }}{% if k.anonymisiert %}<i>anonymisiert (Löschkonzept)</i>{% endif %}</td></tr>
+	{% if k.firma %}<tr><td class="oi-feld">Firma / Organisation</td><td>{{ k.firma | e }}</td></tr>{% endif %}
+	<tr><td class="oi-feld">E-Mail</td><td>{{ (doc.email or "–") | e }}</td></tr>
+	{% if k.telefon %}<tr><td class="oi-feld">Telefon</td><td>{{ k.telefon | e }}</td></tr>{% endif %}
+	<tr><td class="oi-feld">Ort</td><td>{{ (k.plz or "") | e }} {{ (k.ort or "") | e }}{% if k.land %} ({{ oekoinvest_label("land", k.land) }}){% endif %}</td></tr>
+	<tr><td class="oi-feld">Konto im Portal</td><td>{{ doc.nutzer_id or "noch keins" }}</td></tr>
+	<tr><td class="oi-feld">Zuständig</td><td>{{ oekoinvest_konto(doc.zustaendig_id).name | e if doc.zustaendig_id else "noch nicht zugewiesen" }}</td></tr>
+	{% if doc.flaeche_id %}<tr><td class="oi-feld">Fläche</td><td>{{ doc.flaeche_id }}</td></tr>{% endif %}
+</table>
+
+{% if daten %}
+<div class="oi-abschnitt">Angaben aus dem Formular</div>
+<table class="oi-tabelle">
+	{% for schluessel, wert in daten.items() %}{% if wert not in (None, "", [], {}) %}
+	<tr><td style="width:34%">{{ schluessel | e }}</td><td class="oi-text">{% if wert is mapping %}{% for a, b in wert.items() %}{{ a | e }}: {{ b | e }}{% if not loop.last %}, {% endif %}{% endfor %}{% elif wert is iterable and wert is not string %}{{ wert | join(", ") | e }}{% else %}{{ wert | e }}{% endif %}</td></tr>
+	{% endif %}{% endfor %}
+</table>
+{% endif %}
+{% if doc.description %}<div class="oi-abschnitt">Interne Notiz</div><p class="oi-text">{{ doc.description | e }}</p>{% endif %}
+{% if doc.ablehn_grund %}<div class="oi-abschnitt">Begründung (Ablehnung)</div><p class="oi-text">{{ doc.ablehn_grund | e }}</p>{% endif %}
+
+<div class="oi-abschnitt">Einwilligung</div>
+{% if ew.am %}
+<table class="oi-daten">
+	<tr><td class="oi-feld">Erteilt am</td><td>{{ oekoinvest_datum(ew.am, true) }}</td></tr>
+	<tr><td class="oi-feld">IP-Adresse</td><td>{{ (ew.ip or "–") | e }}</td></tr>
+	<tr><td class="oi-feld">Text</td><td class="oi-klein">{{ (ew.text or "–") | e }}</td></tr>
+</table>
+{% else %}<p class="oi-klein">{{ "anonymisiert (Löschkonzept)" if ew.anonymisiert else "keine Angaben" }}</p>{% endif %}
+
+{% if doc.status_verlauf %}
+<div class="oi-abschnitt">Statusverlauf</div>
+<table class="oi-tabelle">
+	<tr><th>Zeitpunkt</th><th>Status</th><th>durch</th><th>Kommentar</th></tr>
+	{% for e in doc.status_verlauf %}<tr><td>{{ oekoinvest_datum(e.am, true) }}</td><td>{{ oekoinvest_status("vorgang", e.status) }}</td><td>{{ rolle_label.get(e.von_rolle, e.von_rolle) }}</td><td>{{ (e.kommentar or "") | e }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+<div class="oi-fuss">{{ f.name }} · interner Ausdruck vom {{ oekoinvest_datum(frappe.utils.now_datetime(), true) }} durch {{ frappe.session.user | e }} · enthält personenbezogene Daten – vertraulich behandeln</div>

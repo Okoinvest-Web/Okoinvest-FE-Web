@@ -21,10 +21,22 @@ import useFokusFalle from "@/components/ui/useFokusFalle";
 import { rolleLabel } from "@/lib/plattform/konstanten";
 import { initialen } from "@/lib/plattform/format";
 import { darfLesen, seitenBereich } from "@/lib/plattform/rechte"; // Backoffice-Unterrollen: Menü je Leserecht
+import { unterrollen } from "@/lib/plattform/rechte"; // Onboarding B1: Menüpunkt Einarbeitung nur für Leitung
+import { GraduationCap } from "lucide-react"; // Onboarding B1
 import { BarChart3, Contact, KeyRound, LayoutTemplate, Link2, Target, Workflow } from "lucide-react"; // Backoffice-Ausbau
 import { Fingerprint, UsersRound } from "lucide-react"; // Login, Sicherheit & Teams
 import { SunMedium, TriangleAlert } from "lucide-react"; // Anlagen & Monitoring
+import { BadgeCheck, ScanFace } from "lucide-react"; // KYC/KYB
+import { HandHeart, Zap } from "lucide-react"; // Fachprüfung Kapitalseite
+import { HardHat, Milestone } from "lucide-react"; // Projektentwicklung
+import { Landmark, ReceiptText } from "lucide-react"; // ERPNext-Finanzen & Abrechnung
+import { Banknote, Calculator } from "lucide-react"; // Finanzierung
+import { BookOpen, CalendarDays, FileSignature, LifeBuoy, Timer } from "lucide-react"; // Signatur, Termine, Service & HR
+import { Map as KartenIcon } from "lucide-react"; // Geodaten & Akquise-Engine (Alias: globales Map nicht überdecken)
+import { FileSpreadsheet, PlugZap } from "lucide-react"; // Energiebeschaffung
+import { ScrollText, Stamp } from "lucide-react"; // Grundbuch & Closing
 import OrgWechsler from "./Sicherheit/OrgWechsler";
+import TourHinweis from "./Bedienung/Onboarding/TourHinweis"; // Onboarding B1: Tour-Hinweise (abschaltbar)
 import { avatarKlasse } from "@/lib/plattform/organisation";
 
 function navigation(rollen, nutzer = { rollen }) {
@@ -40,13 +52,28 @@ function navigation(rollen, nutzer = { rollen }) {
         hat("anbieter") && { href: "/portal/projekte", label: "Meine Projekte", icon: FolderKanban },
         hat("investor") && { href: "/portal/boerse", label: "Projektbörse", icon: TrendingUp },
         hat("investor") && { href: "/portal/pipeline", label: "Deal-Pipeline", icon: SquareKanban }, // Deal-Room
-        hat("unternehmen") && { href: "/portal/anlagen", label: "Meine Anlagen", icon: SunMedium }, // Anlagen & Monitoring
+        hat("investor", "anbieter") && { href: "/portal/finanzierung", label: "Finanzierungscockpit", icon: Calculator }, // Finanzierung: Rendite & Finanzierungsvergleich
+        hat("bank") && { href: "/portal/bank", label: "Finanzierungsanfragen", icon: Banknote }, // Finanzierung: Bank-Portal (externe Rolle)
+        hat("unternehmen") && { href: "/portal/anlagen", label: "Mein Solarstrom", icon: SunMedium }, // Anlagen & Monitoring (Kunde = Stromabnehmer, Anlage im Eigentum von ÖkoInvest)
+        hat("unternehmen") && { href: "/portal/energie", label: "Energie & Lastgang", icon: Zap, exakt: true }, // Fachprüfung Kapitalseite: Abnahmestellen, Lastgang, Pool
+        hat("unternehmen") && { href: "/portal/energie/beschaffung", label: "Energiebeschaffung", icon: PlugZap }, // Energiebeschaffung: Vertrag, Ausschreibung, Freigabe, Vollmacht
+        hat("lieferant") && { href: "/portal/ausschreibungen", label: "Angebotsanfragen", icon: FileSpreadsheet }, // Energiebeschaffung: Versorger-Portal
+        hat("mitglied") && { href: "/portal/beteiligung", label: "Genossenschaft & Gemeinschaft", icon: HandHeart }, // Fachprüfung Kapitalseite
+        hat("kommune") && { href: "/portal/kommune", label: "Gemeinde", icon: Landmark }, // Onboarding B1: Rolle Kommune → Gemeinde-Sicht
+        hat("flaeche", "landwirt", "investor", "gutachter") && { href: "/portal/entwicklung", label: hat("gutachter") ? "Aufträge & Projekte" : "Projektentwicklung", icon: HardHat }, // Projektentwicklung: „Wo steht mein Projekt?“, Co-Development, Gutachter
+        hat("flaeche", "landwirt", "unternehmen", "anbieter") && { href: "/portal/abrechnungen", label: "Abrechnungen", icon: ReceiptText }, // ERPNext-Finanzen & Abrechnung
+        hat("flaeche", "landwirt", "unternehmen") && { href: "/portal/grundbuch", label: "Grundbuch", icon: ScrollText }, // Grundbuch & Closing: Dienstbarkeit Eigentümer/Dachgeber
+        hat("investor", "anbieter") && { href: "/portal/closing", label: "Deal-Abschluss", icon: Stamp }, // Grundbuch & Closing: Closing-Raum Käufer/Verkäufer
         { href: "/portal/nachrichten", label: "Nachrichten", icon: MessagesSquare, zaehler: "nachrichten" },
         { href: "/portal/benachrichtigungen", label: "Benachrichtigungen", icon: Bell, zaehler: "hinweise" },
         { href: "/portal/dokumente", label: "Dokumente", icon: FileText },
+        { href: "/portal/signatur", label: "Unterschriften", icon: FileSignature }, // Signatur
+        { href: "/portal/termine", label: "Termine", icon: CalendarDays }, // Termine
+        { href: "/portal/support", label: "Support", icon: LifeBuoy }, // Service
         { href: "/portal/profil", label: hat("investor") ? "Profil & Suchprofil" : "Profil", icon: UserRound },
         { href: "/portal/organisation", label: "Organisation & Team", icon: UsersRound }, // Login, Sicherheit & Teams
         { href: "/portal/sicherheit", label: "Sicherheit", icon: Fingerprint },
+        { href: "/portal/verifizierung", label: "Verifizierung", icon: BadgeCheck }, // KYC/KYB
       ].filter(Boolean),
     },
   ];
@@ -61,10 +88,21 @@ function navigation(rollen, nutzer = { rollen }) {
         { href: "/portal/admin/projekte", label: "Projekt-Freigabe", icon: ShieldCheck },
         { href: "/portal/admin/interessen", label: "NDA & LOI", icon: Handshake },
         { href: "/portal/admin/dealroom", label: "Deal-Room", icon: Gavel }, // Deal-Room: Q&A-Moderation, Bieterverfahren
+        { href: "/portal/admin/closing", label: "Deal-Abschluss", icon: Stamp }, // Grundbuch & Closing: Closing-Räume
+        { href: "/portal/admin/grundbuch", label: "Grundbuch & Dienstbarkeiten", icon: ScrollText }, // Grundbuch & Closing
+        { href: "/portal/admin/entwicklung", label: "Projektentwicklung", icon: Milestone }, // Projektentwicklung: Pipeline, Gantt, Risiken
         { href: "/portal/admin/anlagen", label: "Anlagen & Störungen", icon: TriangleAlert }, // Anlagen & Monitoring: Störungs-Leitstand
+        { href: "/portal/admin/energie", label: "Energie-Handelsdesk", icon: PlugZap }, // Energiebeschaffung: Spot/Termin, Pool, Kunden, Ausschreibungen, Lieferanten
+        { href: "/portal/admin/compliance", label: "Compliance (KYC)", icon: ScanFace }, // KYC/KYB: Warteschlange, Prüfung, Sanktionsabgleich
+        { href: "/portal/admin/bonitaet", label: "Bonität", icon: Gauge }, // Dienste: Bonitätsauskünfte vor LOI
+        { href: "/portal/admin/gesellschaften", label: "Gesellschaften & SPV", icon: Building2 }, // Dienste: SPV-Gründung, Organigramm, Fristen
         { href: "/portal/admin/deals", label: "Deals & Provisionen", icon: Coins },
+        { href: "/portal/admin/finanzen", label: "Finanzen & Abrechnung", icon: Landmark }, // ERPNext-Finanzen & Abrechnung
+        { href: "/portal/admin/finanzierung", label: "Finanzierung & Banken", icon: Banknote }, // Finanzierung: Bankfinanzierung Eigenbetrieb, Covenants
         { href: "/portal/admin/nutzer", label: "Nutzer & Protokoll", icon: Users },
         { href: "/portal/admin/postausgang", label: "E-Mail-Postausgang", icon: Mail },
+        { href: "/portal/admin/kalender", label: "Kalender", icon: CalendarDays }, // Termine
+        { href: "/portal/admin/support", label: "Support-Tickets", icon: LifeBuoy }, // Service
       ].filter((e) => darfLesen(nutzer, seitenBereich(e.href))),
     });
     // Backoffice-Ausbau: CRM, Akquise, Automationen, Vorlagen, Berichte, Revisionsprotokoll, Rechte
@@ -73,13 +111,18 @@ function navigation(rollen, nutzer = { rollen }) {
       eintraege: [
         { href: "/portal/admin/crm", label: "CRM", icon: Contact },
         { href: "/portal/admin/akquise", label: "Akquise & Gebiete", icon: Target },
+        { href: "/portal/admin/akquise/karte", label: "Akquise-Karte", icon: KartenIcon }, // Geodaten & Akquise-Engine
         { href: "/portal/admin/automationen", label: "Automationen", icon: Workflow },
         { href: "/portal/admin/vorlagen", label: "Vorlagen", icon: LayoutTemplate },
         { href: "/portal/admin/berichte", label: "Berichte", icon: BarChart3 },
         { href: "/portal/admin/protokoll", label: "Revisionsprotokoll", icon: Link2 },
         { href: "/portal/admin/rechte", label: "Rechte", icon: KeyRound },
+        { href: "/portal/admin/team", label: "Team & Zeiten", icon: Timer }, // HR
+        { href: "/portal/admin/wissen", label: "Wissensdatenbank", icon: BookOpen }, // HR: intern
       ].filter((e) => darfLesen(nutzer, seitenBereich(e.href))),
     });
+    // Onboarding B1: Einarbeitungsstand des Teams – nur Leitung
+    if (unterrollen(nutzer).includes("leitung")) bereiche[bereiche.length - 1].eintraege.push({ href: "/portal/admin/einarbeitung", label: "Einarbeitung", icon: GraduationCap });
   }
   return bereiche;
 }
@@ -108,10 +151,19 @@ const LABELS = {
   pipeline: "Deal-Pipeline",
   dealroom: "Deal-Room",
   anlagen: "Anlagen", // Anlagen & Monitoring
+  abrechnungen: "Abrechnungen", finanzen: "Finanzen & Abrechnung", // ERPNext-Finanzen & Abrechnung
+  entwicklung: "Projektentwicklung", steckbrief: "Steckbrief", // Projektentwicklung
+  finanzierung: "Finanzierung", bank: "Finanzierungsanfragen", // Finanzierung
+  energie: "Energie & Lastgang", beteiligung: "Genossenschaft & Gemeinschaft", bewertung: "Bewertung", // Fachprüfung Kapitalseite
+  verifizierung: "Verifizierung", compliance: "Compliance", // KYC/KYB
+  gesellschaften: "Gesellschaften", bonitaet: "Bonität", identitaet: "Online-Identifizierung", // Dienste
+  signatur: "Unterschriften", termine: "Termine", support: "Support", kalender: "Kalender", team: "Team & Zeiten", wissen: "Wissensdatenbank", // Signatur, Termine, Service & HR
   karte: "Karte",
   hilfe: "Hilfe",
   willkommen: "Einstieg",
+  kommune: "Gemeinde", einarbeitung: "Einarbeitung", // Onboarding B1
   crm: "CRM", akquise: "Akquise", automationen: "Automationen", vorlagen: "Vorlagen", berichte: "Berichte", protokoll: "Revisionsprotokoll", rechte: "Rechte", dubletten: "Dubletten", organisation: "Organisation", // Backoffice-Ausbau
+  ausschreibungen: "Ausschreibungen", beschaffung: "Beschaffung", kunden: "Kunden", lieferanten: "Lieferanten", // Energiebeschaffung
 };
 
 function brotkrumen(pfad) {
@@ -337,6 +389,7 @@ export default function PortalRahmen({ nutzer, ungelesen = 0, hinweise = { eintr
         </header>
 
         <div id="portal-inhalt" tabIndex={-1} className="mx-auto w-full max-w-[1320px] px-4 py-6 outline-none md:px-8 md:py-10">
+          <TourHinweis nutzer={nutzer} />
           {children}
         </div>
         {/* Platz für die mobile Bottom-Navigation */}

@@ -1,11 +1,8 @@
-<div style="font-family: Inter, Arial, Helvetica, sans-serif; color: #1f2933; font-size: 15px; line-height: 1.6; max-width: 560px;">
-	<p style="font-family: Manrope, Arial, Helvetica, sans-serif; font-size: 18px; font-weight: 700; color: #436621; margin: 0 0 16px;">ÖkoInvest</p>
-	<p>Guten Tag{% if vorname %} {{ vorname | e }}{% endif %},</p>
-	<p>vielen Dank für Ihre Registrierung im Portal von ÖkoInvest. Bitte bestätigen Sie Ihre E-Mail-Adresse über den folgenden Link. Danach ordnen wir frühere Anfragen mit dieser Adresse automatisch Ihrem Konto zu.</p>
-	<p style="margin: 24px 0;">
-		<a href="{{ link | e }}" style="background: #558227; color: #ffffff; text-decoration: none; padding: 12px 22px; border-radius: 999px; font-weight: 600; display: inline-block;">E-Mail-Adresse bestätigen</a>
-	</p>
-	<p style="font-size: 13px; color: #52606d;">Der Link ist 72 Stunden gültig und kann nur einmal verwendet werden. Falls die Schaltfläche nicht funktioniert, kopieren Sie diese Adresse in Ihren Browser:<br>{{ link | e }}</p>
-	<p style="font-size: 13px; color: #52606d;">Sie haben sich nicht registriert? Dann können Sie diese E-Mail ignorieren.</p>
-	<p style="font-size: 13px; color: #52606d; border-top: 1px solid #e4e7eb; padding-top: 12px; margin-top: 24px;">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich</p>
-</div>
+{% extends "templates/emails/oekoinvest_basis.html" %}
+{% block inhalt %}
+<p>Guten Tag{% if vorname %} {{ vorname | e }}{% endif %},</p>
+<p>vielen Dank für Ihre Registrierung im Portal von ÖkoInvest. Bitte bestätigen Sie Ihre E-Mail-Adresse über den folgenden Link. Danach ordnen wir frühere Anfragen mit dieser Adresse automatisch Ihrem Konto zu.</p>
+<p style="margin:24px 0;"><a href="{{ link | e }}" style="background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;">E-Mail-Adresse bestätigen</a></p>
+<p style="font-size:13px;color:#52606d;">Der Link ist 72 Stunden gültig und kann nur einmal verwendet werden. Falls die Schaltfläche nicht funktioniert, kopieren Sie diese Adresse in Ihren Browser:<br><span style="word-break: break-all;">{{ link | e }}</span></p>
+<p style="font-size:13px;color:#52606d;">Sie haben sich nicht registriert? Dann können Sie diese E-Mail ignorieren.</p>
+{% endblock %}

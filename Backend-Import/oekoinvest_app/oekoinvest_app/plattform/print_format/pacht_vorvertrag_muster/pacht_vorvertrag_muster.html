@@ -1,0 +1,55 @@
+{#- ÖkoInvest – Absichtserklärung / Pacht-Vorvertrag (MUSTER zur anwaltlichen Prüfung) für eine Plattform Flaeche. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set eig = oekoinvest_konto(doc.nutzer_id) -%}
+{%- set pa = oekoinvest_json(doc.pachtangebot) -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Flächensicherung · Muster</div>
+	<div class="oi-titel">Absichtserklärung zur Verpachtung einer Fläche (Pacht-Vorvertrag)</div>
+	<div class="oi-untertitel">Fläche {{ doc.name }} · {{ doc.bezeichnung | e }}</div>
+</div>
+<div class="oi-muster-stempel">MUSTER – keine Rechtsberatung. Vor jeder Verwendung anwaltlich prüfen und an das Recht des Belegenheitslandes ({{ oekoinvest_label("land", doc.land) }}) anpassen, z. B. dingliche Sicherung (Dienstbarkeit), Grundverkehrs- bzw. Genehmigungsvorschriften und steuerliche Folgen für den Eigentümer.</div>
+
+<div class="oi-abschnitt">Beteiligte</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Eigentümer/in (Verpächter/in)</td><td><b>{{ (eig.firma or eig.name) | e }}</b>{% if eig.firma %}<br>{{ eig.name | e }}{% endif %}<br>{{ eig.email | e }}</td></tr>
+	<tr><td class="oi-feld">Interessentin (Pächterin)</td><td><b>{{ f.name }}</b> oder eine von ihr benannte Projektgesellschaft<br>{{ f.strasse }}, {{ f.ort }}, {{ f.land }} · {{ f.fn }}</td></tr>
+</table>
+
+<div class="oi-abschnitt">Fläche</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Lage</td><td>{{ doc.plz | e }} {{ doc.ort | e }}{% if doc.bundesland %}, {{ doc.bundesland | e }}{% endif %} ({{ oekoinvest_label("land", doc.land) }})</td></tr>
+	<tr><td class="oi-feld">Gemarkung</td><td>{{ (doc.gemarkung or "–") | e }}</td></tr>
+	<tr><td class="oi-feld">Größe (Angabe Eigentümer)</td><td>{{ oekoinvest_zahl(doc.ha, 2) }} ha</td></tr>
+	<tr><td class="oi-feld">Nutzung / Eigentum</td><td>{{ oekoinvest_label("nutzung", doc.nutzung) }} · {{ oekoinvest_label("eigentum", doc.eigentum) }}{% if doc.agri %} · Agri-PV vorgesehen{% endif %}</td></tr>
+</table>
+{% if doc.flurstuecke %}
+<table class="oi-tabelle">
+	<tr><th>Gemarkung</th><th>Flur</th><th>Flurstück</th></tr>
+	{% for fl in doc.flurstuecke %}<tr><td>{{ fl.gemarkung | e }}</td><td>{{ fl.flur | e }}</td><td>{{ fl.nummer | e }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+
+<div class="oi-abschnitt">Eckpunkte</div>
+{% if pa.euroProHaJahr %}
+<table class="oi-daten">
+	<tr><td class="oi-feld">Pacht je Hektar und Jahr</td><td><b>{{ oekoinvest_eur(pa.euroProHaJahr) }}</b></td></tr>
+	<tr><td class="oi-feld">Jahrespacht (rechnerisch)</td><td>{{ oekoinvest_eur((pa.euroProHaJahr or 0) * (doc.ha or 0)) }} bei {{ oekoinvest_zahl(doc.ha, 2) }} ha – maßgeblich ist die vermessene Fläche</td></tr>
+	<tr><td class="oi-feld">Laufzeit</td><td>{{ pa.laufzeitJahre }} Jahre ab Inbetriebnahme{% if pa.verlaengerung %} · Verlängerung: {{ pa.verlaengerung | e }}{% endif %}</td></tr>
+	<tr><td class="oi-feld">Angebot vom</td><td>{{ oekoinvest_datum(pa.am) }}</td></tr>
+</table>
+{% if pa.text %}<p class="oi-text">{{ pa.text | e }}</p>{% endif %}
+{% else %}
+<div class="oi-warnung">Für diese Fläche liegt noch kein Pachtangebot vor (Status: {{ oekoinvest_status("flaeche", doc.status) }}). Die Eckpunkte werden mit dem Pachtangebot im Portal festgelegt.</div>
+{% endif %}
+
+<p class="oi-absatz"><b>1. Absicht.</b> Die Beteiligten beabsichtigen, über die Fläche einen Pachtvertrag zur Errichtung und zum Betrieb einer Photovoltaik-Anlage{% if doc.agri %} (Agri-PV mit fortgesetzter landwirtschaftlicher Nutzung){% endif %} abzuschließen.</p>
+<p class="oi-absatz"><b>2. Vorbehalte.</b> Der Abschluss des Pachtvertrags steht unter dem Vorbehalt der Standortprüfung, insbesondere Netzanschluss, Planungs- und Baurecht, naturschutzfachliche Belange und die Zustimmung etwaiger Berechtigter (z. B. Miteigentümer, Grundpfandgläubiger, bestehende Pächter).</p>
+<p class="oi-absatz"><b>3. Verbindlichkeit.</b> Diese Absichtserklärung begründet keine Pflicht zum Abschluss des Pachtvertrags und keine Zahlungspflichten. Pflichten entstehen erst mit dem schriftlichen Pachtvertrag.</p>
+<p class="oi-absatz"><b>4. Vertraulichkeit und Daten.</b> Die Beteiligten behandeln die ausgetauschten Informationen vertraulich. Personenbezogene Daten werden nach der Datenschutzerklärung der {{ f.name }} verarbeitet.</p>
+<p class="oi-absatz"><b>5. Beratung.</b> Dem Eigentümer wird empfohlen, vor Unterzeichnung eine rechtliche und steuerliche Beratung einzuholen (z. B. zu Erbschaft-, Schenkung- und Grundsteuer sowie zur Förderfähigkeit landwirtschaftlicher Flächen).</p>
+
+<table class="oi-unterschrift">
+	<tr><td><div style="height:34px"></div><div class="oi-linie">Ort, Datum, Unterschrift Eigentümer/in</div></td><td><div style="height:34px"></div><div class="oi-linie">Ort, Datum, Unterschrift {{ f.name }}</div></td></tr>
+</table>
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · {{ f.gericht }} · Muster-Stand {{ oekoinvest_datum(frappe.utils.nowdate()) }}</div>

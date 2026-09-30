@@ -1,0 +1,183 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Anfrage an eine Bank zu einem Finanzierungsfall (E-Mail mit persönlichem, befristetem Link; Token nur als Hash).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "fall_id",
+  "bank_id",
+  "status",
+  "frist",
+  "gesendet_am",
+  "cb1",
+  "einladung_email",
+  "einladung_hash",
+  "einladung_ablauf",
+  "einladung_status",
+  "sb1",
+  "nachricht",
+  "verlauf"
+ ],
+ "fields": [
+  {
+   "fieldname": "fall_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Finanzierungsfall",
+   "options": "Plattform Finanzierungsfall",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "bank_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Bank",
+   "options": "Plattform Bank",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "offen",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "offen\nin_pruefung\ntermsheet\nabgesagt\nausgewaehlt\nnicht_ausgewaehlt\nzurueckgezogen"
+  },
+  {
+   "fieldname": "frist",
+   "fieldtype": "Date",
+   "label": "Frist Term Sheet"
+  },
+  {
+   "fieldname": "gesendet_am",
+   "fieldtype": "Datetime",
+   "label": "Gesendet am"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "einladung_email",
+   "fieldtype": "Data",
+   "label": "Einladung an",
+   "options": "Email"
+  },
+  {
+   "fieldname": "einladung_hash",
+   "fieldtype": "Data",
+   "label": "Einladung (SHA-256)",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "einladung_ablauf",
+   "fieldtype": "Datetime",
+   "label": "Einladung gültig bis"
+  },
+  {
+   "default": "offen",
+   "fieldname": "einladung_status",
+   "fieldtype": "Select",
+   "label": "Einladung",
+   "options": "offen\nangenommen\nersetzt\nwiderrufen"
+  },
+  {
+   "fieldname": "sb1",
+   "fieldtype": "Section Break",
+   "label": ""
+  },
+  {
+   "fieldname": "nachricht",
+   "fieldtype": "Text",
+   "label": "Nachricht an die Bank"
+  },
+  {
+   "fieldname": "verlauf",
+   "fieldtype": "JSON",
+   "label": "Verlauf"
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 06:29:55.122163",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Finanzierungsanfrage",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Transaktion",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -31,6 +31,13 @@ from oekoinvest_app.plattform.rechte import stufe
 
 DT = "Plattform Anlage"
 
+# Eigentum & Betrieb (Fachprüfung Kapitalseite): Anlage im Eigentum von ÖkoInvest bzw. einer Projektgesellschaft (SPV),
+# ÖkoInvest verkauft den Strom an den Kunden (Stromabnehmer). Gleiche Werte wie src/lib/plattform/anlagen.js.
+BETRIEBSFUEHRER_STANDARD = "ÖkoInvest GmbH"
+DIENSTBARKEIT_STATUS = {"nicht_erforderlich": "Nicht erforderlich", "vorbereitung": "In Vorbereitung", "beantragt": "Beim Grundbuch beantragt", "eingetragen": "Im Grundbuch eingetragen"}
+INDEX_BASIS = ["fest", "prozent", "vpi", "strompreis"]
+ENDSCHAFT = ["kaufoption", "uebergang", "verlaengerung", "rueckbau"]
+
 
 # ================================================================ Rechte
 
@@ -110,6 +117,9 @@ def vertrag_json(c):
 		"id": c.name, "anlageId": c.anlage_id, "nummer": c.nummer or "", "beginn": beginn, "laufzeitJahre": cint(c.laufzeit_jahre), "ende": ende,
 		"strompreisCt": flt(c.strompreis_ct), "grundgebuehrMonat": flt(c.grundgebuehr_monat), "indexierungPct": flt(c.indexierung_pct),
 		"kuendigungsfristMonate": cint(c.kuendigungsfrist_monate), "status": c.status, "bemerkung": c.bemerkung or "",
+		# Vertragsdetails: Preisgleitung, Mindestabnahme (Take-or-Pay), Endschaft/Kaufoption
+		"indexBasis": c.get("index_basis") or "fest", "mindestabnahmeKwhJahr": flt(c.get("mindestabnahme_kwh_jahr")) or None,
+		"endschaft": c.get("endschaft") or "", "kaufoptionEur": flt(c.get("kaufoption_eur")) or None, "endschaftText": c.get("endschaft_text") or "",
 	}
 
 
@@ -158,6 +168,13 @@ def anlage_json(n, a, detail=False):
 		"simulation": None,
 		"kunde": {"id": kunde.name, "name": " ".join(x for x in (kunde.vorname, kunde.nachname) if x), "firma": kunde.firma or "", "email": kunde.email} if kunde else None,
 		"organisation": {"id": a.organisation_id, "name": _org_name(a.organisation_id)} if a.organisation_id else None,
+		# Eigentum & Betrieb – Kunde ist Stromabnehmer, nicht Eigentümer
+		"eigentuemer": a.get("eigentuemer") or "", "eigentuemerId": a.get("eigentuemer_id") or None, "betriebsfuehrer": a.get("betriebsfuehrer") or BETRIEBSFUEHRER_STANDARD,
+		"dachgeber": (_org_name(a.organisation_id) or (kunde.firma if kunde else "") or "Stromabnehmer") if cint(a.get("dachgeber_ist_kunde")) else (a.get("dachgeber") or ""),
+		"dachgeberIstKunde": bool(cint(a.get("dachgeber_ist_kunde"))),
+		"dienstbarkeitStatus": a.get("dienstbarkeit_status") or "", "dienstbarkeitStatusLabel": DIENSTBARKEIT_STATUS.get(a.get("dienstbarkeit_status") or "", ""),
+		"dienstbarkeitDatum": str(a.get("dienstbarkeit_datum") or ""), "dienstbarkeitDokumentId": a.get("dienstbarkeit_dokument_id") or None, "dienstbarkeitHinweis": a.get("dienstbarkeit_hinweis") or "",
+		"finanziertDurch": (a.get("finanziert_durch") or "") if bo else None,
 		"offeneStoerungen": [{"id": s.name, "schwere": s.schwere, "status": s.status, "titel": s.titel, "regel": s.regel} for s in offen],
 		"vertrag": {"strompreisCt": flt(c.strompreis_ct), "grundgebuehrMonat": flt(c.grundgebuehr_monat), "status": c.status} if c else None,
 		"meinZugriff": zg, "darfBearbeiten": bo_schreiben(n), "erstelltAm": iso(a.creation), "geaendertAm": iso(a.modified),
@@ -171,8 +188,9 @@ def anlage_json(n, a, detail=False):
 	a_kurz = frappe._dict(name=a.name, titel=a.titel, typ=a.typ, ort=a.ort)
 	out.update({
 		"vertrag": vertrag_json(c),
-		"komponenten": [{"id": k.name, "anlageId": a.name, "art": k.art, "artLabel": KOMPONENTEN_ARTEN.get(k.art, k.art), "hersteller": k.hersteller or "", "modell": k.modell or "", "seriennummer": k.seriennummer or "", "anzahl": cint(k.anzahl) or 1, "leistungKw": flt(k.leistung_kw) or None, "kapazitaetKwh": flt(k.kapazitaet_kwh) or None, "inbetriebnahme": str(k.inbetriebnahme or ""), "garantieBis": str(k.garantie_bis or ""), "bemerkung": k.bemerkung or ""} for k in komponenten],
-		"messpunkte": [{"id": m.name, "anlageId": a.name, "bezeichnung": m.bezeichnung or "", "zaehlernummer": m.zaehlernummer, "art": m.art, "artLabel": MESSPUNKT_ARTEN.get(m.art, (m.art,))[0], "messstelle": m.messstelle, "messstelleLabel": MESSSTELLEN.get(m.messstelle, m.messstelle), "abrechnungsrelevant": bool(cint(m.abrechnungsrelevant)), "smgw": bool(cint(m.smgw)), "msb": m.msb or "", "eichgueltigBis": str(m.eichgueltig_bis or ""), "bemerkung": m.bemerkung or ""} for m in messpunkte],
+		# Technische Tiefe nur fürs Backoffice; Kunden sehen nur abrechnungsrelevante Messpunkte
+		"komponenten": None if not bo else [{"id": k.name, "anlageId": a.name, "art": k.art, "artLabel": KOMPONENTEN_ARTEN.get(k.art, k.art), "hersteller": k.hersteller or "", "modell": k.modell or "", "seriennummer": k.seriennummer or "", "anzahl": cint(k.anzahl) or 1, "leistungKw": flt(k.leistung_kw) or None, "kapazitaetKwh": flt(k.kapazitaet_kwh) or None, "inbetriebnahme": str(k.inbetriebnahme or ""), "garantieBis": str(k.garantie_bis or ""), "bemerkung": k.bemerkung or ""} for k in komponenten],
+		"messpunkte": [{"id": m.name, "anlageId": a.name, "bezeichnung": m.bezeichnung or "", "zaehlernummer": m.zaehlernummer, "art": m.art, "artLabel": MESSPUNKT_ARTEN.get(m.art, (m.art,))[0], "messstelle": m.messstelle, "messstelleLabel": MESSSTELLEN.get(m.messstelle, m.messstelle), "abrechnungsrelevant": bool(cint(m.abrechnungsrelevant)), "smgw": bool(cint(m.smgw)), "msb": m.msb or "", "eichgueltigBis": str(m.eichgueltig_bis or ""), "bemerkung": m.bemerkung or ""} for m in messpunkte if bo or cint(m.abrechnungsrelevant)],
 		"wartungen": [{"id": w.name, "anlageId": a.name, "art": w.art, "artLabel": WARTUNG_ARTEN.get(w.art, w.art), "datum": str(w.datum or ""), "status": w.status, "statusLabel": WARTUNG_STATUS.get(w.status, w.status), "dienstleister": w.dienstleister or "", "bericht": w.bericht or "", "naechsteFaelligkeit": str(w.naechste_faelligkeit or ""), **({"kostenEur": flt(w.kosten_eur) or None} if bo else {})} for w in wartungen],
 		"stoerungen": [stoerung_json(n, s, zg, a_kurz) for s in stoerungen],
 		"geraete": [zugang_json(z) for z in frappe.get_all("Plattform Geraetezugang", filters={"anlage_id": a.name}, fields=["*"], order_by="creation asc", limit_page_length=0)] if bo else None,
@@ -213,7 +231,7 @@ def liste(q=None, typ=None, status=None, als_benutzer=None):
 	erg = []
 	for name in frappe.get_all(DT, filters=filters, pluck="name", order_by="titel asc", limit_page_length=0):
 		a = frappe.get_doc(DT, name)
-		if such and such not in " ".join([a.titel or "", a.ort or "", a.bundesland or "", a.name, _org_name(a.organisation_id)]).lower():
+		if such and such not in " ".join([a.titel or "", a.ort or "", a.bundesland or "", a.name, _org_name(a.organisation_id), a.get("eigentuemer") or ""]).lower():
 			continue
 		erg.append(anlage_json(n, a))
 	return erg
@@ -240,7 +258,11 @@ def kunden(als_benutzer=None):
 		k = frappe.db.get_value("Plattform Konto", name, ["name", "aktiv", "backoffice_rollen"], as_dict=True)
 		if k and cint(k.aktiv) and stufe(frappe._dict(rollen=["admin"], backofficeRollen=k.backoffice_rollen or ""), "anlagen") >= 1:
 			betrieb.append({"id": k.name, "name": name_von(k.name)})
-	return {"konten": sorted(konten, key=lambda x: x["name"]), "organisationen": orgs, "betrieb": betrieb}
+	# Eigentümergesellschaften aus dem Gesellschaftsverzeichnis (falls installiert)
+	ges = []
+	if frappe.db.exists("DocType", "Plattform Projektgesellschaft"):
+		ges = [{"id": g.name, "name": g.firma, "status": g.status} for g in frappe.get_all("Plattform Projektgesellschaft", fields=["name", "firma", "status"], order_by="firma asc", limit_page_length=0)]
+	return {"konten": sorted(konten, key=lambda x: x["name"]), "organisationen": orgs, "betrieb": betrieb, "gesellschaften": ges}
 
 
 # ================================================================ Stammdaten (Backoffice)
@@ -293,6 +315,39 @@ def _anlage_setzen(a, d, neu):
 		if o and not frappe.db.exists("Plattform Organisation", o):
 			ungueltig("Organisation nicht gefunden.")
 		a.organisation_id = o or None
+	# Eigentum & Betrieb (Pflicht: Eigentümergesellschaft)
+	if has("eigentuemer"):
+		a.eigentuemer = v.text(d.get("eigentuemer"), 160)
+	if "eigentuemerId" in d:
+		gid = v.kennung(d.get("eigentuemerId")) or None
+		if gid:
+			firma = frappe.db.get_value("Plattform Projektgesellschaft", gid, "firma") if frappe.db.exists("DocType", "Plattform Projektgesellschaft") else None
+			if not firma:
+				ungueltig("Gesellschaft nicht im Gesellschaftsverzeichnis gefunden.")
+			a.eigentuemer = firma  # Name aus dem Verzeichnis übernehmen
+		a.eigentuemer_id = gid
+	if has("betriebsfuehrer"):
+		a.betriebsfuehrer = v.text(d.get("betriebsfuehrer"), 160) or a.get("betriebsfuehrer") or BETRIEBSFUEHRER_STANDARD
+	if "dachgeberIstKunde" in d:
+		a.dachgeber_ist_kunde = 1 if v.wahr(d.get("dachgeberIstKunde")) else 0
+	if "dachgeber" in d:
+		a.dachgeber = v.text(d.get("dachgeber"), 160)
+	if "dienstbarkeitStatus" in d:
+		a.dienstbarkeit_status = v.auswahl(d.get("dienstbarkeitStatus"), list(DIENSTBARKEIT_STATUS), "")
+	if "dienstbarkeitDatum" in d:
+		a.dienstbarkeit_datum = _datum(d.get("dienstbarkeitDatum"))
+	if "dienstbarkeitHinweis" in d:
+		a.dienstbarkeit_hinweis = v.text(d.get("dienstbarkeitHinweis"), 200)
+	if "dienstbarkeitDokumentId" in d:
+		dok = v.kennung(d.get("dienstbarkeitDokumentId"))
+		if dok and not frappe.db.exists("Plattform Dokument", dok):
+			ungueltig("Dokument nicht gefunden.")
+		a.dienstbarkeit_dokument_id = dok or None
+	if "finanziertDurch" in d:
+		a.finanziert_durch = v.text(d.get("finanziertDurch"), 160)
+	v.pflicht(len(a.get("eigentuemer") or "") >= 3, "Bitte geben Sie die Eigentümergesellschaft an (ÖkoInvest GmbH oder Projektgesellschaft).")
+	if a.get("dienstbarkeit_status") in ("beantragt", "eingetragen"):
+		v.pflicht(bool(a.get("dienstbarkeit_datum")), "Bitte geben Sie das Datum des Antrags bzw. der Eintragung der Dienstbarkeit an.")
 	v.pflicht(len(a.titel or "") >= 3, "Bitte geben Sie eine Bezeichnung an (mind. 3 Zeichen).")
 	v.pflicht(bool(a.typ), "Bitte wählen Sie den Anlagentyp.")
 	v.pflicht(bool(a.bundesland), "Bitte wählen Sie Bundesland bzw. Kanton.")
@@ -373,6 +428,12 @@ def _eintrag_felder(art, d, a):
 			"strompreis_ct": v.zahl(d.get("strompreisCt"), min=0, max=100, stellen=3), "grundgebuehr_monat": v.zahl(d.get("grundgebuehrMonat"), min=0, max=1000000, stellen=2),
 			"indexierung_pct": v.zahl(d.get("indexierungPct"), min=0, max=10, stellen=2) or 0, "kuendigungsfrist_monate": int(v.zahl(d.get("kuendigungsfristMonate"), min=0, max=36) or 6),
 			"status": v.auswahl(d.get("status"), ["aktiv", "gekuendigt", "beendet"], "aktiv"), "bemerkung": v.text(d.get("bemerkung"), 300),
+			# Vertragsdetails (wie demo/anlagen.js)
+			"index_basis": v.auswahl(d.get("indexBasis"), INDEX_BASIS, "prozent" if flt(d.get("indexierungPct")) > 0 else "fest"),
+			"mindestabnahme_kwh_jahr": v.zahl(d.get("mindestabnahmeKwhJahr"), min=0, max=1e9, stellen=0),
+			"endschaft": v.auswahl(d.get("endschaft"), ENDSCHAFT, ""),
+			"kaufoption_eur": v.zahl(d.get("kaufoptionEur"), min=0, max=1e9, stellen=0),
+			"endschaft_text": v.text(d.get("endschaftText"), 300),
 		}
 		v.pflicht(bool(f["beginn"]), "Bitte geben Sie den Vertragsbeginn an.")
 		v.pflicht(f["laufzeit_jahre"] > 0, "Bitte geben Sie die Laufzeit in Jahren an (1–40).")
@@ -426,6 +487,10 @@ def eintrag_speichern(anlageId=None, art=None, id=None, daten=None, als_benutzer
 	name = None
 	if art == "vertrag":
 		name = frappe.db.get_value(dt, {"anlage_id": a.name}, "name")
+		if felder.get("status") == "aktiv" and (a.kunde_id or a.organisation_id) and not (name and frappe.db.get_value(dt, name, "status") == "aktiv"):
+			from oekoinvest_app.plattform.kyc_kern import kyc_sperre  # KYC/KYB: Contracting-Vertrag nur mit verifiziertem Kunden
+
+			kyc_sperre("contracting", konto_id=a.kunde_id or None, organisation_id=a.organisation_id or None, text="Contracting-Vertrag nicht möglich: Der Kunde ist noch nicht verifiziert (KYB).")
 	elif art == "monatswert":
 		name = frappe.db.get_value(dt, {"messpunkt_id": felder["messpunkt_id"], "register": felder["register"], "monat": felder["monat"]}, "name")
 	elif id:

@@ -1,0 +1,212 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 20:00:00.000000",
+ "description": "Risiko eines Entwicklungsprojekts (Eintritt × Auswirkung 1–5), Maßnahme, optional für Co-Investoren sichtbar.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "projekt_id",
+  "titel",
+  "kategorie",
+  "status",
+  "cb_1",
+  "eintritt",
+  "auswirkung",
+  "score",
+  "extern",
+  "verantwortlich_id",
+  "meilenstein_id",
+  "sec_m",
+  "massnahme"
+ ],
+ "fields": [
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Entwicklungsprojekt",
+   "options": "Plattform Entwicklungsprojekt",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Risiko",
+   "reqd": 1,
+   "in_list_view": 1,
+   "bold": 1
+  },
+  {
+   "fieldname": "kategorie",
+   "fieldtype": "Select",
+   "label": "Kategorie",
+   "options": "genehmigung\nnetz\nflaeche\nnatur\nakzeptanz\nmarkt\nfinanzierung\ntechnik\nsonstige",
+   "default": "sonstige",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "offen\nbeobachten\nmitigiert\neingetreten\ngeschlossen",
+   "default": "offen",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "eintritt",
+   "fieldtype": "Int",
+   "label": "Eintritt (1–5)",
+   "default": "3"
+  },
+  {
+   "fieldname": "auswirkung",
+   "fieldtype": "Int",
+   "label": "Auswirkung (1–5)",
+   "default": "3"
+  },
+  {
+   "fieldname": "score",
+   "fieldtype": "Int",
+   "label": "Score",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "extern",
+   "fieldtype": "Check",
+   "label": "Für Co-Investoren sichtbar"
+  },
+  {
+   "fieldname": "verantwortlich_id",
+   "fieldtype": "Link",
+   "label": "Verantwortlich",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "meilenstein_id",
+   "fieldtype": "Link",
+   "label": "Meilenstein",
+   "options": "Plattform Entwicklung Meilenstein"
+  },
+  {
+   "fieldname": "sec_m",
+   "fieldtype": "Section Break",
+   "label": "Maßnahmen"
+  },
+  {
+   "fieldname": "massnahme",
+   "fieldtype": "Text",
+   "label": "Maßnahmen"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Entwicklung Risiko",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Akquise"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Transaktion"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Projektleitung"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "in_create": 1,
+ "title_field": "titel"
+}

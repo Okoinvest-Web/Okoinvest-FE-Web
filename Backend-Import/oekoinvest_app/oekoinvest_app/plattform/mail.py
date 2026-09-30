@@ -122,3 +122,41 @@ def benachrichtigung(konto, betreff, titel, text, pfad):
 		"oekoinvest_benachrichtigung",
 		{"vorname": konto.get("vorname") or "", "titel": titel or "", "text": text, "link": f"{basis}{pfad or '/portal'}", "basis": basis},
 	)
+
+
+# ================================================================ E-Mail-Vorlagen aus dem Desk (Go-live-Paket)
+# fixtures/email_template.json enthält für alle Ereignisse eine Vorlage „ÖkoInvest: …“ im Markenlayout
+# (gleiches Layout wie templates/emails/oekoinvest_basis.html). Neue Module (z. B. KYC, Einladungen, Termine)
+# senden darüber – ohne eigene HTML-Dateien:
+#   mail.vorlage_senden("ÖkoInvest: KYC-Status", konto.email, {"vorname": …, "status_label": …, "pfad": "/portal/kyc"})
+# `pfad` (interner Portal-Pfad) wird zu `link` auf plattform_basis_url; Inhalte bleiben ohne vertrauliche Daten.
+
+
+def vorlage_senden(vorlage, empfaenger, args=None, betreff=None):
+	args = dict(args or {})
+	basis = basis_url()
+	pfad = str(args.pop("pfad", "") or "")
+	if pfad:
+		if not basis or not pfad.startswith("/") or pfad.startswith("//"):
+			return False
+		args["link"] = f"{basis}{pfad}"
+	args.setdefault("basis", basis)
+	if not empfaenger or not frappe.db.exists("Email Template", vorlage):
+		frappe.log_error(title="ÖkoInvest: E-Mail-Vorlage fehlt", message=f"Vorlage {vorlage}")
+		return False
+	try:
+		t = frappe.get_doc("Email Template", vorlage)
+		html = frappe.render_template(t.response_html if cint(t.use_html) else t.response, args)
+		frappe.sendmail(
+			recipients=[empfaenger],
+			subject=betreff or frappe.render_template(t.subject, args),
+			message=html,
+			now=False,
+			delayed=True,
+			add_unsubscribe_link=0,
+		)
+		return True
+	except Exception:
+		frappe.clear_last_message()
+		frappe.log_error(title="ÖkoInvest: E-Mail konnte nicht in die Warteschlange gestellt werden", message=f"Vorlage {vorlage}")
+		return False

@@ -97,7 +97,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-30 12:00:00.000000",
+ "modified": "2026-09-30 04:31:35.779142",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Plattform Geraetezugang",
@@ -123,12 +123,24 @@
   {
    "create": 0,
    "delete": 0,
-   "email": 0,
-   "export": 1,
-   "print": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
    "read": 1,
    "report": 1,
    "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Betrieb",
    "share": 0,
    "write": 1
   }

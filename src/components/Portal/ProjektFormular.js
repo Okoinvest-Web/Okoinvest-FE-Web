@@ -1,6 +1,6 @@
 "use client";
 
-// Projekt anlegen/bearbeiten in fünf Schritten – jeder Schritt speichert.
+// Projekt anlegen/bearbeiten in sechs Schritten (inkl. Standard-Projektdatenblatt) – jeder Schritt speichert.
 // Letzter Schritt: Provisionsvereinbarung (protokolliert) und Einreichung zur Prüfung.
 
 import { useId, useState } from "react";
@@ -16,8 +16,10 @@ import { PHASEN, PROVISION } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import { eingabe, textbereich, auswahlfeld, Feld, FehlerBox, ErfolgBox } from "./felder";
 import KiExpose from "./Ki/KiExpose";
+import DatenblattFormular from "./Fach/DatenblattFormular"; // Fachprüfung Kapitalseite: Standard-Projektdatenblatt
+import { DATENBLATT_VERTRAULICH } from "@/lib/plattform/fach/datenblatt";
 
-const SCHRITTE = ["Grunddaten", "Entwicklungsstand", "Preis & Exposé", "Vertrauliches", "Provision & Einreichen"];
+const SCHRITTE = ["Grunddaten", "Entwicklungsstand", "Preis & Exposé", "Vertrauliches", "Datenblatt", "Provision & Einreichen"];
 
 function start(p) {
   return {
@@ -38,6 +40,7 @@ function start(p) {
     beschreibung: p?.beschreibung || "",
     highlights: p?.highlights?.length ? p.highlights : [""],
     vertraulich: { ...(p?.vertraulich || {}) },
+    datenblatt: { ...(p?.datenblatt || {}) }, // Fachprüfung Kapitalseite
   };
 }
 
@@ -53,6 +56,7 @@ export default function ProjektFormular({ projekt, schrittStart = 0 }) {
 
   const setze = (k, v) => setP((x) => ({ ...x, [k]: v }));
   const setzeV = (k, v) => setP((x) => ({ ...x, vertraulich: { ...x.vertraulich, [k]: v } }));
+  const setzeDb = (k, v) => setP((x) => ({ ...x, datenblatt: { ...x.datenblatt, [k]: v } })); // Datenblatt
   const phase = PHASEN.find((x) => x.id === p.phase);
 
   async function speichern() {
@@ -106,7 +110,7 @@ export default function ProjektFormular({ projekt, schrittStart = 0 }) {
   return (
     <div className="space-y-6">
       {/* Schrittanzeige */}
-      <ol className="grid grid-cols-5 gap-1.5" aria-label="Schritte">
+      <ol className="grid grid-cols-6 gap-1.5" aria-label="Schritte">
         {SCHRITTE.map((s, i) => {
           const erreichbar = !!projekt || i === 0;
           return (
@@ -260,7 +264,7 @@ export default function ProjektFormular({ projekt, schrittStart = 0 }) {
               Diese Angaben sehen nur das Backoffice und Investoren, deren NDA freigegeben wurde. Unterlagen für den Datenraum laden Sie nach dem Speichern in der Projektansicht hoch.
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
-              {Object.entries(VERTRAULICH_FELDER).map(([k, label]) =>
+              {Object.entries(VERTRAULICH_FELDER).filter(([k]) => !DATENBLATT_VERTRAULICH.includes(k)).map(([k, label]) => // Netz/Ertrag im Datenblatt
                 k === "details" ? (
                   <Feld key={k} id={`${id}-v-${k}`} label={label} className="sm:col-span-2">
                     <textarea id={`${id}-v-${k}`} rows={4} maxLength={3000} className={textbereich} value={p.vertraulich[k] ?? ""} onChange={(e) => setzeV(k, e.target.value)} />
@@ -275,7 +279,9 @@ export default function ProjektFormular({ projekt, schrittStart = 0 }) {
           </div>
         )}
 
-        {schritt === 4 && (
+        {schritt === 4 && <DatenblattFormular p={p} setzeDb={setzeDb} setzeV={setzeV} />}
+
+        {schritt === 5 && (
           <div className="space-y-5">
             <div className="rounded-3xl bg-navy-950 p-6 text-white">
               <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-300">Provisionsvereinbarung</p>

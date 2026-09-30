@@ -1,5 +1,6 @@
 import { ShieldCheck, Clock, Coins } from "lucide-react";
 import FlaecheFormular from "@/components/Portal/FlaecheFormular";
+import { begriffeFuer } from "@/components/Portal/Flaeche/Fachanzeige"; // Fachprüfung Flächen: Lexikon-Popover im Formular
 import { Karte, SeitenKopf } from "@/components/Portal/ui";
 import { portalNutzer } from "@/lib/plattform/server/seite";
 import { PACHT, PROVISION } from "@/lib/invest/markt";
@@ -15,7 +16,7 @@ export default async function FlaecheNeu() {
       <SeitenKopf eyebrow="Flächen" titel="Fläche hinzufügen" text="Je genauer die Angaben, desto schneller die Vorprüfung. Alles lässt sich später ergänzen." />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
         <Karte>
-          <FlaecheFormular agriStandard={agri} />
+          <FlaecheFormular agriStandard={agri} begriffe={begriffeFuer()} />
         </Karte>
         <aside className="space-y-4">
           <div className="rounded-3xl bg-navy-950 p-6 text-white">

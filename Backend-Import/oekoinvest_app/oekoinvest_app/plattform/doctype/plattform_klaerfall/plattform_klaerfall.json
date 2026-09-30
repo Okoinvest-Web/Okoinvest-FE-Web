@@ -1,0 +1,207 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Klärfall aus dem Abrechnungslauf statt einer falschen Rechnung: fehlende Monatswerte, fehlender Index, unklarer Empfänger/Aussteller.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "art",
+  "schluessel",
+  "bezug_text",
+  "status",
+  "anzahl",
+  "cb_1",
+  "pachtvertrag_id",
+  "anlage_id",
+  "provision_id",
+  "monat",
+  "zuletzt_am",
+  "sb_1",
+  "gruende",
+  "kommentar",
+  "erledigt_von",
+  "erledigt_am",
+  "lauf_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "pacht\ncontracting\nprovision",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "schluessel",
+   "fieldtype": "Data",
+   "label": "Periodenschlüssel"
+  },
+  {
+   "fieldname": "bezug_text",
+   "fieldtype": "Data",
+   "label": "Bezug",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "offen\nerledigt\nverworfen",
+   "default": "offen",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "anzahl",
+   "fieldtype": "Int",
+   "label": "Anzahl Meldungen",
+   "default": "1"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "pachtvertrag_id",
+   "fieldtype": "Link",
+   "label": "Pachtvertrag",
+   "options": "Plattform Pachtvertrag"
+  },
+  {
+   "fieldname": "anlage_id",
+   "fieldtype": "Link",
+   "label": "Anlage",
+   "options": "Plattform Anlage"
+  },
+  {
+   "fieldname": "provision_id",
+   "fieldtype": "Link",
+   "label": "Provision",
+   "options": "Plattform Provision"
+  },
+  {
+   "fieldname": "monat",
+   "fieldtype": "Data",
+   "label": "Monat"
+  },
+  {
+   "fieldname": "zuletzt_am",
+   "fieldtype": "Datetime",
+   "label": "Zuletzt gemeldet"
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": ""
+  },
+  {
+   "fieldname": "gruende",
+   "fieldtype": "JSON",
+   "label": "Gründe"
+  },
+  {
+   "fieldname": "kommentar",
+   "fieldtype": "Small Text",
+   "label": "Kommentar"
+  },
+  {
+   "fieldname": "erledigt_von",
+   "fieldtype": "Link",
+   "label": "Erledigt von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "erledigt_am",
+   "fieldtype": "Datetime",
+   "label": "Erledigt am"
+  },
+  {
+   "fieldname": "lauf_id",
+   "fieldtype": "Link",
+   "label": "Abrechnungslauf",
+   "options": "Plattform Abrechnungslauf"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 0,
+ "links": [],
+ "modified": "2026-09-30 05:54:25.276826",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Klaerfall",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Betrieb",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "in_create": 0,
+ "title_field": "bezug_text",
+ "show_title_field_in_link": 1
+}

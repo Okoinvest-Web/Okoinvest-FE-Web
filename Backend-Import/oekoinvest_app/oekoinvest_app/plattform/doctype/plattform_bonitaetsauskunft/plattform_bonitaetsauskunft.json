@@ -1,0 +1,301 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 20:00:00.000000",
+ "description": "Bonitätsauskunft einer Auskunftei (KSV1870, Creditreform, CRIF, Dun & Bradstreet) vor LOI/Gebot. Ergebnisse nur für Leitung, Transaktion und Compliance; Betroffene werden ohne Ergebnis informiert. Keine automatisierte Entscheidung.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "subjekt_name",
+  "subjekt_art",
+  "subjekt_konto",
+  "subjekt_organisation",
+  "cb1",
+  "land",
+  "registernummer",
+  "anlass",
+  "rechtsgrundlage",
+  "interesse_id",
+  "sec_ergebnis",
+  "status",
+  "anbieter",
+  "ampel",
+  "score",
+  "skala",
+  "cb2",
+  "kreditlimit",
+  "waehrung",
+  "ausfallwahrscheinlichkeit",
+  "zahlungsweise",
+  "negativmerkmale",
+  "referenz",
+  "auskunft_am",
+  "sec_nachweis",
+  "von_id",
+  "informiert_am",
+  "freigabe_am",
+  "freigabe_von",
+  "freigabe_begruendung"
+ ],
+ "fields": [
+  {
+   "fieldname": "subjekt_name",
+   "fieldtype": "Data",
+   "label": "Unternehmen / Person",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "subjekt_art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "organisation\nkonto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "subjekt_konto",
+   "fieldtype": "Link",
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "subjekt_organisation",
+   "fieldtype": "Link",
+   "label": "Organisation",
+   "options": "Plattform Organisation",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "label": "Land",
+   "options": "AT\nDE\nCH",
+   "read_only": 1
+  },
+  {
+   "fieldname": "registernummer",
+   "fieldtype": "Data",
+   "label": "Registernummer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "anlass",
+   "fieldtype": "Select",
+   "label": "Anlass",
+   "options": "loi\nbieter\nvertrag\npruefung",
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "rechtsgrundlage",
+   "fieldtype": "Select",
+   "label": "Rechtsgrundlage",
+   "options": "berechtigtes_interesse\nvorvertraglich\neinwilligung",
+   "read_only": 1
+  },
+  {
+   "fieldname": "interesse_id",
+   "fieldtype": "Link",
+   "label": "Interesse",
+   "options": "Plattform Interesse",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_ergebnis",
+   "fieldtype": "Section Break",
+   "label": "Ergebnis"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "angefragt\nabgeschlossen\nfehler\nkeine_daten",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "anbieter",
+   "fieldtype": "Data",
+   "label": "Anbieter",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ampel",
+   "fieldtype": "Select",
+   "label": "Ampel",
+   "options": "gruen\ngelb\nrot\nunbekannt",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "score",
+   "fieldtype": "Float",
+   "label": "Score",
+   "read_only": 1
+  },
+  {
+   "fieldname": "skala",
+   "fieldtype": "Data",
+   "label": "Skala",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "kreditlimit",
+   "fieldtype": "Float",
+   "label": "Kreditlimit (Empfehlung)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "waehrung",
+   "fieldtype": "Data",
+   "label": "Währung",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ausfallwahrscheinlichkeit",
+   "fieldtype": "Float",
+   "label": "Ausfallwahrscheinlichkeit (0–1)",
+   "read_only": 1,
+   "precision": "4"
+  },
+  {
+   "fieldname": "zahlungsweise",
+   "fieldtype": "Data",
+   "label": "Zahlungsweise",
+   "read_only": 1
+  },
+  {
+   "fieldname": "negativmerkmale",
+   "fieldtype": "JSON",
+   "label": "Negativmerkmale",
+   "read_only": 1
+  },
+  {
+   "fieldname": "referenz",
+   "fieldtype": "Data",
+   "label": "Referenz der Auskunftei",
+   "read_only": 1
+  },
+  {
+   "fieldname": "auskunft_am",
+   "fieldtype": "Datetime",
+   "label": "Auskunft vom",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "sec_nachweis",
+   "fieldtype": "Section Break",
+   "label": "Nachweise"
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "label": "Beauftragt von",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "informiert_am",
+   "fieldtype": "Datetime",
+   "label": "Betroffene informiert am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "freigabe_am",
+   "fieldtype": "Datetime",
+   "label": "Manuell freigegeben am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "freigabe_von",
+   "fieldtype": "Link",
+   "label": "Freigegeben von",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "freigabe_begruendung",
+   "fieldtype": "Small Text",
+   "label": "Begründung der Freigabe",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Bonitaetsauskunft",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Transaktion"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Compliance"
+  }
+ ],
+ "sort_field": "auskunft_am",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "subjekt_name",
+ "track_changes": 1
+}

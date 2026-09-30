@@ -17,6 +17,11 @@
   "grundgebuehr_monat",
   "indexierung_pct",
   "kuendigungsfrist_monate",
+  "index_basis",
+  "mindestabnahme_kwh_jahr",
+  "endschaft",
+  "kaufoption_eur",
+  "endschaft_text",
   "bemerkung"
  ],
  "fields": [
@@ -83,6 +88,35 @@
    "default": "6"
   },
   {
+   "fieldname": "index_basis",
+   "fieldtype": "Select",
+   "label": "Preisgleitung",
+   "options": "fest\nprozent\nvpi\nstrompreis",
+   "default": "fest"
+  },
+  {
+   "fieldname": "mindestabnahme_kwh_jahr",
+   "fieldtype": "Float",
+   "label": "Mindestabnahme (kWh/Jahr)",
+   "description": "Take-or-Pay: Fehlmengen werden zum Arbeitspreis ausgeglichen."
+  },
+  {
+   "fieldname": "endschaft",
+   "fieldtype": "Select",
+   "label": "Endschaftsregelung",
+   "options": "\nkaufoption\nuebergang\nverlaengerung\nrueckbau"
+  },
+  {
+   "fieldname": "kaufoption_eur",
+   "fieldtype": "Currency",
+   "label": "Kaufoption / Restwert (netto)"
+  },
+  {
+   "fieldname": "endschaft_text",
+   "fieldtype": "Data",
+   "label": "Endschaft – Details"
+  },
+  {
    "fieldname": "bemerkung",
    "fieldtype": "Small Text",
    "label": "Bemerkung"
@@ -90,7 +124,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-30 12:00:00.000000",
+ "modified": "2026-09-30 04:31:35.758225",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Plattform Contracting Vertrag",
@@ -116,14 +150,50 @@
   {
    "create": 0,
    "delete": 0,
-   "email": 0,
-   "export": 1,
-   "print": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
    "read": 1,
    "report": 1,
    "role": "ÖkoInvest Admin",
    "share": 0,
    "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Betrieb",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
   }
  ],
  "in_create": 0

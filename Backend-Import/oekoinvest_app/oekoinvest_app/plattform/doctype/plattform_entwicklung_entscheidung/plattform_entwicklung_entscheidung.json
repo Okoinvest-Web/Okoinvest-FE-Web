@@ -1,0 +1,152 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 20:00:00.000000",
+ "description": "Entscheidungsprotokoll eines Entwicklungsprojekts (append-only: keine Änderung, kein Löschen).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "projekt_id",
+  "datum",
+  "titel",
+  "art",
+  "cb_1",
+  "beteiligte",
+  "von_id",
+  "sec_t",
+  "beschluss",
+  "begruendung"
+ ],
+ "fields": [
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Entwicklungsprojekt",
+   "options": "Plattform Entwicklungsprojekt",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "datum",
+   "fieldtype": "Date",
+   "label": "Datum",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Titel",
+   "reqd": 1,
+   "in_list_view": 1,
+   "bold": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "go\nnogo\nbudget\nstrategie\nsonstige",
+   "default": "sonstige",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "beteiligte",
+   "fieldtype": "Data",
+   "label": "Beteiligte"
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "label": "Erfasst von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "sec_t",
+   "fieldtype": "Section Break",
+   "label": "Beschluss"
+  },
+  {
+   "fieldname": "beschluss",
+   "fieldtype": "Text",
+   "label": "Beschluss",
+   "reqd": 1
+  },
+  {
+   "fieldname": "begruendung",
+   "fieldtype": "Text",
+   "label": "Begründung"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Entwicklung Entscheidung",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Projektleitung"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "in_create": 1,
+ "title_field": "titel"
+}

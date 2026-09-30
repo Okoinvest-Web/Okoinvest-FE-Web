@@ -1,0 +1,305 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 14:00:00.000000",
+ "description": "Termin (Besichtigung, Beratung, Gemeinde, Datenraum) mit Mitarbeiter, Kunde, ICS-Sequenz, optional Frappe-Event.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "art",
+  "status",
+  "start",
+  "ende",
+  "kanal",
+  "ort",
+  "cb_1",
+  "mitarbeiter_id",
+  "vertretung_fuer_id",
+  "konto_id",
+  "herkunft",
+  "event",
+  "sb_1",
+  "kontakt_name",
+  "kontakt_email",
+  "kontakt_telefon",
+  "cb_2",
+  "kontakt_firma",
+  "kontakt_plz",
+  "kontakt_ort",
+  "kontakt_land",
+  "sb_2",
+  "notiz",
+  "bezug_art",
+  "bezug_id",
+  "sequenz",
+  "erinnert_am",
+  "token_hash",
+  "ip",
+  "verlauf_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Terminart",
+   "options": "besichtigung\nberatung_telefon\nberatung_video\ngemeinde\ndatenraum",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "gebucht\nbestaetigt\nstorniert\nerledigt\nnicht_erschienen",
+   "default": "gebucht",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Beginn",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "ende",
+   "fieldtype": "Datetime",
+   "label": "Ende",
+   "reqd": 1
+  },
+  {
+   "fieldname": "kanal",
+   "fieldtype": "Select",
+   "label": "Kanal",
+   "options": "vor_ort\ntelefon\nvideo"
+  },
+  {
+   "fieldname": "ort",
+   "fieldtype": "Data",
+   "label": "Ort"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "mitarbeiter_id",
+   "fieldtype": "Link",
+   "label": "Mitarbeiter",
+   "options": "Plattform Konto",
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "vertretung_fuer_id",
+   "fieldtype": "Link",
+   "label": "Vertretung für",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "konto_id",
+   "fieldtype": "Link",
+   "label": "Kundenkonto",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "herkunft",
+   "fieldtype": "Data",
+   "label": "Herkunft"
+  },
+  {
+   "fieldname": "event",
+   "fieldtype": "Data",
+   "label": "Frappe Event",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": "Kontakt"
+  },
+  {
+   "fieldname": "kontakt_name",
+   "fieldtype": "Data",
+   "label": "Name"
+  },
+  {
+   "fieldname": "kontakt_email",
+   "fieldtype": "Data",
+   "label": "E-Mail",
+   "search_index": 1
+  },
+  {
+   "fieldname": "kontakt_telefon",
+   "fieldtype": "Data",
+   "label": "Telefon"
+  },
+  {
+   "fieldname": "cb_2",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "kontakt_firma",
+   "fieldtype": "Data",
+   "label": "Firma/Gemeinde"
+  },
+  {
+   "fieldname": "kontakt_plz",
+   "fieldtype": "Data",
+   "label": "PLZ"
+  },
+  {
+   "fieldname": "kontakt_ort",
+   "fieldtype": "Data",
+   "label": "Ort"
+  },
+  {
+   "fieldname": "kontakt_land",
+   "fieldtype": "Data",
+   "label": "Land"
+  },
+  {
+   "fieldname": "sb_2",
+   "fieldtype": "Section Break",
+   "label": "Weiteres"
+  },
+  {
+   "fieldname": "notiz",
+   "fieldtype": "Small Text",
+   "label": "Notiz"
+  },
+  {
+   "fieldname": "bezug_art",
+   "fieldtype": "Data",
+   "label": "Bezugsart"
+  },
+  {
+   "fieldname": "bezug_id",
+   "fieldtype": "Data",
+   "label": "Bezug"
+  },
+  {
+   "fieldname": "sequenz",
+   "fieldtype": "Int",
+   "label": "ICS-Sequenz",
+   "read_only": 1
+  },
+  {
+   "fieldname": "erinnert_am",
+   "fieldtype": "Datetime",
+   "label": "Erinnert am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "token_hash",
+   "fieldtype": "Data",
+   "label": "Verwaltungs-Link (Hash)",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "label": "IP",
+   "read_only": 1
+  },
+  {
+   "fieldname": "verlauf_json",
+   "fieldtype": "Long Text",
+   "label": "Verlauf (JSON)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 06:08:21.082136",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Termin",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "in_create": 0,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Akquise",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Transaktion",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Betrieb",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ]
+}

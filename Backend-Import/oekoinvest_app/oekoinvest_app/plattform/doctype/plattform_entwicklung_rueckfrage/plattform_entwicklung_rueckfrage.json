@@ -1,0 +1,119 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 20:00:00.000000",
+ "description": "Rückfrage zwischen Gutachter und Projektleitung an einem Meilenstein.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "projekt_id",
+  "meilenstein_id",
+  "von_id",
+  "an_id",
+  "backoffice",
+  "am",
+  "text"
+ ],
+ "fields": [
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Entwicklungsprojekt",
+   "options": "Plattform Entwicklungsprojekt",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "meilenstein_id",
+   "fieldtype": "Link",
+   "label": "Meilenstein",
+   "options": "Plattform Entwicklung Meilenstein",
+   "reqd": 1
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "label": "Von",
+   "options": "Plattform Konto",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "an_id",
+   "fieldtype": "Link",
+   "label": "An",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "backoffice",
+   "fieldtype": "Check",
+   "label": "Vom Backoffice"
+  },
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "label": "Am",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "text",
+   "fieldtype": "Text",
+   "label": "Text",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Entwicklung Rueckfrage",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Projektleitung"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "in_create": 1,
+ "title_field": "meilenstein_id"
+}

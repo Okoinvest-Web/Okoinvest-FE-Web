@@ -50,6 +50,25 @@ def vorgang_ausgabe(vg, n):
 # ================================================================ Fläche
 
 
+# Fachprüfung Flächen: Flurstück (Kindtabelle, snake_case) <-> Ausgabe (camelCase wie im Demo-Backend)
+FLURSTUECK_FELDER = {"gemarkung": "gemarkung", "gemarkungNr": "gemarkung_nr", "flur": "flur", "nummer": "nummer", "grundbuch": "grundbuch", "blatt": "blatt", "egrid": "egrid", "m2": "m2"}
+
+
+def flurstueck_json(x):
+	out = {"gemarkung": x.get("gemarkung") or "", "flur": x.get("flur") or "", "nummer": x.get("nummer") or ""}
+	for k, feld in FLURSTUECK_FELDER.items():
+		w = x.get(feld)
+		if k == "m2":
+			out["m2"] = zahl_oder_null(w) if w else None
+		elif w:
+			out[k] = w
+	return out
+
+
+def flurstueck_zeile(x):
+	return {feld: (x.get(k) if x.get(k) not in (None, "") else None) if k == "m2" else (x.get(k) or "") for k, feld in FLURSTUECK_FELDER.items()}
+
+
 def flaeche_json(f):
 	return {
 		"id": f.name,
@@ -62,12 +81,13 @@ def flaeche_json(f):
 		"plz": f.plz or "",
 		"ort": f.ort or "",
 		"gemarkung": f.gemarkung or "",
-		"flurstuecke": [{"gemarkung": x.gemarkung or "", "flur": x.flur or "", "nummer": x.nummer or ""} for x in (f.get("flurstuecke") or [])],
+		"flurstuecke": [flurstueck_json(x) for x in (f.get("flurstuecke") or [])],
 		"ha": zahl_oder_null(f.ha),
 		"nutzung": f.nutzung or "",
 		"agri": bool(cint(f.agri)),
 		"eigentum": f.eigentum or "",
 		"hinweise": f.hinweise or "",
+		"fach": aus_json(f.get("fach")) or {},  # Fachprüfung Flächen
 		"status": f.status,
 		"statusVerlauf": verlauf_json(f),
 		"pachtangebot": aus_json(f.pachtangebot),
@@ -136,6 +156,7 @@ def projekt_json(p):
 		"beschreibung": p.beschreibung or "",
 		"highlights": aus_json(p.highlights, []) or [],
 		"vertraulich": aus_json(p.vertraulich, {}) or {},
+		"datenblatt": aus_json(p.get("datenblatt"), {}) or {},  # Fachprüfung Kapitalseite
 		"status": p.status,
 		"statusVerlauf": verlauf_json(p),
 		"provisionAkzeptiert": aus_json(p.provision_akzeptiert),
@@ -248,11 +269,12 @@ def provision_json(pv):
 FELD_NAMEN_FLAECHE = {
 	"bezeichnung": "Bezeichnung", "land": "Land", "bundesland": "Bundesland", "plz": "PLZ", "ort": "Ort", "gemarkung": "Gemarkung",
 	"flurstuecke": "Flurstücke", "ha": "Größe", "nutzung": "Nutzung", "agri": "Agri-PV", "eigentum": "Eigentum", "hinweise": "Hinweise",
+	"fach": "Fachangaben",  # Fachprüfung Flächen
 }
 FELD_NAMEN_PROJEKT = {
 	"titel": "Titel", "typ": "Typ", "land": "Land", "bundesland": "Bundesland", "region": "Region", "mwp": "Leistung", "mwhSpeicher": "Speicher",
 	"flaecheHa": "Fläche", "phase": "Phase", "netzanschluss": "Netzanschluss", "codGeplant": "COD", "preisModus": "Preismodus", "preis": "Preis",
-	"preisProKwp": "Preis je kWp", "beschreibung": "Beschreibung", "highlights": "Highlights", "vertraulich": "vertrauliche Angaben",
+	"preisProKwp": "Preis je kWp", "beschreibung": "Beschreibung", "highlights": "Highlights", "vertraulich": "vertrauliche Angaben", "datenblatt": "Datenblatt",
 }
 
 

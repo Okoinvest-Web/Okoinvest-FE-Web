@@ -1,0 +1,49 @@
+{#- ÖkoInvest – Finanzierungsvergleich (Plattform Finanzierungsszenario). Werte wie im Cockpit gespeichert (Website-Server
+    rechnet mit src/lib/plattform/finanzierung/kern.js). Orientierung – keine Anlage-, Finanzierungs- oder Steuerberatung. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set e = oekoinvest_json(doc.eingaben) -%}
+{%- set r = oekoinvest_json(doc.ergebnis) -%}
+{%- set p = r.get("projekt") or {} -%}
+{%- set namen = {"ek": "100 % Eigenkapital", "annuitaet": "Annuitätenkredit", "skulptiert": "Projektfinanzierung (skulptiert)", "foerder": "Förderkredit", "leasing": "Leasing", "mietkauf": "Mietkauf", "misch": "Mischform"} -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Finanzierungscockpit · Szenario</div>
+	<div class="oi-titel">{{ doc.name_szenario | e }}</div>
+	<div class="oi-untertitel">{{ (doc.projekt_titel or "Freies Werkzeug") | e }} · {{ oekoinvest_zahl(e.get("mwp"), 2) }} MWp · {{ e.get("land") or "DE" }} · gespeichert {{ oekoinvest_datum(doc.am) }}</div>
+</div>
+
+<table class="oi-kacheln"><tr>
+	<td class="oi-kachel"><div class="oi-wert" style="font-size:12pt">{{ oekoinvest_eur(e.get("capex")) }}</div><div class="oi-bez">Investition</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_prozent(p.get("projektIrr")) }}</div><div class="oi-bez">Projekt-IRR (P50)</div></td>
+	<td class="oi-kachel"><div class="oi-wert" style="font-size:12pt">{{ oekoinvest_eur(p.get("npv")) }}</div><div class="oi-bez">Kapitalwert (WACC)</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl(p.get("lcoeCt"), 2) }}</div><div class="oi-bez">LCOE ct/kWh</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl(p.get("amortisation"), 1) }}</div><div class="oi-bez">Amortisation (Jahre)</div></td>
+</tr></table>
+
+<div class="oi-abschnitt">Finanzierungsvarianten</div>
+<table class="oi-tabelle">
+	<tr><th>Variante</th><th class="oi-zahl">EK-Bedarf</th><th class="oi-zahl">Fremdkapital</th><th class="oi-zahl">DSCR min / Ø</th><th class="oi-zahl">EK-IRR</th><th class="oi-zahl">nach Steuern</th><th class="oi-zahl">Kapitalwert EK</th><th class="oi-zahl">Fin.-Kosten</th></tr>
+	{% for v in r.get("varianten") or [] %}
+	<tr>
+		<td><b>{{ namen.get(v.art, v.art) }}</b></td>
+		<td class="oi-zahl">{{ oekoinvest_eur(v.kapitalbedarfEk) }}</td>
+		<td class="oi-zahl">{{ oekoinvest_eur(v.fremdkapital) }}</td>
+		<td class="oi-zahl">{% if v.dscrMin %}{{ oekoinvest_zahl(v.dscrMin, 2) }} / {{ oekoinvest_zahl(v.dscrMittel, 2) }}{% else %}–{% endif %}</td>
+		<td class="oi-zahl">{{ oekoinvest_prozent(v.ekIrr) }}</td>
+		<td class="oi-zahl">{{ oekoinvest_prozent(v.ekIrrNachSteuer) }}</td>
+		<td class="oi-zahl">{{ oekoinvest_eur(v.npvEk) }}</td>
+		<td class="oi-zahl">{{ oekoinvest_eur(v.gesamtkostenFinanzierung) }}</td>
+	</tr>
+	{% endfor %}
+</table>
+
+<div class="oi-abschnitt">Annahmen</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Ertrag P50 / P90</td><td>{{ oekoinvest_zahl(e.get("p50")) }} / {{ oekoinvest_zahl(e.get("p90")) }} kWh/kWp</td></tr>
+	<tr><td class="oi-feld">Erlös</td><td>{{ e.get("modell") }} · {{ oekoinvest_zahl(e.get("preisCt"), 2) }} ct/kWh über {{ e.get("vertragJahre") }} Jahre, danach Marktwert {{ oekoinvest_zahl(e.get("merchantCt"), 1) }} ct/kWh</td></tr>
+	<tr><td class="oi-feld">Betriebskosten / Pacht</td><td>{{ oekoinvest_zahl(e.get("opexKwp"), 1) }} €/kWp·a · {{ oekoinvest_eur(e.get("pachtJahr")) }} p. a.</td></tr>
+	<tr><td class="oi-feld">Bankkredit</td><td>{{ oekoinvest_prozent(e.get("zins"), 2) }} all-in · {{ e.get("laufzeitKredit") }} Jahre · FK-Quote {{ oekoinvest_prozent(e.get("fkQuote"), 0) }} · Mindest-DSCR {{ oekoinvest_zahl(e.get("dscrZiel"), 2) }}</td></tr>
+	<tr><td class="oi-feld">Eigenkapital-Diskont</td><td>{{ oekoinvest_prozent(e.get("diskontEk"), 2) }}</td></tr>
+</table>
+<div class="oi-hinweis">Orientierungsrechnung auf Basis der Annahmen und der Marktwerte der Plattform (Stand September 2026) – keine Anlage-, Finanzierungs- oder Steuerberatung. Steuereffekte sind Näherungen; bitte mit Bank und Steuerberatung prüfen. Förderprogramme ohne Zusage.</div>
+<div class="oi-fuss">{{ f.name }} · Finanzierungsvergleich · vertraulich</div>

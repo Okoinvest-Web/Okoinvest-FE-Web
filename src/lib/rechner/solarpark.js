@@ -69,7 +69,8 @@ export function rechneSolarpark(eingabe = {}) {
   const kwp = e.mwp * 1000;
   const region = regionById(e.regionId);
   const bauart = BAUART[e.bauart] || BAUART.sued;
-  const spezErtrag = region.ertrag * bauart.faktor;
+  // Optional: spezifischer Ertrag aus einem Ertragsgutachten (z. B. P50/P90 aus dem Projektdatenblatt der Börse)
+  const spezErtrag = e.spezErtrag > 0 ? e.spezErtrag : region.ertrag * bauart.faktor;
   const flaecheHa = e.mwp * bauart.haProMwp;
   const inv = investition(e);
   const vertragJahre = e.modell === "merchant" ? 0 : Math.min(e.vertragJahre, e.laufzeit);

@@ -1,0 +1,278 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Bankfinanzierung Eigenbetrieb: Finanzierungsbedarf eines Projekts/einer SPV mit Financial Model, Bankenpaket-Freigabe, Auszahlungsvoraussetzungen, Entscheidung, Covenant-Status und Geschäftsmodell.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "titel",
+  "status",
+  "spv",
+  "spv_organisation_id",
+  "cb1",
+  "bezug_art",
+  "bezug_id",
+  "land",
+  "mwp",
+  "betrag_wunsch",
+  "sb1",
+  "covenant_ampel",
+  "covenant_geprueft_am",
+  "reporting_frist",
+  "cb2",
+  "reporting_zuletzt",
+  "reporting_gemahnt",
+  "geschaeftsmodell",
+  "sb2",
+  "eingaben",
+  "paket_freigabe",
+  "cps",
+  "entscheidung",
+  "geschaeftsmodell_detail",
+  "covenant",
+  "verlauf",
+  "notiz",
+  "erstellt_von"
+ ],
+ "fields": [
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Titel",
+   "reqd": 1
+  },
+  {
+   "default": "vorbereitung",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "vorbereitung\nangefragt\ntermsheets\nentschieden\nvertrag\nauszahlung\nabgebrochen"
+  },
+  {
+   "fieldname": "spv",
+   "fieldtype": "Data",
+   "label": "Projektgesellschaft (SPV)"
+  },
+  {
+   "fieldname": "spv_organisation_id",
+   "fieldtype": "Link",
+   "label": "SPV-Organisation (KYB)",
+   "options": "Plattform Organisation"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "default": "frei",
+   "fieldname": "bezug_art",
+   "fieldtype": "Select",
+   "label": "Bezug",
+   "options": "frei\nentwicklung\nanlage"
+  },
+  {
+   "fieldname": "bezug_id",
+   "fieldtype": "Data",
+   "label": "Bezug (Kennung)",
+   "search_index": 1
+  },
+  {
+   "default": "DE",
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "label": "Land",
+   "options": "DE\nAT\nCH"
+  },
+  {
+   "fieldname": "mwp",
+   "fieldtype": "Float",
+   "label": "Leistung (MWp)"
+  },
+  {
+   "fieldname": "betrag_wunsch",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Finanzierungsbedarf"
+  },
+  {
+   "fieldname": "sb1",
+   "fieldtype": "Section Break",
+   "label": "Covenants & Reporting"
+  },
+  {
+   "default": "grau",
+   "fieldname": "covenant_ampel",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Covenant-Ampel",
+   "options": "grau\ngruen\ngelb\nrot"
+  },
+  {
+   "fieldname": "covenant_geprueft_am",
+   "fieldtype": "Datetime",
+   "label": "Zuletzt geprüft"
+  },
+  {
+   "fieldname": "reporting_frist",
+   "fieldtype": "Date",
+   "label": "Nächste Reporting-Frist"
+  },
+  {
+   "fieldname": "cb2",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "reporting_zuletzt",
+   "fieldtype": "Datetime",
+   "label": "Letztes Reporting"
+  },
+  {
+   "fieldname": "reporting_gemahnt",
+   "fieldtype": "Check",
+   "label": "Reporting-Erinnerung gesendet"
+  },
+  {
+   "fieldname": "geschaeftsmodell",
+   "fieldtype": "Select",
+   "label": "Geschäftsmodell",
+   "options": "\nverkauf\neigenbetrieb\ncontracting\nverpachtung"
+  },
+  {
+   "fieldname": "sb2",
+   "fieldtype": "Section Break",
+   "label": "Daten (JSON, Pflege über das Portal)"
+  },
+  {
+   "fieldname": "eingaben",
+   "fieldtype": "JSON",
+   "label": "Financial Model (Eingaben)"
+  },
+  {
+   "fieldname": "paket_freigabe",
+   "fieldtype": "JSON",
+   "label": "Bankenpaket – freigegebene Bausteine"
+  },
+  {
+   "fieldname": "cps",
+   "fieldtype": "JSON",
+   "label": "Auszahlungsvoraussetzungen"
+  },
+  {
+   "fieldname": "entscheidung",
+   "fieldtype": "JSON",
+   "label": "Entscheidung"
+  },
+  {
+   "fieldname": "geschaeftsmodell_detail",
+   "fieldtype": "JSON",
+   "label": "Geschäftsmodell – Vergleich"
+  },
+  {
+   "fieldname": "covenant",
+   "fieldtype": "JSON",
+   "label": "Covenant-Prüfung (letzte)"
+  },
+  {
+   "fieldname": "verlauf",
+   "fieldtype": "JSON",
+   "label": "Verlauf"
+  },
+  {
+   "fieldname": "notiz",
+   "fieldtype": "Text",
+   "label": "Notiz"
+  },
+  {
+   "fieldname": "erstellt_von",
+   "fieldtype": "Link",
+   "label": "Angelegt von",
+   "options": "Plattform Konto"
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 06:29:55.127438",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Finanzierungsfall",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Transaktion",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "search_fields": "titel",
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "titel",
+ "track_changes": 1
+}

@@ -1,0 +1,30 @@
+{
+ "attach_print": 0,
+ "channel": "Email",
+ "condition": "doc.email and doc.status in ('eingereicht', 'nachgefordert', 'verifiziert', 'abgelehnt', 'abgelaufen')",
+ "creation": "2026-09-30 12:00:00.000000",
+ "days_in_advance": 0,
+ "docstatus": 0,
+ "doctype": "Notification",
+ "document_type": "KYC Fall",
+ "enabled": 1,
+ "event": "Value Change",
+ "value_changed": "status",
+ "idx": 0,
+ "is_standard": 1,
+ "message": "",
+ "message_type": "Markdown",
+ "modified": "2026-09-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "KYC Status an Nutzer",
+ "owner": "Administrator",
+ "recipients": [
+  {
+   "receiver_by_document_field": "email"
+  }
+ ],
+ "send_system_notification": 0,
+ "send_to_all_assignees": 0,
+ "subject": "Neuigkeiten zu Ihrer Verifizierung – ÖkoInvest"
+}

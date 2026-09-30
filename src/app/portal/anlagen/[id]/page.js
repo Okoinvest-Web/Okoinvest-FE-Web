@@ -17,6 +17,8 @@ import { LASTPROFILE, NETZSTROM_CT, kw, kwh, kwpText, prognoseMonatKwh, tonnen }
 import { LAENDER } from "@/lib/plattform/konstanten";
 import { datum } from "@/lib/plattform/format";
 import { darfLesen } from "@/lib/plattform/rechte";
+import { Coins, Landmark, PlugZap } from "lucide-react"; // Eigentum & Stromlieferung
+import { DIENSTBARKEIT_STATUS, ENDSCHAFT, INDEX_BASIS, mindestabnahme } from "@/lib/plattform/anlagen"; // Eigentum & Vertragsdetails
 
 export const metadata = { title: "Anlage" };
 
@@ -35,17 +37,18 @@ export default async function AnlageSeite({ params, searchParams }) {
   const sp = await searchParams;
   const n = await portalNutzer();
   const a = await laden(() => anlageMitStatus(n, id));
-  const tab = TAB_IDS.includes(sp?.tab) ? sp.tab : "uebersicht";
-  const basis = `/portal/anlagen/${a.id}`;
   const backoffice = a.meinZugriff === "backoffice";
+  // Technische Tiefe (Komponenten, Monitoring-Messpunkte, Wartungskosten) nur fürs Backoffice
+  const tab = TAB_IDS.includes(sp?.tab) && (backoffice || sp.tab !== "technik") ? sp.tab : "uebersicht";
+  const basis = `/portal/anlagen/${a.id}`;
   const offene = (a.stoerungen || []).filter((s) => s.status !== "behoben");
   const tabs = [
     { id: "uebersicht", label: "Übersicht", icon: Activity },
     { id: "zaehler", label: "Zählerstände", icon: Zaehler },
     { id: "stoerungen", label: "Störungen", icon: TriangleAlert, zaehler: offene.length },
-    { id: "technik", label: "Technik & Wartung", icon: Wrench },
-    { id: "vertrag", label: "Vertrag & Kosten", icon: FileText },
-  ];
+    backoffice && { id: "technik", label: "Technik & Wartung", icon: Wrench },
+    { id: "vertrag", label: backoffice ? "Vertrag & Eigentum" : "Vertrag & Kosten", icon: FileText },
+  ].filter(Boolean);
 
   let inhalt = null;
   if (tab === "zaehler") {
@@ -107,7 +110,7 @@ export default async function AnlageSeite({ params, searchParams }) {
       <div className="space-y-5">
         {!backoffice && (
           <Hinweis ton="neutral" icon={TriangleAlert}>
-            Störungen erkennt das Monitoring automatisch (keine Daten, Fehlercode, Leistung deutlich unter Erwartung, unplausible Zählerstände). Der Betrieb von ÖkoInvest quittiert und behebt sie – Sie werden bei neuen und behobenen Störungen benachrichtigt und können Hinweise ergänzen.
+            Störungen erkennt das Monitoring automatisch (keine Daten, Fehlercode, Leistung deutlich unter Erwartung, unplausible Zählerstände). Solange eine Störung die Erzeugung mindert, liefert die Anlage weniger Solarstrom – den fehlenden Strom beziehen Sie automatisch aus dem Netz über Ihren Stromlieferanten. {a.betriebsfuehrer || "ÖkoInvest"} quittiert und behebt Störungen als Betriebsführer; Sie werden benachrichtigt und können Hinweise ergänzen.
           </Hinweis>
         )}
         <StoerungenListe stoerungen={a.stoerungen || []} betrieb={betrieb} leer="Keine Störungen in dieser Auswahl." />
@@ -174,9 +177,26 @@ export default async function AnlageSeite({ params, searchParams }) {
   } else if (tab === "vertrag") {
     const c = a.vertrag;
     const speicher = a.typ === "speicher";
+    const eigentum = (
+      <Karte titel="Eigentum & Betrieb" untertitel="Wer besitzt, betreibt und beliefert?">
+        <Angaben
+          items={[
+            { label: "Eigentümer der Anlage", wert: a.eigentuemer || "–" },
+            { label: "Betriebsführer", wert: a.betriebsfuehrer || "–" },
+            { label: "Stromabnehmer", wert: a.organisation?.name || a.kunde?.firma || a.kunde?.name || "–" },
+            { label: "Dachgeber / Grundstückseigentümer", wert: a.dachgeberIstKunde ? `${a.dachgeber || "Stromabnehmer"} (Stromabnehmer)` : a.dachgeber || "–" },
+            { label: "Dienstbarkeit / Servitut", wert: a.dienstbarkeitStatus ? `${DIENSTBARKEIT_STATUS[a.dienstbarkeitStatus]?.label || a.dienstbarkeitStatus}${a.dienstbarkeitDatum ? ` (${datum(a.dienstbarkeitDatum)})` : ""}` : "noch nicht geklärt" },
+            a.dienstbarkeitHinweis && { label: "Grundbuch", wert: a.dienstbarkeitHinweis },
+            backoffice && { label: "Finanziert durch", wert: a.finanziertDurch || "–" },
+          ].filter(Boolean)}
+        />
+        <p className="mt-4 text-[12.5px] leading-relaxed text-ink-500">Die Anlage steht im Eigentum und Betrieb der {a.eigentuemer || "Eigentümergesellschaft"}. Sie beziehen den erzeugten Solarstrom zum vereinbarten Preis; Wartung, Versicherung und Instandhaltung liegen beim Betreiber.</p>
+      </Karte>
+    );
     inhalt = c ? (
+      <div className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-        <Karte titel="Contracting-Vertrag">
+        <Karte titel="Stromliefervertrag (Contracting)">
           <Angaben
             items={[
               { label: "Vertragsnummer", wert: c.nummer || "–" },
@@ -187,9 +207,27 @@ export default async function AnlageSeite({ params, searchParams }) {
               { label: "Grundgebühr", wert: `${eur0(c.grundgebuehrMonat)} je Monat netto` },
               { label: "Indexierung", wert: c.indexierungPct ? `${Number(c.indexierungPct).toLocaleString("de-DE")} % p. a.` : "keine" },
               { label: "Kündigungsfrist", wert: `${c.kuendigungsfristMonate} Monate zum Laufzeitende` },
+              c.indexBasis && { label: "Preisgleitung", wert: INDEX_BASIS[c.indexBasis] || c.indexBasis },
+              { label: "Mindestabnahme", wert: c.mindestabnahmeKwhJahr ? `${kwh(c.mindestabnahmeKwhJahr)} pro Jahr (Take-or-Pay)` : "keine" },
+              { label: "Vertragsende", wert: c.endschaft ? `${ENDSCHAFT[c.endschaft] || c.endschaft}${c.kaufoptionEur ? ` – ${eur0(c.kaufoptionEur)} netto` : ""}` : "nicht geregelt" },
+              c.endschaftText && { label: "Endschaft – Details", wert: c.endschaftText, breit: true },
               c.bemerkung && { label: "Hinweis", wert: c.bemerkung, breit: true },
-            ]}
+            ].filter(Boolean)}
           />
+          {(() => {
+            const jetztD = new Date();
+            const m = mindestabnahme(c, { eigenverbrauchKwh: a.jahr?.eigenverbrauchKwh || 0, monate: jetztD.getMonth() + jetztD.getDate() / 31 });
+            return m ? (
+              <div className="mt-4 rounded-2xl bg-sand-50 p-4 ring-1 ring-inset ring-ink-200/60">
+                <p className="text-[13px] font-semibold text-ink-900">Mindestabnahme anteilig bis heute</p>
+                <p className="mt-1 text-[13.5px] text-ink-700">Soll {kwh(m.sollKwh)} · Ist {kwh(m.istKwh)} ({pct(m.quote)})</p>
+                <div className="mt-2 h-2 rounded-full bg-ink-100" role="progressbar" aria-label="Mindestabnahme erreicht" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.round((m.quote || 0) * 100))}>
+                  <div className={`h-2 rounded-full ${m.quote < 1 ? "bg-sun-400" : "bg-ov-500"}`} style={{ width: `${Math.min(100, (m.quote || 0) * 100)}%` }} />
+                </div>
+                <p className="mt-2 text-[12.5px] text-ink-500">{m.fehlKwh > 0 ? `Bei gleichbleibendem Verlauf fiele ein Ausgleich von rund ${eur0(m.ausgleichEur)} an (Fehlmenge × Arbeitspreis) – abgerechnet wird zum Vertragsjahr.` : "Mindestabnahme anteilig erreicht."}</p>
+              </div>
+            ) : null;
+          })()}
         </Karte>
         <Karte titel="Ihre Kosten und Ersparnis" untertitel={`Vergleich mit Netzstrom (Gewerbe, Richtwert ${NETZSTROM_CT.toLocaleString("de-DE")} ct/kWh netto)`}>
           {speicher ? (
@@ -234,8 +272,13 @@ export default async function AnlageSeite({ params, searchParams }) {
           </p>
         </Karte>
       </div>
+      {eigentum}
+      </div>
     ) : (
-      <Hinweis ton="neutral" icon={FileText}>Für diese Anlage ist noch kein Contracting-Vertrag hinterlegt.</Hinweis>
+      <div className="space-y-6">
+        <Hinweis ton="neutral" icon={FileText}>Für diese Anlage ist noch kein Liefervertrag hinterlegt.</Hinweis>
+        {eigentum}
+      </div>
     );
   } else {
     const soll = sollBisHeute(a);
@@ -248,7 +291,16 @@ export default async function AnlageSeite({ params, searchParams }) {
           <Verlauf anlage={{ id: a.id, kwp: a.kwp, speicherKwh: a.speicherKwh }} />
           <div className="min-w-0 space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              {a.kwp > 0 ? (
+              {a.kwp > 0 && !backoffice ? (
+                <>
+                  <Wert icon={PlugZap} label="Solarstrom geliefert heute" wert={kwh(a.heute?.eigenverbrauchKwh)} />
+                  <Wert icon={PlugZap} label="Solarstrom geliefert Jahr" wert={kwh(a.jahr?.eigenverbrauchKwh)} hinweis="abgerechnete Menge (Schätzung)" />
+                  <Wert icon={BatteryCharging} label="Deckungsanteil Jahr" wert={pct(a.quotenJahr?.autarkie)} hinweis="Ihr Verbrauch aus Solarstrom" />
+                  <Wert icon={ArrowDownToLine} label="Reststrom aus dem Netz" wert={kwh(a.jahr?.netzbezugKwh)} hinweis="über Ihren Lieferanten" />
+                  {a.kosten && <Wert icon={Coins} label="Kosten Solarstrom Jahr" wert={eur0(a.kosten.jahr?.gesamtEur)} hinweis="Arbeitspreis + Grundgebühr" />}
+                  {a.kosten && <Wert icon={Leaf} label="Ersparnis Jahr" wert={eur0(a.kosten.jahr?.ersparnisEur)} hinweis="ggü. Netzstrom (Richtwert)" />}
+                </>
+              ) : a.kwp > 0 ? (
                 <>
                   <Wert icon={Sun} label="Erzeugung heute" wert={kwh(a.heute?.erzeugungKwh)} />
                   <Wert icon={Sun} label="Erzeugung Monat" wert={kwh(a.monat?.erzeugungKwh)} />
@@ -261,8 +313,8 @@ export default async function AnlageSeite({ params, searchParams }) {
                   <Wert icon={BatteryCharging} label="Geladen heute" wert={kwh(a.heute?.ladenKwh)} />
                 </>
               )}
-              <Wert icon={ArrowDownToLine} label="Netzbezug Jahr" wert={kwh(a.jahr?.netzbezugKwh)} />
-              <Wert icon={ArrowUpFromLine} label="Einspeisung Jahr" wert={kwh(a.jahr?.einspeisungKwh)} />
+              {(backoffice || !(a.kwp > 0)) && <Wert icon={ArrowDownToLine} label="Netzbezug Jahr" wert={kwh(a.jahr?.netzbezugKwh)} />}
+              {(backoffice || !(a.kwp > 0)) && <Wert icon={ArrowUpFromLine} label="Einspeisung Jahr" wert={kwh(a.jahr?.einspeisungKwh)} />}
             </div>
             {a.kwp > 0 && (
               <Karte titel="Soll-Ist im laufenden Jahr" innen="p-5">
@@ -312,6 +364,12 @@ export default async function AnlageSeite({ params, searchParams }) {
           </>
         }
       >
+        {a.eigentuemer && (
+          <p className="mt-2 flex flex-wrap items-center gap-x-2 text-[13.5px] text-ink-600">
+            <Landmark aria-hidden="true" className="h-4 w-4 shrink-0" />
+            Anlage im Eigentum und Betrieb der {a.eigentuemer}{a.betriebsfuehrer && a.betriebsfuehrer !== a.eigentuemer ? ` · Betriebsführung ${a.betriebsfuehrer}` : ""}
+          </p>
+        )}
         {(a.organisation || (backoffice && a.kunde)) && (
           <p className="mt-2 flex flex-wrap items-center gap-x-2 text-[13.5px] text-ink-500">
             <Cpu aria-hidden="true" className="h-4 w-4" />

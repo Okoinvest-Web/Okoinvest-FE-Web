@@ -13,6 +13,7 @@ import { erlaubteUebergaenge } from "@/lib/plattform/prozesse";
 import { senden } from "@/lib/plattform/client";
 import { PROVISION } from "@/lib/invest/markt";
 import { eingabe, textbereich, auswahlfeld, Feld, FehlerBox, ErfolgBox } from "./felder";
+import PachtangebotFelder from "./Flaeche/PachtangebotFelder"; // Fachprüfung Flächen: vollständiges Pachtangebot
 
 const NEGATIV = ["abgelehnt", "zurueckgezogen", "storniert"];
 
@@ -35,7 +36,7 @@ export default function StatusAktionen({ art, id, status, als = "admin", kontext
     setErfolg("");
     setGewaehlt(u);
     const start = {};
-    if (u.pflicht?.includes("pachtangebot")) Object.assign(start, { euroProHaJahr: kontext.pachtVorschlag?.euroProHaJahr ?? "", laufzeitJahre: kontext.pachtVorschlag?.laufzeitJahre ?? "", verlaengerung: kontext.pachtVorschlag?.verlaengerung ?? "" });
+    if (u.pflicht?.includes("pachtangebot")) start.pa = { ...(kontext.pachtVorschlag || {}) };
     if (u.pflicht?.includes("provisionSatz")) start.provisionSatz = String(PROVISION.verkaeufer.min * 100).replace(".", ",");
     if (u.pflicht?.includes("interesseId")) start.interesseId = kontext.interessenten?.[0]?.id || "";
     setWerte(start);
@@ -49,7 +50,7 @@ export default function StatusAktionen({ art, id, status, als = "admin", kontext
     const extra = {};
     if (werte.kommentar) extra.kommentar = werte.kommentar;
     if (u.pflicht?.includes("grund")) extra.grund = werte.grund || "";
-    if (u.pflicht?.includes("pachtangebot")) extra.pachtangebot = { euroProHaJahr: werte.euroProHaJahr, laufzeitJahre: werte.laufzeitJahre, verlaengerung: werte.verlaengerung, text: werte.pachtText };
+    if (u.pflicht?.includes("pachtangebot")) extra.pachtangebot = { ...(werte.pa || {}) };
     if (u.pflicht?.includes("provisionSatz")) extra.provisionSatz = werte.provisionSatz;
     if (u.pflicht?.includes("interesseId")) extra.interesseId = werte.interesseId;
     if (u.pflicht?.includes("kaufpreis")) extra.kaufpreis = werte.kaufpreis;
@@ -92,22 +93,7 @@ export default function StatusAktionen({ art, id, status, als = "admin", kontext
         <form id={`${fid}-form`} onSubmit={ausfuehren} className="space-y-4 rounded-2xl bg-sand-50 p-4 ring-1 ring-ink-200/70">
           <p className="text-[14px] font-semibold text-ink-900">{gewaehlt.aktion}</p>
 
-          {p.includes("pachtangebot") && (
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Feld id={`${fid}-e`} label="Pacht €/ha und Jahr" pflicht>
-                <input id={`${fid}-e`} inputMode="decimal" required className={eingabe} value={werte.euroProHaJahr ?? ""} onChange={(e) => setze("euroProHaJahr", e.target.value)} />
-              </Feld>
-              <Feld id={`${fid}-l`} label="Laufzeit (Jahre)" pflicht>
-                <input id={`${fid}-l`} inputMode="numeric" required className={eingabe} value={werte.laufzeitJahre ?? ""} onChange={(e) => setze("laufzeitJahre", e.target.value)} />
-              </Feld>
-              <Feld id={`${fid}-v`} label="Verlängerung">
-                <input id={`${fid}-v`} className={eingabe} value={werte.verlaengerung ?? ""} onChange={(e) => setze("verlaengerung", e.target.value)} />
-              </Feld>
-              <Feld id={`${fid}-pt`} label="Erläuterung zum Angebot" className="sm:col-span-3">
-                <textarea id={`${fid}-pt`} rows={3} className={textbereich} value={werte.pachtText ?? ""} onChange={(e) => setze("pachtText", e.target.value)} />
-              </Feld>
-            </div>
-          )}
+          {p.includes("pachtangebot") && <PachtangebotFelder werte={werte.pa || {}} setze={(k, v) => setWerte((w) => ({ ...w, pa: { ...(w.pa || {}), [k]: v } }))} />}
 
           {p.includes("provisionSatz") && (
             <Feld id={`${fid}-ps`} label="Provisionssatz in %" pflicht hinweis={`Vereinbart: ${PROVISION.verkaeufer.text}. Erlaubt ${String(PROVISION.verkaeufer.min * 100).replace(".", ",")}–${PROVISION.verkaeufer.max * 100} %.`}>

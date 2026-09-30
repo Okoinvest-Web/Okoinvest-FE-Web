@@ -26,7 +26,15 @@ MAIL_VORLAGEN = {
 	# Sicherheitsmeldungen versendet plattform/sicherheit.melden() immer selbst (Vorlage oekoinvest_sicherheit)
 	# Anlagen & Monitoring (Texte ohne Inhalte, Details im Portal)
 	"stoerung": ("Störung an einer Anlage – ÖkoInvest", "An einer Anlage wurde eine Störung erkannt oder behoben. Details finden Sie im Portal."),
+	# Projektentwicklung (Fortschritt, Fristen, Gutachten-Aufträge) – ohne Inhalte
+	"entwicklung": ("Neuigkeiten aus der Projektentwicklung – ÖkoInvest", "Zu einem Projekt, an dem Sie beteiligt sind, gibt es Neuigkeiten. Details finden Sie im Portal unter „Projektentwicklung“."),
+	# Energiebeschaffung (Fristen, Angebotsvergleich zur Freigabe, Angebotsanfragen, Zuschläge) – ohne Inhalte
+	"energie": ("Neuigkeiten zu Ihrer Energiebeschaffung – ÖkoInvest", "Zu Ihrer Energiebeschaffung bzw. einer Angebotsanfrage gibt es Neuigkeiten. Details finden Sie im Portal."),
 	"sicherheit": ("Hinweis zur Sicherheit Ihres Kontos – ÖkoInvest", "Es gibt einen Hinweis zur Sicherheit Ihres Kontos. Details finden Sie im Portal unter „Sicherheit“."),
+	# Dokumente, Signatur, Termine, Service & HR – ohne Inhalte
+	"signatur": ("Elektronische Unterschrift – ÖkoInvest", "Im Portal von ÖkoInvest gibt es Neuigkeiten zu einem Dokument zur elektronischen Unterschrift."),
+	"termin": ("Ihr Termin – ÖkoInvest", "Im Portal von ÖkoInvest gibt es Neuigkeiten zu einem Termin."),
+	"ticket": ("Ihre Support-Anfrage – ÖkoInvest", "Im Portal von ÖkoInvest gibt es Neuigkeiten zu Ihrer Support-Anfrage."),
 }
 
 

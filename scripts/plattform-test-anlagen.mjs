@@ -213,6 +213,10 @@ async function main() {
   pruefe(r.status === 200 && r.json.anlage?.id === eigeneId, "Detail der eigenen Anlage", r.status);
   pruefe(r.json.anlage?.kosten?.jahr && typeof r.json.anlage.kosten.jahr.ersparnisEur === "number", "Kosten/Ersparnis aus dem Vertrag");
   pruefe(!r.json.anlage?.geraete, "Detail für den Kunden ohne Gerätezugänge");
+  // Eigentum & Betrieb (Fachprüfung Kapitalseite): Kunde = Stromabnehmer, Anlage im Eigentum von ÖkoInvest/SPV
+  pruefe(typeof r.json.anlage?.eigentuemer === "string" && r.json.anlage.eigentuemer.length >= 3, "Kunde sieht die Eigentümergesellschaft", r.json.anlage?.eigentuemer);
+  pruefe(!r.json.anlage?.komponenten && r.json.anlage?.finanziertDurch === undefined, "Kunde sieht keine Komponenten-Interna und keine Finanzierung");
+  pruefe((r.json.anlage?.messpunkte || []).every((m) => m.abrechnungsrelevant), "Kunde sieht nur abrechnungsrelevante Messpunkte");
   pruefe((r.json.anlage?.wartungen || []).every((w) => w.kostenEur === undefined), "Interne Wartungskosten für den Kunden ausgeblendet");
   pruefe((r.json.anlage?.stoerungen || []).every((s) => s.kommentare.every((k) => !k.intern)), "Keine internen Kommentare beim Kunden");
   r = await kunde.get(`/api/portal/anlagen/${eigeneId}/messdaten?${zeit}`);
@@ -246,7 +250,10 @@ async function main() {
   pruefe(r.status === 403, "Kunde kann keine Anlage anlegen → 403", r.status);
   r = await admin.post("/api/admin/anlagen", { name: "Hallendach Test", typ: "dach" }, { origin: "https://boese.example.org" });
   pruefe(r.status === 403, "CSRF: fremder Origin → 403", r.status);
+  r = await admin.post("/api/admin/anlagen", { name: `Ohne Eigentümer ${LAUF} (Test)`, typ: "dach", status: "planung", land: "DE", bundesland: "Hessen", kwp: 50 });
+  pruefe(r.status === 422, "Anlage ohne Eigentümergesellschaft → 422 (Pflichtfeld)", r.status);
   r = await admin.post("/api/admin/anlagen", {
+    eigentuemer: "ÖkoInvest GmbH", dachgeberIstKunde: true, // Eigentum & Betrieb (Pflicht)
     name: `Testdach ${LAUF} (Test)`, typ: "dach", status: "betrieb", land: "DE", bundesland: "Hessen", ort: "Raum Kassel", kwp: 240, wechselrichterAnzahl: 2,
     speicherKwh: 100, speicherKw: 50, lastprofil: "gewerbe", lastJahrKwh: 300000, inbetriebnahme: "2025-04-01", kundeId: fremd.nutzer.id,
   });

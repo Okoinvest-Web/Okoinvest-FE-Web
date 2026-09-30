@@ -1,0 +1,9 @@
+Geodaten in diesem Ordner (Akquise-Cockpit, Demo-Betrieb)
+
+netzknoten-ooe-sbg.geojson, schutzgebiete-innviertel.geojson, orte-innviertel.geojson:
+  Quelle: OpenStreetMap (Overpass API, Stand siehe metadata.stand je Datei)
+  (c) OpenStreetMap-Mitwirkende - Open Database License (ODbL) 1.0 - https://www.openstreetmap.org/copyright
+  Abgeleitete Datenbanken unterliegen ebenfalls der ODbL (Share-Alike).
+  Schutzgebiete aus OSM sind NICHT amtlich - im Betrieb durch amtliche Daten (EEA Natura 2000, Umweltbundesamt) ersetzen.
+
+Erzeugt mit Backend-Import/dienste/geodaten/demo/demo_bauen.py. Synthetische Demo-Parzellen liegen unter src/data/geo/.

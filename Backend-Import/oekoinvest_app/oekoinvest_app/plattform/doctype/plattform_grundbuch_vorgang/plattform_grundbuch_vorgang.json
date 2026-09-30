@@ -1,0 +1,383 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-30 21:00:00.000000",
+ "description": "Grundbuch-Akte je Grundstück/Dach: Dienstbarkeit bzw. Servitut von Vertrag bis Eintragung (DE/AT/CH), verknüpft mit Fläche (Pacht) oder Anlage (Contracting).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "titel",
+  "status",
+  "land",
+  "objekt_art",
+  "recht",
+  "spalte_1",
+  "bezug_art",
+  "flaeche_id",
+  "anlage_id",
+  "vertrag_bezug",
+  "abgebrochen",
+  "abschnitt_grundstueck",
+  "grundstueck_bezeichnung",
+  "grundbuch",
+  "flurstuecke",
+  "gebaeude",
+  "spalte_2",
+  "eigentuemer_id",
+  "eigentuemer_name",
+  "eigentuemer_anschrift",
+  "eigentuemer_anzahl",
+  "berechtigter",
+  "abschnitt_entgelt",
+  "entgelt_jahr",
+  "laufzeit_jahre",
+  "laufzeit_beginn",
+  "spalte_3",
+  "pfandglaeubiger",
+  "naechste_frist",
+  "status_gemeldet",
+  "abschnitt_schritte",
+  "schritte",
+  "abschnitt_intern",
+  "notiz",
+  "verlauf",
+  "erstellt_von"
+ ],
+ "fields": [
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Titel",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "vorbereitung\nunterschrift\nbeglaubigung\neingereicht\neingetragen\nabgebrochen",
+   "default": "vorbereitung",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "label": "Land",
+   "options": "DE\nAT\nCH",
+   "default": "DE",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "objekt_art",
+   "fieldtype": "Select",
+   "label": "Objekt",
+   "options": "freiflaeche\ndach",
+   "default": "freiflaeche",
+   "read_only": 1
+  },
+  {
+   "fieldname": "recht",
+   "fieldtype": "Select",
+   "label": "Art des Rechts",
+   "options": "bpd\ngrunddienstbarkeit\nservitut\nsuperaedifikat\ndienstbarkeit\nbaurecht"
+  },
+  {
+   "fieldname": "spalte_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bezug_art",
+   "fieldtype": "Select",
+   "label": "Bezug",
+   "options": "flaeche\nanlage\nfrei",
+   "default": "frei",
+   "read_only": 1
+  },
+  {
+   "fieldname": "flaeche_id",
+   "fieldtype": "Link",
+   "label": "Fläche",
+   "options": "Plattform Flaeche",
+   "read_only": 1
+  },
+  {
+   "fieldname": "anlage_id",
+   "fieldtype": "Link",
+   "label": "Anlage",
+   "options": "Plattform Anlage",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vertrag_bezug",
+   "fieldtype": "Data",
+   "label": "Vertrag (Pacht/Contracting)"
+  },
+  {
+   "fieldname": "abgebrochen",
+   "fieldtype": "Check",
+   "label": "Abgebrochen",
+   "read_only": 1
+  },
+  {
+   "fieldname": "abschnitt_grundstueck",
+   "fieldtype": "Section Break",
+   "label": "Grundstück & Beteiligte"
+  },
+  {
+   "fieldname": "grundstueck_bezeichnung",
+   "fieldtype": "Data",
+   "label": "Bezeichnung"
+  },
+  {
+   "fieldname": "grundbuch",
+   "fieldtype": "Data",
+   "label": "Grundbuch / Blatt bzw. KG / EZ"
+  },
+  {
+   "fieldname": "flurstuecke",
+   "fieldtype": "Small Text",
+   "label": "Flurstücke / Grundstücksnummern / Parzellen"
+  },
+  {
+   "fieldname": "gebaeude",
+   "fieldtype": "Data",
+   "label": "Gebäude / Dachfläche"
+  },
+  {
+   "fieldname": "spalte_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "eigentuemer_id",
+   "fieldtype": "Link",
+   "label": "Eigentümer (Portal-Konto)",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "eigentuemer_name",
+   "fieldtype": "Data",
+   "label": "Eigentümer/in",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "eigentuemer_anschrift",
+   "fieldtype": "Data",
+   "label": "Anschrift Eigentümer/in"
+  },
+  {
+   "fieldname": "eigentuemer_anzahl",
+   "fieldtype": "Int",
+   "label": "Anzahl Unterschriften",
+   "default": "1"
+  },
+  {
+   "fieldname": "berechtigter",
+   "fieldtype": "Data",
+   "label": "Berechtigte/r",
+   "default": "ÖkoInvest GmbH"
+  },
+  {
+   "fieldname": "abschnitt_entgelt",
+   "fieldtype": "Section Break",
+   "label": "Entgelt, Laufzeit, Rang"
+  },
+  {
+   "fieldname": "entgelt_jahr",
+   "fieldtype": "Currency",
+   "label": "Entgelt pro Jahr"
+  },
+  {
+   "fieldname": "laufzeit_jahre",
+   "fieldtype": "Int",
+   "label": "Laufzeit (Jahre)",
+   "default": "25"
+  },
+  {
+   "fieldname": "laufzeit_beginn",
+   "fieldtype": "Data",
+   "label": "Laufzeit ab",
+   "default": "Inbetriebnahme"
+  },
+  {
+   "fieldname": "spalte_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pfandglaeubiger",
+   "fieldtype": "Long Text",
+   "label": "Grundpfandgläubiger (JSON)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "naechste_frist",
+   "fieldtype": "Date",
+   "label": "Nächste Frist",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status_gemeldet",
+   "fieldtype": "Data",
+   "label": "Status gemeldet",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "abschnitt_schritte",
+   "fieldtype": "Section Break",
+   "label": "Schritte"
+  },
+  {
+   "fieldname": "schritte",
+   "fieldtype": "Table",
+   "label": "Schritte",
+   "options": "Plattform Grundbuch Schritt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "abschnitt_intern",
+   "fieldtype": "Section Break",
+   "label": "Intern",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "notiz",
+   "fieldtype": "Small Text",
+   "label": "Interne Notiz"
+  },
+  {
+   "fieldname": "verlauf",
+   "fieldtype": "Long Text",
+   "label": "Verlauf (JSON)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "erstellt_von",
+   "fieldtype": "Link",
+   "label": "Angelegt von",
+   "options": "Plattform Konto",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 21:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Grundbuch Vorgang",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Akquise"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Transaktion"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Betrieb"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Projektleitung"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "",
+ "naming_rule": "By script",
+ "in_create": 1,
+ "title_field": "titel",
+ "show_title_field_in_link": 1,
+ "search_fields": "titel,eigentuemer_name,status"
+}

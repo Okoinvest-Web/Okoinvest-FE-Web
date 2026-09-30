@@ -1,0 +1,56 @@
+{#- ÖkoInvest – Signaturprotokoll zu einem Signaturvorgang (einfache elektronische Signatur, EES, Art. 3 Nr. 10 eIDAS – keine qualifizierte).
+    Enthält Dokument, Prüfsummen (vorher/nachher), Unterzeichner mit Zeitpunkt, Art, IP, Browser und das vollständige Protokoll. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set protokoll = oekoinvest_json(doc.protokoll_json, []) or [] -%}
+{%- set widerruf = oekoinvest_json(doc.widerruf_json, {}) or {} -%}
+{%- set arten = {"nda": "Vertraulichkeitsvereinbarung (NDA)", "provision": "Provisionsvereinbarung", "pacht_loi": "Pacht-Absichtserklärung", "gutachter": "Auftrag Gutachter", "sonstiges": "Sonstiges Dokument"} -%}
+{%- set status_label = {"laufend": "Zur Unterschrift", "abgeschlossen": "Vollständig unterschrieben", "abgelehnt": "Abgelehnt", "widerrufen": "Widerrufen", "abgelaufen": "Frist abgelaufen"} -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Elektronische Unterschrift · Signaturprotokoll</div>
+	<div class="oi-titel">{{ doc.titel | e }}</div>
+	<div class="oi-untertitel">Vorgang {{ doc.name }} · {{ arten.get(doc.art, doc.art) }} · Stand {{ oekoinvest_datum(frappe.utils.now(), true) }}</div>
+</div>
+<span class="oi-vertraulich">Einfache elektronische Signatur (EES) nach Art. 3 Nr. 10 eIDAS-VO – keine fortgeschrittene und keine qualifizierte elektronische Signatur</span>
+
+<table class="oi-kacheln"><tr>
+	<td class="oi-kachel"><div class="oi-bez">Status</div><div class="oi-wert" style="font-size:11pt">{{ status_label.get(doc.status, doc.status) }}</div></td>
+	<td class="oi-kachel"><div class="oi-bez">Unterschriften</div><div class="oi-wert" style="font-size:11pt">{{ doc.unterzeichner | selectattr("status", "equalto", "unterschrieben") | list | length }} / {{ doc.unterzeichner | length }}</div></td>
+	<td class="oi-kachel"><div class="oi-bez">Frist</div><div class="oi-wert" style="font-size:11pt">{{ oekoinvest_datum(doc.frist) if doc.frist else "–" }}</div></td>
+	<td class="oi-kachel"><div class="oi-bez">Abgeschlossen</div><div class="oi-wert" style="font-size:11pt">{{ oekoinvest_datum(doc.abgeschlossen_am, true) if doc.abgeschlossen_am else "–" }}</div></td>
+</tr></table>
+
+<div class="oi-abschnitt">Dokument und Prüfsummen</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Originaldatei</td><td>{{ doc.dokument_name | e }} · {{ doc.seiten or "–" }} Seiten · {{ doc.groesse or 0 }} Byte</td></tr>
+	<tr><td class="oi-feld">SHA-256 Original (vorher)</td><td class="oi-klein">{{ doc.sha256_original }}</td></tr>
+	<tr><td class="oi-feld">SHA-256 signiert (nachher)</td><td class="oi-klein">{{ doc.sha256_signiert or "– (noch nicht abgeschlossen)" }}</td></tr>
+	<tr><td class="oi-feld">Verfahren</td><td>Signiertes PDF = unverändertes Original + angehängte Prüfseite (inkrementelles PDF-Update). Die ersten {{ doc.groesse or 0 }} Byte des signierten PDFs sind byte-gleich mit dem Original.</td></tr>
+	<tr><td class="oi-feld">Bereitgestellt</td><td>{{ oekoinvest_datum(doc.creation, true) }}{% if doc.ersteller_id %} durch {{ oekoinvest_konto(doc.ersteller_id).name | e }}{% else %} (automatisch, Standard-Erklärung){% endif %} · Reihenfolge {{ "fest" if doc.reihenfolge else "beliebig" }}</td></tr>
+	{% if widerruf.am %}<tr><td class="oi-feld">Widerruf</td><td>{{ oekoinvest_datum(widerruf.am, true) }} – {{ widerruf.grund | e }}</td></tr>{% endif %}
+</table>
+
+<div class="oi-abschnitt">Unterzeichner</div>
+<table class="oi-tabelle">
+	<tr><th>#</th><th>Name / E-Mail</th><th>Status</th><th>Zeitpunkt</th><th>Art</th><th>Nachweise</th></tr>
+	{% for u in doc.unterzeichner | sort(attribute="position") %}
+	<tr>
+		<td>{{ u.position }}</td>
+		<td>{{ u.name_anzeige | e }}<br><span class="oi-klein">{{ u.email | e }}</span></td>
+		<td>{% if u.status == "unterschrieben" %}<span class="oi-badge">unterschrieben</span>{% elif u.status == "abgelehnt" %}<span class="oi-badge oi-rot">abgelehnt</span>{% else %}<span class="oi-badge oi-gelb">offen</span>{% endif %}</td>
+		<td>{{ oekoinvest_datum(u.unterschrieben_am, true) if u.unterschrieben_am else (oekoinvest_datum(u.abgelehnt_am, true) if u.abgelehnt_am else "–") }}</td>
+		<td>{% if u.art == "gezeichnet" %}gezeichnet{% if u.bild_png %}<br><img src="data:image/png;base64,{{ u.bild_png }}" style="max-height:34px;max-width:140px"/>{% endif %}{% elif u.art == "getippt" %}getippt: „{{ u.getippter_name | e }}“{% else %}–{% endif %}</td>
+		<td class="oi-klein">Code bestätigt: {{ oekoinvest_datum(u.code_bestaetigt_am, true) if u.code_bestaetigt_am else "–" }}<br>IP {{ u.ip or "–" }}<br>{{ (u.user_agent or "")[:90] | e }}<br>SHA-256 {{ (u.sha256_dokument or "")[:24] }}…{% if u.ablehn_grund %}<br>Grund: {{ u.ablehn_grund | e }}{% endif %}</td>
+	</tr>
+	{% endfor %}
+</table>
+
+<div class="oi-abschnitt">Protokoll (append-only)</div>
+<table class="oi-tabelle">
+	<tr><th>Zeitpunkt (UTC)</th><th>Ereignis</th><th>Person</th><th>IP / Browser</th><th>SHA-256</th></tr>
+	{% for e in protokoll %}<tr><td class="oi-klein">{{ e.am }}</td><td>{{ e.art }}<br><span class="oi-klein">{{ e.text | e }}</span></td><td>{{ oekoinvest_konto(e.kontoId).name | e if e.kontoId else "System" }}</td><td class="oi-klein">{{ e.ip or "" }}<br>{{ (e.userAgent or "")[:60] | e }}</td><td class="oi-klein">{{ (e.sha256 or "")[:16] }}{% if e.sha256 %}…{% endif %}</td></tr>{% endfor %}
+</table>
+
+<div class="oi-abschnitt">Rechtlicher Hinweis</div>
+<p class="oi-text oi-klein">Die einfache elektronische Signatur erfüllt keine gesetzliche Schriftform (in Deutschland z. B. § 126 BGB, in Österreich in der Regel nur mit qualifizierter Signatur, in der Schweiz Art. 14 OR) und ersetzt keine notarielle Beurkundung. Sie eignet sich für formfreie Erklärungen wie Vertraulichkeitsvereinbarungen, Absichtserklärungen oder Aufträge; ihre Beweiskraft unterliegt der freien Beweiswürdigung des Gerichts.</p>
+<div class="oi-fuss">{{ f.name }} · Signaturprotokoll {{ doc.name }} · Die IP-Adressen dienen ausschließlich dem Nachweis der Unterschrift (berechtigtes Interesse, Art. 6 Abs. 1 lit. f DSGVO).</div>

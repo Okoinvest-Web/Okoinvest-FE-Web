@@ -1,0 +1,34 @@
+{#- ÖkoInvest – Zuschlagsschreiben an den bezuschlagten Energieversorger (Plattform Ausschreibung, Status „zuschlag“). -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set vg = oekoinvest_energie_vergleich(doc.name) -%}
+{%- set z = vg.zuschlag or {} -%}
+{%- set pos = z.position or {} -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<table class="oi-daten" style="margin-bottom:14px"><tr>
+	<td>{{ (z.lieferant or "Versorger") | e }}</td>
+	<td style="text-align:right" class="oi-klein">{{ f.ort }}, {{ oekoinvest_datum(frappe.utils.nowdate()) }}<br>Unser Zeichen: {{ doc.name }}</td>
+</tr></table>
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Energiebeschaffung · Zuschlag</div>
+	<div class="oi-titel">Zuschlag für Ihr Angebot</div>
+	<div class="oi-untertitel">{{ vg.los }} · Stromlieferung ab {{ doc.lieferbeginn }}</div>
+</div>
+{% if doc.status == "zuschlag" and z.am %}
+<p>Sehr geehrte Damen und Herren,</p>
+<p class="oi-absatz">wir bedanken uns für Ihr Angebot und teilen Ihnen mit, dass Sie für die oben genannte Angebotsanfrage den Zuschlag erhalten. Alle beteiligten Kunden haben den Zuschlag im Portal von {{ f.name }} freigegeben.</p>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Produkt</td><td>{{ {"fix": "Festpreis", "tranchen": "Tranchenmodell", "spot": "Spot-Index + Aufschlag"}.get((z.produkt or {}).art, "–") }}, {{ (z.produkt or {}).laufzeitJahre or 1 }} Jahr(e){{ ", Grünstrom (HKN)" if (z.produkt or {}).gruen else "" }}</td></tr>
+	<tr><td class="oi-feld">{{ "Arbeitspreis" if pos.arbeitspreisCt else "Aufschlag" }}</td><td>{{ oekoinvest_zahl(pos.arbeitspreisCt or pos.aufschlagCt or 0, 3) }} ct/kWh (netto)</td></tr>
+	<tr><td class="oi-feld">Grundpreis</td><td>{{ oekoinvest_zahl(pos.grundpreisEurMonat or 0, 2) }} € je Monat</td></tr>
+	{% if pos.hknCt %}<tr><td class="oi-feld">Herkunftsnachweise</td><td>{{ oekoinvest_zahl(pos.hknCt, 3) }} ct/kWh</td></tr>{% endif %}
+	<tr><td class="oi-feld">Zahlungsziel</td><td>{{ z.zahlungsziel }} Tage</td></tr>
+	<tr><td class="oi-feld">Bindefrist des Angebots</td><td>{{ oekoinvest_datum(z.bindefrist, true) }}</td></tr>
+	<tr><td class="oi-feld">Zuschlag am</td><td>{{ oekoinvest_datum(z.am, true) }}</td></tr>
+</table>
+<p class="oi-absatz">Die Kundendaten (Firmenname, Anschrift, Markt- bzw. Messlokations-ID/Zählpunkt) und die Unterlagen für die Anmeldung zum Lieferbeginn übermitteln wir Ihnen gesondert. Der Liefervertrag kommt mit dem Kunden zustande; bitte senden Sie die Vertragsunterlagen zur Weiterleitung an uns.</p>
+<div class="oi-hinweis">Deutschland: technischer Lieferantenwechsel seit 6. Juni 2025 innerhalb von 24 Stunden an jedem Werktag (GPKE); Österreich: Wechselverfahren nach der Wechsel-Verordnung der E-Control, nach aktuellem Stand höchstens drei Wochen. Vertragliche Kündigungsfristen bleiben unberührt.</div>
+<p>Mit freundlichen Grüßen<br>{{ f.name }}</p>
+{% else %}
+<div class="oi-warnung">Für diese Ausschreibung ist noch kein Zuschlag erteilt (Status: {{ doc.status }}). Ein Zuschlag setzt die Freigabe aller Kunden voraus.</div>
+{% endif %}
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · {{ f.gericht }} · Geschäftsführung: {{ f.gf }}</div>

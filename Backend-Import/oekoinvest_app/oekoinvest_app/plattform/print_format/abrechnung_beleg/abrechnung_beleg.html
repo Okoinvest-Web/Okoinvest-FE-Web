@@ -1,0 +1,3 @@
+{#- ÖkoInvest – Beleg der Plattform-Abrechnung (Pacht-Gutschrift, Contracting-Rechnung mit Zählerständen, Provisionsrechnung). Inhalt: templates/finanzen/beleg.html -#}
+{%- set b = oekoinvest_abrechnung(doc.name) -%}
+{% if b %}{% include "oekoinvest_app/templates/finanzen/beleg.html" %}{% else %}<p class="oi-hinweis">Keine Berechtigung für diesen Beleg.</p>{% endif %}

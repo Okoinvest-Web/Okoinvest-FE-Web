@@ -1,0 +1,19 @@
+{#- ÖkoInvest – Ersuchen um Rangrücktritt / Vorrangseinräumung an die Bank (MUSTER) für eine Plattform Grundbuch Vorgang. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set g = oekoinvest_grundbuch(doc.name) -%}
+{%- set a = g.akte -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Grundbuch · Muster</div>
+	<div class="oi-titel">{% if doc.land == "AT" %}Ersuchen um Vorrangseinräumung{% else %}Ersuchen um Rangrücktritt{% endif %}</div>
+	<div class="oi-untertitel">An: {% for x in a.pfandglaeubiger %}{{ x.name | e }}{% if not loop.last %}, {% endif %}{% else %}[Bank]{% endfor %} · Akte {{ doc.name }}</div>
+</div>
+<div class="oi-muster-stempel">MUSTER – keine Rechtsberatung. {{ g.hinweis | e }}</div>
+<p class="oi-absatz"><b>Betreff:</b> Dienstbarkeit für eine Photovoltaikanlage – Grundstück {{ (doc.grundbuch or "[ergänzen]") | e }}, Eigentümer/in {{ (doc.eigentuemer_name or "[ergänzen]") | e }}</p>
+<p class="oi-absatz">Sehr geehrte Damen und Herren,</p>
+<p class="oi-absatz">zugunsten der {{ (doc.berechtigter or f.name) | e }} soll auf dem oben bezeichneten Grundstück eine Dienstbarkeit für Errichtung und Betrieb einer Photovoltaikanlage eingetragen werden. Auf dem Grundstück lastet zu Ihren Gunsten {% if doc.land == "AT" %}ein Pfandrecht im C-Blatt{% elif doc.land == "CH" %}ein Grundpfandrecht{% else %}eine Grundschuld bzw. Hypothek in Abteilung III{% endif %}.</p>
+<p class="oi-absatz">Wir bitten Sie, {% if doc.land == "AT" %}der Dienstbarkeit den Vorrang vor Ihrem Pfandrecht einzuräumen (§ 30 GBG) und die Vorrangseinräumungserklärung mit beglaubigter Unterschrift auszustellen{% elif doc.land == "CH" %}mit Ihrem Grundpfandrecht im Rang hinter die Dienstbarkeit zurückzutreten und die Erklärung in grundbuchfähiger Form auszustellen{% else %}mit Ihrem Recht im Rang hinter die Dienstbarkeit zurückzutreten (§ 880 BGB) und die Rangrücktrittsbewilligung in öffentlich beglaubigter Form (§ 29 GBO) zu erteilen{% endif %}. Die Kosten übernimmt die Berechtigte.</p>
+<div class="oi-hinweis">Die Anlage steigert in der Regel den Ertrag des Grundstücks; das Eigentum bleibt bei Ihrer Kreditnehmerin; am Vertragsende wird zurückgebaut und die Dienstbarkeit gelöscht (Rückbausicherheit).</div>
+<p class="oi-absatz">Anlagen: Auszug aus dem Vertrag, Lageplan, Zustimmung der Eigentümerin.</p>
+<p class="oi-absatz">Mit freundlichen Grüßen<br>{{ f.name }}</p>
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · {{ f.gericht }} · Muster-Stand {{ oekoinvest_datum(frappe.utils.nowdate()) }}</div>

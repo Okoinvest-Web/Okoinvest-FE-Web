@@ -8,6 +8,7 @@ from oekoinvest_app.plattform.ausgabe import FELD_NAMEN_PROJEKT, geaenderte_feld
 from oekoinvest_app.plattform.kern import (
 	admin_noetig,
 	als_json,
+	aus_json,
 	ist_admin,
 	jetzt_iso,
 	konflikt,
@@ -36,6 +37,7 @@ from oekoinvest_app.plattform.organisation import (
 	organisation_fuer_neu,
 )
 from oekoinvest_app.plattform.prozesse import PROZESSE
+from oekoinvest_app.plattform.fach.datenblatt import datenblatt_bereinigen  # Fachprüfung Kapitalseite
 
 MAX_LISTE = 1000
 
@@ -79,6 +81,8 @@ def projekt_daten(daten, basis=None):
 				"details": v.mehrzeilig(vt.get("details"), 3000),
 			}
 		),
+		# Fachprüfung Kapitalseite: Standard-Projektdatenblatt (vertraulich, nie in der öffentlichen Projektion)
+		"datenblatt": als_json(datenblatt_bereinigen(d.get("datenblatt"), basis.get("datenblatt") or {})),
 	}
 
 
@@ -134,7 +138,7 @@ def aendern(id=None, daten=None, als_benutzer=None):  # noqa: A002
 	p = _laden(n, id, schreiben=True)
 	if not ist_admin(n) and p.status != "entwurf":
 		konflikt("Nur Entwürfe können bearbeitet werden. Nehmen Sie das Projekt ggf. zuerst von der Börse bzw. ziehen Sie die Einreichung zurück.")
-	werte = projekt_daten(daten, {"land": p.land})
+	werte = projekt_daten(daten, {"land": p.land, "datenblatt": aus_json(p.get("datenblatt"), {}) or {}})
 	v.pflicht(werte["titel"], "Bitte geben Sie einen Projekttitel an.")
 	alt = projekt_json(p)
 	p.update(werte)

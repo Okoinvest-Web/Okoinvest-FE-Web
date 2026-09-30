@@ -63,7 +63,7 @@ export default async function Projekte() {
         <Leer
           icon={FolderKanban}
           titel="Noch kein Projekt"
-          text="In fünf Schritten zum geprüften Inserat: Grunddaten, Entwicklungsstand, Exposé, vertrauliche Angaben, Provisionsvereinbarung."
+          text="In sechs Schritten zum geprüften Inserat: Grunddaten, Entwicklungsstand, Exposé, vertrauliche Angaben, Projektdatenblatt, Provisionsvereinbarung."
           aktion={<Button href="/portal/projekte/neu" pfeil>Erstes Projekt anlegen</Button>}
         />
       )}

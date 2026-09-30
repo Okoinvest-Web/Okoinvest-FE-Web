@@ -54,23 +54,25 @@ def uebergang_anwenden(n, art, o, nach, als, extra=None, ip=""):
 	von = o.status
 	kommentar = v.mehrzeilig(extra.get("grund") or extra.get("kommentar") or "", 1000)
 
+	# KYC/KYB: NDA-Freigabe, LOI und Veröffentlichung nur mit verifiziertem Konto (kyc_kern, HTTP 409 „kyc“)
+	from oekoinvest_app.plattform.kyc_kern import kyc_uebergang_pruefen
+
+	kyc_uebergang_pruefen(art, o, nach)
+	from oekoinvest_app.plattform.dienste_kern import bonitaet_uebergang_pruefen  # Dienste: LOI nur mit gültiger Bonitätsauskunft (409 „bonitaet“)
+
+	bonitaet_uebergang_pruefen(art, o, nach)
+
 	if extra.get("grund"):
 		o.ablehn_grund = kommentar
 
 	if art == "flaeche" and nach == "pachtangebot":
-		pa = extra.get("pachtangebot") if isinstance(extra.get("pachtangebot"), dict) else {}
-		euro = v.zahl(pa.get("euroProHaJahr"), min=50, max=50000)
-		jahre = v.zahl(pa.get("laufzeitJahre"), min=1, max=60)
-		v.pflicht(euro is not None and jahre is not None, "Pachtangebot: Pacht je ha und Laufzeit angeben.")
-		o.pachtangebot = als_json(
-			{
-				"euroProHaJahr": euro,
-				"laufzeitJahre": jahre,
-				"verlaengerung": v.text(pa.get("verlaengerung"), 80),
-				"text": v.mehrzeilig(pa.get("text"), 2000),
-				"am": jetzt_iso(),
-			}
-		)
+		# Fachprüfung Flächen: vollständiger Angebotsbogen (Modell, Indexierung, Reservierung, Rückbau, Dienstbarkeit …)
+		from oekoinvest_app.plattform.flaeche_fach import Fehler, pachtangebot_bereinigen
+
+		try:
+			o.pachtangebot = als_json(pachtangebot_bereinigen(extra.get("pachtangebot"), am=jetzt_iso()))
+		except Fehler as e:
+			v.pflicht(False, str(e))
 
 	if art == "projekt" and nach == "veroeffentlicht":
 		o.provision_satz = provision_satz_normalisieren(extra.get("provisionSatz"))
@@ -78,18 +80,16 @@ def uebergang_anwenden(n, art, o, nach, als, extra=None, ip=""):
 			o.veroeffentlicht_am = jetzt()
 
 	if art == "interesse" and nach == "loi_abgegeben":
+		# Fachprüfung Kapitalseite: strukturierte LOI (fach/loi.py = fach/loi.js)
+		from oekoinvest_app.plattform.fach.loi import LoiFehler, loi_bereinigen
+
 		loi = extra.get("loi") if isinstance(extra.get("loi"), dict) else {}
-		t = v.mehrzeilig(loi.get("text"), 3000)
-		v.pflicht(len(t) >= 10, "Bitte beschreiben Sie Ihre Absichtserklärung (mind. 10 Zeichen).")
-		o.loi = als_json(
-			{
-				"betrag": v.zahl(loi.get("betrag"), min=0, max=1e10),
-				"text": t,
-				"bedingungen": v.mehrzeilig(loi.get("bedingungen"), 2000),
-				"gueltigBis": v.text(loi.get("gueltigBis"), 10),
-				"am": jetzt_iso(),
-			}
-		)
+		mwp = frappe.db.get_value("Plattform Projekt", o.projekt_id, "mwp") if o.get("projekt_id") else 0
+		try:
+			sauber = loi_bereinigen(loi, mwp=mwp or 0)
+		except LoiFehler as e:
+			v.pflicht(False, str(e))
+		o.loi = als_json({**sauber, "am": jetzt_iso()})
 
 	if art == "projekt" and nach == "verkauft":
 		kaeufer_id = v.kennung(extra.get("interesseId"))
@@ -137,6 +137,10 @@ def system_wechsel(art, o, nach, kommentar):
 	von = o.status
 	erlaubt = any(u["nach"] == nach and von in u["von"] and u["wer"] in ("system", "admin") for u in PROZESSE[art]["uebergaenge"])
 	if not erlaubt:
+		return False
+	from oekoinvest_app.plattform.kyc_kern import kyc_uebergang_pruefen  # KYC/KYB: ohne Verifizierung überspringen
+
+	if not kyc_uebergang_pruefen(art, o, nach, werfen=False):
 		return False
 	o.status = nach
 	verlauf(o, nach, None, "system", kommentar)

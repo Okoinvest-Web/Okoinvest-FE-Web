@@ -1,0 +1,174 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Bankenstamm der Bankfinanzierung: Bank, Ansprechperson, E-Mail für Anfragen, verknüpfte Portal-Konten (Rolle „bank“).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "bank_name",
+  "land",
+  "art",
+  "status",
+  "cb1",
+  "ansprechpartner",
+  "email",
+  "telefon",
+  "schwerpunkt",
+  "sb1",
+  "konten",
+  "notiz"
+ ],
+ "fields": [
+  {
+   "fieldname": "bank_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Name der Bank",
+   "reqd": 1
+  },
+  {
+   "default": "DE",
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Land",
+   "options": "DE\nAT\nCH"
+  },
+  {
+   "default": "geschaeftsbank",
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "geschaeftsbank\nfoerderbank\nsparkasse\ngenossenschaft\nleasing\nsonstige"
+  },
+  {
+   "default": "aktiv",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "aktiv\ninaktiv"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "ansprechpartner",
+   "fieldtype": "Data",
+   "label": "Ansprechperson"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "E-Mail",
+   "options": "Email",
+   "reqd": 1
+  },
+  {
+   "fieldname": "telefon",
+   "fieldtype": "Data",
+   "label": "Telefon"
+  },
+  {
+   "fieldname": "schwerpunkt",
+   "fieldtype": "Data",
+   "label": "Schwerpunkt"
+  },
+  {
+   "fieldname": "sb1",
+   "fieldtype": "Section Break",
+   "label": "Portal"
+  },
+  {
+   "fieldname": "konten",
+   "fieldtype": "JSON",
+   "label": "Portal-Konten (Kennungen)"
+  },
+  {
+   "fieldname": "notiz",
+   "fieldtype": "Small Text",
+   "label": "Notiz"
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 06:29:55.082776",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Bank",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Transaktion",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "search_fields": "bank_name",
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "bank_name",
+ "track_changes": 1
+}

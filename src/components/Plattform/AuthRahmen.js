@@ -12,6 +12,7 @@ const NUTZEN = {
   anbieter: ["Anonymer Teaser, Datenraum nach NDA", "Aufrufe, Merker und NDA-Anfragen live", `Provision ${PROVISION.verkaeufer.text}`],
   unternehmen: ["Reststrom-Pool, Solarcarport, Speicher", "Angebote und Unterlagen an einem Ort", "Status jederzeit einsehbar"],
   mitglied: ["Genossenschaft und Energiegemeinschaften", "Beteiligung und Status einsehen", "Nachrichten an einem Ort"],
+  kommune: ["Projekte im Gemeindegebiet ab Planung", "Beteiligungsmodelle und § 6 EEG im Überblick", "Fester Ansprechpartner für Verwaltung und Gemeinderat"],
 };
 
 export default function AuthRahmen({ eyebrow, titel, text, rolle, children }) {

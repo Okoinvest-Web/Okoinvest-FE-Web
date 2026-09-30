@@ -1,0 +1,91 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Wirtschaftlich Berechtigter (Kindtabelle des KYC-Falls): mehr als 25 % Kapital/Stimmrechte oder Kontrolle; sonst fiktiver wB (gesetzlicher Vertreter).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "zeile_id",
+  "vorname",
+  "nachname",
+  "geburtsdatum",
+  "staatsangehoerigkeit",
+  "wohnsitzland",
+  "anteil",
+  "kontrolle_art",
+  "pep"
+ ],
+ "fields": [
+  {
+   "fieldname": "zeile_id",
+   "fieldtype": "Data",
+   "label": "Zeilen-ID",
+   "hidden": 1
+  },
+  {
+   "fieldname": "vorname",
+   "fieldtype": "Data",
+   "label": "Vorname",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "nachname",
+   "fieldtype": "Data",
+   "label": "Nachname",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "geburtsdatum",
+   "fieldtype": "Date",
+   "label": "Geburtsdatum",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "staatsangehoerigkeit",
+   "fieldtype": "Data",
+   "label": "Staatsangehörigkeit",
+   "length": 2
+  },
+  {
+   "fieldname": "wohnsitzland",
+   "fieldtype": "Data",
+   "label": "Wohnsitzland",
+   "in_list_view": 1,
+   "length": 2
+  },
+  {
+   "fieldname": "anteil",
+   "fieldtype": "Percent",
+   "label": "Anteil",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "kontrolle_art",
+   "fieldtype": "Select",
+   "label": "Art der Kontrolle",
+   "options": "anteil\nstimmrechte\nkontrolle\nfiktiv",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "pep",
+   "fieldtype": "Check",
+   "label": "PEP"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "KYC Wirtschaftlich Berechtigter",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "istable": 1,
+ "editable_grid": 1
+}

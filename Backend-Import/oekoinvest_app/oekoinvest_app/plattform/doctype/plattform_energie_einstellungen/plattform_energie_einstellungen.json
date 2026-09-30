@@ -1,0 +1,83 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 09:00:00.000000",
+ "description": "Annahmen der Wechselanalyse, Vergütungsparameter (nicht festgelegt), Bestpreis-Regel.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "werte",
+  "lauf_am",
+  "alarme"
+ ],
+ "fields": [
+  {
+   "fieldname": "werte",
+   "fieldtype": "JSON",
+   "label": "Einstellungen (JSON, Schlüssel wie ANNAHMEN_STANDARD)"
+  },
+  {
+   "fieldname": "lauf_am",
+   "fieldtype": "Datetime",
+   "label": "Letzte Wechselanalyse",
+   "read_only": 1
+  },
+  {
+   "fieldname": "alarme",
+   "fieldtype": "JSON",
+   "label": "Versendete Fristen-Alarme",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Energie Einstellungen",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Energie"
+  }
+ ],
+ "issingle": 1
+}

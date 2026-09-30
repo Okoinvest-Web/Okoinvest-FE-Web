@@ -1,0 +1,64 @@
+{
+ "_hinweis": "Beispiel für sites/<site>/site_config.json des ÖkoInvest-Backends. KEINE Geheimnisse hier eintragen – db_password, encryption_key usw. erzeugt bench selbst. Schlüssel mit _ am Anfang sind nur Kommentare und können entfallen.",
+ "_hinweis_setzen": "Werte einzeln setzen: bench --site <site> set-config <schluessel> <wert> (JSON-Werte mit --parse).",
+
+ "host_name": "https://backend.example.com",
+ "_host_name": "Öffentliche Adresse des Frappe-Servers (Desk). Frappe baut daraus Links in Desk-Benachrichtigungen.",
+
+ "plattform_basis_url": "https://www.oekoinvest.com",
+ "_plattform_basis_url": "PFLICHT. Basis aller Links in Portal-E-Mails, gleicher Wert wie PLATTFORM_BASIS_URL der Website. Wird nie aus dem Request-Host übernommen.",
+
+ "plattform_backoffice_email": "backoffice@example.com",
+ "_plattform_backoffice_email": "Optional: Sammeladresse für Hinweise auf neue Anfragen (sonst nur zuständige Konten). Platzhalter ersetzen.",
+
+ "plattform_2fa_pflicht": "admin",
+ "_plattform_2fa_pflicht": "Portal-Rollen mit Pflicht zur Zwei-Faktor-Anmeldung (kommagetrennt).",
+
+ "oekoinvest_kontakt_telefon": null,
+ "oekoinvest_kontakt_email": null,
+ "oekoinvest_kontakt_web": null,
+ "oekoinvest_uid": null,
+ "_oekoinvest_kontakt": "Kontaktangaben im Briefkopf/Druck – erst nach Freigabe setzen (null = nicht drucken). UID-Nummer für die Fußzeile.",
+
+ "oekoinvest_ki_tageskontingent": 30,
+ "oekoinvest_ki_tageskontingent_admin": 150,
+
+ "oekoinvest_mqtt_host": "mqtt.example.com",
+ "oekoinvest_mqtt_port": 8883,
+ "_oekoinvest_mqtt": "Nur Anzeige im Anlagen-Assistenten (Broker des Ingest-Dienstes).",
+
+ "oekoinvest_loeschfristen": {
+  "benachrichtigung_gelesen": 365,
+  "benachrichtigung_alle": 730,
+  "ki_nutzung": 365,
+  "automation_lauf": 365,
+  "projektaufruf": 730,
+  "vorgang_ohne_konto": 1095,
+  "geloeschte_dokumente": 90
+ },
+ "_oekoinvest_loeschfristen": "Tage je Datenart (plattform/aufbewahrung.py), 0 = nie löschen. Mit Datenschutz abstimmen (Löschkonzept).",
+
+ "oekoinvest_log_tage": {
+  "Error Log": 30,
+  "Email Queue": 30,
+  "Activity Log": 180,
+  "Access Log": 180
+ },
+ "_oekoinvest_log_tage": "Aufbewahrung der Frappe-Protokolle (Log Settings); überschreibt Werte im Desk bei jedem Migrate.",
+
+ "oekoinvest_provision_gewichte": {"veroeffentlicht": 0.15, "reserviert": 0.6},
+
+ "oekoinvest_system_settings": {},
+ "oekoinvest_website_settings": {},
+ "_oekoinvest_settings": "Optionale Überschreibungen der Systemeinstellungen (Feld → Wert), wirken bei jedem Migrate, z. B. {\"session_expiry\": \"04:00\"}.",
+
+ "oekoinvest_erpnext": false,
+ "oekoinvest_hrms": false,
+ "oekoinvest_drive": false,
+ "oekoinvest_helpdesk": false,
+ "_oekoinvest_apps": "Schalter der optionalen Integrationen – wirken nur, wenn die App installiert ist.",
+
+ "allow_tests": false,
+ "developer_mode": 0,
+ "_betrieb": "Produktion: developer_mode 0, allow_tests false. Tests nur auf einer eigenen Test-Site."
+}

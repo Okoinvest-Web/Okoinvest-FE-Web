@@ -73,6 +73,14 @@ def liste(typ=None, land=None, phase=None, mwpMin=None, mwpMax=None, als_benutze
 	}
 
 
+def _checkliste_fuer(p, pj):
+	"""Checkliste des Projekts (für den DD-Index) aus den Dokument-Metadaten."""
+	from oekoinvest_app.plattform.checkliste import checkliste_projekt
+
+	doks = frappe.get_all("Plattform Dokument", filters={"bezug_art": "projekt", "bezug_id": p.name}, fields=["name as id", "dateiname as name", "am", "checkliste"], limit_page_length=0)
+	return checkliste_projekt(pj, doks)
+
+
 @frappe.whitelist(methods=["POST"])
 def detail(schluessel=None, zaehlen=None, als_benutzer=None):
 	n = nutzer(als_benutzer, pflicht=False)
@@ -111,6 +119,12 @@ def detail(schluessel=None, zaehlen=None, als_benutzer=None):
 	}
 	if zugriff != "oeffentlich":
 		out["vertraulich"] = projekt_vertraulich(projekt_json(p))
+		# Fachprüfung Kapitalseite: Datenblatt und Due-Diligence-Index nur mit Datenraum-Zugriff
+		from oekoinvest_app.plattform.fach.datenblatt import dd_index
+
+		pj = projekt_json(p)
+		out["datenblatt"] = pj.get("datenblatt") or {}
+		out["ddIndex"] = dd_index(pj, _checkliste_fuer(p, pj))
 		filters = {"bezug_art": "projekt", "bezug_id": p.name}
 		if zugriff == "nda":
 			filters["kategorie"] = "datenraum"

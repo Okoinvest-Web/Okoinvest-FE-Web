@@ -1,0 +1,300 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 09:00:00.000000",
+ "description": "Stromliefervertrag eines Kunden (laufend, gekündigt, neu aus Zuschlag) – Grundlage für Wechselanalyse und Fristen-Alarm.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "kunde_id",
+  "lieferant",
+  "lieferant_id",
+  "zone",
+  "struktur",
+  "preis_ct",
+  "preis_art",
+  "aufschlag_ct",
+  "grundpreis_eur_monat",
+  "hkn_ct",
+  "cb_1",
+  "beginn",
+  "vertrag_ende",
+  "kuendigungsfrist_monate",
+  "kuendigungsfrist_wochen",
+  "verlaengerung_monate",
+  "verlaengerung_preis_ct",
+  "jahres_kwh",
+  "lastprofil",
+  "pv_kwp_geplant",
+  "speicher_kwh_geplant",
+  "sec_2",
+  "status",
+  "pool",
+  "quelle",
+  "ausschreibung_id",
+  "angebot_id",
+  "vorvertrag_id",
+  "abnahmestellen",
+  "bemerkung"
+ ],
+ "fields": [
+  {
+   "fieldname": "kunde_id",
+   "fieldtype": "Link",
+   "label": "Kunde",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "lieferant",
+   "fieldtype": "Data",
+   "label": "Lieferant",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "lieferant_id",
+   "fieldtype": "Link",
+   "label": "Lieferant (Stamm)",
+   "options": "Plattform Lieferant"
+  },
+  {
+   "fieldname": "zone",
+   "fieldtype": "Select",
+   "label": "Zone",
+   "options": "DE\nAT",
+   "default": "DE"
+  },
+  {
+   "fieldname": "struktur",
+   "fieldtype": "Select",
+   "label": "Struktur",
+   "options": "fix\ntranchen\nspot",
+   "default": "fix"
+  },
+  {
+   "fieldname": "preis_ct",
+   "fieldtype": "Float",
+   "label": "Arbeitspreis (ct/kWh)",
+   "precision": "3"
+  },
+  {
+   "fieldname": "preis_art",
+   "fieldtype": "Select",
+   "label": "Preis umfasst",
+   "options": "energie\ngesamt",
+   "default": "energie"
+  },
+  {
+   "fieldname": "aufschlag_ct",
+   "fieldtype": "Float",
+   "label": "Aufschlag (ct/kWh)",
+   "precision": "3"
+  },
+  {
+   "fieldname": "grundpreis_eur_monat",
+   "fieldtype": "Currency",
+   "label": "Grundpreis (€/Monat)"
+  },
+  {
+   "fieldname": "hkn_ct",
+   "fieldtype": "Float",
+   "label": "Herkunftsnachweise (ct/kWh)",
+   "precision": "3"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "beginn",
+   "fieldtype": "Date",
+   "label": "Beginn"
+  },
+  {
+   "fieldname": "vertrag_ende",
+   "fieldtype": "Date",
+   "label": "Vertragsende",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "kuendigungsfrist_monate",
+   "fieldtype": "Int",
+   "label": "Kündigungsfrist (Monate)",
+   "default": "3"
+  },
+  {
+   "fieldname": "kuendigungsfrist_wochen",
+   "fieldtype": "Int",
+   "label": "Kündigungsfrist (Wochen)"
+  },
+  {
+   "fieldname": "verlaengerung_monate",
+   "fieldtype": "Int",
+   "label": "Verlängerung (Monate)"
+  },
+  {
+   "fieldname": "verlaengerung_preis_ct",
+   "fieldtype": "Float",
+   "label": "Verlängerungsangebot (ct/kWh)",
+   "precision": "3"
+  },
+  {
+   "fieldname": "jahres_kwh",
+   "fieldtype": "Float",
+   "label": "Jahresmenge (kWh)",
+   "precision": "0"
+  },
+  {
+   "fieldname": "lastprofil",
+   "fieldtype": "Select",
+   "label": "Lastprofil",
+   "options": "einschicht\nzweischicht\ndreischicht\nhandel",
+   "default": "einschicht"
+  },
+  {
+   "fieldname": "pv_kwp_geplant",
+   "fieldtype": "Float",
+   "label": "Geplante PV (kWp)"
+  },
+  {
+   "fieldname": "speicher_kwh_geplant",
+   "fieldtype": "Float",
+   "label": "Geplanter Speicher (kWh)"
+  },
+  {
+   "fieldname": "sec_2",
+   "fieldtype": "Section Break",
+   "label": "Herkunft"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "aktiv\ngekuendigt\nbeendet\nneu",
+   "default": "aktiv",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "pool",
+   "fieldtype": "Check",
+   "label": "Pool (strukturiert über ÖkoInvest)"
+  },
+  {
+   "fieldname": "quelle",
+   "fieldtype": "Select",
+   "label": "Quelle",
+   "options": "kunde\nbackoffice\nzuschlag",
+   "default": "kunde"
+  },
+  {
+   "fieldname": "ausschreibung_id",
+   "fieldtype": "Link",
+   "label": "Ausschreibung",
+   "options": "Plattform Ausschreibung"
+  },
+  {
+   "fieldname": "angebot_id",
+   "fieldtype": "Link",
+   "label": "Angebot",
+   "options": "Plattform Lieferantenangebot"
+  },
+  {
+   "fieldname": "vorvertrag_id",
+   "fieldtype": "Link",
+   "label": "Vorvertrag",
+   "options": "Plattform Energie Vertrag"
+  },
+  {
+   "fieldname": "abnahmestellen",
+   "fieldtype": "JSON",
+   "label": "Abnahmestellen (Kennungen)"
+  },
+  {
+   "fieldname": "bemerkung",
+   "fieldtype": "Small Text",
+   "label": "Bemerkung"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Energie Vertrag",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 1,
+   "role": "ÖkoInvest Energie"
+  }
+ ]
+}

@@ -1,0 +1,141 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-30 08:00:00.000000",
+ "description": "Monatsbericht des Backoffice als Druckformat (Kennzahlen des gewählten Monats mit Vormonatsvergleich). Monat wählen, speichern, dann Drucken → „Monatsbericht Backoffice“.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "monat",
+  "cb_monat",
+  "hinweis"
+ ],
+ "fields": [
+  {
+   "description": "Format JJJJ-MM, z. B. 2026-09. Leer = Vormonat.",
+   "fieldname": "monat",
+   "fieldtype": "Data",
+   "label": "Monat"
+  },
+  {
+   "fieldname": "cb_monat",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "hinweis",
+   "fieldtype": "HTML",
+   "label": "Hinweis",
+   "options": "<p class=\"text-muted\">Nach dem Speichern über <b>Drucken</b> das Druckformat „Monatsbericht Backoffice“ wählen. Der Bericht enthält nur Kennzahlen – keine Namen, Kontaktdaten oder vertraulichen Projektangaben.</p>"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-09-30 04:31:35.798806",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Monatsbericht",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 0,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Akquise",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Transaktion",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Betrieb",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Compliance",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

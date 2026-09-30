@@ -77,6 +77,7 @@ const SEITEN = [
   // Unternehmen & Kontakt
   { pfad: "/unternehmen", prio: 0.6, freq: "monthly" },
   { pfad: "/kontakt", prio: 0.6, freq: "yearly" },
+  { pfad: "/termin", prio: 0.6, freq: "monthly" },
   // Rechtstexte
   { pfad: "/impressum", prio: 0.2, freq: "yearly", datum: RECHT },
   { pfad: "/datenschutz", prio: 0.2, freq: "yearly", datum: RECHT },

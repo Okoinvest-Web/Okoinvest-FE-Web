@@ -1,0 +1,309 @@
+{
+ "charts": [
+  {
+   "chart_name": "ÖkoInvest Projekte nach Status",
+   "label": "Projekte nach Status"
+  },
+  {
+   "chart_name": "ÖkoInvest Interessen nach Status",
+   "label": "Interessen nach Status"
+  }
+ ],
+ "content": "[{\"id\": \"R3pzh84KpL\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Projektbörse & Deals</b></span>\", \"col\": 12}}, {\"id\": \"McNfAQLKHu\", \"type\": \"paragraph\", \"data\": {\"text\": \"<span style=\\\"color:var(--text-muted)\\\">Projektfreigabe, Klick-NDA, Datenraum, LOI, Bieterverfahren und Provisionen.</span>\", \"col\": 12}}, {\"id\": \"7qnQTupqzi\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Projekte zur Prüfung\", \"col\": 3}}, {\"id\": \"QPtDu7W7ea\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Projekte in der Börse\", \"col\": 3}}, {\"id\": \"DNKgeInGqi\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest MWp in der Börse\", \"col\": 3}}, {\"id\": \"7w4e4pxskC\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Provision bezahlt\", \"col\": 3}}, {\"id\": \"1ITtNZPHaQ\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"0Jt7Qg84iq\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Schnellzugriff</b></span>\", \"col\": 12}}, {\"id\": \"h4gVJjrsMn\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Projekte zur Prüfung\", \"col\": 3}}, {\"id\": \"TvnRO2qGFq\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Projekte in der Börse\", \"col\": 3}}, {\"id\": \"562dfOB1rc\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LOI offen\", \"col\": 3}}, {\"id\": \"avXiOqkVCJ\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Provisionen\", \"col\": 3}}, {\"id\": \"TBJahe84S5\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"jIc1xLJjBi\", \"type\": \"chart\", \"data\": {\"chart_name\": \"ÖkoInvest Projekte nach Status\", \"col\": 6}}, {\"id\": \"ctx57Y3c5w\", \"type\": \"chart\", \"data\": {\"chart_name\": \"ÖkoInvest Interessen nach Status\", \"col\": 6}}, {\"id\": \"nRpQgwXJ43\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"ANVj77p3kZ\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Bereiche</b></span>\", \"col\": 12}}, {\"id\": \"Zl4AblV7vY\", \"type\": \"card\", \"data\": {\"card_name\": \"Projektbörse\", \"col\": 4}}, {\"id\": \"7AZQ3VZprk\", \"type\": \"card\", \"data\": {\"card_name\": \"Deal-Room\", \"col\": 4}}, {\"id\": \"YSgy3c2Eom\", \"type\": \"card\", \"data\": {\"card_name\": \"Protokolle\", \"col\": 4}}, {\"id\": \"06Dwt0Y3oo\", \"type\": \"card\", \"data\": {\"card_name\": \"Auswertung\", \"col\": 4}}]",
+ "creation": "2026-09-30 08:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "accounting",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "Projektbörse & Deals",
+ "links": [
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Projektbörse",
+   "link_count": 3,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Projekt",
+   "link_count": 0,
+   "link_to": "Plattform Projekt",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Interesse (NDA & LOI)",
+   "link_count": 0,
+   "link_to": "Plattform Interesse",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Provision",
+   "link_count": 0,
+   "link_to": "Plattform Provision",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Deal-Room",
+   "link_count": 5,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Frage (Q&A)",
+   "link_count": 0,
+   "link_to": "Plattform Frage",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Bieterverfahren",
+   "link_count": 0,
+   "link_to": "Plattform Bieterverfahren",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Gebot",
+   "link_count": 0,
+   "link_to": "Plattform Gebot",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Datenraum-Eintrag",
+   "link_count": 0,
+   "link_to": "Plattform Datenraum Eintrag",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kontaktfreigabe",
+   "link_count": 0,
+   "link_to": "Plattform Kontaktfreigabe",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Protokolle",
+   "link_count": 2,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Datenraum-Zugriff",
+   "link_count": 0,
+   "link_to": "Plattform Zugriff",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Exposé-Aufrufe",
+   "link_count": 0,
+   "link_to": "Plattform Projektaufruf",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Auswertung",
+   "link_count": 2,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Börse-Trichter",
+   "link_count": 0,
+   "link_to": "Boerse Trichter",
+   "link_type": "Report",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Provisionen erwartet/realisiert",
+   "link_count": 0,
+   "link_to": "Provisionen Erwartet Realisiert",
+   "link_type": "Report",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Projektbörse & Deals",
+ "number_cards": [
+  {
+   "label": "Projekte zur Prüfung",
+   "number_card_name": "ÖkoInvest Projekte zur Prüfung"
+  },
+  {
+   "label": "Projekte in der Börse",
+   "number_card_name": "ÖkoInvest Projekte in der Börse"
+  },
+  {
+   "label": "MWp in der Börse",
+   "number_card_name": "ÖkoInvest MWp in der Börse"
+  },
+  {
+   "label": "Provision bezahlt",
+   "number_card_name": "ÖkoInvest Provision bezahlt"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "role": "ÖkoInvest Transaktion"
+  },
+  {
+   "role": "ÖkoInvest Akquise"
+  },
+  {
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "role": "ÖkoInvest Leser"
+  },
+  {
+   "role": "ÖkoInvest Compliance"
+  }
+ ],
+ "sequence_id": 3.0,
+ "shortcuts": [
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "{} zur Prüfung",
+   "label": "Projekte zur Prüfung",
+   "link_to": "Plattform Projekt",
+   "stats_filter": "[[\"Plattform Projekt\", \"status\", \"=\", \"pruefung\", false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": "{} online",
+   "label": "Projekte in der Börse",
+   "link_to": "Plattform Projekt",
+   "stats_filter": "[[\"Plattform Projekt\", \"status\", \"in\", [\"veroeffentlicht\", \"reserviert\"], false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "{} offen",
+   "label": "LOI offen",
+   "link_to": "Plattform Interesse",
+   "stats_filter": "[[\"Plattform Interesse\", \"status\", \"=\", \"loi_abgegeben\", false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "{} offen",
+   "label": "Provisionen",
+   "link_to": "Plattform Provision",
+   "stats_filter": "[[\"Plattform Provision\", \"status\", \"in\", [\"offen\", \"in_rechnung\"], false]]",
+   "type": "DocType",
+   "url": null
+  }
+ ],
+ "title": "Projektbörse & Deals"
+}

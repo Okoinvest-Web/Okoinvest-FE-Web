@@ -1,0 +1,34 @@
+{#- ÖkoInvest – Bestätigung des Eingangs einer Absichtserklärung (LOI) für ein Plattform Interesse. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set loi = oekoinvest_json(doc.loi) -%}
+{%- set inv = oekoinvest_konto(doc.investor_id) -%}
+{%- set p = oekoinvest_projekt(doc.projekt_id) -%}
+{%- set angenommen = (doc.status_verlauf or []) | selectattr("status", "equalto", "loi_angenommen") | list -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<table class="oi-daten" style="margin-bottom:14px"><tr>
+	<td>{{ (inv.firma or inv.name) | e }}{% if inv.firma %}<br>z. Hd. {{ inv.name | e }}{% endif %}<br>{{ inv.email | e }}</td>
+	<td style="text-align:right" class="oi-klein">{{ f.ort }}, {{ oekoinvest_datum(frappe.utils.nowdate()) }}<br>Unser Zeichen: {{ doc.name }}</td>
+</tr></table>
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Projektbörse · Absichtserklärung</div>
+	<div class="oi-titel">Bestätigung Ihrer Absichtserklärung (LOI)</div>
+	<div class="oi-untertitel">Projekt {{ p.id | e }} · {{ p.titel | e }}</div>
+</div>
+{% if loi.am %}
+<p>Sehr geehrte Damen und Herren,</p>
+<p>wir bestätigen den Eingang Ihrer Absichtserklärung zum oben genannten Projekt über das Portal der {{ f.name }}.</p>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Eingegangen am</td><td>{{ oekoinvest_datum(loi.am, true) }}</td></tr>
+	<tr><td class="oi-feld">Indikativer Kaufpreis</td><td>{{ oekoinvest_eur(loi.betrag) if loi.betrag else "nicht angegeben" }}</td></tr>
+	<tr><td class="oi-feld">Gültig bis</td><td>{{ oekoinvest_datum(loi.gueltigBis) if loi.gueltigBis else "–" }}</td></tr>
+	<tr><td class="oi-feld">Aktueller Stand</td><td>{{ oekoinvest_status("interesse", doc.status) }}{% if angenommen %} (angenommen am {{ oekoinvest_datum(angenommen[-1].am, true) }}){% endif %}</td></tr>
+</table>
+<div class="oi-abschnitt">Ihre Erklärung</div>
+<p class="oi-text">{{ loi.text | e }}</p>
+{% if loi.bedingungen %}<div class="oi-abschnitt">Bedingungen</div><p class="oi-text">{{ loi.bedingungen | e }}</p>{% endif %}
+<div class="oi-hinweis">Eine Absichtserklärung ist in der Regel nicht bindend. Diese Bestätigung dokumentiert nur den Eingang{% if not angenommen %} und stellt keine Annahme dar{% endif %}. Verbindlich ist ausschließlich ein schriftlicher Kaufvertrag. Ihr Datenraum-Zugang und die Vertraulichkeitsvereinbarung gelten fort.</div>
+<p>Mit freundlichen Grüßen<br>{{ f.name }}</p>
+{% else %}
+<div class="oi-warnung">Zu diesem Interesse liegt keine Absichtserklärung vor (Status: {{ oekoinvest_status("interesse", doc.status) }}).</div>
+{% endif %}
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · {{ f.gericht }} · Geschäftsführung: {{ f.gf }}</div>

@@ -30,6 +30,7 @@
   "eigentum",
   "cb_eigenschaften",
   "hinweise",
+  "fach",
   "description",
   "sec_angebot",
   "pachtangebot",
@@ -162,14 +163,14 @@
    "fieldname": "nutzung",
    "fieldtype": "Select",
    "label": "Nutzung",
-   "options": "acker\ngruenland\nkonversion\ngewerbe\nsonstige\ndach"
+   "options": "acker\ngruenland\nkonversion\ngewerbe\nsonstige\ndach\ndauerkultur\nbrache\ndeponie"
   },
   {
    "default": "eigentum",
    "fieldname": "eigentum",
    "fieldtype": "Select",
    "label": "Eigentumsverhältnis",
-   "options": "eigentum\nmiteigentum\nverwaltung"
+   "options": "eigentum\nmiteigentum\nverwaltung\nerbengemeinschaft\ngesellschaft"
   },
   {
    "fieldname": "cb_eigenschaften",
@@ -179,6 +180,12 @@
    "fieldname": "hinweise",
    "fieldtype": "Text",
    "label": "Hinweise"
+  },
+  {
+   "description": "Fachangaben (Boden, Bewirtschaftung, Förderbindungen, Schutzgebiete, Lage, Eigentum/Belastungen, Agri-PV, Dach) – Positivliste in plattform/flaeche_fach.py",
+   "fieldname": "fach",
+   "fieldtype": "JSON",
+   "label": "Fachangaben"
   },
   {
    "fieldname": "description",
@@ -218,7 +225,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-29 08:00:00.000000",
+ "modified": "2026-09-30 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Plattform Flaeche",
@@ -248,6 +255,54 @@
    "role": "ÖkoInvest Admin",
    "share": 0,
    "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Akquise",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Transaktion",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Compliance",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
   }
  ],
  "search_fields": "bezeichnung,plz,ort,status",

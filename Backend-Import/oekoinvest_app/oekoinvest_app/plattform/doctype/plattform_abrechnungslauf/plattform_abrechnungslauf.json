@@ -1,0 +1,117 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Protokoll eines Abrechnungslaufs (Scheduler oder manuell): erzeugte Belege, Klärfälle, bereits abgerechnete Perioden.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "art",
+  "stichtag",
+  "monat",
+  "trockenlauf",
+  "von_id",
+  "ergebnis"
+ ],
+ "fields": [
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "pacht\ncontracting\nprovision\nalle",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "stichtag",
+   "fieldtype": "Date",
+   "label": "Stichtag",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "monat",
+   "fieldtype": "Data",
+   "label": "Contracting-Monat"
+  },
+  {
+   "fieldname": "trockenlauf",
+   "fieldtype": "Check",
+   "label": "Trockenlauf"
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "label": "Gestartet von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "ergebnis",
+   "fieldtype": "JSON",
+   "label": "Ergebnis"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 0,
+ "links": [],
+ "modified": "2026-09-30 05:54:25.046782",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Abrechnungslauf",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "in_create": 0
+}

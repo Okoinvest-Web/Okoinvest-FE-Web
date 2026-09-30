@@ -1,0 +1,109 @@
+{#- ÖkoInvest – KYC-Prüfprotokoll (interne Dokumentation der Compliance nach § 8 GwG). Nur für die Rolle „ÖkoInvest Compliance“. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set p = oekoinvest_json(doc.person_json, {}) or {} -%}
+{%- set fi = oekoinvest_json(doc.firma_json, {}) or {} -%}
+{%- set pep = oekoinvest_json(doc.pep_json, {}) or {} -%}
+{%- set mh = oekoinvest_json(doc.mittelherkunft_json, {}) or {} -%}
+{%- set pr = oekoinvest_json(doc.pruefung_json, {}) or {} -%}
+{%- set ri = oekoinvest_json(doc.risiko_json, {}) or {} -%}
+{%- set sk = oekoinvest_json(doc.sanktionen_json, {}) or {} -%}
+{%- set vt = oekoinvest_json(doc.vertreter_json, []) or [] -%}
+{%- set ext = oekoinvest_json(doc.pruefergebnisse_json, []) or [] -%}
+{%- set verlauf = oekoinvest_json(doc.verlauf_json, []) or [] -%}
+{%- set dokumente = frappe.get_all("KYC Dokument", filters={"fall": doc.name}, fields=["name", "art", "dateiname", "status", "am", "sha256", "pruefung_json", "ausgestellt_am", "geloescht"], order_by="am asc") -%}
+{%- set bank = frappe.db.get_value("KYC Bankverbindung", {"fall": doc.name}, ["iban", "kontoinhaber", "iban_ok", "inhaber_passt", "geprueft"], as_dict=True) -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Compliance · {{ "KYB" if doc.kontotyp == "unternehmen" else "KYC" }} · vertraulich</div>
+	<div class="oi-titel">KYC-Prüfprotokoll {{ doc.name }}</div>
+	<div class="oi-untertitel">{{ doc.bezeichnung | e }} · Stand {{ oekoinvest_datum(frappe.utils.now(), true) }} · erstellt durch {{ frappe.session.user | e }}</div>
+</div>
+<span class="oi-vertraulich">Vertraulich – nur Compliance · Aufbewahrung nach § 8 Abs. 4 GwG</span>
+
+<table class="oi-kacheln"><tr>
+	<td class="oi-kachel"><div class="oi-bez">Status</div><div class="oi-wert" style="font-size:11pt">{{ doc.status }}</div></td>
+	<td class="oi-kachel"><div class="oi-bez">Risiko</div><div class="oi-wert" style="font-size:11pt">{{ doc.risiko or "–" }}{% if ri.manuell %} (manuell){% endif %}</div></td>
+	<td class="oi-kachel"><div class="oi-bez">Sanktionsabgleich</div><div class="oi-wert" style="font-size:11pt">{{ doc.sanktionen_status or "–" }}</div></td>
+	<td class="oi-kachel"><div class="oi-bez">Nächste Prüfung</div><div class="oi-wert" style="font-size:11pt">{{ oekoinvest_datum(doc.naechste_pruefung) if doc.naechste_pruefung else "–" }}</div></td>
+</tr></table>
+
+<div class="oi-abschnitt">Identifizierte Person</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Name</td><td>{{ (p.vorname ~ " " ~ p.nachname) | e }}</td></tr>
+	<tr><td class="oi-feld">Geburtsdatum, Geburtsort</td><td>{{ oekoinvest_datum(p.geburtsdatum) if p.geburtsdatum else "–" }}, {{ p.geburtsort | e }}</td></tr>
+	<tr><td class="oi-feld">Staatsangehörigkeit</td><td>{{ p.staatsangehoerigkeit }}</td></tr>
+	<tr><td class="oi-feld">Anschrift</td><td>{{ (p.adresse or {}).strasse | e }}, {{ (p.adresse or {}).plz | e }} {{ (p.adresse or {}).ort | e }}, {{ (p.adresse or {}).land }}</td></tr>
+	<tr><td class="oi-feld">Ausweis (Art, Nummer, Behörde)</td><td>{{ (p.ausweis or {}).art }} · {{ (p.ausweis or {}).nummer | e }} · {{ (p.ausweis or {}).behoerde | e }}</td></tr>
+	<tr><td class="oi-feld">Gültig bis</td><td>{{ oekoinvest_datum((p.ausweis or {}).gueltigBis) if (p.ausweis or {}).gueltigBis else "–" }}</td></tr>
+	<tr><td class="oi-feld">PEP-Selbstauskunft</td><td>{% if pep.istPep %}PEP – {{ pep.funktion | e }}{% elif pep.naheStehend %}Nahestehend – {{ pep.funktion | e }}{% else %}nein{% endif %}</td></tr>
+	{% if mh.ticket %}<tr><td class="oi-feld">Ticket / Herkunft der Mittel</td><td>{{ mh.ticket }} · {{ (mh.quellen or []) | join(", ") }}{% if mh.text %} – {{ mh.text | e }}{% endif %}</td></tr>{% endif %}
+</table>
+
+{% if doc.kontotyp == "unternehmen" %}
+<div class="oi-abschnitt">Unternehmen (KYB)</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Firma, Rechtsform</td><td>{{ fi.name | e }} ({{ fi.rechtsform | e }})</td></tr>
+	<tr><td class="oi-feld">Register</td><td>{{ fi.registernummer | e }} · {{ fi.registergericht | e }} · {{ fi.land }}</td></tr>
+	<tr><td class="oi-feld">Sitz</td><td>{{ fi.sitz | e }}</td></tr>
+	<tr><td class="oi-feld">Struktur</td><td>{{ "mehrstufig" if fi.mehrstufig else "einfach" }}{% if fi.treuhand %} · Treuhand/Stiftung{% endif %}</td></tr>
+</table>
+<table class="oi-tabelle">
+	<tr><th>Wirtschaftlich Berechtigte</th><th>Geburtsdatum</th><th>Wohnsitz</th><th>Kontrolle</th><th class="oi-zahl">Anteil</th><th>PEP</th></tr>
+	{% for u in doc.ubos %}<tr><td>{{ (u.vorname ~ " " ~ u.nachname) | e }}</td><td>{{ oekoinvest_datum(u.geburtsdatum) }}</td><td>{{ u.wohnsitzland }}</td><td>{{ u.kontrolle_art }}</td><td class="oi-zahl">{{ u.anteil or "" }}{% if u.anteil %} %{% endif %}</td><td>{{ "ja" if u.pep else "nein" }}</td></tr>{% else %}<tr><td colspan="6">keine erfasst</td></tr>{% endfor %}
+</table>
+<table class="oi-tabelle">
+	<tr><th>Vertretungsberechtigte</th><th>Funktion</th><th>Geburtsdatum</th></tr>
+	{% for x in vt %}<tr><td>{{ (x.vorname ~ " " ~ x.nachname) | e }}</td><td>{{ x.funktion | e }}</td><td>{{ oekoinvest_datum(x.geburtsdatum) if x.geburtsdatum else "–" }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+
+<div class="oi-abschnitt">Unterlagen und Prüfliste</div>
+<table class="oi-tabelle">
+	<tr><th>Art</th><th>Datei</th><th>Eingang</th><th>Ergebnis</th><th>Prüfpunkte / Notiz</th></tr>
+	{% for d in dokumente %}{% set pj = oekoinvest_json(d.pruefung_json, {}) or {} %}
+	<tr><td>{{ d.art }}</td><td>{{ d.dateiname | e }}<br><span class="oi-klein">SHA-256 {{ (d.sha256 or "")[:16] }}…</span></td><td>{{ oekoinvest_datum(d.am, true) }}</td>
+		<td>{% if d.geloescht %}gelöscht{% elif d.status == "ok" %}<span class="oi-badge">geprüft</span>{% elif d.status == "abgelehnt" %}<span class="oi-badge oi-rot">nicht akzeptiert</span>{% else %}<span class="oi-badge oi-gelb">ungeprüft</span>{% endif %}</td>
+		<td class="oi-klein">{% for k2, w in (pj.punkte or {}).items() %}{{ k2 }}: {{ "✓" if w else "–" }}{% if not loop.last %} · {% endif %}{% endfor %}{% if pj.notiz %}<br>{{ pj.notiz | e }}{% endif %}</td></tr>
+	{% endfor %}
+</table>
+{% if bank %}
+<table class="oi-daten">
+	<tr><td class="oi-feld">Bankverbindung</td><td>IBAN {{ bank.iban[:2] }}•• •••• {{ bank.iban[-4:] }} · Inhaber {{ bank.kontoinhaber | e }}</td></tr>
+	<tr><td class="oi-feld">Prüfung</td><td>Prüfziffer {{ "korrekt" if bank.iban_ok else "fehlerhaft" }} · Inhaber = geprüfte Person/Firma: {{ "ja" if bank.inhaber_passt else "nein" }} · {{ "geprüft" if bank.geprueft else "ungeprüft" }}</td></tr>
+</table>
+{% endif %}
+
+<div class="oi-abschnitt">Risikoeinstufung</div>
+<p>Stufe <strong>{{ ri.stufe or doc.risiko or "–" }}</strong>{% if ri.punkte is not none %} ({{ ri.punkte }} Punkte){% endif %}{% if ri.manuell %} – manuell: {{ ri.begruendung | e }} (Regel: {{ ri.regelStufe }}){% endif %}</p>
+{% if ri.gruende %}<ul>{% for g in ri.gruende %}<li>{{ g | e }}</li>{% endfor %}</ul>{% endif %}
+
+<div class="oi-abschnitt">Sanktionslisten-Abgleich</div>
+<p class="oi-klein">Liste: {{ sk.listeQuelle | e }} · Stand {{ sk.listeStand }} · letzter Abgleich {{ oekoinvest_datum(sk.letzterAbgleich, true) if sk.letzterAbgleich else "–" }}</p>
+<table class="oi-tabelle">
+	<tr><th>Geprüfter Name</th><th>Listeneintrag</th><th class="oi-zahl">Ähnlichkeit</th><th>Geburtsdatum</th><th>Bewertung</th></tr>
+	{% for t in sk.treffer or [] %}<tr><td>{{ t.prueflingName | e }} ({{ t.pruefling }})</td><td>{{ t.name | e }} · {{ t.euRef }}</td><td class="oi-zahl">{{ (t.score * 100) | round | int }} %</td><td>{{ t.geburtsdatum }}</td><td>{{ t.bewertung or "offen" }}{% if t.begruendung %} – {{ t.begruendung | e }}{% endif %}</td></tr>{% else %}<tr><td colspan="5">kein Treffer</td></tr>{% endfor %}
+</table>
+
+{% if ext %}
+<div class="oi-abschnitt">Externe Prüfergebnisse</div>
+<table class="oi-tabelle">
+	<tr><th>Quelle</th><th>Art</th><th>Ergebnis</th><th>Zusammenfassung</th><th>Zeitpunkt</th></tr>
+	{% for e in ext %}<tr><td>{{ e.quelle | e }}</td><td>{{ e.art | e }}</td><td>{{ e.ergebnis }}</td><td>{{ e.zusammenfassung | e }}</td><td>{{ oekoinvest_datum(e.am, true) }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+
+<div class="oi-abschnitt">Entscheidung</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Erstprüfung</td><td>{{ oekoinvest_konto(doc.erst_pruefer).name if doc.erst_pruefer else "–" }} {{ oekoinvest_datum(pr.erstAm, true) if pr.erstAm else "" }}</td></tr>
+	<tr><td class="oi-feld">Zweitfreigabe (Vier-Augen)</td><td>{{ oekoinvest_konto(doc.zweit_pruefer).name if doc.zweit_pruefer else "–" }} {{ oekoinvest_datum(pr.zweitAm, true) if pr.zweitAm else "" }}</td></tr>
+	<tr><td class="oi-feld">Ergebnis</td><td>{{ (pr.entscheidung or {}).ergebnis or doc.status }}{% if (pr.entscheidung or {}).grund %} – {{ pr.entscheidung.grund | e }}{% endif %}</td></tr>
+	<tr><td class="oi-feld">Verifiziert am</td><td>{{ oekoinvest_datum(doc.verifiziert_am, true) if doc.verifiziert_am else "–" }}</td></tr>
+	<tr><td class="oi-feld">Aufbewahrung / Löschung ab</td><td>{{ oekoinvest_datum(doc.loeschen_ab) if doc.loeschen_ab else "5 Jahre nach Ende der Geschäftsbeziehung (Schluss des Kalenderjahres)" }}</td></tr>
+</table>
+
+<div class="oi-abschnitt">Verlauf</div>
+<table class="oi-tabelle">
+	<tr><th>Zeitpunkt</th><th>Status</th><th>Rolle</th><th>Vermerk</th></tr>
+	{% for x in verlauf %}<tr><td>{{ oekoinvest_datum(x.am, true) }}</td><td>{{ x.status }}</td><td>{{ x.rolle }}{% if not x.oeffentlich %} (intern){% endif %}</td><td class="oi-text">{{ x.kommentar | e }}</td></tr>{% endfor %}
+</table>
+<div class="oi-fuss">{{ f.name }} · Internes Prüfprotokoll · Jeder Abruf der Unterlagen ist im Aktivitätsprotokoll (Hash-Kette) vermerkt. Dieses Protokoll ersetzt keine rechtliche Beratung.</div>

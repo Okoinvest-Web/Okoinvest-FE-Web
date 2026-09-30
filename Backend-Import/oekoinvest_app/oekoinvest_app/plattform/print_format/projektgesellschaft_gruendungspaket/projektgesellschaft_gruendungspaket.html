@@ -1,0 +1,55 @@
+{#- ÖkoInvest – Gründungspaket einer Projektgesellschaft (Plattform Projektgesellschaft): Übersicht, Gesellschaftsvertrag bzw.
+    Errichtungserklärung/Statuten (MUSTER), Gesellschafter, Geschäftsführung, Anmeldung (Entwurf), Meldedaten wirtschaftliche
+    Eigentümer, Checkliste. Gleiche Gliederung wie src/lib/plattform/dienste/gesellschaft/dokumente.js. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set x = oekoinvest_gesellschaft(doc.name) -%}
+{%- set w = "CHF" if doc.waehrung == "CHF" else "€" -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Gesellschaften · Gründungspaket</div>
+	<div class="oi-titel">{{ doc.firma | e }}</div>
+	<div class="oi-untertitel">{{ x.rf.label }} · {{ doc.sitz | e }}{% if doc.registernummer %} · {{ doc.registernummer }}{% endif %}</div>
+</div>
+<div class="oi-muster-stempel">{{ x.muster }}</div>
+
+<div class="oi-abschnitt">Kerndaten</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Firma</td><td><b>{{ doc.firma | e }}</b></td></tr>
+	<tr><td class="oi-feld">Rechtsform</td><td>{{ x.rf.label }}</td></tr>
+	<tr><td class="oi-feld">Sitz · Anschrift</td><td>{{ doc.sitz | e }}{% if doc.anschrift %} · {{ doc.anschrift | e }}{% endif %}</td></tr>
+	{% if x.rf.kapital %}<tr><td class="oi-feld">Stammkapital</td><td>{{ oekoinvest_zahl(doc.stammkapital) }} {{ w }} · bei Gründung eingezahlt {{ oekoinvest_zahl(doc.einzahlung) }} {{ w }}</td></tr>{% endif %}
+	<tr><td class="oi-feld">Form der Gründung</td><td>{{ x.beurkundung }}</td></tr>
+	{% if x.projekt %}<tr><td class="oi-feld">Entwicklungsprojekt</td><td>{{ x.projekt.titel | e }} ({{ x.projekt.id }})</td></tr>{% endif %}
+</table>
+
+<div class="oi-abschnitt">{% if doc.land == "CH" %}Statuten{% elif doc.rechtsform == "de_gmbh_co_kg" %}Gesellschaftsvertrag der Kommanditgesellschaft{% elif doc.land == "AT" and x.einer %}Erklärung über die Errichtung der Gesellschaft{% elif x.musterprotokoll %}Musterprotokoll (§ 2 Abs. 1a GmbHG) – Datenblatt{% else %}Gesellschaftsvertrag{% endif %}</div>
+<p class="oi-absatz"><b>1. Firma und Sitz.</b> Die Firma der Gesellschaft lautet „{{ doc.firma | e }}“. Sitz der Gesellschaft ist {{ doc.sitz | e }}.</p>
+<p class="oi-absatz"><b>2. Gegenstand.</b> {{ x.gegenstand | e }}</p>
+{% if doc.rechtsform == "de_gmbh_co_kg" %}
+<p class="oi-absatz"><b>3. Gesellschafter.</b> Persönlich haftende Gesellschafterin ohne Kapitalanteil ist die {{ ((x.komplementaer or {}).get("name") or "__________") | e }}. Kommanditisten sind die nachfolgend genannten Gesellschafter mit ihren Haftsummen. Der Beitritt erfolgt aufschiebend bedingt auf die Eintragung (Schutz nach § 176 HGB).</p>
+{% else %}
+<p class="oi-absatz"><b>3. Kapital.</b> Das Stammkapital beträgt {{ oekoinvest_zahl(doc.stammkapital) }} {{ w }}. {% if doc.land == "CH" %}Die Stammanteile sind vollständig liberiert.{% else %}Auf jede Bareinlage ist bei Gründung mindestens ein Viertel, insgesamt mindestens der gesetzliche Mindestbetrag einzuzahlen.{% endif %}</p>
+{% endif %}
+<table class="oi-daten">
+	<tr><td class="oi-feld"><b>Gesellschafter</b></td><td><b>{% if doc.rechtsform == "de_gmbh_co_kg" %}Haftsumme{% else %}Einlage{% endif %} · Anteil</b></td></tr>
+	{% for g in x.gesellschafter %}<tr><td class="oi-feld">{{ loop.index }}. {{ g.name | e }}{% if g.register %}, {{ g.register | e }}{% endif %}</td><td>{{ oekoinvest_zahl(g.einlage) }} {{ w }} · {{ g.anteil }} %</td></tr>{% endfor %}
+</table>
+<p class="oi-absatz"><b>4. Geschäftsführung und Vertretung.</b> Zu Geschäftsführern werden bestellt: {% for p in x.geschaeftsfuehrung %}{{ p.name | e }}{% if p.geburtsdatum %} (geb. {{ oekoinvest_datum(p.geburtsdatum) }}){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}. {% if x.geschaeftsfuehrung | length > 1 %}Sind mehrere Geschäftsführer bestellt, vertreten zwei gemeinsam oder einer mit einem Prokuristen.{% else %}Der Geschäftsführer vertritt allein.{% endif %}</p>
+<p class="oi-absatz"><b>5. Geschäftsjahr.</b> {% if doc.bilanzstichtag and doc.bilanzstichtag != "12-31" %}Das Geschäftsjahr endet am {{ doc.bilanzstichtag }} (MM-TT).{% else %}Das Geschäftsjahr ist das Kalenderjahr.{% endif %}</p>
+<p class="oi-absatz"><b>6. Gründungskosten.</b> Die Kosten der Gründung trägt die Gesellschaft bis zu einem Betrag von __________ {{ w }}.</p>
+
+<div class="oi-abschnitt">Anmeldung zum {{ x.register }} (Entwurf für das Notariat)</div>
+<p class="oi-absatz">Angemeldet wird die Errichtung der {{ doc.firma | e }} ({{ x.rf.label }}), Sitz {{ doc.sitz | e }}, Geschäftsanschrift {{ (doc.anschrift or "__________") | e }}. Die Anmeldung reicht das Notariat elektronisch ein.</p>
+
+<div class="oi-abschnitt">Wirtschaftliche Eigentümer – Meldedaten</div>
+<p class="oi-absatz">{{ x.meldung }}</p>
+<table class="oi-daten">
+	{% for g in x.eigentuemer %}<tr><td class="oi-feld">{{ g.name | e }}</td><td>{% if g.art == "person" %}direkt, {{ g.anteil }} %{% else %}indirekt über {{ g.anteil }} % – wirtschaftliche Eigentümer des Gesellschafters ergänzen{% endif %}</td></tr>{% else %}<tr><td colspan="2">Kein Gesellschafter über 25 % – oberste Führungsebene als wirtschaftliche Eigentümer melden.</td></tr>{% endfor %}
+</table>
+
+<div class="oi-abschnitt">Checkliste</div>
+<table class="oi-daten">
+	{% for s in doc.schritte %}<tr><td class="oi-feld">{% if s.status == "erledigt" %}✓{% elif s.status == "entfaellt" %}–{% else %}○{% endif %} {{ s.label | e }}{% if not s.pflicht %} (optional){% endif %}</td><td>{% if s.datum %}{{ oekoinvest_datum(s.datum) }}{% endif %}{% if s.wert and s.feld != "termin" %} · {{ s.wert | e }}{% endif %}</td></tr>{% endfor %}
+</table>
+<div class="oi-hinweis">Alle Texte sind Muster zur Prüfung und Anpassung durch das Notariat bzw. die Rechtsberatung. Das Portal erzeugt zusätzlich je Dokument ein eigenes PDF (Gesellschafterliste, Geschäftsführerbestellung, Kapitalbestätigung, Datenblatt Behörden, Übertragung der Projektrechte).</div>
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · {{ f.gericht }}</div>

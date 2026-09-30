@@ -1,0 +1,108 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Finanzierungscockpit: gespeichertes Szenario eines Kontos (Eingaben + Ergebnis, gerechnet vom Website-Server). Nur über die API; eigene Szenarien.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "nutzer_id",
+  "name_szenario",
+  "projekt_id",
+  "projekt_titel",
+  "fokus",
+  "am",
+  "sb1",
+  "eingaben",
+  "ergebnis"
+ ],
+ "fields": [
+  {
+   "fieldname": "nutzer_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "name_szenario",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Projekt (Börse)",
+   "options": "Plattform Projekt",
+   "search_index": 1
+  },
+  {
+   "fieldname": "projekt_titel",
+   "fieldtype": "Data",
+   "label": "Projekttitel"
+  },
+  {
+   "default": "skulptiert",
+   "fieldname": "fokus",
+   "fieldtype": "Select",
+   "label": "Schwerpunkt-Variante",
+   "options": "skulptiert\nek\nannuitaet\nfoerder\nleasing\nmietkauf\nmisch"
+  },
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Gespeichert am"
+  },
+  {
+   "fieldname": "sb1",
+   "fieldtype": "Section Break",
+   "label": "Daten"
+  },
+  {
+   "fieldname": "eingaben",
+   "fieldtype": "JSON",
+   "label": "Eingaben (Cockpit)"
+  },
+  {
+   "fieldname": "ergebnis",
+   "fieldtype": "JSON",
+   "label": "Ergebnis (Kurzfassung)"
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Finanzierungsszenario",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "search_fields": "name_szenario",
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "name_szenario",
+ "track_changes": 1
+}

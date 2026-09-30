@@ -1,0 +1,47 @@
+# Geodaten & Akquise-Engine: PostGIS · Geodaten-Dienst (Import, Scoring, REST-API)
+# Start: cp .env.example .env (Werte setzen!), Zertifikate nach ./zertifikate, dann `docker compose up -d --build`.
+# Veröffentlicht wird NUR 8444 (REST-API über TLS, nur für den Website-Server freigeben). Die Datenbank bleibt intern.
+# Import-Dateien liegen im Verzeichnis ./daten (siehe README, Abschnitt Datenbezug).
+
+name: oekoinvest-geodaten
+
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: geodaten
+      POSTGRES_USER: geodaten
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD setzen}
+    command: ["postgres", "-c", "shared_buffers=1GB", "-c", "work_mem=64MB", "-c", "maintenance_work_mem=512MB"]
+    volumes:
+      - postgis-daten:/var/lib/postgresql/data
+    networks: [intern]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U geodaten -d geodaten"]
+      interval: 10s
+      retries: 10
+
+  geodaten:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://geodaten:${POSTGRES_PASSWORD}@postgis:5432/geodaten
+    ports:
+      - "8444:8444"
+    volumes:
+      - ./zertifikate:/zertifikate:ro
+      - ./daten:/daten
+    networks: [intern]
+    depends_on:
+      postgis:
+        condition: service_healthy
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+volumes:
+  postgis-daten: {}
+
+networks:
+  intern: {}

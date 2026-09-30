@@ -83,6 +83,17 @@ const FELD_LABELS = {
   thema: "Thema",
   nutzung: "Nutzung",
   bundesland: "Bundesland",
+  // Fachprüfung Kommunen: strukturierte Anfrage
+  absender: "Absender",
+  gemeinde: "Gemeinde",
+  gemeindeSchluessel: "Gemeindeschlüssel",
+  rolle: "Funktion",
+  gemeindeFlaechenHa: "Gemeindeeigene Flächen (ha)",
+  interesse6: "Interesse § 6 EEG",
+  buergerbeteiligung: "Bürgerbeteiligung",
+  bauleitplanung: "Stand Bauleitplanung",
+  kriterienkatalog: "Kriterienkatalog",
+  themen: "Themen",
 };
 
 /** Lesbare Bezeichnung für freie Zusatzdaten einer Anfrage */

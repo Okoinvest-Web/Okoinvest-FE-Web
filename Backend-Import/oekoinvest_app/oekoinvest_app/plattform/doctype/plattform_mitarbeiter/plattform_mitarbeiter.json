@@ -1,0 +1,139 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 14:00:00.000000",
+ "description": "Backoffice-Mitarbeiter: Konto ↔ HRMS-Employee, Vertretung, Kapazität, buchbare Terminarten und Arbeitszeiten.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "konto_id",
+  "funktion",
+  "employee",
+  "vertretung_id",
+  "cb_1",
+  "kapazitaet_stunden",
+  "aktiv",
+  "termine_aktiv",
+  "sb_1",
+  "terminarten_json",
+  "arbeitszeiten_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "konto_id",
+   "fieldtype": "Link",
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "funktion",
+   "fieldtype": "Data",
+   "label": "Funktion",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Data",
+   "label": "Employee (HRMS)"
+  },
+  {
+   "fieldname": "vertretung_id",
+   "fieldtype": "Link",
+   "label": "Standard-Vertretung",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "kapazitaet_stunden",
+   "fieldtype": "Float",
+   "label": "Wochenstunden",
+   "default": "38.5"
+  },
+  {
+   "fieldname": "aktiv",
+   "fieldtype": "Check",
+   "label": "Aktiv",
+   "default": "1"
+  },
+  {
+   "fieldname": "termine_aktiv",
+   "fieldtype": "Check",
+   "label": "Online buchbar",
+   "default": "1"
+  },
+  {
+   "fieldname": "sb_1",
+   "fieldtype": "Section Break",
+   "label": "Termine"
+  },
+  {
+   "fieldname": "terminarten_json",
+   "fieldtype": "Small Text",
+   "label": "Terminarten (JSON)"
+  },
+  {
+   "fieldname": "arbeitszeiten_json",
+   "fieldtype": "Long Text",
+   "label": "Arbeitszeiten (JSON, Wochentag → Fenster)"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 06:08:21.049334",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Mitarbeiter",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "in_create": 0,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ]
+}

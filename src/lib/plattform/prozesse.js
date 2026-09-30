@@ -15,6 +15,8 @@
 //
 // Client- und serverseitig nutzbar (keine Node-Importe).
 
+import { fachPflichtFehlt } from "./flaecheFach"; // Fachprüfung Flächen
+
 const OFFEN_VORGANG = ["eingegangen", "in_pruefung", "qualifiziert", "angebot"];
 const OFFEN_FLAECHE = ["eingegangen", "vorpruefung", "standortanalyse", "pachtangebot", "vertrag", "planung"];
 
@@ -185,6 +187,7 @@ export const BEDINGUNGEN = {
     if (!f?.plz) fehlt.push("PLZ");
     if (!f?.ort) fehlt.push("Ort / Gemeinde");
     if (!(Number(f?.ha) > 0)) fehlt.push("Größe in Hektar");
+    fehlt.push(...fachPflichtFehlt(f)); // Fachprüfung Flächen: Pflichtangaben je Nutzung (Dach, Agri-PV, Eigentum, Pacht, Katasterfläche)
     return fehlt;
   },
 };

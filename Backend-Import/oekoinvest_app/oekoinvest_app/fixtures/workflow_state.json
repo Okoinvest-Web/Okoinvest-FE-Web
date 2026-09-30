@@ -1,0 +1,135 @@
+[
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "abgelehnt",
+  "style": "Danger",
+  "workflow_state_name": "abgelehnt"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "abgeschlossen",
+  "style": "Success",
+  "workflow_state_name": "abgeschlossen"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "angebot",
+  "style": "Primary",
+  "workflow_state_name": "angebot"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "bau",
+  "style": "Primary",
+  "workflow_state_name": "bau"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "betrieb",
+  "style": "Success",
+  "workflow_state_name": "betrieb"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "eingegangen",
+  "style": "Info",
+  "workflow_state_name": "eingegangen"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "entwurf",
+  "style": "",
+  "workflow_state_name": "entwurf"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "in_pruefung",
+  "style": "Warning",
+  "workflow_state_name": "in_pruefung"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "pachtangebot",
+  "style": "Primary",
+  "workflow_state_name": "pachtangebot"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "planung",
+  "style": "Primary",
+  "workflow_state_name": "planung"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "pruefung",
+  "style": "Warning",
+  "workflow_state_name": "pruefung"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "qualifiziert",
+  "style": "Primary",
+  "workflow_state_name": "qualifiziert"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "reserviert",
+  "style": "Primary",
+  "workflow_state_name": "reserviert"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "standortanalyse",
+  "style": "Primary",
+  "workflow_state_name": "standortanalyse"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "verkauft",
+  "style": "Success",
+  "workflow_state_name": "verkauft"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "veroeffentlicht",
+  "style": "Success",
+  "workflow_state_name": "veroeffentlicht"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "vertrag",
+  "style": "Primary",
+  "workflow_state_name": "vertrag"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "vorpruefung",
+  "style": "Warning",
+  "workflow_state_name": "vorpruefung"
+ },
+ {
+  "doctype": "Workflow State",
+  "icon": "",
+  "name": "zurueckgezogen",
+  "style": "Danger",
+  "workflow_state_name": "zurueckgezogen"
+ }
+]

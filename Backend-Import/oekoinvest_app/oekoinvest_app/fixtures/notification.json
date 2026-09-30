@@ -1,0 +1,640 @@
+[
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": null,
+  "doctype": "Notification",
+  "document_type": "Plattform Vorgang",
+  "enabled": 1,
+  "event": "New",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Über die Website ist eine neue Anfrage <b>{{ doc.name }}</b> eingegangen ({{ oekoinvest_label('vorgang_typ', doc.typ) }}).</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – bitte im Portal-Backoffice bzw. im Desk bearbeiten.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Neue Anfrage",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Akquise"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Admin"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Neue Anfrage {{ doc.name }} ({{ oekoinvest_label('vorgang_typ', doc.typ) }})"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.status == \"eingegangen\"",
+  "doctype": "Notification",
+  "document_type": "Plattform Flaeche",
+  "enabled": 1,
+  "event": "Value Change",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Die Fläche <b>{{ doc.name }}</b> ({{ doc.ha or '–' }} ha, {{ doc.land }}) wurde zur Prüfung eingereicht.</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – bitte im Portal-Backoffice bzw. im Desk bearbeiten.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Fläche eingereicht",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Akquise"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Fläche {{ doc.name }} eingereicht",
+  "value_changed": "status"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.status == \"pruefung\"",
+  "doctype": "Notification",
+  "document_type": "Plattform Projekt",
+  "enabled": 1,
+  "event": "Value Change",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Das Projekt <b>{{ doc.name }}</b> wurde zur Prüfung eingereicht. Vor der Veröffentlichung bitte Anonymisierung, Angaben und Provisionssatz prüfen.</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – bitte im Portal-Backoffice bzw. im Desk bearbeiten.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Projekt zur Prüfung",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Transaktion"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Admin"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Projekt {{ doc.name }} zur Prüfung eingereicht",
+  "value_changed": "status"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.status == \"nda_angefragt\"",
+  "doctype": "Notification",
+  "document_type": "Plattform Interesse",
+  "enabled": 1,
+  "event": "Value Change",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Zum Projekt <b>{{ doc.projekt_id }}</b> wurde die Vertraulichkeitsvereinbarung akzeptiert (Interesse {{ doc.name }}). Bitte Datenraum-Freigabe prüfen.</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – bitte im Portal-Backoffice bzw. im Desk bearbeiten.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: NDA angefragt",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Transaktion"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "NDA akzeptiert – Datenraum-Freigabe {{ doc.name }}",
+  "value_changed": "status"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.status == \"loi_abgegeben\"",
+  "doctype": "Notification",
+  "document_type": "Plattform Interesse",
+  "enabled": 1,
+  "event": "Value Change",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Zum Projekt <b>{{ doc.projekt_id }}</b> ist eine Absichtserklärung eingegangen (Interesse {{ doc.name }}).</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – bitte im Portal-Backoffice bzw. im Desk bearbeiten.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: LOI eingegangen",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Transaktion"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Admin"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Neue LOI zu Projekt {{ doc.projekt_id }}",
+  "value_changed": "status"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.status == \"zuschlag\"",
+  "doctype": "Notification",
+  "document_type": "Plattform Gebot",
+  "enabled": 1,
+  "event": "Value Change",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Im Bieterverfahren zum Projekt <b>{{ doc.projekt_id }}</b> wurde der Zuschlag erteilt (Gebot {{ doc.name }}).</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – bitte im Portal-Backoffice bzw. im Desk bearbeiten.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Zuschlag",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Transaktion"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Buchhaltung"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Zuschlag im Bieterverfahren – Projekt {{ doc.projekt_id }}",
+  "value_changed": "status"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": null,
+  "doctype": "Notification",
+  "document_type": "Plattform Provision",
+  "enabled": 1,
+  "event": "New",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Mit dem Verkauf von Projekt <b>{{ doc.projekt_id }}</b> ist die Provision <b>{{ doc.name }}</b> über {{ oekoinvest_eur(doc.betrag) }} entstanden.</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – bitte im Portal-Backoffice bzw. im Desk bearbeiten.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Provision entstanden",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Buchhaltung"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Admin"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Provision {{ doc.name }} – Rechnung vorbereiten"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.schwere in (\"mittel\", \"hoch\", \"kritisch\")",
+  "doctype": "Notification",
+  "document_type": "Plattform Stoerungsfall",
+  "enabled": 1,
+  "event": "New",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>An Anlage <b>{{ doc.anlage_id }}</b> wurde eine Störung erkannt: {{ oekoinvest_label('regel', doc.regel) }}, Schwere {{ oekoinvest_label('schwere', doc.schwere) }}.</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – bitte im Portal-Backoffice bzw. im Desk bearbeiten.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Neue Störung",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Betrieb"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Störung {{ doc.name }} ({{ oekoinvest_label('schwere', doc.schwere) }}) an Anlage {{ doc.anlage_id }}"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.status == \"offen\"",
+  "date_changed": "faellig_am",
+  "days_in_advance": 1,
+  "doctype": "Notification",
+  "document_type": "Plattform Aufgabe",
+  "enabled": 1,
+  "event": "Days After",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Die Aufgabe <b>{{ doc.name }}</b> ist seit gestern überfällig und noch offen.</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – bitte im Portal-Backoffice bzw. im Desk bearbeiten.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Aufgabe überfällig",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Admin"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Aufgabe {{ doc.name }} ist überfällig"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.status == \"geplant\"",
+  "date_changed": "datum",
+  "days_in_advance": 7,
+  "doctype": "Notification",
+  "document_type": "Plattform Wartung",
+  "enabled": 1,
+  "event": "Days Before",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Für Anlage <b>{{ doc.anlage_id }}</b> ist in 7 Tagen eine Wartung geplant ({{ oekoinvest_label('wartung_art', doc.art) }}).</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – bitte im Portal-Backoffice bzw. im Desk bearbeiten.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Wartung fällig",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Betrieb"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Wartung {{ doc.name }} an Anlage {{ doc.anlage_id }} in 7 Tagen"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.status in (\"offen\", \"in_arbeit\")",
+  "date_changed": "soll_ende",
+  "days_in_advance": 7,
+  "doctype": "Notification",
+  "document_type": "Plattform Entwicklung Meilenstein",
+  "enabled": 1,
+  "event": "Days Before",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Der Meilenstein <b>{{ doc.titel }}</b> im Entwicklungsprojekt {{ doc.projekt_id }} ist am <b>{{ frappe.utils.formatdate(doc.soll_ende) }}</b> fällig (Status: {{ doc.status }}).</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form('Plattform Entwicklungsprojekt', doc.projekt_id) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Projekt im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung der Projektentwicklung – Pflege im Portal-Backoffice (Projektentwicklung).</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Meilenstein fällig",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Projektleitung"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Admin"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Meilenstein fällig in 7 Tagen: {{ doc.titel }} ({{ doc.projekt_id }})"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.status == \"erledigt\"",
+  "doctype": "Notification",
+  "document_type": "Plattform Entwicklung Meilenstein",
+  "enabled": 1,
+  "event": "Value Change",
+  "value_changed": "status",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Der Meilenstein <b>{{ doc.titel }}</b> im Entwicklungsprojekt {{ doc.projekt_id }} wurde erledigt{% if doc.ist_ende %} (Ist-Ende {{ frappe.utils.formatdate(doc.ist_ende) }}){% endif %}. Flächeneigentümer und Co-Investoren erhalten eine vereinfachte Meldung im Portal.</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form('Plattform Entwicklungsprojekt', doc.projekt_id) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Projekt im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung der Projektentwicklung – Pflege im Portal-Backoffice (Projektentwicklung).</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Meilenstein erledigt",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Projektleitung"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Meilenstein erledigt: {{ doc.titel }} ({{ doc.projekt_id }})"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.status == \"eingetragen\"",
+  "doctype": "Notification",
+  "document_type": "Plattform Projektgesellschaft",
+  "enabled": 1,
+  "event": "Value Change",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Die Projektgesellschaft <b>{{ doc.firma }}</b> ist eingetragen ({{ doc.registernummer }}). Bitte jetzt die Folgemeldungen erledigen: steuerliche Erfassung/UID und Meldung der wirtschaftlichen Eigentümer (WiEReG binnen 4 Wochen bzw. Transparenzregister).</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – bitte im Portal-Backoffice bzw. im Desk bearbeiten.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Projektgesellschaft eingetragen",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Transaktion"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Admin"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Eingetragen: {{ doc.firma }} ({{ doc.registernummer }})",
+  "value_changed": "status"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.ampel == \"rot\" or doc.status == \"keine_daten\"",
+  "doctype": "Notification",
+  "document_type": "Plattform Bonitaetsauskunft",
+  "enabled": 1,
+  "event": "New",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Zur Bonitätsauskunft <b>{{ doc.name }}</b> liegt eine rote Ampel bzw. keine Bewertung vor. LOI und Gebote bleiben gesperrt, bis Transaktion oder Compliance mit Begründung freigibt. Das Ergebnis steht aus Vertraulichkeitsgründen nicht in dieser E-Mail.</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – bitte im Portal-Backoffice bzw. im Desk bearbeiten.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Bonitätsauskunft rot",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Transaktion"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Compliance"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Bonitätsauskunft {{ doc.name }} erfordert eine Entscheidung"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.alarm_neu",
+  "doctype": "Notification",
+  "document_type": "Plattform Wechselanalyse",
+  "enabled": 1,
+  "event": "New",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Für den Stromvertrag <b>{{ doc.vertrag_id }}</b> endet die Kündigungsfrist am <b>{{ oekoinvest_datum(doc.stichtag) }}</b> ({{ doc.tage_bis_stichtag }} Tage).</p><p>Empfehlung der Wechselanalyse: <b>{{ doc.empfehlung }}</b> – Vertrag {{ doc.vertrag_ct }} ct/kWh, Markt {{ doc.markt_ct }} ct/kWh.</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung – Kundenanalyse im Portal-Backoffice unter Energie-Handelsdesk.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Fristen-Alarm Energievertrag",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Energie"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Admin"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Kündigungsfrist Stromvertrag: {{ doc.tage_bis_stichtag }} Tage ({{ doc.stichtag }})"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.status == 'zuschlag'",
+  "doctype": "Notification",
+  "document_type": "Plattform Ausschreibung",
+  "enabled": 1,
+  "event": "Value Change",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Für die Ausschreibung <b>{{ doc.titel }}</b> haben alle Kunden den Zuschlag freigegeben.</p><p>Nächste Schritte: Kundendaten an den Versorger übermitteln, Altverträge kündigen, Lieferbeginn {{ doc.lieferbeginn }} bestätigen lassen (DE: GPKE, AT: Wechselprozess).</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Zuschlag Energie erteilt",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Energie"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Admin"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Zuschlag erteilt: {{ doc.titel }}",
+  "value_changed": "status"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.ampel in ('gelb', 'rot')",
+  "doctype": "Notification",
+  "document_type": "Plattform Covenant Pruefung",
+  "enabled": 1,
+  "event": "New",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Die Covenant-Prüfung für <b>{{ doc.fall_id }}</b> ({{ doc.periode }}) ergab DSCR <b>{{ oekoinvest_zahl(doc.dscr, 2) }}</b>: {{ doc.grund }}</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – bitte im Portal-Backoffice bzw. im Desk bearbeiten.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Covenant-Frühwarnung",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Admin"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Buchhaltung"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Transaktion"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Covenant {{ 'Lock-up/Verletzung' if doc.ampel == 'rot' else 'Frühwarnung' }}: {{ doc.fall_id }}"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": null,
+  "doctype": "Notification",
+  "document_type": "Plattform Term Sheet",
+  "enabled": 1,
+  "event": "New",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Zum Finanzierungsfall <b>{{ doc.fall_id }}</b> liegt ein neues Term Sheet vor ({{ oekoinvest_eur(doc.betrag) }}, {{ doc.laufzeit_jahre }} Jahre).</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – bitte im Portal-Backoffice bzw. im Desk bearbeiten.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Term Sheet eingegangen",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Admin"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Transaktion"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Term Sheet eingegangen: {{ doc.fall_id }}"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.status == \"eingetragen\"",
+  "doctype": "Notification",
+  "document_type": "Plattform Grundbuch Vorgang",
+  "enabled": 1,
+  "event": "Value Change",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Die Dienstbarkeit der Grundbuch-Akte <b>{{ doc.name }}</b> ({{ doc.titel }}, {{ doc.land }}) ist im Grundbuch eingetragen. Bitte Grundbuchauszug und Rang prüfen und – falls verknüpft – den Status an Anlage bzw. Pachtvertrag kontrollieren.</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – Muster und Hinweise sind keine Rechtsberatung.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Grundbuch eingetragen",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Akquise"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Transaktion"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Admin"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Grundbuch: eingetragen – {{ doc.titel }}",
+  "value_changed": "status"
+ },
+ {
+  "attach_print": 0,
+  "channel": "Email",
+  "condition": "doc.status == \"vollzogen\"",
+  "doctype": "Notification",
+  "document_type": "Plattform Closing",
+  "enabled": 1,
+  "event": "Value Change",
+  "is_standard": 0,
+  "message": "<div style=\"background:#f3f5f0;padding:24px 12px;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e1e7da;border-radius:16px;overflow:hidden;\">\n<tr><td style=\"background:#003473;padding:18px 28px;\"><span style=\"font-family:Manrope,Inter,Arial,sans-serif;font-size:20px;font-weight:800;color:#ffffff;\">ÖkoInvest</span></td></tr>\n<tr><td style=\"height:4px;background:#669933;font-size:0;line-height:4px;\">&nbsp;</td></tr>\n<tr><td style=\"padding:28px;color:#1f2933;font-size:15px;line-height:1.6;\"><p>Der Deal <b>{{ doc.name }}</b> (Projekt {{ doc.projekt_id }}) ist vollzogen. Die Provision und die Provisionsrechnung wurden automatisch angelegt – bitte Übergabe-Checkliste und Anzeigen an Netzbetreiber, Direktvermarkter und Behörden nachhalten.</p><p style=\"margin:24px 0;\"><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" style=\"background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;\">Im Desk öffnen</a></p><p style=\"font-size:13px;color:#52606d;\">Interne Benachrichtigung des Backoffice – Muster und Hinweise sind keine Rechtsberatung.</p></td></tr>\n<tr><td style=\"padding:16px 28px;background:#f7f8f5;color:#52606d;font-size:12px;line-height:1.5;\">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich<br>FN 541505g · Landesgericht Ried im Innkreis</td></tr>\n</table></div>",
+  "message_type": "HTML",
+  "module": "Plattform",
+  "name": "ÖkoInvest: Closing vollzogen",
+  "recipients": [
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Transaktion"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Buchhaltung"
+   },
+   {
+    "doctype": "Notification Recipient",
+    "parentfield": "recipients",
+    "parenttype": "Notification",
+    "receiver_by_role": "ÖkoInvest Admin"
+   }
+  ],
+  "send_system_notification": 1,
+  "send_to_all_assignees": 0,
+  "set_property_after_alert": null,
+  "subject": "Closing vollzogen: {{ doc.name }} ({{ doc.projekt_id }})",
+  "value_changed": "status"
+ }
+]

@@ -1,0 +1,211 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Kreditvertrag nach der Bankentscheidung – Grundlage für Tilgungsplan, Covenant-Monitoring und Bank-Reporting.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "fall_id",
+  "bank_id",
+  "nummer",
+  "unterzeichnet_am",
+  "auszahlung_am",
+  "cb1",
+  "betrag",
+  "zins_pct",
+  "laufzeit_jahre",
+  "tilgungsprofil",
+  "tilgungsfrei_jahre",
+  "sb1",
+  "dscr_covenant",
+  "dscr_lockup",
+  "llcr_covenant",
+  "dsra_monate",
+  "berichtspflichten",
+  "plan_cfads"
+ ],
+ "fields": [
+  {
+   "fieldname": "fall_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Finanzierungsfall",
+   "options": "Plattform Finanzierungsfall",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "bank_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Bank",
+   "options": "Plattform Bank"
+  },
+  {
+   "fieldname": "nummer",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Vertragsnummer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "unterzeichnet_am",
+   "fieldtype": "Date",
+   "label": "Unterzeichnet am",
+   "reqd": 1
+  },
+  {
+   "fieldname": "auszahlung_am",
+   "fieldtype": "Date",
+   "label": "Auszahlung am"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "betrag",
+   "fieldtype": "Currency",
+   "label": "Betrag",
+   "reqd": 1
+  },
+  {
+   "fieldname": "zins_pct",
+   "fieldtype": "Float",
+   "label": "Zins % p. a. (all-in)"
+  },
+  {
+   "fieldname": "laufzeit_jahre",
+   "fieldtype": "Int",
+   "label": "Laufzeit (Jahre)"
+  },
+  {
+   "default": "annuitaet",
+   "fieldname": "tilgungsprofil",
+   "fieldtype": "Select",
+   "label": "Tilgungsprofil",
+   "options": "annuitaet\nlinear\nskulptiert\nendfaellig"
+  },
+  {
+   "fieldname": "tilgungsfrei_jahre",
+   "fieldtype": "Int",
+   "label": "Tilgungsfreie Jahre"
+  },
+  {
+   "fieldname": "sb1",
+   "fieldtype": "Section Break",
+   "label": "Covenants"
+  },
+  {
+   "fieldname": "dscr_covenant",
+   "fieldtype": "Float",
+   "label": "DSCR Covenant (Default)"
+  },
+  {
+   "fieldname": "dscr_lockup",
+   "fieldtype": "Float",
+   "label": "DSCR Lock-up"
+  },
+  {
+   "fieldname": "llcr_covenant",
+   "fieldtype": "Float",
+   "label": "LLCR Covenant"
+  },
+  {
+   "fieldname": "dsra_monate",
+   "fieldtype": "Int",
+   "label": "DSRA (Monate)"
+  },
+  {
+   "fieldname": "berichtspflichten",
+   "fieldtype": "Small Text",
+   "label": "Berichtspflichten (eine je Zeile)"
+  },
+  {
+   "fieldname": "plan_cfads",
+   "fieldtype": "JSON",
+   "label": "Plan-CFADS P90 je Jahr (für LLCR, vom Financial Model)"
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 06:29:55.153495",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Kreditvertrag",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Transaktion",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "search_fields": "nummer",
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "nummer",
+ "track_changes": 1
+}

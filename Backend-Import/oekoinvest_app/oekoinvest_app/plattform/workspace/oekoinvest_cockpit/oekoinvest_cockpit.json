@@ -1,0 +1,272 @@
+{
+ "charts": [
+  {
+   "chart_name": "ÖkoInvest Anfragen je Monat",
+   "label": "Anfragen je Monat"
+  },
+  {
+   "chart_name": "ÖkoInvest Flächen nach Status",
+   "label": "Flächen nach Status"
+  },
+  {
+   "chart_name": "ÖkoInvest Interessen nach Status",
+   "label": "Interessen nach Status"
+  },
+  {
+   "chart_name": "ÖkoInvest Provisionen je Monat",
+   "label": "Provisionen je Monat"
+  }
+ ],
+ "content": "[{\"id\": \"OhbVrpoiVg\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>ÖkoInvest Cockpit</b></span>\", \"col\": 12}}, {\"id\": \"RV5IfLBcbf\", \"type\": \"paragraph\", \"data\": {\"text\": \"<span style=\\\"color:var(--text-muted)\\\">Überblick über Anfragen, Flächen, Projektbörse, Provisionen und Anlagen. Statuswechsel erfolgen im Formular über „Status“ bzw. im Portal-Backoffice.</span>\", \"col\": 12}}, {\"id\": \"noGMbJmTPS\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Offene Anfragen\", \"col\": 3}}, {\"id\": \"IAoCLrZ3aW\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Flächen in Pipeline\", \"col\": 3}}, {\"id\": \"ZkSBvrjn9W\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Projekte in der Börse\", \"col\": 3}}, {\"id\": \"vgfygw2wMq\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Provision offen\", \"col\": 3}}, {\"id\": \"ZcUDIh7yfJ\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest NDA-Anfragen offen\", \"col\": 3}}, {\"id\": \"s1ON43xKmT\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest LOI offen\", \"col\": 3}}, {\"id\": \"ecQoXsf2o3\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Störungen offen\", \"col\": 3}}, {\"id\": \"gyrDO1xkxw\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"ÖkoInvest Aufgaben überfällig\", \"col\": 3}}, {\"id\": \"nQrS7RPeMO\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"kIUpkDyr7O\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Schnellzugriff</b></span>\", \"col\": 12}}, {\"id\": \"SJoRu1XXdo\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Unbearbeitete Anfragen\", \"col\": 3}}, {\"id\": \"0cZuzren68\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Projekte zur Prüfung\", \"col\": 3}}, {\"id\": \"K4TunPFz46\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"NDA-Anfragen\", \"col\": 3}}, {\"id\": \"PDjqipVJIq\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Offene Störungen\", \"col\": 3}}, {\"id\": \"VLB5LzxoiG\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Meine Aufgaben\", \"col\": 3}}, {\"id\": \"FfWd3hjOkY\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Monatsbericht\", \"col\": 3}}, {\"id\": \"RBMeyyMDHq\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"J38aRUhR4I\", \"type\": \"chart\", \"data\": {\"chart_name\": \"ÖkoInvest Anfragen je Monat\", \"col\": 6}}, {\"id\": \"WrXPvhsBkD\", \"type\": \"chart\", \"data\": {\"chart_name\": \"ÖkoInvest Flächen nach Status\", \"col\": 6}}, {\"id\": \"a9U4UqGWlG\", \"type\": \"chart\", \"data\": {\"chart_name\": \"ÖkoInvest Interessen nach Status\", \"col\": 6}}, {\"id\": \"6g3Ot1OGMm\", \"type\": \"chart\", \"data\": {\"chart_name\": \"ÖkoInvest Provisionen je Monat\", \"col\": 6}}, {\"id\": \"jxWkI9X7H6\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"aMuFbh7x41\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>Bereiche</b></span>\", \"col\": 12}}, {\"id\": \"Ztpdp4K8ff\", \"type\": \"card\", \"data\": {\"card_name\": \"Berichte\", \"col\": 4}}]",
+ "creation": "2026-09-30 08:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "home",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "ÖkoInvest Cockpit",
+ "links": [
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Berichte",
+   "link_count": 8,
+   "link_to": null,
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Pipeline Flächen",
+   "link_count": 0,
+   "link_to": "Pipeline Flaechen",
+   "link_type": "Report",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Börse-Trichter",
+   "link_count": 0,
+   "link_to": "Boerse Trichter",
+   "link_type": "Report",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Provisionen erwartet/realisiert",
+   "link_count": 0,
+   "link_to": "Provisionen Erwartet Realisiert",
+   "link_type": "Report",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Anlagen-Verfügbarkeit",
+   "link_count": 0,
+   "link_to": "Anlagen Verfuegbarkeit",
+   "link_type": "Report",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Offene Störungen",
+   "link_count": 0,
+   "link_to": "Offene Stoerungen",
+   "link_type": "Report",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "KYC-Übersicht",
+   "link_count": 0,
+   "link_to": "KYC Uebersicht",
+   "link_type": "Report",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Aktivitäten je Mitarbeiter",
+   "link_count": 0,
+   "link_to": "Aktivitaeten je Mitarbeiter",
+   "link_type": "Report",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Monatsbericht (Druck)",
+   "link_count": 0,
+   "link_to": "Plattform Monatsbericht",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "",
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-30 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "ÖkoInvest Cockpit",
+ "number_cards": [
+  {
+   "label": "Offene Anfragen",
+   "number_card_name": "ÖkoInvest Offene Anfragen"
+  },
+  {
+   "label": "Flächen in Pipeline",
+   "number_card_name": "ÖkoInvest Flächen in Pipeline"
+  },
+  {
+   "label": "Projekte in der Börse",
+   "number_card_name": "ÖkoInvest Projekte in der Börse"
+  },
+  {
+   "label": "Provision offen",
+   "number_card_name": "ÖkoInvest Provision offen"
+  },
+  {
+   "label": "NDA-Anfragen offen",
+   "number_card_name": "ÖkoInvest NDA-Anfragen offen"
+  },
+  {
+   "label": "LOI offen",
+   "number_card_name": "ÖkoInvest LOI offen"
+  },
+  {
+   "label": "Störungen offen",
+   "number_card_name": "ÖkoInvest Störungen offen"
+  },
+  {
+   "label": "Aufgaben überfällig",
+   "number_card_name": "ÖkoInvest Aufgaben überfällig"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "role": "ÖkoInvest Akquise"
+  },
+  {
+   "role": "ÖkoInvest Transaktion"
+  },
+  {
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "role": "ÖkoInvest Betrieb"
+  },
+  {
+   "role": "ÖkoInvest Compliance"
+  },
+  {
+   "role": "ÖkoInvest Leser"
+  }
+ ],
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "{} neu",
+   "label": "Unbearbeitete Anfragen",
+   "link_to": "Plattform Vorgang",
+   "stats_filter": "[[\"Plattform Vorgang\", \"status\", \"=\", \"eingegangen\", false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "{} zur Prüfung",
+   "label": "Projekte zur Prüfung",
+   "link_to": "Plattform Projekt",
+   "stats_filter": "[[\"Plattform Projekt\", \"status\", \"=\", \"pruefung\", false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": "{} offen",
+   "label": "NDA-Anfragen",
+   "link_to": "Plattform Interesse",
+   "stats_filter": "[[\"Plattform Interesse\", \"status\", \"=\", \"nda_angefragt\", false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "format": "{} offen",
+   "label": "Offene Störungen",
+   "link_to": "Plattform Stoerungsfall",
+   "stats_filter": "[[\"Plattform Stoerungsfall\", \"status\", \"in\", [\"offen\", \"in_arbeit\"], false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "{} offen",
+   "label": "Meine Aufgaben",
+   "link_to": "Plattform Aufgabe",
+   "stats_filter": "[[\"Plattform Aufgabe\", \"status\", \"=\", \"offen\", false]]",
+   "type": "DocType",
+   "url": null
+  },
+  {
+   "color": "Grey",
+   "doc_view": "",
+   "format": null,
+   "label": "Monatsbericht",
+   "link_to": "Plattform Monatsbericht",
+   "stats_filter": null,
+   "type": "DocType",
+   "url": null
+  }
+ ],
+ "title": "ÖkoInvest Cockpit"
+}

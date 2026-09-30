@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlarmClock, ClipboardList, Coins, FileSignature, FileSpreadsheet, KeyRound, LandPlot, MessagesSquare, ShieldCheck, TrendingUp, UserX } from "lucide-react";
 import { AufgabenListe } from "@/components/Portal/Aufgaben";
+import ErsteSchritte from "@/components/Portal/Bedienung/Onboarding/ErsteSchritte"; // Onboarding B1
 import DateiLink from "@/components/Portal/DateiLink";
 import { Hinweis } from "@/components/Portal/ui";
 import { EXPORTE } from "@/lib/plattform/csv";
@@ -58,6 +59,7 @@ export default async function AdminCockpit() {
   return (
     <div className="space-y-6">
       <SeitenKopf eyebrow="Backoffice" titel="Cockpit" text="Pipeline, Trichter und alles, was heute entschieden werden muss." />
+      <ErsteSchritte nutzer={n} />{/* Onboarding B1: Einarbeitung je Unterrolle */}
 
       {a.meineUeberfaellig > 0 && (
         <Hinweis ton="warn" icon={AlarmClock} titel={`${a.meineUeberfaellig} ${a.meineUeberfaellig === 1 ? "Wiedervorlage ist" : "Wiedervorlagen sind"} überfällig`}>

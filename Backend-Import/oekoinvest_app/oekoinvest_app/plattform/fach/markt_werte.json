@@ -1,0 +1,72 @@
+{
+ "quelle": "src/lib/invest/markt.js (Auszug, generiert – nicht von Hand ändern)",
+ "regionen": {
+  "de-nord": 960,
+  "de-ost": 1020,
+  "de-west": 1000,
+  "de-sued": 1100,
+  "at": 1120,
+  "ch": 1050
+ },
+ "bauart": {
+  "sued": {
+   "label": "Süd, fest",
+   "faktor": 1,
+   "haProMwp": 1.1
+  },
+  "ostWest": {
+   "label": "Ost/West, fest",
+   "faktor": 0.92,
+   "haProMwp": 0.85
+  },
+  "tracker": {
+   "label": "Einachsig nachgeführt",
+   "faktor": 1.15,
+   "haProMwp": 1.5
+  },
+  "agriVertikal": {
+   "label": "Agri-PV vertikal, bifazial",
+   "faktor": 0.9,
+   "haProMwp": 2.6
+  },
+  "agriHoch": {
+   "label": "Agri-PV hoch aufgeständert",
+   "faktor": 0.95,
+   "haProMwp": 1.6
+  }
+ },
+ "carportErtragFaktor": 0.93,
+ "erloese": {
+  "eegFreiflaecheCt": 4.8,
+  "eegBesondereCt": 5.3,
+  "ppaCt": {
+   "min": 3.8,
+   "max": 5.5
+  }
+ },
+ "capex": {
+  "freiflaeche": {
+   "min": 400,
+   "max": 600
+  },
+  "agri": {
+   "min": 850,
+   "max": 1300
+  },
+  "carport": {
+   "min": 1100,
+   "max": 1700
+  }
+ },
+ "pacht": {
+  "freiflaeche": {
+   "min": 1500,
+   "max": 4500
+  },
+  "agri": {
+   "min": 600,
+   "max": 2000
+  }
+ },
+ "agriPrivilegierungHa": 2.5
+}

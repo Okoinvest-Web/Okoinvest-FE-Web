@@ -5,8 +5,11 @@ import frappe
 
 from oekoinvest_app.plattform import validierung as v
 from oekoinvest_app.plattform.ablauf import uebergang_anwenden
-from oekoinvest_app.plattform.ausgabe import FELD_NAMEN_FLAECHE, flaeche_ausgabe, flaeche_json, geaenderte_felder
+from oekoinvest_app.plattform.ausgabe import FELD_NAMEN_FLAECHE, flaeche_ausgabe, flaeche_json, flurstueck_json, flurstueck_zeile, geaenderte_felder
+from oekoinvest_app.plattform.flaeche_fach import Fehler, flaeche_fach_daten  # Fachprüfung Flächen
 from oekoinvest_app.plattform.kern import (
+	als_json,
+	aus_json,
 	admin_noetig,
 	ist_admin,
 	konflikt,
@@ -29,15 +32,11 @@ def flaeche_daten(daten, basis=None):
 	d = daten if isinstance(daten, dict) else {}
 	basis = basis or {}
 	land = v.auswahl(d.get("land"), LAENDER, basis.get("land") or "DE")
-	if isinstance(d.get("flurstuecke"), list):
-		flurstuecke = []
-		for x in d["flurstuecke"][:50]:
-			x = x if isinstance(x, dict) else {}
-			fs = {"gemarkung": v.text(x.get("gemarkung"), 80), "flur": v.text(x.get("flur"), 20), "nummer": v.text(x.get("nummer"), 30)}
-			if fs["nummer"] or fs["gemarkung"]:
-				flurstuecke.append(fs)
-	else:
-		flurstuecke = basis.get("flurstuecke") or []
+	# Fachprüfung Flächen: Flurstücke je Land mit Formatprüfung, strukturierte Fachangaben (Positivliste)
+	try:
+		flurstuecke, fach = flaeche_fach_daten(d, basis, land)
+	except Fehler as e:
+		v.pflicht(False, str(e))
 	ha = v.zahl(d.get("ha"), min=0.01, max=100000, stellen=2)
 	return {
 		"bezeichnung": v.text(d.get("bezeichnung"), 120),
@@ -51,6 +50,7 @@ def flaeche_daten(daten, basis=None):
 		"nutzung": v.auswahl(d.get("nutzung"), FLAECHE_NUTZUNG, "acker"),
 		"agri": 1 if v.wahr(d.get("agri")) else 0,
 		"eigentum": v.auswahl(d.get("eigentum"), EIGENTUM, "eigentum"),
+		"fach": fach,
 		"hinweise": v.mehrzeilig(d.get("hinweise"), 3000),
 	}
 
@@ -58,7 +58,9 @@ def flaeche_daten(daten, basis=None):
 def _anwenden(f, werte):
 	for feld, wert in werte.items():
 		if feld == "flurstuecke":
-			f.set("flurstuecke", [dict(x) for x in wert])
+			f.set("flurstuecke", [flurstueck_zeile(x) for x in wert])
+		elif feld == "fach":
+			f.set("fach", als_json(wert or {}))
 		else:
 			f.set(feld, wert)
 
@@ -118,7 +120,7 @@ def aendern(id=None, daten=None, als_benutzer=None):  # noqa: A002
 	admin = ist_admin(n)
 	if not admin and f.status not in ("entwurf", "eingegangen"):
 		konflikt("Die Fläche ist bereits in Bearbeitung – Änderungen bitte per Nachricht mitteilen.")
-	basis = {"land": f.land, "flurstuecke": [{"gemarkung": x.gemarkung, "flur": x.flur, "nummer": x.nummer} for x in f.get("flurstuecke") or []]}
+	basis = {"land": f.land, "flurstuecke": [flurstueck_json(x) for x in f.get("flurstuecke") or []], "fach": aus_json(f.get("fach")) or {}}
 	werte = flaeche_daten(daten, basis)
 	v.pflicht(werte["bezeichnung"], "Bitte geben Sie eine Bezeichnung an.")
 	alt = {**flaeche_json(f)}

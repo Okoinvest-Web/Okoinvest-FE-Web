@@ -1,0 +1,155 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 14:00:00.000000",
+ "description": "Abwesenheit eines Mitarbeiters (Plattform oder HRMS Leave Application) – löst die automatische Vertretung aus.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "mitarbeiter_id",
+  "von",
+  "bis",
+  "art",
+  "cb_1",
+  "vertretung_id",
+  "status",
+  "quelle",
+  "leave_application",
+  "bemerkung",
+  "erstellt_von",
+  "vertretung_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "mitarbeiter_id",
+   "fieldtype": "Link",
+   "label": "Mitarbeiter",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "von",
+   "fieldtype": "Date",
+   "label": "Von",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "bis",
+   "fieldtype": "Date",
+   "label": "Bis",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "urlaub\nkrank\nfortbildung\ndienstreise\nsonstiges",
+   "default": "urlaub"
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "vertretung_id",
+   "fieldtype": "Link",
+   "label": "Vertretung",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "genehmigt\nabgelehnt",
+   "default": "genehmigt"
+  },
+  {
+   "fieldname": "quelle",
+   "fieldtype": "Select",
+   "label": "Quelle",
+   "options": "plattform\nhrms",
+   "default": "plattform"
+  },
+  {
+   "fieldname": "leave_application",
+   "fieldtype": "Data",
+   "label": "Leave Application",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "bemerkung",
+   "fieldtype": "Data",
+   "label": "Bemerkung"
+  },
+  {
+   "fieldname": "erstellt_von",
+   "fieldtype": "Link",
+   "label": "Erfasst von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "vertretung_json",
+   "fieldtype": "Small Text",
+   "label": "Übergaben (JSON)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 06:08:20.973173",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Abwesenheit",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "in_create": 0,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ]
+}

@@ -1,0 +1,21 @@
+{#- ÖkoInvest – Hinweisblatt Löschungsbewilligung bei Vertragsende (MUSTER) für eine Plattform Grundbuch Vorgang. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set g = oekoinvest_grundbuch(doc.name) -%}
+{%- set a = g.akte -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Grundbuch · Hinweis</div>
+	<div class="oi-titel">Löschung der Dienstbarkeit bei Vertragsende</div>
+	<div class="oi-untertitel">{{ g.land_label }} · Akte {{ doc.name }} · {{ doc.titel | e }}</div>
+</div>
+<div class="oi-muster-stempel">MUSTER – keine Rechtsberatung. {{ g.hinweis | e }}</div>
+<div class="oi-abschnitt">Ablauf</div>
+<p class="oi-absatz">{{ g.loeschung | e }}</p>
+<div class="oi-abschnitt">Was im Vertrag stehen sollte</div>
+<ul>
+	<li>Pflicht der Berechtigten, die Löschung nach Rückbau in grundbuchfähiger Form zu bewilligen – innerhalb einer festen Frist.</li>
+	<li>Kostentragung der Löschung durch die Berechtigte.</li>
+	<li>Löschungspflicht auch bei Nichtbau (z. B. wenn bis zu einem Stichtag nicht errichtet wurde).</li>
+	<li>Rückbausicherheit (Bürgschaft/Versicherung) bis zur Löschung.</li>
+</ul>
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · Muster-Stand {{ oekoinvest_datum(frappe.utils.nowdate()) }}</div>

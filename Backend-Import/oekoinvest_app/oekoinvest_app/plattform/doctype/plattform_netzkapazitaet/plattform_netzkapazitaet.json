@@ -1,0 +1,137 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "Kapazitätsangabe eines Netzknotens (Umspannwerk/Trafostation) laut Netzbetreiber – immer mit Quelle und Stand.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "knoten_id",
+  "kapazitaet",
+  "frei_mw",
+  "cb_kap",
+  "quelle",
+  "stand",
+  "gepflegt_von",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "knoten_id",
+   "fieldtype": "Data",
+   "label": "Netzknoten-ID (Geodaten-Dienst)",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "kapazitaet",
+   "fieldtype": "Select",
+   "label": "Kapazität",
+   "options": "unbekannt\nfrei\nknapp",
+   "default": "unbekannt",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "frei_mw",
+   "fieldtype": "Float",
+   "label": "Freie Kapazität (MW)",
+   "precision": "1"
+  },
+  {
+   "fieldname": "cb_kap",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "quelle",
+   "fieldtype": "Data",
+   "label": "Quelle (Veröffentlichung/Auskunft)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "stand",
+   "fieldtype": "Date",
+   "label": "Stand",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "gepflegt_von",
+   "fieldtype": "Link",
+   "label": "Gepflegt von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Beschreibung",
+   "hidden": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Netzkapazitaet",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Akquise",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "knoten_id",
+ "track_changes": 1
+}

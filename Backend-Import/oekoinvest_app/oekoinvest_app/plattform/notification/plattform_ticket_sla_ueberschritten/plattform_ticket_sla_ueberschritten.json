@@ -1,0 +1,30 @@
+{
+ "attach_print": 0,
+ "channel": "Email",
+ "condition": "doc.sla_gemeldet == 1 and doc.status in ('neu', 'in_arbeit', 'wartet_kunde')",
+ "creation": "2026-09-30 15:00:00.000000",
+ "days_in_advance": 0,
+ "docstatus": 0,
+ "doctype": "Notification",
+ "document_type": "Plattform Ticket",
+ "enabled": 1,
+ "event": "Value Change",
+ "idx": 0,
+ "is_standard": 1,
+ "message": "",
+ "message_type": "Markdown",
+ "modified": "2026-09-30 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Ticket SLA ueberschritten",
+ "owner": "Administrator",
+ "recipients": [
+  {
+   "receiver_by_role": "ÖkoInvest Admin"
+  }
+ ],
+ "send_system_notification": 1,
+ "send_to_all_assignees": 0,
+ "subject": "SLA überschritten: Ticket {{ doc.name }} ({{ doc.prioritaet }})",
+ "value_changed": "sla_gemeldet"
+}

@@ -1,0 +1,444 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 12:00:00.000000",
+ "description": "KYC/KYB-Fall je Konto (bzw. Organisation). Status nur über die Plattform-Methoden (plattform/api/kyc.py) bzw. den Workflow „KYC Prüfung“. Personendaten nur für die Compliance.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sec_fall",
+  "konto",
+  "organisation",
+  "kontotyp",
+  "bezeichnung",
+  "email",
+  "cb_fall",
+  "status",
+  "risiko",
+  "risiko_manuell",
+  "sanktionen_status",
+  "pep",
+  "bearbeiter",
+  "sec_person",
+  "vorname",
+  "nachname",
+  "geburtsdatum",
+  "cb_person",
+  "staatsangehoerigkeit",
+  "wohnsitzland",
+  "ausweis_gueltig_bis",
+  "person_json",
+  "sec_firma",
+  "firma_name",
+  "firma_land",
+  "registernummer",
+  "cb_firma",
+  "firma_json",
+  "vertreter_json",
+  "ubos",
+  "sec_erkl",
+  "pep_json",
+  "mittelherkunft_json",
+  "steuer_json",
+  "sec_pruefung",
+  "eingereicht_am",
+  "verifiziert_am",
+  "naechste_pruefung",
+  "cb_pruefung",
+  "erst_pruefer",
+  "zweit_pruefer",
+  "nachforderung",
+  "pruefung_json",
+  "risiko_json",
+  "sanktionen_json",
+  "pruefergebnisse_json",
+  "verlauf_json",
+  "sec_fristen",
+  "beziehung_ende",
+  "loeschen_ab",
+  "cb_fristen",
+  "erinnerungen_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "sec_fall",
+   "fieldtype": "Section Break",
+   "label": "Fall"
+  },
+  {
+   "fieldname": "konto",
+   "fieldtype": "Link",
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "organisation",
+   "fieldtype": "Link",
+   "label": "Organisation (KYB)",
+   "options": "Plattform Organisation",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "kontotyp",
+   "fieldtype": "Select",
+   "label": "Kontotyp",
+   "options": "\nprivat\nunternehmen",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "bezeichnung",
+   "fieldtype": "Data",
+   "label": "Bezeichnung",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "E-Mail (Benachrichtigung)",
+   "options": "Email",
+   "read_only": 1,
+   "description": "Nur für Status-Benachrichtigungen ohne Inhalte."
+  },
+  {
+   "fieldname": "cb_fall",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "offen\neingereicht\nin_pruefung\nzweitpruefung\nnachgefordert\nverifiziert\nabgelehnt\nabgelaufen\ngeloescht",
+   "default": "offen",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "risiko",
+   "fieldtype": "Select",
+   "label": "Risiko",
+   "options": "\nniedrig\nmittel\nhoch",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "risiko_manuell",
+   "fieldtype": "Check",
+   "label": "Risiko manuell eingestuft",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sanktionen_status",
+   "fieldtype": "Select",
+   "label": "Sanktionsabgleich",
+   "options": "\nkein_treffer\ntreffer_pruefen\nausgeschlossen\nbestaetigt",
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "pep",
+   "fieldtype": "Check",
+   "label": "PEP-Bezug",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "bearbeiter",
+   "fieldtype": "Link",
+   "label": "Bearbeitung",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_person",
+   "fieldtype": "Section Break",
+   "label": "Person"
+  },
+  {
+   "fieldname": "vorname",
+   "fieldtype": "Data",
+   "label": "Vorname",
+   "read_only": 1
+  },
+  {
+   "fieldname": "nachname",
+   "fieldtype": "Data",
+   "label": "Nachname",
+   "read_only": 1
+  },
+  {
+   "fieldname": "geburtsdatum",
+   "fieldtype": "Date",
+   "label": "Geburtsdatum",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_person",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "staatsangehoerigkeit",
+   "fieldtype": "Data",
+   "label": "Staatsangehörigkeit (ISO)",
+   "read_only": 1,
+   "length": 2
+  },
+  {
+   "fieldname": "wohnsitzland",
+   "fieldtype": "Data",
+   "label": "Wohnsitzland (ISO)",
+   "read_only": 1,
+   "length": 2
+  },
+  {
+   "fieldname": "ausweis_gueltig_bis",
+   "fieldtype": "Date",
+   "label": "Ausweis gültig bis",
+   "read_only": 1
+  },
+  {
+   "fieldname": "person_json",
+   "fieldtype": "Code",
+   "label": "Person (JSON)",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_firma",
+   "fieldtype": "Section Break",
+   "label": "Unternehmen (KYB)",
+   "depends_on": "eval:doc.kontotyp=='unternehmen'"
+  },
+  {
+   "fieldname": "firma_name",
+   "fieldtype": "Data",
+   "label": "Firma",
+   "read_only": 1
+  },
+  {
+   "fieldname": "firma_land",
+   "fieldtype": "Data",
+   "label": "Sitzstaat (ISO)",
+   "read_only": 1,
+   "length": 2
+  },
+  {
+   "fieldname": "registernummer",
+   "fieldtype": "Data",
+   "label": "Registernummer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_firma",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "firma_json",
+   "fieldtype": "Code",
+   "label": "Unternehmen (JSON)",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vertreter_json",
+   "fieldtype": "Code",
+   "label": "Vertretungsberechtigte (JSON)",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ubos",
+   "fieldtype": "Table",
+   "label": "Wirtschaftlich Berechtigte",
+   "options": "KYC Wirtschaftlich Berechtigter",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_erkl",
+   "fieldtype": "Section Break",
+   "label": "Erklärungen",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "pep_json",
+   "fieldtype": "Code",
+   "label": "PEP-Selbstauskunft (JSON)",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mittelherkunft_json",
+   "fieldtype": "Code",
+   "label": "Herkunft der Mittel (JSON)",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "steuer_json",
+   "fieldtype": "Code",
+   "label": "Steuerliche Ansässigkeit (JSON)",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_pruefung",
+   "fieldtype": "Section Break",
+   "label": "Prüfung"
+  },
+  {
+   "fieldname": "eingereicht_am",
+   "fieldtype": "Datetime",
+   "label": "Eingereicht am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "verifiziert_am",
+   "fieldtype": "Datetime",
+   "label": "Verifiziert am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "naechste_pruefung",
+   "fieldtype": "Date",
+   "label": "Nächste Überprüfung",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb_pruefung",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "erst_pruefer",
+   "fieldtype": "Link",
+   "label": "Erstprüfung",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "zweit_pruefer",
+   "fieldtype": "Link",
+   "label": "Zweitfreigabe (Vier-Augen)",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "nachforderung",
+   "fieldtype": "Small Text",
+   "label": "Nachforderung (an Nutzer)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pruefung_json",
+   "fieldtype": "Code",
+   "label": "Prüfung/Entscheidung (JSON)",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "risiko_json",
+   "fieldtype": "Code",
+   "label": "Risiko (JSON)",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sanktionen_json",
+   "fieldtype": "Code",
+   "label": "Sanktionsabgleich (JSON)",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pruefergebnisse_json",
+   "fieldtype": "Code",
+   "label": "Externe Prüfergebnisse (JSON)",
+   "description": "Angehängt über kyc_kern.ergebnis_anhaengen (Identitätsanbieter, Register, Bonität) – Hinweise, keine Entscheidung.",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "verlauf_json",
+   "fieldtype": "Code",
+   "label": "Verlauf (JSON)",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_fristen",
+   "fieldtype": "Section Break",
+   "label": "Fristen und Löschung"
+  },
+  {
+   "fieldname": "beziehung_ende",
+   "fieldtype": "Date",
+   "label": "Ende der Geschäftsbeziehung",
+   "read_only": 1
+  },
+  {
+   "fieldname": "loeschen_ab",
+   "fieldtype": "Date",
+   "label": "Löschung ab",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb_fristen",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "erinnerungen_json",
+   "fieldtype": "Code",
+   "label": "Erinnerungen (JSON)",
+   "options": "JSON",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "KYC Fall",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Compliance",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "title_field": "bezeichnung"
+}

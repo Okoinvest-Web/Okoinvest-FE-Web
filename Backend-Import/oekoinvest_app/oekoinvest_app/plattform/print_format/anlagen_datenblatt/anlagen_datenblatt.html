@@ -1,0 +1,63 @@
+{#- ÖkoInvest – Anlagen-Datenblatt (Plattform Anlage) mit Komponenten, Messpunkten, Vertrag, Wartung und offenen Störungen. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set d = oekoinvest_anlage(doc.name) -%}
+{%- set kunde = oekoinvest_konto(doc.kunde_id) if doc.kunde_id else None -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Anlagen & Betrieb · Datenblatt</div>
+	<div class="oi-titel">{{ doc.titel | e }}</div>
+	<div class="oi-untertitel">Anlage {{ doc.name }} · {{ oekoinvest_label("anlage_typ", doc.typ) }} · {{ oekoinvest_label("anlage_status", doc.status) }}</div>
+</div>
+
+<table class="oi-kacheln"><tr>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl(doc.kwp, 1) }}</div><div class="oi-bez">kWp</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl(doc.speicher_kwh, 0) if doc.speicher_kwh else "–" }}</div><div class="oi-bez">kWh Speicher</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ doc.wechselrichter_anzahl or "–" }}</div><div class="oi-bez">Wechselrichter</div></td>
+	<td class="oi-kachel"><div class="oi-wert" style="font-size:11pt">{{ oekoinvest_datum(doc.inbetriebnahme) }}</div><div class="oi-bez">Inbetriebnahme</div></td>
+</tr></table>
+
+<div class="oi-abschnitt">Stammdaten</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Standort</td><td>{{ doc.ort | e }}{% if doc.bundesland %}, {{ doc.bundesland | e }}{% endif %} ({{ oekoinvest_label("land", doc.land) }})</td></tr>
+	<tr><td class="oi-feld">Kunde</td><td>{% if kunde %}{{ (kunde.firma or kunde.name) | e }}{% else %}–{% endif %}</td></tr>
+	<tr><td class="oi-feld">Lastprofil</td><td>{{ oekoinvest_label("lastprofil", doc.lastprofil) }}{% if doc.last_jahr_kwh %} · {{ oekoinvest_zahl(doc.last_jahr_kwh) }} kWh/Jahr{% endif %}</td></tr>
+	<tr><td class="oi-feld">Speicherleistung</td><td>{{ oekoinvest_zahl(doc.speicher_kw, 0) ~ " kW" if doc.speicher_kw else "–" }}</td></tr>
+</table>
+{% if doc.beschreibung %}<p class="oi-text">{{ doc.beschreibung | e }}</p>{% endif %}
+
+{% if d.komponenten %}
+<div class="oi-abschnitt">Komponenten</div>
+<table class="oi-tabelle">
+	<tr><th>Art</th><th>Hersteller / Modell</th><th>Seriennummer</th><th class="oi-zahl">Anzahl</th><th class="oi-zahl">Leistung / Kapazität</th><th>Garantie bis</th></tr>
+	{% for k in d.komponenten %}<tr><td>{{ oekoinvest_label("komponente", k.art) }}</td><td>{{ k.hersteller | e }} {{ k.modell | e }}</td><td>{{ (k.seriennummer or "–") | e }}</td><td class="oi-zahl">{{ k.anzahl or 1 }}</td><td class="oi-zahl">{% if k.leistung_kw %}{{ oekoinvest_zahl(k.leistung_kw, 1) }} kW{% endif %}{% if k.kapazitaet_kwh %} {{ oekoinvest_zahl(k.kapazitaet_kwh, 0) }} kWh{% endif %}</td><td>{{ oekoinvest_datum(k.garantie_bis) }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+{% if d.messpunkte %}
+<div class="oi-abschnitt">Messpunkte</div>
+<table class="oi-tabelle">
+	<tr><th>Bezeichnung</th><th>Zählernummer</th><th>Art</th><th>Messstelle</th><th>Abrechnung</th><th>Eichung bis</th></tr>
+	{% for m in d.messpunkte %}<tr><td>{{ m.bezeichnung | e }}</td><td>{{ (m.zaehlernummer or "–") | e }}</td><td>{{ oekoinvest_label("messpunkt_art", m.art) }}</td><td>{{ oekoinvest_label("messstelle", m.messstelle) }}{% if m.smgw %} · SMGW{% endif %}</td><td>{{ "ja" if m.abrechnungsrelevant else "nein" }}</td><td>{{ oekoinvest_datum(m.eichgueltig_bis) }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+{% if d.vertraege %}
+<div class="oi-abschnitt">Contracting-Vertrag</div>
+<table class="oi-tabelle">
+	<tr><th>Nummer</th><th>Beginn</th><th class="oi-zahl">Laufzeit</th><th class="oi-zahl">Arbeitspreis</th><th class="oi-zahl">Grundgebühr</th><th class="oi-zahl">Indexierung</th><th>Status</th></tr>
+	{% for v in d.vertraege %}<tr><td>{{ (v.nummer or "–") | e }}</td><td>{{ oekoinvest_datum(v.beginn) }}</td><td class="oi-zahl">{{ v.laufzeit_jahre or "–" }} J.</td><td class="oi-zahl">{{ oekoinvest_zahl(v.strompreis_ct, 2) }} ct/kWh</td><td class="oi-zahl">{{ oekoinvest_eur(v.grundgebuehr_monat, 2) }}/Monat</td><td class="oi-zahl">{{ oekoinvest_zahl(v.indexierung_pct, 1) }} %</td><td>{{ v.status }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+{% if d.wartungen %}
+<div class="oi-abschnitt">Wartung</div>
+<table class="oi-tabelle">
+	<tr><th>Art</th><th>Datum</th><th>Status</th><th>Dienstleister</th><th>Nächste Fälligkeit</th></tr>
+	{% for w in d.wartungen[:10] %}<tr><td>{{ oekoinvest_label("wartung_art", w.art) }}</td><td>{{ oekoinvest_datum(w.datum) }}</td><td>{{ oekoinvest_label("wartung_status", w.status) }}</td><td>{{ (w.dienstleister or "–") | e }}</td><td>{{ oekoinvest_datum(w.naechste_faelligkeit) }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+<div class="oi-abschnitt">Offene Störungen</div>
+{% if d.stoerungen %}
+<table class="oi-tabelle">
+	<tr><th>Störung</th><th>Titel</th><th>Schwere</th><th>Status</th><th>Erkannt</th></tr>
+	{% for s in d.stoerungen %}<tr><td>{{ s.name }}</td><td>{{ s.titel | e }}</td><td>{{ oekoinvest_label("schwere", s.schwere) }}</td><td>{{ oekoinvest_label("stoerung_status", s.status) }}</td><td>{{ oekoinvest_datum(s.erkannt_am, true) }}</td></tr>{% endfor %}
+</table>
+{% else %}<p class="oi-klein">Keine offenen Störungen.</p>{% endif %}
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · Stand {{ oekoinvest_datum(frappe.utils.now_datetime(), true) }}</div>

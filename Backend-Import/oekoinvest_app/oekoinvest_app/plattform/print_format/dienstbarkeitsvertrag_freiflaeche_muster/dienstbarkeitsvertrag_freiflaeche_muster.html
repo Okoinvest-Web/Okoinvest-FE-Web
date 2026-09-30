@@ -1,0 +1,55 @@
+{#- ÖkoInvest – Dienstbarkeitsvertrag Freifläche (Muster) für eine Plattform Grundbuch Vorgang. MUSTER zur anwaltlichen/notariellen Prüfung. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set g = oekoinvest_grundbuch(doc.name) -%}
+{%- set a = g.akte -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Grundbuch · Muster</div>
+	<div class="oi-titel">Dienstbarkeitsvertrag Freifläche (Muster)</div>
+	<div class="oi-untertitel">{{ g.land_label }} · {{ g.recht_label | e }} · Akte {{ doc.name }}</div>
+</div>
+<div class="oi-muster-stempel">MUSTER – keine Rechtsberatung. {{ g.hinweis | e }}</div>
+<div class="oi-abschnitt">Vertragsparteien</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Eigentümer/in</td><td><b>{{ (doc.eigentuemer_name or "[ergänzen]") | e }}</b>{% if doc.eigentuemer_anschrift %}<br>{{ doc.eigentuemer_anschrift | e }}{% endif %}{% if (doc.eigentuemer_anzahl or 1) > 1 %}<br>– alle {{ doc.eigentuemer_anzahl }} Verfügungsberechtigten unterzeichnen{% endif %}</td></tr>
+	<tr><td class="oi-feld">Berechtigte/r</td><td><b>{{ (doc.berechtigter or f.name) | e }}</b> bzw. eine von ihr benannte Projektgesellschaft<br>{{ f.strasse }}, {{ f.ort }} · {{ f.fn }}</td></tr>
+</table>
+<div class="oi-abschnitt">§ 1 Belastetes Grundstück</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Land</td><td>{{ g.land_label }}</td></tr>
+	<tr><td class="oi-feld">{% if doc.land == "AT" %}Katastralgemeinde / EZ{% elif doc.land == "CH" %}Gemeinde / Grundbuch{% else %}Grundbuch von / Blatt{% endif %}</td><td>{{ (doc.grundbuch or "[ergänzen]") | e }}</td></tr>
+	<tr><td class="oi-feld">{% if doc.land == "AT" %}Grundstücksnummer(n){% elif doc.land == "CH" %}Parzelle(n) / EGRID{% else %}Flurstück(e){% endif %}</td><td>{{ (doc.flurstuecke or "[ergänzen]") | e }}</td></tr>
+	<tr><td class="oi-feld">Bezeichnung</td><td>{{ (doc.grundstueck_bezeichnung or doc.titel) | e }}</td></tr>
+	{% if doc.objekt_art == "dach" %}<tr><td class="oi-feld">Gebäude / Dachfläche</td><td>{{ (doc.gebaeude or "[ergänzen]") | e }}</td></tr>{% endif %}
+</table>
+<div class="oi-abschnitt">§ 2 Inhalt des Rechts</div>
+<p class="oi-absatz">Die Berechtigte ist befugt,</p>
+<ul>
+	<li>das Grundstück bzw. die im Lageplan bezeichnete Teilfläche zur Errichtung, zum Betrieb, zur Wartung, Erneuerung (Repowering) und zum Rückbau einer Photovoltaik-Freiflächenanlage samt Nebenanlagen zu nutzen,</li>
+	<li>Kabel und Leitungen zu verlegen, zu betreiben und zu erneuern,</li>
+	<li>das Grundstück zu betreten und zu befahren, soweit für Bau, Betrieb und Rückbau erforderlich,</li>
+	<li>die Unterlassung von Maßnahmen zu verlangen, die Bestand oder Betrieb beeinträchtigen (z. B. Bebauung, Verschattung).</li>
+</ul>
+<div class="oi-abschnitt">§ 3 Bestellung und Eintragung</div>
+{% if doc.land == "AT" %}<p class="oi-absatz">Die Eigentümerin räumt der Berechtigten die Dienstbarkeit ein und erteilt ihre ausdrückliche Einwilligung, dass auf Grund dieses Vertrages ob der bezeichneten Liegenschaft die Dienstbarkeit zugunsten der Berechtigten einverleibt werden kann (Aufsandungserklärung, § 32 Abs. 1 lit. b GBG). Die Unterschriften werden gerichtlich oder notariell beglaubigt (§ 31 GBG).</p>
+{% elif doc.land == "CH" %}<p class="oi-absatz">Die Eigentümerin räumt der Berechtigten die Dienstbarkeit bzw. das Baurecht ein und bewilligt die Eintragung im Grundbuch. Der Vertrag bedarf der öffentlichen Beurkundung (Art. 732 bzw. 779a ZGB); die Eintragung ist konstitutiv (Art. 731 ZGB).</p>
+{% else %}<p class="oi-absatz">Die Eigentümerin bestellt der Berechtigten eine {{ g.recht_label | e }} und bewilligt und beantragt deren Eintragung im Grundbuch an nächstoffener Rangstelle, im Rang vor den in Abteilung III eingetragenen Rechten (Eintragungsbewilligung § 19 GBO in öffentlich beglaubigter Form, § 29 GBO).</p>{% endif %}
+<div class="oi-abschnitt">§ 4 Eigentum an der Anlage</div>
+{% if doc.land == "DE" %}<p class="oi-absatz">Die Anlage wird nur zu einem vorübergehenden Zweck und in Ausübung dieser Dienstbarkeit verbunden; sie wird kein wesentlicher Bestandteil (Scheinbestandteil, § 95 BGB) und bleibt Eigentum der Berechtigten.</p>
+{% elif doc.land == "AT" %}<p class="oi-absatz">Die Anlage wird in der Absicht errichtet, dass sie nicht stets auf Grundstück bzw. Gebäude bleiben soll, und bleibt Eigentum der Berechtigten (Superädifikat, § 435 ABGB, soweit anwendbar; Absicherung über Urkundenhinterlegung möglich).</p>
+{% else %}<p class="oi-absatz">Die Anlage bleibt Eigentum der Berechtigten; wegen des Akzessionsprinzips (Art. 667, 671 ZGB) wird dies über die Dienstbarkeit bzw. ein Baurecht (Art. 675, 779 ff. ZGB) abgesichert.</p>{% endif %}
+<div class="oi-abschnitt">§ 5 Entgelt und Laufzeit</div>
+<p class="oi-absatz">Laufzeit {{ doc.laufzeit_jahre or "[…]" }} Jahre ab {{ (doc.laufzeit_beginn or "Inbetriebnahme") | e }}. Entgelt: {% if doc.entgelt_jahr %}{{ oekoinvest_eur(doc.entgelt_jahr) }} pro Jahr{% else %}abgegolten durch das Entgelt aus dem Nutzungs- bzw. Pachtvertrag{% endif %}{% if doc.vertrag_bezug %} ({{ doc.vertrag_bezug | e }}){% endif %}.</p>
+<div class="oi-abschnitt">§ 6 Übertragung, Rang, Rückbau, Löschung</div>
+<p class="oi-absatz">{% if doc.land == "DE" %}Die Berechtigte darf die Ausübung Dritten überlassen (§ 1092 Abs. 1 Satz 2 BGB). Für Betreiberwechsel und die Verwertung durch finanzierende Banken verpflichtet sich die Eigentümerin, inhaltsgleiche Dienstbarkeiten zugunsten benannter Dritter zu bestellen (Eintrittsrecht); Übertragbarkeit nach § 1092 Abs. 3 BGB im Einzelfall prüfen.{% else %}Die Berechtigte darf die Ausübung Dritten überlassen; für einen Betreiberwechsel verpflichtet sich die Eigentümerin, die erforderlichen Erklärungen in grundbuchsfähiger Form abzugeben.{% endif %} Die Eigentümerin wirkt am Rangrücktritt bzw. an der Vorrangseinräumung der Grundpfandgläubiger mit. Nach Vertragsende baut die Berechtigte die Anlage zurück. {{ g.loeschung | e }}</p>
+<div class="oi-abschnitt">§ 7 Kosten (Schätzung)</div>
+<table class="oi-tabelle">
+	<tr><th>Position</th><th class="oi-zahl">Betrag</th><th>Quelle</th></tr>
+	{% for p in g.kosten.positionen %}<tr><td>{{ p.label | e }}</td><td class="oi-zahl">{{ oekoinvest_zahl(p.betrag) }} {{ "CHF" if g.kosten.waehrung == "CHF" else "€" }}</td><td class="oi-klein">{{ p.quelle | e }}</td></tr>{% endfor %}
+	<tr><td><b>Summe (Orientierung)</b></td><td class="oi-zahl"><b>{{ oekoinvest_zahl(g.kosten.summe) }} {{ "CHF" if g.kosten.waehrung == "CHF" else "€" }}</b></td><td></td></tr>
+</table>
+<p class="oi-klein">{{ g.kosten.hinweis | e }} Die Kosten trägt nach diesem Muster die Berechtigte.</p>
+<table class="oi-unterschrift">
+	<tr><td><div style="height:34px"></div><div class="oi-linie">Ort, Datum, Unterschrift Eigentümer/in{% if doc.land == "CH" %} (vor der Urkundsperson){% else %} (beglaubigt){% endif %}</div></td><td><div style="height:34px"></div><div class="oi-linie">Ort, Datum, Unterschrift Berechtigte/r</div></td></tr>
+</table>
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · {{ f.gericht }} · Muster-Stand {{ oekoinvest_datum(frappe.utils.nowdate()) }}</div>

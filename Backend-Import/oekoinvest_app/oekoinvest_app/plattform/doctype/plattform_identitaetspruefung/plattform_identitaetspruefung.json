@@ -1,0 +1,232 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 20:00:00.000000",
+ "description": "Online-Identifizierung über einen Identitätsanbieter (Sitzung, Webhook-Ergebnis) bzw. automatische MRZ-Vorprüfung (ICAO 9303). Ergebnisse sind Hinweise für den KYC-Fall – die Entscheidung trifft die Compliance. Die MRZ selbst wird nicht gespeichert.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "konto_id",
+  "art",
+  "anbieter",
+  "cb_status",
+  "status",
+  "erstellt_am",
+  "abgeschlossen_am",
+  "sec_anbieter",
+  "verfahren",
+  "externe_id",
+  "grund",
+  "url",
+  "ereignisse",
+  "kyc_eintrag_id",
+  "sec_mrz",
+  "format",
+  "dokumentart",
+  "ausstellerstaat",
+  "cb_mrz",
+  "gueltig_bis",
+  "nummer_maskiert",
+  "pruefziffern",
+  "abgleich"
+ ],
+ "fields": [
+  {
+   "fieldname": "konto_id",
+   "fieldtype": "Link",
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "online\nmrz",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "anbieter",
+   "fieldtype": "Data",
+   "label": "Anbieter",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Ergebnis",
+   "options": "ausstehend\nbestanden\npruefen\nabgelehnt\nabgebrochen\nplausibel\nauffaellig\nungueltig",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "erstellt_am",
+   "fieldtype": "Datetime",
+   "label": "Erstellt am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "abgeschlossen_am",
+   "fieldtype": "Datetime",
+   "label": "Abgeschlossen am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_anbieter",
+   "fieldtype": "Section Break",
+   "label": "Anbieter"
+  },
+  {
+   "fieldname": "verfahren",
+   "fieldtype": "Data",
+   "label": "Verfahren",
+   "read_only": 1
+  },
+  {
+   "fieldname": "externe_id",
+   "fieldtype": "Data",
+   "label": "Externe Kennung",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "grund",
+   "fieldtype": "Small Text",
+   "label": "Grund / Hinweis",
+   "read_only": 1
+  },
+  {
+   "fieldname": "url",
+   "fieldtype": "Small Text",
+   "label": "Anbieter-URL (nur während der Sitzung)",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "ereignisse",
+   "fieldtype": "JSON",
+   "label": "Webhook-Ereignisse (IDs, Zeitpunkte)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kyc_eintrag_id",
+   "fieldtype": "Data",
+   "label": "Eintrag im KYC-Fall",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_mrz",
+   "fieldtype": "Section Break",
+   "label": "MRZ-Vorprüfung"
+  },
+  {
+   "fieldname": "format",
+   "fieldtype": "Data",
+   "label": "Format",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dokumentart",
+   "fieldtype": "Data",
+   "label": "Dokumentart",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ausstellerstaat",
+   "fieldtype": "Data",
+   "label": "Ausstellerstaat",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_mrz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gueltig_bis",
+   "fieldtype": "Date",
+   "label": "Gültig bis",
+   "read_only": 1
+  },
+  {
+   "fieldname": "nummer_maskiert",
+   "fieldtype": "Data",
+   "label": "Dokumentnummer (maskiert)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pruefziffern",
+   "fieldtype": "Data",
+   "label": "Prüfziffern ok",
+   "read_only": 1
+  },
+  {
+   "fieldname": "abgleich",
+   "fieldtype": "JSON",
+   "label": "Abgleich (Name, Geburtsdatum, Gültigkeit, Nummer)",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Identitaetspruefung",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Compliance"
+  }
+ ],
+ "sort_field": "erstellt_am",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "konto_id",
+ "track_changes": 1
+}

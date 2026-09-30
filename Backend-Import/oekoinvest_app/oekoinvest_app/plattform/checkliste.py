@@ -8,6 +8,9 @@ import math
 
 from oekoinvest_app.plattform.konstanten import PHASEN_IDS
 
+# Fachprüfung Kapitalseite: Gewichtung der Datenraum-Qualität (wie QUALITAET_GEWICHT in checkliste.js)
+QUALITAET_GEWICHT = {"unterlagen": 0.7, "datenblatt": 0.3}
+
 
 def _idx(phase):
 	return PHASEN_IDS.index(phase) if phase in PHASEN_IDS else 0
@@ -66,7 +69,14 @@ def checkliste_projekt(p, dokumente):
 				"dokumente": d,
 			}
 		)
-	return _auswerten(punkte)
+	out = _auswerten(punkte)
+	from oekoinvest_app.plattform.fach.datenblatt import datenblatt_vollstaendigkeit
+
+	db = datenblatt_vollstaendigkeit(p)
+	out["quoteUnterlagen"] = out["quote"]
+	out["datenblatt"] = {"quote": db["quote"], "erwartet": db["erwartet"], "erfuellt": db["erfuellt"], "bereiche": db["bereiche"]}
+	out["quote"] = int(math.floor(out["quoteUnterlagen"] * QUALITAET_GEWICHT["unterlagen"] + db["quote"] * QUALITAET_GEWICHT["datenblatt"] + 0.5))
+	return out
 
 
 def checkliste_flaeche(f, dokumente):

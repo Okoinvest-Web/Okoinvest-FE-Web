@@ -76,6 +76,8 @@ export const METHODEN = {
   suchen: "bedienung.suchen",
   onboarding: "bedienung.onboarding",
   onboardingSpeichern: "bedienung.onboarding_speichern",
+  // Fachprüfung Kommunen: Gemeinde-Sicht (Adapter-Teil: backend/frappe/kommune.js)
+  kommuneUebersicht: "kommune.uebersicht",
 };
 
 function meldung(daten) {
@@ -127,6 +129,8 @@ export async function aufruf(op, args = {}, nutzer = null) {
   if (res.status === 401 || /AuthenticationError/.test(typ)) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
   if (res.status === 403 || /PermissionError/.test(typ)) throw new PlattformFehler(403, text || "Dafür fehlt Ihnen die Berechtigung.");
   if (res.status === 404 || /DoesNotExistError/.test(typ)) throw new PlattformFehler(404, text || "Nicht gefunden.");
+  if (/KycErforderlich/.test(typ)) throw new PlattformFehler(409, text || "Bitte Verifizierung abschließen.", "kyc"); // KYC/KYB: Freigabe-Sperre (plattform/kyc_kern.py)
+  if (/BonitaetErforderlich/.test(typ)) throw new PlattformFehler(409, text || "Vor LOI bzw. Gebot ist eine Bonitätsprüfung nötig.", "bonitaet"); // Dienste: Bonität vor LOI (plattform/dienste_kern.py)
   if (res.status === 409 || /DuplicateEntryError|TimestampMismatchError/.test(typ)) throw new PlattformFehler(409, text || "Konflikt – bitte neu laden.");
   if (res.status === 429 || /TooManyRequestsError/.test(typ)) throw new PlattformFehler(429, text || "Zu viele Anfragen – bitte warten Sie einen Moment.", "gesperrt");
   if (/ValidationError|MandatoryError|LinkValidationError/.test(typ) || res.status === 417) throw new PlattformFehler(422, text || "Eingabe ungültig.");

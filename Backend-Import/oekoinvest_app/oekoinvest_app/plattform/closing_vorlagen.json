@@ -1,0 +1,676 @@
+{
+ "_hinweis": "GENERIERT aus src/lib/plattform/closing/grundbuch.js und closing.js – nicht von Hand ändern (Generator: siehe Backend-Import/README bzw. docs/GRUNDBUCH-CLOSING.md)",
+ "stand": "30.09.2026",
+ "GB_LAENDER": {
+  "DE": "Deutschland",
+  "AT": "Österreich",
+  "CH": "Schweiz"
+ },
+ "GB_OBJEKTARTEN": {
+  "freiflaeche": {
+   "label": "Grundstück (Freifläche / Agri-PV)",
+   "kurz": "Freifläche"
+  },
+  "dach": {
+   "label": "Dach bzw. Gebäude (Dach-PV, Carport)",
+   "kurz": "Dach"
+  }
+ },
+ "GB_RECHTE": {
+  "DE": {
+   "bpd": {
+    "label": "Beschränkte persönliche Dienstbarkeit (§§ 1090 ff. BGB)",
+    "kurz": "bpD"
+   },
+   "grunddienstbarkeit": {
+    "label": "Grunddienstbarkeit (§§ 1018 ff. BGB)",
+    "kurz": "Grunddienstbarkeit"
+   }
+  },
+  "AT": {
+   "servitut": {
+    "label": "Dienstbarkeit / Servitut (§§ 472 ff. ABGB)",
+    "kurz": "Servitut"
+   },
+   "superaedifikat": {
+    "label": "Servitut + Superädifikat (§ 435 ABGB, Urkundenhinterlegung)",
+    "kurz": "Superädifikat"
+   }
+  },
+  "CH": {
+   "dienstbarkeit": {
+    "label": "Dienstbarkeit (Art. 730 ff. bzw. 781 ZGB)",
+    "kurz": "Dienstbarkeit"
+   },
+   "baurecht": {
+    "label": "Baurecht (Art. 675, 779 ff. ZGB)",
+    "kurz": "Baurecht"
+   }
+  }
+ },
+ "GB_SCHRITT_STATUS": {
+  "offen": {
+   "label": "Offen",
+   "ton": "neutral"
+  },
+  "in_arbeit": {
+   "label": "In Arbeit",
+   "ton": "info"
+  },
+  "erledigt": {
+   "label": "Erledigt",
+   "ton": "ok"
+  },
+  "entfaellt": {
+   "label": "Entfällt",
+   "ton": "neutral"
+  }
+ },
+ "GB_STATUS": {
+  "vorbereitung": {
+   "label": "Vertrag in Vorbereitung",
+   "ton": "warn"
+  },
+  "unterschrift": {
+   "label": "Zur Unterschrift",
+   "ton": "info"
+  },
+  "beglaubigung": {
+   "label": "Beglaubigung / Notar",
+   "ton": "info"
+  },
+  "eingereicht": {
+   "label": "Beim Grundbuch eingereicht",
+   "ton": "info"
+  },
+  "eingetragen": {
+   "label": "Im Grundbuch eingetragen",
+   "ton": "ok"
+  },
+  "abgebrochen": {
+   "label": "Abgebrochen",
+   "ton": "neutral"
+  }
+ },
+ "GB_OFFEN": [
+  "vorbereitung",
+  "unterschrift",
+  "beglaubigung",
+  "eingereicht"
+ ],
+ "GB_SCHRITTE": {
+  "DE": [
+   {
+    "optional": false,
+    "signatur": false,
+    "nachweis": "",
+    "nachweisLabel": "",
+    "schluessel": "vertrag",
+    "label": "Vertrag mit Dienstbarkeitsbestellung erstellt",
+    "phase": "vorbereitung",
+    "nach": [],
+    "fristTage": 14,
+    "text": "Nutzungsvertrag (Pacht- bzw. Dachnutzungsvertrag) enthält die Pflicht zur Bestellung einer beschränkten persönlichen Dienstbarkeit (§§ 1090 ff. BGB) samt Entwurf der Eintragungsbewilligung. Vorlage: Druckformat „Dienstbarkeitsvertrag“ (Muster).",
+    "portal": "Wir bereiten den Vertrag vor. Er regelt, dass die Anlage auf Ihrem Grundstück bzw. Dach stehen darf – und dass dieses Recht im Grundbuch gesichert wird. Sie erhalten den Entwurf vorab zum Lesen."
+   },
+   {
+    "optional": false,
+    "signatur": true,
+    "nachweis": "",
+    "nachweisLabel": "",
+    "schluessel": "unterschrift",
+    "label": "Vertrag unterschrieben",
+    "phase": "unterschrift",
+    "nach": [
+     "vertrag"
+    ],
+    "fristTage": 21,
+    "text": "Schuldrechtlicher Vertrag unterzeichnet – elektronisch über das Signatur-Modul oder als Upload. Für das Grundbuch genügt das NICHT: Die Bewilligung braucht eine öffentlich beglaubigte Unterschrift (§ 29 GBO).",
+    "portal": "Sie unterschreiben den Vertrag – bequem elektronisch im Portal oder auf Papier. Das Grundbuch verlangt zusätzlich eine beglaubigte Unterschrift beim Notar (nächster Schritt)."
+   },
+   {
+    "optional": false,
+    "signatur": false,
+    "nachweis": "",
+    "nachweisLabel": "",
+    "schluessel": "beglaubigung",
+    "label": "Notartermin: Bewilligung beglaubigt",
+    "phase": "beglaubigung",
+    "nach": [
+     "unterschrift"
+    ],
+    "fristTage": 30,
+    "text": "Eintragungsbewilligung des Eigentümers (§ 19 GBO) mit öffentlich beglaubigter Unterschrift (§ 29 GBO, § 129 BGB). Üblich: Notar entwirft die Bewilligung, beglaubigt und übernimmt den Vollzug. Alle Miteigentümer bzw. Verfügungsberechtigten unterschreiben.",
+    "portal": "Kurzer Termin beim Notar: Der Notar bestätigt Ihre Unterschrift unter der Eintragungsbewilligung. Bitte Ausweis mitnehmen. Die Kosten trägt in der Regel der Betreiber – das steht im Vertrag."
+   },
+   {
+    "optional": true,
+    "signatur": false,
+    "nachweis": "wert_oder_dok",
+    "nachweisLabel": "Erklärung der Bank (Datum/Aktenzeichen) oder Dokument",
+    "schluessel": "rang",
+    "label": "Rangrücktritt der Grundpfandgläubiger",
+    "phase": "beglaubigung",
+    "nach": [
+     "vertrag"
+    ],
+    "fristTage": 45,
+    "text": "Stehen Grundschulden/Hypotheken in Abteilung III, treten die Gläubiger mit ihrem Recht im Rang hinter die Dienstbarkeit zurück (Rangänderung § 880 BGB; Bewilligung der Bank in Form des § 29 GBO, bei Grundpfandrechten mit Zustimmung des Eigentümers). Ohne Rangrücktritt kann die Dienstbarkeit in einer Zwangsversteigerung erlöschen. Entfällt ohne Grundpfandrechte.",
+    "portal": "Hat Ihre Bank eine Grundschuld auf dem Grundstück, bitten wir sie, der Dienstbarkeit den Vorrang zu geben. Für Sie ändert sich an Ihrem Kredit nichts – die Bank bestätigt nur die Reihenfolge im Grundbuch. Wir übernehmen die Korrespondenz, brauchen aber Ihre Zustimmung."
+   },
+   {
+    "optional": false,
+    "signatur": false,
+    "nachweis": "wert",
+    "nachweisLabel": "Aktenzeichen / Eingangsbestätigung",
+    "schluessel": "antrag",
+    "label": "Antrag beim Grundbuchamt gestellt",
+    "phase": "eingereicht",
+    "nach": [
+     "beglaubigung"
+    ],
+    "fristTage": 14,
+    "text": "Notar reicht Bewilligung und Antrag (§ 13 GBO) beim Grundbuchamt ein. Die Reihenfolge des Eingangs bestimmt den Rang (§§ 17, 45 GBO, § 879 BGB).",
+    "portal": "Der Notar hat die Eintragung beim Grundbuchamt beantragt. Das Amt bearbeitet den Antrag – das dauert je nach Amt einige Wochen."
+   },
+   {
+    "optional": false,
+    "signatur": false,
+    "nachweis": "wert_oder_dok",
+    "nachweisLabel": "Lfd. Nr. Abt. II / Eintragungsnachricht oder Grundbuchauszug",
+    "schluessel": "eintragung",
+    "label": "Eintragung bestätigt (Grundbuchauszug)",
+    "phase": "eingereicht",
+    "nach": [
+     "antrag",
+     "rang"
+    ],
+    "fristTage": 60,
+    "text": "Eintragungsnachricht bzw. aktueller Grundbuchauszug (Abteilung II) liegt vor und ist auf Inhalt und Rang geprüft (vor Grundpfandrechten, soweit Rangrücktritt vereinbart).",
+    "portal": "Geschafft: Die Dienstbarkeit steht im Grundbuch. Sie erhalten eine Kopie des Auszugs. Ihr Eigentum bleibt unverändert – eingetragen ist nur das Nutzungsrecht für die Anlage."
+   }
+  ],
+  "AT": [
+   {
+    "optional": false,
+    "signatur": false,
+    "nachweis": "",
+    "nachweisLabel": "",
+    "schluessel": "vertrag",
+    "label": "Dienstbarkeitsvertrag (Servitutsvertrag) erstellt",
+    "phase": "vorbereitung",
+    "nach": [],
+    "fristTage": 14,
+    "text": "Vertrag über die Einräumung einer Dienstbarkeit (§§ 472 ff. ABGB) mit ausdrücklicher Aufsandungserklärung (§ 32 Abs. 1 lit. b GBG) – ohne sie wird nicht einverleibt. Bei Dach-PV: Eigentum an der Anlage absichern (Superädifikat § 435 ABGB bzw. Zugehör-Regelung).",
+    "portal": "Wir bereiten den Servitutsvertrag vor. Er erlaubt, die Anlage auf Ihrem Grund bzw. Dach zu errichten und zu betreiben, und enthält die Erklärung, dass das Recht ins Grundbuch eingetragen werden darf."
+   },
+   {
+    "optional": false,
+    "signatur": true,
+    "nachweis": "",
+    "nachweisLabel": "",
+    "schluessel": "unterschrift",
+    "label": "Vertrag unterschrieben",
+    "phase": "unterschrift",
+    "nach": [
+     "vertrag"
+    ],
+    "fristTage": 21,
+    "text": "Vertrag unterzeichnet (Signatur-Modul oder Upload). Für die Einverleibung ist eine beglaubigte Unterschrift nötig (§ 31 GBG) – elektronische Unterschrift ersetzt sie nicht.",
+    "portal": "Sie unterschreiben den Vertrag. Für das Grundbuch lassen Sie Ihre Unterschrift danach beim Notar oder Bezirksgericht beglaubigen."
+   },
+   {
+    "optional": false,
+    "signatur": false,
+    "nachweis": "",
+    "nachweisLabel": "",
+    "schluessel": "beglaubigung",
+    "label": "Unterschrift beglaubigt (Notar/Gericht)",
+    "phase": "beglaubigung",
+    "nach": [
+     "unterschrift"
+    ],
+    "fristTage": 30,
+    "text": "Gerichtliche oder notarielle Beglaubigung der Unterschriften aller Verfügungsberechtigten (§ 31 GBG). Gebührenpflicht nach § 33 TP 9 GebG bei entgeltlicher Einräumung beachten (Selbstberechnung durch den Parteienvertreter).",
+    "portal": "Kurzer Termin beim Notar oder Bezirksgericht: Ihre Unterschrift wird beglaubigt. Bitte Lichtbildausweis mitnehmen."
+   },
+   {
+    "optional": true,
+    "signatur": false,
+    "nachweis": "wert_oder_dok",
+    "nachweisLabel": "Vorrangseinräumungserklärung (Datum) oder Dokument",
+    "schluessel": "rang",
+    "label": "Vorrangseinräumung der Pfandgläubiger",
+    "phase": "beglaubigung",
+    "nach": [
+     "vertrag"
+    ],
+    "fristTage": 45,
+    "text": "Pfandgläubiger aus dem C-Blatt räumen der Dienstbarkeit den Vorrang ein (Rangeinräumung, § 30 GBG); Erklärung mit beglaubigter Unterschrift. Entfällt ohne Pfandrechte.",
+    "portal": "Ist Ihr Grundstück mit einem Pfandrecht (z. B. für einen Kredit) belastet, bitten wir die Bank, der Dienstbarkeit den Vorrang einzuräumen. An Ihrem Kredit ändert sich nichts."
+   },
+   {
+    "optional": false,
+    "signatur": false,
+    "nachweis": "wert",
+    "nachweisLabel": "Tagebuchzahl (TZ) des Gesuchs",
+    "schluessel": "antrag",
+    "label": "Grundbuchsgesuch eingebracht",
+    "phase": "eingereicht",
+    "nach": [
+     "beglaubigung"
+    ],
+    "fristTage": 14,
+    "text": "Grundbuchsgesuch beim zuständigen Bezirksgericht (Grundbuchsgericht), in der Regel elektronisch durch Notar oder Rechtsanwalt. Die Tagebuchzahl (TZ) des Eingangs bestimmt den Rang (§ 29 GBG). Eingaben- und Eintragungsgebühr nach TP 9 GGG.",
+    "portal": "Der Antrag auf Eintragung liegt beim Grundbuchsgericht. Die sogenannte Tagebuchzahl sichert den Rang ab dem Eingang."
+   },
+   {
+    "optional": false,
+    "signatur": false,
+    "nachweis": "wert_oder_dok",
+    "nachweisLabel": "TZ der Einverleibung oder Grundbuchsauszug",
+    "schluessel": "eintragung",
+    "label": "Einverleibung bestätigt (Grundbuchsbeschluss)",
+    "phase": "eingereicht",
+    "nach": [
+     "antrag",
+     "rang"
+    ],
+    "fristTage": 60,
+    "text": "Grundbuchsbeschluss bzw. aktueller Grundbuchsauszug (C-Blatt) mit der Dienstbarkeit liegt vor und ist auf Inhalt und Rang geprüft.",
+    "portal": "Die Dienstbarkeit ist im Grundbuch einverleibt. Sie erhalten den Beschluss bzw. Auszug. Ihr Eigentum bleibt unverändert."
+   }
+  ],
+  "CH": [
+   {
+    "optional": false,
+    "signatur": false,
+    "nachweis": "",
+    "nachweisLabel": "",
+    "schluessel": "vertrag",
+    "label": "Dienstbarkeits- bzw. Baurechtsvertrag (Entwurf)",
+    "phase": "vorbereitung",
+    "nach": [],
+    "fristTage": 21,
+    "text": "Vertragsentwurf (Dienstbarkeit Art. 730 ff. bzw. 781 ZGB, Baurecht Art. 779 ff. ZGB), abgestimmt mit der Urkundsperson. Bei Dach-PV: Eigentum an der Anlage trotz Akzessionsprinzip (Art. 667, 671 ZGB) über Baurecht bzw. Dienstbarkeit sichern.",
+    "portal": "Wir stimmen den Vertrag mit dem Notariat ab. Er sichert das Recht, die Anlage auf Ihrem Grundstück bzw. Dach zu betreiben."
+   },
+   {
+    "optional": false,
+    "signatur": false,
+    "nachweis": "",
+    "nachweisLabel": "",
+    "schluessel": "beurkundung",
+    "label": "Öffentliche Beurkundung (Notariat)",
+    "phase": "beglaubigung",
+    "nach": [
+     "vertrag"
+    ],
+    "fristTage": 30,
+    "text": "Rechtsgeschäfte über Grunddienstbarkeiten und Baurechte bedürfen der öffentlichen Beurkundung (Art. 732, 779a ZGB); die Unterzeichnung erfolgt vor der Urkundsperson. Verfahren und Gebühren sind kantonal geregelt.",
+    "portal": "Termin beim Notariat: Der Vertrag wird öffentlich beurkundet und dort unterschrieben. Bitte amtlichen Ausweis mitnehmen."
+   },
+   {
+    "optional": true,
+    "signatur": false,
+    "nachweis": "wert_oder_dok",
+    "nachweisLabel": "Rangrücktrittserklärung (Datum) oder Dokument",
+    "schluessel": "rang",
+    "label": "Rangrücktritt der Grundpfandgläubiger",
+    "phase": "beglaubigung",
+    "nach": [
+     "vertrag"
+    ],
+    "fristTage": 45,
+    "text": "Grundpfandgläubiger (Schuldbrief, Grundpfandverschreibung) erklären den Rangrücktritt. Sonst kann eine nachrangige Dienstbarkeit bei einer Pfandverwertung gelöscht werden, wenn sie den Gläubiger schädigt (Art. 812 Abs. 2 ZGB). Entfällt ohne Grundpfandrechte.",
+    "portal": "Ist Ihr Grundstück mit einem Grundpfand belastet, bitten wir die Bank um einen Rangrücktritt. An Ihrer Hypothek ändert sich nichts."
+   },
+   {
+    "optional": false,
+    "signatur": false,
+    "nachweis": "wert",
+    "nachweisLabel": "Tagebuchnummer / Beleg-Nr.",
+    "schluessel": "antrag",
+    "label": "Grundbuchanmeldung eingereicht",
+    "phase": "eingereicht",
+    "nach": [
+     "beurkundung"
+    ],
+    "fristTage": 14,
+    "text": "Die Urkundsperson meldet das Recht beim Grundbuchamt an; der Tagebucheintrag bestimmt den Rang (Art. 948, 972 ZGB).",
+    "portal": "Das Notariat hat die Eintragung beim Grundbuchamt angemeldet."
+   },
+   {
+    "optional": false,
+    "signatur": false,
+    "nachweis": "wert_oder_dok",
+    "nachweisLabel": "Beleg-Nr. oder Grundbuchauszug",
+    "schluessel": "eintragung",
+    "label": "Eintragung bestätigt (Grundbuchauszug)",
+    "phase": "eingereicht",
+    "nach": [
+     "antrag",
+     "rang"
+    ],
+    "fristTage": 60,
+    "text": "Grundbuchauszug mit der Dienstbarkeit bzw. dem Baurecht liegt vor; die Eintragung ist konstitutiv (Art. 731 Abs. 1 ZGB).",
+    "portal": "Das Recht ist im Grundbuch eingetragen. Sie erhalten eine Kopie des Auszugs. Ihr Eigentum bleibt unverändert."
+   }
+  ]
+ },
+ "GB_VORLAGEN": {
+  "dienstbarkeit_freiflaeche": {
+   "label": "Dienstbarkeitsvertrag Freifläche (Muster)",
+   "objektarten": [
+    "freiflaeche"
+   ],
+   "frappe": "Dienstbarkeitsvertrag Freiflaeche Muster"
+  },
+  "dachnutzung_servitut": {
+   "label": "Dachnutzungs- und Servitutsvertrag (Muster)",
+   "objektarten": [
+    "dach"
+   ],
+   "frappe": "Dachnutzungsvertrag Servitut Muster"
+  },
+  "rangruecktritt": {
+   "label": "Ersuchen um Rangrücktritt / Vorrangseinräumung an die Bank (Muster)",
+   "objektarten": [
+    "freiflaeche",
+    "dach"
+   ],
+   "frappe": "Rangruecktritt Ersuchen Muster"
+  },
+  "loeschung_hinweis": {
+   "label": "Hinweisblatt Löschungsbewilligung bei Vertragsende (Muster)",
+   "objektarten": [
+    "freiflaeche",
+    "dach"
+   ],
+   "frappe": "Loeschungsbewilligung Hinweis Muster"
+  }
+ },
+ "GB_HINWEIS": "Muster und Kostenschätzung dienen der Orientierung und ersetzen keine Rechtsberatung. Vor Verwendung durch Rechtsanwalt bzw. Notar prüfen lassen und an das Recht des Belegenheitslandes anpassen.",
+ "GB_PORTAL_EINLEITUNG": {
+  "DE": "Damit die Anlage auch bei einem Verkauf Ihres Grundstücks, einer Zwangsversteigerung oder einem Betreiberwechsel sicher weiterlaufen kann, wird das Nutzungsrecht als beschränkte persönliche Dienstbarkeit im Grundbuch (Abteilung II) eingetragen. Ihr Eigentum bleibt unverändert; Sie können das Grundstück weiterhin verkaufen oder vererben – das Recht geht mit.",
+  "AT": "Damit die Anlage auch bei einem Eigentümerwechsel oder einer Zwangsversteigerung sicher weiterlaufen kann, wird das Nutzungsrecht als Dienstbarkeit (Servitut) im Grundbuch (C-Blatt) einverleibt. Ihr Eigentum bleibt unverändert.",
+  "CH": "Damit die Anlage auch bei einem Eigentümerwechsel oder einer Pfandverwertung sicher weiterlaufen kann, wird das Nutzungsrecht als Dienstbarkeit bzw. Baurecht im Grundbuch eingetragen. Ihr Eigentum bleibt unverändert."
+ },
+ "GB_LOESCHUNG": {
+  "DE": "Nach Vertragsende und Rückbau bewilligt der Berechtigte die Löschung der Dienstbarkeit (Löschungsbewilligung in Form des § 29 GBO); der Eigentümer beantragt die Löschung beim Grundbuchamt. Die Pflicht zur Löschungsbewilligung gehört in den Vertrag.",
+  "AT": "Nach Vertragsende und Rückbau stellt der Berechtigte eine Löschungserklärung (Aufsandung zur Löschung) mit beglaubigter Unterschrift aus; die Löschung wird mit Grundbuchsgesuch beantragt.",
+  "CH": "Nach Vertragsende und Rückbau erteilt der Berechtigte die Löschungsbewilligung; die Löschung wird beim Grundbuchamt angemeldet (Art. 964 ZGB)."
+ },
+ "CL_STRUKTUREN": {
+  "asset": {
+   "label": "Asset Deal",
+   "text": "Kauf der Anlage bzw. der Projektrechte (Verträge, Genehmigungen, Dienstbarkeiten) – jeder Vertrag wird einzeln übertragen, Zustimmungen der Vertragspartner nötig."
+  },
+  "share": {
+   "label": "Share Deal",
+   "text": "Kauf der Anteile an der Projektgesellschaft (SPV) – Verträge bleiben bei der Gesellschaft, Change-of-Control-Klauseln prüfen, Formvorschriften für die Anteilsübertragung beachten."
+  }
+ },
+ "CL_STATUS": {
+  "vorbereitung": {
+   "label": "Vorbereitung Signing",
+   "ton": "warn"
+  },
+  "signing": {
+   "label": "Signed – Closing Conditions offen",
+   "ton": "info"
+  },
+  "vollzogen": {
+   "label": "Closing vollzogen",
+   "ton": "ok"
+  },
+  "abgebrochen": {
+   "label": "Abgebrochen",
+   "ton": "neutral"
+  }
+ },
+ "CL_OFFEN": [
+  "vorbereitung",
+  "signing"
+ ],
+ "CL_VERANTWORTLICH": {
+  "kaeufer": "Käufer",
+  "verkaeufer": "Verkäufer",
+  "oekoinvest": "ÖkoInvest (Transaktion)",
+  "notar": "Notar/Treuhänder",
+  "dritte": "Dritte (Bank, Behörde, Netzbetreiber)"
+ },
+ "CP_STATUS": {
+  "offen": {
+   "label": "Offen",
+   "ton": "neutral"
+  },
+  "gemeldet": {
+   "label": "Als erfüllt gemeldet",
+   "ton": "info"
+  },
+  "erfuellt": {
+   "label": "Erfüllt",
+   "ton": "ok"
+  },
+  "verzichtet": {
+   "label": "Verzichtet",
+   "ton": "neutral"
+  }
+ },
+ "SIGNING_PUNKTE": [
+  {
+   "schluessel": "kyc_kaeufer",
+   "label": "KYC/KYB des Käufers verifiziert",
+   "auto": true,
+   "text": "Identität, wirtschaftlich Berechtigte, Sanktions-/PEP-Prüfung (KYC-Modul)."
+  },
+  {
+   "schluessel": "kyc_verkaeufer",
+   "label": "KYC/KYB des Verkäufers verifiziert",
+   "auto": true,
+   "text": "Firmenbuch/Handelsregister, wirtschaftlich Berechtigte, Sanktionsprüfung (KYC-Modul)."
+  },
+  {
+   "schluessel": "bonitaet",
+   "label": "Bonität des Käufers geprüft",
+   "text": "Bonitätsauskunft (Dienste-Modul) oder gleichwertiger Nachweis, nicht älter als 3 Monate."
+  },
+  {
+   "schluessel": "finanzierung",
+   "label": "Finanzierungsnachweis liegt vor",
+   "text": "Eigenkapitalnachweis, Fonds-Commitment oder Finanzierungszusage der Bank."
+  },
+  {
+   "schluessel": "gremien",
+   "label": "Gremienzustimmungen beider Seiten",
+   "text": "Investment Committee, Aufsichtsrat/Beirat bzw. Gesellschafterbeschluss – soweit Satzung oder Geschäftsordnung es verlangen."
+  },
+  {
+   "schluessel": "dd",
+   "label": "Due Diligence abgeschlossen",
+   "text": "Technisch, rechtlich, steuerlich; offene Punkte als Garantie, Freistellung oder CP geregelt."
+  },
+  {
+   "schluessel": "spa",
+   "label": "Kaufvertrag (SPA/APA) endverhandelt",
+   "text": "Finale Fassung von beiden Seiten freigegeben; bei Share Deal Form der Anteilsübertragung (Notar) geklärt."
+  }
+ ],
+ "CP_STANDARD": {
+  "gemeinsam": [
+   {
+    "schluessel": "dienstbarkeiten",
+    "label": "Dienstbarkeiten eingetragen bzw. Eintragung gesichert",
+    "verantwortlich": "verkaeufer",
+    "text": "Grundbuch-Akten der Flächen/Dächer: Eintragung bestätigt oder Antrag gestellt mit Rang vor Grundpfandrechten (Rangrücktritt).",
+    "fristTage": 60
+   },
+   {
+    "schluessel": "banken",
+    "label": "Freigabe der finanzierenden Banken des Verkäufers",
+    "verantwortlich": "verkaeufer",
+    "text": "Löschung bzw. Freigabe von Sicherheiten (Abtretungen, Verpfändungen) oder Zustimmung zur Übernahme der Finanzierung.",
+    "fristTage": 45
+   },
+   {
+    "schluessel": "kein_mac",
+    "label": "Keine wesentliche nachteilige Veränderung (MAC)",
+    "verantwortlich": "verkaeufer",
+    "text": "Bestätigung des Verkäufers zum Closing, dass kein Material Adverse Change eingetreten ist (Bring-down der Garantien).",
+    "fristTage": 60
+   }
+  ],
+  "asset": [
+   {
+    "schluessel": "vertragsuebernahme",
+    "label": "Zustimmungen zur Vertragsübernahme",
+    "verantwortlich": "verkaeufer",
+    "text": "Grundstückseigentümer (Pacht/Dienstbarkeit), Netzbetreiber, Direktvermarkter, Wartung – schriftliche Zustimmung zur Übertragung auf den Käufer.",
+    "fristTage": 45
+   },
+   {
+    "schluessel": "foerderung",
+    "label": "Übertragung der Förderung / Einspeisevergütung geklärt",
+    "verantwortlich": "verkaeufer",
+    "text": "DE: Betreiberwechsel im Marktstammdatenregister; AT: EAG-Förderabwicklung (OeMAG) bzw. Förderstelle; CH: Pronovo – Voraussetzungen vorab prüfen.",
+    "fristTage": 45
+   }
+  ],
+  "share": [
+   {
+    "schluessel": "zustimmung_anteile",
+    "label": "Zustimmung zur Anteilsübertragung (Vinkulierung)",
+    "verantwortlich": "verkaeufer",
+    "text": "Gesellschafterbeschluss bzw. Zustimmung nach Gesellschaftsvertrag; Verzicht auf Vorkaufsrechte.",
+    "fristTage": 30
+   },
+   {
+    "schluessel": "change_of_control",
+    "label": "Change-of-Control-Verzichte der Vertragspartner",
+    "verantwortlich": "verkaeufer",
+    "text": "Pacht-, Netz-, Direktvermarktungs- und Kreditverträge auf Kündigungsrechte bei Gesellschafterwechsel prüfen und Verzichte einholen.",
+    "fristTage": 45
+   },
+   {
+    "schluessel": "abtretung_form",
+    "label": "Form der Anteilsabtretung gesichert (Notartermin)",
+    "verantwortlich": "notar",
+    "text": "DE GmbH: notarielle Beurkundung (§ 15 Abs. 3, 4 GmbHG); AT GmbH: Notariatsakt (§ 76 Abs. 2 GmbHG); CH GmbH: Schriftform (Art. 785 OR) + Zustimmung (Art. 786 OR). GmbH & Co. KG: Einheitlichkeit prüfen.",
+    "fristTage": 30
+   }
+  ]
+ },
+ "CP_AUS_LOI": {
+  "gremien": {
+   "schluessel": "gremien_kaeufer",
+   "label": "Zustimmung der Gremien des Käufers",
+   "verantwortlich": "kaeufer",
+   "text": "Investment Committee bzw. Aufsichtsrat – schriftliche Bestätigung.",
+   "fristTage": 21
+  },
+  "finanzierung": {
+   "schluessel": "finanzierung_kaeufer",
+   "label": "Finanzierungszusage der Bank des Käufers",
+   "verantwortlich": "kaeufer",
+   "text": "Unterschriebener Kreditvertrag bzw. unbedingte Zusage; Auszahlungsvoraussetzungen der Bank abgestimmt.",
+   "fristTage": 45
+  },
+  "netz": {
+   "schluessel": "netz",
+   "label": "Netzanschluss bestätigt bzw. Zusage übertragen",
+   "verantwortlich": "verkaeufer",
+   "text": "Netzbetreiber bestätigt Anschluss bzw. Übertragung der Netzanschlusszusage/Reservierung.",
+   "fristTage": 45
+  },
+  "genehmigung": {
+   "schluessel": "genehmigung",
+   "label": "Genehmigung bestandskräftig",
+   "verantwortlich": "verkaeufer",
+   "text": "Baugenehmigung/Bebauungsplan (DE), Widmung/Bewilligungen (AT), Baubewilligung (CH) – Rechtskraft bzw. Ablauf der Rechtsmittelfristen nachgewiesen.",
+   "fristTage": 60
+  },
+  "kartell": {
+   "schluessel": "kartell",
+   "label": "Fusionskontrolle / Investitionsprüfung",
+   "verantwortlich": "kaeufer",
+   "text": "Freigabe bzw. Bestätigung, dass keine Anmeldung nötig ist (DE: GWB, AWV; AT: KartG, InvKG; CH: KG). Nur Hinweis – im Einzelfall prüfen.",
+   "fristTage": 60
+  }
+ },
+ "UEBERGABE_PUNKTE": [
+  {
+   "schluessel": "unterlagen",
+   "label": "Unterlagen übergeben",
+   "text": "Datenraum-Export, Originalverträge, Genehmigungen, Gutachten, As-built-Dokumentation."
+  },
+  {
+   "schluessel": "zugaenge",
+   "label": "Zugänge übergeben",
+   "text": "Monitoring, Datenlogger, Portale (Netzbetreiber, Direktvermarkter), Schlüssel/Schließanlagen – Passwörter neu setzen."
+  },
+  {
+   "schluessel": "vertraege",
+   "label": "Verträge übertragen bzw. angezeigt",
+   "text": "Pacht-/Dachnutzungs-, Netzanschluss-, Direktvermarktungs-, Wartungs- und Versicherungsverträge."
+  },
+  {
+   "schluessel": "netzbetreiber",
+   "label": "Anzeige an den Netzbetreiber",
+   "text": "Betreiber- bzw. Gesellschafterwechsel, neue Bankverbindung für Einspeisevergütung."
+  },
+  {
+   "schluessel": "direktvermarkter",
+   "label": "Anzeige an den Direktvermarkter / Abnehmer (PPA)",
+   "text": "Vertragspartner- bzw. Kontrollwechsel."
+  },
+  {
+   "schluessel": "behoerden",
+   "label": "Anzeigen an Behörden und Register",
+   "text": "DE: Marktstammdatenregister (Betreiberwechsel), Finanzamt; AT: Förderstelle/OeMAG, Firmenbuch; CH: Pronovo, Handelsregister; Transparenzregister/WiEReG bei Share Deal."
+  },
+  {
+   "schluessel": "grundbuch",
+   "label": "Grundbuch: Rechte auf Käufer umgestellt",
+   "text": "Asset Deal: Übertragung bzw. Neubestellung der Dienstbarkeiten zugunsten des Käufers (Übertragbarkeit nach Landesrecht prüfen)."
+  }
+ ],
+ "CL_HINWEIS": "Muster und Checklisten sind Orientierung und ersetzen keine Rechts- oder Steuerberatung. Kaufvertrag, Garantien und Form der Übertragung vor Unterzeichnung durch Rechtsanwalt bzw. Notar prüfen lassen.",
+ "TREUHAND_HINWEIS": {
+  "DE": "Notaranderkonto: nur bei berechtigtem Sicherungsinteresse (§ 57 BeurkG); schriftliche Verwahrungsanweisung mit Auszahlungsvoraussetzungen (z. B. Nachweis der CPs, Eintragungen).",
+  "AT": "Treuhandschaft durch Notar oder Rechtsanwalt über ein Treuhandkonto (Treuhandbuch der Kammer); Auszahlungsvoraussetzungen in der Treuhandvereinbarung festlegen.",
+  "CH": "Hinterlegung beim Notariat bzw. Escrow über eine Bank; Freigabe gegen Nachweis der Closing Conditions."
+ },
+ "FORM_HINWEISE": {
+  "asset:DE": [
+   "Asset Deal: Jeder Vertrag wird einzeln übertragen (Zustimmung der Vertragspartner). Gehört ein Grundstück dazu, ist der Kaufvertrag beurkundungspflichtig (DE § 311b BGB) bzw. grundbücherlich durchzuführen; Grunderwerbsteuer auf den Grundstücksanteil.",
+   "Dienstbarkeiten: Die beschränkte persönliche Dienstbarkeit ist grundsätzlich nicht übertragbar (§ 1092 Abs. 1 BGB); Ausnahmen nach § 1092 Abs. 3 BGB im Einzelfall prüfen – üblich sind Eintrittsrechte bzw. Neubestellung zugunsten des Käufers.",
+   "Kartell- und Investitionsprüfung: nur Hinweis – Schwellenwerte und Sektorregeln (Energie als kritische Infrastruktur) im Einzelfall prüfen."
+  ],
+  "asset:AT": [
+   "Asset Deal: Jeder Vertrag wird einzeln übertragen (Zustimmung der Vertragspartner). Gehört ein Grundstück dazu, ist der Kaufvertrag beurkundungspflichtig (DE § 311b BGB) bzw. grundbücherlich durchzuführen; Grunderwerbsteuer auf den Grundstücksanteil.",
+   "Dienstbarkeiten: Übertragbarkeit persönlicher Servituten auf den Käufer vertraglich absichern bzw. Neubestellung vereinbaren; Superädifikate über Urkundenhinterlegung übertragen.",
+   "Kartell- und Investitionsprüfung: nur Hinweis – Schwellenwerte und Sektorregeln (Energie als kritische Infrastruktur) im Einzelfall prüfen."
+  ],
+  "asset:CH": [
+   "Asset Deal: Jeder Vertrag wird einzeln übertragen (Zustimmung der Vertragspartner). Gehört ein Grundstück dazu, ist der Kaufvertrag beurkundungspflichtig (DE § 311b BGB) bzw. grundbücherlich durchzuführen; Grunderwerbsteuer auf den Grundstücksanteil.",
+   "Dienstbarkeiten: Übertragbarkeit (Art. 781 ZGB, nach Vertrag) bzw. selbständiges Baurecht als eigenes Grundstück (Art. 779 Abs. 3 ZGB) prüfen.",
+   "Kartell- und Investitionsprüfung: nur Hinweis – Schwellenwerte und Sektorregeln (Energie als kritische Infrastruktur) im Einzelfall prüfen."
+  ],
+  "share:DE": [
+   "GmbH-Anteile: Verpflichtung und Abtretung notariell beurkunden (§ 15 Abs. 3 und 4 GmbHG); Notar reicht die neue Gesellschafterliste ein (§ 40 GmbHG). Bei GmbH & Co. KG werden KG-Anteile formfrei übertragen – wird die Komplementär-GmbH mitverkauft, kann der gesamte Vertrag beurkundungspflichtig sein.",
+   "Grunderwerbsteuer beim Share Deal: nur relevant, wenn die Gesellschaft Grundstücke (bzw. grundstücksgleiche Rechte) hält – DE Anteilsübergänge ab 90 % (§ 1 Abs. 2b, 3 GrEStG), AT Anteilsvereinigung ab 95 % (§ 1 Abs. 3 GrEStG), CH kantonale Handänderungssteuer bei wirtschaftlicher Handänderung. Steuerberatung einbeziehen.",
+   "Kartell- und Investitionsprüfung: nur Hinweis – Schwellenwerte und Sektorregeln (Energie als kritische Infrastruktur) im Einzelfall prüfen."
+  ],
+  "share:AT": [
+   "GmbH-Anteile: Verpflichtung und Übertragung bedürfen eines Notariatsakts (§ 76 Abs. 2 GmbHG); Firmenbuch-Anmeldung des Gesellschafterwechsels. KG-Anteile: Übertragung nach Gesellschaftsvertrag, Eintragung im Firmenbuch.",
+   "Grunderwerbsteuer beim Share Deal: nur relevant, wenn die Gesellschaft Grundstücke (bzw. grundstücksgleiche Rechte) hält – DE Anteilsübergänge ab 90 % (§ 1 Abs. 2b, 3 GrEStG), AT Anteilsvereinigung ab 95 % (§ 1 Abs. 3 GrEStG), CH kantonale Handänderungssteuer bei wirtschaftlicher Handänderung. Steuerberatung einbeziehen.",
+   "Kartell- und Investitionsprüfung: nur Hinweis – Schwellenwerte und Sektorregeln (Energie als kritische Infrastruktur) im Einzelfall prüfen."
+  ],
+  "share:CH": [
+   "GmbH-Stammanteile: Abtretung und Verpflichtung in Schriftform (Art. 785 OR), Zustimmung der Gesellschafterversammlung (Art. 786 OR), Handelsregister. AG-Aktien: Übertragung je nach Titel; Vinkulierung beachten.",
+   "Grunderwerbsteuer beim Share Deal: nur relevant, wenn die Gesellschaft Grundstücke (bzw. grundstücksgleiche Rechte) hält – DE Anteilsübergänge ab 90 % (§ 1 Abs. 2b, 3 GrEStG), AT Anteilsvereinigung ab 95 % (§ 1 Abs. 3 GrEStG), CH kantonale Handänderungssteuer bei wirtschaftlicher Handänderung. Steuerberatung einbeziehen.",
+   "Kartell- und Investitionsprüfung: nur Hinweis – Schwellenwerte und Sektorregeln (Energie als kritische Infrastruktur) im Einzelfall prüfen."
+  ]
+ }
+}

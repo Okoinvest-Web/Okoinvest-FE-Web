@@ -31,6 +31,7 @@ export const ORG_ARTEN = {
   behoerde: "Behörde",
   verband: "Verband / Genossenschaft",
   sonstige: "Sonstige",
+  stadtwerk: "Stadtwerk / kommunales Unternehmen", // Fachprüfung Kommunen
 };
 
 export const AKTIVITAET_TYPEN = {
@@ -58,7 +59,7 @@ export const CRM_ROLLE_FUER_TYP = {
 };
 
 /** CRM-Rolle je Portal-Rolle */
-export const CRM_ROLLE_FUER_KONTO = { flaeche: "eigentuemer", landwirt: "landwirt", investor: "investor", anbieter: "anbieter", unternehmen: "unternehmen", mitglied: "mitglied" };
+export const CRM_ROLLE_FUER_KONTO = { flaeche: "eigentuemer", landwirt: "landwirt", investor: "investor", anbieter: "anbieter", unternehmen: "unternehmen", mitglied: "mitglied", kommune: "gemeinde" };
 
 // ------------------------------------------------------------ Normalisierung
 

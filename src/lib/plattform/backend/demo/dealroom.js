@@ -32,6 +32,8 @@ import { intern } from "../demo";
 import { aendern, lesen, uploadLesen } from "./speicher";
 import { jetzt, neueId, vorTagen } from "./hilfen";
 import { datenraumStufeOk, dokumentStufe, tagHeute, verbindlichZugelassen } from "./dealroomRegeln";
+import { kycSperre } from "./kycRegeln"; // KYC/KYB: Gebot und Zuschlag nur verifiziert
+import { bonitaetSperre } from "./diensteRegeln"; // Dienste: Gebot nur mit gültiger Bonitätsauskunft, wenn Pflicht
 
 const { nachricht, benachrichtigen, protokoll, systemWechsel, darfDokument, dokumentMeta, nutzerById, kurz, nameVon, aktiveAdmins } = intern;
 
@@ -638,6 +640,7 @@ export async function bieterAktion(n, id, daten = {}) {
       v.pflicht(g, "Bitte wählen Sie ein gültiges Gebot.");
       const i = db.interessen.find((x) => x.id === g.interesseId);
       v.pflicht(i && ["nda_freigegeben", "loi_abgegeben", "loi_angenommen"].includes(i.status), "Der Bieter hat keinen gültigen Datenraum-Status mehr.");
+      kycSperre(db, "zuschlag", { kontoId: i.investorId, organisationId: i.organisationId || null, text: "Zuschlag nicht möglich: Der Bieter ist noch nicht verifiziert (KYC/KYB)." }); // KYC/KYB
       if (!["veroeffentlicht", "reserviert"].includes(p.status)) throw konflikt("Das Projekt ist nicht mehr in der Börse.");
       const gesamt = gebotGesamt(g, p.mwp);
       for (const x of db.dealroom.gebote.filter((y) => y.verfahrenId === vf.id && y.status === "abgegeben")) x.status = x.id === g.id ? "zuschlag" : "unterlegen";
@@ -692,6 +695,8 @@ export async function gebotAbgeben(n, daten = {}) {
     const r = aktuelleRunde(vf);
     const status = verfahrenStatus(db, vf);
     if (!r.teilnehmer.includes(interesse.id)) throw verboten("Sie sind für diese Runde nicht zugelassen.");
+    kycSperre(db, "gebot", { kontoId: interesse.investorId, organisationId: interesse.organisationId || null }); // KYC/KYB
+    bonitaetSperre(db, "gebot", { kontoId: interesse.investorId, organisationId: interesse.organisationId || null }); // Dienste: Bonität vor Gebot
     if (status !== "laufend" || !rundeOffen(r)) throw konflikt("Die Angebotsfrist ist abgelaufen – Gebote sind nicht mehr möglich.");
     const preisModus = v.auswahl(daten.preisModus, ["gesamt", "proKwp"], "gesamt");
     const preis = preisModus === "gesamt" ? v.zahl(daten.preis, { min: 1000, max: 1e11 }) : null;

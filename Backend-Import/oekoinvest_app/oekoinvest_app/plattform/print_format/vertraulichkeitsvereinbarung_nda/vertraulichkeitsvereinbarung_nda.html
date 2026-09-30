@@ -1,0 +1,52 @@
+{#- ÖkoInvest – Vertraulichkeitsvereinbarung (Klick-NDA) mit Protokollanhang (Plattform Interesse). -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set nda = oekoinvest_nda() -%}
+{%- set prot = oekoinvest_json(doc.nda) -%}
+{%- set inv = oekoinvest_konto(doc.investor_id) -%}
+{%- set p = oekoinvest_projekt(doc.projekt_id) -%}
+{%- set rolle_label = {"admin": "Backoffice", "eigentuemer": "Investor", "system": "System"} -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Projektbörse · Vertraulichkeit</div>
+	<div class="oi-titel">{{ nda.titel }}</div>
+	<div class="oi-untertitel">Fassung {{ (prot.version or nda.version) | e }} · Interesse {{ doc.name }}</div>
+</div>
+<div class="oi-muster-stempel">Entwurf der Textfassung – Wortlaut vor dem Livegang anwaltlich prüfen lassen.</div>
+
+<table class="oi-daten">
+	<tr><td class="oi-feld">Empfänger</td><td><b>{{ (inv.firma or inv.name) | e }}</b>{% if inv.firma %}<br>{{ inv.name | e }}{% endif %}<br>{{ inv.email | e }}</td></tr>
+	<tr><td class="oi-feld">Projekt (öffentlicher Titel)</td><td>{{ p.titel | e }} · {{ p.id | e }}</td></tr>
+	<tr><td class="oi-feld">Gegenüber</td><td>{{ f.name }}, {{ f.strasse }}, {{ f.ort }}, {{ f.land }}</td></tr>
+</table>
+
+<div class="oi-abschnitt">Erklärung des Empfängers</div>
+{% for absatz in nda.absaetze %}<p class="oi-absatz"><b>{{ loop.index }}.</b> {{ absatz }}</p>{% endfor %}
+{% if not prot.am %}<div class="oi-warnung">Für dieses Interesse wurde die Vertraulichkeitsvereinbarung noch nicht akzeptiert.</div>{% endif %}
+
+<div class="oi-protokoll">
+	<div class="oi-kopf">
+		<div class="oi-ueberzeile">Anhang</div>
+		<div class="oi-titel">Protokoll der elektronischen Annahme</div>
+		<div class="oi-untertitel">Nachweis gemäß Aktivitätsprotokoll der Plattform (SHA-256-Hash-Kette)</div>
+	</div>
+	<table class="oi-tabelle">
+		<tr><th>Merkmal</th><th>Wert</th></tr>
+		<tr><td>Zeitstempel der Annahme</td><td>{{ oekoinvest_datum(prot.am, true) }}{% if prot.am %} <span class="oi-klein">({{ prot.am | e }}, UTC)</span>{% endif %}</td></tr>
+		<tr><td>IP-Adresse</td><td>{{ (prot.ip or "–") | e }}</td></tr>
+		<tr><td>Browser (User-Agent)</td><td class="oi-klein">{{ (prot.userAgent or "–") | e }}</td></tr>
+		<tr><td>Textfassung</td><td>{{ (prot.version or "–") | e }}</td></tr>
+		<tr><td>Konto des Empfängers</td><td>{{ inv.id | e }}</td></tr>
+		<tr><td>Interesse / Projekt</td><td>{{ doc.name }} / {{ doc.projekt_id }}</td></tr>
+	</table>
+	{% if doc.status_verlauf %}
+	<div class="oi-abschnitt">Statusverlauf</div>
+	<table class="oi-tabelle">
+		<tr><th>Zeitpunkt</th><th>Status</th><th>durch</th><th>Kommentar</th></tr>
+		{% for e in doc.status_verlauf %}
+		<tr><td>{{ oekoinvest_datum(e.am, true) }}</td><td>{{ oekoinvest_status("interesse", e.status) }}</td><td>{{ rolle_label.get(e.von_rolle, e.von_rolle) }}</td><td>{{ (e.kommentar or "") | e }}</td></tr>
+		{% endfor %}
+	</table>
+	{% endif %}
+	<p class="oi-klein">Erstellt am {{ oekoinvest_datum(frappe.utils.now_datetime(), true) }} durch {{ frappe.session.user | e }}. Vertrauliches Dokument – nur für Nachweiszwecke.</p>
+</div>
+<div class="oi-fuss">{{ f.name }} · {{ f.fn }} · {{ f.gericht }} · Geschäftsführung: {{ f.gf }}</div>

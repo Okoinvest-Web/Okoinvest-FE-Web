@@ -1,0 +1,184 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-30 14:00:00.000000",
+ "description": "Unterzeichner eines Signaturvorgangs (Position, Code, Unterschrift, Protokolldaten).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "position",
+  "konto_id",
+  "name_anzeige",
+  "email",
+  "status",
+  "code_hash",
+  "code_ablauf",
+  "code_versuche",
+  "code_gesendet_am",
+  "code_verbraucht",
+  "eingeladen_am",
+  "erinnert_am",
+  "unterschrieben_am",
+  "art",
+  "getippter_name",
+  "bild_png",
+  "ip",
+  "user_agent",
+  "sha256_dokument",
+  "code_bestaetigt_am",
+  "abgelehnt_am",
+  "ablehn_grund"
+ ],
+ "fields": [
+  {
+   "fieldname": "position",
+   "fieldtype": "Int",
+   "label": "Position",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "konto_id",
+   "fieldtype": "Link",
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "name_anzeige",
+   "fieldtype": "Data",
+   "label": "Name",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "E-Mail"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "offen\nunterschrieben\nabgelehnt",
+   "default": "offen",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "code_hash",
+   "fieldtype": "Data",
+   "label": "Code (Hash)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "code_ablauf",
+   "fieldtype": "Datetime",
+   "label": "Code gültig bis",
+   "read_only": 1
+  },
+  {
+   "fieldname": "code_versuche",
+   "fieldtype": "Int",
+   "label": "Fehlversuche",
+   "read_only": 1
+  },
+  {
+   "fieldname": "code_gesendet_am",
+   "fieldtype": "Datetime",
+   "label": "Code gesendet",
+   "read_only": 1
+  },
+  {
+   "fieldname": "code_verbraucht",
+   "fieldtype": "Check",
+   "label": "Code verbraucht",
+   "read_only": 1
+  },
+  {
+   "fieldname": "eingeladen_am",
+   "fieldtype": "Datetime",
+   "label": "Eingeladen am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "erinnert_am",
+   "fieldtype": "Datetime",
+   "label": "Erinnert am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unterschrieben_am",
+   "fieldtype": "Datetime",
+   "label": "Unterschrieben am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "\ngezeichnet\ngetippt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "getippter_name",
+   "fieldtype": "Data",
+   "label": "Getippter Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bild_png",
+   "fieldtype": "Long Text",
+   "label": "Unterschrift (PNG, base64)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "label": "IP-Adresse",
+   "read_only": 1
+  },
+  {
+   "fieldname": "user_agent",
+   "fieldtype": "Small Text",
+   "label": "Browser",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sha256_dokument",
+   "fieldtype": "Data",
+   "label": "SHA-256 des Dokuments",
+   "read_only": 1
+  },
+  {
+   "fieldname": "code_bestaetigt_am",
+   "fieldtype": "Datetime",
+   "label": "Code bestätigt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "abgelehnt_am",
+   "fieldtype": "Datetime",
+   "label": "Abgelehnt am",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ablehn_grund",
+   "fieldtype": "Small Text",
+   "label": "Ablehnungsgrund",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Signatur Unterzeichner",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "in_create": 0,
+ "istable": 1,
+ "editable_grid": 0,
+ "permissions": []
+}

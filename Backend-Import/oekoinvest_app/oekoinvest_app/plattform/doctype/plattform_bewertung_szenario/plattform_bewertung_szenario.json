@@ -1,0 +1,86 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 18:00:00.000000",
+ "description": "Gespeichertes Bewertungsszenario eines Investors/Anbieters zu einem Börsenprojekt (Eingaben und Ergebnis).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "konto_id",
+  "projekt_id",
+  "titel",
+  "modus",
+  "eingaben",
+  "ergebnis"
+ ],
+ "fields": [
+  {
+   "fieldname": "konto_id",
+   "fieldtype": "Link",
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "reqd": 1,
+   "search_index": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "projekt_id",
+   "fieldtype": "Link",
+   "label": "Projekt",
+   "options": "Plattform Projekt",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "modus",
+   "fieldtype": "Select",
+   "label": "Modus",
+   "options": "entwicklung\nbestand"
+  },
+  {
+   "fieldname": "eingaben",
+   "fieldtype": "JSON",
+   "label": "Eingaben"
+  },
+  {
+   "fieldname": "ergebnis",
+   "fieldtype": "JSON",
+   "label": "Ergebnis"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Bewertung Szenario",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "in_create": 0
+}

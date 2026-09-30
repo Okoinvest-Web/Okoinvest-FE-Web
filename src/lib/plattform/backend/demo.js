@@ -27,7 +27,15 @@ import * as org from "./demo/teams"; // Login, Sicherheit & Teams: Organisations
 import { sicherheitWerkzeugeSetzen } from "./demo/sicherheitWerkzeuge";
 import { fehlversuchBuchen, mitZweiFaktor, sitzungNutzer, sperrePruefen } from "./demo/sicherheit"; // Login, Sicherheit & Teams
 import { backofficeEreignis, protokollAnhaengen, werkzeugeSetzen } from "./demo/backoffice"; // Backoffice: CRM, Automationen, Hash-Kette
+import { kycUebergangPruefen } from "./demo/kycRegeln"; // KYC/KYB: Freigaben nur mit verifiziertem Konto
+import { bonitaetUebergangPruefen } from "./demo/diensteRegeln"; // Dienste: Bonitätsauskunft vor LOI (konfigurierbar)
 export * from "./demo/crm-ops"; // Backoffice-Operationen (CRM, Akquise, Automationen, Vorlagen, Berichte, Rechte)
+import { EIGENTUM_IDS, fachAusAnfrage, flaecheFachDaten, pachtangebotBereinigen } from "../flaecheFach"; // Fachprüfung Flächen: Flurstücke je Land, Fachangaben, Pachtangebot
+import { kommuneDaten } from "../kommune"; // Fachprüfung Kommunen: strukturierte Anfrage
+import { datenblattBereinigen, ddIndex } from "../fach/datenblatt"; // Fachprüfung Kapitalseite: Projektdatenblatt, DD-Index
+import { loiBereinigen } from "../fach/loi"; // Fachprüfung Kapitalseite: strukturierte LOI
+import { suchprofilErweiterung } from "../fach/suchprofil"; // Fachprüfung Kapitalseite: Suchprofil (Investorentyp, ESG …)
+import { fachBereit } from "./demo/fach"; // Fachprüfung Kapitalseite: Demo-Datenblätter einmalig ergänzen
 
 seedSetzen(seedErstellen);
 
@@ -126,6 +134,7 @@ const MAIL_VORLAGEN = {
   suchprofil: { betreff: "Neues Projekt passend zu Ihrem Suchprofil – ÖkoInvest", text: "In der Projektbörse wurde ein Projekt veröffentlicht, das zu Ihrem Suchprofil passt." },
   anfrage: { betreff: "Neue Anfrage über die Website – ÖkoInvest", text: "Über die Website ist eine neue Anfrage eingegangen." },
   aufgabe: { betreff: "Aufgabe im Backoffice – ÖkoInvest", text: "Ihnen wurde eine Aufgabe zugewiesen bzw. eine Wiedervorlage ist fällig." },
+  energie: { betreff: "Neuigkeiten zu Ihrer Energiebeschaffung – ÖkoInvest", text: "Zu Ihrer Energiebeschaffung bzw. einer Angebotsanfrage gibt es Neuigkeiten. Details finden Sie im Portal." }, // Energiebeschaffung
 };
 const MAIL_HINWEIS = "Aus Gründen der Vertraulichkeit enthält diese E-Mail keine Inhalte. Bitte melden Sie sich im Portal an.";
 
@@ -262,11 +271,13 @@ function datenBereinigen(d, tiefe = 0) {
 const FELD_NAMEN_FLAECHE = {
   bezeichnung: "Bezeichnung", land: "Land", bundesland: "Bundesland", plz: "PLZ", ort: "Ort", gemarkung: "Gemarkung", flurstuecke: "Flurstücke",
   ha: "Größe", nutzung: "Nutzung", agri: "Agri-PV", eigentum: "Eigentum", hinweise: "Hinweise",
+  fach: "Fachangaben", // Fachprüfung Flächen
 };
 const FELD_NAMEN_PROJEKT = {
   titel: "Titel", typ: "Typ", land: "Land", bundesland: "Bundesland", region: "Region", mwp: "Leistung", mwhSpeicher: "Speicher", flaecheHa: "Fläche",
   phase: "Phase", netzanschluss: "Netzanschluss", codGeplant: "COD", preisModus: "Preismodus", preis: "Preis", preisProKwp: "Preis je kWp",
   beschreibung: "Beschreibung", highlights: "Highlights", vertraulich: "vertrauliche Angaben",
+  datenblatt: "Datenblatt", // Fachprüfung Kapitalseite
 };
 function geaenderteFelder(alt, neu, namen) {
   return Object.keys(namen).filter((k) => k in neu && JSON.stringify(alt[k] ?? null) !== JSON.stringify(neu[k] ?? null)).map((k) => namen[k]);
@@ -446,7 +457,7 @@ export async function profilSpeichern(n, daten) {
     if (Array.isArray(daten.rollen)) {
       const r = v.mehrfach(daten.rollen, ROLLEN_IDS);
       v.pflicht(r.length > 0, "Bitte wählen Sie mindestens eine Rolle.");
-      u.rollen = [...r, ...(u.rollen.includes("admin") ? ["admin"] : [])];
+      u.rollen = [...r, ...u.rollen.filter((x) => x === "admin" || x === "gutachter" || x === "lieferant" || x === "bank")]; // nicht selbst wählbar: Backoffice, Gutachter (Projektentwicklung), Lieferant (Energiebeschaffung), Bank (Finanzierung)
     }
     protokoll(db, u, "profil", "nutzer", u.id, "Profil aktualisiert");
     return ohneGeheimnis(u);
@@ -465,6 +476,7 @@ export async function suchprofilSpeichern(n, p) {
     ticketMax: v.zahl(p?.ticketMax, { min: 0, max: 1e10 }),
     benachrichtigen: v.wahr(p?.benachrichtigen),
     schwelle: v.zahl(p?.schwelle, { min: SUCHPROFIL_SCHWELLE.min, max: SUCHPROFIL_SCHWELLE.max, stellen: 0 }) ?? SUCHPROFIL_SCHWELLE.standard,
+    ...suchprofilErweiterung(p, Object.values(BUNDESLAENDER).flat()), // Fachprüfung Kapitalseite
   };
   if (profil.mwpMin !== null && profil.mwpMax !== null) v.pflicht(profil.mwpMin <= profil.mwpMax, "MWp: Minimum größer als Maximum.");
   if (profil.ticketMin !== null && profil.ticketMax !== null) v.pflicht(profil.ticketMin <= profil.ticketMax, "Ticket: Minimum größer als Maximum.");
@@ -495,7 +507,8 @@ export async function anfrageAnlegen({ typ, kontakt, daten, herkunft, ip, einwil
   };
   v.pflicht(k.vorname && k.nachname, "Bitte geben Sie Vor- und Nachnamen an.");
   v.pflicht(k.email, "Bitte geben Sie eine gültige E-Mail-Adresse an.");
-  const d = datenBereinigen(daten);
+  let d = datenBereinigen(daten);
+  if (t === "kommune") d = { ...d, ...kommuneDaten(daten, k.land, k) }; // Fachprüfung Kommunen: Positivliste + Gemeindeschlüssel
   v.pflicht(JSON.stringify(d).length <= 20000, "Zu viele Zusatzdaten.");
   const h = datenBereinigen(herkunft);
 
@@ -535,6 +548,7 @@ export async function anfrageAnlegen({ typ, kontakt, daten, herkunft, ip, einwil
         nutzung: d.art === "dach" ? "dach" : v.auswahl(d.nutzung, FLAECHE_NUTZUNG, "acker"), // /dachflaeche-verpachten sendet daten.art = "dach"
         agri: t === "agri",
         eigentum: "eigentum",
+        fach: fachAusAnfrage(t, d), // z. B. Dachart/Dachfläche aus /dachflaeche-verpachten
         hinweise: v.mehrzeilig(d.nachricht, 2000),
         status: "entwurf",
         statusVerlauf: [verlaufEintrag("entwurf", u, "system", "Aus Anfrage angelegt")],
@@ -609,12 +623,8 @@ export async function vorgang(n, id) {
 
 function flaecheDaten(daten, basis = {}) {
   const land = v.auswahl(daten.land, LAENDER, basis.land || "DE");
-  const flurstuecke = Array.isArray(daten.flurstuecke)
-    ? daten.flurstuecke
-        .slice(0, 50)
-        .map((f) => ({ gemarkung: v.text(f?.gemarkung, 80), flur: v.text(f?.flur, 20), nummer: v.text(f?.nummer, 30) }))
-        .filter((f) => f.nummer || f.gemarkung)
-    : basis.flurstuecke || [];
+  // Fachprüfung Flächen: Flurstücke je Land mit Formatprüfung (422), strukturierte Fachangaben `fach`
+  const { flurstuecke, fach } = flaecheFachDaten(daten, basis, land);
   return {
     bezeichnung: v.text(daten.bezeichnung, 120),
     land,
@@ -626,7 +636,8 @@ function flaecheDaten(daten, basis = {}) {
     ha: v.zahl(daten.ha, { min: 0.01, max: 100000, stellen: 2 }),
     nutzung: v.auswahl(daten.nutzung, FLAECHE_NUTZUNG, "acker"),
     agri: v.wahr(daten.agri),
-    eigentum: v.auswahl(daten.eigentum, ["eigentum", "miteigentum", "verwaltung"], "eigentum"),
+    eigentum: v.auswahl(daten.eigentum, EIGENTUM_IDS, "eigentum"),
+    fach,
     hinweise: v.mehrzeilig(daten.hinweise, 3000),
   };
 }
@@ -741,6 +752,7 @@ function projektDaten(daten, basis = {}) {
       verguetung: v.text(vt.verguetung, 200),
       details: v.mehrzeilig(vt.details, 3000),
     },
+    datenblatt: datenblattBereinigen(daten.datenblatt, basis.datenblatt), // Fachprüfung Kapitalseite: Standard-Projektdatenblatt (vertraulich)
   };
 }
 
@@ -780,6 +792,7 @@ export async function projekte(n, { alle = false, status } = {}) {
 
 export async function projekt(n, id) {
   if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
+  await fachBereit(); // Fachprüfung Kapitalseite
   const db = await lesen();
   const p = objekt(db, "projekt", id);
   if (!p) throw nichtGefunden("Projekt nicht gefunden.");
@@ -889,6 +902,7 @@ export async function boerse(n, filter = {}) {
 }
 
 export async function boerseDetail(n, schluessel, { zaehlen = false } = {}) {
+  await fachBereit(); // Fachprüfung Kapitalseite
   const s = String(schluessel || "");
   const finden = (db) => db.projekte.find((p) => p.slug === s || p.id === s);
   let db = await lesen();
@@ -914,6 +928,8 @@ export async function boerseDetail(n, schluessel, { zaehlen = false } = {}) {
   const out = { projekt: boerseEintrag(db, p, n), zugriff, interesse, vertraulich: null, dokumente: [] };
   if (zugriff !== "oeffentlich") {
     out.vertraulich = projektVertraulich(p);
+    out.datenblatt = p.datenblatt || {}; // Fachprüfung Kapitalseite: Datenblatt + Due-Diligence-Index nur nach NDA
+    out.ddIndex = ddIndex(p, checklisteProjekt(p, projektDokumente(db, p)));
     out.dokumente = db.dokumente
       .filter((d) => d.bezugArt === "projekt" && d.bezugId === p.id && (zugriff !== "nda" || (d.kategorie === "datenraum" && datenraumStufeOk(db, d, interesse))))
       .map(dokumentMeta);
@@ -1017,14 +1033,13 @@ function uebergangAnwenden(db, n, art, o, nach, als, extra = {}, ip = "") {
   const von = o.status;
   const kommentar = v.mehrzeilig(extra.grund || extra.kommentar || "", 1000);
 
+  kycUebergangPruefen(db, art, o, nach); // KYC/KYB: NDA-Freigabe, LOI, Veröffentlichung nur verifiziert (409 „kyc“)
+  bonitaetUebergangPruefen(db, art, o, nach); // Dienste: LOI nur mit gültiger Bonitätsauskunft, wenn Pflicht (409 „bonitaet“)
   // Nebenwirkungen vor dem Wechsel (Validierung)
   if (extra.grund) o.ablehnGrund = kommentar;
   if (art === "flaeche" && nach === "pachtangebot") {
-    const pa = extra.pachtangebot || {};
-    const euro = v.zahl(pa.euroProHaJahr, { min: 50, max: 50000 });
-    const jahre = v.zahl(pa.laufzeitJahre, { min: 1, max: 60 });
-    v.pflicht(euro !== null && jahre !== null, "Pachtangebot: Pacht je ha und Laufzeit angeben.");
-    o.pachtangebot = { euroProHaJahr: euro, laufzeitJahre: jahre, verlaengerung: v.text(pa.verlaengerung, 80), text: v.mehrzeilig(pa.text, 2000), am: jetzt() };
+    // Fachprüfung Flächen: vollständiger Angebotsbogen (Modell, Indexierung, Reservierung, Rückbau, Dienstbarkeit …)
+    o.pachtangebot = pachtangebotBereinigen(extra.pachtangebot, { am: jetzt() });
   }
   if (art === "projekt" && nach === "veroeffentlicht") {
     let satz = v.zahl(extra.provisionSatz, { min: 0, max: 100 });
@@ -1034,10 +1049,14 @@ function uebergangAnwenden(db, n, art, o, nach, als, extra = {}, ip = "") {
     if (!o.veroeffentlichtAm) o.veroeffentlichtAm = jetzt();
   }
   if (art === "interesse" && nach === "loi_abgegeben") {
-    const l = extra.loi || {};
-    const t = v.mehrzeilig(l.text, 3000);
-    v.pflicht(t.length >= 10, "Bitte beschreiben Sie Ihre Absichtserklärung (mind. 10 Zeichen).");
-    o.loi = { betrag: v.zahl(l.betrag, { min: 0, max: 1e10 }), text: t, bedingungen: v.mehrzeilig(l.bedingungen, 2000), gueltigBis: v.text(l.gueltigBis, 10), am: jetzt() };
+    // Fachprüfung Kapitalseite: strukturierte LOI (Preisbasis, Struktur, Bedingungen, Exklusivität, Gültigkeit) – fach/loi.js
+    let loi;
+    try {
+      loi = loiBereinigen(extra.loi || {}, { mwp: objekt(db, "projekt", o.projektId)?.mwp });
+    } catch (e) {
+      throw e?.status === 422 && !(e instanceof PlattformFehler) ? ungueltig(e.message) : e;
+    }
+    o.loi = { ...loi, am: jetzt() };
   }
   let provision = null;
   if (art === "projekt" && nach === "verkauft") {
@@ -1131,6 +1150,7 @@ function systemWechsel(db, art, o, nach, kommentar) {
   const von = o.status;
   const erlaubt = PROZESSE[art].uebergaenge.some((u) => u.nach === nach && u.von.includes(von) && (u.wer === "system" || u.wer === "admin"));
   if (!erlaubt) return;
+  if (!kycUebergangPruefen(db, art, o, nach, { werfen: false })) return; // KYC/KYB: Systemwechsel ohne Verifizierung überspringen
   o.status = nach;
   o.statusVerlauf.push(verlaufEintrag(nach, null, "system", kommentar));
   o.geaendertAm = jetzt();
@@ -1403,7 +1423,7 @@ export async function nutzerAendern(n, id, { rollen, aktiv }) {
     const u = nutzerById(db, id);
     if (!u) throw nichtGefunden("Konto nicht gefunden.");
     if (Array.isArray(rollen)) {
-      const r = v.mehrfach(rollen, [...ROLLEN_IDS, "admin"]);
+      const r = v.mehrfach(rollen, [...ROLLEN_IDS, "admin", "gutachter", "lieferant", "bank"]); // gutachter: Projektentwicklung · lieferant: Energiebeschaffung · bank: Finanzierung
       v.pflicht(r.length, "Mindestens eine Rolle.");
       if (u.id === n.id && !r.includes("admin")) throw konflikt("Die eigene Admin-Rolle kann nicht entfernt werden.");
       u.rollen = r;

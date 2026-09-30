@@ -1,3 +1,393 @@
 Plattform Flaeche,Plattform Fläche
 Plattform Aktivitaet,Plattform Aktivität
 Plattform Flurstueck,Plattform Flurstück
+Plattform Geraet,Plattform Gerät
+Plattform Geraetezugang,Plattform Gerätezugang
+Plattform Stoerungsfall,Plattform Störungsfall
+Plattform Zaehlerstand Monatswert,Plattform Zählerstand (Monatswert)
+Plattform CRM Aktivitaet,Plattform CRM-Aktivität
+Plattform Zwei Faktor,Plattform Zwei-Faktor
+Plattform KI Nutzung,Plattform KI-Nutzung
+Plattform Datenraum Eintrag,Plattform Datenraum-Eintrag
+Plattform Objekt Info,Plattform Objekt-Info
+Plattform Contracting Vertrag,Plattform Contracting-Vertrag
+Plattform Konto Rolle,Plattform Konto-Rolle
+Plattform Vorlage Version,Plattform Vorlagen-Version
+Plattform CRM Kontakt,Plattform CRM-Kontakt
+Plattform CRM Organisation,Plattform CRM-Organisation
+Plattform CRM Bezug,Plattform CRM-Bezug
+Plattform Automation Regel,Plattform Automationsregel
+Plattform Automation Lauf,Plattform Automationslauf
+Pipeline Flaechen,Pipeline Flächen
+Boerse Trichter,Börse-Trichter
+Provisionen Erwartet Realisiert,Provisionen erwartet/realisiert
+Anlagen Verfuegbarkeit,Anlagen-Verfügbarkeit
+Offene Stoerungen,Offene Störungen
+KYC Uebersicht,KYC-Übersicht
+Aktivitaeten je Mitarbeiter,Aktivitäten je Mitarbeiter
+Expose vertraulich,Exposé (vertraulich)
+Expose Teaser,Exposé-Teaser (öffentlich)
+LOI Eingang,LOI-Bestätigung
+Ereignisbericht Anlage,Störungsbericht
+Vorgangsblatt,Vorgangsübersicht
+Pacht-Vorvertrag Muster,Pacht-Vorvertrag (Muster)
+Vertraulichkeitsvereinbarung NDA,Vertraulichkeitsvereinbarung (NDA)
+eingegangen,Eingegangen
+in_pruefung,In Prüfung
+qualifiziert,Qualifiziert
+angebot,Angebot / Gespräch
+abgeschlossen,Abgeschlossen
+abgelehnt,Abgelehnt
+zurueckgezogen,Zurückgezogen
+entwurf,Entwurf
+vorpruefung,Vorprüfung
+standortanalyse,Standortanalyse
+pachtangebot,Pachtangebot
+vertrag,Vertrag
+planung,Planung
+bau,Bau
+betrieb,Betrieb
+pruefung,Prüfung
+veroeffentlicht,Veröffentlicht
+reserviert,Reserviert
+verkauft,Verkauft
+gemerkt,Gemerkt
+nda_angefragt,NDA angefragt
+nda_freigegeben,Datenraum frei
+loi_abgegeben,LOI abgegeben
+loi_angenommen,LOI angenommen
+offen,Offen
+in_rechnung,In Rechnung
+bezahlt,Bezahlt
+storniert,Storniert
+erledigt,Erledigt
+in_arbeit,In Arbeit
+behoben,Behoben
+geplant,Geplant
+abgesagt,Abgesagt
+ruhend,Außer Betrieb
+rueckbau,Rückgebaut
+aktiv,Aktiv
+gekuendigt,Gekündigt
+beendet,Beendet
+laufend,Laufend
+auswertung,Auswertung
+zuschlag,Zuschlag
+abgebrochen,Abgebrochen
+abgegeben,Abgegeben
+unterlegen,Unterlegen
+eingereicht,Eingereicht
+freigegeben,Freigegeben
+beantwortet,Beantwortet
+angenommen,Angenommen
+widerrufen,Widerrufen
+ersetzt,Ersetzt
+ausgefuehrt,Ausgeführt
+teilweise,Teilweise
+nicht_erfuellt,Bedingung nicht erfüllt
+schleife,Schleifenschutz
+gedrosselt,Gedrosselt
+testlauf,Testlauf
+flaeche,Fläche
+agri,Agri-PV
+investor,Investor
+projekt,Projekt
+reststrom,Reststrom-Pool
+energiegemeinschaft,Energiegemeinschaft
+genossenschaft,Genossenschaft
+kommune,Kommune
+carport,Solarcarport
+speicher,Speicher
+kontakt,Allgemeine Anfrage
+freiflaeche,Freiflächen-PV
+hybrid,PV mit Speicher
+dach,Dach
+acker,Acker
+gruenland,Grünland
+konversion,Konversionsfläche
+gewerbe,Gewerbe
+sonstige,Sonstige
+sonstiges,Sonstiges
+eigentum,Alleineigentum
+miteigentum,Miteigentum
+verwaltung,Verwaltung / Vollmacht
+angefragt,Angefragt
+zusage,Zusage
+vorhanden,Vorhanden
+gesamt,Gesamtpreis
+proKwp,Preis je kWp
+aufstellung,Aufstellungsbeschluss
+satzung,Baurecht
+rtb,Baureif (RTB)
+cod,In Betrieb (COD)
+netz,Netz
+vorgang,Vorgang
+interesse,Interesse
+nutzer,Allgemein
+provision,Provision
+allgemein,Allgemein
+datenraum,Datenraum
+plan,Plan
+anruf,Anruf
+termin,Termin
+notiz,Notiz
+nachricht,Nachricht
+aufgabe,Aufgabe
+suchprofil,Suchprofil
+nda,NDA
+sicherheit,Sicherheit
+anfrage,Anfrage
+manuell,Manuell
+wechselrichter,Wechselrichter
+zaehler,Zähler
+datenlogger,Datenlogger / Gateway
+modul,PV-Module
+erzeugung,Erzeugung
+zweirichtung,Zweirichtung
+verbrauch,Verbrauch
+geeicht,Geeicht
+monitoring,Monitoring
+industrie,Industrie
+landwirtschaft,Landwirtschaft
+keins,Kein Verbrauch vor Ort
+inspektion,Inspektion
+reinigung,Modulreinigung
+thermografie,Thermografie
+reparatur,Reparatur / Tausch
+software,Firmware-Update
+niedrig,Niedrig
+mittel,Mittel
+hoch,Hoch
+kritisch,Kritisch
+offline,Keine Daten (offline)
+minderleistung,Minderleistung
+fehlercode,Fehlercode
+zaehler_rueckwaerts,Zählerstand rückwärts
+zaehler_sprung,Unplausibler Zählersprung
+indikativ,Indikativ
+verbindlich,Verbindlich
+inhaber,Inhaber
+mitglied,Mitglied
+lesen,Nur lesen
+eigentuemer,Eigentümer
+investmenthaus,Investmenthaus
+projektentwickler,Projektentwickler
+stadtwerk,Stadtwerk / Kommune
+bank,Bank
+behoerde,Behörde
+entwickler,Entwickler
+gemeinde,Gemeinde
+gutachter,Gutachter
+netzbetreiber,Netzbetreiber
+unternehmen,Unternehmen
+verband,Verband
+kaufmaennisch,Kaufmännisch
+rechtlich,Rechtlich
+technisch,Technisch
+technik,Technik
+ertrag,Ertrag
+finanzen,Finanzen
+vertraege,Verträge
+beobachten,Beobachten
+verhandlung,Verhandlung
+gewonnen,Gewonnen
+verloren,Verloren
+ansehen,Ansehen
+download,Download
+expose,Exposé
+frage,Frage
+triage,Anfrage-Zusammenfassung
+email_neu,E-Mail ändern
+magic,Anmelde-Link
+nicht_erforderlich,Nicht erforderlich
+vorbereitung,In Vorbereitung
+beantragt,Beantragt
+eingetragen,Eingetragen
+fest,Festpreis
+prozent,Prozentuale Anpassung
+vpi,Verbraucherpreisindex (VPI)
+strompreis,Strompreisindex
+kaufoption,Kaufoption
+uebergang,Übergang an den Kunden
+verlaengerung,Verlängerung
+Plattform Entwicklung Rueckfrage,Plattform Entwicklung Rückfrage
+Plattform Projektflaeche,Plattform Projektfläche
+pausiert,Pausiert
+boerse,An Börse übergeben
+eeg,Förderung (EEG/EAG/Pronovo)
+ppa,PPA
+merchant,Merchant
+gutachten,Gutachten
+genehmigung,Genehmigung
+vermarktung,Vermarktung
+finanzierung,Finanzierung
+entfaellt,Entfällt
+natur,Natur- und Artenschutz
+akzeptanz,Akzeptanz
+markt,Markt
+mitigiert,Gemindert
+eingetreten,Eingetreten
+geschlossen,Geschlossen
+go,Go / Freigabe
+nogo,Stopp / No-Go
+budget,Budget
+strategie,Strategie
+recht,Recht
+gebuehren,Gebühren
+personal,Eigenleistung
+erpnext,ERPNext
+demo,Demo
+option,Optionsvertrag
+pachtvertrag,Pachtvertrag
+bauamt,Bauamt
+naturschutz,Naturschutzbehörde
+landratsamt,Landratsamt / Bezirk / Kanton
+planer,Planungsbüro
+oebuv,Öffentlich bestellt und vereidigt
+zertifiziert,Zertifiziert / akkreditiert
+kammer,Kammermitglied
+fachbuero,Fachbüro
+Plattform Pachtvertrag,Pachtvertrag
+Plattform Abrechnung,Abrechnung (Gutschrift/Rechnung)
+Plattform Klaerfall,Klärfall Abrechnung
+Plattform Zahlungslauf,Zahlungslauf (SEPA)
+Plattform Abrechnungslauf,Abrechnungslauf
+Plattform VPI Wert,Indexwert (VPI)
+Plattform Anlagen Aktivierung,Anlagen-Aktivierung (AfA)
+Plattform Kostentraeger,Kostenträger
+Plattform Projektkosten,Projektkosten
+Plattform Finanzen Einstellungen,Finanzeinstellungen
+VPI-AT-2020,VPI 2020 (Österreich)
+VPI-DE-2020,VPI 2020 (Deutschland)
+LIK-CH-2020,LIK Dez. 2020 (Schweiz)
+abrechnung,Abrechnungen & Zahlungen
+angewiesen,Zahlung angewiesen
+gutschrift,Gutschrift
+vorschuessig,im Voraus (vorschüssig)
+nachschuessig,im Nachhinein (nachschüssig)
+halbjaehrlich,halbjährlich
+quartalsweise,vierteljährlich
+indexiert,Indexierte Pacht
+umsatz,Umsatzbeteiligung
+Plattform Marktpreis Spot,Marktpreis Spot (Day-Ahead)
+Plattform Marktpreis Termin,Marktpreis Termin
+Plattform Energie Vertrag,Stromvertrag
+Plattform Ausschreibung,Ausschreibung Strom
+Plattform Ausschreibungsrunde,Ausschreibungsrunde
+Plattform Lieferantenangebot,Angebot Versorger
+Plattform Lieferant,Energieversorger
+Plattform Lieferant Einladung,Einladung Versorger
+Plattform Beschaffungstranche,Beschaffungstranche
+Plattform Wechselanalyse,Wechselanalyse
+Plattform Beschaffungsvollmacht,Beschaffungsvollmacht
+Plattform Energie Einstellungen,Einstellungen Energiebeschaffung
+ausschreiben,Jetzt ausschreiben
+abwarten,Abwarten
+verlaengern,Verlängern
+pruefen,Daten ergänzen
+base,Base
+peak,Peak
+fix,Festpreis
+tranchen,Tranchenmodell
+spot,Spot-Index
+energie,nur Energie
+einschicht,Einschicht
+zweischicht,Zweischicht
+dreischicht,Dreischicht
+handel,Handel & Büro
+neu,Neu
+kunde,Kunde
+freigabe,Wartet auf Kundenfreigabe
+rang,Eigener Rang
+abstand,Abstand zum Bestpreis
+bestpreis,Bestpreis nennen
+aus,Kein Hinweis
+keine,Keine
+vorauszahlung,Vorauszahlung
+buergschaft,Bankbürgschaft
+garantie,Konzerngarantie
+kaution,Kaution
+erteilt,Erteilt
+gesperrt,Gesperrt
+ÖkoInvest Energie,ÖkoInvest Energie
+Plattform Covenant Pruefung,Plattform Covenant-Prüfung
+Plattform Foerderprogramm,Plattform Förderprogramm
+skulptiert,skulptiert (nach DSCR)
+ek,100 % Eigenkapital
+annuitaet,Annuität
+foerder,Förderkredit
+leasing,Leasing
+mietkauf,Mietkauf
+misch,Mischform
+geschaeftsbank,Geschäftsbank
+foerderbank,Förderbank
+sparkasse,Sparkasse
+inaktiv,Inaktiv
+termsheets,Term Sheets liegen vor
+entschieden,Bank ausgewählt
+auszahlung,Ausgezahlt / Betrieb
+frei,Ohne Bezug
+entwicklung,Entwicklungsprojekt
+anlage,Anlage
+grau,Keine Daten
+gruen,Grün
+gelb,Gelb
+rot,Rot
+verkauf,Build-to-Sell (Verkauf)
+eigenbetrieb,Eigenbetrieb
+contracting,Contracting
+verpachtung,Verpachtung
+termsheet,Term Sheet erhalten
+ausgewaehlt,Ausgewählt
+nicht_ausgewaehlt,Nicht ausgewählt
+backoffice,Backoffice
+euribor3,EURIBOR 3M
+euribor6,EURIBOR 6M
+saron,SARON
+linear,Linear
+endfaellig,Endfällig
+ertragsgutachten,Ertragsgutachten
+pacht,Pacht/Dienstbarkeit
+epc,EPC-Vertrag
+om,O&M-Vertrag
+erloes,Erlösvertrag
+versicherung,Versicherung
+gesellschaft,Gesellschaftsunterlagen
+kyb,KYB
+kredit,Förderkredit
+zuschuss,Investitionszuschuss
+marktpraemie,Marktprämie / Vergütung
+steuer,Steuerliche Förderung
+Finanzierungsvergleich,Finanzierungsvergleich
+Bank Reporting Covenants,Bank-Reporting (Covenants)
+Plattform Grundbuch Vorgang,Grundbuch-Akte
+Plattform Grundbuch Schritt,Grundbuch-Schritt
+Plattform Closing,Closing-Raum
+Plattform Closing Bedingung,Closing-Bedingung
+Offene Grundbuch Eintragungen,Offene Grundbuch-Eintragungen
+Dienstbarkeitsvertrag Freiflaeche Muster,Dienstbarkeitsvertrag Freifläche (Muster)
+Dachnutzungsvertrag Servitut Muster,Dachnutzungs- und Servitutsvertrag (Muster)
+Rangruecktritt Ersuchen Muster,Ersuchen um Rangrücktritt (Muster)
+Loeschungsbewilligung Hinweis Muster,Hinweis Löschungsbewilligung (Muster)
+Kaufvertrag SPA Muster,Kaufvertrag SPA (Muster)
+Closing Abschlussbericht,Closing-Abschlussbericht
+unterschrift,Zur Unterschrift
+beglaubigung,Beglaubigung / Notar
+bpd,Beschränkte persönliche Dienstbarkeit
+grunddienstbarkeit,Grunddienstbarkeit
+servitut,Servitut
+superaedifikat,Servitut + Superädifikat
+dienstbarkeit,Dienstbarkeit
+baurecht,Baurecht
+signing,Signed – Bedingungen offen
+vollzogen,Closing vollzogen
+asset,Asset Deal
+share,Share Deal
+gemeldet,Als erfüllt gemeldet
+erfuellt,Erfüllt
+verzichtet,Verzichtet
+kaeufer,Käufer
+verkaeufer,Verkäufer
+oekoinvest,ÖkoInvest
+notar,Notar/Treuhänder
+dritte,Dritte

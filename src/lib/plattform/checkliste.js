@@ -8,6 +8,7 @@
 // Client- und serverseitig nutzbar (keine Node-Importe).
 
 import { PHASEN } from "@/lib/invest/markt";
+import { datenblattVollstaendigkeit } from "./fach/datenblatt"; // Fachprüfung Kapitalseite
 
 const PHASE_IDX = (id) => Math.max(0, PHASEN.findIndex((p) => p.id === id));
 
@@ -56,6 +57,12 @@ function belege(dokumente, id) {
   return (dokumente || []).filter((d) => d.checkliste === id).map((d) => ({ id: d.id, name: d.name, am: d.am }));
 }
 
+/**
+ * Gewichtung der Datenraum-Qualität (Fachprüfung Kapitalseite): Pflichtunterlagen 70 %, Vollständigkeit des
+ * Standard-Projektdatenblatts (fach/datenblatt.js, phasenabhängig) 30 %. Frappe: checkliste.py (identisch).
+ */
+export const QUALITAET_GEWICHT = { unterlagen: 0.7, datenblatt: 0.3 };
+
 /** Checkliste eines Projekts; `dokumente` = Metadaten mit Feld `checkliste` */
 export function checklisteProjekt(p, dokumente = []) {
   const phase = PHASE_IDX(p?.phase);
@@ -72,7 +79,13 @@ export function checklisteProjekt(p, dokumente = []) {
       dokumente: d,
     };
   });
-  return auswerten(punkte);
+  const out = auswerten(punkte);
+  // Fachprüfung Kapitalseite: Datenblatt fließt in die Datenraum-Qualität ein
+  const db = datenblattVollstaendigkeit(p);
+  out.quoteUnterlagen = out.quote;
+  out.datenblatt = { quote: db.quote, erwartet: db.erwartet, erfuellt: db.erfuellt, bereiche: db.bereiche };
+  out.quote = Math.round(out.quoteUnterlagen * QUALITAET_GEWICHT.unterlagen + db.quote * QUALITAET_GEWICHT.datenblatt);
+  return out;
 }
 
 /** Checkliste einer Fläche */

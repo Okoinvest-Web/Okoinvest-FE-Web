@@ -1,0 +1,31 @@
+{#- ÖkoInvest – Abschlussbericht einer Transaktion (Plattform Closing). -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set x = oekoinvest_closing(doc.name) -%}
+{%- set c = x.c -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Closing · Abschlussbericht</div>
+	<div class="oi-titel">{{ (x.projekt.titel or doc.projekt_id) | e }}</div>
+	<div class="oi-untertitel">Closing-Akte {{ doc.name }} · {{ x.struktur_label }} · {{ x.status_label }}</div>
+</div>
+<span class="oi-vertraulich">Vertraulich</span>
+<div class="oi-abschnitt">Eckdaten</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Verkäufer</td><td>{{ x.verkaeufer.anzeige | e }}</td></tr>
+	<tr><td class="oi-feld">Käufer</td><td>{{ x.kaeufer.anzeige | e }}</td></tr>
+	<tr><td class="oi-feld">Kaufpreis</td><td>{{ oekoinvest_eur(doc.kaufpreis) }}</td></tr>
+	<tr><td class="oi-feld">Signing</td><td>{{ oekoinvest_datum(doc.signing_am) }}</td></tr>
+	<tr><td class="oi-feld">Notartermin</td><td>{{ oekoinvest_datum(doc.notar_termin, True) }}</td></tr>
+	<tr><td class="oi-feld">Zahlungseingang</td><td>{{ oekoinvest_datum(doc.zahlung_eingang_am) }}</td></tr>
+	<tr><td class="oi-feld">Closing</td><td>{{ oekoinvest_datum(doc.vollzogen_am) }}</td></tr>
+	<tr><td class="oi-feld">Provision</td><td>{% if x.provision %}{{ oekoinvest_eur(x.provision.betrag) }} ({{ oekoinvest_prozent(x.provision.satz) }}) – {{ x.provision.status }}{% else %}–{% endif %}</td></tr>
+	<tr><td class="oi-feld">Provisionsrechnung</td><td>{% if x.rechnung %}{{ x.rechnung.nummer }} ({{ x.rechnung.status }}){% else %}–{% endif %}</td></tr>
+</table>
+<div class="oi-abschnitt">Signing-Checkliste</div>
+<table class="oi-tabelle"><tr><th>Punkt</th><th>Erledigt</th></tr>{% for s in x.signing %}<tr><td>{{ s.label | e }}</td><td>{{ "ja" if s.erledigt else "nein" }}</td></tr>{% endfor %}</table>
+<div class="oi-abschnitt">Closing Conditions</div>
+<table class="oi-tabelle"><tr><th>Bedingung</th><th>Status</th><th>Nachweis</th><th>Am</th></tr>{% for b in c.cps %}<tr><td>{{ b.label | e }}</td><td>{{ x.cp_status[b.status].label }}</td><td>{{ b.nachweis | e }}</td><td>{{ oekoinvest_datum(b.erfuelltAm) }}</td></tr>{% endfor %}</table>
+<div class="oi-abschnitt">Übergabe</div>
+<table class="oi-tabelle"><tr><th>Punkt</th><th>Erledigt</th></tr>{% for u in x.uebergabe %}<tr><td>{{ u.label | e }}</td><td>{{ "ja" if u.erledigt else "offen" }}</td></tr>{% endfor %}</table>
+<p class="oi-klein">{{ x.hinweis | e }}</p>
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · erstellt {{ oekoinvest_datum(frappe.utils.nowdate()) }}</div>

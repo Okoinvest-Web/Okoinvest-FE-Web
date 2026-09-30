@@ -19,6 +19,9 @@ import { VERTRAULICH_FELDER } from "@/lib/plattform/oeffentlich";
 import { datumZeit, eur, mwp, preisText, prozent } from "@/lib/plattform/format";
 import { fmt } from "@/lib/rechner/annahmen";
 import { phaseById, PROVISION } from "@/lib/invest/markt";
+import { DatenblattAnzeige, DdIndexKarte } from "@/components/Portal/Fach/DdIndex"; // Fachprüfung Kapitalseite
+import { PruefHinweise } from "@/components/Portal/Fach/DatenblattFormular";
+import { datenblattPruefen, ddIndex } from "@/lib/plattform/fach/datenblatt";
 
 export const metadata = { title: "Projekt" };
 
@@ -74,7 +77,7 @@ export default async function Projekt({ params, searchParams }) {
       </Karte>
 
       {bearbeiten ? (
-        <Karte titel="Projekt bearbeiten" untertitel="Fünf Schritte – jeder wird gespeichert">
+        <Karte titel="Projekt bearbeiten" untertitel="Sechs Schritte – jeder wird gespeichert">
           <ProjektFormular projekt={p} schrittStart={schritt} />
         </Karte>
       ) : (
@@ -111,6 +114,7 @@ export default async function Projekt({ params, searchParams }) {
               {!Object.values(p.vertraulich || {}).some(Boolean) && <p className="text-[14px] text-ink-500">Keine vertraulichen Angaben hinterlegt.</p>}
             </Karte>
           )}
+          {!bearbeiten && <DatenblattAnzeige projekt={p} untertitel="So sehen Investoren Ihr Datenblatt nach NDA-Freigabe" />}
           <Karte titel="Nachrichten" untertitel="Abstimmung mit dem Backoffice zu diesem Projekt">
             <NachrichtenThread bezugArt="projekt" bezugId={p.id} nachrichten={thread.nachrichten} />
           </Karte>
@@ -126,11 +130,21 @@ export default async function Projekt({ params, searchParams }) {
               </div>
             )}
             {eigen && !bearbeiten && <StatusAktionen art="projekt" id={p.id} status={p.status} als="eigentuemer" leerText={admin ? undefined : "Aktuell ist nichts von Ihnen zu tun."} />}
-            {eigen && bearbeiten && <p className="text-[14px] text-ink-600">Vervollständigen Sie die fünf Schritte und reichen Sie das Projekt im letzten Schritt ein.</p>}
+            {eigen && bearbeiten && <p className="text-[14px] text-ink-600">Vervollständigen Sie die sechs Schritte (inkl. Projektdatenblatt) und reichen Sie das Projekt im letzten Schritt ein.</p>}
             {admin && <StatusAktionen art="projekt" id={p.id} status={p.status} als="admin" kontext={{ interessenten }} className={eigen ? "mt-4" : ""} leerText="Keine weiteren Schritte vorgesehen." />}
             {p.provisionSatz != null && <p className="mt-4 text-[13.5px] text-ink-600">Vereinbarter Provisionssatz: <span className="font-semibold text-ink-900">{prozent(p.provisionSatz, 1)}</span> ({PROVISION.verkaeufer.text})</p>}
           </Karte>
 
+          {/* Fachprüfung Kapitalseite: Due-Diligence-Sicht und Plausibilität – was Investoren prüfen werden */}
+          <DdIndexKarte index={ddIndex(p, p.checkliste)} titel="Due-Diligence-Sicht" untertitel="So bewerten Investoren die Vollständigkeit Ihrer Angaben und Unterlagen" kompakt />
+          {(() => {
+            const h = datenblattPruefen(p);
+            return h.length ? (
+              <Karte titel="Plausibilitätsprüfung Datenblatt" untertitel={eigen && bearbeiten ? "Im Schritt „Datenblatt“ korrigieren" : "Hinweise für Rückfragen"}>
+                <PruefHinweise hinweise={h} />
+              </Karte>
+            ) : null;
+          })()}
           {p.provision && (
             <Karte titel="Abschluss & Provision">
               <Angaben

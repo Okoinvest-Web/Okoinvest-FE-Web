@@ -1,0 +1,57 @@
+{#- ÖkoInvest – Projektsteckbrief (Plattform Entwicklungsprojekt): Eckdaten, Pipeline-Wert, Flächen, Meilensteine mit kritischem Pfad und Verzug, wesentliche Risiken. Intern. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set d = oekoinvest_entwicklung(doc.name) -%}
+{%- set k = d.kennzahlen or {} -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Projektentwicklung · Projektsteckbrief · intern</div>
+	<div class="oi-titel">{{ doc.titel | e }}</div>
+	<div class="oi-untertitel">{{ doc.name }} · {{ d.typ }} · {{ doc.gemeinde | e }}{% if doc.gemeinde %}, {% endif %}{{ doc.bundesland | e }} ({{ oekoinvest_label("land", doc.land) }}) · {{ d.status }}</div>
+</div>
+
+<table class="oi-kacheln"><tr>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_zahl(doc.mwp, 1) }}</div><div class="oi-bez">{{ "MW" if doc.typ == "speicher" else "MWp" }}{% if doc.mwh %} · {{ oekoinvest_zahl(doc.mwh, 0) }} MWh{% endif %}</div></td>
+	<td class="oi-kachel"><div class="oi-wert" style="font-size:11pt">{{ k.phaseLabel }}</div><div class="oi-bez">Phase · {{ k.fortschritt }} % erledigt</div></td>
+	<td class="oi-kachel"><div class="oi-wert">{{ oekoinvest_eur(k.pipeline.wert if k.pipeline else 0) }}</div><div class="oi-bez">Pipeline-Wert ({{ ((k.pipeline.wahrscheinlichkeit if k.pipeline else 0) * 100) | round | int }} %)</div></td>
+	<td class="oi-kachel"><div class="oi-wert" style="font-size:11pt">{{ oekoinvest_datum(k.prognoseCod) }}</div><div class="oi-bez">COD Prognose · Ziel {{ doc.ziel_cod or "–" }}</div></td>
+</tr></table>
+
+<div class="oi-abschnitt">Eckdaten</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Projektleitung</td><td>{{ d.projektleitung or "–" }}</td></tr>
+	<tr><td class="oi-feld">Vermarktung</td><td>{{ d.vermarktung }}</td></tr>
+	<tr><td class="oi-feld">Netzverknüpfungspunkt</td><td>{{ (doc.nvp or "–") | e }}{% if doc.netzbetreiber %} · {{ doc.netzbetreiber | e }}{% endif %}</td></tr>
+	<tr><td class="oi-feld">Fläche</td><td>{{ oekoinvest_zahl(k.flaecheGesichertHa, 1) }} von {{ oekoinvest_zahl(k.flaecheHa, 1) }} ha gesichert</td></tr>
+	<tr><td class="oi-feld">Budget Ist / Plan</td><td>{{ oekoinvest_eur(k.budgetIst) }} / {{ oekoinvest_eur(k.budgetPlan) }}</td></tr>
+	{% if k.meilensteine and k.meilensteine.ueberfaellig %}<tr><td class="oi-feld">Verzug</td><td><span class="oi-badge oi-rot">{{ k.meilensteine.ueberfaellig }} überfällig, davon {{ k.meilensteine.kritischUeberfaellig }} auf dem kritischen Pfad</span></td></tr>{% endif %}
+</table>
+{% if doc.beschreibung %}<p class="oi-text">{{ doc.beschreibung | e }}</p>{% endif %}
+
+{% if d.flaechen %}
+<div class="oi-abschnitt">Flächen</div>
+<table class="oi-tabelle">
+	<tr><th>Fläche</th><th class="oi-zahl">ha</th><th>Pachtstatus</th></tr>
+	{% for x in d.flaechen %}<tr><td>{{ x.bezeichnung | e }}</td><td class="oi-zahl">{{ oekoinvest_zahl(x.ha, 1) }}</td><td>{{ d.pacht_labels.get(x.pacht_status, x.pacht_status) }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+
+<div class="oi-abschnitt">Meilensteine</div>
+<table class="oi-tabelle">
+	<tr><th>Meilenstein</th><th>Soll-Ende</th><th>Ist-Ende</th><th>Status</th></tr>
+	{% for m in d.meilensteine %}<tr>
+		<td>{% if m.kritisch %}<strong>{{ m.titel | e }}</strong> <span class="oi-badge oi-navy">kritisch</span>{% else %}{{ m.titel | e }}{% endif %}</td>
+		<td>{{ oekoinvest_datum(m.sollEnde) }}</td>
+		<td>{{ oekoinvest_datum(m.istEnde) if m.istEnde else "–" }}</td>
+		<td>{% if m.ueberfaellig %}<span class="oi-badge oi-rot">überfällig ({{ m.verzugTage }} T.)</span>{% else %}{{ m.statusLabel }}{% endif %}</td>
+	</tr>{% endfor %}
+</table>
+
+<div class="oi-abschnitt">Wesentliche Risiken</div>
+{% if d.risiken %}
+<table class="oi-tabelle">
+	<tr><th class="oi-zahl">Score</th><th>Risiko</th><th>Maßnahme</th></tr>
+	{% for r in d.risiken[:8] %}<tr><td class="oi-zahl"><span class="oi-badge {{ 'oi-rot' if r.score >= 15 else ('oi-gelb' if r.score >= 8 else '') }}">{{ r.score }}</span></td><td>{{ r.titel | e }}</td><td>{{ (r.massnahme or "–") | e }}</td></tr>{% endfor %}
+</table>
+{% else %}<p class="oi-klein">Keine offenen Risiken.</p>{% endif %}
+<div class="oi-hinweis">Pipeline-Wert = MWp × 1000 × Mitte der Preisspanne der Phase (€/kWp) × Wahrscheinlichkeit – interne Planannahme, keine Bewertung.</div>
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · Stand {{ oekoinvest_datum(frappe.utils.now_datetime(), true) }} · vertraulich, nur für den internen Gebrauch</div>

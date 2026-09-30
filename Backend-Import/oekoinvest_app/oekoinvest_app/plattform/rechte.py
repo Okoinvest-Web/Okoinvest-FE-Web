@@ -7,13 +7,20 @@
 
 import frappe
 
-BACKOFFICE_ROLLEN = ["leitung", "akquise", "transaktion", "buchhaltung", "lesen", "betrieb"]  # betrieb: Anlagen & Monitoring
+BACKOFFICE_ROLLEN = ["leitung", "akquise", "transaktion", "buchhaltung", "lesen", "betrieb", "compliance"]  # betrieb: Anlagen & Monitoring, compliance: KYC/KYB
 
 BEREICHE = {
 	"cockpit": "Cockpit", "vorgaenge": "Vorgänge", "flaechen": "Flächen", "akquise": "Akquise & Gebiete", "projekte": "Projekte",
 	"interessen": "NDA & LOI", "provisionen": "Provisionen", "aufgaben": "Aufgaben", "crm": "CRM", "vorlagen": "Vorlagen",
 	"automationen": "Automationen", "berichte": "Berichte", "export": "CSV-Export", "postausgang": "Postausgang", "nutzer": "Nutzer",
-	"protokoll": "Protokoll", "rechte": "Rechte", "anlagen": "Anlagen & Monitoring", "sonstiges": "Weitere Admin-Funktionen",
+	"protokoll": "Protokoll", "rechte": "Rechte", "anlagen": "Anlagen & Monitoring", "compliance": "Compliance (KYC/KYB)", "sonstiges": "Weitere Admin-Funktionen",
+	"finanzen": "Finanzen & Abrechnung",  # ERPNext-Finanzen & Abrechnung
+	"finanzierung": "Finanzierung & Banken",  # Bankfinanzierung Eigenbetrieb, Covenants, Geschäftsmodell
+	"entwicklung": "Projektentwicklung",  # Projektentwicklung
+	"gesellschaften": "Gesellschaften & SPV-Gründung", "bonitaet": "Bonitätsauskünfte", "register": "Registerauskünfte",  # Dienste
+	"grundbuch": "Grundbuch & Dienstbarkeiten", "closing": "Deal-Abschluss (Closing)",  # Grundbuch & Closing
+	"geodaten": "Geodaten & Akquise-Karte",  # Geodaten & Akquise-Engine
+	"signatur": "Elektronische Unterschrift", "kalender": "Termine & Kalender", "support": "Service & Support", "team": "Team & HR", "wissen": "Wissensdatenbank",  # Signatur, Termine, Service & HR
 }
 
 # Spalten: leitung, akquise, transaktion, buchhaltung, lesen
@@ -36,6 +43,24 @@ _M = {
 	"protokoll": [2, 1, 1, 1, 1],
 	"rechte": [2, 0, 0, 0, 0],
 	"anlagen": [2, 0, 0, 1, 1],  # Anlagen & Monitoring
+	"compliance": [1, 0, 0, 0, 0],  # KYC/KYB: Leitung nur Warteschlange/Status, Unterlagen nur Unterrolle „compliance“
+	"entwicklung": [2, 1, 1, 1, 1],  # Projektentwicklung (übrige Unterrollen lesen)
+	"finanzen": [2, 0, 1, 2, 1],  # ERPNext-Finanzen & Abrechnung (rechte.js: zusätzlich Projektleitung lesen)
+	"finanzierung": [2, 0, 2, 2, 1],  # Bankfinanzierung (wie rechte.js): Leitung/Transaktion/Buchhaltung schreiben, Lesen lesen; Entscheidung nur Leitung
+	# Dienste – alle 8 Spalten (leitung, akquise, transaktion, buchhaltung, lesen, betrieb, compliance, projektleitung), wie rechte.js
+	"gesellschaften": [2, 0, 2, 1, 1, 0, 0, 1],
+	"bonitaet": [2, 0, 2, 0, 0, 0, 2, 0],
+	"register": [2, 1, 2, 1, 1, 0, 2, 1],
+	"geodaten": [2, 2, 0, 0, 0, 0, 0, 0],  # Geodaten & Akquise-Engine: nur Leitung und Akquise (wie rechte.js)
+	# Signatur, Termine, Service & HR – alle 8 Spalten, wie rechte.js
+	"signatur": [2, 2, 2, 1, 1, 0, 1, 1],
+	"kalender": [2, 2, 2, 1, 1, 2, 1, 2],
+	"support": [2, 1, 1, 1, 1, 2, 1, 1],
+	"team": [2, 1, 1, 1, 1, 1, 1, 1],
+	"wissen": [2, 2, 2, 2, 1, 2, 2, 2],
+	# Grundbuch & Closing – 8 Spalten (leitung, akquise, transaktion, buchhaltung, lesen, betrieb, compliance, projektleitung), wie rechte.js
+	"grundbuch": [2, 2, 2, 1, 1, 1, 0, 2],
+	"closing": [2, 0, 2, 1, 1, 0, 1, 1],
 	"sonstiges": [2, 1, 1, 1, 1],
 }
 # Anlagen & Monitoring: Spalte „betrieb“ (wie rechte.js) – Anlagen schreiben, Cockpit/Nutzer lesen, Aufgaben schreiben
@@ -43,6 +68,32 @@ _BETRIEB = {"cockpit": 1, "aufgaben": 2, "anlagen": 2, "nutzer": 1}
 for _b, _z in _M.items():
 	if len(_z) < 6:
 		_z.append(_BETRIEB.get(_b, 0))
+# KYC/KYB: Spalte „compliance“ (wie rechte.js) – Compliance schreiben, Cockpit/Nutzer/Protokoll lesen, Aufgaben schreiben
+_COMPLIANCE = {"cockpit": 1, "aufgaben": 2, "nutzer": 1, "protokoll": 1, "compliance": 2}
+for _b, _z in _M.items():
+	if len(_z) < 7:
+		_z.append(_COMPLIANCE.get(_b, 0))
+# Projektentwicklung: Spalte „projektleitung“ (wie rechte.js) – Entwicklung und CRM schreiben, Aufgaben schreiben, Kernbereiche lesen
+_PROJEKTLEITUNG = {"cockpit": 1, "aufgaben": 2, "flaechen": 1, "akquise": 1, "projekte": 1, "crm": 2, "vorlagen": 1, "berichte": 1, "nutzer": 1, "entwicklung": 2, "finanzen": 1, "finanzierung": 1}
+if "projektleitung" not in BACKOFFICE_ROLLEN:
+	BACKOFFICE_ROLLEN.append("projektleitung")
+for _b, _z in _M.items():
+	while len(_z) < len(BACKOFFICE_ROLLEN) - 1:
+		_z.append(0)
+	if len(_z) < len(BACKOFFICE_ROLLEN):
+		_z.append(_PROJEKTLEITUNG.get(_b, 0))
+# Energiebeschaffung: Bereich „energie“ (Leitung schreiben, Buchhaltung/Lesen lesen) und Spalte „energie“ (wie rechte.js)
+BEREICHE["energie"] = "Energiebeschaffung"
+_ENERGIE = {"cockpit": 1, "vorgaenge": 1, "aufgaben": 2, "crm": 2, "vorlagen": 1, "berichte": 1, "nutzer": 1, "energie": 2, "kalender": 2, "wissen": 1}
+if "energie" not in _M:
+	_M["energie"] = [2, 0, 0, 1, 1]
+if "energie" not in BACKOFFICE_ROLLEN:
+	BACKOFFICE_ROLLEN.append("energie")
+for _b, _z in _M.items():
+	while len(_z) < len(BACKOFFICE_ROLLEN) - 1:
+		_z.append(0)
+	if len(_z) < len(BACKOFFICE_ROLLEN):
+		_z.append(_ENERGIE.get(_b, 0))
 RECHTE_MATRIX = {b: dict(zip(BACKOFFICE_ROLLEN, s)) for b, s in _M.items()}
 STUFE_LABEL = ["–", "lesen", "schreiben"]
 BEREICH_FUER_ART = {"vorgang": "vorgaenge", "flaeche": "flaechen", "projekt": "projekte", "interesse": "interessen", "provision": "provisionen"}

@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-30 09:00:00.000000",
+ "description": "Runde einer Ausschreibung (Kindtabelle).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "nr",
+  "start",
+  "frist",
+  "beendet_am",
+  "eingeladen",
+  "bestpreis_regel",
+  "erinnert_am"
+ ],
+ "fields": [
+  {
+   "fieldname": "nr",
+   "fieldtype": "Int",
+   "label": "Runde",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "frist",
+   "fieldtype": "Datetime",
+   "label": "Angebotsfrist",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "beendet_am",
+   "fieldtype": "Datetime",
+   "label": "Beendet am"
+  },
+  {
+   "fieldname": "eingeladen",
+   "fieldtype": "JSON",
+   "label": "Eingeladene Versorger"
+  },
+  {
+   "fieldname": "bestpreis_regel",
+   "fieldtype": "Select",
+   "label": "Hinweis an Bieter",
+   "options": "aus\nrang\nabstand\nbestpreis",
+   "default": "aus"
+  },
+  {
+   "fieldname": "erinnert_am",
+   "fieldtype": "Datetime",
+   "label": "Erinnert am"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-30 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Ausschreibungsrunde",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "permissions": [],
+ "istable": 1,
+ "editable_grid": 1
+}

@@ -10,6 +10,7 @@ from oekoinvest_app.plattform import benachrichtigung
 from oekoinvest_app.plattform import validierung as v
 from oekoinvest_app.plattform.kern import als_json, jetzt_iso, nutzer, protokoll, verlauf
 from oekoinvest_app.plattform.konstanten import BUNDESLAENDER, FLAECHE_NUTZUNG, LAENDER, VORGANG_TYPEN
+from oekoinvest_app.plattform.flaeche_fach import fach_aus_anfrage  # Fachprüfung Flächen
 
 VERBOTENE_SCHLUESSEL = {"__proto__", "constructor", "prototype"}
 
@@ -64,6 +65,13 @@ def anlegen(typ=None, kontakt=None, daten=None, herkunft=None, ip=None, einwilli
 	v.pflicht(k["vorname"] and k["nachname"], "Bitte geben Sie Vor- und Nachnamen an.")
 	v.pflicht(k["email"], "Bitte geben Sie eine gültige E-Mail-Adresse an.")
 	d = daten_bereinigen(daten)
+	if t == "kommune":  # Fachprüfung Kommunen: Positivliste + Gemeindeschlüssel je Land
+		from oekoinvest_app.plattform.flaeche_fach import Fehler, kommune_daten
+
+		try:
+			d = {**d, **kommune_daten(daten, k["land"], k)}
+		except Fehler as e:
+			v.pflicht(False, str(e))
 	v.pflicht(len(json.dumps(d, ensure_ascii=False)) <= 20000, "Zu viele Zusatzdaten.")
 	h = daten_bereinigen(herkunft)
 	ip_ = v.text(ip, 64)
@@ -106,6 +114,7 @@ def anlegen(typ=None, kontakt=None, daten=None, herkunft=None, ip=None, einwilli
 				"nutzung": "dach" if d.get("art") == "dach" else v.auswahl(d.get("nutzung"), FLAECHE_NUTZUNG, "acker"),  # /dachflaeche-verpachten
 				"agri": 1 if t == "agri" else 0,
 				"eigentum": "eigentum",
+				"fach": als_json(fach_aus_anfrage(d)),  # Fachprüfung Flächen: z. B. Dachart aus /dachflaeche-verpachten
 				"hinweise": v.mehrzeilig(d.get("nachricht"), 2000),
 				"status": "entwurf",
 			}

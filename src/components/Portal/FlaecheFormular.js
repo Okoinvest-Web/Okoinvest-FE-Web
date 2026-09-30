@@ -4,13 +4,16 @@
 
 import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { senden } from "@/lib/plattform/client";
 import { BUNDESLAENDER, FLAECHE_NUTZUNG, LAENDER } from "@/lib/plattform/konstanten";
 import { FREIFLAECHE } from "@/lib/invest/markt";
 import { eingabe, textbereich, auswahlfeld, Feld, FehlerBox } from "./felder";
 import { FeldFehler, fehlerText, regeln, useFeldPruefung } from "./Bedienung/pruefung";
+// Fachprüfung Flächen: Flurstücke je Land, strukturierte Fachangaben, Pflichtangaben je Nutzung
+import FlurstueckeEditor, { leeresFlurstueck } from "./Flaeche/FlurstueckeEditor";
+import FachFormular from "./Flaeche/FachFormular";
+import { EIGENTUM_FORMEN, NUTZUNG_REIHENFOLGE, fachPflichtFehlt, flurstueckePruefen } from "@/lib/plattform/flaecheFach";
 
 // Inline-Validierung (Bedienung & Onboarding): verständliche Meldungen direkt am Feld
 const PRUEFUNG = {
@@ -20,7 +23,7 @@ const PRUEFUNG = {
   ha: [regeln.pflicht("Bitte eine ungefähre Größe angeben – eine Schätzung genügt."), regeln.zahl({ min: 0.01, max: 100000, einheit: "ha", was: "Die Größe" })],
 };
 
-export default function FlaecheFormular({ flaeche, agriStandard = false }) {
+export default function FlaecheFormular({ flaeche, agriStandard = false, begriffe = {} }) {
   const router = useRouter();
   const id = useId();
   const neu = !flaeche;
@@ -35,7 +38,8 @@ export default function FlaecheFormular({ flaeche, agriStandard = false }) {
     agri: flaeche?.agri ?? agriStandard,
     eigentum: flaeche?.eigentum || "eigentum",
     gemarkung: flaeche?.gemarkung || "",
-    flurstuecke: flaeche?.flurstuecke?.length ? flaeche.flurstuecke : [{ gemarkung: "", flur: "", nummer: "" }],
+    flurstuecke: flaeche?.flurstuecke?.length ? flaeche.flurstuecke.map((s) => ({ ...leeresFlurstueck(), ...s, m2: s.m2 ?? "" })) : [leeresFlurstueck()],
+    fach: flaeche?.fach || {},
     hinweise: flaeche?.hinweise || "",
   }));
   const [laeuft, setLaeuft] = useState(false);
@@ -47,7 +51,7 @@ export default function FlaecheFormular({ flaeche, agriStandard = false }) {
     setF(neu);
     pruef.aendern(k, neu);
   };
-  const setzeFlurstueck = (i, k, v) => setF((x) => ({ ...x, flurstuecke: x.flurstuecke.map((s, j) => (j === i ? { ...s, [k]: v } : s)) }));
+  const setzeFach = (bereich, feld, wert) => setF((x) => ({ ...x, fach: { ...x.fach, [bereich]: { ...(x.fach?.[bereich] || {}), [feld]: wert } } }));
 
   async function speichern(einreichen) {
     // Einreichen braucht alle Pflichtangaben, ein Entwurf nur die Bezeichnung
@@ -55,10 +59,23 @@ export default function FlaecheFormular({ flaeche, agriStandard = false }) {
       setFehler(einreichen ? "Bitte ergänzen Sie die markierten Angaben – dann können wir die Fläche prüfen." : "");
       return;
     }
+    // Flurstücksformate je Land und Pflichtangaben je Nutzung schon im Browser prüfen (Server prüft erneut)
+    const fs = flurstueckePruefen(f.flurstuecke, f.land);
+    if (fs.fehler.length) {
+      setFehler(`Flurstück ${fs.fehler[0].index + 1}: ${fs.fehler[0].text}.`);
+      return;
+    }
+    if (einreichen) {
+      const fehlt = fachPflichtFehlt({ ...f, flurstuecke: fs.flurstuecke, ha: Number(String(f.ha).replace(",", ".")) });
+      if (fehlt.length) {
+        setFehler(`Bitte ergänzen: ${fehlt.join(", ")}.`);
+        return;
+      }
+    }
     setLaeuft(true);
     setFehler("");
     try {
-      const daten = { ...f, flurstuecke: f.flurstuecke.filter((s) => s.nummer || s.gemarkung) };
+      const daten = { ...f, agri: f.nutzung === "dach" ? false : f.agri, flurstuecke: f.flurstuecke };
       if (neu) {
         const r = await senden("/api/portal/flaechen", { body: { ...daten, einreichen } });
         router.push(`/portal/flaechen/${r.flaeche.id}`);
@@ -120,49 +137,33 @@ export default function FlaecheFormular({ flaeche, agriStandard = false }) {
         </Feld>
         <Feld id={`${id}-n`} label="Aktuelle Nutzung">
           <select id={`${id}-n`} className={auswahlfeld} value={f.nutzung} onChange={(e) => setze("nutzung", e.target.value)}>
-            {Object.entries(FLAECHE_NUTZUNG).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
+            {NUTZUNG_REIHENFOLGE.filter((k) => FLAECHE_NUTZUNG[k]).map((k) => (
+              <option key={k} value={k}>{FLAECHE_NUTZUNG[k]}</option>
             ))}
           </select>
         </Feld>
         <Feld id={`${id}-e`} label="Eigentumsverhältnis">
           <select id={`${id}-e`} className={auswahlfeld} value={f.eigentum} onChange={(e) => setze("eigentum", e.target.value)}>
-            <option value="eigentum">Alleineigentum</option>
-            <option value="miteigentum">Miteigentum / Erbengemeinschaft</option>
-            <option value="verwaltung">Verwaltung für Eigentümer</option>
+            {Object.entries(EIGENTUM_FORMEN).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
           </select>
         </Feld>
-        <label className="flex items-start gap-3 self-end rounded-xl bg-sand-50 px-4 py-3 text-[14px] text-ink-700 ring-1 ring-inset ring-ink-200">
+        {f.nutzung !== "dach" && <label className="flex items-start gap-3 self-end rounded-xl bg-sand-50 px-4 py-3 text-[14px] text-ink-700 ring-1 ring-inset ring-ink-200">
           <input type="checkbox" checked={f.agri} onChange={(e) => setze("agri", e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#558227]" />
           <span>Landwirtschaftliche Nutzung soll bleiben (Agri-PV)</span>
-        </label>
+        </label>}
       </fieldset>
 
       <fieldset>
-        <legend className="mb-1 font-display text-[16px] font-bold text-ink-900">Flurstücke</legend>
-        <p className="mb-3 text-[13.5px] text-ink-500">Optional, beschleunigt aber die Vorprüfung. Angaben finden Sie im Grundbuchauszug bzw. Katasterplan.</p>
-        <div className="space-y-2">
-          {f.flurstuecke.map((s, i) => (
-            <div key={i} className="grid grid-cols-[1fr_1fr] gap-2 sm:grid-cols-[2fr_1fr_1fr_auto]">
-              <input aria-label={`Gemarkung Flurstück ${i + 1}`} placeholder="Gemarkung / KG" className={`${eingabe} col-span-2 sm:col-span-1`} value={s.gemarkung} onChange={(e) => setzeFlurstueck(i, "gemarkung", e.target.value)} />
-              <input aria-label={`Flur ${i + 1}`} placeholder="Flur" className={eingabe} value={s.flur} onChange={(e) => setzeFlurstueck(i, "flur", e.target.value)} />
-              <input aria-label={`Flurstücksnummer ${i + 1}`} placeholder="Nr." className={eingabe} value={s.nummer} onChange={(e) => setzeFlurstueck(i, "nummer", e.target.value)} />
-              <button
-                type="button"
-                onClick={() => setF((x) => ({ ...x, flurstuecke: x.flurstuecke.length > 1 ? x.flurstuecke.filter((_, j) => j !== i) : [{ gemarkung: "", flur: "", nummer: "" }] }))}
-                className="col-span-2 flex h-12 items-center justify-center rounded-xl text-ink-500 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 hover:text-ink-800 sm:col-span-1 sm:w-12"
-                aria-label={`Flurstück ${i + 1} entfernen`}
-              >
-                <Trash2 aria-hidden="true" className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
-        </div>
-        {f.flurstuecke.length < 50 && (
-          <button type="button" onClick={() => setF((x) => ({ ...x, flurstuecke: [...x.flurstuecke, { gemarkung: x.flurstuecke.at(-1)?.gemarkung || "", flur: "", nummer: "" }] }))} className="mt-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-ov-700 hover:text-ov-800">
-            <Plus aria-hidden="true" className="h-4 w-4" /> Flurstück hinzufügen
-          </button>
-        )}
+        <legend className="mb-1 font-display text-[16px] font-bold text-ink-900">{f.land === "AT" ? "Grundstücke" : f.land === "CH" ? "Parzellen" : "Flurstücke"}</legend>
+        <FlurstueckeEditor land={f.land} liste={f.flurstuecke} onChange={(liste) => setF((x) => ({ ...x, flurstuecke: liste }))} ha={f.ha} />
+      </fieldset>
+
+      <fieldset>
+        <legend className="mb-1 font-display text-[16px] font-bold text-ink-900">Fachangaben</legend>
+        <p className="mb-3 text-[13.5px] leading-relaxed text-ink-500">Je vollständiger, desto verbindlicher unsere Vorprüfung. Mit * markierte Angaben brauchen wir zum Einreichen; alles andere können Sie später ergänzen.</p>
+        <FachFormular f={f} setze={setzeFach} begriffe={begriffe} />
       </fieldset>
 
       <Feld id={`${id}-hi`} label="Hinweise" hinweis="z. B. Hofstelle, Leitungen, Wege, Pachtverhältnisse, Wünsche">

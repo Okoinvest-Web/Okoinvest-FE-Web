@@ -1,0 +1,42 @@
+{#- ÖkoInvest – Kaufvertrag (SPA/APA) MUSTER für eine Plattform Closing. Kerndaten aus Projekt und Gebot/LOI. -#}
+{%- set f = oekoinvest_firma() -%}
+{%- set x = oekoinvest_closing(doc.name) -%}
+{%- set c = x.c -%}
+{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+<div class="oi-kopf">
+	<div class="oi-ueberzeile">Closing · Muster</div>
+	<div class="oi-titel">{% if doc.struktur == "share" %}Anteilskaufvertrag (Share Purchase Agreement){% else %}Kaufvertrag über Anlage und Projektrechte (Asset Purchase Agreement){% endif %}</div>
+	<div class="oi-untertitel">{{ (x.projekt.titel or doc.projekt_id) | e }} · {{ x.struktur_label }} · Closing-Akte {{ doc.name }}</div>
+</div>
+<div class="oi-muster-stempel">MUSTER – keine Rechtsberatung. {{ x.hinweis | e }}</div>
+<div class="oi-abschnitt">Parteien</div>
+<table class="oi-daten">
+	<tr><td class="oi-feld">Verkäufer</td><td>{{ x.verkaeufer.anzeige | e }}</td></tr>
+	<tr><td class="oi-feld">Käufer</td><td>{{ x.kaeufer.anzeige | e }}</td></tr>
+	<tr><td class="oi-feld">Vermittlerin (nicht Partei)</td><td>{{ f.name }} · {{ f.fn }}</td></tr>
+</table>
+<div class="oi-abschnitt">§ 1 Kaufgegenstand</div>
+<p class="oi-absatz">{% if doc.struktur == "share" %}{{ doc.anteil_prozent or 100 }} % der Geschäftsanteile an der {{ (doc.spv_name or "[Projektgesellschaft]") | e }}, Inhaberin des Projekts „{{ x.projekt.titel | e }}“ ({{ x.projekt.mwp }} MWp).{% else %}Die Photovoltaikanlage bzw. die Projektrechte „{{ x.projekt.titel | e }}“ ({{ x.projekt.mwp }} MWp) mit Genehmigungen, Nutzungs- und Dienstbarkeitsverträgen, Netzanschlusszusage und Unterlagen gemäß Asset-Liste.{% endif %}</p>
+<div class="oi-abschnitt">§ 2 Kaufpreis und Zahlung</div>
+<p class="oi-absatz">Kaufpreis {{ oekoinvest_eur(doc.kaufpreis) }} ({{ doc.kaufpreis_quelle or "vereinbart" }}), fällig zum Closing{% if c.zahlung.treuhand %}; Zahlung über Treuhand-/Notaranderkonto – {{ x.treuhand | e }}{% endif %}.{% if doc.earn_out %} Earn-out: {{ doc.earn_out | e }}{% endif %}</p>
+{% if c.meilensteine %}<table class="oi-tabelle"><tr><th>Meilenstein</th><th class="oi-zahl">Betrag</th><th>Bedingung</th></tr>{% for m in c.meilensteine %}<tr><td>{{ m.label | e }}</td><td class="oi-zahl">{{ oekoinvest_eur(m.betrag) }}</td><td>{{ m.bedingung | e }}</td></tr>{% endfor %}</table>{% endif %}
+<div class="oi-abschnitt">§ 3 Signing und Closing</div>
+<p class="oi-absatz">Wirksam mit Unterzeichnung (Signing); dinglicher Vollzug (Closing), sobald alle aufschiebenden Bedingungen erfüllt oder verzichtet sind und der Kaufpreis gezahlt bzw. auf dem Treuhandkonto eingegangen ist. Longstop Date: [Datum].</p>
+<div class="oi-abschnitt">§ 4 Aufschiebende Bedingungen (Closing Conditions)</div>
+<table class="oi-tabelle"><tr><th>Bedingung</th><th>Verantwortlich</th><th>Frist</th></tr>{% for b in c.cps %}<tr><td>{{ b.label | e }}</td><td>{{ x.verantwortlich[b.verantwortlich] }}</td><td>{{ oekoinvest_datum(b.frist) }}</td></tr>{% endfor %}</table>
+<div class="oi-abschnitt">§ 5 Garantien (Auswahl) und Haftung</div>
+<ul>
+	<li>{% if doc.struktur == "share" %}Bestand und Lastenfreiheit der Anteile, ordnungsgemäße Gründung und Kapitalaufbringung.{% else %}Eigentum und Lastenfreiheit der Anlage bzw. Inhaberschaft der Projektrechte.{% endif %}</li>
+	<li>Nutzungsverträge wirksam und ungekündigt; Dienstbarkeiten eingetragen bzw. gesichert, Rang wie offengelegt.</li>
+	<li>Genehmigungen erteilt und bestandskräftig bzw. wie offengelegt; Netzanschluss wie offengelegt.</li>
+	<li>Keine Rechtsstreitigkeiten, keine Steuerrückstände, Datenraum vollständig (Disclosure).</li>
+</ul>
+<p class="oi-absatz">Haftung: De minimis [ ], Basket [ ], Cap [ ] % des Kaufpreises, Verjährung [ ] Monate; optional W&amp;I-Versicherung. MAC-Klausel: Rücktritt bzw. Nachverhandlung bei wesentlicher nachteiliger Veränderung bis zum Closing.</p>
+<div class="oi-abschnitt">§ 6 Form, Steuern, Prüfungen</div>
+<ul>{% for h in x.form %}<li>{{ h | e }}</li>{% endfor %}</ul>
+<div class="oi-abschnitt">§ 7 Übergabe</div>
+<ul>{% for u in x.uebergabe %}<li>{{ u.label | e }}: {{ u.text | e }}</li>{% endfor %}</ul>
+<table class="oi-unterschrift">
+	<tr><td><div style="height:34px"></div><div class="oi-linie">Ort, Datum, Unterschrift Verkäufer</div></td><td><div style="height:34px"></div><div class="oi-linie">Ort, Datum, Unterschrift Käufer</div></td></tr>
+</table>
+<div class="oi-fuss">{{ f.name }} · {{ f.strasse }} · {{ f.ort }} · {{ f.fn }} · Muster-Stand {{ oekoinvest_datum(frappe.utils.nowdate()) }}</div>

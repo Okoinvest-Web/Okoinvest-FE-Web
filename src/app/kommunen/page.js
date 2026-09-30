@@ -10,7 +10,7 @@ import Faq from "@/components/ui/Faq";
 import CtaBand from "@/components/ui/CtaBand";
 import Reveal from "@/components/ui/Reveal";
 import Querverweise from "@/components/Reusable/Querverweise";
-import AuswahlAnfrage from "@/components/Carport/AuswahlAnfrage";
+import KommuneAnfrage from "@/components/Kommune/KommuneAnfrage"; // strukturierte Anfrage (Fachprüfung Kommunen)
 import { abs, SITE } from "@/data/site";
 import { KOMMUNE, GEMEINSCHAFTEN, STAND } from "@/lib/invest/markt";
 import { rechneKommune } from "@/lib/rechner/kommune";
@@ -251,28 +251,8 @@ export default function KommunenSeite() {
             lead="Ob konkrete Fläche, Kriterienkatalog oder Stadtwerke-Beteiligung: Schildern Sie kurz Ihr Anliegen – wir melden uns mit einem Terminvorschlag."
           />
           <div className="rounded-[2rem] bg-white p-6 ring-1 ring-ink-200/70 md:p-8">
-            <AuswahlAnfrage
-              typ="kommune"
-              felder={["firma", "telefon", "plz", "ort", "land", "nachricht"]}
-              button="Gespräch anfragen"
-              gruppen={[
-                { id: "absender", legende: "Sie sind", optionen: [{ id: "gemeinde", label: "Gemeinde" }, { id: "stadtwerk", label: "Stadtwerk" }, { id: "landkreis", label: "Landkreis / Verband" }] },
-                {
-                  id: "themen",
-                  legende: "Themen",
-                  mehrfach: true,
-                  start: ["solarpark"],
-                  optionen: [
-                    { id: "solarpark", label: "Solarpark" },
-                    { id: "kriterien", label: "Kriterienkatalog" },
-                    { id: "beteiligung", label: "Bürgerbeteiligung" },
-                    { id: "carport", label: "Parkplätze" },
-                    { id: "speicher", label: "Speicher" },
-                  ],
-                },
-              ]}
-            />
-            <p className="mt-4 text-[12.5px] text-ink-500">Tipp: Im Feld „Unternehmen / Betrieb“ den Namen der Gemeinde bzw. des Stadtwerks angeben.</p>
+            <KommuneAnfrage />
+            <p className="mt-4 text-[12.5px] text-ink-500">Tipp: Im Feld „Unternehmen / Betrieb“ den Namen der Verwaltung bzw. des Stadtwerks angeben. Projektdaten aus Ihrem Gemeindegebiet zeigen wir erst nach Bestätigung der Gemeinde.</p>
           </div>
         </div>
       </Section>

@@ -11,6 +11,7 @@ import frappe
 from oekoinvest_app.plattform.konstanten import ROLLE_ANLAGEN_DIENST, ROLLE_API, ROLLE_DESK_ADMIN, ROLLEN
 
 DESK_ROLLEN = {ROLLE_DESK_ADMIN: 1, ROLLE_API: 0, ROLLE_ANLAGEN_DIENST: 0}  # Anlagen-Dienst: Ingest-Dienst (MQTT → Frappe)
+DESK_ROLLEN["ÖkoInvest Projektleitung"] = 1  # Projektentwicklung: Desk-Rolle (Entwicklungsprojekte, Meilensteine, Risiken)
 
 
 def rollen_anlegen():
@@ -75,3 +76,68 @@ def admin_konto_anlegen(email, vorname, nachname):
 	frappe.db.commit()
 	print(f"Backoffice-Konto {konto.name} ({e}) angelegt. Passwort-Link ist 24 Stunden gültig.")
 	return konto.name
+
+
+# ================================================================ Go-live: technische und Desk-Benutzer (idempotent)
+# Aufruf aus Backend-Import/installieren.sh bzw. von Hand:
+#   bench --site <site> execute oekoinvest_app.plattform.installation.technischer_benutzer_anlegen \
+#     --kwargs "{'email': 'plattform-web@<domain>', 'art': 'api'}"
+#   bench --site <site> execute oekoinvest_app.plattform.installation.desk_benutzer_anlegen \
+#     --kwargs "{'email': 'vorname.nachname@<domain>', 'vorname': 'Vorname', 'nachname': 'Nachname', 'profil': 'ÖkoInvest Leitung'}"
+# API-Schlüssel werden NICHT automatisch erzeugt (das Secret gehört nur in die Umgebung der Website bzw. des Dienstes):
+# Desk → User → „API Access“ → „Generate Keys“.
+
+TECHNISCHE_PROFILE = {"api": ("ÖkoInvest API-Benutzer", ROLLE_API, "Plattform Website"), "anlagen": ("ÖkoInvest Anlagen-Dienst", ROLLE_ANLAGEN_DIENST, "Anlagen-Dienst")}
+
+
+def _profil_setzen(user, profil):
+	if not frappe.db.exists("Role Profile", profil):
+		frappe.throw(f"Rollenprofil „{profil}“ fehlt – bitte zuerst bench migrate ausführen.")
+	user.role_profile_name = profil
+	user.set("roles", [])
+	for r in frappe.get_doc("Role Profile", profil).roles:
+		user.append("roles", {"role": r.role})
+
+
+def technischer_benutzer_anlegen(email, art="api"):
+	"""Website User mit genau einer technischen Rolle (API der Website bzw. Anlagen-Dienst), ohne Passwort-Login."""
+	from oekoinvest_app.plattform import validierung as v
+
+	if art not in TECHNISCHE_PROFILE:
+		frappe.throw("art muss 'api' oder 'anlagen' sein.")
+	profil, rolle, vorname = TECHNISCHE_PROFILE[art]
+	e = v.email(email)
+	if not e:
+		frappe.throw("Ungültige E-Mail-Adresse.")
+	user = frappe.get_doc("User", e) if frappe.db.exists("User", e) else frappe.new_doc("User")
+	if user.is_new():
+		user.update({"email": e, "first_name": vorname, "send_welcome_email": 0, "user_type": "Website User"})
+	_profil_setzen(user, profil)
+	if "System Manager" in [r.role for r in user.roles]:
+		frappe.throw("Technische Benutzer dürfen keine weiteren Rollen haben.")
+	user.flags.no_welcome_mail = True
+	user.save(ignore_permissions=True)
+	frappe.db.commit()
+	print(f"Technischer Benutzer {e} ({rolle}) bereit. API-Schlüssel im Desk erzeugen: User → API Access → Generate Keys.")
+	return e
+
+
+def desk_benutzer_anlegen(email, vorname, nachname="", profil="ÖkoInvest Nur lesen"):
+	"""System User (Desk) mit Rollenprofil; Frappe sendet den Link zum Festlegen des Passworts. 2FA ist Pflicht."""
+	from oekoinvest_app.plattform import validierung as v
+
+	e = v.email(email)
+	if not e:
+		frappe.throw("Ungültige E-Mail-Adresse.")
+	if not str(profil).startswith("ÖkoInvest ") or profil in ("ÖkoInvest API-Benutzer", "ÖkoInvest Anlagen-Dienst"):
+		frappe.throw("Für Desk-Benutzer bitte ein Desk-Rollenprofil wählen (z. B. „ÖkoInvest Leitung“).")
+	neu = not frappe.db.exists("User", e)
+	user = frappe.new_doc("User") if neu else frappe.get_doc("User", e)
+	if neu:
+		user.update({"email": e, "first_name": vorname, "last_name": nachname, "send_welcome_email": 1})
+	_profil_setzen(user, profil)
+	user.user_type = "System User"
+	user.save(ignore_permissions=True)
+	frappe.db.commit()
+	print(f"Desk-Benutzer {e} mit Profil „{profil}“ {'angelegt (Einladungs-E-Mail folgt)' if neu else 'aktualisiert'}.")
+	return e

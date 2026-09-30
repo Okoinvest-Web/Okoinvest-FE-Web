@@ -1,0 +1,10 @@
+{% extends "templates/emails/oekoinvest_basis.html" %}
+{#- Bestätigungscode der elektronischen Unterschrift (EES). Enthält den Code, keine Vertragsinhalte. -#}
+{% block inhalt %}
+<p>Guten Tag{% if vorname %} {{ vorname | e }}{% endif %},</p>
+<p>Ihr Bestätigungscode für die elektronische Unterschrift zum Vorgang {{ vorgang | e }} lautet:</p>
+<p style="margin:20px 0;font-family:Manrope,Inter,Arial,sans-serif;font-size:30px;font-weight:800;letter-spacing:8px;color:#003473;">{{ code | e }}</p>
+<p>Der Code ist {{ minuten }} Minuten gültig und gilt nur für diesen Vorgang. Geben Sie ihn nicht weiter – ÖkoInvest fragt nie telefonisch nach diesem Code.</p>
+{% if link %}<p style="margin:24px 0;"><a href="{{ link | e }}" style="background:#003473;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;display:inline-block;">Zum Dokument</a></p>{% endif %}
+<p style="font-size:13px;color:#52606d;">Einfache elektronische Signatur (EES) nach Art. 3 Nr. 10 eIDAS-Verordnung – keine qualifizierte elektronische Signatur. Sie haben diese E-Mail erhalten, weil Sie im Portal eine Unterschrift begonnen haben.</p>
+{% endblock %}

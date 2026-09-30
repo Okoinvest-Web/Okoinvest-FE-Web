@@ -504,7 +504,8 @@ async function main() {
     const res = await c.anfrage("GET", pfad, undefined, { origin: null });
     // Portal-Seiten streamen (loading.js): notFound() kann nach dem ersten Byte kommen → Status 200 mit 404-Fallback
     const nichtGefunden = res.status === 404 || res.text.includes("NEXT_HTTP_ERROR_FALLBACK;404");
-    const geheim = /Testvertrag|Frage zur Abrechnung/.test(res.text);
+    // Nur Backoffice-Inhalte zählen (eigene Benachrichtigungen des Kunden im Portalrahmen, z. B. zu seinem Ticket, sind erlaubt)
+    const geheim = new RegExp(`Testartikel ${LAUF}|"betreff":"Frage zur Abrechnung`).test(res.text);
     pruefe(erwartet === 404 ? nichtGefunden && !geheim : res.status === 200 && !nichtGefunden, `${pfad} (${c.name}) → ${erwartet}`, res.status);
   }
 

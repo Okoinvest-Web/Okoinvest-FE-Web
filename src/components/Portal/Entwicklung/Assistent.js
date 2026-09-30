@@ -36,6 +36,7 @@ export default function Assistent({ auswahl, startFlaeche = "" }) {
         const v = j.vorschlag;
         setD((x) => ({ ...x, titel: v.titel || x.titel, typ: v.typ, land: v.land, bundesland: v.bundesland || "", gemeinde: v.gemeinde || "", mwp: v.mwp ?? "" }));
       })
+      .catch(() => {}) // Vorschlag ist optional – ohne Antwort bleibt das Formular leer bedienbar
       .finally(() => aktiv && setLaden(false));
     return () => {
       aktiv = false;

@@ -38,6 +38,7 @@ export default function AnfrageFormular({
 
   async function absenden(e) {
     e.preventDefault();
+    if (status === "sendet") return; // Doppelabsendung verhindern
     const fd = new FormData(e.currentTarget);
     if (fd.get("website")) return; // Honeypot
     const kontakt = {};

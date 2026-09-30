@@ -116,7 +116,7 @@ export function KomfortFormular({ nutzer }) {
         <legend className="mb-2 text-[13.5px] font-semibold text-ink-700">Benachrichtigungskanäle</legend>
         <ul className="space-y-2 text-[14px] text-ink-700">
           <li className="flex items-start gap-3 rounded-2xl bg-sand-50 p-3 ring-1 ring-inset ring-ink-200/70">
-            <input type="checkbox" checked disabled className="mt-0.5 h-4 w-4 accent-[#558227]" aria-describedby={`${id}-k1`} />
+            <input type="checkbox" checked disabled className="mt-0.5 h-4 w-4 accent-[#558227]" aria-labelledby={`${id}-k1`} />
             <span id={`${id}-k1`}><strong className="font-semibold text-ink-900">Portal (Glocke)</strong> – immer aktiv</span>
           </li>
           <li>
@@ -126,7 +126,7 @@ export function KomfortFormular({ nutzer }) {
             </label>
           </li>
           <li className="flex items-start gap-3 rounded-2xl bg-sand-50 p-3 ring-1 ring-inset ring-ink-200/70">
-            <input type="checkbox" checked disabled className="mt-0.5 h-4 w-4 accent-[#558227]" aria-describedby={`${id}-k3`} />
+            <input type="checkbox" checked disabled className="mt-0.5 h-4 w-4 accent-[#558227]" aria-labelledby={`${id}-k3`} />
             <span id={`${id}-k3`}><strong className="font-semibold text-ink-900">Sicherheitsmeldungen per E-Mail</strong> – neues Gerät, Zwei-Faktor, E-Mail-Änderung (nicht abschaltbar)</span>
           </li>
         </ul>

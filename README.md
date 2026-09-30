@@ -32,6 +32,8 @@ Ohne weitere Konfiguration läuft die Plattform im **Demo-Backend** (lokale JSON
 ## Vor dem Livegang
 
 - `src/data/site.js`: Produktivdomain (`NEXT_PUBLIC_SITE_URL`), Telefon, E-Mail, UID eintragen.
+- Zeitzone des Next-Servers auf `TZ=Europe/Vienna` setzen (Datums-/Uhrzeitanzeigen werden serverseitig vorgerendert; bei UTC weichen sie von der Browseranzeige ab).
+- Am Reverse-Proxy ein Upload-Limit setzen (z. B. nginx `client_max_body_size 35m`).
 - Umgebungsvariablen setzen (`SESSION_SECRET`, `PLATTFORM_BACKEND=frappe`, `SERVER`, `API_KEY`, `API_SECRET`, optional `NEXT_PUBLIC_GA_ID`) – siehe `docs/PLATTFORM.md`.
 - Rechtstexte (Impressum, Datenschutz, Nutzungsbedingungen) anwaltlich prüfen lassen.
 - Logo: `src/components/ui/Logo.js` durch freigegebene Logodatei ersetzen, falls vorhanden.

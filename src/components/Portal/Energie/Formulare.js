@@ -45,6 +45,13 @@ const inTagen = (t) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`;
 };
 const isoAusLokal = (s) => (s ? new Date(s).toISOString() : "");
+// Gespeicherte ISO-Zeit (UTC) → Wert für datetime-local in lokaler Zeit (Gegenstück zu isoAusLokal)
+const lokalAusIso = (s) => {
+  const d = s ? new Date(s) : null;
+  if (!d || Number.isNaN(d.getTime())) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
 
 /** Einfacher Aktionsknopf (POST, danach neu laden) */
 export function AktionKnopf({ url, body, label, bestaetigen, variant = "secondary", icon: Icon, erfolgText }) {
@@ -595,7 +602,7 @@ export function Preisblatt({ a: x, letztes = null }) {
     const pad = (n) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T12:00`;
   };
-  const [kopf, setKopf] = useState({ bindefristBis: letztes?.bindefristBis ? letztes.bindefristBis.slice(0, 16) : bfStandard(), zahlungszielTage: letztes?.zahlungszielTage ?? 14, sicherheit: letztes?.sicherheit || "keine", bemerkung: letztes?.bemerkung || "" });
+  const [kopf, setKopf] = useState({ bindefristBis: letztes?.bindefristBis ? lokalAusIso(letztes.bindefristBis) : bfStandard(), zahlungszielTage: letztes?.zahlungszielTage ?? 14, sicherheit: letztes?.sicherheit || "keine", bemerkung: letztes?.bemerkung || "" });
   const setP = (id, k) => (ev) => setPos({ ...pos, [id]: { ...pos[id], [k]: ev.target.type === "checkbox" ? ev.target.checked : ev.target.value } });
   return (
     <form

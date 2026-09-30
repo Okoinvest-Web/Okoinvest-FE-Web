@@ -29,7 +29,12 @@ const lokal = (iso) => {
   return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`;
 };
 const iso = (lokalWert) => (lokalWert ? new Date(lokalWert).toISOString() : "");
-const inTagen = (t) => lokal(new Date(Date.now() + t * 86400e3).toISOString());
+// Auf die volle Stunde gerundet – sonst weicht der Vorschlagswert zwischen Server-Render und Hydration minütlich ab
+const inTagen = (t) => {
+  const d = new Date(Date.now() + t * 86400e3);
+  d.setMinutes(0, 0, 0);
+  return lokal(d.toISOString());
+};
 // Ganzzahl (Euro) aus „2.400.000“ bzw. Dezimalzahl aus „95,5“ oder „95.5“
 const zahl = (s) => (s === "" || s === null || s === undefined ? "" : Number(String(s).replace(/[^\d]/g, "")));
 const dezimal = (s) => (s === "" || s === null || s === undefined ? "" : Number(String(s).replace(/\s/g, "").replace(",", ".")));

@@ -202,17 +202,24 @@ export function DokumentHochladen({ fallId }) {
       className="flex flex-col gap-2 sm:flex-row sm:items-end"
       onSubmit={async (e) => {
         e.preventDefault();
-        const datei = e.currentTarget.datei.files?.[0];
+        const form = e.currentTarget; // nach await ist e.currentTarget null
+        if (s.laeuft) return;
+        const datei = form.datei.files?.[0];
         if (!datei) return setS({ laeuft: false, fehler: "Bitte eine Datei wählen.", ok: "" });
         setS({ laeuft: true, fehler: "", ok: "" });
         const fd = new FormData();
         fd.append("datei", datei);
         fd.append("baustein", baustein);
-        const res = await fetch(`/api/admin/finanzierung/${fallId}/dokumente`, { method: "POST", body: fd, headers: { "X-Plattform-Upload": "1" }, credentials: "same-origin" });
+        let res;
+        try {
+          res = await fetch(`/api/admin/finanzierung/${fallId}/dokumente`, { method: "POST", body: fd, headers: { "X-Plattform-Upload": "1" }, credentials: "same-origin" });
+        } catch {
+          return setS({ laeuft: false, fehler: "Keine Verbindung – bitte erneut versuchen.", ok: "" });
+        }
         const j = await res.json().catch(() => ({}));
         if (!res.ok || j.ok === false) return setS({ laeuft: false, fehler: j.error || `Upload fehlgeschlagen (${res.status})`, ok: "" });
         setS({ laeuft: false, fehler: "", ok: "Hochgeladen." });
-        e.currentTarget?.reset?.();
+        form.reset();
         router.refresh();
       }}
     >

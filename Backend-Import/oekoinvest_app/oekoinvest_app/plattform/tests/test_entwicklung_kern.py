@@ -106,7 +106,7 @@ class TestPipeline(unittest.TestCase):
 		self.assertEqual(K.risiko_ampel(20), "hoch")
 		self.assertEqual(K.quartal("2027-08-15"), "Q3 2027")
 		self.assertEqual(K.mwp_aus_flaeche(11), 10.0)
-		self.assertEqual(K.plus_monate("2026-01-31", 1), "2026-03-03")  # wie JavaScript (Monatsüberlauf)
+		self.assertEqual(K.plus_monate("2026-01-31", 1), "2026-02-28")  # wie JavaScript plusMonate: Monatsende begrenzt (a6418e2)
 		self.assertEqual(K.plan_monate(K.vorlage("DE", "freiflaeche")), 40)
 
 

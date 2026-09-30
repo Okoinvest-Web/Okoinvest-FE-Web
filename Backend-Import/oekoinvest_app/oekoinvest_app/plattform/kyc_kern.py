@@ -412,6 +412,26 @@ def tage_bis(datum_iso, heute=None):
 	return (date.fromisoformat(str(datum_iso)) - h).days
 
 
+def vier_augen(einstellungen, risiko_stufe=None, risiko_detail=None, treffer=None):
+	"""Vier-Augen-Pflicht wie vierAugenNoetig (demo/kyc.js): immer (Einstellung) oder – bei „vierAugenBeiHoch“ – Risiko hoch,
+	Regel-Risiko hoch (auch nach manueller Herabstufung) oder ein (ausgeschlossener) Sanktionstreffer."""
+	e = einstellungen or {}
+	r = risiko_detail or {}
+	hoch = risiko_stufe == "hoch" or r.get("stufe") == "hoch" or r.get("regelStufe") == "hoch"
+	return bool(e.get("vierAugenImmer") or (e.get("vierAugenBeiHoch") and (hoch or bool(treffer))))
+
+
+def treffer_schluessel(t):
+	return f"{(t or {}).get('eintragId')}|{(t or {}).get('prueflingName')}"
+
+
+def neuer_treffer(vorher, nachher):
+	"""Neuabgleich: gibt es einen neuen, unbewerteten Treffer? Vergleich über Treffer-Schlüssel statt Anzahl
+	(fällt ein alter Treffer weg und kommt ein neuer hinzu, bleibt die Anzahl gleich)."""
+	alt = {treffer_schluessel(t) for t in (vorher or [])}
+	return any(not t.get("bewertung") and treffer_schluessel(t) not in alt for t in (nachher or []))
+
+
 def monate_spaeter(datum_iso, monate):
 	d = date.fromisoformat(str(datum_iso)[:10])
 	m = d.month - 1 + monate

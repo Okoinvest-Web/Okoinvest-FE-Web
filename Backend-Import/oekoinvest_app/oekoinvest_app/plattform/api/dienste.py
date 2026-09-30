@@ -514,8 +514,8 @@ def bonitaet_beauftragen(subjekt=None, land=None, registernummer=None, name=None
 	d = frappe.get_doc({
 		"doctype": DT_BON, "subjekt_art": art, "subjekt_konto": sid if art == "konto" else None, "subjekt_organisation": sid if art == "organisation" else None, "subjekt_name": sname,
 		"land": land, "registernummer": v.text(registernummer, 40), "anlass": v.auswahl(anlass, list(dk.BONITAET_ANLAESSE), "loi"), "rechtsgrundlage": rg,
-		"interesse_id": v.kennung(interesseId) or None, "status": status, "anbieter": anbieter, "score": r.get("score"), "skala": r.get("skala"), "ampel": "unbekannt" if status == "keine_daten" else dk.bonitaet_ampel(anbieter, r.get("score")),
-		"kreditlimit": r.get("kreditlimit"), "waehrung": r.get("waehrung") or "EUR", "ausfallwahrscheinlichkeit": r.get("ausfallwahrscheinlichkeit"), "zahlungsweise": v.text(r.get("zahlungsweise"), 160),
+		"interesse_id": v.kennung(interesseId) or None, "status": status, "anbieter": anbieter, "score": dk.zahl_oder_null(r.get("score")), "skala": r.get("skala"), "ampel": "unbekannt" if status == "keine_daten" else dk.bonitaet_ampel(anbieter, r.get("score")),
+		"kreditlimit": dk.zahl_oder_null(r.get("kreditlimit")), "waehrung": r.get("waehrung") or "EUR", "ausfallwahrscheinlichkeit": dk.zahl_oder_null(r.get("ausfallwahrscheinlichkeit")), "zahlungsweise": v.text(r.get("zahlungsweise"), 160),
 		"negativmerkmale": _dump((r.get("negativmerkmale") or [])[:10]), "referenz": v.text(r.get("referenz"), 80), "auskunft_am": now_datetime(), "von_id": n.id,
 	}).insert(ignore_permissions=True)
 	protokoll(n, "bonitaet_auskunft", "bonitaet", d.name, f"Bonitätsauskunft {dk.BONITAET_ANBIETER[anbieter]} zu {sname} eingeholt ({dk.BONITAET_ANLAESSE.get(d.anlass)})")

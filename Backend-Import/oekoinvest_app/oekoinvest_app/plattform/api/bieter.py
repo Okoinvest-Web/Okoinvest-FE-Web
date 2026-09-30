@@ -338,7 +338,7 @@ def aktion(id=None, daten=None, als_benutzer=None):  # noqa: A002, C901
 			konflikt("Ein Zuschlag ist erst nach Ablauf bzw. Ende der Runde möglich (Gleichbehandlung).")
 		gid = v.kennung(d.get("gebotId"))
 		g = frappe.get_doc("Plattform Gebot", gid) if gid and frappe.db.exists("Plattform Gebot", gid) else None
-		v.pflicht(g and g.verfahren_id == vf.name and g.status == "abgegeben", "Bitte wählen Sie ein gültiges Gebot.")
+		v.pflicht(g and g.verfahren_id == vf.name and cint(g.runde) == cint(r.nr) and g.status == "abgegeben", "Bitte wählen Sie ein gültiges Gebot.")  # nur Gebote der letzten Runde
 		i = frappe.get_doc("Plattform Interesse", g.interesse_id)
 		v.pflicht(i.status in ("nda_freigegeben", "loi_abgegeben", "loi_angenommen"), "Der Bieter hat keinen gültigen Datenraum-Status mehr.")
 		from oekoinvest_app.plattform.kyc_kern import kyc_sperre  # KYC/KYB

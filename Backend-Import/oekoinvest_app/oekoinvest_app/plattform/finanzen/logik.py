@@ -50,16 +50,17 @@ MAX_KWH_JE_KWP_MONAT = 270
 # ================================================================ Geld und Datum
 
 
-def rund2(x):
-	"""Kaufmännisch auf Cent (wie Math.round(x*100 + EPSILON)/100 in JS)."""
-	x = float(x or 0)
-	return float(int(abs(x) * 100 + 0.5 + 1e-9)) / 100 * (1 if x >= 0 else -1)
-
-
 def rund(x, stellen=2):
+	"""Symmetrisch kaufmännisch runden wie rund() in finanzen/basis.js (−1,005 → −1,01; nie −0)."""
 	f = 10 ** stellen
 	x = float(x or 0)
-	return float(int(abs(x) * f + 0.5 + 1e-9)) / f * (1 if x >= 0 else -1)
+	r = float(int(abs(x) * f + 0.5 + 1e-9)) / f * (1 if x >= 0 else -1)
+	return r if r != 0 else 0.0  # −0.0 vermeiden („-0,00 €“)
+
+
+def rund2(x):
+	"""Kaufmännisch auf Cent (wie rund2 in JS)."""
+	return rund(x, 2)
 
 
 def summe(liste, feld=None):
@@ -159,9 +160,9 @@ def laufzeit_ende(beginn, laufzeit_jahre):
 	if not ist_datum(beginn) or not (int(laufzeit_jahre or 0) > 0):
 		return None
 	j = int(beginn[:4]) + int(laufzeit_jahre)
-	md = beginn[4:]
-	ziel = f"{j}-02-28" if md == "-02-29" else f"{j}{md}"
-	return plus_tage(ziel, -1)
+	ziel = f"{j}{beginn[4:]}"
+	# Beginn 29.02.: im Schaltjahr endet die Laufzeit am 28.02., sonst am Monatsende (28.02.) – nie am 27.02. (wie laufzeitEnde in JS)
+	return plus_tage(ziel, -1) if ist_datum(ziel) else f"{j}-02-28"
 
 
 def faelligkeiten(v, stichtag, ausblick_bis=None):

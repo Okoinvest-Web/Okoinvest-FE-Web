@@ -624,7 +624,7 @@ def fall_detail(id=None, ip=None, als_benutzer=None):  # noqa: A002
 def vier_augen_noetig(f, e):
 	"""Vier-Augen: immer (Einstellung), bei Risiko hoch oder wenn ein Sanktionstreffer ausgeschlossen wurde."""
 	treffer = (aus_json(f.sanktionen_json, {}) or {}).get("treffer") or []
-	return bool(e.get("vierAugenImmer") or (e.get("vierAugenBeiHoch") and (f.risiko == "hoch" or treffer)))
+	return k.vier_augen(e, f.risiko, aus_json(f.risiko_json, {}) or {}, treffer)  # Regel-Risiko „hoch“ bleibt Vier-Augen-pflichtig
 
 
 def _verifizieren_pruefen(f):
@@ -641,6 +641,8 @@ def _verifizieren_pruefen(f):
 
 def desk_entscheidung_pruefen(f, von):
 	"""Desk/Workflow: gleiche Regeln wie die API (Controller KYC Fall)."""
+	if f.status != von and f.konto and frappe.db.get_value("Plattform Konto", f.konto, "user") == frappe.session.user:
+		frappe.throw("Den eigenen KYC-Fall prüft eine andere Person der Compliance.", frappe.PermissionError)
 	if f.status == "verifiziert":
 		_verifizieren_pruefen(f)
 		e = k.einstellungen()
@@ -671,6 +673,8 @@ def aktion(id=None, daten=None, als_benutzer=None):  # noqa: A002
 	if not art:
 		ungueltig("Unbekannte Aktion.")
 	f = _fall_laden(id)
+	if f.konto == n.id:
+		verboten("Den eigenen KYC-Fall prüft eine andere Person der Compliance.")
 	e = k.einstellungen()
 	pruefung = aus_json(f.pruefung_json, {}) or {}
 	hinweis = ""

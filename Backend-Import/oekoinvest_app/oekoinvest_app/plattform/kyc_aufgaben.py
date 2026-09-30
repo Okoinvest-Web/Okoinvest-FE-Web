@@ -67,10 +67,10 @@ def fristen_laufen(n=None, stichtag=None, fall_id=None):
 				geaendert = True
 		s = aus_json(f.sanktionen_json, {}) or {}
 		if f.status in ("verifiziert", "in_pruefung", "eingereicht", "zweitpruefung") and liste["stand"] and s.get("listeStand") != liste["stand"]:
-			vorher = len(s.get("treffer") or [])
+			vorher = s.get("treffer") or []
 			neu = abgleich_ausfuehren(f, n, "Neuer Listenstand")
 			erg["neuAbgeglichen"] += 1
-			if neu["status"] == "treffer_pruefen" and len(neu["treffer"]) > vorher:
+			if neu["status"] == "treffer_pruefen" and k.neuer_treffer(vorher, neu["treffer"]):  # Schlüssel statt Anzahl
 				erg["neueTreffer"] += 1
 				if f.status == "verifiziert":
 					f.status = "in_pruefung"

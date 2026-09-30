@@ -138,6 +138,12 @@ def _person_gesperrt(person):
 	return frappe.db.get_value(DT_S, {"person_hash": h, "aktiv": 1}, ["name", "grund", "creation"], as_dict=True)
 
 
+def _flurstueck_gesperrt(land, p):
+	"""Aktiver Sperrlisten-Eintrag zu einem Flurstück (Hash) oder None."""
+	h = _hash(kk.flurstueck_schluessel(land, (p or {}).get("kgNr"), (p or {}).get("gstNr")))
+	return frappe.db.get_value(DT_S, {"aktiv": 1, "flurstueck_hashes": ["like", f'%"{h}"%']}, ["name", "grund", "creation"], as_dict=True)
+
+
 def _flurstueck_hashes_aktiv():
 	aktiv = set()
 	for x in frappe.get_all(DT_S, filters={"aktiv": 1}, fields=["flurstueck_hashes"], limit_page_length=0):
@@ -351,8 +357,9 @@ def kampagne_aendern(id=None, daten=None, als_benutzer=None):  # noqa: A002
 	if "status" in d:
 		st = v.auswahl(d.get("status"), list(kk.KAMPAGNE_STATUS), "")
 		v.pflicht(st, "Unbekannter Status.")
-		if st == "aktiv" and k.status != "aktiv":
-			ungueltig("Bitte „Kampagne starten“ verwenden (legt die Grundbuch-Aufgaben an).")
+		ok, text = kk.kampagne_status_wechsel_erlaubt(k.status, st)
+		if not ok:
+			ungueltig(text)
 		k.status = st
 	k.save(ignore_permissions=True)
 	protokoll(n, "aendern", "kampagne", k.name, f"Kampagne „{k.titel}“ geändert")
@@ -473,10 +480,16 @@ def grundbuch_ergebnis(ziel_id=None, daten=None, als_benutzer=None):
 	z = _ziel_laden(ziel_id)
 	k = frappe.get_doc(DT_K, z.kampagne)
 	v.pflicht(k.status != "abgeschlossen", "Die Kampagne ist abgeschlossen.")
-	parz_ids = {p.get("id") for p in (aus_json(z.parzellen, []) or [])}
+	v.pflicht(z.status != "gesperrt", "Für dieses Ziel liegt ein Widerspruch vor (Sperrliste) – kein Grundbuch-Ergebnis.")
+	parz = aus_json(z.parzellen, []) or []
+	gesperrte_fs = set(aus_json(z.gesperrte_flurstuecke, []) or [])
+	parz_ids = {p.get("id") for p in parz} - gesperrte_fs
 	neu = []
 	for p in personen:
-		sperre = _person_gesperrt(p)
+		# Widerspruch je Person ODER alle angegebenen Flurstücke der Person stehen auf der Sperrliste (Art. 21 DSGVO)
+		eigene = [x for x in parz if x.get("id") in p["flurstuecke"]]
+		fs_sperren = [s_ for s_ in (_flurstueck_gesperrt(k.land, x) for x in eigene) if s_]
+		sperre = _person_gesperrt(p) or (fs_sperren[0] if eigene and len(fs_sperren) == len(eigene) else None)
 		code = kk.code_erzeugen()
 		while frappe.db.exists("Plattform Kampagnenempfaenger", {"code": code}):
 			code = kk.code_erzeugen()
@@ -492,7 +505,7 @@ def grundbuch_ergebnis(ziel_id=None, daten=None, als_benutzer=None):
 	z.grundbuch_ergebnis_am = now_datetime()
 	if kosten is not None:
 		z.grundbuch_kosten_ist = kosten
-	z.status = "gesperrt" if all(cint(e.gesperrt) for e in z.empfaenger) else "ermittelt"
+	z.status = kk.ziel_status_nach_grundbuch(z.status, all(cint(e.gesperrt) for e in z.empfaenger))  # fortgeschrittenen Status nicht zurücksetzen
 	z.save(ignore_permissions=True)
 	if z.grundbuch_aufgabe and frappe.db.get_value("Plattform Aufgabe", z.grundbuch_aufgabe, "status") == "offen":
 		a = frappe.get_doc("Plattform Aufgabe", z.grundbuch_aufgabe)
@@ -517,7 +530,7 @@ def empfaenger_aendern(ziel_id=None, empfaenger_id=None, daten=None, als_benutze
 	z = _ziel_laden(ziel_id)
 	row = _empfaenger_row(z, empfaenger_id)
 	e = _empf(row)
-	v.pflicht(not e["gesperrt"] or "status" not in d, "Gesperrte Empfänger (Widerspruch) können nicht weiter bearbeitet werden.")
+	v.pflicht(kk.gesperrt_aenderung_erlaubt(e["gesperrt"], d), "Gesperrte Empfänger (Widerspruch) können nicht weiter bearbeitet werden.")  # nur Notizen
 	for feld in ("einwilligungTelefon", "einwilligungEmail"):
 		if feld in d:
 			x = d.get(feld)
@@ -573,6 +586,8 @@ def _versand_empfaenger(k, stufe):
 	out = []
 	nachfass = aus_json(k.nachfass, []) or []
 	for z in _ziele_von(k.name):
+		if z.status == "gesperrt":  # Widerspruch auf Ziel-/Flurstücksebene
+			continue
 		for row in z.empfaenger:
 			e = _empf(row)
 			if e["gesperrt"] or not e["codeAktiv"] or _person_gesperrt(e):

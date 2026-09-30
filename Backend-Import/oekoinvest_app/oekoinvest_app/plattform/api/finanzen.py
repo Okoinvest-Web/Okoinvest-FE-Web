@@ -622,7 +622,12 @@ def zahlungslauf_aktion(id=None, daten=None, als_benutzer=None):  # noqa: A002
 	zl = frappe.get_doc("Plattform Zahlungslauf", k)
 	if zl.status != "erstellt":
 		konflikt("Der Zahlungslauf ist bereits abgeschlossen.")
-	belege = [x for x in (aus_json(zl.belege, []) or []) if frappe.db.get_value(DT, x, "status") == "angewiesen"]
+	# nur Belege, die noch zu DIESEM Lauf gehören (zwischenzeitlich „offen“ gesetzt und neu exportiert → anderer Lauf)
+	belege = []
+	for x in aus_json(zl.belege, []) or []:
+		b = frappe.db.get_value(DT, x, ["status", "zahlungslauf_id"], as_dict=True)
+		if b and b.status == "angewiesen" and b.zahlungslauf_id == zl.name:
+			belege.append(x)
 	if d.get("aktion") == "bestaetigen":
 		datum = min(str(zl.ausfuehrung_am), L.heute())
 		for x in belege:

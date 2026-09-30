@@ -73,6 +73,34 @@ def _datum(x):
 	return datetime.fromisoformat(t[:19] if len(t) >= 19 else t[:10])  # UTC-Sekunden genügen für Tagesfristen
 
 
+# Widerspruch (Art. 21 DSGVO): gesperrte Empfänger nur noch mit Notizen – kein Status, Termin, Rücklauf oder Einwilligung
+GESPERRT_VERBOTEN = ("status", "termin", "rueckmeldung", "einwilligungTelefon", "einwilligungEmail")
+ZIEL_FORTGESCHRITTEN = ("angeschrieben", "reaktion", "termin", "gesichert", "abgelehnt")
+
+
+def gesperrt_aenderung_erlaubt(gesperrt, daten):
+	"""Wie empfaengerAendern (demo/akquise-kampagne.js): bei Sperre sind nur Notizen erlaubt."""
+	return not gesperrt or all((daten or {}).get(f) is None for f in GESPERRT_VERBOTEN)
+
+
+def ziel_status_nach_grundbuch(alt, alle_gesperrt):
+	"""Erneute Grundbuch-Erfassung setzt einen fortgeschrittenen Ziel-Status nicht zurück."""
+	if alt in ZIEL_FORTGESCHRITTEN:
+		return alt
+	return "gesperrt" if alle_gesperrt else "ermittelt"
+
+
+def kampagne_status_wechsel_erlaubt(alt, neu):
+	"""(ok, Fehlertext) – abgeschlossen bleibt abgeschlossen, aktiv nicht zurück in den Entwurf, Start nur über „Kampagne starten“."""
+	if alt == "abgeschlossen" and neu != "abgeschlossen":
+		return False, "Abgeschlossene Kampagnen lassen sich nicht wieder öffnen."
+	if neu == "aktiv" and alt != "aktiv":
+		return False, "Bitte „Kampagne starten“ verwenden (legt die Grundbuch-Aufgaben an)."
+	if alt == "aktiv" and neu == "entwurf":
+		return False, "Eine laufende Kampagne kann nicht zurück in den Entwurf (Codes und Nachfassen der Empfänger)."
+	return True, ""
+
+
 def hat_reagiert(e):
 	return bool(e.get("anfragen") or e.get("termine") or e.get("widerspruchAm") or e.get("rueckmeldungAm") or e.get("status") in REAKTION)
 

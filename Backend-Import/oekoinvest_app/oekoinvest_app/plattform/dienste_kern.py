@@ -11,6 +11,7 @@
 
 import hashlib
 import hmac
+import math
 import re
 import unicodedata
 from datetime import date, datetime, timedelta, timezone
@@ -426,10 +427,20 @@ BONITAET_HINWEIS_NUTZER = (
 )
 
 
-def bonitaet_ampel(anbieter, score):
+def zahl_oder_null(x):
+	"""Zahl oder None – None/"" der Auskunftei bleiben „keine Angabe“ (wie zahlOderNull in bonitaet/adapter.js)."""
+	if x is None or x == "" or isinstance(x, bool):
+		return None
 	try:
-		s = float(score)
+		z = float(x)
 	except (TypeError, ValueError):
+		return None
+	return z if math.isfinite(z) else None
+
+
+def bonitaet_ampel(anbieter, score):
+	s = zahl_oder_null(score)  # None/""/NaN → „unbekannt“, nie „grün“
+	if s is None:
 		return "unbekannt"
 	if anbieter == "ksv1870":
 		return "gruen" if s <= 299 else "gelb" if s <= 399 else "rot"
@@ -700,10 +711,15 @@ def ist_firma(konto_id=None, organisation_id=None):
 def bonitaet_aktuell(konto_id=None, organisation_id=None):
 	import frappe
 
-	filters = {"subjekt_organisation": organisation_id} if organisation_id else {"subjekt_konto": konto_id}
 	if not (organisation_id or konto_id):
 		return None
-	namen = frappe.get_all("Plattform Bonitaetsauskunft", filters=filters, pluck="name", order_by="auskunft_am desc", limit_page_length=1)
+	# Organisation vor Konto (wie bonitaetAktuell in JS): gibt es Firmenauskünfte, zählt nur diese – eine neuere Personenauskunft
+	# darf eine (rote) Firmenauskunft nicht überdecken; ohne Firmenauskunft gilt die Auskunft zum Konto.
+	namen = []
+	if organisation_id:
+		namen = frappe.get_all("Plattform Bonitaetsauskunft", filters={"subjekt_organisation": organisation_id}, pluck="name", order_by="auskunft_am desc", limit_page_length=1)
+	if not namen and konto_id:
+		namen = frappe.get_all("Plattform Bonitaetsauskunft", filters={"subjekt_konto": konto_id}, pluck="name", order_by="auskunft_am desc", limit_page_length=1)
 	if not namen:
 		return None
 	d = frappe.get_doc("Plattform Bonitaetsauskunft", namen[0])

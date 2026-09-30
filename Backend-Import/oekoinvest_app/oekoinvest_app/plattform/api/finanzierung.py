@@ -605,9 +605,13 @@ def aktion(fallId=None, daten=None, als_benutzer=None):  # noqa: N803
 	elif art == "entscheidung":
 		if not leitung(n):
 			verboten("Die Bankentscheidung trifft die Leitung.")
+		if frappe.db.exists(DT_KV, {"fall_id": f.name}):
+			konflikt("Der Kreditvertrag ist bereits erfasst – die Bankentscheidung kann nicht mehr geändert werden.")
 		k = v.kennung(d.get("anfrageId"))
 		if not k or frappe.db.get_value(DT_ANFRAGE, k, "fall_id") != f.name:
 			nicht_gefunden("Anfrage nicht gefunden.")
+		if frappe.db.get_value(DT_ANFRAGE, k, "status") in ("abgesagt", "zurueckgezogen"):
+			konflikt("Diese Anfrage wurde zurückgezogen bzw. abgesagt.")
 		ts = _neueste_ts(k)
 		if not ts:
 			konflikt("Für diese Bank liegt kein Term Sheet vor.")

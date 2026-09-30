@@ -111,10 +111,10 @@ def plus_monate(iso, monate):
 	m = d.month - 1 + ganz
 	jahr = d.year + m // 12
 	monat = m % 12 + 1
-	# JS setUTCMonth läuft bei zu großem Tag in den Folgemonat über
-	tag = d.day
-	basis = date(jahr, monat, 1)
-	d2 = basis + timedelta(days=tag - 1)
+	# Monatsende begrenzen wie plusMonate in JS: 31.01. + 1 Monat = 28./29.02. (kein Überlauf in den März)
+	import calendar
+
+	d2 = date(jahr, monat, min(d.day, calendar.monthrange(jahr, monat)[1]))
 	rest = monate - ganz
 	if rest:
 		d2 = d2 + timedelta(days=round(rest * 30.4))

@@ -5,14 +5,14 @@
 // wenn Next.js das Modul mehrfach lädt) und atomar über Datei + Umbenennen.
 // Uploads liegen unter .data/uploads/ mit zufälligen Dateinamen.
 
-import { promises as fs } from "node:fs";
+import { promises as fs, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 export const DATEN_ORDNER = path.join(process.cwd(), ".data");
 export const UPLOAD_ORDNER = path.join(DATEN_ORDNER, "uploads");
 const DATEI = path.join(DATEN_ORDNER, "plattform.json");
 const SPERRE = path.join(DATEN_ORDNER, "plattform.lock");
-const SCHEMA = 1;
+const SCHEMA = 2; // 2: Benachrichtigungen, Postausgang, Aufgaben, Checklisten
 
 let cache = null; // { mtimeMs, size, db }
 
@@ -46,11 +46,15 @@ async function entsperren() {
   await fs.rm(SPERRE, { force: true }).catch(() => {});
 }
 
+// BEWUSST SYNCHRON: React 19 schneidet im Dev-Modus den Rückgabewert von
+// awaited I/O (fs.promises) für die Debug-Anzeige mit und liefert ihn im
+// HTML aus – das war die komplette Demo-Datenbank inkl. Passwort-Hashes auf
+// jeder Seite (2–5 MB). Synchrones Lesen erzeugt keinen solchen I/O-Eintrag.
 async function dateiLesen() {
   try {
-    const st = await fs.stat(DATEI);
+    const st = statSync(DATEI);
     if (cache && cache.mtimeMs === st.mtimeMs && cache.size === st.size) return structuredClone(cache.db);
-    const roh = await fs.readFile(DATEI, "utf8");
+    const roh = readFileSync(DATEI, "utf8");
     const db = JSON.parse(roh);
     cache = { mtimeMs: st.mtimeMs, size: st.size, db };
     return structuredClone(db);

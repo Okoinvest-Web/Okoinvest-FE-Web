@@ -38,7 +38,7 @@ const postausgangAnlegen = (...a) => internSicherheit.postausgangAnlegen(...a);
 
 const EINLADUNG_TAGE = 14;
 /** Schema der Sammlung db.finanzierung – bei Änderung der Demo-Daten erhöhen (die Sammlung wird dann neu befüllt, übrige Daten bleiben) */
-const FZ_SCHEMA = 5;
+const FZ_SCHEMA = 6;
 const MAX_SZENARIEN = 30;
 /** Systemleser für die Covenant-Prüfung (liest nur Zählerwerte der verknüpften Anlage, Ergebnis nur im Bereich „finanzierung“) */
 const SYSTEM_LESER = { id: "system-finanzierung", rollen: ["admin"], backofficeRollen: ["leitung"] };

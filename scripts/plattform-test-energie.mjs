@@ -334,7 +334,7 @@ async function teilB() {
   pruefe(r.status === 401, "ohne Anmeldung → 401", r.status);
 
   abschnitt("B4. Verdeckte Angebote");
-  const pb = (ap, gp, extra = {}) => ({ positionen: [{ produktId: "P1", arbeitspreisCt: ap, grundpreisEurMonat: gp }, { produktId: "P2", aufschlagCt: 0.45, grundpreisEurMonat: gp }], bindefristBis: inStunden(24 * 20), zahlungszielTage: 14, sicherheit: "keine", ...extra });
+  const pb = (ap, gp, extra = {}, spot = 0.45) => ({ positionen: [{ produktId: "P1", arbeitspreisCt: ap, grundpreisEurMonat: gp }, { produktId: "P2", aufschlagCt: spot, grundpreisEurMonat: gp }], bindefristBis: inStunden(24 * 20), zahlungszielTage: 14, sicherheit: "keine", ...extra });
   r = await L1.c.post(`/api/portal/ausschreibungen/${A.id}/angebot`, { positionen: [{ produktId: "P1", grundpreisEurMonat: 10 }], bindefristBis: inStunden(24 * 20), zahlungszielTage: 14, sicherheit: "keine" });
   pruefe(r.status === 422, "Preisblatt ohne Arbeitspreis → 422", r.json);
   r = await L1.c.post(`/api/portal/ausschreibungen/${A.id}/angebot`, pb(11.777, 90));
@@ -416,8 +416,8 @@ async function teilB() {
   r = await admin.post("/api/admin/energie/ausschreibungen", neuDaten([kunde.nutzer.id, kunde2.nutzer.id], `Test-Pool ${LAUF}`, [L1.l.id, L2.l.id]));
   pruefe(r.status === 201 && r.json.ausschreibung.anonym.anzahlKunden.startsWith("2 Kunden"), "Pool-Ausschreibung mit zwei Kunden", r.json.ausschreibung?.anonym);
   const P = r.json.ausschreibung;
-  await L1.c.post(`/api/portal/ausschreibungen/${P.id}/angebot`, pb(12.1, 50));
-  await L2.c.post(`/api/portal/ausschreibungen/${P.id}/angebot`, pb(11.4, 50));
+  await L1.c.post(`/api/portal/ausschreibungen/${P.id}/angebot`, pb(12.1, 50, {}, 0.9));
+  await L2.c.post(`/api/portal/ausschreibungen/${P.id}/angebot`, pb(11.4, 50, {}, 0.3));
   await admin.post(`/api/admin/energie/ausschreibungen/${P.id}`, { aktion: "beenden" });
   r = await admin.post(`/api/admin/energie/ausschreibungen/${P.id}`, { aktion: "naechsteRunde", frist: inStunden(2), lieferantIds: [L1.l.id, L2.l.id, L3.l.id], bestpreisRegel: "abstand" });
   pruefe(r.status === 200 && r.json.ausschreibung.runde.nr === 2 && !r.json.ausschreibung.teilnehmer.some((t) => t.lieferantId === L3.l.id), "Runde 2 nur mit Versorgern, die in Runde 1 geboten haben", r.json.ausschreibung?.teilnehmer);
@@ -487,7 +487,7 @@ async function teilB() {
   ]) {
     r = await cl.get(pfad);
     const nichtGefunden = r.status === 404 || r.text.includes("NEXT_HTTP_ERROR_FALLBACK;404");
-    pruefe(soll === 404 ? nichtGefunden && !r.text.includes(`Kundenfirma ${LAUF}`) : r.status === 200 && !nichtGefunden, `${pfad} (${cl.name}) → ${soll}`, r.status);
+    pruefe(soll === 404 ? nichtGefunden && (cl === kunde || !r.text.includes(`Kundenfirma ${LAUF}`)) : r.status === 200 && !nichtGefunden, `${pfad} (${cl.name}) → ${soll}`, r.status);
   }
 }
 

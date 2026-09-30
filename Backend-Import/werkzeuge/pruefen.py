@@ -218,7 +218,10 @@ def python_pruefen():
 			if pfad.startswith(APP):
 				with open(pfad, encoding="utf-8") as f:
 					inhalt = f.read()
-				if re.search(r"allow_guest\s*=\s*True", inhalt):
+				gast = len(re.findall(r"allow_guest\s*=\s*True", inhalt))
+				# Einzige Ausnahme (Auftrag Team „Dienste“): Webhook des Identitätsanbieters – HMAC-Prüfung + rate_limit Pflicht
+				ausnahme = rel(pfad).replace("\\", "/").endswith("plattform/api/dienste.py") and gast == 1 and "def webhook_identitaet" in inhalt and "@rate_limit(" in inhalt and "webhook_signatur_pruefen" in inhalt
+				if gast and not ausnahme:
 					fehler("Sicherheit", f"{rel(pfad)}: allow_guest=True ist nicht erlaubt (nur API-Benutzer)")
 	shutil.rmtree(ziel, ignore_errors=True)
 	return anzahl

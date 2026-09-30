@@ -81,7 +81,7 @@ async function Spotmarkt({ n, zone }) {
   const spread = Number.isFinite(g.base) && Number.isFinite(o.gesamt.base) ? (zone === "AT" ? g.base - o.gesamt.base : o.gesamt.base - g.base) : null;
   const letzte = s.aktuell[s.aktuell.length - 1];
   const tickStd = [];
-  if (s.aktuell.length) for (let t = Math.ceil(s.aktuell[0].t / 21600e3) * 21600e3; t <= letzte.t; t += 21600e3) tickStd.push(t);
+  if (s.aktuell.length) for (let t = Math.ceil(s.aktuell[0].t / 43200e3) * 43200e3; t <= letzte.t; t += 43200e3) tickStd.push(t);
   const tage = s.tage;
   const tagTicks = tage.filter((_, i) => i % 20 === 0).map((_, i) => i * 20);
   return (
@@ -91,40 +91,40 @@ async function Spotmarkt({ n, zone }) {
         {s.quelle === "simulation" && <Hinweis ton="warn">Simulation: {s.fehler || "Live-Daten nicht verfügbar."} Werte nicht für Entscheidungen verwenden.</Hinweis>}
       </div>
       <section aria-label="Kennzahlen Spotmarkt" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <Wert label="Base (365 Tage)" wert={eurMwh(g.base)} hinweis={`Peak ${eurMwh(g.peak)}`} />
-        <Wert label="Offpeak" wert={eurMwh(g.offpeak)} hinweis="Wochenende und 20–8 Uhr" />
-        <Wert label="Solar-Capture" wert={eurMwh(g.capture)} hinweis={`Capture-Rate ${prozent(g.captureRate, 0)}`} />
+        <Wert label="Base €/MWh (365 Tage)" wert={fmt(g.base, 2)} hinweis={`Peak ${fmt(g.peak, 2)} €/MWh`} />
+        <Wert label="Offpeak €/MWh" wert={fmt(g.offpeak, 2)} hinweis="Wochenende und 20–8 Uhr" />
+        <Wert label="Solar-Capture €/MWh" wert={fmt(g.capture, 2)} hinweis={`Capture-Rate ${prozent(g.captureRate, 0)}`} />
         <Wert label="Negative Stunden" wert={fmt(s.negativ.gesamt)} hinweis={`längste Folge ${s.negativ.laengsteFolge} h`} />
-        <Wert label="Volatilität" wert={`${fmt(s.volatilitaet.tagesAenderungStd, 1)} €`} hinweis={`σ Tagesänderung · Spanne Ø ${fmt(s.volatilitaet.tagesSpanne)} €`} />
+        <Wert label="Volatilität (σ Tag)" wert={`${fmt(s.volatilitaet.tagesAenderungStd, 1)} €`} hinweis={`Ø Tagesspanne ${fmt(s.volatilitaet.tagesSpanne)} €/MWh`} />
         <Wert label={zone === "AT" ? "Spread AT − DE" : "Spread AT − DE"} wert={spread !== null ? `${fmt(spread, 2)} €` : "–"} hinweis="Base, 365 Tage" />
       </section>
       <Karte titel={`Day-Ahead ${zone === "AT" ? "Österreich" : "Deutschland/Luxemburg"} – letzte Tage`} untertitel={`Auflösung ${s.aufloesungMin} min · zuletzt ${letzte ? `${uhr(letzte.t)} Uhr: ${eurMwh(letzte.eurMwh)}` : "–"}`}>
-        <LinienChart reihen={[{ name: "Day-Ahead", farbe: FARBEN.navy, flaeche: FARBEN.navyHell, treppe: true, punkte: s.aktuell.map((p) => ({ x: p.t, y: p.eurMwh })) }]} xTicks={tickStd} xText={(t) => `${new Date(t).toLocaleDateString("de-DE", { timeZone: "Europe/Vienna", day: "2-digit", month: "2-digit" })} ${uhr(t)}`} yEinheit="€/MWh" beschreibung="Day-Ahead-Preis der letzten zwei Tage und – nach Veröffentlichung – des Folgetags" />
+        <LinienChart reihen={[{ name: "Day-Ahead", farbe: FARBEN.navy, flaeche: FARBEN.navyHell, treppe: true, punkte: s.aktuell.map((p) => ({ x: p.t, y: p.eurMwh })) }]} xTicks={tickStd} xText={(t) => `${new Date(t).toLocaleDateString("de-DE", { timeZone: "Europe/Vienna", day: "2-digit", month: "2-digit" })} ${uhr(t).slice(0, 2)} h`} yEinheit="€/MWh" beschreibung="Day-Ahead-Preis der letzten zwei Tage und – nach Veröffentlichung – des Folgetags" />
         <Quelle warnung={s.quelle === "simulation"}>Quelle: {s.quelleLabel}. {s.lizenz}</Quelle>
       </Karte>
       <div className="grid gap-6 xl:grid-cols-2">
         <Karte titel="Tagesmittel (120 Tage)" untertitel="Base und Peak je Tag">
-          <LinienChart reihen={[{ name: "Base", farbe: FARBEN.navy, punkte: tage.map((t, i) => ({ x: i, y: t.base })) }, { name: "Peak", farbe: FARBEN.gruen, punkte: tage.map((t, i) => ({ x: i, y: t.peak })) }]} xTicks={tagTicks} xText={(i) => tagKurz(tage[i]?.tag || "")} yEinheit="€/MWh" beschreibung="Tagesmittel Base und Peak der letzten 120 Tage" />
+          <LinienChart reihen={[{ name: "Base", farbe: FARBEN.navy, punkte: tage.map((t, i) => ({ x: i, y: t.base })) }, { name: "Peak", farbe: FARBEN.gruen, punkte: tage.map((t, i) => ({ x: i, y: t.peak })) }]} xTicks={tagTicks} xText={(i) => tagKurz(tage[i]?.tag || "")} yEinheit="€/MWh" beschreibung="Tagesmittel Base und Peak der letzten 120 Tage" breite={480} />
           <Legende eintraege={[{ name: "Base", farbe: FARBEN.navy }, { name: "Peak (Mo–Fr 8–20 Uhr)", farbe: FARBEN.gruen }]} />
         </Karte>
         <Karte titel="Monatsmittel und Solar-Capture" untertitel="Base, Peak und Capture-Preis (lastgewichtet mit Solarprofil)">
-          <BalkenChart kategorien={s.monate.map((m) => monatText(m.monat))} reihen={[{ name: "Base", farbe: FARBEN.navy, werte: s.monate.map((m) => m.base) }, { name: "Peak", farbe: FARBEN.gruen, werte: s.monate.map((m) => m.peak) }, { name: "Solar-Capture", farbe: FARBEN.sonne, werte: s.monate.map((m) => m.capture) }]} yEinheit="€/MWh" beschreibung="Monatsmittel Base, Peak und Solar-Capture der letzten 13 Monate" />
+          <BalkenChart kategorien={s.monate.map((m) => monatText(m.monat))} reihen={[{ name: "Base", farbe: FARBEN.navy, werte: s.monate.map((m) => m.base) }, { name: "Peak", farbe: FARBEN.gruen, werte: s.monate.map((m) => m.peak) }, { name: "Solar-Capture", farbe: FARBEN.sonne, werte: s.monate.map((m) => m.capture) }]} yEinheit="€/MWh" beschreibung="Monatsmittel Base, Peak und Solar-Capture der letzten 13 Monate" breite={480} />
           <Legende eintraege={[{ name: "Base", farbe: FARBEN.navy }, { name: "Peak", farbe: FARBEN.gruen }, { name: "Solar-Capture", farbe: FARBEN.sonne }]} />
         </Karte>
       </div>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Karte titel="Jahres- und Monatswerte" untertitel="€/MWh · negative Stunden · Capture-Rate">
           <Tabelle
-            kopf={["Zeitraum", "Base", "Peak", "Offpeak", "Capture", "Rate", "neg. h", "Min", "Max"]}
-            rechts={[1, 2, 3, 4, 5, 6, 7, 8]}
+            kopf={["Zeitraum", "Base", "Peak", "Offpeak", "Capture", "Rate", "neg. h", "Max"]}
+            rechts={[1, 2, 3, 4, 5, 6, 7]}
             zeilen={[
-              ...s.jahre.map((j) => [`${j.jahr}${j.vollstaendig ? "" : " (Teil)"}`, fmt(j.base, 2), fmt(j.peak, 2), fmt(j.offpeak, 2), fmt(j.capture, 2), prozent(j.captureRate, 0), fmt(j.negativ), fmt(j.min?.eurMwh, 0), fmt(j.max?.eurMwh, 0)]),
-              ...s.monate.slice(-6).reverse().map((m) => [monatText(m.monat), fmt(m.base, 2), fmt(m.peak, 2), fmt(m.offpeak, 2), fmt(m.capture, 2), prozent(m.captureRate, 0), fmt(m.negativ), fmt(m.min?.eurMwh, 0), fmt(m.max?.eurMwh, 0)]),
+              ...s.jahre.map((j) => [`${j.jahr}${j.vollstaendig ? "" : " (Teil)"}`, fmt(j.base, 2), fmt(j.peak, 2), fmt(j.offpeak, 2), fmt(j.capture, 2), prozent(j.captureRate, 0), fmt(j.negativ), fmt(j.max?.eurMwh, 0)]),
+              ...s.monate.slice(-6).reverse().map((m) => [monatText(m.monat), fmt(m.base, 2), fmt(m.peak, 2), fmt(m.offpeak, 2), fmt(m.capture, 2), prozent(m.captureRate, 0), fmt(m.negativ), fmt(m.max?.eurMwh, 0)]),
             ]}
           />
         </Karte>
         <Karte titel="Durchschnittlicher Tagesgang" untertitel="365 Tage, Werktag und Wochenende">
-          <LinienChart reihen={[{ name: "Werktag", farbe: FARBEN.navy, punkte: s.profil.werktag.map((y, x) => ({ x, y })) }, { name: "Wochenende", farbe: FARBEN.gruen, gestrichelt: true, punkte: s.profil.wochenende.map((y, x) => ({ x, y })) }]} xTicks={[0, 6, 12, 18, 23]} xText={(h) => `${h} Uhr`} yEinheit="€/MWh" hoehe={220} beschreibung="Durchschnittlicher Preis je Stunde" />
+          <LinienChart reihen={[{ name: "Werktag", farbe: FARBEN.navy, punkte: s.profil.werktag.map((y, x) => ({ x, y })) }, { name: "Wochenende", farbe: FARBEN.gruen, gestrichelt: true, punkte: s.profil.wochenende.map((y, x) => ({ x, y })) }]} xTicks={[0, 6, 12, 18, 23]} xText={(h) => `${h} Uhr`} yEinheit="€/MWh" hoehe={220} beschreibung="Durchschnittlicher Preis je Stunde" breite={480} />
           <Legende eintraege={[{ name: "Werktag", farbe: FARBEN.navy }, { name: "Wochenende", farbe: FARBEN.gruen }]} />
         </Karte>
       </div>

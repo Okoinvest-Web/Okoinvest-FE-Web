@@ -27,6 +27,14 @@ const faelle = [
   { name: "NÖ außerhalb Zone > 2 ha", m: mitNetz({ ...basis, ha: 9, bundesland: "Niederösterreich", widmung: s.widmungslage({ bundesland: "Niederösterreich", zoneAbstandM: 150 }) }, [13.03, 48.215]) },
   { name: "Kein Netz im Umkreis", m: { ...basis, ha: 5.5, netz: null, widmung: s.widmungslage({ bundesland: "Kärnten" }), bundesland: "Kärnten" } },
   { name: "Sehr groß, 110 kV", m: mitNetz({ ...basis, ha: 70, widmung: s.widmungslage({ bundesland: "Oberösterreich", uwAbstandKm: 2 }) }, [13.25, 48.28]) },
+  // Deutschland (EEG-Kulisse, § 35 BauGB) und Schweiz (Richtplan, FFF) – Ausbaustufe A1b
+  { name: "DE A 96 privilegiert + Randstreifen", m: mitNetz({ ...basis, bundesland: "Bayern", land: "DE", kulisse: { randstreifenAnteil: 1, privilegiertAnteil: 0.8 }, widmung: s.widmungslage({ bundesland: "Bayern", land: "DE", privilegiertAnteil: 0.8 }) }, [13.03, 48.215]) },
+  { name: "DE nur Randstreifen 500 m", m: mitNetz({ ...basis, ha: 9, bundesland: "Bayern", land: "DE", kulisse: { randstreifenAnteil: 0.6, privilegiertAnteil: 0 }, widmung: s.widmungslage({ bundesland: "Bayern", land: "DE", privilegiertAnteil: 0 }) }, [13.05, 48.23]) },
+  { name: "DE benachteiligtes Gebiet", m: mitNetz({ ...basis, ha: 16, bundesland: "Bayern", land: "DE", kulisse: { benachteiligtAnteil: 1 }, widmung: s.widmungslage({ bundesland: "Bayern", land: "DE" }) }, [13.03, 48.215]) },
+  { name: "DE Moor mit Wiedervernässung", m: mitNetz({ ...basis, ha: 11, nutzung: { acker: 3, gruenland: 8, sonstige: 0 }, bundesland: "Bayern", land: "DE", kulisse: { moorAnteil: 0.9, benachteiligtAnteil: 0.3 }, widmung: s.widmungslage({ bundesland: "Bayern", land: "DE" }) }, [13.03, 48.215]) },
+  { name: "DE ohne Kulisse (Niedersachsen)", m: mitNetz({ ...basis, bundesland: "Niedersachsen", land: "DE", kulisse: {}, widmung: s.widmungslage({ bundesland: "Niedersachsen", land: "DE" }) }, [13.03, 48.215]) },
+  { name: "CH Eignungsgebiet mit FFF", m: mitNetz({ ...basis, ha: 8, bundesland: "Bern", land: "CH", kulisse: { eignungAnteil: 0.7, fffAnteil: 0.4 }, widmung: s.widmungslage({ bundesland: "Bern", land: "CH", eignungAnteil: 0.7 }) }, [13.03, 48.215]) },
+  { name: "CH vorbelastet ohne Eignungsgebiet", m: mitNetz({ ...basis, ha: 6, bundesland: "Zürich", land: "CH", kulisse: { vorbelastet: true }, widmung: s.widmungslage({ bundesland: "Zürich", land: "CH" }) }, [13.03, 48.215]) },
 ];
 const aus = {
   hinweis: "Automatisch erzeugt von faelle_erzeugen.mjs – nicht von Hand ändern.",

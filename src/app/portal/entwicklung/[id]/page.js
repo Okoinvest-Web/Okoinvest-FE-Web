@@ -9,6 +9,7 @@ import { entwicklungBackend } from "@/lib/plattform/backend/entwicklung";
 import { heuteIso } from "@/lib/plattform/entwicklung";
 import { LAENDER } from "@/lib/plattform/konstanten";
 import { cn } from "@/components/ui/cn";
+import { PlanungExtern } from "@/components/Portal/Planung/Reiter"; // Planungsdateien (Gutachter/Co-Investor)
 
 export const metadata = { title: "Projektentwicklung" };
 
@@ -115,6 +116,7 @@ export default async function EntwicklungExtern({ params }) {
             {p.gutachter.auftraege.map((a) => <GutachterAuftrag key={a.id} projektId={p.id} a={a} />)}
           </>
         )}
+        {(p.investor || p.gutachter) && <PlanungExtern nutzer={n} projektId={p.id} />}
       </div>
     </>
   );

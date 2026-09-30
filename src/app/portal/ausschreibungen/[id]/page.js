@@ -50,10 +50,10 @@ export default async function LieferantAusschreibung({ params }) {
       {a.hinweis && <div className="mb-6"><Hinweis>{a.hinweis.text}</Hinweis></div>}
       <div className="mb-6 grid gap-6 xl:grid-cols-2">
         <Karte titel="Lastprofil (normiert)" untertitel="Faktor zur mittleren Last je Wochentag und Stunde – keine Rohdaten">
-          <Heatmap matrix={p.wochenprofil} einheit="× Mittel" beschreibung="Normiertes Wochenprofil des Loses" />
+          <Heatmap matrix={p.wochenprofil} einheit="× Mittel" beschreibung="Normiertes Wochenprofil des Loses" breite={520} />
         </Karte>
         <Karte titel="Monatsverteilung" untertitel="Anteil an der Jahresmenge in %">
-          <BalkenChart kategorien={MONATE} reihen={[{ name: "Anteil", farbe: FARBEN.navy, werte: p.monatsanteileProzent }]} yEinheit="%" hoehe={220} beschreibung="Monatsanteile an der Jahresmenge" />
+          <BalkenChart kategorien={MONATE} reihen={[{ name: "Anteil", farbe: FARBEN.navy, werte: p.monatsanteileProzent }]} yEinheit="%" hoehe={220} beschreibung="Monatsanteile an der Jahresmenge" breite={520} />
         </Karte>
       </div>
       <Karte titel="Produktvarianten" className="mb-6">

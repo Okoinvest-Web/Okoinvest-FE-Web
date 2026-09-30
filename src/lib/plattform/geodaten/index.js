@@ -61,6 +61,7 @@ export function filterLesen(suche, bboxLesen) {
     minHa: zahl("minHa", 1000),
     maxTrasseKm: zahl("maxTrasseKm", 50),
     minScore: zahl("minScore", 100),
+    land: ["AT", "DE", "CH"].includes(suche.get("land")) ? suche.get("land") : undefined,
     bundesland: text("bundesland"),
     bezirk: text("bezirk"),
     gemeinde: text("gemeinde"),
@@ -101,7 +102,7 @@ export async function netzknoten(n, opt = {}) {
 
 export async function ebene(n, name, opt = {}) {
   recht(n, 1);
-  if (!["schutzgebiete", "zonen"].includes(name)) throw new PlattformFehler(404, "Ebene unbekannt.");
+  if (!["schutzgebiete", "zonen", "verkehr"].includes(name)) throw new PlattformFehler(404, "Ebene unbekannt.");
   const k = await kontext(n);
   return modusPflicht() === "dienst" ? dienst.ebene(name, opt, k) : demo.ebene(name, opt);
 }

@@ -72,6 +72,17 @@ class Client {
       const [name, wert] = paar.split("=");
       if (/oi_sitzung$/.test(name)) this.cookie = wert ? `${name}=${wert}` : "";
     }
+    // Geteilte Demo-Konten: parallele Testläufe verdrängen ältere Sitzungen (max. 30 je Konto) → einmal neu anmelden
+    const abgemeldet = res.status === 401 || (res.status === 307 && String(res.headers.get("location") || "").includes("/login"));
+    if (abgemeldet && this.anmeldung && !pfad.startsWith("/api/auth/") && !this.erneut) {
+      this.erneut = true;
+      try {
+        await this.login(...this.anmeldung);
+        return await this.anfrage(methode, pfad, body, { origin, kopf, roh });
+      } finally {
+        this.erneut = false;
+      }
+    }
     if (roh) return res;
     const text = await res.text();
     let json = null;
@@ -89,6 +100,7 @@ class Client {
   put = (p, b, o) => this.anfrage("PUT", p, b ?? {}, o);
 
   async login(email, passwort = DEMO_PASSWORT) {
+    this.anmeldung = [email, passwort];
     let r;
     for (let versuch = 1; versuch <= 4; versuch++) {
       r = await this.post("/api/auth/login", { email, passwort });
@@ -106,6 +118,7 @@ class Client {
     if (r.status !== 201) throw new Error(`Registrierung ${email}: ${r.status} ${JSON.stringify(r.json)}`);
     this.nutzer = r.json.nutzer;
     this.email = email;
+    this.anmeldung = [email, PASSWORT];
     return r.json.nutzer;
   }
 }

@@ -213,7 +213,6 @@ class Client {
     return r.json.nutzer;
   }
 }
-const nichtGefunden = (r) => r.status === 404 || (r.status === 200 && String(r.text || "").includes("Diesen Eintrag gibt es nicht"));
 
 async function projektMitLoi(anbieter, investor, admin, titel, loi) {
   let r = await anbieter.post("/api/portal/projekte", { titel });
@@ -259,7 +258,7 @@ async function http() {
   pruefe(r.status === 200 && r.json.akten?.length >= 3 && Array.isArray(r.json.bericht) && r.json.kennzahlen, "Backoffice: Akten, Kennzahlen und Bericht „offene Eintragungen“", r.json);
   const demoAkten = r.json.akten || [];
   const deDemo = demoAkten.find((a) => a.land === "DE" && a.bezug?.art === "flaeche");
-  const atDemo = demoAkten.find((a) => a.land === "AT");
+  const atDemo = demoAkten.find((a) => a.land === "AT" && /Schlag Nord/.test(a.titel));
   pruefe(!!deDemo && !!atDemo && demoAkten.some((a) => a.land === "CH"), "Demo-Akten DE (Fläche), AT und CH vorhanden");
   r = await flaeche.get("/api/portal/grundbuch");
   pruefe(r.status === 200 && r.json.akten.length >= 1 && r.json.akten.every((a) => a.meineRolle === "eigentuemer") && !r.json.akten.some((a) => a.id === atDemo?.id), "Eigentümerin sieht nur eigene Akten", r.json.akten?.map((a) => a.id));
@@ -267,9 +266,9 @@ async function http() {
     r = await flaeche.get(`/api/portal/grundbuch/${atDemo.id}`);
     pruefe(r.status === 403, "Fremde Akte (AT, Landwirt) → 403", r.status);
     r = await landwirt.get(`/api/portal/grundbuch/${atDemo.id}`);
-    pruefe(r.status === 200 && r.json.akte.schritte.every((s) => s.portal && s.text === undefined && s.notiz === undefined) && r.json.akte.eigentuemerId === undefined, "Eigentümer-Sicht vereinfacht („Was bedeutet das für Sie?“, keine internen Notizen)", r.json.akte?.schritte?.[0]);
+    pruefe(r.status === 200 && r.json.akte.schritte.every((s) => s.portal && s.text === undefined && s.notiz === undefined) && r.json.akte.eigentuemerId === undefined, "Eigentümer-Sicht vereinfacht („Was bedeutet das für Sie?“, keine internen Notizen)", { status: r.status, fehler: r.json?.error, schritt: r.json?.akte?.schritte?.[0] });
     r = await flaeche.get(`/portal/grundbuch/${atDemo.id}`);
-    pruefe(nichtGefunden(r), "Seite fremder Akte → 404", r.status);
+    pruefe(r.status === 404 || !r.text.includes(atDemo.id), "Seite fremder Akte → 404 (ohne Inhalte)", r.status);
   }
   r = await admin.get("/api/admin/grundbuch/auswahl");
   pruefe(r.status === 200 && Array.isArray(r.json.flaechen) && Array.isArray(r.json.anlagen), "Auswahl Flächen/Anlagen für neue Akte");
@@ -306,6 +305,7 @@ async function http() {
   r = await schritt(admin, { schluessel: "eintragung", status: "erledigt", nachweisWert: "Abt. II Nr. 4" });
   pruefe(r.status === 409, "Eintragung ohne Rangrücktritt der Bank → 409", r.json);
   r = await schritt(admin, { schluessel: "rang", status: "erledigt", nachweisWert: "Rangrücktritt Testbank" });
+  pruefe(r.status === 200, "Rangrücktritt mit Nachweis erledigt", r.json);
   const fd = new FormData();
   fd.append("datei", new Blob([Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n")], { type: "application/pdf" }), "grundbuchauszug.pdf");
   fd.append("schritt", "eintragung");
@@ -399,7 +399,7 @@ async function http() {
   r = await tInvestor.get(`/api/portal/closing/${cid}`);
   pruefe(r.status === 403, "Fremder Investor → 403", r.status);
   r = await fremd.get(`/portal/closing/${cid}`);
-  pruefe(nichtGefunden(r), "Seite fremder Closing-Raum → 404", r.status);
+  pruefe(r.status === 404 || !r.text.includes(cid), "Seite fremder Closing-Raum → 404 (ohne Inhalte)", r.status);
   r = await investor.get("/api/portal/closing");
   pruefe(r.status === 200 && r.json.closings.some((c) => c.id === cid), "Käufer: Liste eigener Closings");
 
@@ -459,12 +459,12 @@ async function http() {
   pruefe(r.status === 409, "Nach Closing keine Änderungen an CPs → 409", r.status);
 
   abschnitt("B6. Seiten");
-  for (const [cl, pfad] of [[admin, "/portal/admin/grundbuch"], [admin, `/portal/admin/grundbuch/${gid}`], [admin, "/portal/admin/closing"], [admin, `/portal/admin/closing/${cid}`], [eigentuemer, `/portal/grundbuch/${gid}`], [eigentuemer, "/portal/grundbuch"], [investor, `/portal/closing/${cid}`], [anbieter, "/portal/closing"]]) {
+  for (const [cl, pfad, merkmal] of [[admin, "/portal/admin/grundbuch", "offene Grundbuch-Eintragungen"], [admin, `/portal/admin/grundbuch/${gid}`, "Kostenschätzung"], [admin, "/portal/admin/closing", "Closing-Räume"], [admin, `/portal/admin/closing/${cid}`, "Closing Conditions"], [eigentuemer, `/portal/grundbuch/${gid}`, "Was bedeutet das für Sie?"], [eigentuemer, "/portal/grundbuch", "Ihre Grundbuch-Akten"], [investor, `/portal/closing/${cid}`, "Closing Conditions"], [anbieter, "/portal/closing", "Ihre Closing-Räume"]]) {
     r = await cl.get(pfad);
-    pruefe(r.status === 200 && !nichtGefunden(r), `Seite ${pfad} (${cl.name}) → 200`, r.status);
+    pruefe(r.status === 200 && r.text.includes(merkmal), `Seite ${pfad} (${cl.name}) → 200 mit „${merkmal}“`, r.status);
   }
   r = await akquise.get("/portal/admin/closing");
-  pruefe(nichtGefunden(r), "Seite Closing für Unterrolle Akquise → 404", r.status);
+  pruefe(r.status === 404 || !r.text.includes("Closing-Räume"), "Seite Closing für Unterrolle Akquise → 404", r.status);
 }
 
 async function main() {

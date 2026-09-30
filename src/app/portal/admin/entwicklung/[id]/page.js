@@ -9,10 +9,11 @@ import { portalNutzer, laden } from "@/lib/plattform/server/seite";
 import { entwicklungBackend } from "@/lib/plattform/backend/entwicklung";
 import { heuteIso } from "@/lib/plattform/entwicklung";
 import { LAENDER } from "@/lib/plattform/konstanten";
+import { KalkulationReiter, PlanungReiter } from "@/components/Portal/Planung/Reiter"; // Planungsdateien & Projektkosten
 
 export const metadata = { title: "Entwicklungsprojekt" };
 
-const REITER = ["uebersicht", "plan", "flaechen", "risiken", "kontakte", "entscheidungen", "kosten", "freigaben"];
+const REITER = ["uebersicht", "plan", "flaechen", "risiken", "kontakte", "entscheidungen", "kosten", "freigaben", "planung", "kalkulation"];
 
 export default async function EntwicklungProjektSeite({ params, searchParams }) {
   const n = await portalNutzer({ admin: true });
@@ -53,6 +54,8 @@ export default async function EntwicklungProjektSeite({ params, searchParams }) 
           { id: "entscheidungen", label: "Entscheidungen", zaehler: p.entscheidungen.length },
           { id: "kosten", label: "Kosten" },
           { id: "freigaben", label: "Freigaben & Gutachter", zaehler: p.rueckfragen.filter((r) => !r.backoffice).length },
+          { id: "planung", label: "Pläne" }, // Planungsdateien (CAD)
+          { id: "kalkulation", label: "Kostenkalkulation" }, // Projektkostenkalkulation
         ]}
       />
 
@@ -112,6 +115,8 @@ export default async function EntwicklungProjektSeite({ params, searchParams }) 
       {reiter === "entscheidungen" && <Entscheidungen projekt={p} />}
       {reiter === "kosten" && <Kosten projekt={p} />}
       {reiter === "freigaben" && <Freigaben projekt={p} auswahl={auswahl} />}
+      {reiter === "planung" && <PlanungReiter nutzer={n} projektId={p.id} />}
+      {reiter === "kalkulation" && <KalkulationReiter nutzer={n} projektId={p.id} />}
     </>
   );
 }

@@ -178,7 +178,9 @@ export function KlaerfallAktionen({ klaerfall: k }) {
 
 export function Zahlungsvorschlag({ daten, darf, heute }) {
   const router = useRouter();
-  const frei = daten.eintraege.filter((e) => e.ok);
+  // Vorauswahl: freie Gutschriften der ersten Gesellschaft mit gültigem Auftraggeberkonto (eine SEPA-Datei je Gesellschaft)
+  const ersteGes = (daten.auftraggeber || []).find((a) => a.ibanOk !== false && daten.eintraege.some((e) => e.ok && e.gesellschaftId === a.gesellschaftId))?.gesellschaftId;
+  const frei = daten.eintraege.filter((e) => e.ok && e.gesellschaftId === ersteGes);
   const [auswahl, setAuswahl] = useState(() => new Set(frei.flatMap((e) => e.belege.map((b) => b.id))));
   const [datum, setDatum] = useState(heute);
   const [laeuft, setLaeuft] = useState(false);
@@ -234,15 +236,15 @@ export function Zahlungsvorschlag({ daten, darf, heute }) {
             {!e.ok && <p className="mt-2 text-[13px] text-ink-900"><strong>Auszahlung gesperrt:</strong> {e.gruende.join(" ")}</p>}
             <ul className="mt-2 space-y-1">
               {e.belege.map((b) => (
-                <li key={b.id} className="flex items-center gap-2 text-[13.5px] text-ink-700">
+                <li key={b.id} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13.5px] text-ink-700">
                   {e.ok && darf ? (
                     <input type="checkbox" aria-label={`${b.nummer} auswählen`} checked={auswahl.has(b.id)} onChange={() => umschalten(b.id)} className="h-4 w-4 accent-ov-600" />
                   ) : (
                     <span aria-hidden="true" className="inline-block h-4 w-4 rounded border border-ink-300 bg-ink-100" />
                   )}
-                  <span className="ov-num font-semibold">{b.nummer}</span>
-                  <span className="truncate">{zeitraum(b.zeitraum)} · fällig {tag(b.faelligAm)}</span>
-                  <span className="ov-num ml-auto font-semibold">{euro(b.brutto)}</span>
+                  <span className="ov-num whitespace-nowrap font-semibold">{b.nummer}</span>
+                  <span className="ov-num ml-auto whitespace-nowrap font-semibold sm:order-last">{euro(b.brutto)}</span>
+                  <span className="min-w-0 basis-full pl-6 text-[12.5px] text-ink-500 sm:basis-auto sm:pl-0 sm:text-[13.5px] sm:text-ink-700">{zeitraum(b.zeitraum)} · fällig {tag(b.faelligAm)}</span>
                 </li>
               ))}
             </ul>

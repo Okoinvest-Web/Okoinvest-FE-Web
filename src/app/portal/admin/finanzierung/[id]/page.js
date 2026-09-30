@@ -103,7 +103,7 @@ export default async function FinanzierungsFallSeite({ params, searchParams }) {
           {v.zeilen.length === 0 ? <p className="px-6 py-5 text-[14px] text-ink-500">Noch keine Term Sheets.</p> : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[980px] text-[13px]">
+                <table className="w-full min-w-[1120px] text-[13px]">
                   <thead><tr className="text-left text-[11.5px] uppercase tracking-wider text-ink-500"><th className="px-5 py-2.5">Rang / Bank</th><th className="px-3 py-2.5 text-right">Betrag</th><th className="px-3 py-2.5">Zins / Laufzeit</th><th className="px-3 py-2.5">Tilgung</th><th className="px-3 py-2.5 text-right">DSCR P50/P90</th><th className="px-3 py-2.5 text-right">Covenant / Lock-up</th><th className="px-3 py-2.5 text-right">EK-Bedarf</th><th className="px-3 py-2.5 text-right">EK-IRR</th><th className="px-3 py-2.5 text-right">Effektiv p. a.</th><th className="px-5 py-2.5 text-right">Kosten</th></tr></thead>
                   <tbody className="divide-y divide-ink-100">
                     {v.zeilen.map((z) => (

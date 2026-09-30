@@ -872,7 +872,7 @@ function kundeAusschreibungAusgabe(db, a, n, kurve) {
     const lfName = (id) => E(db).lieferanten.find((l) => l.id === id)?.name || "";
     // Anteil des Kunden am Pool (für €/Jahr des Kunden)
     const anteil = a.kundenIds.length > 1 ? (a.lose.find((x) => x.kundeId === n.id)?.jahresKwh || 0) / Math.max(1, a.lose.reduce((s, x) => s + (x.jahresKwh || 0), 0)) : 1;
-    const beste = besteJeLieferant(vg).slice(0, 6).map((z) => ({ lieferant: lfName(z.lieferantId), produkt: z.produkt, art: z.art, ctKwh: z.ctKwh, eurJahr: Math.round(z.eurJahr * anteil), rang: z.rang, abstandProzent: z.abstandProzent, sensitivitaet: Object.fromEntries(Object.entries(z.sensitivitaet).map(([k, x]) => [k, Math.round(x * anteil)])), angebotId: z.angebotId, produktId: z.produktId }));
+    const beste = besteJeLieferant(vg).slice(0, 6).map((z, i) => ({ lieferant: lfName(z.lieferantId), produkt: z.produkt, art: z.art, ctKwh: z.ctKwh, eurJahr: Math.round(z.eurJahr * anteil), rang: i + 1, abstandProzent: z.abstandProzent, sensitivitaet: Object.fromEntries(Object.entries(z.sensitivitaet).map(([k, x]) => [k, Math.round(x * anteil)])), angebotId: z.angebotId, produktId: z.produktId }));
     const vz = vg.zeilen.find((z) => z.angebotId === a.zuschlag.angebotId && z.produktId === a.zuschlag.produktId);
     const g = E(db).angebote.find((x) => x.id === a.zuschlag.angebotId);
     const neuV = E(db).vertraege.find((y) => y.ausschreibungId === a.id && y.kundeId === n.id);

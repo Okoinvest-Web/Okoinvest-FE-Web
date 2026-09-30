@@ -45,6 +45,7 @@ ROLLEN_FIXTURES = [
 	"ÖkoInvest Projektleitung",  # Projektentwicklung: Desk-Rolle
 	"ÖkoInvest Gutachter",  # Projektentwicklung: Website-Rolle (Gutachter/Planer, nur per Einladung)
 	"ÖkoInvest Bank",  # Finanzierung: Website-Rolle Bank/Finanzierungspartner (nur per Einladung, keine DocPerm)
+	"Plattform Kommune",  # Onboarding B1: Website-Rolle Kommune/Gemeinde (selbst wählbar, keine DocPerm)
 ]
 
 ROLE_PROFILES = [
@@ -202,6 +203,7 @@ scheduler_events = {
 		"oekoinvest_app.plattform.api.entwicklung.fristen_taeglich",  # Projektentwicklung: Fristen-Erinnerungen, optional ERPNext-Abgleich
 		"oekoinvest_app.plattform.api.signatur.erinnerungen_senden",  # Signatur: Erinnerung nach 3 Tagen, abgelaufene Fristen
 		"oekoinvest_app.plattform.api.hr.hrms_abgleich",  # HR: Leave Applications (HRMS, optional) → Abwesenheit + Vertretung
+		"oekoinvest_app.plattform.api.onboarding.mail_lauf_taeglich",  # Onboarding B1: Erinnerung an offene Einstiegsschritte nach 3/7 Tagen
 	],
 	# Deal-Room: Erinnerung 48 h vor Ende einer Angebotsfrist
 	"hourly": [

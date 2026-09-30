@@ -264,6 +264,9 @@ async function api() {
     pruefe(r.status === 403, "Anderer Investor ohne NDA für dasselbe Projekt → 403", r.status);
   }
 
+  r = await inv.del(`/api/portal/finanzierung/szenarien/${sz?.id}`);
+  pruefe(r.status === 200, "Eigenes Szenario löschen (Demo-Konto bleibt aufgeräumt)", r.status);
+
   abschnitt("A3. Backoffice: Fall, Anfrage an Banken, Paket-Freigabe");
   r = await admin.get("/api/admin/finanzierung");
   pruefe(r.status === 200 && r.json.faelle?.length >= 3 && r.json.banken?.length >= 3, "Übersicht mit Demo-Fällen und Bankenstamm", r.status);

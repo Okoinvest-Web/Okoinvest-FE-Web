@@ -55,6 +55,11 @@ CP_STANDARD = [
 CP_IDS = [c[0] for c in CP_STANDARD]
 
 
+def _de(x):
+	"""Zahl mit zwei Nachkommastellen, deutsches Komma."""
+	return f"{x:.2f}".replace(".", ",")
+
+
 class FinanzierungFehler(ValueError):
 	"""Validierungsfehler (API: 422)."""
 
@@ -159,14 +164,14 @@ def covenant_ampel(dscr, lockup=DSCR_LOCKUP, covenant=DSCR_DEFAULT, vorher=None)
 	if dscr is None:
 		return {"id": "grau", "verletzt": False, "lockup": False, "grund": "Keine Messdaten bzw. kein Schuldendienst im Zeitraum."}
 	if dscr < covenant:
-		return {"id": "rot", "verletzt": True, "lockup": True, "grund": f"DSCR {dscr:.2f} unter dem Covenant {covenant:.2f} – Kündigungsrecht der Bank (Event of Default), sofort mit der Bank sprechen."}
+		return {"id": "rot", "verletzt": True, "lockup": True, "grund": f"DSCR {_de(dscr)} unter dem Covenant {_de(covenant)} – Kündigungsrecht der Bank (Event of Default), sofort mit der Bank sprechen."}
 	if dscr < lockup:
-		return {"id": "rot", "verletzt": False, "lockup": True, "grund": f"DSCR {dscr:.2f} unter dem Lock-up {lockup:.2f} – Ausschüttungssperre."}
+		return {"id": "rot", "verletzt": False, "lockup": True, "grund": f"DSCR {_de(dscr)} unter dem Lock-up {_de(lockup)} – Ausschüttungssperre."}
 	if dscr < lockup + FRUEHWARN_PUFFER:
-		return {"id": "gelb", "verletzt": False, "lockup": False, "grund": f"DSCR {dscr:.2f} nur knapp über dem Lock-up {lockup:.2f}."}
+		return {"id": "gelb", "verletzt": False, "lockup": False, "grund": f"DSCR {_de(dscr)} nur knapp über dem Lock-up {_de(lockup)}."}
 	if vorher is not None and vorher - dscr > 0.1:
-		return {"id": "gelb", "verletzt": False, "lockup": False, "grund": f"DSCR fällt deutlich ({vorher:.2f} → {dscr:.2f})."}
-	return {"id": "gruen", "verletzt": False, "lockup": False, "grund": f"DSCR {dscr:.2f} – ausreichend Abstand zum Lock-up."}
+		return {"id": "gelb", "verletzt": False, "lockup": False, "grund": f"DSCR fällt deutlich ({_de(vorher)} → {_de(dscr)})."}
+	return {"id": "gruen", "verletzt": False, "lockup": False, "grund": f"DSCR {_de(dscr)} – ausreichend Abstand zum Lock-up."}
 
 
 def covenant_pruefung(monate, lockup=DSCR_LOCKUP, covenant=DSCR_DEFAULT, llcr_covenant=None, restschuld=0.0, plan_cfads=None, zins=0.045):
@@ -189,7 +194,7 @@ def covenant_pruefung(monate, lockup=DSCR_LOCKUP, covenant=DSCR_DEFAULT, llcr_co
 	letzte = pruefungen[-1] if pruefungen else None
 	ampel = letzte["ampel"] if letzte else covenant_ampel(None)
 	if llcr is not None and llcr_covenant and llcr < llcr_covenant and ampel["id"] != "rot":
-		ampel = {"id": "rot", "verletzt": True, "lockup": True, "grund": f"LLCR {llcr:.2f} unter dem Covenant {llcr_covenant:.2f}."}
+		ampel = {"id": "rot", "verletzt": True, "lockup": True, "grund": f"LLCR {_de(llcr)} unter dem Covenant {_de(llcr_covenant)}."}
 	return {"pruefungen": pruefungen, "llcr": llcr, "ampel": ampel, "letzte": letzte}
 
 

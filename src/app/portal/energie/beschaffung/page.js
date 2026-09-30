@@ -68,7 +68,7 @@ export default async function MeineEnergiebeschaffung() {
                 yEinheit="€/Jahr"
                 format={(x) => fmt(x, 0)}
                 hoehe={220}
-                beschreibung="Kosten der besten Angebote bei Marktbewegungen"
+                beschreibung="Kosten der besten Angebote bei Marktbewegungen" breite={520}
               />
               <Legende eintraege={a.vergleich.zeilen.slice(0, 3).map((z, i) => ({ name: `${z.lieferant} – ${z.produkt}`.slice(0, 60), farbe: [FARBEN.navy, FARBEN.gruen, FARBEN.sonne][i] }))} />
               {a.eigeneFreigabe ? <Hinweis>Ihre Entscheidung: {a.eigeneFreigabe.entscheidung} am {datumZeit(a.eigeneFreigabe.am)}.</Hinweis> : <FreigabeKnoepfe ausschreibungId={a.id} />}

@@ -62,7 +62,7 @@ export function LinienChart({ reihen = [], xTicks = [], xText = String, yEinheit
   if (!alle.length) return <p className="text-[14px] text-ink-500">Keine Daten.</p>;
   const xs = alle.map((p) => p.x);
   const ys = alle.map((p) => p.y).filter(Number.isFinite);
-  const PAD = { l: 48, r: 12, t: 14, b: 28 };
+  const PAD = { l: 48, r: 12, t: 26, b: 28 };
   const w = breite - PAD.l - PAD.r;
   const h = hoehe - PAD.t - PAD.b;
   const xmin = Math.min(...xs);
@@ -128,7 +128,7 @@ export function LinienChart({ reihen = [], xTicks = [], xText = String, yEinheit
  */
 export function BalkenChart({ kategorien = [], reihen = [], gestapelt = false, yEinheit = "", hoehe = 240, breite = 720, beschreibung = "", format = (x) => zahl(x, 1), linie = null }) {
   if (!kategorien.length) return <p className="text-[14px] text-ink-500">Keine Daten.</p>;
-  const PAD = { l: 48, r: 12, t: 14, b: 30 };
+  const PAD = { l: 48, r: 12, t: 26, b: 30 };
   const w = breite - PAD.l - PAD.r;
   const h = hoehe - PAD.t - PAD.b;
   const summen = kategorien.map((_, i) => (gestapelt ? reihen.reduce((s, r) => s + Math.max(0, r.werte[i] || 0), 0) : Math.max(...reihen.map((r) => r.werte[i] ?? 0))));

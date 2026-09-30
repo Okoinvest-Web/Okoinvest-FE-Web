@@ -7,8 +7,8 @@
 // Kandidat = zusammenhängender Verbund geeigneter Parzellen (Acker/Grünland; Wald/Gewässer trennen). Mehrere
 // Eigentümer sind möglich – die Akquise sichert dann mehrere Parzellen (Steckbrief listet sie einzeln).
 
-import { abstandPolygonPolygonM, abstandPunktPolygonM, bbox, bboxSchneidet, distanzM, flaecheM2, kompaktheit, schwerpunkt, ueberdeckung } from "./geo.js";
-import { besterKnoten, bewerte, kennzahlen, mwpFuer, naechsterKnoten, netzkosten, prioritaet, widmungslage } from "./scoring.js";
+import { abstandPolygonPolygonM, abstandPunktLinieM, abstandPunktPolygonM, bbox, bboxSchneidet, distanzM, flaecheM2, kompaktheit, schwerpunkt, stichproben, ueberdeckung } from "./geo.js";
+import { KULISSE, besterKnoten, bewerte, kennzahlen, mwpFuer, naechsterKnoten, netzkosten, prioritaet, widmungslage } from "./scoring.js";
 
 const GEEIGNET = ["acker", "gruenland"];
 const NACHBAR_M = 3; // Parzellen mit weniger als 3 m Abstand gelten als zusammenhängend (Feldweg-Grenzen ausgenommen)
@@ -49,11 +49,76 @@ export function verbuende(parzellen) {
 /** Knoten-Feature → flaches Objekt */
 export const knotenFlach = (f) => ({ ...f.properties, lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] });
 
+const r2 = (x) => Math.round(x * 100) / 100;
+
+/**
+ * Flächenkulisse eines Verbunds (Ausbaustufe A1b, Deutschland/Schweiz). Liefert Anteile 0–1 (flächengewichtet):
+ *  - randstreifenAnteil: Stichproben ≤ 500 m zu Autobahn oder Schienenweg (§ 37 Abs. 1 Nr. 2 lit. c EEG – ohne Gleiszahl)
+ *  - privilegiertAnteil: ≤ 200 m zu Autobahn oder Hauptbahn mit mind. zwei Hauptgleisen (§ 35 Abs. 1 Nr. 8 lit. b BauGB)
+ *  - benachteiligtAnteil, moorAnteil, konversionAnteil (DE) bzw. eignungAnteil, fffAnteil, vorbelastet (CH) aus den
+ *    Flurstücks-Eigenschaften `kulisse` (im Dienst per Verschneidung mit den Kulissen-Polygonen, in der Demo synthetisch)
+ * Abstände zur OSM-Mittellinie statt zum äußeren Fahrbahnrand → der Korridor wird leicht UNTERschätzt (konservativ).
+ */
+export function kulisseFuer(gruppe, flaechen, land, verkehr = [], verkehrBoxen = []) {
+  if (land !== "DE" && land !== "CH") return null;
+  const m2 = flaechen.reduce((s, x) => s + x, 0) || 1;
+  const anteil = (merkmal) => gruppe.reduce((s, p, i) => s + ((p.properties.kulisse || []).includes(merkmal) ? flaechen[i] : 0), 0) / m2;
+  const k = { demo: gruppe.some((p) => p.properties.kulisseDemo) };
+  if (land === "CH") {
+    k.eignungAnteil = r2(anteil("eignung"));
+    k.fffAnteil = r2(anteil("fff"));
+    k.vorbelastet = gruppe.some((p) => (p.properties.kulisse || []).includes("vorbelastet"));
+    return k;
+  }
+  const box = bbox({ type: "MultiPolygon", coordinates: gruppe.map((p) => (p.geometry.type === "Polygon" ? p.geometry.coordinates : p.geometry.coordinates[0])) });
+  const dLat = 600 / 111320;
+  const dLon = 600 / (111320 * Math.cos(((box[1] + box[3]) / 2) * (Math.PI / 180)));
+  const nah = [box[0] - dLon, box[1] - dLat, box[2] + dLon, box[3] + dLat];
+  const linien = verkehr.filter((_, i) => bboxSchneidet(verkehrBoxen[i], nah));
+  let rand = 0;
+  let priv = 0;
+  let minA = Infinity;
+  let minS = Infinity;
+  gruppe.forEach((p, i) => {
+    const pkt = stichproben(p.geometry);
+    let nRand = 0;
+    let nPriv = 0;
+    for (const q of pkt) {
+      let dA = Infinity;
+      let dS = Infinity;
+      let dS2 = Infinity;
+      for (const l of linien) {
+        const d = abstandPunktLinieM(q, l.geometry);
+        if (l.properties.art === "autobahn") dA = Math.min(dA, d);
+        else {
+          dS = Math.min(dS, d);
+          if (l.properties.usage === "main" && Number(l.properties.gleise) >= 2) dS2 = Math.min(dS2, d);
+        }
+      }
+      minA = Math.min(minA, dA);
+      minS = Math.min(minS, dS);
+      if (Math.min(dA, dS) <= KULISSE.DE.randstreifenM) nRand++;
+      if (Math.min(dA, dS2) <= KULISSE.DE.privilegiertM) nPriv++;
+    }
+    rand += (pkt.length ? nRand / pkt.length : 0) * flaechen[i];
+    priv += (pkt.length ? nPriv / pkt.length : 0) * flaechen[i];
+  });
+  k.randstreifenAnteil = r2(rand / m2);
+  k.privilegiertAnteil = r2(priv / m2);
+  k.benachteiligtAnteil = r2(anteil("benachteiligt"));
+  k.moorAnteil = r2(anteil("moor"));
+  k.konversionAnteil = r2(anteil("konversion"));
+  k.abstandAutobahnM = Number.isFinite(minA) ? Math.round(minA) : null;
+  k.abstandSchieneM = Number.isFinite(minS) ? Math.round(minS) : null;
+  return k;
+}
+
 /**
  * Kandidaten bauen und bewerten.
- * daten = { parzellen: Feature[], knoten: Feature[], schutz: Feature[], orte: Feature[], zonen?: Feature[] }
+ * daten = { parzellen: Feature[], knoten: Feature[], schutz: Feature[], orte: Feature[], zonen?: Feature[], verkehr?: Feature[] (LineString, DE) }
  */
-export function kandidatenBauen({ parzellen = [], knoten = [], schutz = [], orte = [], zonen = [] }) {
+export function kandidatenBauen({ parzellen = [], knoten = [], schutz = [], orte = [], zonen = [], verkehr = [] }) {
+  const verkehrBoxen = verkehr.map((l) => bbox(l.geometry));
   const geeignet = parzellen.filter((p) => GEEIGNET.includes(p.properties?.nutzung));
   const kn = knoten.map(knotenFlach);
   const schutzBoxen = schutz.map((s) => bbox(s.geometry));
@@ -112,7 +177,8 @@ export function kandidatenBauen({ parzellen = [], knoten = [], schutz = [], orte
       for (const p of gruppe) zoneAbstandM = Math.min(zoneAbstandM, ueberdeckung(p.geometry, z.geometry) > 0.5 ? 0 : abstandPolygonPolygonM(p.geometry, z.geometry));
     });
     if (zoneAbstandM === Infinity) zoneAbstandM = 1e9;
-    const widmung = widmungslage({ bundesland, uwAbstandKm: uw ? uw.luftlinieM / 1000 : null, zoneAbstandM });
+    const kulisse = kulisseFuer(gruppe, flaechen, land, verkehr, verkehrBoxen);
+    const widmung = widmungslage({ bundesland, uwAbstandKm: uw ? uw.luftlinieM / 1000 : null, zoneAbstandM: land === "AT" ? zoneAbstandM : null, land, privilegiertAnteil: kulisse?.privilegiertAnteil, eignungAnteil: kulisse?.eignungAnteil });
 
     const m = {
       ha,
@@ -126,6 +192,7 @@ export function kandidatenBauen({ parzellen = [], knoten = [], schutz = [], orte
       widmung,
       bundesland,
       land,
+      ...(kulisse ? { kulisse } : {}),
     };
     const b = bewerte(m);
     const agri = nutzung.acker >= nutzung.gruenland;
@@ -156,6 +223,7 @@ export function kandidatenBauen({ parzellen = [], knoten = [], schutz = [], orte
         hauptnutzung: agri ? "acker" : "gruenland",
         siedlung,
         schutz: schutzListe,
+        ...(kulisse ? { kulisse } : {}),
       },
       netz: netz
         ? {
@@ -178,8 +246,9 @@ export function kandidatenBauen({ parzellen = [], knoten = [], schutz = [], orte
 }
 
 /** Filter auf Kandidatenliste (gleiche Parameter wie die Dienst-API) */
-export function filtern(liste, { bbox: box, minHa, maxTrasseKm, minScore, bundesland, bezirk, gemeinde, ampel, q } = {}) {
+export function filtern(liste, { bbox: box, minHa, maxTrasseKm, minScore, land, bundesland, bezirk, gemeinde, ampel, q } = {}) {
   let l = liste;
+  if (land) l = l.filter((k) => k.land === land);
   if (box) l = l.filter((k) => bboxSchneidet(k.bbox, box));
   if (minHa) l = l.filter((k) => k.ha >= minHa);
   if (maxTrasseKm) l = l.filter((k) => k.netz && k.netz.trasseM <= maxTrasseKm * 1000);

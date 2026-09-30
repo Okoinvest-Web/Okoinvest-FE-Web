@@ -19,12 +19,13 @@ ROLLEN = {
 	"anbieter": ("Plattform Anbieter", "Projektentwickler / Anbieter", 1),
 	"unternehmen": ("Plattform Unternehmen", "Unternehmen", 1),
 	"mitglied": ("Plattform Mitglied", "Mitglied / Bürger", 1),
+	"kommune": ("Plattform Kommune", "Kommune / Gemeinde", 1),  # Onboarding B1: eigene Rolle (vorher „unternehmen“)
 	"admin": ("Plattform Backoffice", "Backoffice", 0),
 	"gutachter": ("ÖkoInvest Gutachter", "Gutachter / Planer", 0),  # Projektentwicklung: Website-Rolle, nur per Einladung
 	"lieferant": ("Plattform Lieferant", "Energieversorger / Lieferant", 0),  # Energiebeschaffung: Website-Rolle, nur per Einladung
 	"bank": ("ÖkoInvest Bank", "Bank / Finanzierungspartner", 0),  # Finanzierung: Website-Rolle, nur per Einladung zu einer Finanzierungsanfrage
 }
-ROLLEN_IDS = ["flaeche", "landwirt", "investor", "anbieter", "unternehmen", "mitglied"]
+ROLLEN_IDS = ["flaeche", "landwirt", "investor", "anbieter", "unternehmen", "mitglied", "kommune"]  # kommune: Onboarding B1
 ALLE_ROLLEN_IDS = ROLLEN_IDS + ["admin", "gutachter", "lieferant", "bank"]  # gutachter: Projektentwicklung, lieferant: Energiebeschaffung, bank: Finanzierung (nur per Einladung)
 FRAPPE_ROLLEN = [r[0] for r in ROLLEN.values()]
 
@@ -52,7 +53,7 @@ ROLLE_FUER_TYP = {
 	"reststrom": "unternehmen",
 	"carport": "unternehmen",
 	"speicher": "unternehmen",
-	"kommune": "unternehmen",
+	"kommune": "kommune",  # Onboarding B1: eigene Rolle Kommune
 	"genossenschaft": "mitglied",
 	"energiegemeinschaft": "mitglied",
 	"kontakt": "flaeche",

@@ -168,7 +168,7 @@ const LABELS = {
 
 function brotkrumen(pfad) {
   const teile = pfad.split("/").filter(Boolean);
-  return teile.map((t, i) => ({ href: "/" + teile.slice(0, i + 1).join("/"), label: LABELS[t] || decodeURIComponent(t) }));
+  return teile.map((t, i) => ({ href: "/" + teile.slice(0, i + 1).join("/"), label: (t === "energie" && teile[i - 1] === "admin" ? "Energie-Handelsdesk" : LABELS[t]) || decodeURIComponent(t) })); // Energiebeschaffung: /portal/admin/energie
 }
 
 function aktiv(pfad, e) {

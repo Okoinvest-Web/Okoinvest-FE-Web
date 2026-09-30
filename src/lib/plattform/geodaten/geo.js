@@ -257,3 +257,31 @@ export function bboxLesen(text, { maxGrad = 3 } = {}) {
   if (c - a > maxGrad || d - b > maxGrad) return null;
   return z;
 }
+
+// ---------------------------------------------------------------- Linien (Ausbaustufe A1b: Autobahnen/Schienenwege)
+
+/** Kürzester Abstand in m zwischen Punkt [lon, lat] und LineString/MultiLineString */
+export function abstandPunktLinieM(pt, linie) {
+  if (!linie?.coordinates) return Infinity;
+  const teile = linie.type === "MultiLineString" ? linie.coordinates : [linie.coordinates];
+  const p = projektor(pt);
+  const q = p(pt);
+  let min = Infinity;
+  for (const t of teile) {
+    const xy = t.map(p);
+    for (let i = 1; i < xy.length; i++) min = Math.min(min, abstandPunktStrecke(q, xy[i - 1], xy[i]));
+  }
+  return min;
+}
+
+/** Stichprobenpunkte einer Fläche: Stützpunkte, Kantenmitten und Schwerpunkt (für Flächenanteile in Korridoren) */
+export function stichproben(geometrie) {
+  const pkt = [];
+  for (const poly of ringe(geometrie)) {
+    const r = poly[0] || [];
+    for (let i = 1; i < r.length; i++) pkt.push(r[i - 1], [(r[i - 1][0] + r[i][0]) / 2, (r[i - 1][1] + r[i][1]) / 2]);
+  }
+  const s = schwerpunkt(geometrie);
+  if (s) pkt.push(s, s); // Schwerpunkt doppelt gewichtet
+  return pkt;
+}

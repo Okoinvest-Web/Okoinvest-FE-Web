@@ -7,6 +7,9 @@
 //   public/geo/orte-innviertel.geojson           OSM Siedlungspunkte (ODbL)
 //   src/data/geo/parzellen-demo.geojson          SYNTHETISCHE Parzellen (DEMO, keine echten Grundstücke/Eigentümer)
 // Erzeugt mit Backend-Import/dienste/geodaten/demo/demo_bauen.py. Nur serverseitig verwenden.
+// Deutschland (Ausbaustufe A1b, Raum Türkheim/Unterallgäu, demo_bauen_de.py):
+//   public/geo/netzknoten-schwaben.geojson · verkehr-unterallgaeu.geojson (A 96, Schienenwege) · orte-unterallgaeu.geojson ·
+//   schutzgebiete-unterallgaeu.geojson (alle OSM, ODbL) · src/data/geo/parzellen-demo-de.geojson (SYNTHETISCH, Kulisse synthetisch)
 
 import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
@@ -15,21 +18,34 @@ import { filtern, imUmkreis, kandidatenBauen, knotenFlach } from "./kandidaten.j
 import { KNOTEN_ARTEN, SCORING_VERSION } from "./scoring.js";
 
 const DATEIEN = {
-  parzellen: "src/data/geo/parzellen-demo.geojson",
-  knoten: "public/geo/netzknoten-ooe-sbg.geojson",
-  schutz: "public/geo/schutzgebiete-innviertel.geojson",
-  orte: "public/geo/orte-innviertel.geojson",
+  parzellen: ["src/data/geo/parzellen-demo.geojson", "src/data/geo/parzellen-demo-de.geojson"],
+  knoten: ["public/geo/netzknoten-ooe-sbg.geojson", "public/geo/netzknoten-schwaben.geojson"],
+  schutz: ["public/geo/schutzgebiete-innviertel.geojson", "public/geo/schutzgebiete-unterallgaeu.geojson"],
+  orte: ["public/geo/orte-innviertel.geojson", "public/geo/orte-unterallgaeu.geojson"],
+  verkehr: ["public/geo/verkehr-unterallgaeu.geojson"],
 };
+
+/** Demo-Regionen (Kartenstart/Sprungziele) */
+export const DEMO_REGIONEN = [
+  { id: "at-innviertel", land: "AT", label: "Innviertel (Oberösterreich)", mitte: [13.19, 48.17], zoom: 10 },
+  { id: "de-unterallgaeu", land: "DE", label: "Unterallgäu / Türkheim (Bayern)", mitte: [10.64, 48.06], zoom: 11 },
+];
 
 let roh = null;
 let cache = null;
 
 function lesen() {
-  const pfade = Object.fromEntries(Object.entries(DATEIEN).map(([k, p]) => [k, path.join(process.cwd(), p)]));
-  const stempel = Object.values(pfade).map((p) => statSync(p).mtimeMs).join("|");
+  const pfade = Object.fromEntries(Object.entries(DATEIEN).map(([k, liste]) => [k, liste.map((p) => path.join(process.cwd(), p))]));
+  const stempel = Object.values(pfade).flat().map((p) => statSync(p).mtimeMs).join("|");
   if (!roh || roh.stempel !== stempel) {
     const j = (p) => JSON.parse(readFileSync(p, "utf8"));
-    const d = Object.fromEntries(Object.entries(pfade).map(([k, p]) => [k, j(p)]));
+    // Je Art alle Regionen zusammenführen; metadata der ersten Datei (AT) bleibt für die Quellenliste, alle unter `alle`
+    const d = Object.fromEntries(
+      Object.entries(pfade).map(([k, liste]) => {
+        const fcs = liste.map(j);
+        return [k, { type: "FeatureCollection", metadata: fcs[0].metadata, alle: fcs.map((f) => f.metadata || {}), features: fcs.flatMap((f) => f.features) }];
+      })
+    );
     roh = { stempel, ...d };
     cache = null;
   }
@@ -49,7 +65,7 @@ function daten(kapazitaeten = {}) {
   const schluessel = `${r.stempel}#${JSON.stringify(kapazitaeten)}`;
   if (!cache || cache.schluessel !== schluessel) {
     const knoten = knotenMitKapazitaet(r.knoten.features, kapazitaeten);
-    const kandidaten = kandidatenBauen({ parzellen: r.parzellen.features, knoten, schutz: r.schutz.features, orte: r.orte.features });
+    const kandidaten = kandidatenBauen({ parzellen: r.parzellen.features, knoten, schutz: r.schutz.features, orte: r.orte.features, verkehr: r.verkehr.features });
     cache = { schluessel, knoten, kandidaten };
   }
   return cache;
@@ -61,7 +77,10 @@ const QUELLEN = () => {
     { id: "osm_netz", titel: "Umspannwerke/Trafostationen (OpenStreetMap)", lizenz: "ODbL-1.0", attribution: "© OpenStreetMap-Mitwirkende (ODbL)", url: "https://www.openstreetmap.org/copyright", stand: r.knoten.metadata?.stand || null },
     { id: "osm_schutz", titel: "Schutzgebiete (OpenStreetMap, nicht amtlich)", lizenz: "ODbL-1.0", attribution: "© OpenStreetMap-Mitwirkende (ODbL)", url: "https://www.openstreetmap.org/copyright", stand: r.schutz.metadata?.stand || null },
     { id: "demo", titel: "Parzellen (SYNTHETISCH – DEMO)", lizenz: "intern", attribution: "DEMO-Parzellen, keine echten Grundstücke", url: "", stand: r.parzellen.metadata?.stand || null },
+    { id: "osm_verkehr", titel: "Autobahnen/Schienenwege Deutschland (OpenStreetMap, Gleiszahl geschätzt)", lizenz: "ODbL-1.0", attribution: "© OpenStreetMap-Mitwirkende (ODbL)", url: "https://www.openstreetmap.org/copyright", stand: r.verkehr.metadata?.stand || null },
+    { id: "demo_de", titel: "Flurstücke Deutschland (SYNTHETISCH – DEMO, Kulisse synthetisch)", lizenz: "intern", attribution: "DEMO-Flurstücke, keine echten Grundstücke", url: "", stand: r.parzellen.alle?.[1]?.stand || null },
     { id: "basemap", titel: "basemap.at", lizenz: "CC-BY-4.0", attribution: "Grundkarte: basemap.at", url: "https://basemap.at", stand: null },
+    { id: "topplus", titel: "TopPlusOpen (BKG) – Kartenhintergrund Deutschland", lizenz: "dl-de/by-2-0", attribution: "© BKG (2026) dl-de/by-2-0", url: "https://gdz.bkg.bund.de", stand: null },
   ];
 };
 
@@ -81,8 +100,9 @@ export function uebersicht({ kapazitaeten } = {}) {
       gruen: kandidaten.filter((k) => k.ampel === "gruen").length,
       prioA: kandidaten.filter((k) => k.prioritaet === "A").length,
     },
-    gebiete: { bundeslaender: zaehle(kandidaten, "bundesland"), bezirke: zaehle(kandidaten, "bezirk"), gemeinden: zaehle(kandidaten, "gemeinde") },
+    gebiete: { laender: zaehle(kandidaten, "land"), bundeslaender: zaehle(kandidaten, "bundesland"), bezirke: zaehle(kandidaten, "bezirk"), gemeinden: zaehle(kandidaten, "gemeinde") },
     start: { mitte: [13.19, 48.17], zoom: 10 },
+    regionen: DEMO_REGIONEN,
   };
 }
 
@@ -109,9 +129,12 @@ export function netzknoten({ bbox, arten = ["uew", "uw110", "ms", "trafo"] } = {
   return { type: "FeatureCollection", features };
 }
 
-/** Ebenen: schutzgebiete (OSM) | zonen (OÖ-Prioritätsradien um Umspannwerke, abgeleitet aus dem Kriterienkatalog) */
+/** Ebenen: schutzgebiete (OSM) | zonen (OÖ-Prioritätsradien um Umspannwerke, abgeleitet aus dem Kriterienkatalog) | verkehr (DE) */
 export function ebene(name, { bbox } = {}) {
   const r = lesen();
+  if (name === "verkehr") {
+    return { type: "FeatureCollection", features: r.verkehr.features.filter((f) => !bbox || bboxSchneidet(bboxVon(f.geometry), bbox)), hinweis: "Autobahnen und Schienenwege (OSM). EEG-Randstreifen 500 m (§ 37 Abs. 1 Nr. 2 lit. c EEG), Privilegierung 200 m an Autobahn bzw. zweigleisiger Hauptbahn (§ 35 Abs. 1 Nr. 8 lit. b BauGB). Gleiszahl geschätzt." };
+  }
   if (name === "schutzgebiete") {
     return { type: "FeatureCollection", features: r.schutz.features.filter((f) => !bbox || bboxSchneidet(bboxVon(f.geometry), bbox)) };
   }
@@ -142,7 +165,7 @@ export function suche(q, { kapazitaeten } = {}) {
       treffer.push({ typ: "kandidat", label: `${k.gemeinde} · ${String(k.ha).replace(".", ",")} ha · Score ${k.score}`, kandidatId: k.id, lon: k.schwerpunkt[0], lat: k.schwerpunkt[1] });
     }
   }
-  const gst = s.match(/^(\d{5})\s*[-/ ]\s*([\d/.]+)$/);
+  const gst = s.match(/^(\d{4,5})\s*[-/ ]\s*([\d/.]+)$/); // AT: KG-Nr (5-stellig), DE-Demo: Gemarkungsnummer (4-stellig)
   for (const p of r.parzellen.features) {
     if (treffer.length >= 10) break;
     const pr = p.properties;

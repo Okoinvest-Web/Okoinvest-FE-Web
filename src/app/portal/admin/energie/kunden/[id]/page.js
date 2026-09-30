@@ -68,7 +68,7 @@ export default async function KundenAnalyse({ params }) {
           </div>
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
             <Karte titel="Monatsmengen und PV-Einfluss" untertitel={`Netzbezug ohne und mit ${fmt(r.pv.kwp)} kWp PV${r.pv.speicherKwh ? ` + ${fmt(r.pv.speicherKwh)} kWh Speicher` : ""}${r.pv.beispiel ? " (Beispielgröße)" : ""}`}>
-              <BalkenChart kategorien={r.monate.map((m) => monatText(m.monat))} reihen={[{ name: "ohne PV", farbe: FARBEN.navy, werte: r.monate.map((m) => m.mwh) }, { name: "mit PV", farbe: FARBEN.gruen, werte: r.monate.map((m) => m.pvMwh) }]} yEinheit="MWh" beschreibung="Monatlicher Netzbezug ohne und mit PV" />
+              <BalkenChart kategorien={r.monate.map((m) => monatText(m.monat))} reihen={[{ name: "ohne PV", farbe: FARBEN.navy, werte: r.monate.map((m) => m.mwh) }, { name: "mit PV", farbe: FARBEN.gruen, werte: r.monate.map((m) => m.pvMwh) }]} yEinheit="MWh" beschreibung="Monatlicher Netzbezug ohne und mit PV" breite={520} />
               <Legende eintraege={[{ name: "Netzbezug ohne PV", farbe: FARBEN.navy }, { name: "mit PV/Speicher", farbe: FARBEN.gruen }]} />
               <Angaben
                 spalten={3}
@@ -83,7 +83,7 @@ export default async function KundenAnalyse({ params }) {
               <p className="mt-3 text-[12.5px] leading-snug text-ink-500">PV senkt die Menge, verteuert aber die verbleibende Kilowattstunde (Reststrom fällt in teure Abend- und Winterstunden) – das gehört in die Ausschreibung (Profil statt Jahresmenge).</p>
             </Karte>
             <Karte titel="Wochenprofil" untertitel="Mittlere Last je Stunde (kW), Prognosejahr">
-              <Heatmap matrix={r.wochenprofil} einheit="kW" beschreibung="Mittlere Last nach Wochentag und Stunde" />
+              <Heatmap matrix={r.wochenprofil} einheit="kW" beschreibung="Mittlere Last nach Wochentag und Stunde" breite={520} />
             </Karte>
           </div>
         </div>

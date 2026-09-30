@@ -9,9 +9,21 @@
 from .geometrie import distanz_m
 from .netz import FREIFLAECHE, PACHT, ebene_fuer, jsround, netzkosten
 
-SCORING_VERSION = "2026-09-30.1"
+SCORING_VERSION = "2026-09-30.2"  # .2: Deutschland/Schweiz (EEG-Kulisse, BauGB-Privilegierung, Richtplan, FFF)
 
 GEWICHTE = {"groesse": 20, "form": 8, "neigung": 12, "nutzung": 8, "siedlung": 8, "netz": 22, "kosten": 8, "widmung": 10, "einstrahlung": 4}
+# Gewichte je Land (Summe 100) – DE/CH mit Kriterium „Flächenkulisse“, übrige Kriterien proportional skaliert (wie scoring.js)
+GEWICHTE_LAND = {
+	"AT": GEWICHTE,
+	"DE": {"groesse": 18, "form": 7, "neigung": 10, "nutzung": 6, "siedlung": 7, "netz": 20, "kosten": 7, "widmung": 8, "kulisse": 14, "einstrahlung": 3},
+	"CH": {"groesse": 18, "form": 7, "neigung": 11, "nutzung": 6, "siedlung": 7, "netz": 20, "kosten": 7, "widmung": 8, "kulisse": 12, "einstrahlung": 4},
+}
+# Flächenkulisse: DE § 37 EEG (Randstreifen 500 m, benachteiligte Gebiete, Moor, Konversion) + § 35 Abs. 1 Nr. 8 lit. b BauGB (200 m);
+# CH kantonale Eignungsgebiete, vorbelastete Standorte, Fruchtfolgeflächen (Abzug). Anteil × Faktor, Maximum zählt.
+KULISSE = {
+	"DE": {"randstreifenM": 500, "privilegiertM": 200, "faktor": {"konversion": 1, "randstreifen": 1, "benachteiligt": 0.85, "moor": 0.7}},
+	"CH": {"faktor": {"eignung": 1, "vorbelastet": 0.6}, "fffAbzug": 8},
+}
 TRASSE = {"umwegFaktor": 1.25, "querungZuschlagM": 150, "suchradiusKm": 25}
 SCHWELLEN = {"mindestHa": 2, "idealHa": (5, 50), "maxNeigungGrad": 15, "siedlungAbstandM": (100, 300), "ampel": {"gruen": 65, "gelb": 45}}
 
@@ -35,6 +47,9 @@ KNOTEN_FUER_EBENE = {"msLeitung": ("trafo", "ms", "uw110"), "uwMs": ("uw110",), 
 ERTRAG = {
 	"Burgenland": 1210, "Kärnten": 1240, "Niederösterreich": 1190, "Oberösterreich": 1130, "Salzburg": 1140, "Steiermark": 1220,
 	"Tirol": 1370, "Vorarlberg": 1130, "Wien": 1190, "_AT": 1120, "_DE": 1020, "_CH": 1050,
+	# Deutschland je Bundesland (PVGIS, src/data/regionen/*.js)
+	"Baden-Württemberg": 1130, "Bayern": 1130, "Berlin": 1050, "Brandenburg": 1070, "Bremen": 1000, "Hamburg": 1010, "Hessen": 1090, "Mecklenburg-Vorpommern": 1040,
+	"Niedersachsen": 980, "Nordrhein-Westfalen": 1060, "Rheinland-Pfalz": 1110, "Saarland": 1080, "Sachsen": 1080, "Sachsen-Anhalt": 1080, "Schleswig-Holstein": 980, "Thüringen": 1070,
 }
 
 WIDMUNG = {
@@ -47,6 +62,11 @@ WIDMUNG = {
 	"Tirol": {"art": "einzelfall", "text": "Sonderfläche bis 250 kWp, darüber Bewilligung nach TEG – Einzelfall."},
 	"Vorarlberg": {"art": "einzelfall", "text": "Sondergebiet in der Freifläche; Landesgrünzone Rheintal/Walgau beachten."},
 	"Wien": {"art": "einzelfall", "text": "Vorbelastete Flächen bevorzugt; Grünland-Schutzgebiet beachten."},
+	"_DE": {"art": "baugb", "text": "Außerhalb des privilegierten 200-m-Streifens ist ein Bebauungsplan der Gemeinde nötig (Aufstellungsbeschluss, frühzeitige Beteiligung, Satzungsbeschluss); Regionalplan und gemeindliche Kriterien beachten."},
+	"Bayern": {"art": "baugb", "text": "StMB-Hinweise: in der Regel vorhabenbezogener Bebauungsplan; Ausschluss u. a. Böden überdurchschnittlicher Bonität, Wiesenbrütergebiete, Überschwemmungsgebiete; Raumverträglichkeit ab ca. 30 ha prüfen."},
+	"Baden-Württemberg": {"art": "baugb", "text": "Regionalpläne mit PV-Vorrang-/Vorbehaltsgebieten (0,2-%-Flächenziel), Flurbilanz beachten; außerhalb des 200-m-Streifens Bebauungsplan."},
+	"Brandenburg": {"art": "baugb", "text": "Arbeitshilfe des Landes und Freiraumverbund (LEP HR) beachten; Sonderabgabe an die Gemeinde; außerhalb des 200-m-Streifens Bebauungsplan."},
+	"_CH": {"art": "richtplan", "text": "Ausserhalb der Bauzone nur mit Ausnahmebewilligung bzw. Festsetzung im kantonalen Richtplan; Fruchtfolgeflächen, Landschaft und Natur in der Interessenabwägung – Einzelfall mit Kanton und Gemeinde klären."},
 }
 
 SUED = ("S", "SO", "SW", "eben")
@@ -105,10 +125,25 @@ def _km(x):
 	return str(x).replace(".", ",")
 
 
-def widmungslage(bundesland=None, uw_abstand_km=None, zone_abstand_m=None):
-	regel = WIDMUNG.get(bundesland)
+def widmungslage(bundesland=None, uw_abstand_km=None, zone_abstand_m=None, land=None, privilegiert_anteil=None, eignung_anteil=None):
+	regel = WIDMUNG.get(bundesland) or (WIDMUNG.get(f"_{land}") if land and land != "AT" else None)
 	if not regel:
 		return {"status": "unklar", "text": "Keine Widmungsregel hinterlegt – Einzelfallprüfung.", "regel": None}
+	if regel["art"] == "baugb":
+		# § 35 Abs. 1 Nr. 8 lit. b BauGB: längs Autobahnen bzw. Schienenwegen des übergeordneten Netzes mit mind. zwei Hauptgleisen bis 200 m
+		p = float(privilegiert_anteil or 0)
+		if p >= 0.5:
+			return {"status": "zone", "text": f"Privilegiert nach § 35 Abs. 1 Nr. 8 lit. b BauGB ({jsround(p * 100)} % im 200-m-Streifen). {regel['text']}", "regel": regel}
+		if p > 0:
+			return {"status": "angrenzend", "text": f"Teilweise privilegiert ({jsround(p * 100)} % im 200-m-Streifen). {regel['text']}", "regel": regel}
+		return {"status": "unklar", "text": f"Bebauungsplan nötig. {regel['text']}", "regel": regel}
+	if regel["art"] == "richtplan":
+		e = float(eignung_anteil or 0)
+		if e >= 0.5:
+			return {"status": "zone", "text": f"Im kantonalen Eignungsgebiet ({jsround(e * 100)} %). {regel['text']}", "regel": regel}
+		if e > 0:
+			return {"status": "angrenzend", "text": f"Teilweise im Eignungsgebiet ({jsround(e * 100)} %). {regel['text']}", "regel": regel}
+		return {"status": "unklar", "text": regel["text"], "regel": regel}
 	if regel["art"] == "uw_radius":
 		if uw_abstand_km is None:
 			return {"status": "unklar", "text": regel["text"], "regel": regel}
@@ -140,6 +175,12 @@ def bewerte(m):
 
 	ha = float(m.get("ha") or 0)
 	mwp = mwp_fuer(ha)
+	land = m.get("land") if m.get("land") in GEWICHTE_LAND else "AT"
+	L = GEWICHTE_LAND[land]
+
+	def sk(id_, p):
+		# Grundpunkte → Landesgewicht (Österreich unverändert)
+		return p if L is GEWICHTE else p * (L[id_] / GEWICHTE[id_])
 
 	# Größe
 	if ha < SCHWELLEN["mindestHa"]:
@@ -153,11 +194,11 @@ def bewerte(m):
 		pg = 20
 	else:
 		pg = 16
-	add("groesse", "Größe", pg, GEWICHTE["groesse"], f"{r1(ha)} ha")
+	add("groesse", "Größe", sk("groesse", pg), L["groesse"], f"{r1(ha)} ha")
 
 	# Form
 	kp = clamp(float(m.get("kompaktheit") or 0))
-	add("form", "Form/Kompaktheit", clamp((kp - 0.45) / 0.45) * GEWICHTE["form"], GEWICHTE["form"], "kompakt" if kp >= 0.85 else ("brauchbar" if kp >= 0.65 else "zerklüftet/schmal"))
+	add("form", "Form/Kompaktheit", sk("form", clamp((kp - 0.45) / 0.45) * GEWICHTE["form"]), L["form"], "kompakt" if kp >= 0.85 else ("brauchbar" if kp >= 0.65 else "zerklüftet/schmal"))
 
 	# Neigung/Exposition
 	n = max(0.0, float(m.get("neigungGrad") or 0))
@@ -173,13 +214,13 @@ def bewerte(m):
 		pn = 2 if sued else 0
 	if n > SCHWELLEN["maxNeigungGrad"]:
 		ko.append({"id": "neigung", "text": f"Mittlere Neigung {r1(n)}° – zu steil.", "deckel": 20})
-	add("neigung", "Neigung/Exposition", pn, GEWICHTE["neigung"], f"{r1(n)}°, {exp}")
+	add("neigung", "Neigung/Exposition", sk("neigung", pn), L["neigung"], f"{r1(n)}°, {exp}")
 
 	# Nutzung
 	nu = m.get("nutzung") or {}
 	acker, gruen, sonst = float(nu.get("acker") or 0), float(nu.get("gruenland") or 0), float(nu.get("sonstige") or 0)
 	summe = (acker + gruen + sonst) or 1
-	add("nutzung", "Nutzung", (acker * 8 + gruen * 7 + sonst * 3) / summe, GEWICHTE["nutzung"], "Acker" if acker >= gruen else "Grünland")
+	add("nutzung", "Nutzung", sk("nutzung", (acker * 8 + gruen * 7 + sonst * 3) / summe), L["nutzung"], "Acker" if acker >= gruen else "Grünland")
 
 	# Schutzgebiete
 	for s in m.get("schutz") or []:
@@ -203,7 +244,7 @@ def bewerte(m):
 	else:
 		sa = float(sa)
 		ps = 0 if sa < s_min else (8 if sa >= s_voll else 4 + ((sa - s_min) / (s_voll - s_min)) * 4)
-	add("siedlung", "Abstand Siedlung", ps, GEWICHTE["siedlung"], "unbekannt" if sa is None else f"{jsround(sa)} m")
+	add("siedlung", "Abstand Siedlung", sk("siedlung", ps), L["siedlung"], "unbekannt" if sa is None else f"{jsround(sa)} m")
 
 	# Netz
 	netz = m.get("netz")
@@ -222,7 +263,7 @@ def bewerte(m):
 		else:
 			p = max(0, 3 - (km - 12) / 4)
 		kn = netz.get("knoten") or {}
-		add("netz", "Netzanschluss (Trasse)", p, GEWICHTE["netz"], f"{r1(km)} km Trasse")
+		add("netz", "Netzanschluss (Trasse)", sk("netz", p), L["netz"], f"{r1(km)} km Trasse")
 		if kn.get("kapazitaet") == "knapp":
 			add("kapazitaet", "Netzkapazität", -8, 0, "knapp", "minus")
 		elif kn.get("kapazitaet") == "frei":
@@ -236,24 +277,47 @@ def bewerte(m):
 			pk = 5 - ((anteil - 0.15) / 0.1) * 3
 		else:
 			pk = max(0, 2 - (anteil - 0.25) * 10)
-		add("kosten", "Netzanschlusskosten", pk, GEWICHTE["kosten"], f"{jsround(anteil * 100)} % der Anlagenkosten")
+		add("kosten", "Netzanschlusskosten", sk("kosten", pk), L["kosten"], f"{jsround(anteil * 100)} % der Anlagenkosten")
 	else:
-		add("netz", "Netzanschluss (Trasse)", 0, GEWICHTE["netz"], "kein Netzknoten im Suchradius", "minus")
-		add("kosten", "Netzanschlusskosten", 0, GEWICHTE["kosten"], "nicht bestimmbar", "minus")
+		add("netz", "Netzanschluss (Trasse)", 0, L["netz"], "kein Netzknoten im Suchradius", "minus")
+		add("kosten", "Netzanschlusskosten", 0, L["kosten"], "nicht bestimmbar", "minus")
 
 	# Widmung
 	w = m.get("widmung") or {"status": "unklar"}
 	pw = {"zone": 10, "angrenzend": 6, "unklar": 4, "ausserhalb": 2}.get(w.get("status"), 4)
-	add("widmung", "Widmungslage", pw, GEWICHTE["widmung"], w.get("status") or "unklar")
-	regel = w.get("regel") or WIDMUNG.get(m.get("bundesland"))
+	add("widmung", {"DE": "Planungsrecht (BauGB)", "CH": "Raumplanung (Kanton)"}.get(land, "Widmungslage"), sk("widmung", pw), L["widmung"], w.get("status") or "unklar")
+	regel = w.get("regel") or WIDMUNG.get(m.get("bundesland")) or (WIDMUNG.get(f"_{land}") if land != "AT" else None)
 	if regel and "maxHaAusserhalb" in regel and w.get("status") != "zone" and ha > regel["maxHaAusserhalb"]:
 		ko.append({"id": "widmung", "text": "Außerhalb der Zonen nur eingeschränkt widmungsfähig.", "deckel": 45 if regel["maxHaAusserhalb"] > 0 else 20})
 	if regel and regel.get("maxHa") and ha > regel["maxHa"]:
 		add("widmung_max", "Widmungsgrenze", -3, 0, f"max. {regel['maxHa']} ha je Widmung", "minus")
 
+	# Flächenkulisse (DE: EEG-Förderkulisse, CH: kantonale Eignung) – großer Pluspunkt
+	ku = m.get("kulisse") or {}
+	if land == "DE":
+		f = KULISSE["DE"]["faktor"]
+		teile = [
+			("konversion", clamp(float(ku.get("konversionAnteil") or 0))),
+			("randstreifen", clamp(float(ku.get("randstreifenAnteil") or 0))),
+			("benachteiligt", clamp(float(ku.get("benachteiligtAnteil") or 0))),
+			("moor", clamp(float(ku.get("moorAnteil") or 0))),
+		]
+		best = 0
+		for id_, a in teile:
+			best = max(best, a * f[id_])
+		add("kulisse", "EEG-Flächenkulisse", best * L["kulisse"], L["kulisse"], ", ".join(f"{i} {jsround(a * 100)} %" for i, a in teile if a > 0) or "keine EEG-Kulisse", None if best > 0 else "minus")
+	elif land == "CH":
+		e = clamp(float(ku.get("eignungAnteil") or 0))
+		vb = 1 if ku.get("vorbelastet") else 0
+		best = max(e * KULISSE["CH"]["faktor"]["eignung"], vb * KULISSE["CH"]["faktor"]["vorbelastet"])
+		add("kulisse", "Eignung (Richtplan)", best * L["kulisse"], L["kulisse"], f"Eignungsgebiet {jsround(e * 100)} %" if e > 0 else ("vorbelastet" if vb else "kein Eignungsgebiet"), None if best > 0 else "minus")
+		fff = clamp(float(ku.get("fffAnteil") or 0))
+		if fff > 0.05:
+			add("fff", "Fruchtfolgefläche", -KULISSE["CH"]["fffAbzug"] * fff, 0, f"{jsround(fff * 100)} % Fruchtfolgefläche", "minus")
+
 	# Einstrahlung
-	ertrag = ERTRAG.get(m.get("bundesland")) or ERTRAG.get(f"_{m.get('land') or 'AT'}") or ERTRAG["_AT"]
-	add("einstrahlung", "Einstrahlung", clamp((ertrag - 1000) / 200) * GEWICHTE["einstrahlung"], GEWICHTE["einstrahlung"], f"{ertrag} kWh/kWp")
+	ertrag = ERTRAG.get(m.get("bundesland")) or ERTRAG.get(f"_{land}") or ERTRAG["_AT"]
+	add("einstrahlung", "Einstrahlung", sk("einstrahlung", clamp((ertrag - 1000) / 200) * GEWICHTE["einstrahlung"]), L["einstrahlung"], f"{ertrag} kWh/kWp")
 
 	score = sum(x["punkte"] for x in k)
 	score = max(0, min(100, score))

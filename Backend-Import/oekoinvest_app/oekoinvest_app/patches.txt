@@ -10,3 +10,5 @@ oekoinvest_app.patches.hashkette_einfuehren
 # ↓ weitere Patches anderer Teams hier eintragen (Datei unter oekoinvest_app/patches/, Funktion execute())
 # Fachprüfung Kapitalseite: Eigentümergesellschaft/Betriebsführer an Anlagen, Preisgleitung an Contracting-Verträgen
 oekoinvest_app.patches.anlage_eigentuemer
+# Onboarding B1: eigene Rolle „kommune“ für Konten mit kommunalem Anliegen (vorher „unternehmen“)
+oekoinvest_app.patches.kommune_rolle

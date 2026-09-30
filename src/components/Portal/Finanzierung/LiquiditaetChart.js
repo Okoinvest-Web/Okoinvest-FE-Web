@@ -26,6 +26,13 @@ export default function LiquiditaetChart({ reihen = [], titel = "Liquiditätsver
   const ticks = [min, min + spanne / 2, max];
   const jahresTicks = [0, Math.round(T / 4), Math.round(T / 2), Math.round((3 * T) / 4), T];
 
+  // Direktlabels am Linienende ohne Überlappung (mind. 13 px Abstand)
+  const labelY = (() => {
+    const pos = reihen.map((r, i) => ({ i, y: y(r.werte[r.werte.length - 1]) + 4 })).sort((p1, p2) => p1.y - p2.y);
+    for (let k = 1; k < pos.length; k++) if (pos[k].y - pos[k - 1].y < 13) pos[k].y = pos[k - 1].y + 13;
+    return Object.fromEntries(pos.map((q) => [q.i, q.y]));
+  })();
+
   const bewegen = (ev) => {
     const box = ev.currentTarget.getBoundingClientRect();
     const t = Math.round(((ev.clientX - box.left - R.l) / (W - R.l - R.r)) * T);
@@ -57,7 +64,7 @@ export default function LiquiditaetChart({ reihen = [], titel = "Liquiditätsver
         {reihen.map((r, i) => (
           <g key={r.id}>
             <polyline fill="none" stroke={LINIEN_FARBEN[i]} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" points={r.werte.map((v, t) => `${x(t).toFixed(1)},${y(v).toFixed(1)}`).join(" ")} />
-            <text x={W - R.r + 6} y={y(r.werte[r.werte.length - 1]) + 4 + (i - 1) * 2} fontSize="11" fill="#394050">{r.kurz || r.label}</text>
+            <text x={W - R.r + 6} y={labelY[i]} fontSize="11" fill="#394050">{r.kurz || r.label}</text>
           </g>
         ))}
         {hover !== null && (

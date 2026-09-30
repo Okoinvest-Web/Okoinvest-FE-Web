@@ -12,7 +12,7 @@
 import { jetzt, neueId, vorTagen } from "./hilfen";
 import { annuitaet } from "@/lib/invest/markt";
 import { prognoseJahrKwh } from "../../anlagen";
-import { cockpitStandard, cockpitBereinigen, rechneCockpit, ergebnisKurz } from "../../finanzierung/kern";
+import { cockpitStandard, cockpitBereinigen, rechneCockpit, ergebnisKurz, varianteRechnen } from "../../finanzierung/kern";
 import { CP_STANDARD, termsheetBereinigen } from "../../finanzierung/bank";
 
 const MAIL_AUS = { status: false, nachricht: false, nda: false, suchprofil: false, anfrage: false, aufgabe: false, finanzierung: false };
@@ -67,9 +67,11 @@ export async function finanzierungSeed(db) {
   // ---------------------------------------------------------------- Fall 1: Entwicklungsprojekt (Eigenbetrieb)
   const ep = (db.entwicklung?.projekte || []).find((p) => p.typ !== "speicher" && p.mwp >= 5) || null;
   const e1 = cockpitBereinigen({ ...cockpitStandard({ land: ep?.land || "DE", typ: ep?.typ === "agri" ? "agri" : "freiflaeche", mwp: ep?.mwp || 12 }) });
+  // Finanzierungsbedarf = Kreditkapazität bei Mindest-DSCR (P90) – so bleiben die Demo-Angebote bankfähig
+  const kapazitaet = Math.round(varianteRechnen("skulptiert", e1).fremdkapital / 1000) * 1000;
   const f1 = fall({
     titel: ep ? `${ep.titel} – Eigenbetrieb` : "Solarpark Demo Süd – Eigenbetrieb (fiktiv)", spv: "Demo Solarpark Süd GmbH & Co. KG (fiktiv, in Gründung)", bezugArt: ep ? "entwicklung" : "frei", bezugId: ep?.id || null,
-    eingaben: e1, betragWunsch: Math.round(e1.capex * 0.75 / 1000) * 1000, status: "termsheets", paketFreigabe: ["steckbrief", "financial_model", "ertragsgutachten", "netz", "pacht"],
+    eingaben: e1, betragWunsch: kapazitaet, status: "termsheets", paketFreigabe: ["steckbrief", "financial_model", "ertragsgutachten", "netz", "pacht"],
     geschaeftsmodell: null, verlauf: [{ am: vorTagen(21), von: "Demo-Backoffice", text: "Finanzierungsfall angelegt" }, { am: vorTagen(20), von: "Demo-Backoffice", text: "3 Bank(en) angefragt" }],
   });
   f1.cps.find((c) => c.id === "genehmigung").erledigt = false;
@@ -82,7 +84,7 @@ export async function finanzierungSeed(db) {
   };
   const TS = (a, von, daten, tage) => F.termsheets.push({ id: neueId("FT"), anfrageId: a.id, fallId: a.fallId, bankId: a.bankId, von, vonId: von === "bank" ? konto?.id : admin?.id, am: vorTagen(tage), termsheet: termsheetBereinigen(daten) });
   const a11 = A(f1, b1, { status: "termsheet" });
-  TS(a11, "bank", { betrag: Math.round(f1.betragWunsch * 0.95), laufzeitJahre: 18, zinsArt: "fix", zinsPct: 4.35, tilgungsprofil: "annuitaet", tilgungsfreiJahre: 1, dscrSizing: 1.15, dscrCovenant: 1.05, dscrLockup: 1.1, dsraMonate: 6, bearbeitungPct: 0.75, sicherheiten: ["uebereignung", "abtretung", "konten", "dienstbarkeit"], cps: CP_STANDARD.map((c) => c.id).slice(0, 10), gueltigBis: tag(40), bemerkung: "Indikativ, vorbehaltlich Kreditentscheidung (Demo)." }, 6);
+  TS(a11, "bank", { betrag: Math.round((varianteRechnen("annuitaet", { ...e1, zins: 0.0435, fkQuote: 0.9 }).fremdkapital * 0.97) / 1000) * 1000, laufzeitJahre: 18, zinsArt: "fix", zinsPct: 4.35, tilgungsprofil: "annuitaet", tilgungsfreiJahre: 1, dscrSizing: 1.15, dscrCovenant: 1.05, dscrLockup: 1.1, dsraMonate: 6, bearbeitungPct: 0.75, sicherheiten: ["uebereignung", "abtretung", "konten", "dienstbarkeit"], cps: CP_STANDARD.map((c) => c.id).slice(0, 10), gueltigBis: tag(40), bemerkung: "Indikativ, vorbehaltlich Kreditentscheidung (Demo)." }, 6);
   a11.verlauf.push({ am: vorTagen(6), text: "Term Sheet von der Bank eingereicht", fuerBank: true });
   const a12 = A(f1, b2, { status: "termsheet" });
   TS(a12, "backoffice", { betrag: f1.betragWunsch, laufzeitJahre: 18, zinsArt: "euribor6", referenzAnnahmePct: 2.7, margePct: 1.65, tilgungsprofil: "skulptiert", dscrSizing: 1.2, dscrCovenant: 1.05, dscrLockup: 1.1, llcrCovenant: 1.1, dsraMonate: 6, bearbeitungPct: 1.25, sicherheiten: ["uebereignung", "abtretung", "verpfaendung", "konten", "direct"], cps: CP_STANDARD.map((c) => c.id), gueltigBis: tag(30), bemerkung: "Per E-Mail erhalten, im Backoffice erfasst (Demo). Zinssicherung (Swap) Pflicht." }, 4);

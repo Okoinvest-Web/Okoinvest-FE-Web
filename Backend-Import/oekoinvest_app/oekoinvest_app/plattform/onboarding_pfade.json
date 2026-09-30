@@ -1,0 +1,2384 @@
+{
+ "version": 1,
+ "hinweis": "Automatisch erzeugt aus src/lib/plattform/onboarding/pfade/*.js (scripts/onboarding-pfade-export.mjs) – nicht von Hand ändern.",
+ "pfade": [
+  {
+   "id": "backoffice",
+   "gruppe": "intern",
+   "titel": "Einarbeitung im Backoffice",
+   "text": "Aufgaben-Checkliste für die ersten Tage: Sicherheit, Werkzeuge, Vorlagen und eine erste echte Aufgabe – mit Kurzanleitungen je Modul.",
+   "rollen": [
+    "admin"
+   ],
+   "untertypAus": "unterrolle",
+   "untertypen": {
+    "leitung": {
+     "label": "Leitung"
+    },
+    "akquise": {
+     "label": "Akquise"
+    },
+    "transaktion": {
+     "label": "Transaktion"
+    },
+    "buchhaltung": {
+     "label": "Buchhaltung"
+    },
+    "betrieb": {
+     "label": "Betrieb"
+    },
+    "compliance": {
+     "label": "Compliance"
+    },
+    "energie": {
+     "label": "Energie"
+    },
+    "lesen": {
+     "label": "Nur lesen"
+    },
+    "projektleitung": {
+     "label": "Projektleitung"
+    }
+   },
+   "schritte": [
+    {
+     "id": "zweifaktor",
+     "titel": "Zwei-Faktor-Anmeldung einrichten",
+     "kurz": "2FA",
+     "art": "aktion",
+     "text": "Pflicht für alle Backoffice-Konten: Sie sehen personenbezogene und vertrauliche Daten. Einrichtung unter „Sicherheit“ mit einer Authenticator-App, Wiederherstellungscodes sicher ablegen.",
+     "links": [
+      {
+       "href": "/portal/sicherheit",
+       "label": "Sicherheit öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "fakt": "zweiFaktor"
+     }
+    },
+    {
+     "id": "profil",
+     "titel": "Kontaktdaten und Firma",
+     "kurz": "Profil",
+     "art": "formular",
+     "formular": "profil",
+     "firmaLabel": "Firma / Organisation",
+     "text": "Name und Durchwahl – erscheinen bei Zuweisungen, in Vorlagen (Platzhalter) und für Kolleginnen und Kollegen in der Vertretung.",
+     "pflicht": true,
+     "kriterium": {
+      "alle": [
+       {
+        "fakt": "name"
+       },
+       {
+        "eines": [
+         {
+          "fakt": "telefon"
+         },
+         {
+          "merker": true
+         }
+        ]
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Ohne Telefon weiter"
+    },
+    {
+     "id": "bedienung",
+     "titel": "Schnellsuche und Tastenkürzel",
+     "kurz": "Schnellsuche",
+     "art": "info",
+     "text": "Mit Strg + K (Mac: ⌘ + K) oder „/“ finden Sie Objekte, Vorgänge und Aktionen ohne Maus. „?“ zeigt alle Tastenkürzel.",
+     "punkte": [
+      "„g“ und danach ein Buchstabe springt in einen Bereich (z. B. g d = Übersicht).",
+      "Einzeltasten-Kürzel lassen sich in der Hilfe abschalten."
+     ],
+     "links": [
+      {
+       "href": "/portal/hilfe",
+       "label": "Hilfe öffnen"
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Ausprobiert"
+    },
+    {
+     "id": "benachrichtigungen",
+     "titel": "E-Mail-Benachrichtigungen festlegen",
+     "kurz": "Benachrichtigungen",
+     "art": "formular",
+     "formular": "benachrichtigungen",
+     "text": "Neue Anfragen, zugewiesene Aufgaben und Wiedervorlagen – wählen Sie, was per E-Mail kommen soll.",
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "mailEinstellungen"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Standard übernehmen"
+    },
+    {
+     "id": "rechte",
+     "titel": "Rechte und Unterrollen",
+     "kurz": "Rechte und Unterrollen",
+     "art": "info",
+     "text": "Unterrollen steuern, wer welchen Bereich lesen oder ändern darf. Die Matrix zeigt jede Stufe; Änderungen wirken sofort und stehen im Revisionsprotokoll.",
+     "punkte": [
+      "Neue Kolleginnen und Kollegen: Konto unter „Nutzer & Protokoll“, Unterrolle unter „Rechte“.",
+      "Einarbeitungsstand des Teams sehen Sie unter „Einarbeitung“."
+     ],
+     "links": [
+      {
+       "href": "/portal/admin/rechte",
+       "label": "Rechte öffnen"
+      },
+      {
+       "href": "/portal/admin/einarbeitung",
+       "label": "Einarbeitung des Teams"
+      }
+     ],
+     "nurFuer": [
+      "leitung"
+     ],
+     "pflicht": [
+      "leitung"
+     ],
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kennengelernt"
+    },
+    {
+     "id": "steuerung",
+     "titel": "Automationen und Berichte",
+     "kurz": "Automationen und Berichte",
+     "art": "info",
+     "text": "Wenn–Und–Dann-Regeln (mit Testlauf ohne Wirkung) nehmen Routine ab; Berichte zeigen Trichter, Pipeline, Provisionen und Durchlaufzeiten – als CSV oder Monatsbericht-PDF.",
+     "punkte": [
+      "Regeln erst im Testlauf prüfen, dann aktivieren.",
+      "Revisionsprotokoll: Hash-Kette regelmäßig prüfen."
+     ],
+     "links": [
+      {
+       "href": "/portal/admin/automationen",
+       "label": "Automationen"
+      },
+      {
+       "href": "/portal/admin/berichte",
+       "label": "Berichte"
+      }
+     ],
+     "nurFuer": [
+      "leitung"
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kennengelernt"
+    },
+    {
+     "id": "gebiete",
+     "titel": "Gebiete zuordnen lassen",
+     "kurz": "Gebiete zuordnen lassen",
+     "art": "info",
+     "text": "Anfragen aus Ihrem Gebiet werden Ihnen automatisch zugewiesen. Prüfen Sie unter „Akquise & Gebiete“, welche Bundesländer bzw. Kantone Ihnen zugeordnet sind.",
+     "punkte": [
+      "SLA: Erstkontakt innerhalb von 2 Werktagen – die Ampel zeigt überfällige Anfragen.",
+      "Tasten j/k blättern, a/b/c setzt die Priorität."
+     ],
+     "links": [
+      {
+       "href": "/portal/admin/akquise",
+       "label": "Akquise & Gebiete"
+      },
+      {
+       "href": "/portal/admin/akquise/karte",
+       "label": "Akquise-Karte"
+      }
+     ],
+     "nurFuer": [
+      "akquise"
+     ],
+     "pflicht": [
+      "akquise"
+     ],
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "gebiete"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Zuordnung geklärt"
+    },
+    {
+     "id": "vorlagen",
+     "titel": "Vorlagen kennenlernen",
+     "kurz": "Vorlagen kennenlernen",
+     "art": "info",
+     "text": "E-Mail- und Nachrichtenvorlagen mit Platzhaltern ({{vorname}}, {{flaeche}} …), Vorschau und Versionen – für Eingangsbestätigung, Nachforderung, Pachtangebot, NDA-Freigabe.",
+     "punkte": [
+      "Vor dem Senden immer die Vorschau prüfen – Platzhalter ohne Wert bleiben sichtbar."
+     ],
+     "links": [
+      {
+       "href": "/portal/admin/vorlagen",
+       "label": "Vorlagen öffnen"
+      }
+     ],
+     "nurFuer": [
+      "akquise",
+      "transaktion"
+     ],
+     "pflicht": [
+      "akquise",
+      "transaktion"
+     ],
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kennengelernt"
+    },
+    {
+     "id": "pipeline",
+     "titel": "Flächen-Pipeline und CRM",
+     "kurz": "Flächen-Pipeline und CRM",
+     "art": "info",
+     "text": "Kanban je Status mit Pflichtbegründung beim Statuswechsel; CRM-Kontakte entstehen automatisch aus jeder Anfrage (Dubletten per E-Mail zusammengeführt).",
+     "punkte": [
+      "Pachtangebot nur mit allen Pflichtpunkten (Indexierung, Rückbau, Dienstbarkeit) – der Eigentümer sieht eine Ampel je Punkt."
+     ],
+     "links": [
+      {
+       "href": "/portal/admin/flaechen",
+       "label": "Flächen-Pipeline"
+      },
+      {
+       "href": "/portal/admin/crm",
+       "label": "CRM"
+      }
+     ],
+     "nurFuer": [
+      "akquise"
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kennengelernt"
+    },
+    {
+     "id": "freigabe",
+     "titel": "Projektfreigabe und NDA & LOI",
+     "kurz": "Projektfreigabe und NDA & LOI",
+     "art": "info",
+     "text": "Vor der Veröffentlichung: Anonymität von Titel und Region, Plausibilität des Datenblatts, Provisionssatz 1,5–3 %. NDA-Anfragen freigeben, LOIs strukturiert beantworten.",
+     "punkte": [
+      "Vor Datenraum und LOI den KYC-Status des Investors prüfen – das Gating sperrt sonst automatisch.",
+      "Bonitätsauskunft nur mit berechtigtem Interesse und Protokoll."
+     ],
+     "links": [
+      {
+       "href": "/portal/admin/projekte",
+       "label": "Projekt-Freigabe"
+      },
+      {
+       "href": "/portal/admin/interessen",
+       "label": "NDA & LOI"
+      },
+      {
+       "href": "/portal/admin/dealroom",
+       "label": "Deal-Room"
+      }
+     ],
+     "nurFuer": [
+      "transaktion"
+     ],
+     "pflicht": [
+      "transaktion"
+     ],
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kennengelernt"
+    },
+    {
+     "id": "closing",
+     "titel": "Deal-Abschluss",
+     "kurz": "Deal-Abschluss",
+     "art": "info",
+     "text": "Closing-Raum mit Checkliste der Vollzugsbedingungen, Kaufvertragsentwurf, Notartermin und automatischer Provisionsrechnung.",
+     "punkte": [],
+     "links": [
+      {
+       "href": "/portal/admin/closing",
+       "label": "Deal-Abschluss"
+      }
+     ],
+     "nurFuer": [
+      "transaktion"
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kennengelernt"
+    },
+    {
+     "id": "finanzen",
+     "titel": "Provisionen und Abrechnung",
+     "kurz": "Provisionen und Abrechnung",
+     "art": "info",
+     "text": "Provisionen entstehen automatisch mit dem Verkauf; Pacht-Gutschriften, Contracting-Rechnungen und Zahlungsstatus laufen über „Finanzen & Abrechnung“ (ERPNext, falls angebunden).",
+     "punkte": [
+      "Exporte (CSV) sind protokolliert und formelgeschützt für Excel.",
+      "Zahlungsläufe erst nach KYC-Freigabe des Empfängers (IBAN geprüft)."
+     ],
+     "links": [
+      {
+       "href": "/portal/admin/deals",
+       "label": "Deals & Provisionen"
+      },
+      {
+       "href": "/portal/admin/finanzen",
+       "label": "Finanzen & Abrechnung"
+      }
+     ],
+     "nurFuer": [
+      "buchhaltung"
+     ],
+     "pflicht": [
+      "buchhaltung"
+     ],
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kennengelernt"
+    },
+    {
+     "id": "leitstand",
+     "titel": "Störungs-Leitstand und Anlagen",
+     "kurz": "Störungs-Leitstand und Anlagen",
+     "art": "info",
+     "text": "Störungen nach Schwere, Quittieren mit Kommentar, Zuweisung; Anlagen mit Komponenten, Messpunkten und Wartung. Kunden sehen nur „Mein Solarstrom“.",
+     "punkte": [
+      "Aus einer Störung lässt sich direkt ein Support-Ticket erzeugen."
+     ],
+     "links": [
+      {
+       "href": "/portal/admin/anlagen",
+       "label": "Anlagen & Störungen"
+      },
+      {
+       "href": "/portal/admin/support",
+       "label": "Support-Tickets"
+      }
+     ],
+     "nurFuer": [
+      "betrieb"
+     ],
+     "pflicht": [
+      "betrieb"
+     ],
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kennengelernt"
+    },
+    {
+     "id": "kyc",
+     "titel": "KYC-Warteschlange und Vier-Augen-Prinzip",
+     "kurz": "KYC-Warteschlange und Vier-Augen-Prinzip",
+     "art": "info",
+     "text": "Fälle prüfen (Ausweis, Register, wirtschaftlich Berechtigte, IBAN, Eigentum), Sanktions-/PEP-Abgleich, Risikoeinstufung. Hohe Risiken gehen in die Zweitprüfung.",
+     "punkte": [
+      "Unterlagen nur ansehen, wenn nötig – jeder Abruf wird protokolliert.",
+      "Fristen (Ausweis-Ablauf, Wiederholungsprüfung) erscheinen als Aufgaben."
+     ],
+     "links": [
+      {
+       "href": "/portal/admin/compliance",
+       "label": "Compliance (KYC)"
+      }
+     ],
+     "nurFuer": [
+      "compliance"
+     ],
+     "pflicht": [
+      "compliance"
+     ],
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kennengelernt"
+    },
+    {
+     "id": "handelsdesk",
+     "titel": "Handelsdesk und Ausschreibungen",
+     "kurz": "Handelsdesk und Ausschreibungen",
+     "art": "info",
+     "text": "Spot- und Terminmarkt, Beschaffungsstrategien je Kunde, Ausschreibung unter Versorgern mit Runden und Vergleich, Kündigungsfristen-Alarm.",
+     "punkte": [
+      "Zuschlag nur nach Freigabe des Kunden im Portal.",
+      "Lieferantenstamm pflegen – Einladungen gehen per E-Mail mit Angebotslink."
+     ],
+     "links": [
+      {
+       "href": "/portal/admin/energie",
+       "label": "Energie-Handelsdesk"
+      },
+      {
+       "href": "/portal/admin/energie/ausschreibungen",
+       "label": "Ausschreibungen"
+      }
+     ],
+     "nurFuer": [
+      "energie"
+     ],
+     "pflicht": [
+      "energie"
+     ],
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kennengelernt"
+    },
+    {
+     "id": "entwicklung",
+     "titel": "Projektentwicklung",
+     "kurz": "Projektentwicklung",
+     "art": "info",
+     "text": "Entwicklungsakte je Projekt mit Gantt, Meilensteinen, Risiken, Budget und Gutachter-Einladung; Übergabe an Börse oder Betrieb.",
+     "punkte": [],
+     "links": [
+      {
+       "href": "/portal/admin/entwicklung",
+       "label": "Projektentwicklung"
+      }
+     ],
+     "nurFuer": [
+      "projektleitung"
+     ],
+     "pflicht": [
+      "projektleitung"
+     ],
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kennengelernt"
+    },
+    {
+     "id": "ueberblick",
+     "titel": "Überblick verschaffen",
+     "kurz": "Überblick verschaffen",
+     "art": "info",
+     "text": "Sie sehen alle Bereiche außer der Rechteverwaltung, ändern aber nichts. Einstieg: Cockpit für Kennzahlen, Berichte für Entwicklungen, Revisionsprotokoll für Nachvollziehbarkeit.",
+     "punkte": [],
+     "links": [
+      {
+       "href": "/portal/admin",
+       "label": "Cockpit"
+      },
+      {
+       "href": "/portal/admin/berichte",
+       "label": "Berichte"
+      }
+     ],
+     "nurFuer": [
+      "lesen"
+     ],
+     "pflicht": [
+      "lesen"
+     ],
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kennengelernt"
+    },
+    {
+     "id": "wissen",
+     "titel": "Wissensdatenbank",
+     "kurz": "Wissensdatenbank",
+     "art": "info",
+     "text": "Interne Anleitungen, Prozessbeschreibungen und Musterantworten – bitte ergänzen, wenn Sie etwas zum zweiten Mal erklären.",
+     "punkte": [],
+     "links": [
+      {
+       "href": "/portal/admin/wissen",
+       "label": "Wissensdatenbank"
+      }
+     ],
+     "nurFuer": [
+      "leitung",
+      "akquise",
+      "transaktion",
+      "buchhaltung",
+      "betrieb",
+      "compliance",
+      "energie",
+      "lesen",
+      "projektleitung"
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kennengelernt"
+    },
+    {
+     "id": "aufgabe",
+     "titel": "Erste Aufgabe erledigen",
+     "kurz": "Erste Aufgabe",
+     "art": "aktion",
+     "text": "Übernehmen Sie eine Aufgabe aus „Meine Aufgaben“ (oder lassen Sie sich eine zuweisen) und schließen Sie sie ab – so kennen Sie den Ablauf von Zuweisung, Wiedervorlage und Erledigung.",
+     "links": [
+      {
+       "href": "/portal/admin/aufgaben",
+       "label": "Aufgaben öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": [
+      "leitung",
+      "akquise",
+      "transaktion",
+      "buchhaltung",
+      "betrieb",
+      "compliance",
+      "energie",
+      "projektleitung"
+     ],
+     "kriterium": {
+      "fakt": "aufgabenErledigt"
+     },
+     "nurFuer": [
+      "leitung",
+      "akquise",
+      "transaktion",
+      "buchhaltung",
+      "betrieb",
+      "compliance",
+      "energie",
+      "projektleitung"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kommune",
+   "titel": "Einstieg für Gemeinden",
+   "text": "Gemeindedaten, Ansprechpartner, Planungsstand und Beteiligungsmodelle – danach sehen Sie Projekte in Ihrem Gemeindegebiet ab der Bauleitplanung.",
+   "rollen": [
+    "kommune"
+   ],
+   "schritte": [
+    {
+     "id": "profil",
+     "titel": "Ansprechpartner der Gemeinde",
+     "kurz": "Profil",
+     "art": "formular",
+     "formular": "profil",
+     "firmaLabel": "Gemeinde / Stadt / Amt",
+     "text": "Name, Funktion (z. B. Bürgermeisterin, Bauamt) und Telefon der Ansprechperson sowie die Gemeinde. Wir bestätigen das Konto über einen unabhängigen Weg (Rückruf über die Zentrale der Verwaltung).",
+     "pflicht": true,
+     "kriterium": {
+      "alle": [
+       {
+        "fakt": "name"
+       },
+       {
+        "fakt": "telefon"
+       },
+       {
+        "fakt": "firma"
+       }
+      ]
+     },
+     "bestaetigbar": false,
+     "bestaetigenText": null
+    },
+    {
+     "id": "gemeinde",
+     "titel": "Gemeindedaten erfassen",
+     "kurz": "Gemeindedaten",
+     "art": "aktion",
+     "text": "Gemeinde, amtlicher Gemeindeschlüssel (DE AGS, AT Gemeindekennziffer, CH BFS-Nummer), gemeindeeigene Flächen, Planungsstand und Themen – strukturiert in einem Formular.",
+     "links": [
+      {
+       "href": "/kommunen#anfrage",
+       "label": "Gemeindedaten erfassen",
+       "primaer": true
+      }
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "fakt": "kommuneAnliegen"
+     }
+    },
+    {
+     "id": "bauleitplanung",
+     "titel": "Bauleitplanung und Kriterienkatalog",
+     "kurz": "Bauleitplanung",
+     "art": "info",
+     "begriff": "kriterienkatalog",
+     "text": "Freiflächen-PV braucht in der Regel eine Bauleitplanung der Gemeinde (DE: Flächennutzungs- und Bebauungsplan; AT: Umwidmung „Grünland-Photovoltaik“; CH: Nutzungsplanung). Ein eigener Kriterienkatalog steuert, wo Anlagen erwünscht sind.",
+     "punkte": [
+      "DE: Aufstellungsbeschluss → frühzeitige Beteiligung → Offenlage → Satzungsbeschluss; privilegiert sind u. a. Flächen im 200-m-Korridor an Autobahnen und zweigleisigen Schienen (§ 35 BauGB).",
+      "Ein Kriterienkatalog (Bodengüte, Abstand zur Wohnbebauung, Sichtachsen, Größe je Ortsteil) schafft Gleichbehandlung aller Anfragen.",
+      "Kosten der Bauleitplanung übernimmt üblicherweise der Projektträger über einen städtebaulichen Vertrag."
+     ],
+     "links": [
+      {
+       "href": "/kommunen",
+       "label": "Leitfaden für Kommunen"
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Verstanden"
+    },
+    {
+     "id": "beteiligung",
+     "titel": "Bürger- und Kommunalbeteiligung",
+     "kurz": "Beteiligung",
+     "art": "info",
+     "begriff": "kommunalbeteiligung",
+     "text": "Wertschöpfung bleibt vor Ort: in Deutschland die Zahlung nach § 6 EEG (bis 0,2 ct/kWh an die Gemeinde), dazu Gewerbesteuer, Bürgerbeteiligung über Genossenschaft oder Energiegemeinschaft.",
+     "punkte": [
+      "§ 6 EEG: freiwillige Zahlung des Betreibers an die Gemeinde – vertraglich vereinbart, nach aktuellem Stand ohne Gegenleistung der Gemeinde.",
+      "AT: Beteiligung über Erneuerbare-Energie-Gemeinschaften (lokal/regional) oder Bürgerenergiegemeinschaften; CH: ZEV bzw. lokale Elektrizitätsgemeinschaft (LEG, seit 2026).",
+      "Die Schätzung für Ihr Gebiet zeigt die Gemeinde-Sicht, sobald Projekte in der Planung sind."
+     ],
+     "links": [
+      {
+       "href": "/rechner/kommune",
+       "label": "Kommunal-Rechner"
+      },
+      {
+       "href": "/genossenschaft",
+       "label": "Genossenschaft"
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Verstanden"
+    },
+    {
+     "id": "gemeindesicht",
+     "titel": "Gemeinde-Sicht öffnen",
+     "kurz": "Gemeinde-Sicht",
+     "art": "aktion",
+     "text": "Projekte im Gemeindegebiet ab Planungsphase – vereinfacht, ohne Eigentümer, Flurstücke oder Pachtkonditionen. Freigeschaltet, sobald das Backoffice Ihr Anliegen bestätigt hat.",
+     "links": [
+      {
+       "href": "/portal/kommune",
+       "label": "Gemeinde-Sicht öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "kommuneGeprueft"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Angesehen"
+    },
+    {
+     "id": "termin",
+     "titel": "Gemeindetermin vereinbaren",
+     "kurz": "Termin",
+     "art": "aktion",
+     "text": "Vorstellung im Rathaus oder Gemeinderat (ca. 60 Minuten): Beteiligungsmodelle, Ablauf der Bauleitplanung, Fragen der Bürgerinnen und Bürger.",
+     "links": [
+      {
+       "href": "/portal/termine?art=gemeinde",
+       "label": "Gemeindetermin buchen",
+       "primaer": true
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "termine"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Später selbst buchen"
+    },
+    {
+     "id": "benachrichtigungen",
+     "titel": "E-Mail-Benachrichtigungen festlegen",
+     "kurz": "Benachrichtigungen",
+     "art": "formular",
+     "formular": "benachrichtigungen",
+     "text": "Neue Projekte im Gemeindegebiet, Statuswechsel und Nachrichten – wählen Sie, was per E-Mail kommen soll.",
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "mailEinstellungen"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Standard übernehmen"
+    }
+   ]
+  },
+  {
+   "id": "flaeche",
+   "titel": "Einstieg für Flächen- und Dacheigentümer",
+   "text": "Fläche oder Dach mit den Angaben anlegen, die Planer wirklich brauchen – kostenlose Vorprüfung, Pachtangebot im Portal, Besichtigung vor Ort.",
+   "rollen": [
+    "flaeche",
+    "landwirt"
+   ],
+   "untertypen": {
+    "eigentuemer": {
+     "label": "Flächeneigentümer",
+     "text": "Acker, Grünland, Konversions- oder Gewerbefläche verpachten."
+    },
+    "landwirt": {
+     "label": "Landwirt (Agri-PV)",
+     "text": "Landwirtschaft bleibt Hauptnutzung – verpachten, selbst investieren oder beteiligen."
+    },
+    "dach": {
+     "label": "Dacheigentümer",
+     "text": "Hallen- oder Gewerbedach verpachten bzw. Solarstrom vor Ort nutzen."
+    }
+   },
+   "schritte": [
+    {
+     "id": "typ",
+     "titel": "Was möchten Sie einbringen?",
+     "kurz": "Ihr Typ",
+     "art": "formular",
+     "formular": "untertyp",
+     "text": "Die Auswahl bestimmt, welche Fachangaben wir abfragen – Agri-PV nach DIN SPEC 91434, Dächer mit Statik und Brandschutz.",
+     "pflicht": true,
+     "kriterium": {
+      "fakt": "untertyp"
+     }
+    },
+    {
+     "id": "profil",
+     "titel": "Kontaktdaten und Firma",
+     "kurz": "Profil",
+     "art": "formular",
+     "formular": "profil",
+     "firmaLabel": "Firma / Organisation",
+     "text": "Name und Telefon – für die Besichtigung und Rückfragen zu Grundbuch und Bewirtschaftung. Bei Erbengemeinschaften oder Gesellschaften bitte die Person, die für alle spricht.",
+     "pflicht": true,
+     "kriterium": {
+      "alle": [
+       {
+        "fakt": "name"
+       },
+       {
+        "eines": [
+         {
+          "fakt": "telefon"
+         },
+         {
+          "merker": true
+         }
+        ]
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Ohne Telefon weiter"
+    },
+    {
+     "id": "flaeche",
+     "titel": "Fläche bzw. Dach anlegen",
+     "kurz": "Fläche",
+     "art": "formular",
+     "formular": "flaeche",
+     "text": "Bezeichnung, Ort und ungefähre Größe genügen für den Anfang. Die Fläche wird als Entwurf gespeichert.",
+     "texte": {
+      "landwirt": "Bezeichnung, Ort und ungefähre Größe. Agri-PV ist vorausgewählt – Kultur, Bewirtschaftung und Durchfahrtshöhe ergänzen Sie im nächsten Schritt.",
+      "dach": "Bezeichnung, Ort und Dachfläche in m² (wird in Hektar umgerechnet). Dachart, Asbest und Statik folgen im nächsten Schritt."
+     },
+     "pflicht": true,
+     "kriterium": {
+      "fakt": "flaechen"
+     }
+    },
+    {
+     "id": "fachdaten",
+     "titel": "Fachangaben ergänzen und zur Vorprüfung einreichen",
+     "kurz": "Fachangaben",
+     "art": "aktion",
+     "text": "Auf der Flächenseite nutzen Sie die Fach-Formulare: Flurstücke je Land (DE Gemarkung/Flur, AT KG/EZ, CH Parzelle/E-GRID), Eigentum und Vertretung, Belastungen im Grundbuch, laufende Pacht und Förderbindungen.",
+     "punkteJe": {
+      "eigentuemer": [
+       "Katasterfläche angeben – eine Größe über 110 % der Katasterfläche blockiert das Einreichen.",
+       "Grundschulden brauchen später einen Rangrücktritt der Bank – früh klären spart Monate."
+      ],
+      "landwirt": [
+       "Agri-PV: Kategorie nach DIN SPEC 91434, Kultur (Pflicht), Arbeitsbreite, lichte Höhe, Referenzertrag.",
+       "Laufende Förderbindungen (AUKM/ÖPUL) und Pachtverträge mit Ende und Kündigungsfrist angeben – sonst droht Rückforderung."
+      ],
+      "dach": [
+       "Pflicht: Dachart, Asbest (asbesthaltige Dächer können nicht belegt werden), Nutzer des Gebäudes.",
+       "Hilfreich: Baujahr/Restnutzungsdauer der Eindeckung, Statik-Reserve in kN/m², Brandwände, Trafo/Netzanschluss."
+      ]
+     },
+     "links": [
+      {
+       "href": "/portal/flaechen",
+       "label": "Meine Flächen",
+       "primaer": true
+      }
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "fakt": "flaechenEingereicht"
+     }
+    },
+    {
+     "id": "flaechencheck",
+     "titel": "Flächencheck-Ergebnis übernehmen",
+     "kurz": "Flächencheck",
+     "art": "aktion",
+     "text": "Sie haben den kostenlosen Flächencheck schon genutzt? Dann liegt das Ergebnis als Anfrage in Ihrem Konto und wird mit Ihrer bestätigten E-Mail-Adresse automatisch zugeordnet. Noch nicht? Der Check dauert zwei Minuten.",
+     "links": [
+      {
+       "href": "/flaechencheck",
+       "label": "Flächencheck starten"
+      },
+      {
+       "href": "/portal/anfragen",
+       "label": "Meine Anfragen"
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "flaechencheck"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Nicht nötig",
+     "nurFuer": [
+      "eigentuemer",
+      "landwirt"
+     ]
+    },
+    {
+     "id": "kyc",
+     "titel": "Eigentumsnachweis und Bankverbindung",
+     "kurz": "Verifizierung",
+     "art": "aktion",
+     "text": "Bevor wir Pacht auszahlen oder einen Vertrag schließen, prüfen wir Identität, Eigentum und IBAN. Sie laden die Nachweise einmal im Portal hoch.",
+     "punkte": [
+      "Grundbuchauszug (DE) bzw. Grundbuchsauszug (AT) oder Grundstücksbeschreibung (CH) – ein aktueller Auszug genügt.",
+      "IBAN des Kontos, auf das die Pacht fließen soll; Kontoinhaber muss Eigentümer bzw. bevollmächtigt sein.",
+      "Bei Erbengemeinschaft oder Miteigentum: Vollmacht aller Beteiligten."
+     ],
+     "links": [
+      {
+       "href": "/portal/verifizierung",
+       "label": "Verifizierung öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "fakt": "kyc.angestossen"
+     }
+    },
+    {
+     "id": "ablauf",
+     "titel": "So geht es weiter",
+     "kurz": "Ablauf",
+     "art": "info",
+     "text": "Nach dem Einreichen verfolgen Sie jeden Schritt in der Pipeline Ihrer Fläche – mit Erklärung, was passiert und wie lange es in der Regel dauert.",
+     "punkte": [
+      "Vorprüfung (kostenlos): Lage, Netz, Schutzgebiete, Planungsrecht – meist wenige Wochen.",
+      "Pachtangebot im Portal mit Ampel je Punkt (Indexierung, Rückbausicherheit, Dienstbarkeit) – prüfen Sie es gern mit Anwalt oder Steuerberatung.",
+      "Planung und Genehmigung dauern je nach Land und Verfahren (B-Plan, Umwidmung, Nutzungsplanung) oft ein bis drei Jahre – Dauern sind Erfahrungswerte, keine Zusagen."
+     ],
+     "punkteJe": {
+      "dach": [
+       "Bei Dächern mit Stromnutzung vor Ort: Dachnutzungsvertrag mit Dienstbarkeit und optional Solarstrom-Liefervertrag (Contracting)."
+      ]
+     },
+     "links": [
+      {
+       "href": "/portal/flaechen",
+       "label": "Pipeline ansehen"
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Verstanden"
+    },
+    {
+     "id": "termin",
+     "titel": "Besichtigung vereinbaren",
+     "kurz": "Termin",
+     "art": "aktion",
+     "text": "Gemeinsamer Termin vor Ort (ca. 90 Minuten): Zufahrt, Netzanschluss-Möglichkeiten, Besonderheiten der Fläche bzw. des Dachs und die nächsten Schritte.",
+     "links": [
+      {
+       "href": "/portal/termine?art=besichtigung",
+       "label": "Besichtigung buchen",
+       "primaer": true
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "termine"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Später selbst buchen"
+    },
+    {
+     "id": "benachrichtigungen",
+     "titel": "E-Mail-Benachrichtigungen festlegen",
+     "kurz": "Benachrichtigungen",
+     "art": "formular",
+     "formular": "benachrichtigungen",
+     "text": "Statuswechsel Ihrer Fläche, Pachtangebote, Nachrichten und Pachtabrechnungen – wählen Sie, was per E-Mail kommen soll.",
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "mailEinstellungen"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Standard übernehmen"
+    }
+   ]
+  },
+  {
+   "id": "verkaeufer",
+   "titel": "Einstieg für Verkäufer",
+   "text": "Vom ersten Projekt bis zur geprüften Veröffentlichung: Datenblatt, Unterlagen, Provisionsvereinbarung und Verifizierung.",
+   "rollen": [
+    "anbieter"
+   ],
+   "untertypen": {
+    "projektentwickler": {
+     "label": "Projektrechte verkaufen",
+     "text": "Projektentwickler: Rechte von der Flächensicherung bis Ready-to-Build (RTB)."
+    },
+    "bestand": {
+     "label": "Bestandsanlage verkaufen",
+     "text": "Eigentümer einer Anlage in Betrieb (COD) – Zweitmarkt nach Ist-Ertrag."
+    }
+   },
+   "schritte": [
+    {
+     "id": "typ",
+     "titel": "Was möchten Sie verkaufen?",
+     "kurz": "Ihr Typ",
+     "art": "formular",
+     "formular": "untertyp",
+     "text": "Projektrechte und Bestandsanlagen werden unterschiedlich bewertet – deshalb gibt es zwei Wege mit eigenen Mindestdaten.",
+     "pflicht": true,
+     "kriterium": {
+      "fakt": "untertyp"
+     }
+    },
+    {
+     "id": "profil",
+     "titel": "Kontaktdaten und Firma",
+     "kurz": "Profil",
+     "art": "formular",
+     "formular": "profil",
+     "firmaLabel": "Verkaufende Gesellschaft",
+     "text": "Die verkaufende Gesellschaft (bzw. die Projektgesellschaft) laut Register – sie erscheint in Provisionsvereinbarung und Kaufvertragsentwurf.",
+     "pflicht": true,
+     "kriterium": {
+      "alle": [
+       {
+        "fakt": "name"
+       },
+       {
+        "fakt": "telefon"
+       },
+       {
+        "fakt": "firma"
+       }
+      ]
+     },
+     "bestaetigbar": false,
+     "bestaetigenText": null
+    },
+    {
+     "id": "provision",
+     "titel": "Provisionsvereinbarung verstehen",
+     "kurz": "Provision",
+     "art": "info",
+     "text": "Die Plattform ist für Sie nur im Erfolgsfall kostenpflichtig: Die Verkäuferprovision von 1,5–3 % des Kaufpreises fällt ausschließlich bei Abschluss an. Den Satz legt das Backoffice bei der Freigabe fest.",
+     "punkte": [
+      "Sie akzeptieren die Vereinbarung beim Einreichen jedes Projekts (Zeitpunkt, IP und Textversion werden gespeichert).",
+      "Die Provisionsrechnung entsteht automatisch mit dem Verkauf – vorher gibt es keine Kosten.",
+      "Käufer aus Ihrem eigenen Netzwerk? Bitte vor dem Einreichen im Projekt vermerken, damit wir das sauber regeln."
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "provision"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Verstanden"
+    },
+    {
+     "id": "projekt",
+     "titel": "Erstes Projekt mit Datenblatt anlegen",
+     "kurz": "Projekt",
+     "art": "aktion",
+     "text": "Titel anonym halten (keine Gemeinde, kein Flurstück). Das Datenblatt verlangt je Phase unterschiedliche Mindestdaten – der Entwurf ist jederzeit speicherbar.",
+     "texte": {
+      "bestand": "Bestandsanlage als Projekt in Phase „In Betrieb (COD / Bestand)“ anlegen. Für den Zweitmarkt zählen Ist-Erträge, Verfügbarkeit und Restlaufzeiten – das Datenblatt fragt sie im Bereich „Bestandsanlage“ ab."
+     },
+     "punkteJe": {
+      "projektentwickler": [
+       "Flächensicherung: Anteil gesichert in %, Laufzeit und Optionen der Nutzungsverträge.",
+       "Ab Netzanschlusszusage: Netzbetreiber, Zusage (Datum, MW, Befristung), Spannungsebene, Entfernung zum Verknüpfungspunkt.",
+       "Ab Aufstellungsbeschluss: Genehmigungsweg und Meilensteine mit Datum (Aufstellung, frühzeitige Beteiligung, Offenlage, Satzung).",
+       "Ab RTB: Ertragsgutachten mit P50/P90, Gutachter und Datum; EEG-/EAG-Zuschlag bzw. PPA-Stand."
+      ],
+      "bestand": [
+       "Inbetriebnahme (COD), installierte Leistung DC/AC, Einspeisetarif bzw. Direktvermarkter.",
+       "Ist-Erträge je Jahr gegen Prognose, technische Verfügbarkeit, O&M-Vertrag und Versicherung.",
+       "Wechselrichter-Tausch, Ende der Förderung und Ende der Pacht – die Pacht sollte die Förderdauer abdecken."
+      ]
+     },
+     "links": [
+      {
+       "href": "/portal/projekte/neu",
+       "label": "Projekt anlegen",
+       "primaer": true
+      }
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "eines": [
+       {
+        "alle": [
+         {
+          "untertyp": [
+           "bestand"
+          ]
+         },
+         {
+          "fakt": "projekteBestand"
+         }
+        ]
+       },
+       {
+        "alle": [
+         {
+          "untertyp": [
+           "projektentwickler"
+          ]
+         },
+         {
+          "fakt": "projekte"
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "id": "unterlagen",
+     "titel": "Dokumenten-Checkliste abarbeiten",
+     "kurz": "Unterlagen",
+     "art": "aktion",
+     "text": "Auf der Projektseite zeigt die Checkliste je Phase, welche Unterlagen Investoren erwarten. Laden Sie Unterlagen direkt am Punkt hoch – das erhöht die Datenraum-Qualität (70 % Unterlagen, 30 % Datenblatt).",
+     "punkteJe": {
+      "projektentwickler": [
+       "Typisch: Nutzungsverträge, Lageplan, Netzanschlusszusage, Beschlüsse zur Bauleitplanung, Gutachten (Artenschutz, Blendung, Baugrund)."
+      ],
+      "bestand": [
+       "Typisch: Inbetriebnahmeprotokoll, Einspeise- und Direktvermarktungsverträge, Ertragsberichte, O&M- und Versicherungsvertrag, Pachtvertrag, Wartungsprotokolle."
+      ]
+     },
+     "links": [
+      {
+       "href": "/portal/projekte",
+       "label": "Meine Projekte"
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "datenblatt"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Später ergänzen"
+    },
+    {
+     "id": "qualitaet",
+     "titel": "So läuft die Qualitätsprüfung",
+     "kurz": "Qualitätsprüfung",
+     "art": "info",
+     "text": "Vor der Veröffentlichung prüft das Transaktionsteam Anonymität, Plausibilität und Vollständigkeit. Offensichtliche Unstimmigkeiten (z. B. DC/AC-Verhältnis, Ertrag über dem Regionsrichtwert) zeigt das Datenblatt schon beim Ausfüllen.",
+     "punkte": [
+      "Prüfhinweise erscheinen als Fehler, Warnung oder Info – Warnungen blockieren nicht, werden aber Investoren gegenüber erklärt.",
+      "Renditeangaben gelten als Anbieterangabe und werden als „ungeprüft“ gekennzeichnet.",
+      "Nach der Freigabe sehen Sie Aufrufe, Merker und NDA-Anfragen live; Fragen der Investoren beantworten Sie im Deal-Room."
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Verstanden"
+    },
+    {
+     "id": "kyc",
+     "titel": "Verifizierung der Gesellschaft (KYB)",
+     "kurz": "Verifizierung",
+     "art": "aktion",
+     "text": "Vor Reservierung und Verkauf prüfen wir die verkaufende Gesellschaft: Registerauszug, wirtschaftlich Berechtigte, Vertretung. Frühzeitig starten spart Zeit im Closing.",
+     "punkte": [
+      "Bei Share Deals zusätzlich die Projektgesellschaft (SPV) – Unterlagen dazu fordert das Transaktionsteam an."
+     ],
+     "links": [
+      {
+       "href": "/portal/verifizierung",
+       "label": "Verifizierung öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "fakt": "kyc.angestossen"
+     }
+    },
+    {
+     "id": "benachrichtigungen",
+     "titel": "E-Mail-Benachrichtigungen festlegen",
+     "kurz": "Benachrichtigungen",
+     "art": "formular",
+     "formular": "benachrichtigungen",
+     "text": "NDA-Anfragen, Fragen im Deal-Room, Statuswechsel Ihrer Projekte – wählen Sie, was per E-Mail kommen soll.",
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "mailEinstellungen"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Standard übernehmen"
+    },
+    {
+     "id": "termin",
+     "titel": "Vermarktung besprechen",
+     "kurz": "Termin",
+     "art": "aktion",
+     "text": "Videotermin mit dem Transaktionsteam: Preisvorstellung, Käuferkreis, Bieterverfahren oder Direktansprache.",
+     "links": [
+      {
+       "href": "/portal/termine?art=beratung_video",
+       "label": "Videotermin buchen",
+       "primaer": true
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "termine"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Später selbst buchen"
+    }
+   ]
+  },
+  {
+   "id": "investor",
+   "titel": "Einstieg für Investoren",
+   "text": "In rund zehn Minuten zum arbeitsfähigen Konto: Suchprofil mit Matching, Verifizierung für Datenraum und LOI, Termin mit dem Transaktionsteam.",
+   "rollen": [
+    "investor"
+   ],
+   "untertypen": {
+    "family_office": {
+     "label": "Family Office",
+     "text": "Eigenes Vermögen, flexible Tickets, oft Co-Investments."
+    },
+    "fonds": {
+     "label": "Fonds / AIF / Asset Manager",
+     "text": "Spezialfonds, AIF, Versicherer – Mandat, Gremien, ESG-Vorgaben."
+    },
+    "stadtwerk": {
+     "label": "Stadtwerk / EVU",
+     "text": "Kommunale Versorger und Energieversorger – Erzeugung im Netzgebiet, Direktvermarktung."
+    },
+    "ipp": {
+     "label": "IPP / Stromerzeuger",
+     "text": "Unabhängige Erzeuger mit eigenem Betrieb, oft Co-Development."
+    },
+    "privat": {
+     "label": "Privatinvestor",
+     "text": "Natürliche Person – kleinere Tickets, meist Bestandsanlagen oder baureife Projekte."
+    }
+   },
+   "schritte": [
+    {
+     "id": "typ",
+     "titel": "Welcher Investorentyp sind Sie?",
+     "kurz": "Ihr Typ",
+     "art": "formular",
+     "formular": "untertyp",
+     "text": "Die Auswahl bestimmt die folgenden Schritte (z. B. KYB mit wirtschaftlich Berechtigten für Gesellschaften) und wird als Investorentyp in Ihr Suchprofil übernommen.",
+     "pflicht": true,
+     "kriterium": {
+      "fakt": "untertyp"
+     }
+    },
+    {
+     "id": "profil",
+     "titel": "Kontaktdaten und Firma",
+     "kurz": "Profil",
+     "art": "formular",
+     "formular": "profil",
+     "firmaLabel": "Gesellschaft / Investmentvehikel",
+     "text": "Unter welchem Namen investieren Sie? Bei Gesellschaften die vollständige Firma laut Register – sie erscheint in NDA, LOI und Exposé-Wasserzeichen.",
+     "pflicht": true,
+     "kriterium": {
+      "alle": [
+       {
+        "fakt": "name"
+       },
+       {
+        "fakt": "telefon"
+       },
+       {
+        "eines": [
+         {
+          "fakt": "firma"
+         },
+         {
+          "untertyp": [
+           "privat"
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     "bestaetigbar": false,
+     "bestaetigenText": null
+    },
+    {
+     "id": "suchprofil",
+     "titel": "Suchprofil fachlich anlegen",
+     "kurz": "Suchprofil",
+     "art": "formular",
+     "formular": "suchprofil",
+     "text": "Projekttypen, Länder, Größe und Phasen – daraus berechnen wir für jedes Projekt einen Matching-Score und melden neue Treffer.",
+     "texte": {
+      "stadtwerk": "Projekttypen, Länder, Größe und Phasen. Tipp: Regionen auf Ihr Netz- bzw. Versorgungsgebiet eingrenzen – Direktvermarktung und Bürgerbeteiligung lassen sich im Profil als ESG-Kriterium ergänzen.",
+      "fonds": "Projekttypen, Länder, Größe und Phasen laut Anlagerichtlinie. Taxonomie-/SFDR-Anforderungen ergänzen Sie im nächsten Schritt.",
+      "privat": "Projekttypen, Länder und Größe. Für den Einstieg eignen sich meist Bestandsanlagen (Phase „In Betrieb“) oder baureife Projekte mit geringem Entwicklungsrisiko."
+     },
+     "pflicht": true,
+     "kriterium": {
+      "fakt": "suchprofil"
+     }
+    },
+    {
+     "id": "ticket",
+     "titel": "Ticketgröße und Deal-Struktur",
+     "kurz": "Ticket & Struktur",
+     "art": "formular",
+     "formular": "ticket",
+     "text": "Wie viel Eigenkapital je Transaktion, Asset oder Share Deal, Rendite-Ziel und Finanzierungsweise – damit wir nur passende Projekte vorschlagen.",
+     "punkte": [
+      "Asset Deal: Kauf der Anlage bzw. Rechte einzeln – Verträge müssen übertragen werden.",
+      "Share Deal: Kauf der Projektgesellschaft (SPV) mit allen Verträgen – übliche Form bei Projektrechten.",
+      "Rendite-Ziel: bitte Basis angeben (Projekt-IRR oder Eigenkapital-IRR) – sie wird im Bewertungswerkzeug vorbelegt."
+     ],
+     "punkteJe": {
+      "fonds": [
+       "ESG: EU-Taxonomie und Art. 8/9 SFDR im Suchprofil markieren – Projekte ohne Nachweise werden als „prüfen“ gekennzeichnet."
+      ],
+      "ipp": [
+       "Co-Development: Wenn Sie Projekte in früher Phase gemeinsam weiterentwickeln wollen, im Suchprofil „Co-Development gewünscht“ wählen."
+      ],
+      "privat": [
+       "Als Privatperson prüfen Sie bitte mit Steuerberatung, ob der Kauf gewerblich ist (Einkünfte aus Gewerbebetrieb) – keine Anlageberatung durch ÖkoInvest."
+      ]
+     },
+     "pflicht": true,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "suchprofilTicket"
+       },
+       {
+        "fakt": "suchprofilStruktur"
+       }
+      ]
+     }
+    },
+    {
+     "id": "kyc",
+     "titel": "Verifizierung starten (KYC/KYB)",
+     "kurz": "Verifizierung",
+     "art": "aktion",
+     "text": "Vor Datenraum-Zugriff, LOI und Zuschlag prüfen wir Identität bzw. Gesellschaft (Geldwäschegesetz). Starten Sie jetzt – die Prüfung läuft parallel zu Ihrer Projektsuche.",
+     "punkte": [],
+     "punkteJe": {
+      "family_office": [
+       "KYB: Registerauszug (nicht älter als 3 Monate), wirtschaftlich Berechtigte ab 25 %, Ausweis der vertretungsberechtigten Person."
+      ],
+      "fonds": [
+       "KYB: Registerauszug der Fondsgesellschaft bzw. KVG, Nachweis der Vertretung, wirtschaftlich Berechtigte bzw. fiktiv wirtschaftlich Berechtigte (Geschäftsleitung), sofern keine natürliche Person ≥ 25 % hält."
+      ],
+      "stadtwerk": [
+       "KYB: Registerauszug, Beteiligungsverhältnisse (kommunale Gesellschafter), Vertretungsnachweis. Bei mehrheitlich öffentlicher Hand nach aktuellem Stand vereinfachte Prüfung möglich – die Compliance entscheidet im Einzelfall."
+      ],
+      "ipp": [
+       "KYB: Registerauszug, Gesellschafterstruktur bis zu den wirtschaftlich Berechtigten, Vertretungsnachweis."
+      ],
+      "privat": [
+       "KYC: amtlicher Lichtbildausweis (Vorder- und Rückseite), Meldeadresse; optional Online-Identifizierung per Video."
+      ]
+     },
+     "links": [
+      {
+       "href": "/portal/verifizierung",
+       "label": "Verifizierung öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "fakt": "kyc.angestossen"
+     }
+    },
+    {
+     "id": "nda",
+     "titel": "NDA-Rahmen verstehen",
+     "kurz": "NDA",
+     "art": "info",
+     "begriff": "nda",
+     "text": "Projekte erscheinen anonym. Vertrauliche Angaben, Datenblatt und Datenraum öffnen sich erst nach Klick-NDA je Projekt und Freigabe durch das Transaktionsteam.",
+     "punkte": [
+      "Die Klick-NDA gilt je Projekt; Zeitpunkt, IP-Adresse und Textversion werden als Nachweis gespeichert.",
+      "Jeder Datenraum-Download und jedes Exposé wird protokolliert; Exposés tragen Ihren Namen als Wasserzeichen.",
+      "Vertrauliche Inhalte nicht weitergeben – auch nicht an Finanzierer, bevor diese selbst eine NDA gezeichnet haben.",
+      "Für Investoren ist die Plattform kostenfrei – die Provision trägt der Verkäufer, und nur bei Abschluss."
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "interessen"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Verstanden",
+     "links": [
+      {
+       "href": "/portal/boerse",
+       "label": "Projektbörse ansehen"
+      }
+     ]
+    },
+    {
+     "id": "bonitaet",
+     "titel": "Hinweis zur Bonitätsprüfung",
+     "kurz": "Bonität",
+     "art": "info",
+     "text": "Vor einer LOI bzw. vor dem Zuschlag in einem Bieterverfahren kann das Transaktionsteam eine Bonitätsauskunft einholen (z. B. KSV1870, Creditreform, CRIF) – nur mit berechtigtem Interesse und nach den Datenschutzvorgaben.",
+     "punkte": [
+      "Halten Sie Finanzierungsnachweis bzw. Eigenkapitalbestätigung (Bank, Gremienbeschluss) bereit – das beschleunigt Exklusivität und Zuschlag.",
+      "Ergebnisse sieht nur das Backoffice (Transaktion, Compliance, Leitung) – sie erscheinen nicht beim Verkäufer."
+     ],
+     "punkteJe": {
+      "privat": [
+       "Bei Privatpersonen erfolgt eine Auskunft nur mit Ihrer ausdrücklichen Zustimmung."
+      ]
+     },
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Verstanden"
+    },
+    {
+     "id": "finanzierung",
+     "titel": "Finanzierungs-Cockpit kennenlernen",
+     "kurz": "Finanzierung",
+     "art": "aktion",
+     "text": "Rendite je Projekt nach Login, Vergleich Eigenkapital, Annuitäten- und Förderkredit, Leasing und Mietkauf, Szenarien speichern und als PDF weitergeben.",
+     "punkte": [
+      "Fremdkapital wird auf P90 und Mindest-DSCR bemessen – so rechnen auch die meisten Banken.",
+      "Zahlen im Cockpit sind Modellrechnungen vor Steuern und ersetzen keine Bank- oder Steuerberatung."
+     ],
+     "links": [
+      {
+       "href": "/portal/finanzierung",
+       "label": "Cockpit öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Angesehen"
+    },
+    {
+     "id": "benachrichtigungen",
+     "titel": "E-Mail-Benachrichtigungen festlegen",
+     "kurz": "Benachrichtigungen",
+     "art": "formular",
+     "formular": "benachrichtigungen",
+     "text": "Neue Treffer zu Ihrem Suchprofil, NDA-Freigaben und LOI-Antworten – wählen Sie, was per E-Mail kommen soll.",
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "mailEinstellungen"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Standard übernehmen"
+    },
+    {
+     "id": "termin",
+     "titel": "Kennenlernen mit dem Transaktionsteam",
+     "kurz": "Termin",
+     "art": "aktion",
+     "text": "30–45 Minuten per Video: Investitionskriterien, aktuelle Pipeline, Ablauf von NDA bis Closing. Danach meldet sich eine feste Ansprechperson.",
+     "links": [
+      {
+       "href": "/portal/termine?art=beratung_video",
+       "label": "Videotermin buchen",
+       "primaer": true
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "termine"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Später selbst buchen"
+    }
+   ]
+  },
+  {
+   "id": "kunde",
+   "titel": "Einstieg für Unternehmen",
+   "text": "Solarstrom vom eigenen Dach oder gebündelte Energiebeschaffung – mit den Stammdaten, die Lieferanten und Abrechnung wirklich brauchen.",
+   "rollen": [
+    "unternehmen"
+   ],
+   "untertypen": {
+    "contracting": {
+     "label": "Solarstrom vor Ort (Contracting)",
+     "text": "Die Anlage auf Ihrem Dach gehört ÖkoInvest bzw. der Projektgesellschaft – Sie beziehen den Strom."
+    },
+    "reststrom": {
+     "label": "Reststrom / Energiebeschaffung",
+     "text": "Den Strom, den Sie weiterhin kaufen müssen, bündeln wir im Pool und schreiben ihn unter Versorgern aus."
+    }
+   },
+   "schritte": [
+    {
+     "id": "typ",
+     "titel": "Womit starten Sie?",
+     "kurz": "Ihr Typ",
+     "art": "formular",
+     "formular": "untertyp",
+     "text": "Beides ist später kombinierbar – z. B. Solarstrom vom Dach und Reststrom aus dem Pool.",
+     "pflicht": true,
+     "kriterium": {
+      "fakt": "untertyp"
+     }
+    },
+    {
+     "id": "profil",
+     "titel": "Kontaktdaten und Firma",
+     "kurz": "Profil",
+     "art": "formular",
+     "formular": "profil",
+     "firmaLabel": "Unternehmen",
+     "text": "Firma laut Register und eine erreichbare Ansprechperson – für Verträge, Rechnungen und Störungsmeldungen.",
+     "pflicht": true,
+     "kriterium": {
+      "alle": [
+       {
+        "fakt": "name"
+       },
+       {
+        "fakt": "telefon"
+       },
+       {
+        "fakt": "firma"
+       }
+      ]
+     },
+     "bestaetigbar": false,
+     "bestaetigenText": null
+    },
+    {
+     "id": "solarstrom",
+     "titel": "„Mein Solarstrom“ kennenlernen",
+     "kurz": "Mein Solarstrom",
+     "art": "aktion",
+     "begriff": "energie-contracting",
+     "text": "Vertrag, erzeugter und gelieferter Strom, abrechnungsrelevante Zähler. Technik und Finanzierung der Anlage liegen beim Betreiber – Sie sehen, was Sie für Abrechnung und Planung brauchen.",
+     "punkte": [
+      "Vertragsdaten: Laufzeit, Arbeitspreis, Preisgleitung, Mindestabnahme und Endschaftsregelung.",
+      "Monatswerte je Zähler – Grundlage der Rechnung."
+     ],
+     "links": [
+      {
+       "href": "/portal/anlagen",
+       "label": "Mein Solarstrom öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": [
+      "contracting"
+     ],
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "anlagen"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Angesehen",
+     "nurFuer": [
+      "contracting"
+     ]
+    },
+    {
+     "id": "rechnungen",
+     "titel": "Rechnungen und Zahlungen",
+     "kurz": "Rechnungen",
+     "art": "info",
+     "text": "Rechnungen aus dem Contracting-Vertrag erscheinen monatlich unter „Abrechnungen“ – mit PDF und Zahlungsstatus. Die E-Mail enthält nur einen Hinweis, keine Beträge.",
+     "punkte": [
+      "Rechnungsanschrift und Bestellnummer bitte über „Nachrichten“ mitteilen, falls Ihre Buchhaltung sie braucht.",
+      "Abweichungen zum Zählerstand? Direkt an der Rechnung melden – wir prüfen die Messwerte."
+     ],
+     "links": [
+      {
+       "href": "/portal/abrechnungen",
+       "label": "Abrechnungen öffnen"
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Verstanden",
+     "nurFuer": [
+      "contracting"
+     ]
+    },
+    {
+     "id": "stoerung",
+     "titel": "Störung melden",
+     "kurz": "Störung",
+     "art": "info",
+     "text": "Die Anlage wird laufend überwacht – die meisten Störungen sehen wir vor Ihnen. Fällt Ihnen etwas auf (Brandgeruch, beschädigte Module, Wechselrichter aus), melden Sie es über den Support.",
+     "punkte": [
+      "Bei Gefahr (Brand, Rauch) zuerst Feuerwehr 112 bzw. 118 (CH) rufen, dann melden.",
+      "Meldung mit Foto und Ort am Gebäude – Sie erhalten eine Ticketnummer und Statusmeldungen."
+     ],
+     "links": [
+      {
+       "href": "/portal/support",
+       "label": "Support öffnen"
+      }
+     ],
+     "pflicht": [
+      "contracting"
+     ],
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Verstanden",
+     "nurFuer": [
+      "contracting"
+     ]
+    },
+    {
+     "id": "abnahmestelle",
+     "titel": "Energie-Stammdaten erfassen",
+     "kurz": "Abnahmestelle",
+     "art": "aktion",
+     "begriff": "marktlokation",
+     "text": "Je Abnahmestelle: Marktlokation (DE, 11-stellig mit Prüfziffer), Messlokation bzw. Zählpunkt (AT, 33-stellig) oder Messpunkt (CH), Messart, Netzebene und Jahresverbrauch.",
+     "punkte": [
+      "Die Angaben stehen auf Ihrer Stromrechnung oder im Netznutzungsvertrag.",
+      "Leistungsgemessene Kunden (RLM) haben in der Regel ab 100.000 kWh/a einen Lastgang – das verbessert Angebote deutlich."
+     ],
+     "links": [
+      {
+       "href": "/portal/energie",
+       "label": "Energie & Lastgang öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": [
+      "reststrom"
+     ],
+     "kriterium": {
+      "fakt": "abnahmestellen"
+     },
+     "nurFuer": [
+      "reststrom"
+     ]
+    },
+    {
+     "id": "lastgang",
+     "titel": "Lastgang hochladen",
+     "kurz": "Lastgang",
+     "art": "aktion",
+     "begriff": "lastgang",
+     "text": "15-Minuten-Werte eines Jahres (CSV/Excel-Export des Netzbetreibers oder Messstellenbetreibers). Einheiten, Zeitumstellung und Lücken erkennt der Import selbst.",
+     "punkte": [
+      "Ohne Lastgang (Standardlastprofil) rechnen wir mit dem Jahresverbrauch – dann Schritt auf „später“ setzen."
+     ],
+     "links": [
+      {
+       "href": "/portal/energie",
+       "label": "Lastgang hochladen",
+       "primaer": true
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "lastgaenge"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kein Lastgang vorhanden",
+     "nurFuer": [
+      "reststrom"
+     ]
+    },
+    {
+     "id": "vertrag",
+     "titel": "Laufenden Vertrag und Kündigungsfrist erfassen",
+     "kurz": "Vertrag",
+     "art": "aktion",
+     "text": "Lieferant, Vertragsende, Kündigungsfrist und Preisstruktur. Daraus berechnen wir das Kündigungsfenster und erinnern rechtzeitig – ein verpasstes Fenster kostet oft ein ganzes Jahr.",
+     "links": [
+      {
+       "href": "/portal/energie/beschaffung",
+       "label": "Energiebeschaffung öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": [
+      "reststrom"
+     ],
+     "kriterium": {
+      "fakt": "energieVertrag"
+     },
+     "nurFuer": [
+      "reststrom"
+     ]
+    },
+    {
+     "id": "vollmacht",
+     "titel": "Beschaffungsvollmacht erteilen",
+     "kurz": "Vollmacht",
+     "art": "aktion",
+     "text": "Mit der Vollmacht dürfen wir in Ihrem Namen Angebote bei Versorgern einholen und – nur nach Ihrer Freigabe im Portal – den Zuschlag erteilen. Widerruf jederzeit im Portal.",
+     "punkte": [
+      "Angebote holen wir mit anonymisiertem Lastgang ein – Ihr Firmenname geht erst mit dem Zuschlag an den Versorger."
+     ],
+     "links": [
+      {
+       "href": "/portal/energie/beschaffung",
+       "label": "Vollmacht erteilen",
+       "primaer": true
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "vollmacht"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Später entscheiden",
+     "nurFuer": [
+      "reststrom"
+     ]
+    },
+    {
+     "id": "ansprechpartner",
+     "titel": "Ihr Ansprechpartner",
+     "kurz": "Ansprechpartner",
+     "art": "info",
+     "text": "Fragen stellen Sie am schnellsten über „Nachrichten“ – direkt am Vorgang, damit nichts verloren geht. Für dringende technische Themen gibt es den Support mit Ticketnummer.",
+     "punkte": [
+      "Nachrichten am Objekt (Fläche, Projekt, Anlage, Anfrage) landen bei der zuständigen Person im Backoffice.",
+      "Telefon und E-Mail-Adresse Ihres Ansprechpartners erhalten Sie mit der ersten Antwort – bis dahin bitte über das Portal.",
+      "Rückruf gewünscht? Buchen Sie eine Beratung am Telefon unter „Termine“."
+     ],
+     "links": [
+      {
+       "href": "/portal/nachrichten",
+       "label": "Nachrichten öffnen"
+      },
+      {
+       "href": "/portal/support",
+       "label": "Support"
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Verstanden"
+    },
+    {
+     "id": "benachrichtigungen",
+     "titel": "E-Mail-Benachrichtigungen festlegen",
+     "kurz": "Benachrichtigungen",
+     "art": "formular",
+     "formular": "benachrichtigungen",
+     "text": "Kündigungsfristen, Angebotsvergleiche zur Freigabe, Rechnungen und Störungen – wählen Sie, was per E-Mail kommen soll.",
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "mailEinstellungen"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Standard übernehmen"
+    }
+   ]
+  },
+  {
+   "id": "gutachter",
+   "titel": "Einstieg für Gutachter und Planer",
+   "text": "Zugewiesene Gutachten und Meilensteine, Upload der Ergebnisse, Rückfragen – mehr nicht, und das sicher.",
+   "rollen": [
+    "gutachter"
+   ],
+   "schritte": [
+    {
+     "id": "profil",
+     "titel": "Kontaktdaten und Firma",
+     "kurz": "Profil",
+     "art": "formular",
+     "formular": "profil",
+     "firmaLabel": "Büro / Sachverständigenbüro",
+     "text": "Büro und Ansprechperson. Qualifikation (z. B. öffentlich bestellt, Fachkunde Artenschutz) bitte bei der ersten Rückfrage nennen – sie wird am Auftrag vermerkt.",
+     "pflicht": true,
+     "kriterium": {
+      "alle": [
+       {
+        "fakt": "name"
+       },
+       {
+        "fakt": "telefon"
+       },
+       {
+        "fakt": "firma"
+       }
+      ]
+     },
+     "bestaetigbar": false,
+     "bestaetigenText": null
+    },
+    {
+     "id": "zweifaktor",
+     "titel": "Zwei-Faktor-Anmeldung einrichten",
+     "kurz": "2FA",
+     "art": "aktion",
+     "text": "Sie sehen vertrauliche Projektunterlagen – deshalb ist die Zwei-Faktor-Anmeldung für Gutachter Pflicht.",
+     "links": [
+      {
+       "href": "/portal/sicherheit",
+       "label": "Sicherheit öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "fakt": "zweiFaktor"
+     }
+    },
+    {
+     "id": "auftraege",
+     "titel": "Aufträge ansehen",
+     "kurz": "Aufträge",
+     "art": "aktion",
+     "text": "Unter „Aufträge & Projekte“ sehen Sie nur die Meilensteine, die Ihnen zugewiesen wurden – mit Frist, Unterlagen und Rückfragen.",
+     "links": [
+      {
+       "href": "/portal/entwicklung",
+       "label": "Aufträge öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "auftraege"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Noch kein Auftrag"
+    },
+    {
+     "id": "regeln",
+     "titel": "So melden Sie Ergebnisse",
+     "kurz": "Ablauf",
+     "art": "info",
+     "text": "Laden Sie das Gutachten am Meilenstein hoch und melden Sie „eingereicht“ – erst mit Upload möglich. „Erledigt“ setzt die Projektleitung nach Prüfung.",
+     "punkte": [
+      "Rückfragen direkt am Meilenstein – so bleibt der Verlauf nachvollziehbar.",
+      "Unterlagen nur für den Auftrag verwenden; Weitergabe nur nach Absprache."
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Verstanden"
+    },
+    {
+     "id": "benachrichtigungen",
+     "titel": "E-Mail-Benachrichtigungen festlegen",
+     "kurz": "Benachrichtigungen",
+     "art": "formular",
+     "formular": "benachrichtigungen",
+     "text": "Neue Aufträge, Fristen und Rückfragen – wählen Sie, was per E-Mail kommen soll.",
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "mailEinstellungen"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Standard übernehmen"
+    }
+   ]
+  },
+  {
+   "id": "lieferant",
+   "titel": "Einstieg für Energieversorger",
+   "text": "Angebotsanfragen mit anonymisierten Lastgängen, Preisblatt, Fristen und Runden – bis zum Zuschlag.",
+   "rollen": [
+    "lieferant"
+   ],
+   "schritte": [
+    {
+     "id": "profil",
+     "titel": "Kontaktdaten und Firma",
+     "kurz": "Profil",
+     "art": "formular",
+     "formular": "profil",
+     "firmaLabel": "Energieversorger",
+     "text": "Firma und Ansprechperson im Vertrieb (Großkunden/B2B), an die Angebotsanfragen gehen.",
+     "pflicht": true,
+     "kriterium": {
+      "alle": [
+       {
+        "fakt": "name"
+       },
+       {
+        "fakt": "telefon"
+       },
+       {
+        "fakt": "firma"
+       }
+      ]
+     },
+     "bestaetigbar": false,
+     "bestaetigenText": null
+    },
+    {
+     "id": "zweifaktor",
+     "titel": "Zwei-Faktor-Anmeldung einrichten",
+     "kurz": "2FA",
+     "art": "aktion",
+     "text": "Empfohlen: Preisblätter sind wettbewerbsrelevant – schützen Sie den Zugang mit einem zweiten Faktor.",
+     "links": [
+      {
+       "href": "/portal/sicherheit",
+       "label": "Sicherheit öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "fakt": "zweiFaktor"
+     }
+    },
+    {
+     "id": "anfragen",
+     "titel": "Angebotsanfragen ansehen",
+     "kurz": "Anfragen",
+     "art": "aktion",
+     "text": "Jede Anfrage enthält Lastgang bzw. Verbrauch (anonymisiert), Lieferzeitraum, Preisstruktur und Frist. Sie geben je Runde ein Preisblatt ab und können es bis zur Frist ändern.",
+     "links": [
+      {
+       "href": "/portal/ausschreibungen",
+       "label": "Angebotsanfragen öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "ausschreibungen"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Noch keine Anfrage"
+    },
+    {
+     "id": "regeln",
+     "titel": "Regeln der Ausschreibung",
+     "kurz": "Regeln",
+     "art": "info",
+     "text": "Alle Versorger erhalten dieselben Informationen. Fragen stellen Sie im Portal – Antworten sehen alle Bieter anonym.",
+     "punkte": [
+      "Bindefrist des Angebots bitte realistisch angeben – der Kunde gibt den Zuschlag im Portal frei.",
+      "Nach dem Zuschlag erhalten Sie Firmendaten und Vollmacht des Kunden für den Vertrag."
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Verstanden"
+    },
+    {
+     "id": "benachrichtigungen",
+     "titel": "E-Mail-Benachrichtigungen festlegen",
+     "kurz": "Benachrichtigungen",
+     "art": "formular",
+     "formular": "benachrichtigungen",
+     "text": "Neue Angebotsanfragen, Fristen, Runden und Zuschläge – wählen Sie, was per E-Mail kommen soll.",
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "mailEinstellungen"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Standard übernehmen"
+    }
+   ]
+  },
+  {
+   "id": "bank",
+   "titel": "Einstieg für Finanzierungspartner",
+   "text": "Finanzierungsanfragen mit freigegebenem Bankenpaket, Term Sheet abgeben, Rückfragen stellen.",
+   "rollen": [
+    "bank"
+   ],
+   "schritte": [
+    {
+     "id": "profil",
+     "titel": "Kontaktdaten und Firma",
+     "kurz": "Profil",
+     "art": "formular",
+     "formular": "profil",
+     "firmaLabel": "Bank / Institut",
+     "text": "Institut und Ansprechperson (z. B. Projekt- oder Erneuerbare-Energien-Finanzierung).",
+     "pflicht": true,
+     "kriterium": {
+      "alle": [
+       {
+        "fakt": "name"
+       },
+       {
+        "fakt": "telefon"
+       },
+       {
+        "fakt": "firma"
+       }
+      ]
+     },
+     "bestaetigbar": false,
+     "bestaetigenText": null
+    },
+    {
+     "id": "zweifaktor",
+     "titel": "Zwei-Faktor-Anmeldung einrichten",
+     "kurz": "2FA",
+     "art": "aktion",
+     "text": "Bankenpakete enthalten Financial Model, Ertragsgutachten und Verträge – deshalb ist die Zwei-Faktor-Anmeldung Pflicht.",
+     "links": [
+      {
+       "href": "/portal/sicherheit",
+       "label": "Sicherheit öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "fakt": "zweiFaktor"
+     }
+    },
+    {
+     "id": "anfragen",
+     "titel": "Finanzierungsanfragen ansehen",
+     "kurz": "Anfragen",
+     "art": "aktion",
+     "text": "Sie sehen nur Anfragen, zu denen Ihr Institut eingeladen wurde – mit dem jeweils freigegebenen Bankenpaket.",
+     "links": [
+      {
+       "href": "/portal/bank",
+       "label": "Finanzierungsanfragen öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "bankAnfragen"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Noch keine Anfrage"
+    },
+    {
+     "id": "vertraulichkeit",
+     "titel": "Vertraulichkeit und Protokoll",
+     "kurz": "Vertraulichkeit",
+     "art": "info",
+     "text": "Jeder Abruf eines Bausteins wird protokolliert. Term Sheets, Absagen und Rückfragen geben Sie im Portal ab – so bleibt die Entscheidung nachvollziehbar.",
+     "punkte": [
+      "Covenants (DSCR, LLCR) werden im Betrieb aus Anlagen-Messdaten überwacht; Frühwarnungen erhalten Sie nach Kreditvertrag."
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Verstanden"
+    },
+    {
+     "id": "benachrichtigungen",
+     "titel": "E-Mail-Benachrichtigungen festlegen",
+     "kurz": "Benachrichtigungen",
+     "art": "formular",
+     "formular": "benachrichtigungen",
+     "text": "Neue Anfragen, Rückfragen und Covenant-Frühwarnungen – wählen Sie, was per E-Mail kommen soll.",
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "mailEinstellungen"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Standard übernehmen"
+    }
+   ]
+  },
+  {
+   "id": "mitglied",
+   "titel": "Einstieg für Mitglieder",
+   "text": "Genossenschaft oder Energiegemeinschaft: Interesse vormerken, Pflichthinweise kennen, Status verfolgen.",
+   "rollen": [
+    "mitglied"
+   ],
+   "schritte": [
+    {
+     "id": "profil",
+     "titel": "Kontaktdaten und Firma",
+     "kurz": "Profil",
+     "art": "formular",
+     "formular": "profil",
+     "firmaLabel": "Firma / Organisation",
+     "text": "Name und Telefon. Für eine spätere Zeichnung von Anteilen brauchen wir zusätzlich Ihre Anschrift – das erfragen wir erst, wenn die Genossenschaft zeichnungsbereit ist.",
+     "pflicht": true,
+     "kriterium": {
+      "alle": [
+       {
+        "fakt": "name"
+       },
+       {
+        "eines": [
+         {
+          "fakt": "telefon"
+         },
+         {
+          "merker": true
+         }
+        ]
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Ohne Telefon weiter"
+    },
+    {
+     "id": "beteiligung",
+     "titel": "Beteiligung vormerken",
+     "kurz": "Beteiligung",
+     "art": "aktion",
+     "text": "Genossenschaft (Anteile an Solarparks in der Region) oder Energiegemeinschaft (Strom gemeinsam erzeugen und nutzen) – mit den Stammdaten Ihres Landes (z. B. 33-stellige Zählpunktnummer in Österreich).",
+     "links": [
+      {
+       "href": "/portal/beteiligung",
+       "label": "Beteiligung öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "fakt": "beteiligung"
+     }
+    },
+    {
+     "id": "pflichthinweise",
+     "titel": "Pflichthinweise zur Genossenschaft",
+     "kurz": "Pflichthinweise",
+     "art": "info",
+     "begriff": "nachschusspflicht",
+     "text": "Die Genossenschaft ist im Aufbau – eine Zeichnung ist noch nicht möglich, Sie merken Ihr Interesse unverbindlich vor.",
+     "punkte": [
+      "Geschäftsanteile sind unternehmerische Beteiligungen: Verlust ist möglich; eine Nachschusspflicht regelt die Satzung.",
+      "Kündigung und Auszahlung richten sich nach Satzung und Gesetz (DE u. a. §§ 65, 73 GenG) – das Geld ist nicht täglich verfügbar.",
+      "ÖkoInvest erbringt keine Anlageberatung."
+     ],
+     "pflicht": true,
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Zur Kenntnis genommen"
+    },
+    {
+     "id": "kyc",
+     "titel": "Verifizierung starten (KYC/KYB)",
+     "kurz": "Verifizierung",
+     "art": "aktion",
+     "text": "Für die spätere Zeichnung ist eine Identitätsprüfung nötig. Sie können sie jetzt schon anstoßen – oder später, wenn die Genossenschaft zeichnungsbereit ist.",
+     "punkte": [],
+     "links": [
+      {
+       "href": "/portal/verifizierung",
+       "label": "Verifizierung öffnen",
+       "primaer": true
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "fakt": "kyc.angestossen"
+     }
+    },
+    {
+     "id": "benachrichtigungen",
+     "titel": "E-Mail-Benachrichtigungen festlegen",
+     "kurz": "Benachrichtigungen",
+     "art": "formular",
+     "formular": "benachrichtigungen",
+     "text": "Im Portal sehen Sie alles in der Glocke. Per E-Mail kommt nur, was Sie hier wählen – ohne vertrauliche Inhalte.",
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "mailEinstellungen"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Standard übernehmen"
+    }
+   ]
+  }
+ ],
+ "touren": [
+  "uebersicht",
+  "boerse",
+  "boerse_detail",
+  "projekte",
+  "flaechen",
+  "energie",
+  "anlagen",
+  "kommune",
+  "verifizierung",
+  "admin",
+  "admin_vorgaenge",
+  "admin_akquise"
+ ]
+}

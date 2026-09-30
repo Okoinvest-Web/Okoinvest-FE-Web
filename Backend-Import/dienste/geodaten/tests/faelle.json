@@ -1,6 +1,6 @@
 {
  "hinweis": "Automatisch erzeugt von faelle_erzeugen.mjs – nicht von Hand ändern.",
- "version": "2026-09-30.1",
+ "version": "2026-09-30.2",
  "knoten": [
   {
    "id": "uw-a",
@@ -551,6 +551,485 @@
      "einstrahlung": 2.6
     },
     "mwp": 63.6
+   }
+  },
+  {
+   "name": "DE A 96 privilegiert + Randstreifen",
+   "eingabe": {
+    "ha": 12,
+    "kompaktheit": 0.92,
+    "neigungGrad": 2.5,
+    "exposition": "S",
+    "nutzung": {
+     "acker": 12,
+     "gruenland": 0,
+     "sonstige": 0
+    },
+    "schutz": [],
+    "siedlungAbstandM": 450,
+    "bundesland": "Bayern",
+    "land": "DE",
+    "kulisse": {
+     "randstreifenAnteil": 1,
+     "privilegiertAnteil": 0.8
+    },
+    "widmung": {
+     "status": "zone"
+    },
+    "netz": {
+     "knoten": {
+      "id": "tr-b",
+      "name": "Trafo B",
+      "art": "trafo",
+      "kapazitaet": "unbekannt",
+      "lon": 13.02,
+      "lat": 48.21
+     },
+     "luftlinieM": 926,
+     "trasseM": 1158,
+     "kosten": {
+      "ebene": "msLeitung",
+      "summe": 600460,
+      "min": 480368,
+      "max": 840644,
+      "proKwp": 55,
+      "anteil": 0.117,
+      "ampel": "pruefen",
+      "monate": [
+       9,
+       30
+      ]
+     },
+     "ebene": "msLeitung"
+    }
+   },
+   "erwartet": {
+    "score": 97,
+    "ampel": "gruen",
+    "ko": [],
+    "punkte": {
+     "groesse": 18,
+     "form": 7,
+     "neigung": 10,
+     "nutzung": 6,
+     "siedlung": 7,
+     "netz": 19.7,
+     "kosten": 5.6,
+     "widmung": 8,
+     "kulisse": 14,
+     "einstrahlung": 2
+    },
+    "mwp": 10.9
+   }
+  },
+  {
+   "name": "DE nur Randstreifen 500 m",
+   "eingabe": {
+    "ha": 9,
+    "kompaktheit": 0.92,
+    "neigungGrad": 2.5,
+    "exposition": "S",
+    "nutzung": {
+     "acker": 12,
+     "gruenland": 0,
+     "sonstige": 0
+    },
+    "schutz": [],
+    "siedlungAbstandM": 450,
+    "bundesland": "Bayern",
+    "land": "DE",
+    "kulisse": {
+     "randstreifenAnteil": 0.6,
+     "privilegiertAnteil": 0
+    },
+    "widmung": {
+     "status": "unklar"
+    },
+    "netz": {
+     "knoten": {
+      "id": "uw-a",
+      "name": "UW A",
+      "art": "uw110",
+      "kapazitaet": "unbekannt",
+      "lon": 13.08,
+      "lat": 48.25
+     },
+     "luftlinieM": 3144,
+     "trasseM": 3929,
+     "kosten": {
+      "ebene": "msLeitung",
+      "summe": 838480,
+      "min": 670784,
+      "max": 1173872,
+      "proKwp": 102,
+      "anteil": 0.218,
+      "ampel": "pruefen",
+      "monate": [
+       9,
+       30
+      ]
+     },
+     "ebene": "msLeitung"
+    }
+   },
+   "erwartet": {
+    "score": 79,
+    "ampel": "gruen",
+    "ko": [],
+    "punkte": {
+     "groesse": 18,
+     "form": 7,
+     "neigung": 10,
+     "nutzung": 6,
+     "siedlung": 7,
+     "netz": 14.3,
+     "kosten": 2.6,
+     "widmung": 3.2,
+     "kulisse": 8.4,
+     "einstrahlung": 2
+    },
+    "mwp": 8.2
+   }
+  },
+  {
+   "name": "DE benachteiligtes Gebiet",
+   "eingabe": {
+    "ha": 16,
+    "kompaktheit": 0.92,
+    "neigungGrad": 2.5,
+    "exposition": "S",
+    "nutzung": {
+     "acker": 12,
+     "gruenland": 0,
+     "sonstige": 0
+    },
+    "schutz": [],
+    "siedlungAbstandM": 450,
+    "bundesland": "Bayern",
+    "land": "DE",
+    "kulisse": {
+     "benachteiligtAnteil": 1
+    },
+    "widmung": {
+     "status": "unklar"
+    },
+    "netz": {
+     "knoten": {
+      "id": "uw-a",
+      "name": "UW A",
+      "art": "uw110",
+      "kapazitaet": "unbekannt",
+      "lon": 13.08,
+      "lat": 48.25
+     },
+     "luftlinieM": 5372,
+     "trasseM": 6715,
+     "kosten": {
+      "ebene": "uwMs",
+      "summe": 2296780,
+      "min": 1837424,
+      "max": 3215492,
+      "proKwp": 158,
+      "anteil": 0.337,
+      "ampel": "kritisch",
+      "monate": [
+       15,
+       51
+      ]
+     },
+     "ebene": "uwMs"
+    }
+   },
+   "erwartet": {
+    "score": 75,
+    "ampel": "gruen",
+    "ko": [],
+    "punkte": {
+     "groesse": 18,
+     "form": 7,
+     "neigung": 10,
+     "nutzung": 6,
+     "siedlung": 7,
+     "netz": 8.7,
+     "kosten": 1,
+     "widmung": 3.2,
+     "kulisse": 11.9,
+     "einstrahlung": 2
+    },
+    "mwp": 14.5
+   }
+  },
+  {
+   "name": "DE Moor mit Wiedervernässung",
+   "eingabe": {
+    "ha": 11,
+    "kompaktheit": 0.92,
+    "neigungGrad": 2.5,
+    "exposition": "S",
+    "nutzung": {
+     "acker": 3,
+     "gruenland": 8,
+     "sonstige": 0
+    },
+    "schutz": [],
+    "siedlungAbstandM": 450,
+    "bundesland": "Bayern",
+    "land": "DE",
+    "kulisse": {
+     "moorAnteil": 0.9,
+     "benachteiligtAnteil": 0.3
+    },
+    "widmung": {
+     "status": "unklar"
+    },
+    "netz": {
+     "knoten": {
+      "id": "tr-b",
+      "name": "Trafo B",
+      "art": "trafo",
+      "kapazitaet": "unbekannt",
+      "lon": 13.02,
+      "lat": 48.21
+     },
+     "luftlinieM": 926,
+     "trasseM": 1158,
+     "kosten": {
+      "ebene": "msLeitung",
+      "summe": 568960,
+      "min": 455168,
+      "max": 796544,
+      "proKwp": 57,
+      "anteil": 0.121,
+      "ampel": "pruefen",
+      "monate": [
+       9,
+       30
+      ]
+     },
+     "ebene": "msLeitung"
+    }
+   },
+   "erwartet": {
+    "score": 87,
+    "ampel": "gruen",
+    "ko": [],
+    "punkte": {
+     "groesse": 18,
+     "form": 7,
+     "neigung": 10,
+     "nutzung": 5.5,
+     "siedlung": 7,
+     "netz": 19.7,
+     "kosten": 5.5,
+     "widmung": 3.2,
+     "kulisse": 8.8,
+     "einstrahlung": 2
+    },
+    "mwp": 10
+   }
+  },
+  {
+   "name": "DE ohne Kulisse (Niedersachsen)",
+   "eingabe": {
+    "ha": 12,
+    "kompaktheit": 0.92,
+    "neigungGrad": 2.5,
+    "exposition": "S",
+    "nutzung": {
+     "acker": 12,
+     "gruenland": 0,
+     "sonstige": 0
+    },
+    "schutz": [],
+    "siedlungAbstandM": 450,
+    "bundesland": "Niedersachsen",
+    "land": "DE",
+    "kulisse": {},
+    "widmung": {
+     "status": "unklar"
+    },
+    "netz": {
+     "knoten": {
+      "id": "tr-b",
+      "name": "Trafo B",
+      "art": "trafo",
+      "kapazitaet": "unbekannt",
+      "lon": 13.02,
+      "lat": 48.21
+     },
+     "luftlinieM": 926,
+     "trasseM": 1158,
+     "kosten": {
+      "ebene": "msLeitung",
+      "summe": 600460,
+      "min": 480368,
+      "max": 840644,
+      "proKwp": 55,
+      "anteil": 0.117,
+      "ampel": "pruefen",
+      "monate": [
+       9,
+       30
+      ]
+     },
+     "ebene": "msLeitung"
+    }
+   },
+   "erwartet": {
+    "score": 77,
+    "ampel": "gruen",
+    "ko": [],
+    "punkte": {
+     "groesse": 18,
+     "form": 7,
+     "neigung": 10,
+     "nutzung": 6,
+     "siedlung": 7,
+     "netz": 19.7,
+     "kosten": 5.6,
+     "widmung": 3.2,
+     "kulisse": 0,
+     "einstrahlung": 0
+    },
+    "mwp": 10.9
+   }
+  },
+  {
+   "name": "CH Eignungsgebiet mit FFF",
+   "eingabe": {
+    "ha": 8,
+    "kompaktheit": 0.92,
+    "neigungGrad": 2.5,
+    "exposition": "S",
+    "nutzung": {
+     "acker": 12,
+     "gruenland": 0,
+     "sonstige": 0
+    },
+    "schutz": [],
+    "siedlungAbstandM": 450,
+    "bundesland": "Bern",
+    "land": "CH",
+    "kulisse": {
+     "eignungAnteil": 0.7,
+     "fffAnteil": 0.4
+    },
+    "widmung": {
+     "status": "zone"
+    },
+    "netz": {
+     "knoten": {
+      "id": "tr-b",
+      "name": "Trafo B",
+      "art": "trafo",
+      "kapazitaet": "unbekannt",
+      "lon": 13.02,
+      "lat": 48.21
+     },
+     "luftlinieM": 926,
+     "trasseM": 1158,
+     "kosten": {
+      "ebene": "msLeitung",
+      "summe": 474460,
+      "min": 379568,
+      "max": 664244,
+      "proKwp": 65,
+      "anteil": 0.138,
+      "ampel": "pruefen",
+      "monate": [
+       9,
+       30
+      ]
+     },
+     "ebene": "msLeitung"
+    }
+   },
+   "erwartet": {
+    "score": 88,
+    "ampel": "gruen",
+    "ko": [],
+    "punkte": {
+     "groesse": 18,
+     "form": 7,
+     "neigung": 11,
+     "nutzung": 6,
+     "siedlung": 7,
+     "netz": 19.7,
+     "kosten": 4.8,
+     "widmung": 8,
+     "kulisse": 8.4,
+     "fff": -3.2,
+     "einstrahlung": 1
+    },
+    "mwp": 7.3
+   }
+  },
+  {
+   "name": "CH vorbelastet ohne Eignungsgebiet",
+   "eingabe": {
+    "ha": 6,
+    "kompaktheit": 0.92,
+    "neigungGrad": 2.5,
+    "exposition": "S",
+    "nutzung": {
+     "acker": 12,
+     "gruenland": 0,
+     "sonstige": 0
+    },
+    "schutz": [],
+    "siedlungAbstandM": 450,
+    "bundesland": "Zürich",
+    "land": "CH",
+    "kulisse": {
+     "vorbelastet": true
+    },
+    "widmung": {
+     "status": "unklar"
+    },
+    "netz": {
+     "knoten": {
+      "id": "tr-b",
+      "name": "Trafo B",
+      "art": "trafo",
+      "kapazitaet": "unbekannt",
+      "lon": 13.02,
+      "lat": 48.21
+     },
+     "luftlinieM": 926,
+     "trasseM": 1158,
+     "kosten": {
+      "ebene": "msLeitung",
+      "summe": 411460,
+      "min": 329168,
+      "max": 576044,
+      "proKwp": 75,
+      "anteil": 0.159,
+      "ampel": "pruefen",
+      "monate": [
+       9,
+       30
+      ]
+     },
+     "ebene": "msLeitung"
+    }
+   },
+   "erwartet": {
+    "score": 84,
+    "ampel": "gruen",
+    "ko": [],
+    "punkte": {
+     "groesse": 18,
+     "form": 7,
+     "neigung": 11,
+     "nutzung": 6,
+     "siedlung": 7,
+     "netz": 19.7,
+     "kosten": 4.1,
+     "widmung": 3.2,
+     "kulisse": 7.2,
+     "einstrahlung": 1
+    },
+    "mwp": 5.5
    }
   }
  ],

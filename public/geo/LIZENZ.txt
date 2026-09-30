@@ -7,3 +7,9 @@ netzknoten-ooe-sbg.geojson, schutzgebiete-innviertel.geojson, orte-innviertel.ge
   Schutzgebiete aus OSM sind NICHT amtlich - im Betrieb durch amtliche Daten (EEA Natura 2000, Umweltbundesamt) ersetzen.
 
 Erzeugt mit Backend-Import/dienste/geodaten/demo/demo_bauen.py. Synthetische Demo-Parzellen liegen unter src/data/geo/.
+
+netzknoten-schwaben.geojson, verkehr-unterallgaeu.geojson, orte-unterallgaeu.geojson, schutzgebiete-unterallgaeu.geojson (Deutschland, Ausbaustufe A1b):
+  Quelle: OpenStreetMap (Overpass API, abgefragt am 30.09.2026; Stand siehe metadata.stand je Datei)
+  (c) OpenStreetMap-Mitwirkende - Open Database License (ODbL) 1.0 - https://www.openstreetmap.org/copyright
+  Gleiszahl der Schienenwege GESCHAETZT (parallele OSM-Gleise), Schutzgebiete NICHT amtlich (im Betrieb BfN/LfU bzw. EEA Natura 2000).
+  Erzeugt mit Backend-Import/dienste/geodaten/demo/demo_bauen_de.py. Synthetische Demo-Flurstuecke: src/data/geo/parzellen-demo-de.geojson.

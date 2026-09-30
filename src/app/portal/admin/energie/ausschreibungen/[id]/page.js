@@ -41,10 +41,10 @@ export default async function AusschreibungDetail({ params }) {
       <section aria-label="Kennzahlen" className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Wert ton="dunkel" label="Runde" wert={a.runde ? `${a.runde.nr}${a.runde.offen ? " (offen)" : ""}` : "–"} hinweis={a.runde ? `Frist ${datumZeit(a.runde.frist)}` : "Entwurf"} />
         <Wert label="Menge (Normierung)" wert={`${fmt(a.vergleich.ctx.kwh / 1000)} MWh`} hinweis={`${a.anonym.anzahlKunden} · ${a.anonym.abnahmestellen} Stellen`} />
-        <Wert label="Terminpreis Base" wert={eurMwh(a.vergleich.ctx.baseEurMwh)} hinweis={`lastgewichtet ${eurMwh(a.vergleich.ctx.lastgewichtetEurMwh)}`} />
+        <Wert label="Terminpreis Base €/MWh" wert={fmt(a.vergleich.ctx.baseEurMwh, 2)} hinweis={`lastgewichtet ${eurMwh(a.vergleich.ctx.lastgewichtetEurMwh)}`} />
         <Wert label="Angebote (Runde)" wert={`${a.teilnehmer.filter((t) => t.geboten).length}/${a.teilnehmer.length}`} />
         <Wert label="Bester Preis" wert={zeilen[0] ? `${fmt(zeilen[0].ctKwh, 3)} ct` : "–"} hinweis={zeilen[0]?.lieferant} />
-        <Wert label="Vergütung ÖkoInvest" wert={a.verguetung?.festgelegt ? eur(a.verguetung.gesamtEur) : "nicht festgelegt"} hinweis="Parameter im Handelsdesk" />
+        <Wert label="Vergütung ÖkoInvest" wert={a.verguetung?.festgelegt ? eur(a.verguetung.gesamtEur) : "offen"} hinweis="Parameter im Handelsdesk" />
       </section>
 
       {schreiben && (
@@ -68,12 +68,12 @@ export default async function AusschreibungDetail({ params }) {
       {top.length > 0 && (
         <div className="mb-6 grid gap-6 xl:grid-cols-2">
           <Karte titel="Sensitivität" untertitel="Energiekosten €/Jahr bei Marktbewegung (Festpreis 0 %, Tranchen ~50 %, Spot 100 % Exposition)">
-            <BalkenChart kategorien={[...sz.filter((s) => s < 0), 0, ...sz.filter((s) => s > 0)].map((s) => `${s > 0 ? "+" : ""}${s} %`)} reihen={top.slice(0, 4).map((z, i) => ({ name: `${z.lieferant} – ${z.produkt}`, farbe: [FARBEN.navy, FARBEN.gruen, FARBEN.sonne, FARBEN.grau][i], werte: [...sz.filter((s) => s < 0).map((s) => z.sensitivitaet[s]), z.eurJahr, ...sz.filter((s) => s > 0).map((s) => z.sensitivitaet[s])] }))} yEinheit="€" format={(x) => fmt(x, 0)} beschreibung="Kosten je Angebot bei Marktbewegungen" />
+            <BalkenChart kategorien={[...sz.filter((s) => s < 0), 0, ...sz.filter((s) => s > 0)].map((s) => `${s > 0 ? "+" : ""}${s} %`)} reihen={top.slice(0, 4).map((z, i) => ({ name: `${z.lieferant} – ${z.produkt}`, farbe: [FARBEN.navy, FARBEN.gruen, FARBEN.sonne, FARBEN.grau][i], werte: [...sz.filter((s) => s < 0).map((s) => z.sensitivitaet[s]), z.eurJahr, ...sz.filter((s) => s > 0).map((s) => z.sensitivitaet[s])] }))} yEinheit="€" format={(x) => fmt(x, 0)} beschreibung="Kosten je Angebot bei Marktbewegungen" breite={520} />
             <Legende eintraege={top.slice(0, 4).map((z, i) => ({ name: `${z.lieferant} – ${z.produkt}`.slice(0, 60), farbe: [FARBEN.navy, FARBEN.gruen, FARBEN.sonne, FARBEN.grau][i] }))} />
           </Karte>
           <Karte titel="So sehen es die Versorger" untertitel={`${a.los} – nur gerundete Kennzahlen, keine Namen, Orte oder Lokations-IDs`}>
             <Angaben spalten={3} items={[{ label: "Jahresmenge", wert: `${fmt(a.anonym.jahresMengeMwh)} MWh` }, { label: "Spitze", wert: `${fmt(a.anonym.spitzeKw)} kW` }, { label: "Benutzungsstunden", wert: fmt(a.anonym.benutzungsstunden) }, { label: "Peak-Anteil", wert: `${a.anonym.peakAnteilProzent} %` }, { label: "Kunden", wert: a.anonym.anzahlKunden }, { label: "Länder", wert: Object.keys(a.anonym.laender).join(", ") || "–" }]} />
-            <div className="mt-4"><Heatmap matrix={a.anonym.wochenprofil} einheit="× Mittel" beschreibung="Normiertes Wochenprofil des Loses" /></div>
+            <div className="mt-4"><Heatmap matrix={a.anonym.wochenprofil} einheit="× Mittel" beschreibung="Normiertes Wochenprofil des Loses" breite={520} /></div>
           </Karte>
         </div>
       )}

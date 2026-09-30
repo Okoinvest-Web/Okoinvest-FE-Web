@@ -32,7 +32,8 @@
   "suchprofil",
   "mail_einstellungen",
   "komfort",
-  "onboarding"
+  "onboarding",
+  "onboarding_pfade"
  ],
  "fields": [
   {
@@ -197,6 +198,13 @@
    "fieldname": "onboarding",
    "fieldtype": "JSON",
    "label": "Onboarding",
+   "read_only": 1
+  },
+  {
+   "description": "Onboarding-Assistenten je Rolle und Untertyp: { aktiv, pfade: { <pfad>: { untertyp, bestaetigt[], spaeter[], gestartetAm, abgeschlossenAm } }, tour: { aus, gesehen[] }, mails, auswertung, aktualisiertAm }. Pflege nur über api/onboarding.py.",
+   "fieldname": "onboarding_pfade",
+   "fieldtype": "JSON",
+   "label": "Onboarding-Pfade",
    "read_only": 1
   }
  ],

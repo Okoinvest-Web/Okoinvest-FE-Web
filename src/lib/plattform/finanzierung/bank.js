@@ -208,11 +208,11 @@ export const FRUEHWARN_PUFFER = 0.05; // Frühwarnung, wenn der DSCR weniger als
  */
 export function covenantAmpel({ dscr, lockup = P.dscrLockup, covenant = P.dscrDefault, vorher = null }) {
   if (dscr === null || dscr === undefined || !Number.isFinite(dscr)) return { id: "grau", verletzt: false, lockup: false, grund: "Keine Messdaten bzw. kein Schuldendienst im Zeitraum." };
-  if (dscr < covenant) return { id: "rot", verletzt: true, lockup: true, grund: `DSCR ${dscr.toFixed(2)} unter dem Covenant ${covenant.toFixed(2)} – Kündigungsrecht der Bank (Event of Default), sofort mit der Bank sprechen.` };
-  if (dscr < lockup) return { id: "rot", verletzt: false, lockup: true, grund: `DSCR ${dscr.toFixed(2)} unter dem Lock-up ${lockup.toFixed(2)} – Ausschüttungssperre.` };
-  if (dscr < lockup + FRUEHWARN_PUFFER) return { id: "gelb", verletzt: false, lockup: false, grund: `DSCR ${dscr.toFixed(2)} nur knapp über dem Lock-up ${lockup.toFixed(2)}.` };
-  if (vorher !== null && Number.isFinite(vorher) && vorher - dscr > 0.1) return { id: "gelb", verletzt: false, lockup: false, grund: `DSCR fällt deutlich (${vorher.toFixed(2)} → ${dscr.toFixed(2)}).` };
-  return { id: "gruen", verletzt: false, lockup: false, grund: `DSCR ${dscr.toFixed(2)} – ausreichend Abstand zum Lock-up.` };
+  if (dscr < covenant) return { id: "rot", verletzt: true, lockup: true, grund: `DSCR ${dscr.toFixed(2).replace(".", ",")} unter dem Covenant ${covenant.toFixed(2).replace(".", ",")} – Kündigungsrecht der Bank (Event of Default), sofort mit der Bank sprechen.` };
+  if (dscr < lockup) return { id: "rot", verletzt: false, lockup: true, grund: `DSCR ${dscr.toFixed(2).replace(".", ",")} unter dem Lock-up ${lockup.toFixed(2).replace(".", ",")} – Ausschüttungssperre.` };
+  if (dscr < lockup + FRUEHWARN_PUFFER) return { id: "gelb", verletzt: false, lockup: false, grund: `DSCR ${dscr.toFixed(2).replace(".", ",")} nur knapp über dem Lock-up ${lockup.toFixed(2).replace(".", ",")}.` };
+  if (vorher !== null && Number.isFinite(vorher) && vorher - dscr > 0.1) return { id: "gelb", verletzt: false, lockup: false, grund: `DSCR fällt deutlich (${vorher.toFixed(2).replace(".", ",")} → ${dscr.toFixed(2).replace(".", ",")}).` };
+  return { id: "gruen", verletzt: false, lockup: false, grund: `DSCR ${dscr.toFixed(2).replace(".", ",")} – ausreichend Abstand zum Lock-up.` };
 }
 
 /**
@@ -238,7 +238,7 @@ export function covenantPruefung({ monate = [], lockup, covenant, llcrCovenant =
   const llcr = restschuld > 0.5 && planCfads.length ? npv(zins, [0, ...planCfads]) / restschuld : null;
   const letzte = pruefungen[pruefungen.length - 1] || null;
   let ampel = letzte ? letzte.ampel : covenantAmpel({ dscr: null });
-  if (llcr !== null && llcrCovenant && llcr < llcrCovenant && ampel.id !== "rot") ampel = { id: "rot", verletzt: true, lockup: true, grund: `LLCR ${llcr.toFixed(2)} unter dem Covenant ${llcrCovenant.toFixed(2)}.` };
+  if (llcr !== null && llcrCovenant && llcr < llcrCovenant && ampel.id !== "rot") ampel = { id: "rot", verletzt: true, lockup: true, grund: `LLCR ${llcr.toFixed(2).replace(".", ",")} unter dem Covenant ${llcrCovenant.toFixed(2).replace(".", ",")}.` };
   return { pruefungen, llcr, ampel, letzte };
 }
 

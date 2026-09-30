@@ -735,7 +735,7 @@ def _kunde_ausgabe(a, n, kurve):
 		lose = _los(a)
 		menge = next((flt(x.get("jahresKwh")) for x in lose if x.get("kundeId") == n.id), 0)
 		anteil = menge / max(1, sum(flt(x.get("jahresKwh")) for x in lose)) if len(lose) > 1 else 1
-		beste = [{"lieferant": _lf_name(z["lieferantId"]), "art": z["art"], "produkt": z["produktId"], "ctKwh": z["ctKwh"], "eurJahr": round(z["eurJahr"] * anteil), "rang": z["rang"], "abstandProzent": z["abstandProzent"], "sensitivitaet": {k: round(x * anteil) for k, x in z["sensitivitaet"].items()}} for z in ek.beste_je_lieferant(vg)[:6]]
+		beste = [{"lieferant": _lf_name(z["lieferantId"]), "art": z["art"], "produkt": z["produktId"], "ctKwh": z["ctKwh"], "eurJahr": round(z["eurJahr"] * anteil), "rang": i + 1, "abstandProzent": z["abstandProzent"], "sensitivitaet": {k: round(x * anteil) for k, x in z["sensitivitaet"].items()}} for i, z in enumerate(ek.beste_je_lieferant(vg)[:6])]
 		vz = next((z for z in vg["zeilen"] if z["angebotId"] == zs.get("angebotId") and z["produktId"] == zs.get("produktId")), None)
 		vt = _aktiver_vertrag(n.id)
 		alt_ct = ek.energiepreis_ct(flt(vt.preis_ct) if vt and vt.preis_ct else None, vt.preis_art if vt else "energie")

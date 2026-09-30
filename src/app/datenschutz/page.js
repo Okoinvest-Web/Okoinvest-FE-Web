@@ -206,6 +206,27 @@ export default function DatenschutzPage() {
         Angaben verlassen die Plattform dabei nicht.
       </p>
 
+      <h2>8b. Identitäts- und Firmenprüfung (KYC/KYB)</h2>
+      <p>
+        Bevor Sie den Datenraum nutzen, Absichtserklärungen oder Gebote abgeben, Projekte veröffentlichen, Pachtzahlungen erhalten oder
+        Contracting-Verträge schließen, prüfen wir Ihre Identität bzw. die Ihres Unternehmens, die wirtschaftlich Berechtigten, eine mögliche
+        Stellung als politisch exponierte Person sowie einen Abgleich mit Sanktionslisten der EU. Verarbeitet werden Name, Geburtsdatum und
+        -ort, Staatsangehörigkeit, Anschrift, Ausweisdaten und -kopie, Registerauszüge, Angaben zu wirtschaftlich Berechtigten und Vertretern,
+        Herkunft der Mittel, Bankverbindung und Eigentumsnachweise.
+      </p>
+      <p>
+        <strong>Rechtsgrundlage</strong> ist Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit dem Geldwäschegesetz bzw. den entsprechenden
+        Vorschriften in Österreich und der Schweiz, soweit wir dazu verpflichtet sind; im Übrigen Art. 6 Abs. 1 lit. b DSGVO
+        (Vertragsanbahnung und -durchführung, z. B. Auszahlungen) und lit. f DSGVO (berechtigtes Interesse, Betrug und Geldwäsche auf der
+        Plattform zu verhindern). <strong>Speicherdauer:</strong> fünf Jahre ab Schluss des Kalenderjahres, in dem die Geschäftsbeziehung
+        endet, danach Löschung. <strong>Empfänger:</strong> ausschließlich die Compliance-Mitarbeiter der ÖkoInvest GmbH, unser technischer
+        Dienstleister (Auftragsverarbeitung), bei einer Online-Identifizierung der beauftragte, zugelassene Identifizierungsanbieter und bei
+        gesetzlicher Pflicht Behörden. Unterlagen werden <strong>verschlüsselt</strong> gespeichert, jeder Zugriff wird protokolliert. Bitte
+        schwärzen Sie auf Ausweiskopien nicht benötigte Angaben (Hinweis im Portal). Ohne die Angaben können wir die genannten Schritte nicht
+        freigeben. Eine automatisierte Entscheidung im Sinne von Art. 22 DSGVO findet nicht statt; der Sanktionsabgleich liefert nur
+        Hinweise, entschieden wird durch Menschen.
+      </p>
+
       <h2>9. Live-Strommarktdaten</h2>
       <p>
         Börsenstrompreise und Erzeugungsdaten (z. B. auf der Seite <Link href="/energie-live">Energie live</Link>) beziehen wir{" "}

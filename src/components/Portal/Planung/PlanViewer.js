@@ -259,6 +259,11 @@ export default function PlanViewer({ url, art = "dxf", titel = "Plan", hoehe = "
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status.laeuft]);
 
+  // Mobil: Layerliste zunächst eingeklappt, damit der Plan im sichtbaren Bereich bleibt
+  useEffect(() => {
+    if (window.innerWidth < 1024) setLayerOffen(false);
+  }, []);
+
   useEffect(() => zeichnen(), [zeichnen]);
   useEffect(() => massstabAktualisieren(), [massstabAktualisieren]);
 

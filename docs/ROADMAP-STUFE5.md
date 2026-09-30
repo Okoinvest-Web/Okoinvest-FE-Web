@@ -54,6 +54,9 @@ Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach U
 - [x] Nutzungsbedingungen §§ 1–22, Besondere Bedingungen unter /bedingungen/* (Entwurf, noindex), Handbücher je Rolle und Backoffice-Unterrolle, Prozesslandkarte (docs/handbuch/)
 - [ ] Nach anwaltlicher Freigabe: `FREIGEGEBEN = true` in src/app/bedingungen/_teile.js, dann /bedingungen/* in Footer (Rechtliches) und Sitemap aufnehmen; Platzhalter (Vergütung, Fristen, Anbieter, Gerichtsstand) füllen; offene Rechtsfragen (GwG-Verpflichteter, Art. 9 Online-Ident, Grundbuch-Direktansprache, Drittland KI, WAG/KWG/§ 34c GewO, MaklerG) klären
 
+- [ ] Finanzierungsmodul: `p.kostenkalkulation?.finanzierungsbedarf` aus der Projektkostenkalkulation statt Standard-Capex verwenden (fzAuswahl/eingabenAusBezug)
+- [ ] CAD-Konverter: LibreDWG-Version und SHA-256/GPG gegen ftp.gnu.org prüfen, `LIBREDWG_SHA256` setzen; ODA nur nach Lizenzprüfung
+- [ ] Demo-DB: Testdaten plan-test-*, T-PLAN-* entfernen
 - [ ] Muster-Verträge Grundbuch/Closing je Land anwaltlich/notariell freigeben, Gebührentabellen (GNotKG, GGG/GebG, kantonal) aktualisieren – siehe docs/GRUNDBUCH-CLOSING.md Abschnitt 9
 
 ## Abschluss

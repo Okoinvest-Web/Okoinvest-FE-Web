@@ -184,7 +184,8 @@ export function nachfassFaellig(kampagne, empfaenger, heute = new Date().toISOSt
  */
 export function kampagnenKennzahlen(kampagne, ziele = []) {
   const land = kampagne?.land || "DE";
-  const vk = { ...(VERSAND_KOSTEN[land] || VERSAND_KOSTEN.DE), ...(kampagne?.kosten || {}) };
+  const vk = { ...(VERSAND_KOSTEN[land] || VERSAND_KOSTEN.DE) };
+  for (const f of ["porto", "druck"]) if (kampagne?.kosten?.[f] != null && kampagne.kosten[f] !== "") vk[f] = Number(kampagne.kosten[f]); // leer = Standard
   const empf = ziele.flatMap((z) => z.empfaenger || []);
   const briefe = empf.reduce((s, e) => s + (e.briefe || []).length, 0);
   const aufrufeSumme = empf.reduce((s, e) => s + (Number(e.aufrufe) || 0), 0);

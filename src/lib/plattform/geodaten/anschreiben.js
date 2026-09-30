@@ -25,8 +25,7 @@ export function anschreiben(k, { datum = new Date() } = {}) {
   if (k.land && k.land !== "AT") {
     // Deutschland/Schweiz (A1b): gleicher Brief wie der Serienbrief der Kampagnen, Platzhalter statt Eigentümerdaten
     const b = briefFuer({ id: "Vorlage", name: "Anschreiben", land: k.land }, { ...k, id: k.id }, { anrede: "", vorname: "«Vorname»", nachname: "«Nachname»", strasse: "«Straße Hausnummer»", plz: "«PLZ»", ort: "«Ort»", code: "XXXXXXXXXX" }, { basisUrl: SITE.url, datum });
-    const text = [b.absenderZeile, "", ...b.anschrift, "", b.datum, "", b.betreff, "", b.text, "", b.keinInteresse, "", "Persönlicher Link (Einmalcode je Empfänger, nur in Kampagnen): " + b.link, "", ...b.gruss, "", b.widerspruch, "", "— Datenschutzinformation —", ...b.datenschutz].join("
-");
+    const text = [b.absenderZeile, "", ...b.anschrift, "", b.datum, "", b.betreff, "", b.text, "", b.keinInteresse, "", "Persönlicher Link (Einmalcode je Empfänger, nur in Kampagnen): " + b.link, "", ...b.gruss, "", b.widerspruch, "", "— Datenschutzinformation —", ...b.datenschutz].join("\n");
     return { betreff: b.betreff, text, hinweis: DSGVO_HINWEIS_DE_CH, absender: SITE.firma };
   }
   const grundstuecke = (k.parzellen || []).map((p) => `KG ${p.kgNr || "«KG»"}, Gst.-Nr. ${p.gstNr || "«Gst.-Nr.»"}`);

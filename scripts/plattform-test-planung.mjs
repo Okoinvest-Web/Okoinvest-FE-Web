@@ -316,7 +316,7 @@ async function e2e() {
   pruefe(r.status === 401, "Gast → 401", r.status);
 
   r = await gut.get(`/api/portal/planung?projektId=${pid}`);
-  const gp = r.json.plaene || [];
+  const gp = (r.json.plaene || []).filter((p) => !p.plannummer.startsWith("T-PLAN-")); // eigene Testpläne früherer Läufe ausblenden
   pruefe(r.status === 200 && gp.length === 1 && gp[0].plannummer === "P-300", "Gutachter sieht nur den Plan an seinem Meilenstein (P-300)", gp.map((p) => p.plannummer));
   r = await gut.get(`/api/portal/planung/versionen/${p300.versionen[0].id}`);
   pruefe(r.status === 200 && r.text.includes("FeatureCollection"), "Gutachter lädt P-300 (GeoJSON) herunter", r.status);
@@ -455,24 +455,37 @@ async function e2e() {
   r = await admin.post(`/api/admin/entwicklung/${tp.id}/kalkulation/aktion`, { aktion: "dxf_uebernehmen", versionId: tpv?.id, felder: ["zaunM", "trasse"] });
   pruefe(r.status === 200 && r.json.kalkulation.parameter.zaunM === 1325 && r.json.kalkulation.parameter.trasseLaengeM === 1436 && /dxf:/.test(r.json.kalkulation.parameter.trasse.quelle), "DXF-Übernahme: Zaun 1.325 m, Trasse 1.436 m (proportional aufgeteilt)", r.json.kalkulation?.parameter);
 
-  // Trasse aus Akquise-Geodaten: vorhandenes Ziel mit Trasse nutzen, sonst eines übernehmen
+  // Trasse aus Akquise-Geodaten: vorhandenes, noch nicht verknüpftes Ziel mit Trasse nutzen, sonst eines übernehmen;
+  // die Verknüpfung wird am Ende wieder gelöst (wiederholbare Läufe)
   r = await admin.get("/api/admin/geodaten/ziele");
-  let ziel = (r.json.ziele || []).find((z) => z.umspannwerk?.trasseM > 0 && z.flaecheId);
-  if (!ziel && r.status === 200) {
+  const ziele = (r.json.ziele || []).filter((z) => z.umspannwerk?.trasseM > 0 && z.flaecheId);
+  let ziel = null;
+  let pfEintrag = null;
+  for (const z of ziele) {
+    const e2 = await admin.post(`/api/admin/entwicklung/${tp.id}/eintraege`, { art: "flaeche", daten: { flaecheId: z.flaecheId, pachtStatus: "angefragt" } });
+    if (e2.status === 200) {
+      ziel = z;
+      pfEintrag = e2.json.eintrag;
+      break;
+    }
+  }
+  if (!ziel) {
     const kand = (await admin.get("/api/admin/geodaten/kandidaten")).json.kandidaten || [];
     const frei = kand.find((x) => x.netz?.trasseM > 0 && !(r.json.ziele || []).some((z) => z.kandidatId === x.id));
     if (frei) {
       const z = await admin.post("/api/admin/geodaten/ziele", { kandidatId: frei.id, notiz: `plan-test-${LAUF}` });
       ziel = z.json.ziel;
+      const e2 = ziel ? await admin.post(`/api/admin/entwicklung/${tp.id}/eintraege`, { art: "flaeche", daten: { flaecheId: ziel.flaecheId, pachtStatus: "angefragt" } }) : null;
+      pfEintrag = e2?.json?.eintrag || null;
     }
   }
-  if (pruefe(!!ziel, "Akquise-Ziel mit Trasse verfügbar (Geodaten-Demo)", r.status)) {
-    r = await admin.post(`/api/admin/entwicklung/${tp.id}/eintraege`, { art: "flaeche", daten: { flaecheId: ziel.flaecheId, pachtStatus: "angefragt" } });
-    pruefe(r.status === 200, "Akquise-Fläche mit Testprojekt verknüpft", r.json);
+  if (pruefe(!!ziel && !!pfEintrag, "Akquise-Ziel mit Trasse mit dem Testprojekt verknüpft (Geodaten-Demo)", r.status)) {
     r = await admin.get(`/api/admin/entwicklung/${tp.id}/kalkulation`);
     pruefe(r.json.quellen?.akquise?.trasseM === Math.round(ziel.umspannwerk.trasseM), "Kalkulation zeigt Trassenlänge aus der Akquise", r.json.quellen?.akquise);
     r = await admin.post(`/api/admin/entwicklung/${tp.id}/kalkulation/aktion`, { aktion: "trasse_akquise" });
     pruefe(r.status === 200 && r.json.kalkulation.parameter.trasseLaengeM === Math.round(ziel.umspannwerk.trasseM) && /^akquise:/.test(r.json.kalkulation.parameter.trasse.quelle), `Trassenlänge aus Akquise übernommen (${Math.round(ziel.umspannwerk.trasseM)} m)`, r.json.kalkulation?.parameter?.trasse);
+    const weg = await admin.anfrage("DELETE", `/api/admin/entwicklung/${tp.id}/eintraege?art=flaeche&id=${pfEintrag.id}`);
+    pruefe([200, 204].includes(weg.status), "Verknüpfung der Akquise-Fläche wieder gelöst", weg.status);
   }
   // Kostenstand festschreiben, Übergabe
   r = await admin.post(`/api/admin/entwicklung/${tp.id}/kalkulation/aktion`, { aktion: "festschreiben", stand: "kostenberechnung", kommentar: "Test" });

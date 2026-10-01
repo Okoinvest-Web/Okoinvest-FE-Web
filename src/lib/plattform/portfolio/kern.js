@@ -139,6 +139,69 @@ export function ertragAuswertung(pos, ertraege = [], { bis, monate = 12 } = {}) 
   return { bis: ende, monate: zeilen, summe12: s12, jahr, ampel: ampelErtrag(s12?.abw ?? null), spezifisch12: s12 && kwp && s12.monate === 12 ? runden(s12.ist / kwp) : null };
 }
 
+// ---------------------------------------------------------------- Ist-Erträge aus dem Anlagen-Monitoring
+
+/** Quellen automatisch übernommener Monatswerte (Kennzeichnung im Portfolio) */
+export const ERTRAG_AUTO_QUELLEN = {
+  zaehler_geprueft: "Anlagen-Monitoring – geeichter Zähler (geprüft)",
+  zaehler: "Anlagen-Monitoring – Zählerwert (ungeprüft)",
+};
+
+/**
+ * Monats-Ist aus Zählerstand-Monatswerten der Anlage: Summe Register 2.8.0 aller abrechnungsrelevanten
+ * Erzeugungszähler (`erzeugungIds`); ein Monat zählt nur, wenn alle Erzeugungszähler einen Wert haben.
+ * zeilen: [{ monat, messpunktId, register, menge, geprueft }] · Optionen: ab/bis (JJJJ-MM, inklusive).
+ * Rückgabe [{ monat, kwh, herkunft: zaehler_geprueft | zaehler }] aufsteigend.
+ */
+export function istAusZaehler(zeilen = [], erzeugungIds = [], { ab = "", bis = "" } = {}) {
+  const ids = new Set(erzeugungIds || []);
+  if (!ids.size) return [];
+  const jeMonat = new Map();
+  for (const z of zeilen || []) {
+    if (!istMonat(z?.monat) || !ids.has(z.messpunktId) || z.register !== "2.8.0" || z.menge === null || z.menge === undefined || !Number.isFinite(Number(z.menge))) continue;
+    if ((istMonat(ab) && z.monat < ab) || (istMonat(bis) && z.monat > bis)) continue;
+    const m = jeMonat.get(z.monat) || new Map();
+    if (!m.has(z.messpunktId)) m.set(z.messpunktId, z);
+    jeMonat.set(z.monat, m);
+  }
+  const out = [];
+  for (const monat of [...jeMonat.keys()].sort()) {
+    const m = jeMonat.get(monat);
+    if (m.size < ids.size) continue;
+    const werte = [...m.values()];
+    out.push({ monat, kwh: Math.round(werte.reduce((s, z) => s + Number(z.menge), 0)), herkunft: werte.every((z) => z.geprueft) ? "zaehler_geprueft" : "zaehler" });
+  }
+  return out;
+}
+
+/**
+ * Automatisch übernommene Werte mit den vorhandenen Monatserträgen abgleichen: manuelle Werte (ohne `automatisch`)
+ * behalten Vorrang, automatische werden je Monat ersetzt bzw. ergänzt; nicht mehr gelieferte bleiben stehen.
+ * Rückgabe { liste, neu, geaendert } – Einträge ohne `id` sind neu (ID vergibt das Backend).
+ */
+export function ertraegeAbgleichen(vorhanden = [], auto = [], { positionId = null, am = "" } = {}) {
+  const manuell = new Set(vorhanden.filter((e) => !e.automatisch).map((e) => e.monat));
+  const alt = new Map(vorhanden.filter((e) => e.automatisch).map((e) => [e.monat, e]));
+  const autoMonate = new Set(auto.map((a) => a.monat));
+  const liste = vorhanden.filter((e) => !e.automatisch || (!autoMonate.has(e.monat) && !manuell.has(e.monat)));
+  let neu = 0;
+  let geaendert = 0;
+  for (const a of auto) {
+    if (manuell.has(a.monat)) continue;
+    const quelle = ERTRAG_AUTO_QUELLEN[a.herkunft] || ERTRAG_AUTO_QUELLEN.zaehler;
+    const vorher = alt.get(a.monat);
+    if (vorher && vorher.kwh === a.kwh && vorher.quelle === quelle) {
+      liste.push(vorher);
+      continue;
+    }
+    if (vorher) geaendert++;
+    else neu++;
+    liste.push({ id: vorher?.id || null, positionId, monat: a.monat, kwh: a.kwh, quelle, automatisch: true, herkunft: a.herkunft, vonId: null, am });
+  }
+  liste.sort((x, y) => String(x.monat).localeCompare(String(y.monat)));
+  return { liste, neu, geaendert };
+}
+
 // ---------------------------------------------------------------- Covenants (DSCR)
 
 /**

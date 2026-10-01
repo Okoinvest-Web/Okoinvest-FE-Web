@@ -274,6 +274,7 @@ function regelAusgabe(db, r) {
 
 /** Fristen prüfen, aber nur schreiben, wenn wirklich eine Frist auslöst (Probe auf einer Kopie) */
 export async function fristenBeiBedarf() {
+  await import("./fristErinnerung").then((m) => m.fristErinnerungBeiBedarf()).catch((e) => console.warn("[plattform-demo] Fristerinnerungen:", e?.message)); // täglicher Lauf Fristerinnerungen (Pacht, Genossenschaft, Gemeinde)
   const probe = await boLesen();
   if (!probe.bo.regeln.some((r) => r.aktiv && r.ausloeser.typ === "frist")) return 0;
   if (!fristenPruefenIntern(structuredClone(probe))) return 0;
@@ -399,7 +400,8 @@ export async function automationTestlauf(n, { regel: roh, regelId, bezugArt, bez
 /** Fristen jetzt prüfen (sonst automatisch beim Öffnen von Automationen/Akquise, in Frappe täglich) */
 export async function fristenPruefen(n) {
   rechtNoetig(n, "automationen", 2);
-  return boAendern((db) => ({ ok: true, ausgeloest: fristenPruefenIntern(db) }));
+  const erinnerungen = await import("./fristErinnerung").then((m) => m.fristErinnerungBeiBedarf()).catch(() => null); // Fristerinnerungen (einmal täglich)
+  return boAendern((db) => ({ ok: true, ausgeloest: fristenPruefenIntern(db), fristErinnerungen: erinnerungen?.erinnerungen ?? 0 }));
 }
 
 /** Tag an einem Objekt setzen/entfernen (Recht: Bereich des Objekts, schreiben) */

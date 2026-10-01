@@ -173,6 +173,43 @@ print(json.dumps({"anonym":[K.anonymitaet_pruefen(p,anbieter=a) for p in v["anon
     pruefe(gleich(js.mandat, p.mandat), "Wortlaut des Vermittlungsauftrags identisch (gleiche Prüfsumme)", js.mandat.map((x, i) => (x === p.mandat[i] ? "=" : [x, p.mandat[i]])));
     pruefe(gleich(js.werktage, p.werktage), "Werktage/Monate identisch", [js.werktage, p.werktage]);
   }
+
+  // Integration: anerkannte Vorkenntnis → keine Provision; Stellungnahme des Verkäufers zu Geboten im Bieterverfahren
+  abschnitt("A8. Integration: Vorkenntnis ↔ Provision, Gebots-Stellungnahme ↔ Zuschlag");
+  const akteI = {
+    vorkenntnis: [{ id: "VK-1", interesseId: "I-1", status: "gemeldet" }, { id: "VK-2", interesseId: "I-2", status: "anerkannt" }, { id: "VK-3", interesseId: "I-3", status: "abgelehnt" }],
+    voten: [
+      { interesseId: "I-1", loiAm: "a", art: "zustimmung" },
+      { interesseId: "I-1", gebotId: "GB-1", gebotVersion: 1, art: "ablehnung" },
+      { interesseId: "I-2", gebotId: "GB-2", gebotVersion: 1, art: "ablehnung" },
+      { interesseId: "I-2", gebotId: "GB-2", gebotVersion: 2, art: "verhandeln" },
+    ],
+  };
+  pruefe(R.vorkenntnisAnerkannt(akteI, "I-2")?.id === "VK-2" && !R.vorkenntnisAnerkannt(akteI, "I-1") && !R.vorkenntnisAnerkannt(akteI, "I-3") && !R.vorkenntnisAnerkannt(null, "I-2"), "Nur eine anerkannte Vorkenntnis schließt die Provision aus (gemeldet/abgelehnt nicht)");
+  pruefe(R.VORKENNTNIS_VERMERK === "Vorkenntnis anerkannt", "Vermerk „Vorkenntnis anerkannt“");
+  pruefe(R.aktuellesVotum(akteI.voten, "I-1", null)?.art === "zustimmung", "LOI-Stellungnahme ignoriert Gebots-Stellungnahmen desselben Interessenten");
+  pruefe(R.gebotVotum(akteI.voten, "GB-2", 1)?.art === "ablehnung" && R.gebotVotum(akteI.voten, "GB-2", 2)?.art === "verhandeln" && !R.gebotVotum(akteI.voten, "GB-9", 1), "Gebots-Stellungnahme je Gebotsversion");
+  const zs = wirft(() => R.zuschlagSperre({ akte: akteI, gebotId: "GB-1", version: 1 }));
+  pruefe(zs?.status === 409 && zs.code === "votum", "Zuschlag auf ein vom Verkäufer abgelehntes Gebot → 409 „votum“", zs);
+  pruefe(R.zuschlagSperre({ akte: akteI, gebotId: "GB-2", version: 2 }) && R.zuschlagSperre({ akte: akteI, gebotId: "GB-3", version: 1 }) && R.zuschlagSperre({ akte: null, gebotId: "GB-1", version: 1 }), "Neue Gebotsversion bzw. ohne Ablehnung → Zuschlag möglich");
+  const pyI = spawnSync("python", ["-c", `
+import json,sys
+from oekoinvest_app.plattform import anbieter_kern as K
+a=json.load(sys.stdin)
+def sperre(g,v):
+    try:
+        return K.zuschlag_sperre(akte=a,gebot_id=g,version=v)
+    except K.AnbieterFehler as e:
+        return [e.status,e.code]
+print(json.dumps({"vk":[(K.vorkenntnis_anerkannt(a,i) or {}).get("id") for i in ("I-1","I-2","I-3")],"loi":(K.aktuelles_votum(a["voten"],"I-1",None) or {}).get("art"),"gebot":[(K.gebot_votum(a["voten"],"GB-2",v) or {}).get("art") for v in (1,2)],"sperre":[sperre("GB-1",1),sperre("GB-2",2)],"vermerk":K.VORKENNTNIS_VERMERK},ensure_ascii=False))
+`], { cwd: path.join(WURZEL, "Backend-Import", "oekoinvest_app"), input: JSON.stringify(akteI), encoding: "utf8", env: { ...process.env, PYTHONIOENCODING: "utf-8" } });
+  if (pyI.error || pyI.status !== 0) {
+    console.log(`  (Python nicht verfügbar – Gleichheitsprüfung übersprungen: ${String(pyI.error?.message || pyI.stderr).slice(0, 200)})`);
+  } else {
+    const p = JSON.parse(pyI.stdout);
+    const js = { vk: ["I-1", "I-2", "I-3"].map((i) => R.vorkenntnisAnerkannt(akteI, i)?.id ?? null), loi: R.aktuellesVotum(akteI.voten, "I-1", null)?.art, gebot: [1, 2].map((v) => R.gebotVotum(akteI.voten, "GB-2", v)?.art), sperre: [[409, "votum"], true], vermerk: R.VORKENNTNIS_VERMERK };
+    pruefe(JSON.stringify(js) === JSON.stringify(p), "Gleichheit JS ↔ Python (Vorkenntnis, Gebots-Stellungnahme, Zuschlagssperre)", { js, py: p });
+  }
 }
 
 // ================================================================ Teil B – HTTP

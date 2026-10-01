@@ -21,7 +21,7 @@ export default async function PositionBackoffice({ params }) {
   const bo = s
     ? {
         stammdaten: <Stammdaten p={p} />,
-        ertrag: <ErtragErfassen positionId={p.id} vormonat={monatPlus(heute.slice(0, 7), -1)} />,
+        ertrag: <ErtragErfassen positionId={p.id} vormonat={monatPlus(heute.slice(0, 7), -1)} monitoring={p.monitoring} />,
         abrufe: ["codev", "projekt"].includes(p.art) && p.zusage > 0 ? <AbrufAnlegen positionId={p.id} fruehestens={plusTage(heute, ABRUF_MIN_FRIST_TAGE)} offen={p.kennzahlen.zusage.offen} /> : null,
         abrufZeile: (a) => <AbrufZeile positionId={p.id} abruf={a} />,
         ausschuettungen: <AusschuettungBuchen positionId={p.id} heute={heute} arten={arten} gesperrt={!!p.covenant?.gesperrt} />,

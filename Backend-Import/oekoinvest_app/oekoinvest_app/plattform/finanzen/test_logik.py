@@ -142,5 +142,29 @@ class TestAfa(unittest.TestCase):
 		self.assertEqual((b["ist"], b["ampel"], b["jeMwp"]), (90000, "gelb", 7500))
 
 
+
+class TestPachtakteIntegration(unittest.TestCase):
+	"""Kündigung/Beendigung und Zahlungsaufteilung (gleiche Fälle wie finanzen.test.mjs)."""
+
+	def test_kuendigung_beendigung(self):
+		v = {"id": "PT-T", "vertragsdatum": "2023-06-01", "beginn": "2024-01-01", "laufzeitJahre": 20, "faelligkeit": "monatlich", "zahlweise": "nachschuessig", "zahlungszielTage": 14, "vorlaufTage": 14, "status": "gekuendigt", "kuendigungZum": "2026-06-15"}
+		f = L.faelligkeiten(v, "2026-12-31")
+		self.assertEqual(len(f), 30)
+		self.assertEqual((f[-1]["von"], f[-1]["bis"], f[-1]["anteil"], f[-1]["erstellbarAb"]), ("2026-06-01", "2026-06-15", 0.5, "2026-06-16"))
+		self.assertEqual(L.vertrags_ende(v), "2026-06-15")
+		self.assertEqual(L.vertrags_ende({**v, "status": "beendet", "beendetAm": "2026-05-10"}), "2026-05-10")
+		self.assertEqual(L.vertrags_ende({**v, "status": "aktiv"}), "2043-12-31")
+		r = L.faelligkeiten({"id": "PT-R", "vertragsdatum": "2023-06-01", "beginn": "", "reservierungJahr": 1200, "faelligkeit": "jaehrlich", "status": "gekuendigt", "kuendigungZum": "2024-03-31"}, "2026-12-31")
+		self.assertEqual([(x["phase"], x["von"], x["bis"]) for x in r], [("reservierung", "2023-06-01", "2023-12-31"), ("reservierung", "2024-01-01", "2024-03-31")])
+
+	def test_aufteilung(self):
+		t = L.pacht_aufteilen([{"art": "pacht", "text": "Pacht 2026", "menge": 1, "preis": 1000.01, "betrag": 1000.01}, {"art": "mindest", "text": "Aufstockung", "menge": 0.5, "preis": 500.1, "betrag": 250.05}], [{"name": "A", "email": "a@example.com", "anteilProzent": 50}, {"name": "B", "anteilProzent": 33.33}, {"name": "C", "anteilProzent": 16.67}])
+		self.assertEqual([(x["nr"], x["netto"], [p["betrag"] for p in x["positionen"]]) for x in t], [(1, 625.04, [500.01, 125.03]), (2, 416.64, [333.3, 83.34]), (3, 208.38, [166.7, 41.68])])
+		self.assertEqual(t[1]["positionen"][0]["text"], "Pacht 2026 – Anteil 33,33 %")
+		self.assertIsNone(L.pacht_aufteilen([{"betrag": 10, "text": "x"}], [{"anteilProzent": 100}]))
+		self.assertFalse(L.aufteilung_gilt({"empfaenger": [{}], "ab": "2026-07-01"}, {"bis": "2026-06-30"}))
+		self.assertTrue(L.aufteilung_gilt({"empfaenger": [{}], "ab": "2026-07-01"}, {"bis": "2026-07-31"}))
+
+
 if __name__ == "__main__":
 	unittest.main()

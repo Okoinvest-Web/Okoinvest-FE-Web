@@ -30,6 +30,7 @@
   "projekt_id",
   "entwicklung_id",
   "boerse_projekt_id",
+  "anlage_id",
   "sec_betrieb",
   "p50_kwh_jahr",
   "verguetung_ct",
@@ -190,6 +191,13 @@
    "options": "Plattform Projekt"
   },
   {
+   "description": "Ist-Erträge werden automatisch aus den Zählerstand-Monatswerten übernommen; manuelle Werte haben Vorrang.",
+   "fieldname": "anlage_id",
+   "fieldtype": "Link",
+   "label": "Anlage (Monitoring)",
+   "options": "Plattform Anlage"
+  },
+  {
    "fieldname": "sec_betrieb",
    "fieldtype": "Section Break",
    "label": "Ertrag und Finanzierung"
@@ -278,7 +286,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-01 09:00:00.000000",
+ "modified": "2026-10-01 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Plattform Portfolio Position",

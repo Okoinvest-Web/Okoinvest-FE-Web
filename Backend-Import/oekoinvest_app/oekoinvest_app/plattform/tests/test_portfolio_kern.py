@@ -162,6 +162,34 @@ class TestBerichtWiederverkauf(unittest.TestCase):
 		self.assertIn("49 %", b["titel"])
 
 
+class TestMonitoringErtrag(unittest.TestCase):
+	"""Ist-Erträge aus dem Anlagen-Monitoring: Summe Erzeugungszähler, manuelle Werte haben Vorrang (= kern.js)."""
+
+	ZEILEN = [
+		{"monat": "2026-06", "messpunktId": "MP-1", "register": "2.8.0", "menge": 900000, "geprueft": True},
+		{"monat": "2026-06", "messpunktId": "MP-2", "register": "2.8.0", "menge": 100000.4, "geprueft": True},
+		{"monat": "2026-07", "messpunktId": "MP-1", "register": "2.8.0", "menge": 950000, "geprueft": True},
+		{"monat": "2026-07", "messpunktId": "MP-2", "register": "2.8.0", "menge": 110000, "geprueft": False},
+		{"monat": "2026-08", "messpunktId": "MP-1", "register": "2.8.0", "menge": 980000, "geprueft": True},
+	]
+
+	def test_ist_aus_zaehler(self):
+		a = K.ist_aus_zaehler(self.ZEILEN, ["MP-1", "MP-2"], ab="2025-03", bis="2026-08")
+		self.assertEqual(a, [{"monat": "2026-06", "kwh": 1000000, "herkunft": "zaehler_geprueft"}, {"monat": "2026-07", "kwh": 1060000, "herkunft": "zaehler"}])
+		self.assertEqual(K.ist_aus_zaehler(self.ZEILEN, []), [])
+
+	def test_abgleich_manuell_vorrang(self):
+		auto = K.ist_aus_zaehler(self.ZEILEN, ["MP-1", "MP-2"])
+		r = K.ertraege_abgleichen([{"monat": "2026-06", "kwh": 990000, "quelle": "Betriebsführung"}], auto, position_id="PO-1", am="x")
+		m = {e["monat"]: e for e in r["liste"]}
+		self.assertEqual((m["2026-06"]["kwh"], m["2026-06"].get("automatisch")), (990000, None))
+		self.assertTrue(m["2026-07"]["automatisch"])
+		self.assertTrue(m["2026-07"]["quelle"].startswith("Anlagen-Monitoring"))
+		self.assertEqual((r["neu"], r["geaendert"]), (1, 0))
+		r2 = K.ertraege_abgleichen(r["liste"], auto, position_id="PO-1", am="y")
+		self.assertEqual((r2["neu"], r2["geaendert"]), (0, 0))
+
+
 @unittest.skipUnless(shutil.which("node"), "Node nicht vorhanden – Gleichlauf JS ↔ Python übersprungen")
 class TestGleichlaufJs(unittest.TestCase):
 	def test_js_gleich(self):

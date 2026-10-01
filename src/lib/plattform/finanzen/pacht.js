@@ -92,12 +92,14 @@ export function pachtAufteilen(positionen = [], empfaenger = []) {
   const gesamt = liste.reduce((s, e) => s + Number(e.anteilProzent), 0);
   const teile = liste.map((e, i) => ({ nr: i + 1, empfaenger: e, anteilProzent: Number(e.anteilProzent), positionen: [], netto: 0 }));
   for (const p of positionen) {
-    let rest = rund2(p.betrag);
+    // in ganzen Cent rechnen (gleiches Ergebnis in JS und Python)
+    const cent = Math.floor(Number(p.betrag) * 100 + 0.5);
+    let rest = cent;
     teile.forEach((t, i) => {
       const quote = t.anteilProzent / gesamt;
-      const betrag = i === teile.length - 1 ? rund2(rest) : rund2(p.betrag * quote);
-      rest = rund2(rest - betrag);
-      t.positionen.push({ ...p, text: `${p.text} – Anteil ${zahlDe(t.anteilProzent, 2)} %`, menge: rund(Number(p.menge || 0) * quote, 4), betrag });
+      const c = i === teile.length - 1 ? rest : Math.floor((cent * t.anteilProzent) / gesamt + 0.5);
+      rest -= c;
+      t.positionen.push({ ...p, text: `${p.text} – Anteil ${zahlDe(t.anteilProzent, 2)} %`, menge: rund(Number(p.menge || 0) * quote, 4), betrag: c / 100 });
     });
   }
   for (const t of teile) t.netto = summe(t.positionen, "betrag");

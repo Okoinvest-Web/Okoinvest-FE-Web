@@ -171,6 +171,23 @@ def pachtvertrag_dict(p):
 	}
 
 
+def pachtakte_zusatz(vertrag_id):
+	"""Kündigung, Beendigung und Zahlungsaufteilung aus der Pachtakte (Plattform Pachtakte) für den Abrechnungslauf."""
+	akte = frappe.db.get_value("Plattform Pachtakte", {"vertrag_id": vertrag_id}, ["kuendigung_zum", "aufteilung", "rueckbau"], as_dict=True)
+	if not akte:
+		return {"kuendigungZum": "", "beendetAm": "", "zahlungsaufteilung": None}
+	rueckbau = aus_json(akte.rueckbau, {}) or {}
+	return {"kuendigungZum": str(akte.kuendigung_zum or ""), "beendetAm": rueckbau.get("beendetAm") or "", "zahlungsaufteilung": aus_json(akte.aufteilung, None)}
+
+
+def konto_per_email(email):
+	"""Empfänger der Zahlungsaufteilung → aktives Konto mit dieser E-Mail (sonst None → Klärfall)."""
+	e = str(email or "").strip().lower()
+	if not e:
+		return None
+	return frappe.db.get_value("Plattform Konto", {"email": e, "aktiv": 1}, "name")
+
+
 def pacht_steuer_vorlage(pt):
 	if pt.get("steuervorlage") in T.STEUERVORLAGEN:
 		return pt["steuervorlage"]
@@ -360,10 +377,13 @@ def lauf_ausfuehren(n, art="alle", stichtag=None, monat=None, trockenlauf=False,
 	tabelle = vpi_tabelle()
 	# ---------------------------------------------------------------- Pacht
 	if art in ("pacht", "alle"):
-		for p in frappe.get_all("Plattform Pachtvertrag", filters={"status": ["in", ["aktiv", "gekuendigt"]]}, pluck="name", limit_page_length=0):
+		for p in frappe.get_all("Plattform Pachtvertrag", filters={"status": ["in", ["aktiv", "gekuendigt", "beendet"]]}, pluck="name", limit_page_length=0):
 			if vertrag_ids and p not in vertrag_ids:
 				continue
-			pt = pachtvertrag_dict(frappe.get_doc("Plattform Pachtvertrag", p))
+			pt = {**pachtvertrag_dict(frappe.get_doc("Plattform Pachtvertrag", p)), **pachtakte_zusatz(p)}
+			# „beendet“: nur noch der Rest bis zum Vertragsende (anteilig), ohne bekanntes Ende gar nicht mehr (= finanzen-kern.js)
+			if pt["status"] == "beendet" and not pt.get("beendetAm") and not pt.get("kuendigungZum"):
+				continue
 			for f in L.abzurechnen(fuer_faelligkeit(pt), stichtag):
 				if _aktiver_beleg(f["schluessel"]):
 					lauf["vorhanden"] += 1
@@ -380,22 +400,43 @@ def lauf_ausfuehren(n, art="alle", stichtag=None, monat=None, trockenlauf=False,
 				if not r["netto"] > 0:
 					lauf["uebersprungen"] += 1
 					continue
-				kyc = kyc_auszahlung(pt["eigentuemerId"], pt.get("flaecheId"))
-				kyc_schluessel = f"KYC:{pt['eigentuemerId']}:{pt['id']}"
-				if not kyc["ok"] and not trockenlauf:
-					kid, neu = klaerfall_melden("pacht", kyc_schluessel, {"pachtvertragId": pt["id"]}, f"Auszahlung an {partei(pt['eigentuemerId'])['name']} ({pt['bezeichnung']})", [f"KYC unvollständig: {' '.join(kyc['gruende'])}"], lauf["id"])
-					if neu:
-						lauf["klaerfaelle"].append({"id": kid, "art": "pacht", "bezugText": pt["bezeichnung"], "gruende": ["KYC unvollständig"], "neu": True})
-				elif kyc["ok"] and not trockenlauf:
-					_klaerfall_schliessen(kyc_schluessel, "KYC-Freigabe für Auszahlungen erteilt.")
 				ges_id = pt.get("gesellschaftId") or (anlage_gesellschaft(ad["anlage"])["id"] if ad else OEKOINVEST_ID)
-				erzeugen({
-					"art": "pacht", "gesellschaftId": ges_id, "empfaengerId": pt["eigentuemerId"], "partei": partei(pt["eigentuemerId"]), "schluessel": f["schluessel"],
-					"bezug": {"pachtvertragId": pt["id"], "flaecheId": pt.get("flaecheId"), "anlageId": pt.get("anlageId"), "phase": f["phase"]}, "bezugText": text,
-					"zeitraum": {"von": f["von"], "bis": f["bis"]}, "faelligAm": f["faelligAm"], "positionen": r["positionen"], "steuerVorlage": pacht_steuer_vorlage(pt),
-					"erklaerung": r["erklaerung"], "kennzahlen": {**r["basis"], "phase": f["phase"], "zahlweise": f["zahlweise"]},
-					"hinweise": [] if kyc["ok"] else [f"Auszahlung gesperrt: {' '.join(kyc['gruende'])}"],
-				})
+				# Zahlungsaufteilung aus der Pachtakte: je Eigentümer ein eigener Gutschriftbeleg (Schlüssel …:A<nr>)
+				teile = L.pacht_aufteilen(r["positionen"], pt["zahlungsaufteilung"]["empfaenger"]) if L.aufteilung_gilt(pt.get("zahlungsaufteilung"), f) else None
+				if teile:
+					empfaenger = [{"kontoId": konto_per_email(t["empfaenger"].get("email")), "name": t["empfaenger"].get("name") or t["empfaenger"].get("email") or f"Empfänger {t['nr']}", "schluessel": f"{f['schluessel']}:A{t['nr']}", "positionen": t["positionen"], "netto": t["netto"], "anteilProzent": t["anteilProzent"], "nr": t["nr"]} for t in teile]
+				else:
+					empfaenger = [{"kontoId": pt["eigentuemerId"], "schluessel": f["schluessel"], "positionen": r["positionen"], "netto": r["netto"]}]
+				for em in empfaenger:
+					if teile and _aktiver_beleg(em["schluessel"]):
+						lauf["vorhanden"] += 1
+						continue
+					etext = f"{text} – Anteil {L.zahl_de(em['anteilProzent'], 2)} % ({em['name']})" if teile else text
+					if not em["kontoId"]:
+						klaeren("pacht", em["schluessel"], {"pachtvertragId": pt["id"]}, etext, [f"Empfänger „{em['name']}“ der Zahlungsaufteilung hat kein Portal-Konto – Gutschrift erst nach Registrierung und Verifizierung."])
+						continue
+					if not em["netto"] > 0:
+						lauf["uebersprungen"] += 1
+						continue
+					kyc = kyc_auszahlung(em["kontoId"], pt.get("flaecheId"))
+					kyc_schluessel = f"KYC:{em['kontoId']}:{pt['id']}"
+					if not kyc["ok"] and not trockenlauf:
+						kid, neu = klaerfall_melden("pacht", kyc_schluessel, {"pachtvertragId": pt["id"]}, f"Auszahlung an {partei(em['kontoId'])['name']} ({pt['bezeichnung']})", [f"KYC unvollständig: {' '.join(kyc['gruende'])}"], lauf["id"])
+						if neu:
+							lauf["klaerfaelle"].append({"id": kid, "art": "pacht", "bezugText": pt["bezeichnung"], "gruende": ["KYC unvollständig"], "neu": True})
+					elif kyc["ok"] and not trockenlauf:
+						_klaerfall_schliessen(kyc_schluessel, "KYC-Freigabe für Auszahlungen erteilt.")
+					bezug = {"pachtvertragId": pt["id"], "flaecheId": pt.get("flaecheId"), "anlageId": pt.get("anlageId"), "phase": f["phase"]}
+					if teile:
+						bezug["aufteilung"] = {"nr": em["nr"], "anteilProzent": em["anteilProzent"], "gesamtNetto": r["netto"]}
+					erklaerung = r["erklaerung"] + ([f"Zahlungsaufteilung laut Pachtakte ({len(pt['zahlungsaufteilung']['empfaenger'])} Empfänger): Ihr Anteil {L.zahl_de(em['anteilProzent'], 2)} % von {L.euro(r['netto'])} netto."] if teile else [])
+					erzeugen({
+						"art": "pacht", "gesellschaftId": ges_id, "empfaengerId": em["kontoId"], "partei": partei(em["kontoId"]), "schluessel": em["schluessel"],
+						"bezug": bezug, "bezugText": etext,
+						"zeitraum": {"von": f["von"], "bis": f["bis"]}, "faelligAm": f["faelligAm"], "positionen": em["positionen"], "steuerVorlage": pacht_steuer_vorlage(pt),
+						"erklaerung": erklaerung, "kennzahlen": {**r["basis"], "phase": f["phase"], "zahlweise": f["zahlweise"], **({"anteilProzent": em["anteilProzent"]} if teile else {})},
+						"hinweise": [] if kyc["ok"] else [f"Auszahlung gesperrt: {' '.join(kyc['gruende'])}"],
+					})
 	# ---------------------------------------------------------------- Contracting
 	if art in ("contracting", "alle"):
 		z = L.monats_zeitraum(monat)

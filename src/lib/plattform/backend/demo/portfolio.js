@@ -20,7 +20,7 @@ import { darfLesen, darfSchreiben } from "../../rechte";
 import { UPLOAD, PROJEKT_TYPEN, LAENDER } from "../../konstanten";
 import {
   ABRUF_OFFEN, ABRUF_STATUS, AUSSCHUETTUNG_ARTEN, PF_AKTIV, PF_ARTEN, PF_STATUS, PF_UEBERGAENGE, PortfolioFehler, WV_STRUKTUREN,
-  abrufAktion, abrufPruefen, abrufVerzug, ausschuettungPruefen, boerseEntwurf, cashflowKennzahlen, covenantAuswertung, ertragAuswertung,
+  abrufAktion, abrufPruefen, abrufVerzug, ausschuettungPruefen, boerseEntwurf, cashflowKennzahlen, covenantAuswertung, ertragAuswertung, ertraegeAbgleichen, istAusZaehler,
   istMonat, monatPlus, periodeStandard, sollMonat, periodenAuswahl, plusTage, positionAusClosing, quellensteuerHinweis, statusNachUebergabe,
   steuerHinweise, uebergangPruefen, wiederverkaufPruefen,
 } from "../../portfolio/kern";
@@ -32,6 +32,7 @@ import { jetzt, neueId, sha256, vorTagen, zufallsToken } from "./hilfen";
 import { kycStatusDb } from "./kycRegeln";
 import { teamRolle } from "./teams";
 import { darfTeamSchreiben } from "../../organisation";
+import { zaehlerMonatswerte } from "./anlagen"; // Anlagen-Monitoring: Zählerstand-Monatswerte (Demo: fehlende aus der Simulation abgeleitet)
 
 const { benachrichtigen, protokoll, nutzerById, nameVon, kurz, aktiveAdmins } = intern;
 
@@ -203,6 +204,37 @@ const abrufeVon = (db, x) => P(db).abrufe.filter((a) => a.positionId === x.id).s
 const ausschuettungenVon = (db, x) => P(db).ausschuettungen.filter((a) => a.positionId === x.id).sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
 const letzterMonat = () => monatPlus(heute().slice(0, 7), -1);
 
+// ---------------------------------------------------------------- Ist-Erträge aus dem Anlagen-Monitoring (Position.anlageId)
+
+/** Zählerstand-Monatswerte der verknüpften Anlage (außerhalb der Schreibtransaktion lesen); null = nicht verfügbar */
+async function monitoringZeilen(anlageId) {
+  if (!anlageId) return null;
+  try {
+    return await zaehlerMonatswerte(SYSTEM, anlageId);
+  } catch {
+    return null;
+  }
+}
+/** Erzeugungszähler der Anlage (abrechnungsrelevant, Register 2.8.0) */
+const erzeugungIds = (db, anlageId) => (db.anlagen?.messpunkte || []).filter((m) => m.anlageId === anlageId && m.abrechnungsrelevant && m.art === "erzeugung").map((m) => m.id);
+/** Monats-Ist automatisch übernehmen – manuelle Werte behalten Vorrang, Quelle wird gekennzeichnet */
+function ertraegeUebernehmen(db, x, zeilen) {
+  if (!x.anlageId || !zeilen) return { neu: 0, geaendert: 0 };
+  const auto = istAusZaehler(zeilen, erzeugungIds(db, x.anlageId), { ab: String(x.kaufdatum || "").slice(0, 7), bis: letzterMonat() });
+  const r = ertraegeAbgleichen(ertraegeVon(db, x), auto, { positionId: x.id, am: jetzt() });
+  P(db).ertraege = [...P(db).ertraege.filter((e) => e.positionId !== x.id), ...r.liste.map((e) => (e.id ? e : { ...e, id: neueId("PE") }))];
+  x.monitoringAbgleich = { am: jetzt(), neu: r.neu, geaendert: r.geaendert };
+  return r;
+}
+function monitoringSicht(db, x) {
+  if (!x.anlageId) return null;
+  const a = (db.anlagen?.anlagen || []).find((q) => q.id === x.anlageId);
+  return { anlageId: x.anlageId, anlageName: a?.name || x.anlageId, monateAuto: ertraegeVon(db, x).filter((e) => e.automatisch).length, letzterAbgleich: x.monitoringAbgleich?.am || null };
+}
+function anlagePruefen(db, anlageId) {
+  if (anlageId && !(db.anlagen?.anlagen || []).some((a) => a.id === anlageId)) throw ungueltig("Die Anlage wurde im Anlagen-Monitoring nicht gefunden.");
+}
+
 function entwicklungSicht(db, x) {
   if (!x.entwicklungId || !db.entwicklung) return null;
   const p = (db.entwicklung.projekte || []).find((q) => q.id === x.entwicklungId);
@@ -253,7 +285,8 @@ function positionAusgabe(db, n, x, { detail = false } = {}) {
   return {
     ...basis,
     closingId: x.closingId || null, projektId: x.projektId || null, entwicklungId: x.entwicklungId || null,
-    stammdaten: { p50KwhJahr: x.p50KwhJahr ?? null, verguetungCt: x.verguetungCt ?? null, opexJahr: x.opexJahr ?? null, schuldendienstJahr: x.schuldendienstJahr ?? null, degradation: x.degradation ?? null, dscrLockup: x.dscrLockup ?? null, dscrDefault: x.dscrDefault ?? null },
+    monitoring: monitoringSicht(db, x),
+    stammdaten: { anlageId: x.anlageId || null, p50KwhJahr: x.p50KwhJahr ?? null, verguetungCt: x.verguetungCt ?? null, opexJahr: x.opexJahr ?? null, schuldendienstJahr: x.schuldendienstJahr ?? null, degradation: x.degradation ?? null, dscrLockup: x.dscrLockup ?? null, dscrDefault: x.dscrDefault ?? null },
     ertrag, covenant,
     abrufe: abrufe.map((a) => abrufAusgabe(a, rolle, h)),
     ausschuettungen: aus.map((a) => ({ id: a.id, art: a.art, artLabel: AUSSCHUETTUNG_ARTEN[a.art]?.label, periode: a.periode, betrag: a.betrag, datum: a.datum, status: a.status, bankZustimmung: !!a.bankZustimmung, notiz: bo ? a.notiz || "" : undefined, quellensteuer: quellensteuerHinweis(x.land, a.art) })),
@@ -430,12 +463,14 @@ function stammdaten(d = {}, basis = {}) {
     degradation: zahl("degradation", { min: 0, max: 0.05, stellen: 4 }),
     dscrLockup: zahl("dscrLockup", { min: 1, max: 3, stellen: 2 }),
     dscrDefault: zahl("dscrDefault", { min: 1, max: 3, stellen: 2 }),
+    anlageId: Object.hasOwn(d, "anlageId") ? v.kennung(d.anlageId) || null : basis.anlageId ?? null, // Anlagen-Monitoring: Ist-Erträge automatisch
   };
 }
 
 /** Position anlegen: { art, investorId, organisationId?, entwicklungId?, …Stammdaten } */
 export async function pfAnlegen(n, daten = {}) {
   schreibNoetig(n);
+  const zeilen = await monitoringZeilen(v.kennung(daten.anlageId));
   return aendernBereit((db) => {
     const art = v.auswahl(daten.art, Object.keys(PF_ARTEN), "");
     if (!art) throw ungueltig("Bitte die Art der Position wählen.");
@@ -459,7 +494,9 @@ export async function pfAnlegen(n, daten = {}) {
       closingId: null, projektId: null, boerseProjektId: null, struktur: v.auswahl(daten.struktur, ["share", "asset"], "share"), wiederverkauf: null, notizIntern: v.text(daten.notizIntern, 1000), verlauf: [], erstelltAm: jetzt(), geaendertAm: jetzt(),
     };
     if (!x.kaufdatum) x.kaufdatum = heute();
+    anlagePruefen(db, x.anlageId);
     P(db).positionen.push(x);
+    ertraegeUebernehmen(db, x, zeilen);
     verlauf(x, n, `Position angelegt (${PF_ARTEN[art].label}).`, true);
     benachrichtigen(db, u, { art: "portfolio", titel: `Neu im Portfolio: ${x.titel}`, text: art === "codev" ? "Ihre Co-Development-Beteiligung mit Kapitalzusage und Abrufen ist im Portfolio." : "Die Position ist in Ihrem Portfolio.", link: `/portal/portfolio/${x.id}`, objektArt: "portfolio", objektId: x.id }, { mailBetreff: "Neue Position im Portfolio – ÖkoInvest", mailText: "In Ihrem Portfolio wurde eine Position angelegt. Details finden Sie im Portal." });
     protokoll(db, n, "portfolio_anlegen", "portfolio", x.id, `${art}: ${x.titel}`);
@@ -469,13 +506,22 @@ export async function pfAnlegen(n, daten = {}) {
 
 export async function pfAendern(n, id, daten = {}) {
   schreibNoetig(n);
+  const zeilen = Object.hasOwn(daten, "anlageId") ? await monitoringZeilen(v.kennung(daten.anlageId)) : null;
   return aendernBereit((db) => {
     const x = positionLaden(db, id);
     if (["verkauft", "beendet"].includes(x.status)) throw konflikt("Die Position ist abgeschlossen.");
     const s = stammdaten(daten, x);
     v.pflicht(s.titel.length >= 3, "Bitte einen Titel angeben.");
     if (x.art === "codev" && s.zusage < abrufeVon(db, x).filter((a) => a.status !== "storniert").reduce((t, a) => t + a.betrag, 0)) throw ungueltig("Die Zusage darf nicht unter den bereits abgerufenen Betrag sinken.");
+    anlagePruefen(db, s.anlageId);
+    const anlageNeu = s.anlageId !== (x.anlageId || null);
     Object.assign(x, s);
+    if (anlageNeu) {
+      // Verknüpfung geändert: bisher automatisch übernommene Werte verwerfen, neue übernehmen (manuelle bleiben)
+      P(db).ertraege = P(db).ertraege.filter((e) => e.positionId !== x.id || !e.automatisch);
+      if (x.anlageId) ertraegeUebernehmen(db, x, zeilen);
+      verlauf(x, n, x.anlageId ? `Mit Anlage ${x.anlageId} verknüpft – Ist-Erträge werden aus dem Monitoring übernommen.` : "Verknüpfung mit dem Anlagen-Monitoring entfernt.");
+    }
     if (Object.hasOwn(daten, "notizIntern")) x.notizIntern = v.text(daten.notizIntern, 1000);
     x.geaendertAm = jetzt();
     verlauf(x, n, "Stammdaten geändert.");
@@ -489,12 +535,28 @@ export async function pfAendern(n, id, daten = {}) {
  *   status { nach, grund? } · ertrag { monat, kwh, quelle? } (leer = löschen) · abruf { betrag, faelligAm, zweck, meilenstein? }
  *   abruf_bestaetigen { abrufId, datum? } · abruf_stornieren { abrufId, grund } · ausschuettung { art, periode, betrag, datum, bankZustimmung?, notiz? }
  *   ausschuettung_storno { ausschuettungId, grund } · boerse (Börsen-Entwurf aus der Wiederverkaufsanfrage)
+ *   ertrag_uebernehmen (Ist-Erträge aus dem Anlagen-Monitoring der verknüpften Anlage, manuelle Werte behalten Vorrang)
  */
 export async function pfAktion(n, id, daten = {}) {
   schreibNoetig(n);
-  const aktion = v.auswahl(daten.aktion, ["status", "ertrag", "abruf", "abruf_bestaetigen", "abruf_stornieren", "ausschuettung", "ausschuettung_storno", "boerse"], "");
+  const aktion = v.auswahl(daten.aktion, ["status", "ertrag", "ertrag_uebernehmen", "abruf", "abruf_bestaetigen", "abruf_stornieren", "ausschuettung", "ausschuettung_storno", "boerse"], "");
   if (!aktion) throw ungueltig("Unbekannte Aktion.");
   if (aktion === "boerse") return boerseAnlegen(n, id);
+  if (aktion === "ertrag_uebernehmen") {
+    const db0 = await lesenBereit();
+    const x0 = positionLaden(db0, id);
+    if (!x0.anlageId) throw konflikt("Die Position ist mit keiner Anlage des Monitorings verknüpft.");
+    const zeilen = await monitoringZeilen(x0.anlageId);
+    if (!zeilen) throw konflikt("Die Monatswerte der Anlage sind derzeit nicht verfügbar.");
+    return aendernBereit((db) => {
+      const x = positionLaden(db, id);
+      const r = ertraegeUebernehmen(db, x, zeilen);
+      verlauf(x, n, `Ist-Erträge aus dem Anlagen-Monitoring übernommen (${r.neu} neu, ${r.geaendert} aktualisiert).`);
+      x.geaendertAm = jetzt();
+      protokoll(db, n, "portfolio_ertrag_uebernehmen", "portfolio", x.id, `${r.neu} neu, ${r.geaendert} aktualisiert`);
+      return positionAusgabe(db, n, x, { detail: true });
+    });
+  }
   return aendernBereit((db) => {
     const x = positionLaden(db, id);
     const h = heute();
@@ -606,10 +668,17 @@ export async function pfDokumentSpeichern(n, { positionId, art = "bericht", name
  */
 export async function pfFristenLauf(n) {
   if (n) leseNoetig(n);
-  await lesenBereit();
+  const db0 = await lesenBereit();
+  // Ist-Erträge verknüpfter Anlagen vorab lesen (async, außerhalb der Schreibtransaktion)
+  const monitoring = new Map();
+  for (const id of new Set(P(db0).positionen.filter((p) => p.anlageId && PF_AKTIV.includes(p.status)).map((p) => p.anlageId))) monitoring.set(id, await monitoringZeilen(id));
   return aendern((db) => {
     const h = heute();
-    const erg = { erinnerungen: 0, verzug: 0, covenant: 0 };
+    const erg = { erinnerungen: 0, verzug: 0, covenant: 0, ertraegeUebernommen: 0 };
+    for (const x of P(db).positionen.filter((p) => p.anlageId && PF_AKTIV.includes(p.status))) {
+      const r = ertraegeUebernehmen(db, x, monitoring.get(x.anlageId));
+      erg.ertraegeUebernommen += r.neu + r.geaendert;
+    }
     for (const a of P(db).abrufe.filter((q) => q.status === "angekuendigt")) {
       const x = P(db).positionen.find((p) => p.id === a.positionId);
       if (!x) continue;

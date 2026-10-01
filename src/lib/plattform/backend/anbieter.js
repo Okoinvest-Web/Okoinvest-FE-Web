@@ -6,7 +6,7 @@
 // Operationen (n = angemeldeter Nutzer) – Vertrag: docs/API.md, Abschnitt „Anbieter / Verkäufer“:
 //   anbieterAkte(n, projektId)                       → Akte je Rolle (anbieter | admin | investor: nur Bestandsdaten)
 //   anbieterAktion(n, projektId, daten, {ip})        → Anbieter: mandat_erteilen · mandat_kuendigen · exklusivitaet_beenden ·
-//                                                      pruefpunkt_antworten · votum · vorkenntnis_melden · bestand_speichern · ertrag_import
+//                                                      pruefpunkt_antworten · votum · gebot_votum · vorkenntnis_melden · bestand_speichern · ertrag_import
 //   anbieterAdminAktion(n, projektId, daten, {ip})   → Backoffice (Bereich „projekte“ schreiben): pruefpunkt_anlegen · pruefpunkt ·
 //                                                      mandat_bestaetigen · vorkenntnis_entscheiden
 //   anbieterCockpit(n)                               → offene Schritte je Projekt (Anbieter) bzw. Punkte für das Backoffice

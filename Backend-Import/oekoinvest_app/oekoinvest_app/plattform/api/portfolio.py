@@ -166,7 +166,7 @@ def _pos_dict(doc):
 		"id": doc.name, "art": doc.art, "status": doc.status, "titel": doc.titel, "typ": doc.typ or "freiflaeche", "land": doc.land or "DE", "bundesland": doc.bundesland or "",
 		"mwp": flt(doc.mwp) or None, "spvName": doc.spv_name or "", "anteilProzent": flt(doc.anteil_prozent) or 100, "struktur": doc.struktur or "", "kaufpreis": flt(doc.kaufpreis),
 		"kaufdatum": str(doc.kaufdatum or ""), "inbetriebnahme": doc.inbetriebnahme or "", "zusage": flt(doc.zusage), "investorId": doc.investor_id, "organisationId": doc.organisation_id or None,
-		"closingId": doc.closing_id or None, "projektId": doc.projekt_id or None, "entwicklungId": doc.entwicklung_id or None, "boerseProjektId": doc.boerse_projekt_id or None,
+		"closingId": doc.closing_id or None, "projektId": doc.projekt_id or None, "entwicklungId": doc.entwicklung_id or None, "boerseProjektId": doc.boerse_projekt_id or None, "anlageId": doc.get("anlage_id") or None,
 		"p50KwhJahr": flt(doc.p50_kwh_jahr) or None, "verguetungCt": flt(doc.verguetung_ct) or None, "opexJahr": flt(doc.opex_jahr) or None, "schuldendienstJahr": flt(doc.schuldendienst_jahr) or None,
 		"degradation": doc.degradation if doc.degradation not in (None, "") and flt(doc.degradation) else None, "dscrLockup": flt(doc.dscr_lockup) or None, "dscrDefault": flt(doc.dscr_default) or None,
 		"wiederverkauf": aus_json(doc.wiederverkauf, None), "notizIntern": doc.notiz_intern or "", "verlauf": aus_json(doc.verlauf, []) or [], "geaendertAm": iso(doc.modified),
@@ -250,7 +250,8 @@ def _ausgabe(n, doc, detail=False):
 	return {
 		**basis,
 		"closingId": pos["closingId"], "projektId": pos["projektId"], "entwicklungId": pos["entwicklungId"],
-		"stammdaten": {k: pos[k] for k in ("p50KwhJahr", "verguetungCt", "opexJahr", "schuldendienstJahr", "degradation", "dscrLockup", "dscrDefault")},
+		"monitoring": _monitoring_sicht(doc, ertraege),
+		"stammdaten": {k: pos[k] for k in ("anlageId", "p50KwhJahr", "verguetungCt", "opexJahr", "schuldendienstJahr", "degradation", "dscrLockup", "dscrDefault")},
 		"ertrag": ertrag, "covenant": covenant,
 		"abrufe": [_abruf_ausgabe(a, rolle, heute) for a in abrufe],
 		"ausschuettungen": [{**a, "artLabel": K.AUSSCHUETTUNG_ARTEN.get(a["art"], (a["art"],))[0], "notiz": a["notiz"] if bo else None, "quellensteuer": K.quellensteuer_hinweis(pos["land"], a["art"])} for a in aus],
@@ -477,6 +478,38 @@ def auswahl(als_benutzer=None):
 	return {"investoren": investoren, "entwicklung": entwicklung, "arten": {k: {"label": w} for k, w in K.ARTEN.items()}, "typen": TYPEN}
 
 
+# ================================================================ Ist-Erträge aus dem Anlagen-Monitoring (= demo/portfolio.js)
+
+
+def _monitoring_zeilen(anlage_id):
+	"""Zählerstand-Monatswerte der Erzeugungszähler (abrechnungsrelevant) → (zeilen, erzeugung_ids)."""
+	if not anlage_id or not frappe.db.exists("Plattform Anlage", anlage_id):
+		return [], []
+	ids = frappe.get_all("Plattform Messpunkt", filters={"anlage_id": anlage_id, "abrechnungsrelevant": 1, "art": "erzeugung"}, pluck="name", limit_page_length=0)
+	if not ids:
+		return [], []
+	zeilen = frappe.get_all("Plattform Zaehlerstand Monatswert", filters={"messpunkt_id": ["in", ids], "register": "2.8.0"}, fields=["monat", "messpunkt_id", "register", "menge", "geprueft"], order_by="monat desc", limit_page_length=2000)
+	return [{"monat": z.monat, "messpunktId": z.messpunkt_id, "register": z.register, "menge": flt(z.menge) if z.menge is not None else None, "geprueft": bool(cint(z.geprueft))} for z in zeilen], ids
+
+
+def _ertraege_uebernehmen(doc):
+	"""Monats-Ist automatisch übernehmen – manuelle Werte behalten Vorrang, Quelle gekennzeichnet. Speichert nicht."""
+	if not doc.get("anlage_id"):
+		return {"neu": 0, "geaendert": 0}
+	zeilen, ids = _monitoring_zeilen(doc.anlage_id)
+	auto = K.ist_aus_zaehler(zeilen, ids, ab=str(doc.kaufdatum or "")[:7], bis=_letzter_monat())
+	r = K.ertraege_abgleichen(aus_json(doc.ertraege, []) or [], auto, position_id=doc.name, am=jetzt_iso())
+	doc.ertraege = als_json([{k: w for k, w in e.items() if k not in ("id", "positionId") or w} for e in r["liste"]][-240:])
+	return r
+
+
+def _monitoring_sicht(doc, ertraege):
+	if not doc.get("anlage_id"):
+		return None
+	name = frappe.db.get_value("Plattform Anlage", doc.anlage_id, "titel")
+	return {"anlageId": doc.anlage_id, "anlageName": name or doc.anlage_id, "monateAuto": len([e for e in ertraege if e.get("automatisch")]), "letzterAbgleich": None}
+
+
 def _stammdaten(d, doc=None):
 	"""Werte aus dem Formular (nur übergebene Felder) → Doc-Felder"""
 	werte = {}
@@ -498,6 +531,11 @@ def _stammdaten(d, doc=None):
 	if "inbetriebnahme" in d:
 		ib = str(d.get("inbetriebnahme") or "")
 		werte["inbetriebnahme"] = ib if K.ist_monat(ib[:7]) else ""
+	if "anlageId" in d:  # Anlagen-Monitoring: Ist-Erträge automatisch
+		aid = v.kennung(d.get("anlageId")) or None
+		if aid and not frappe.db.exists("Plattform Anlage", aid):
+			ungueltig("Die Anlage wurde im Anlagen-Monitoring nicht gefunden.")
+		werte["anlage_id"] = aid
 	return werte
 
 
@@ -540,6 +578,7 @@ def anlegen(daten=None, als_benutzer=None):
 	if not doc.anteil_prozent:
 		doc.anteil_prozent = 100
 	_verlauf(doc, n, f"Position angelegt ({K.ARTEN[art]}).", True)
+	_ertraege_uebernehmen(doc)
 	doc.insert(ignore_permissions=True)
 	_investor_melden(doc, f"Neu im Portfolio: {doc.titel}", "Ihre Co-Development-Beteiligung mit Kapitalzusage und Abrufen ist im Portfolio." if art == "codev" else "Die Position ist in Ihrem Portfolio.", mail_betreff="Neue Position im Portfolio – ÖkoInvest", mail_text="In Ihrem Portfolio wurde eine Position angelegt. Details finden Sie im Portal.")
 	protokoll(n, "portfolio_anlegen", "portfolio", doc.name, f"{art}: {doc.titel}")
@@ -559,8 +598,14 @@ def aendern(id=None, daten=None, als_benutzer=None):  # noqa: A002
 		abgerufen = sum(a["betrag"] for a in _abrufe(doc.name) if a["status"] != "storniert")
 		if (werte["zusage"] or 0) < abgerufen:
 			ungueltig("Die Zusage darf nicht unter den bereits abgerufenen Betrag sinken.")
+	anlage_neu = "anlage_id" in werte and (werte["anlage_id"] or None) != (doc.get("anlage_id") or None)
 	doc.update(werte)
 	v.pflicht(len(doc.titel or "") >= 3, "Bitte einen Titel angeben.")
+	if anlage_neu:
+		# Verknüpfung geändert: bisher automatisch übernommene Werte verwerfen, neue übernehmen (manuelle bleiben)
+		doc.ertraege = als_json([e for e in (aus_json(doc.ertraege, []) or []) if not e.get("automatisch")])
+		_ertraege_uebernehmen(doc)
+		_verlauf(doc, n, f"Mit Anlage {doc.anlage_id} verknüpft – Ist-Erträge werden aus dem Monitoring übernommen." if doc.anlage_id else "Verknüpfung mit dem Anlagen-Monitoring entfernt.")
 	_verlauf(doc, n, "Stammdaten geändert.")
 	doc.save(ignore_permissions=True)
 	protokoll(n, "portfolio_aendern", "portfolio", doc.name, "Stammdaten")
@@ -573,11 +618,19 @@ def aktion(id=None, daten=None, als_benutzer=None):  # noqa: A002, C901
 	_schreib_noetig(n)
 	d = aus_json(daten, {}) if isinstance(daten, str) else (daten or {})
 	a_name = d.get("aktion")
-	if a_name not in ("status", "ertrag", "abruf", "abruf_bestaetigen", "abruf_stornieren", "ausschuettung", "ausschuettung_storno", "boerse"):
+	if a_name not in ("status", "ertrag", "ertrag_uebernehmen", "abruf", "abruf_bestaetigen", "abruf_stornieren", "ausschuettung", "ausschuettung_storno", "boerse"):
 		ungueltig("Unbekannte Aktion.")
 	doc, _ = _laden(n, id)
 	heute = _heute()
 	pos = _pos_dict(doc)
+	if a_name == "ertrag_uebernehmen":
+		if not doc.get("anlage_id"):
+			konflikt("Die Position ist mit keiner Anlage des Monitorings verknüpft.")
+		r = _ertraege_uebernehmen(doc)
+		_verlauf(doc, n, f"Ist-Erträge aus dem Anlagen-Monitoring übernommen ({r['neu']} neu, {r['geaendert']} aktualisiert).")
+		doc.save(ignore_permissions=True)
+		protokoll(n, "portfolio_ertrag_uebernehmen", "portfolio", doc.name, f"{r['neu']} neu, {r['geaendert']} aktualisiert")
+		return _ausgabe(n, doc, detail=True)
 	if a_name == "status":
 		nach = _fach(K.uebergang_pruefen, doc.status, str(d.get("nach") or ""))
 		if nach == "verkauf_angefragt":
@@ -704,7 +757,14 @@ def dokument_speichern(positionId=None, art=None, name=None, mime=None, freigabe
 
 def _fristen():
 	heute = _heute()
-	erg = {"erinnerungen": 0, "verzug": 0, "covenant": 0}
+	erg = {"erinnerungen": 0, "verzug": 0, "covenant": 0, "ertraegeUebernommen": 0}
+	# Ist-Erträge verknüpfter Anlagen aus dem Monitoring übernehmen (manuelle Werte behalten Vorrang)
+	for name in frappe.get_all(DT, filters={"status": ["in", K.AKTIV], "anlage_id": ["is", "set"]}, pluck="name", limit_page_length=5000):
+		doc = frappe.get_doc(DT, name)
+		r = _ertraege_uebernehmen(doc)
+		if r["neu"] or r["geaendert"]:
+			erg["ertraegeUebernommen"] += r["neu"] + r["geaendert"]
+			frappe.db.set_value(DT, doc.name, "ertraege", doc.ertraege, update_modified=False)
 	for z in frappe.get_all(DT_ABRUF, filters={"status": "angekuendigt"}, fields=["name"], limit_page_length=5000):
 		a = frappe.get_doc(DT_ABRUF, z.name)
 		if not frappe.db.exists(DT, a.position_id):

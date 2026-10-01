@@ -214,6 +214,7 @@ scheduler_events = {
 		"oekoinvest_app.plattform.api.onboarding.mail_lauf_taeglich",  # Onboarding B1: Erinnerung an offene Einstiegsschritte nach 3/7 Tagen
 		"oekoinvest_app.plattform.api.akquise_kampagne.nachfassen_taeglich",  # Akquise A1b: Nachfassstufen der Kampagnen (Aufgaben)
 		"oekoinvest_app.plattform.api.querschnitt.digest_taeglich",  # Querschnitt: Tages-Digest der Benachrichtigungen (E-Mail ohne Inhalte)
+		"oekoinvest_app.plattform.api.frist_erinnerung.erinnerungen_taeglich",  # Integration: Fristerinnerungen Pachtakte, Genossenschaft (Einzahlung), Gemeinde (Stellungnahme)
 	],
 	# Deal-Room: Erinnerung 48 h vor Ende einer Angebotsfrist
 	"hourly": [

@@ -62,6 +62,7 @@ export default function PositionAnsicht({ p, basis = "/api/portal/portfolio", bo
               ) : (
                 <p className="text-[14px] text-ink-600">Die Betriebsführung meldet die Monatswerte nach Ablesung bzw. aus dem Datenlogger. Sobald Werte vorliegen, sehen Sie hier Soll und Ist.</p>
               )}
+              {p.monitoring?.monateAuto > 0 && <p className="mt-3 text-[12.5px] text-ink-500">{p.monitoring.monateAuto} Monatswerte stammen automatisch aus dem Anlagen-Monitoring (geeichte Zählerwerte); von der Betriebsführung erfasste Werte haben Vorrang.</p>}
               {bo.ertrag}
             </Karte>
           )}

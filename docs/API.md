@@ -1246,3 +1246,15 @@ Backend: `src/lib/plattform/backend/{mitglied,gemeinde}.js` (Demo `demo/{mitglie
 - `GET /api/portal/gemeinde/material?vorgang=&art=pressemitteilung|amtsblatt|faq|aushang|sitzungsvorlage&projekt=&format=pdf|json` → `gemeinde.material` (Entwurf; Abruf protokolliert).
 
 Seiten: `/portal/beteiligung` (Übersicht), `/portal/beteiligung/genossenschaft`, `/portal/beteiligung/versammlung/[id]`, `/portal/beteiligung/energiegemeinschaft`, `/portal/admin/genossenschaft`, `/portal/admin/energiegemeinschaften`, `/portal/kommune` (Cockpit; Backoffice `?vorgang=`). Frappe-DocTypes: Plattform Genossenschaft (GE), Genossenschaftsmitglied (GM), Anteilsuebertragung (GU), Generalversammlung (GV), GV Stimme (GS, nur System Manager), Genossenschaft Ausschuettung (GAU), Energiegemeinschaft (EGM, Monatsläufe in `daten`), EG Teilnahme (ET), EG Abrechnung (EA), Gemeinde Akte (GA). Teilnahme-Stammdaten Energiegemeinschaft weiterhin in `Plattform Beteiligung Interesse` (art `eg`, Fachprüfung Kapitalseite).
+
+## Integration zwischen den Fachmodulen (Integrationsteam)
+
+| Methode / Route | Wer | Wirkung |
+|---|---|---|
+| `anbieter.aktion` · `POST /api/portal/anbieter/[projektId]` `{ aktion: "gebot_votum", gebotId, art: zustimmung\|verhandeln\|ablehnung, kommentar, gegenvorschlag? }` | Anbieter (Team ≥ Mitglied) | Stellungnahme zu einem Gebot (je Gebotsversion), nur bei freigegebenem Bieterstand (sonst 409), nur offene Gebote. Akte: `interessenten[].gebote[]` mit `votum`, `votumMoeglich` |
+| `bieter.aktion` `{ aktion: "zuschlag" }` | Backoffice | 409 „votum“, wenn der Verkäufer das Gebot (diese Version) abgelehnt hat |
+| `prozess.status_wechsel` Projekt → `verkauft` · `closing.cl_aktion` vollziehen | Backoffice | anerkannte Vorkenntnis zum Käufer → keine `Plattform Provision`, Protokoll `provision_entfallen`; Closing-Ausgabe `provisionEntfallen: { grund }` (Verkäufer/Backoffice) |
+| `anbieter.admin_aktion` `{ aktion: "vorkenntnis_entscheiden", entscheidung: "anerkannt" }` | Backoffice | zusätzlich: offene Provision zum Käufer → `storniert` (Grund „Vorkenntnis anerkannt“) |
+| Abrechnungslauf Pacht (`finanzen.abrechnung.lauf_ausfuehren`) | Scheduler/Backoffice | Pachtakte: `kuendigung_zum`, `rueckbau.beendetAm`, `aufteilung` → Ende anteilig; je Empfänger eigener Beleg (`schluessel` `…:A<nr>`, `bezug.aufteilung { nr, anteilProzent, gesamtNetto }`) |
+| `portfolio.aendern` `{ anlageId }` · `portfolio.aktion` `{ aktion: "ertrag_uebernehmen" }` | Backoffice „portfolio“ schreiben | Feld `anlage_id` (Link Plattform Anlage); Ertragseinträge `{ monat, kwh, quelle, automatisch: true, herkunft: zaehler_geprueft\|zaehler }`; Ausgabe `monitoring { anlageId, anlageName, monateAuto }`, `stammdaten.anlageId` |
+| `frist_erinnerung.lauf` · `POST /api/admin/fristen/erinnerungen` | Backoffice (pachtakte, genossenschaft oder kommunen schreiben) | `{ ok, erinnerungen, benachrichtigungen, pacht, genossenschaft, gemeinde }`; Scheduler täglich `frist_erinnerung.erinnerungen_taeglich`. Gemeldet = `Plattform Aktivitaet` (`aktion` „frist_erinnerung“, `objekt_id` = Schlüssel) |

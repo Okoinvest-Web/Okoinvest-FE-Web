@@ -5,6 +5,7 @@ import {
   abzurechnen, afaPlan, arbeitspreis, budgetVergleich, contractingAbrechnen, ertragAusMonatswerten, faelligkeiten, ibanBauen, ibanMaskieren,
   ibanPruefen, indexVerlauf, laufzeitEnde, mahnhinweis, naechsteFaelligkeit, pachtPositionen, pain001, pain001Pruefen, perioden, provisionPositionen,
   sepaText, steuerBerechnen, steuerVorschlag, umsatzbeteiligung, zahlungsstatus, pflichtangabenPruefen,
+  aufteilungGilt, pachtAufteilen, vertragsEnde,
 } from "./index.js";
 
 const TAB = [
@@ -178,4 +179,26 @@ test("AfA-Plan und Projektcontrolling", () => {
   assert.equal(b.ist, 90000);
   assert.equal(b.ampel, "gelb");
   assert.equal(b.jeMwp, 7500);
+});
+
+// Integration Pachtakte → Abrechnungslauf (gleiche Fälle in finanzen/test_logik.py)
+test("Kündigung/Beendigung begrenzen die Gutschriften (anteilig im letzten Monat)", () => {
+  const v = { id: "PT-T", vertragsdatum: "2023-06-01", beginn: "2024-01-01", laufzeitJahre: 20, faelligkeit: "monatlich", zahlweise: "nachschuessig", zahlungszielTage: 14, vorlaufTage: 14, status: "gekuendigt", kuendigungZum: "2026-06-15" };
+  const f = faelligkeiten(v, { stichtag: "2026-12-31" });
+  assert.equal(f.length, 30);
+  assert.deepEqual([f.at(-1).von, f.at(-1).bis, f.at(-1).anteil, f.at(-1).erstellbarAb], ["2026-06-01", "2026-06-15", 0.5, "2026-06-16"]);
+  assert.equal(vertragsEnde(v), "2026-06-15");
+  assert.equal(vertragsEnde({ ...v, status: "beendet", beendetAm: "2026-05-10" }), "2026-05-10");
+  assert.equal(vertragsEnde({ ...v, status: "aktiv" }), "2043-12-31"); // Kündigung erst mit Status „gekündigt“ wirksam
+  const r = faelligkeiten({ id: "PT-R", vertragsdatum: "2023-06-01", beginn: "", reservierungJahr: 1200, faelligkeit: "jaehrlich", status: "gekuendigt", kuendigungZum: "2024-03-31" }, { stichtag: "2026-12-31" });
+  assert.deepEqual(r.map((x) => [x.phase, x.von, x.bis]), [["reservierung", "2023-06-01", "2023-12-31"], ["reservierung", "2024-01-01", "2024-03-31"]]);
+});
+
+test("Zahlungsaufteilung: je Eigentümer eigener Beleg, centgenau", () => {
+  const t = pachtAufteilen([{ art: "pacht", text: "Pacht 2026", menge: 1, preis: 1000.01, betrag: 1000.01 }, { art: "mindest", text: "Aufstockung", menge: 0.5, preis: 500.1, betrag: 250.05 }], [{ name: "A", email: "a@example.com", anteilProzent: 50 }, { name: "B", anteilProzent: 33.33 }, { name: "C", anteilProzent: 16.67 }]);
+  assert.deepEqual(t.map((x) => [x.nr, x.netto, x.positionen.map((p) => p.betrag)]), [[1, 625.04, [500.01, 125.03]], [2, 416.64, [333.3, 83.34]], [3, 208.38, [166.7, 41.68]]]);
+  assert.equal(t[1].positionen[0].text, "Pacht 2026 – Anteil 33,33 %");
+  assert.equal(pachtAufteilen([{ betrag: 10, text: "x" }], [{ anteilProzent: 100 }]), null);
+  assert.equal(aufteilungGilt({ empfaenger: [{}], ab: "2026-07-01" }, { bis: "2026-06-30" }), false);
+  assert.equal(aufteilungGilt({ empfaenger: [{}], ab: "2026-07-01" }, { bis: "2026-07-31" }), true);
 });

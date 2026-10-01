@@ -248,7 +248,7 @@ async function teilB() {
   pruefe(r.status === 409, "alte Version erneut ersetzen → 409", r.status);
   r = await fremd.hochladen(`/api/portal/querschnitt/dokumente/${v2}/version`, { name: "fremd.pdf" });
   pruefe([403, 404].includes(r.status), "fremde Version → 403/404", r.status);
-  r = await eigen.hochladen(`/api/portal/querschnitt/dokumente/${v2}/version`, { name: "x.pdf" }, {});
+  r = await eigen.hochladen(`/api/portal/querschnitt/dokumente/${v2}/version`, { name: "Vollmacht-v3.pdf" });
   const v3 = r.json.dokument?.id;
   r = await eigen.get(`/api/portal/querschnitt/dokumente/${v3}/versionen`);
   pruefe(r.status === 200 && r.json.versionen?.map((x) => x.version).join(",") === "1,2,3", "Versionskette 1,2,3", r.json.versionen?.map((x) => x.version));
@@ -295,8 +295,8 @@ async function teilB() {
   r = await admin.get(`/api/admin/protokoll/suche?nutzer=${eigenNutzer.id}&proSeite=10`);
   pruefe(r.status === 200 && r.json.gesamt >= 2 && r.json.eintraege.every((e) => e.nutzerId === eigenNutzer.id), "Suche nach Konto-ID", { gesamt: r.json.gesamt });
   r = await admin.get(`/api/admin/protokoll/suche?q=Vollmacht&format=csv`, { roh: true });
-  const csvText = await r.text();
-  pruefe(r.status === 200 && (r.headers.get("content-type") || "").includes("text/csv") && csvText.startsWith("﻿") && csvText.includes(";"), "CSV-Export (BOM, Semikolon)", csvText.slice(0, 80));
+  const csvRoh = Buffer.from(await r.arrayBuffer());
+  pruefe(r.status === 200 && (r.headers.get("content-type") || "").includes("text/csv") && csvRoh.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf])) && csvRoh.toString("utf8").includes(";"), "CSV-Export (BOM, Semikolon)", csvRoh.subarray(0, 40).toString("hex"));
   r = await lesen.get("/api/admin/protokoll/suche?q=x");
   pruefe(r.status === 200, "„Nur lesen“ darf suchen", r.status);
 

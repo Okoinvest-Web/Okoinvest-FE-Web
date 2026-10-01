@@ -123,6 +123,7 @@ const STAMM = [
   ["degradation", "Degradation p. a.", "z. B. 0.004"],
   ["zusage", "Kapitalzusage (€)", "nur Co-Development/Projekt"],
   ["inbetriebnahme", "Inbetriebnahme (JJJJ-MM)", ""],
+  ["anlageId", "Anlage im Monitoring (ID)", "Ist-Erträge werden automatisch übernommen; manuelle Werte haben Vorrang. Leer = keine Verknüpfung"],
 ];
 
 export function Stammdaten({ p }) {
@@ -157,10 +158,17 @@ export function Stammdaten({ p }) {
   );
 }
 
-export function ErtragErfassen({ positionId, vormonat }) {
+export function ErtragErfassen({ positionId, vormonat, monitoring = null }) {
   const { fehler, ok, setOk, laeuft, los } = useSenden();
   const [d, setD] = useState({ monat: vormonat, kwh: "", quelle: "Betriebsführung" });
   return (
+    <>
+    {monitoring && (
+      <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-ink-100 pt-4 text-[13.5px] text-ink-700">
+        <span>Verknüpft mit <strong>{monitoring.anlageName}</strong> · {monitoring.monateAuto} Monatswerte automatisch übernommen (täglicher Lauf).</span>
+        <Button type="button" size="sm" variant="secondary" icon={CalendarClock} disabled={laeuft} onClick={async () => { if (await los(aktionUrl(positionId), { aktion: "ertrag_uebernehmen" })) setOk("Ist-Erträge aus dem Monitoring übernommen."); }}>Jetzt übernehmen</Button>
+      </div>
+    )}
     <form
       className="mt-5 flex flex-wrap items-end gap-2 border-t border-ink-100 pt-4"
       onSubmit={async (e) => {
@@ -174,6 +182,7 @@ export function ErtragErfassen({ positionId, vormonat }) {
       <Button type="submit" size="sm" icon={Save} disabled={laeuft}>Monatswert speichern</Button>
       <div className="w-full"><FehlerBox>{fehler}</FehlerBox><ErfolgBox>{ok}</ErfolgBox></div>
     </form>
+    </>
   );
 }
 

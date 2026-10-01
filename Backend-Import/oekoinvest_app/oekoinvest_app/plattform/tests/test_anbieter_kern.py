@@ -164,5 +164,34 @@ class TestBestand(unittest.TestCase):
 		self.assertTrue(K.foerderung_bereinigen({"register": "SEE912345678901"}, "DE")["registerFormatOk"])
 
 
+
+class TestIntegration(unittest.TestCase):
+	"""Integration: anerkannte Vorkenntnis → keine Provision; Gebots-Stellungnahme sperrt den Zuschlag (wie regeln.js)."""
+
+	AKTE = {
+		"vorkenntnis": [{"id": "VK-1", "interesseId": "I-1", "status": "gemeldet"}, {"id": "VK-2", "interesseId": "I-2", "status": "anerkannt"}],
+		"voten": [
+			{"interesseId": "I-1", "loiAm": "a", "art": "zustimmung"},
+			{"interesseId": "I-1", "gebotId": "GB-1", "gebotVersion": 1, "art": "ablehnung"},
+			{"interesseId": "I-2", "gebotId": "GB-2", "gebotVersion": 2, "art": "verhandeln"},
+		],
+	}
+
+	def test_vorkenntnis(self):
+		self.assertEqual(K.vorkenntnis_anerkannt(self.AKTE, "I-2")["id"], "VK-2")
+		self.assertIsNone(K.vorkenntnis_anerkannt(self.AKTE, "I-1"))
+		self.assertIsNone(K.vorkenntnis_anerkannt(None, "I-2"))
+		self.assertEqual(K.VORKENNTNIS_VERMERK, "Vorkenntnis anerkannt")
+
+	def test_gebot_votum_und_zuschlag(self):
+		self.assertEqual(K.aktuelles_votum(self.AKTE["voten"], "I-1", None)["art"], "zustimmung")
+		self.assertEqual(K.gebot_votum(self.AKTE["voten"], "GB-1", 1)["art"], "ablehnung")
+		with self.assertRaises(K.AnbieterFehler) as e:
+			K.zuschlag_sperre(akte=self.AKTE, gebot_id="GB-1", version=1)
+		self.assertEqual((e.exception.status, e.exception.code), (409, "votum"))
+		self.assertTrue(K.zuschlag_sperre(akte=self.AKTE, gebot_id="GB-1", version=2))
+		self.assertTrue(K.zuschlag_sperre(akte=self.AKTE, gebot_id="GB-2", version=2))
+
+
 if __name__ == "__main__":
 	unittest.main()

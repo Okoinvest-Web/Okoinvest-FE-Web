@@ -4,6 +4,7 @@
 # 1:1-Spiegel von src/lib/plattform/finanzen/{basis,konstanten,faelligkeit,indexierung,pacht,contracting,provision,afa}.js
 # – bei Änderungen beide Seiten nachziehen.
 
+import math
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -341,12 +342,14 @@ def pacht_aufteilen(positionen, empfaenger):
 	gesamt = sum(float(e["anteilProzent"]) for e in liste)
 	teile = [{"nr": i + 1, "empfaenger": e, "anteilProzent": float(e["anteilProzent"]), "positionen": [], "netto": 0} for i, e in enumerate(liste)]
 	for p in positionen or []:
-		rest = rund2(p["betrag"])
+		# in ganzen Cent rechnen (gleiches Ergebnis in JS und Python)
+		cent = math.floor(float(p["betrag"]) * 100 + 0.5)
+		rest = cent
 		for i, t in enumerate(teile):
 			quote = t["anteilProzent"] / gesamt
-			betrag = rund2(rest) if i == len(teile) - 1 else rund2(p["betrag"] * quote)
-			rest = rund2(rest - betrag)
-			t["positionen"].append({**p, "text": f"{p['text']} – Anteil {zahl_de(t['anteilProzent'], 2)} %", "menge": rund(float(p.get("menge") or 0) * quote, 4), "betrag": betrag})
+			c = rest if i == len(teile) - 1 else math.floor((cent * t["anteilProzent"]) / gesamt + 0.5)
+			rest -= c
+			t["positionen"].append({**p, "text": f"{p['text']} – Anteil {zahl_de(t['anteilProzent'], 2)} %", "menge": rund(float(p.get("menge") or 0) * quote, 4), "betrag": c / 100})
 	for t in teile:
 		t["netto"] = summe(t["positionen"], "betrag")
 	return teile

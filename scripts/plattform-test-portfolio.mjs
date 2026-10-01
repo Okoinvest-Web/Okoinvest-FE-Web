@@ -12,6 +12,7 @@
 //   Dokument-Upload/Download, Wiederverkauf → Börsen-Entwurf → Provision, Fristenlauf, Seiten.
 
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const WURZEL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -122,6 +123,50 @@ async function logik() {
   const doks = B.berichtDokumente({ ...pos, id: "PO-1" }, B.berichtRechnen(pos, { ertraege: ertr(pos, 1, 24) }, { art: "jahr", periode: "2025", heute }), { empfaenger: "Test" });
   const txt = JSON.stringify(doks);
   pruefe(doks.length === 1 && /Jahresbericht 2025/.test(doks[0].titel) && /Steuerunterlagen/.test(txt) && /keine Anlage- oder Steuerberatung/.test(txt), "Jahresbericht mit Steuerabschnitt und Hinweis");
+
+  // Integration: Ist-Erträge aus dem Anlagen-Monitoring (Position.anlageId), manuelle Werte behalten Vorrang
+  abschnitt("A5. Ist-Erträge aus dem Anlagen-Monitoring");
+  const zeilen = [
+    { monat: "2026-06", messpunktId: "MP-1", register: "2.8.0", menge: 900000, geprueft: true },
+    { monat: "2026-06", messpunktId: "MP-2", register: "2.8.0", menge: 100000.4, geprueft: true },
+    { monat: "2026-06", messpunktId: "MP-3", register: "2.8.0", menge: 55555, geprueft: true }, // Einspeisezähler (kein Erzeugungszähler)
+    { monat: "2026-07", messpunktId: "MP-1", register: "2.8.0", menge: 950000, geprueft: true },
+    { monat: "2026-07", messpunktId: "MP-2", register: "2.8.0", menge: 110000, geprueft: false },
+    { monat: "2026-08", messpunktId: "MP-1", register: "2.8.0", menge: 980000, geprueft: true }, // MP-2 fehlt → unvollständig
+    { monat: "2026-05", messpunktId: "MP-1", register: "1.8.0", menge: 5, geprueft: true },
+    { monat: "2025-01", messpunktId: "MP-1", register: "2.8.0", menge: 1, geprueft: true },
+    { monat: "2025-01", messpunktId: "MP-2", register: "2.8.0", menge: 1, geprueft: true },
+  ];
+  const auto = K.istAusZaehler(zeilen, ["MP-1", "MP-2"], { ab: "2025-03", bis: "2026-08" });
+  pruefe(JSON.stringify(auto) === JSON.stringify([{ monat: "2026-06", kwh: 1000000, herkunft: "zaehler_geprueft" }, { monat: "2026-07", kwh: 1060000, herkunft: "zaehler" }]), "Summe der Erzeugungszähler (2.8.0) je Monat, nur vollständige Monate ab Kauf, geprüft/ungeprüft", auto);
+  const vorhanden = [
+    { id: "PE-1", monat: "2026-06", kwh: 990000, quelle: "Betriebsführung" },
+    { id: "PE-2", monat: "2026-07", kwh: 1, quelle: K.ERTRAG_AUTO_QUELLEN.zaehler, automatisch: true },
+    { id: "PE-3", monat: "2026-05", kwh: 7, quelle: K.ERTRAG_AUTO_QUELLEN.zaehler, automatisch: true },
+  ];
+  const abg = K.ertraegeAbgleichen(vorhanden, auto, { positionId: "PO-1", am: "2026-09-30T10:00:00.000Z" });
+  const m = Object.fromEntries(abg.liste.map((e) => [e.monat, e]));
+  pruefe(m["2026-06"].kwh === 990000 && !m["2026-06"].automatisch, "Manueller Wert hat Vorrang vor dem Zählerwert");
+  pruefe(m["2026-07"].kwh === 1060000 && m["2026-07"].id === "PE-2" && m["2026-07"].automatisch && /Zählerwert \(ungeprüft\)/.test(m["2026-07"].quelle), "Automatischer Wert aktualisiert, Quelle gekennzeichnet");
+  pruefe(m["2026-05"]?.kwh === 7 && abg.neu === 0 && abg.geaendert === 1 && abg.liste.length === 3, "Nicht mehr gelieferte automatische Werte bleiben stehen; Zählung neu/geändert", abg);
+  const ab2 = K.ertraegeAbgleichen(abg.liste, auto, { positionId: "PO-1", am: "x" });
+  pruefe(ab2.neu === 0 && ab2.geaendert === 0, "Wiederholter Abgleich ändert nichts (idempotent)");
+  const e2 = K.ertragAuswertung(pos, abg.liste, { bis: "2026-08" });
+  pruefe(e2.monate.find((z) => z.monat === "2026-07").quelle.startsWith("Anlagen-Monitoring"), "Quelle erscheint in der Soll/Ist-Auswertung");
+  const pyP = spawnSync("python", ["-c", `
+import json,sys
+from oekoinvest_app.plattform import portfolio_kern as K
+f=json.load(sys.stdin)
+a=K.ist_aus_zaehler(f["zeilen"],["MP-1","MP-2"],ab="2025-03",bis="2026-08")
+r=K.ertraege_abgleichen(f["vorhanden"],a,position_id="PO-1",am="2026-09-30T10:00:00.000Z")
+print(json.dumps({"auto":a,"ab":r},ensure_ascii=False))
+`], { cwd: path.join(WURZEL, "Backend-Import", "oekoinvest_app"), input: JSON.stringify({ zeilen, vorhanden }), encoding: "utf8", env: { ...process.env, PYTHONIOENCODING: "utf-8" } });
+  if (pyP.error || pyP.status !== 0) {
+    console.log(`  (Python nicht verfügbar – Gleichheitsprüfung übersprungen: ${String(pyP.error?.message || pyP.stderr).slice(0, 200)})`);
+  } else {
+    const p = JSON.parse(pyP.stdout);
+    pruefe(JSON.stringify(p) === JSON.stringify({ auto, ab: abg }), "Gleichheit JS ↔ Python (istAusZaehler, ertraegeAbgleichen)", { js: { auto, ab: abg }, py: p });
+  }
 }
 
 // ================================================================ Teil B – HTTP

@@ -200,6 +200,69 @@ def ertrag_auswertung(pos, ertraege=None, bis=None, monate=12):
 	return {"bis": ende, "monate": zeilen, "summe12": s12, "jahr": jahr, "ampel": ampel_ertrag(s12["abw"] if s12 else None), "spezifisch12": _runden(s12["ist"] / kwp) if s12 and kwp and s12["monate"] == 12 else None}
 
 
+# ---------------------------------------------------------------- Ist-Erträge aus dem Anlagen-Monitoring (= kern.js)
+
+ERTRAG_AUTO_QUELLEN = {
+	"zaehler_geprueft": "Anlagen-Monitoring – geeichter Zähler (geprüft)",
+	"zaehler": "Anlagen-Monitoring – Zählerwert (ungeprüft)",
+}
+
+
+def _zahl_ok(x):
+	try:
+		return x is not None and x != "" and math.isfinite(float(x))
+	except (TypeError, ValueError):
+		return False
+
+
+def ist_aus_zaehler(zeilen=None, erzeugung_ids=None, ab="", bis=""):
+	"""Monats-Ist aus Zählerstand-Monatswerten: Summe Register 2.8.0 aller Erzeugungszähler, nur vollständige Monate."""
+	ids = set(erzeugung_ids or [])
+	if not ids:
+		return []
+	je_monat = {}
+	for z in zeilen or []:
+		if not ist_monat(z.get("monat")) or z.get("messpunktId") not in ids or z.get("register") != "2.8.0" or not _zahl_ok(z.get("menge")):
+			continue
+		if (ist_monat(ab) and z["monat"] < ab) or (ist_monat(bis) and z["monat"] > bis):
+			continue
+		je_monat.setdefault(z["monat"], {}).setdefault(z["messpunktId"], z)
+	out = []
+	for monat in sorted(je_monat):
+		m = je_monat[monat]
+		if len(m) < len(ids):
+			continue
+		werte = list(m.values())
+		out.append({"monat": monat, "kwh": int(_runden(sum(float(z["menge"]) for z in werte))), "herkunft": "zaehler_geprueft" if all(z.get("geprueft") for z in werte) else "zaehler"})
+	return out
+
+
+def ertraege_abgleichen(vorhanden=None, auto=None, position_id=None, am=""):
+	"""Manuelle Werte behalten Vorrang; automatische je Monat ersetzen/ergänzen. → {liste, neu, geaendert}"""
+	vorhanden = list(vorhanden or [])
+	auto = list(auto or [])
+	manuell = {e.get("monat") for e in vorhanden if not e.get("automatisch")}
+	alt = {e.get("monat"): e for e in vorhanden if e.get("automatisch")}
+	auto_monate = {a["monat"] for a in auto}
+	liste = [e for e in vorhanden if not e.get("automatisch") or (e.get("monat") not in auto_monate and e.get("monat") not in manuell)]
+	neu = geaendert = 0
+	for a in auto:
+		if a["monat"] in manuell:
+			continue
+		quelle = ERTRAG_AUTO_QUELLEN.get(a.get("herkunft")) or ERTRAG_AUTO_QUELLEN["zaehler"]
+		vorher = alt.get(a["monat"])
+		if vorher and vorher.get("kwh") == a["kwh"] and vorher.get("quelle") == quelle:
+			liste.append(vorher)
+			continue
+		if vorher:
+			geaendert += 1
+		else:
+			neu += 1
+		liste.append({"id": (vorher or {}).get("id"), "positionId": position_id, "monat": a["monat"], "kwh": a["kwh"], "quelle": quelle, "automatisch": True, "herkunft": a.get("herkunft"), "vonId": None, "am": am})
+	liste.sort(key=lambda e: str(e.get("monat")))
+	return {"liste": liste, "neu": neu, "geaendert": geaendert}
+
+
 # ---------------------------------------------------------------- Covenants
 
 

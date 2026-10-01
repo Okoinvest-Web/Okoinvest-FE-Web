@@ -490,7 +490,7 @@ def rueckbau_aktion(vertragId=None, eingabe=None, ip=None, als_benutzer=None):
 			ungueltig("Bitte das Vertragsende dokumentieren (z. B. Löschungsbewilligung der Dienstbarkeit erteilt).")
 		pt_doc.status = "beendet"
 		pt_doc.save(ignore_permissions=True)
-		akte["rueckbau"]["beendetAm"] = K.heute_wien() if hasattr(K, "heute_wien") else jetzt_iso()[:10]  # Abrechnungslauf: letzte Gutschrift anteilig bis hier
+		akte["rueckbau"]["beendetAm"] = str(nowdate())  # Abrechnungslauf: letzte Gutschrift anteilig bis hier
 		akte["rueckbau"]["verlauf"] = (akte["rueckbau"].get("verlauf") or []) + [{"am": jetzt_iso(), "von": "abgenommen", "nach": "abgenommen", "wer": "admin", "nutzerId": n.id, "text": f"Vertrag beendet: {kommentar}"}]
 		protokoll(n, "pachtvertrag_beendet", "pachtvertrag", pt["id"], f"Pachtvertrag beendet: {kommentar}"[:280], ip or "")
 		_melden(pt, pt["eigentuemerId"], "Pachtvertrag beendet", f"Der Pachtvertrag „{pt['bezeichnung']}“ ist abgeschlossen. Ihre Abrechnungen bleiben im Portal abrufbar.")

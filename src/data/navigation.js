@@ -93,6 +93,7 @@ export const NAVIGATION = [
         label: "Gemeinschaft",
         items: [
           { name: "Energiegemeinschaften", href: "/energiegemeinschaften", icon: "Share2", text: "Energy Sharing in DE, EEG in AT, LEG in CH" },
+          { name: "Software für Energiegemeinschaften", href: "/energiegemeinschaften/software", icon: "LayoutDashboard", text: "Gründung, Abrechnung und Betrieb nach ElWG" },
           { name: "Genossenschaft", href: "/genossenschaft", icon: "Users", text: "Bürger und Landwirte als Miteigentümer" },
           { name: "Energy-Sharing-Rechner", href: "/rechner/energy-sharing", icon: "Share2", text: "Vorteil je Teilnehmer" },
         ],

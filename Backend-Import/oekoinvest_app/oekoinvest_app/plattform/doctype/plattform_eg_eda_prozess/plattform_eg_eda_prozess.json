@@ -1,0 +1,311 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "EDA-Prozess einer Energiegemeinschaft (Anmeldung, TF-Änderung, Abmeldung, Zählpunktliste, Nachforderung, Energiedatenempfang, Reklamation) mit Status, Fristen, Vier-Augen-Freigabe und Verlauf (WP2).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "prozesscode",
+  "status",
+  "gemeinschaft",
+  "teilnahme",
+  "zaehlpunkt",
+  "zaehlpunktnummer",
+  "cb_1",
+  "conversation_id",
+  "version",
+  "netzbetreiber_id",
+  "empfaenger",
+  "prozessdatum",
+  "modus",
+  "sb_antwort",
+  "responsecode",
+  "responsetext",
+  "frist_bis",
+  "gesendet_am",
+  "versuche",
+  "cb_2",
+  "technik_seit",
+  "bestaetigt_am",
+  "nachfolger",
+  "massen_id",
+  "sb_freigabe",
+  "freigabe_status",
+  "freigabe_beantragt_von",
+  "freigabe_von",
+  "freigabe_am",
+  "sb_daten",
+  "parameter",
+  "ergebnis",
+  "erinnerungen",
+  "merker",
+  "verlauf"
+ ],
+ "fields": [
+  {
+   "fieldname": "prozesscode",
+   "fieldtype": "Select",
+   "label": "Prozess",
+   "options": "EC_REQ_ONL\nEC_REQ_OFF\nEC_PRTFACT_CHG\nEC_PRT_CHANGE\nEC_PODLIST\nCM_REV_SP\nCM_REV_CUS\nCM_REV_IMP\nCR_REQ_PT\nCR_MSG\nREKLAMATION",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "freigabe_offen\nentwurf\ngesendet\nbestaetigt\nabgeschlossen\nabgelehnt\nfehler\nzeitueberschreitung\nverworfen",
+   "default": "entwurf",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "gemeinschaft",
+   "fieldtype": "Link",
+   "label": "Gemeinschaft",
+   "options": "Plattform EG Gemeinschaft",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "teilnahme",
+   "fieldtype": "Link",
+   "label": "Teilnahme",
+   "options": "Plattform EG ZP Teilnahme",
+   "search_index": 1
+  },
+  {
+   "fieldname": "zaehlpunkt",
+   "fieldtype": "Link",
+   "label": "Zählpunkt",
+   "options": "Plattform EG Zaehlpunkt"
+  },
+  {
+   "fieldname": "zaehlpunktnummer",
+   "fieldtype": "Data",
+   "label": "Zählpunktnummer",
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "conversation_id",
+   "fieldtype": "Data",
+   "label": "Conversation-ID",
+   "search_index": 1
+  },
+  {
+   "fieldname": "version",
+   "fieldtype": "Data",
+   "label": "Schemaversion"
+  },
+  {
+   "fieldname": "netzbetreiber_id",
+   "fieldtype": "Data",
+   "label": "Netzbetreiber"
+  },
+  {
+   "fieldname": "empfaenger",
+   "fieldtype": "Data",
+   "label": "EDA-Adresse Netzbetreiber"
+  },
+  {
+   "fieldname": "prozessdatum",
+   "fieldtype": "Date",
+   "label": "Prozessdatum"
+  },
+  {
+   "fieldname": "modus",
+   "fieldtype": "Select",
+   "label": "Modus",
+   "options": "PROD\nSIMU",
+   "default": "PROD"
+  },
+  {
+   "fieldname": "sb_antwort",
+   "fieldtype": "Section Break",
+   "label": "Antwort und Fristen"
+  },
+  {
+   "fieldname": "responsecode",
+   "fieldtype": "Data",
+   "label": "Responsecode"
+  },
+  {
+   "fieldname": "responsetext",
+   "fieldtype": "Data",
+   "label": "Responsecode (Klartext)"
+  },
+  {
+   "fieldname": "frist_bis",
+   "fieldtype": "Date",
+   "label": "Frist bis"
+  },
+  {
+   "fieldname": "gesendet_am",
+   "fieldtype": "Datetime",
+   "label": "Zuletzt gesendet"
+  },
+  {
+   "fieldname": "versuche",
+   "fieldtype": "Int",
+   "label": "Sendeversuche",
+   "default": "0"
+  },
+  {
+   "fieldname": "cb_2",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "technik_seit",
+   "fieldtype": "Date",
+   "label": "Wartet auf Technik seit"
+  },
+  {
+   "fieldname": "bestaetigt_am",
+   "fieldtype": "Datetime",
+   "label": "Bestätigt am"
+  },
+  {
+   "fieldname": "nachfolger",
+   "fieldtype": "Link",
+   "label": "Neu gestartet als",
+   "options": "Plattform EG EDA Prozess"
+  },
+  {
+   "fieldname": "massen_id",
+   "fieldtype": "Data",
+   "label": "Massenvorgang"
+  },
+  {
+   "fieldname": "sb_freigabe",
+   "fieldtype": "Section Break",
+   "label": "Freigabe (Vier-Augen)"
+  },
+  {
+   "fieldname": "freigabe_status",
+   "fieldtype": "Select",
+   "label": "Freigabe",
+   "options": "\noffen\nerteilt\nabgelehnt"
+  },
+  {
+   "fieldname": "freigabe_beantragt_von",
+   "fieldtype": "Link",
+   "label": "Beantragt von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "freigabe_von",
+   "fieldtype": "Link",
+   "label": "Entschieden von",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "freigabe_am",
+   "fieldtype": "Datetime",
+   "label": "Entschieden am"
+  },
+  {
+   "fieldname": "sb_daten",
+   "fieldtype": "Section Break",
+   "label": "Daten"
+  },
+  {
+   "fieldname": "parameter",
+   "fieldtype": "JSON",
+   "label": "Parameter"
+  },
+  {
+   "fieldname": "ergebnis",
+   "fieldtype": "JSON",
+   "label": "Ergebnis"
+  },
+  {
+   "fieldname": "erinnerungen",
+   "fieldtype": "JSON",
+   "label": "Erinnerungen an das Mitglied"
+  },
+  {
+   "fieldname": "merker",
+   "fieldtype": "JSON",
+   "label": "Merker"
+  },
+  {
+   "fieldname": "verlauf",
+   "fieldtype": "JSON",
+   "label": "Verlauf"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform EG EDA Prozess",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "search_fields": "prozesscode,zaehlpunktnummer,conversation_id",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Energie"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  }
+ ]
+}

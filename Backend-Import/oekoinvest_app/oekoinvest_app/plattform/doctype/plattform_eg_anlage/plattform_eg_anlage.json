@@ -1,0 +1,242 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 14:00:00.000000",
+ "description": "Erzeugungs-, Speicher- oder Verbrauchsanlage einer Gemeinschaft (Leistung für § 69 ElWG, Simulation).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "gemeinschaft",
+  "bezeichnung",
+  "art",
+  "engpassleistung_kw",
+  "kwp",
+  "ausrichtung",
+  "neigung",
+  "lat",
+  "lon",
+  "adresse",
+  "eigentuemer_mitglied",
+  "betreiber",
+  "betriebsfuehrung",
+  "nutzungsmodell",
+  "foerderung",
+  "inbetriebnahme",
+  "hkn_registriert",
+  "speicher_kwh",
+  "speicher_ladequelle",
+  "iot_quelle",
+  "haushalt",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "gemeinschaft",
+   "fieldtype": "Link",
+   "label": "Gemeinschaft",
+   "options": "Plattform EG Gemeinschaft",
+   "reqd": 1,
+   "search_index": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "bezeichnung",
+   "fieldtype": "Data",
+   "label": "Bezeichnung",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Art",
+   "options": "pv\nwind\nwasser\nbiomasse\nspeicher\nverbrauch",
+   "reqd": 1
+  },
+  {
+   "fieldname": "engpassleistung_kw",
+   "fieldtype": "Float",
+   "label": "Engpassleistung (kW)"
+  },
+  {
+   "fieldname": "kwp",
+   "fieldtype": "Float",
+   "label": "Modulleistung (kWp)"
+  },
+  {
+   "fieldname": "ausrichtung",
+   "fieldtype": "Int",
+   "label": "Ausrichtung (°)"
+  },
+  {
+   "fieldname": "neigung",
+   "fieldtype": "Int",
+   "label": "Neigung (°)"
+  },
+  {
+   "fieldname": "lat",
+   "fieldtype": "Float",
+   "label": "Breite",
+   "precision": "6"
+  },
+  {
+   "fieldname": "lon",
+   "fieldtype": "Float",
+   "label": "Länge",
+   "precision": "6"
+  },
+  {
+   "fieldname": "adresse",
+   "fieldtype": "Data",
+   "label": "Standort"
+  },
+  {
+   "fieldname": "eigentuemer_mitglied",
+   "fieldtype": "Link",
+   "label": "Eigentümer (Mitglied)",
+   "options": "Plattform EG Mitglied"
+  },
+  {
+   "fieldname": "betreiber",
+   "fieldtype": "Data",
+   "label": "Betreiber"
+  },
+  {
+   "fieldname": "betriebsfuehrung",
+   "fieldtype": "Data",
+   "label": "Betriebsführung"
+  },
+  {
+   "fieldname": "nutzungsmodell",
+   "fieldtype": "Select",
+   "label": "Nutzungsmodell",
+   "options": "ueberschuss\nvolleinspeisung\npacht\neigenanlage_eg",
+   "default": "ueberschuss"
+  },
+  {
+   "fieldname": "foerderung",
+   "fieldtype": "Select",
+   "label": "Förderung",
+   "options": "keine\ninvestzuschuss\nmarktpraemie\nbeides",
+   "default": "keine"
+  },
+  {
+   "fieldname": "inbetriebnahme",
+   "fieldtype": "Date",
+   "label": "Inbetriebnahme"
+  },
+  {
+   "fieldname": "hkn_registriert",
+   "fieldtype": "Check",
+   "label": "HKN registriert",
+   "default": "0"
+  },
+  {
+   "fieldname": "speicher_kwh",
+   "fieldtype": "Float",
+   "label": "Speicher (kWh)"
+  },
+  {
+   "fieldname": "speicher_ladequelle",
+   "fieldtype": "Data",
+   "label": "Ladequelle Speicher"
+  },
+  {
+   "fieldname": "iot_quelle",
+   "fieldtype": "Data",
+   "label": "Monitoring-Quelle"
+  },
+  {
+   "fieldname": "haushalt",
+   "fieldtype": "Check",
+   "label": "Erzeuger ist Haushalt (§ 69: 30 kW)",
+   "default": "0"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "geplant\naktiv\nstillgelegt",
+   "default": "aktiv",
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 03:20:23.732705",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform EG Anlage",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Energie",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "naming_rule": "By script",
+ "title_field": "bezeichnung",
+ "show_title_field_in_link": 1,
+ "search_fields": "bezeichnung"
+}

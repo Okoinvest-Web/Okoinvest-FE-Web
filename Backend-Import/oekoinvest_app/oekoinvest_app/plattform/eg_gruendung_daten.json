@@ -1,0 +1,3812 @@
+{
+ "stand": "2026-10-01",
+ "GR_PAKETE": {
+  "check": {
+   "label": "Machbarkeits-Check",
+   "text": "Lohnt sich eine Gemeinschaft, welches Modell und welche Rechtsform passen? Mit Netzgebiets- und Nahebereichs-Check, Simulation und Förder-Check.",
+   "leistungen": [
+    "Interessentenliste und Netzgebiets- bzw. Nahebereichs-Check",
+    "Simulation mit Lastprofilen (Eigendeckung, Ersparnis je Teilnehmer)",
+    "Empfehlung zu Modell, Nahebereich und Rechtsform",
+    "Förder-Check mit Quellen",
+    "Machbarkeitsbericht (PDF)"
+   ]
+  },
+  "gruendung": {
+   "label": "Gründung bis EDA-bereit",
+   "text": "Vom Konzept bis zum Vertrag mit dem Netzbetreiber: Statuten, Gründungsversammlung, Behördenwege, Marktpartner, EDA-Zugang – mit Fristenwecker.",
+   "leistungen": [
+    "alle Leistungen des Machbarkeits-Checks",
+    "Statuten und Verträge aus Mustern (zur Prüfung)",
+    "Gründungsversammlung mit Einladung, Protokoll und Wahl der Organe",
+    "Behördenwege mit Ausfüllhilfen (Vereinsbehörde bzw. Firmenbuch, Finanzamt)",
+    "Registrierung als Marktpartner (ebUtilities)",
+    "Vertrag mit dem Netzbetreiber und Gemeinschafts-ID",
+    "EDA-Zugang",
+    "Fristenüberwachung bis „EDA-bereit“"
+   ]
+  },
+  "komplett": {
+   "label": "Gründung komplett mit erstem Betriebsjahr",
+   "text": "Wie „Gründung“, zusätzlich Mitgliederaufnahme, Erstanmeldung der Zählpunkte, Lieferantenpflichten und das erste Betriebsjahr mit ÖkoInvest als Organisator.",
+   "leistungen": [
+    "alle Leistungen der Gründung",
+    "Online-Beitritt mit Verträgen und Signatur",
+    "Erstanmeldung der Zählpunkte und Begleitung der Zustimmungen im Netzbetreiber-Portal",
+    "Lieferantenpflichten nach § 69 ElWG, falls die Schwelle überschritten ist",
+    "erste Abrechnung und erstes Betriebsjahr als Organisator (§ 68 Abs. 2 ElWG)"
+   ]
+  },
+  "wechsel": {
+   "label": "Wechsel einer bestehenden Gemeinschaft",
+   "text": "Ohne Ab- und Neuanmeldung der Zählpunkte: Mandat, Übernahme der EDA-Rolle, Import aus dem bisherigen System, Kontrollabrechnung, Stichtag, ElWG-Anpassung.",
+   "leistungen": [
+    "Mandat, Organisator-Bestellung und Anzeige an den Netzbetreiber",
+    "Übernahme der EDA-Rolle ohne Neuanmeldung (Consent-IDs bleiben)",
+    "Import aus dem bisherigen System mit Plausibilitätsprüfung",
+    "Abgleich mit der Zählpunktliste des Netzbetreibers (EC_PODLIST)",
+    "Parallellauf und Probe- bzw. Kontrollabrechnung",
+    "Umstellungsplan mit Stichtag und Saldovortrag",
+    "Mitgliederinformation und ElWG-Anpassung der Verträge"
+   ]
+  }
+ },
+ "GR_STATUS": {
+  "anfrage": {
+   "label": "Anfrage",
+   "ton": "neutral",
+   "rang": 0
+  },
+  "angebot": {
+   "label": "Angebot liegt vor",
+   "ton": "info",
+   "rang": 1
+  },
+  "beauftragt": {
+   "label": "Beauftragt",
+   "ton": "info",
+   "rang": 2
+  },
+  "machbarkeit": {
+   "label": "Machbarkeit",
+   "ton": "warn",
+   "rang": 3
+  },
+  "rechtsform_statuten": {
+   "label": "Rechtsform und Statuten",
+   "ton": "warn",
+   "rang": 4
+  },
+  "konstituierung": {
+   "label": "Gründungsversammlung und Organe",
+   "ton": "warn",
+   "rang": 5
+  },
+  "behoerde": {
+   "label": "Vereinsbehörde bzw. Firmenbuch",
+   "ton": "warn",
+   "rang": 6
+  },
+  "finanzamt_bank": {
+   "label": "Finanzamt und Bank",
+   "ton": "warn",
+   "rang": 7
+  },
+  "marktpartner": {
+   "label": "Marktpartner (ebUtilities)",
+   "ton": "warn",
+   "rang": 8
+  },
+  "nb_vertrag": {
+   "label": "Vertrag mit dem Netzbetreiber",
+   "ton": "warn",
+   "rang": 9
+  },
+  "eda": {
+   "label": "EDA-Zugang und Verträge",
+   "ton": "warn",
+   "rang": 10
+  },
+  "mitgliederaufnahme": {
+   "label": "Mitgliederaufnahme und Erstanmeldung",
+   "ton": "warn",
+   "rang": 11
+  },
+  "wechsel_mandat": {
+   "label": "Wechsel: Mandat und EDA-Rolle",
+   "ton": "warn",
+   "rang": 12
+  },
+  "wechsel_daten": {
+   "label": "Wechsel: Datenübernahme und Abgleich",
+   "ton": "warn",
+   "rang": 13
+  },
+  "wechsel_parallel": {
+   "label": "Wechsel: Parallellauf und Kontrollabrechnung",
+   "ton": "warn",
+   "rang": 14
+  },
+  "wechsel_umstellung": {
+   "label": "Wechsel: Umstellung zum Stichtag",
+   "ton": "warn",
+   "rang": 15
+  },
+  "betriebsbereit": {
+   "label": "Betriebsbereit",
+   "ton": "ok",
+   "rang": 16
+  },
+  "uebergeben": {
+   "label": "Übergeben",
+   "ton": "ok",
+   "rang": 17
+  },
+  "abgebrochen": {
+   "label": "Abgebrochen",
+   "ton": "neutral",
+   "rang": 18
+  }
+ },
+ "GR_AKTIV": [
+  "beauftragt",
+  "machbarkeit",
+  "rechtsform_statuten",
+  "konstituierung",
+  "behoerde",
+  "finanzamt_bank",
+  "marktpartner",
+  "nb_vertrag",
+  "eda",
+  "mitgliederaufnahme",
+  "wechsel_mandat",
+  "wechsel_daten",
+  "wechsel_parallel",
+  "wechsel_umstellung",
+  "betriebsbereit"
+ ],
+ "SCHRITT_STATUS": {
+  "offen": {
+   "label": "Offen",
+   "ton": "neutral"
+  },
+  "in_arbeit": {
+   "label": "In Arbeit",
+   "ton": "info"
+  },
+  "wartet_extern": {
+   "label": "Wartet auf Behörde bzw. Netzbetreiber",
+   "ton": "warn"
+  },
+  "erledigt": {
+   "label": "Erledigt",
+   "ton": "ok"
+  },
+  "entfaellt": {
+   "label": "Entfällt",
+   "ton": "neutral"
+  }
+ },
+ "SCHRITT_FERTIG": [
+  "erledigt",
+  "entfaellt"
+ ],
+ "ZUSTAENDIG": {
+  "oekoinvest": "ÖkoInvest",
+  "auftraggeber": "Auftraggeber bzw. Vorstand",
+  "behoerde": "Behörde bzw. Netzbetreiber"
+ },
+ "PHASEN": {
+  "konzept": "Phase 1 – Konzept",
+  "gruendung": "Phase 2 – Gründung",
+  "realisierung": "Phase 3 – Realisierung (EDA)",
+  "betrieb": "Phase 4 – Betrieb"
+ },
+ "GR_SCHRITTE": [
+  {
+   "s": "interessenten",
+   "label": "Interessentenliste und Auftaktgespräch",
+   "abschnitt": "machbarkeit",
+   "phase": "konzept",
+   "zustaendig": "auftraggeber",
+   "pakete": [
+    "check",
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "check",
+    "gruendung",
+    "komplett"
+   ],
+   "frist": {
+    "art": "auftrag",
+    "tage": 21
+   },
+   "nachweis": "Liste mit Name, PLZ, Rolle (Verbraucher/Erzeuger) und Einwilligung",
+   "quelle": "Fachkonzept 2.1; DSGVO Art. 6 Abs. 1 lit. a"
+  },
+  {
+   "s": "nb_auskunft",
+   "label": "Netzbetreiber-Auskunft zum Nahebereich",
+   "abschnitt": "machbarkeit",
+   "phase": "konzept",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "check",
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "check",
+    "gruendung",
+    "komplett"
+   ],
+   "frist": {
+    "art": "start",
+    "tage": 14
+   },
+   "nachweis": "Auskunft Trafostation bzw. Umspannwerk (Nahebereichs-ID)",
+   "quelle": "ElWG § 70 Abs. 6 (Auskunft binnen 14 Tagen)",
+   "text": "Netzgebiet über PLZ-Liste und Ziffern 3–8 der Zählpunktnummer; Netzbetreiber muss binnen 14 Tagen Auskunft geben."
+  },
+  {
+   "s": "smart_meter",
+   "label": "Smart-Meter-Check der Zählpunkte",
+   "abschnitt": "machbarkeit",
+   "phase": "konzept",
+   "zustaendig": "auftraggeber",
+   "pakete": [
+    "check",
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "check",
+    "gruendung",
+    "komplett"
+   ],
+   "frist": {
+    "art": "auftrag",
+    "tage": 45
+   },
+   "nachweis": "Liste der Zählpunkte mit Viertelstundenwerten bzw. Einbauanträge",
+   "quelle": "HA II 5.1.1 (Einbau bis zu 2 Monate, zu bestätigen)"
+  },
+  {
+   "s": "simulation",
+   "label": "Simulation (Eigendeckung, Ersparnis je Teilnehmer)",
+   "abschnitt": "machbarkeit",
+   "phase": "konzept",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "check",
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "check",
+    "gruendung",
+    "komplett"
+   ],
+   "frist": {
+    "art": "auftrag",
+    "tage": 30
+   },
+   "hilfe": "simulation",
+   "quelle": "Fachkonzept 2.2, 4.7 (WP3)"
+  },
+  {
+   "s": "foerdercheck",
+   "label": "Förder-Check",
+   "abschnitt": "machbarkeit",
+   "phase": "konzept",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "check",
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "check"
+   ],
+   "frist": {
+    "art": "auftrag",
+    "tage": 30
+   },
+   "hilfe": "foerdercheck",
+   "quelle": "Fachkonzept 6.2 Punkt 7"
+  },
+  {
+   "s": "machbarkeitsbericht",
+   "label": "Machbarkeitsbericht mit Empfehlung",
+   "abschnitt": "machbarkeit",
+   "phase": "konzept",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "check",
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "check"
+   ],
+   "frist": {
+    "art": "auftrag",
+    "tage": 35
+   },
+   "nachweis": "Bericht (PDF)",
+   "quelle": "Fachkonzept 2.2 Punkt 5"
+  },
+  {
+   "s": "rechtsform",
+   "label": "Rechtsform entscheiden",
+   "abschnitt": "rechtsform_statuten",
+   "phase": "gruendung",
+   "zustaendig": "auftraggeber",
+   "pakete": [
+    "check",
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "rechtsperson": true
+   },
+   "frist": {
+    "art": "auftrag",
+    "tage": 42
+   },
+   "hilfe": "rechtsform",
+   "quelle": "VerG 2002; GenG; EAG § 79 Abs. 2"
+  },
+  {
+   "s": "statuten",
+   "label": "Statuten aus der Mustervorlage",
+   "abschnitt": "rechtsform_statuten",
+   "phase": "gruendung",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "rechtsformen": [
+     "verein",
+     "egen"
+    ]
+   },
+   "frist": {
+    "art": "auftrag",
+    "tage": 56
+   },
+   "vorlage": "statuten",
+   "nachweis": "beschlussreife Statuten (Version)",
+   "feld": "statutenVersion",
+   "quelle": "VerG § 3 Abs. 2; Musterstatuten der Koordinationsstelle"
+  },
+  {
+   "s": "revisionsverband",
+   "label": "Aufnahme in einen Revisionsverband",
+   "abschnitt": "rechtsform_statuten",
+   "phase": "gruendung",
+   "zustaendig": "auftraggeber",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "rechtsformen": [
+     "egen"
+    ]
+   },
+   "frist": {
+    "art": "auftrag",
+    "tage": 70
+   },
+   "nachweis": "Aufnahmebestätigung des Revisionsverbands",
+   "quelle": "GenRevG 1997 (Voraussetzung der Firmenbuch-Eintragung, zu bestätigen)"
+  },
+  {
+   "s": "gesellschaftsvertrag",
+   "label": "Gesellschaftsvertrag (GmbH bzw. OG/KG)",
+   "abschnitt": "rechtsform_statuten",
+   "phase": "gruendung",
+   "zustaendig": "auftraggeber",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "rechtsformen": [
+     "gmbh",
+     "og_kg"
+    ]
+   },
+   "frist": {
+    "art": "auftrag",
+    "tage": 70
+   },
+   "nachweis": "Gesellschaftsvertrag (GmbH: Notariatsakt)",
+   "quelle": "GmbHG § 4; UGB (zu bestätigen)"
+  },
+  {
+   "s": "gea_vertraege",
+   "label": "Vereinbarung der GEA-Teilnehmer",
+   "abschnitt": "rechtsform_statuten",
+   "phase": "gruendung",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "modelle": [
+     "gea"
+    ]
+   },
+   "frist": {
+    "art": "auftrag",
+    "tage": 56
+   },
+   "nachweis": "Vereinbarung über Aufteilung, Betrieb und Kosten (Muster GEA der Koordinationsstelle)",
+   "quelle": "ElWG §§ 68, 70 Abs. 6 Z 1; Koordinationsstelle GEA-Musterverträge"
+  },
+  {
+   "s": "p2p_vertrag",
+   "label": "P2P- bzw. Eigenversorgungsvertrag",
+   "abschnitt": "rechtsform_statuten",
+   "phase": "gruendung",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "modelle": [
+     "p2p",
+     "eigenversorgung"
+    ]
+   },
+   "frist": {
+    "art": "auftrag",
+    "tage": 30
+   },
+   "nachweis": "Vertrag nach dem P2P-Vertragsmuster der Koordinationsstelle",
+   "quelle": "ElWG § 65 Abs. 2, § 68 Abs. 1"
+  },
+  {
+   "s": "gruendungsversammlung",
+   "label": "Gründungsversammlung (Statuten, Wahl der Organe)",
+   "abschnitt": "konstituierung",
+   "phase": "gruendung",
+   "zustaendig": "auftraggeber",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "rechtsformen": [
+     "verein",
+     "egen",
+     "gmbh",
+     "og_kg"
+    ]
+   },
+   "frist": {
+    "art": "auftrag",
+    "tage": 70
+   },
+   "vorlage": "gruendungsprotokoll",
+   "nachweis": "Protokoll mit Beschluss der Statuten und Wahl der Organe",
+   "quelle": "VerG §§ 2, 11; GenG § 5"
+  },
+  {
+   "s": "organe",
+   "label": "Organe erfasst und vollständig",
+   "abschnitt": "konstituierung",
+   "phase": "gruendung",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "rechtsperson": true
+   },
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "gruendungsversammlung"
+    ],
+    "tage": 7
+   },
+   "hilfe": "organe",
+   "quelle": "VerG §§ 5, 21; GenG (zu bestätigen)"
+  },
+  {
+   "s": "vereinsanzeige",
+   "label": "Errichtungsanzeige bei der Vereinsbehörde",
+   "abschnitt": "behoerde",
+   "phase": "gruendung",
+   "zustaendig": "auftraggeber",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "rechtsformen": [
+     "verein"
+    ]
+   },
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "gruendungsversammlung"
+    ],
+    "tage": 7
+   },
+   "hilfe": "vereinsanzeige",
+   "nachweis": "Eingangsbestätigung der Vereinsbehörde",
+   "quelle": "VerG § 11"
+  },
+  {
+   "s": "zvr",
+   "label": "Verein entstanden – ZVR-Zahl erhalten",
+   "abschnitt": "behoerde",
+   "phase": "gruendung",
+   "zustaendig": "behoerde",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "rechtsformen": [
+     "verein"
+    ]
+   },
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "vereinsanzeige"
+    ],
+    "tage": 28
+   },
+   "feld": "zvrZahl",
+   "statusZiel": "rechtsperson",
+   "nachweis": "Auszug aus dem Vereinsregister",
+   "quelle": "VerG § 13 (4 Wochen, verlängerbar auf 6 Wochen)"
+  },
+  {
+   "s": "firmenbuch",
+   "label": "Eintragung im Firmenbuch – FN erhalten",
+   "abschnitt": "behoerde",
+   "phase": "gruendung",
+   "zustaendig": "auftraggeber",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "rechtsformen": [
+     "egen",
+     "gmbh",
+     "og_kg"
+    ]
+   },
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "gruendungsversammlung"
+    ],
+    "tage": 42
+   },
+   "feld": "firmenbuchnummer",
+   "statusZiel": "rechtsperson",
+   "nachweis": "Firmenbuchauszug",
+   "quelle": "GenG; GmbHG; UGB (Planwert)"
+  },
+  {
+   "s": "bank",
+   "label": "Bankkonto auf die Rechtsperson",
+   "abschnitt": "finanzamt_bank",
+   "phase": "gruendung",
+   "zustaendig": "auftraggeber",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "rechtsperson": true
+   },
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "zvr",
+     "firmenbuch"
+    ],
+    "tage": 14
+   },
+   "feld": "iban",
+   "quelle": "Fachkonzept 2.3"
+  },
+  {
+   "s": "creditor_id",
+   "label": "SEPA-Gläubiger-ID (für Lastschriften)",
+   "abschnitt": "finanzamt_bank",
+   "phase": "gruendung",
+   "zustaendig": "auftraggeber",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [],
+   "nur": {
+    "rechtsperson": true
+   },
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "bank"
+    ],
+    "tage": 21
+   },
+   "feld": "creditorId",
+   "quelle": "Fachkonzept 2.3 (Antrag bei der OeNB)"
+  },
+  {
+   "s": "finanzamt",
+   "label": "Meldung beim Finanzamt (Verf 15a bzw. Verf 15 und Verf 26)",
+   "abschnitt": "finanzamt_bank",
+   "phase": "gruendung",
+   "zustaendig": "auftraggeber",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "rechtsperson": true
+   },
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "zvr",
+     "firmenbuch"
+    ],
+    "tage": 30
+   },
+   "hilfe": "finanzamt",
+   "feld": "steuernummer",
+   "nachweis": "Steuernummer bzw. Bestätigung des Finanzamts",
+   "quelle": "EEG-Ratgeber Steuern & Abgaben (binnen 1 Monat nach Beginn)"
+  },
+  {
+   "s": "ust_option",
+   "label": "Umsatzsteuer: Option U 12 bzw. UID (U 15)",
+   "abschnitt": "finanzamt_bank",
+   "phase": "gruendung",
+   "zustaendig": "auftraggeber",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [],
+   "nur": {
+    "rechtsperson": true
+   },
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "finanzamt"
+    ],
+    "tage": 14
+   },
+   "hilfe": "ust",
+   "feld": "uid",
+   "quelle": "UStG § 6 Abs. 3 (Verzicht, 5 Jahre bindend); EEG-Ratgeber Steuern (nur nach Steuerberatung)"
+  },
+  {
+   "s": "ebutilities",
+   "label": "Registrierung als Marktpartner (ebUtilities)",
+   "abschnitt": "marktpartner",
+   "phase": "realisierung",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "modelle": [
+     "eeg",
+     "beg",
+     "gea"
+    ]
+   },
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "zvr",
+     "firmenbuch",
+     "gea_vertraege"
+    ],
+    "tage": 14
+   },
+   "hilfe": "ebutilities",
+   "feld": "marktpartnerId",
+   "statusZiel": "marktpartner",
+   "nachweis": "Bestätigung mit Marktpartner-ID",
+   "quelle": "HA II 11; Koordinationsstelle Schritt 4"
+  },
+  {
+   "s": "organisator_vollmacht",
+   "label": "Organisator bestellen (Vollmacht, Dienstleistungs- und AV-Vertrag)",
+   "abschnitt": "marktpartner",
+   "phase": "realisierung",
+   "zustaendig": "auftraggeber",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "wenn": "organisator"
+   },
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "gruendungsversammlung",
+     "p2p_vertrag",
+     "gea_vertraege"
+    ],
+    "tage": 14
+   },
+   "vorlage": "vollmacht_organisator",
+   "nachweis": "unterzeichnete Vollmacht und AVV (Art. 28 DSGVO)",
+   "quelle": "ElWG § 68 Abs. 2; DSGVO Art. 28"
+  },
+  {
+   "s": "betreibervertrag",
+   "label": "Vertrag mit dem Netzbetreiber – Gemeinschafts-ID",
+   "abschnitt": "nb_vertrag",
+   "phase": "realisierung",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "ebutilities",
+     "p2p_vertrag"
+    ],
+    "tage": 30
+   },
+   "hilfe": "betreibervertrag",
+   "feld": "gemeinschaftsId",
+   "statusZiel": "vertrag_nb",
+   "nachweis": "unterzeichneter Betreibervertrag",
+   "quelle": "HA II 7.1; Koordinationsstelle Schritt 5 (BEG: Gemeinschafts-ID über ebUtilities)"
+  },
+  {
+   "s": "organisator_anzeige",
+   "label": "Anzeige des Organisators an den Netzbetreiber",
+   "abschnitt": "nb_vertrag",
+   "phase": "realisierung",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "wenn": "organisator"
+   },
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "betreibervertrag"
+    ],
+    "tage": 7
+   },
+   "vorlage": "organisator_anzeige",
+   "nachweis": "Eingangsbestätigung des Netzbetreibers",
+   "quelle": "ElWG § 68 Abs. 2 letzter Satz, § 70 Abs. 2"
+  },
+  {
+   "s": "eda_zugang",
+   "label": "Zugang zur EDA-Plattform",
+   "abschnitt": "eda",
+   "phase": "realisierung",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "ebutilities",
+     "betreibervertrag"
+    ],
+    "tage": 21
+   },
+   "hilfe": "eda_zugang",
+   "feld": "edaAnbindung",
+   "quelle": "HA II 6, 11; Koordinationsstelle Schritt 6"
+  },
+  {
+   "s": "vertraege",
+   "label": "Verträge, Preisblatt und Tarifbeschluss",
+   "abschnitt": "eda",
+   "phase": "realisierung",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "statuten",
+     "gea_vertraege",
+     "p2p_vertrag"
+    ],
+    "tage": 30
+   },
+   "vorlage": "teilnahmevertrag",
+   "nachweis": "Vertragsmuster und beschlossener Tarif",
+   "quelle": "Fachkonzept 2.4 Punkt 2"
+  },
+  {
+   "s": "lieferantenpflichten",
+   "label": "AGB und Informationsblatt (§ 69 ElWG)",
+   "abschnitt": "eda",
+   "phase": "realisierung",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "nur": {
+    "wenn": "lieferantenpflicht"
+   },
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "vertraege"
+    ],
+    "tage": 7
+   },
+   "vorlage": "agb",
+   "quelle": "ElWG § 69 Abs. 1 Z 1–2"
+  },
+  {
+   "s": "datenschutz",
+   "label": "Datenschutz: Verzeichnis, Information, AVV",
+   "abschnitt": "eda",
+   "phase": "realisierung",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "vertraege"
+    ],
+    "tage": 7
+   },
+   "vorlage": "datenschutz",
+   "quelle": "DSGVO Art. 13, 28, 30"
+  },
+  {
+   "s": "eda_bereit",
+   "label": "Gemeinschaft EDA-bereit – Start der Anmeldungen",
+   "abschnitt": "eda",
+   "phase": "realisierung",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "gruendung",
+    "komplett"
+   ],
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "betreibervertrag"
+    ],
+    "tage": 14
+   },
+   "statusZiel": "eda_bereit",
+   "ereignis": "eg.gemeinschaft.eda_bereit",
+   "hilfe": "eda_bereit",
+   "quelle": "Fachkonzept 8 (WP5 → WP2)"
+  },
+  {
+   "s": "mitgliederaufnahme",
+   "label": "Mitgliederaufnahme (Online-Beitritt, Verträge)",
+   "abschnitt": "mitgliederaufnahme",
+   "phase": "betrieb",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "komplett"
+   ],
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "eda_bereit"
+    ],
+    "tage": 30
+   },
+   "quelle": "Fachkonzept 2.4"
+  },
+  {
+   "s": "erstanmeldung",
+   "label": "Erstanmeldung der Zählpunkte und Zustimmungen",
+   "abschnitt": "mitgliederaufnahme",
+   "phase": "betrieb",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "komplett"
+   ],
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "eda_bereit"
+    ],
+    "tage": 30
+   },
+   "quelle": "Fachkonzept 2.4 Punkte 3–5 (EC_REQ_ONL, Zustimmung binnen 30 Tagen)"
+  },
+  {
+   "s": "elabg_meldung",
+   "label": "Meldung zur Elektrizitätsabgabe-Befreiung",
+   "abschnitt": "mitgliederaufnahme",
+   "phase": "betrieb",
+   "zustaendig": "auftraggeber",
+   "pakete": [
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "komplett"
+   ],
+   "nur": {
+    "wenn": "elabg"
+   },
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "erstanmeldung"
+    ],
+    "tage": 28
+   },
+   "hilfe": "elabg",
+   "quelle": "EEG-Ratgeber Steuern (binnen 4 Wochen nach Inbetriebnahme); Eigenstrombefreiungsverordnung"
+  },
+  {
+   "s": "erste_abrechnung",
+   "label": "Erste Abrechnung",
+   "abschnitt": "betriebsbereit",
+   "phase": "betrieb",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "komplett"
+   ],
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "erstanmeldung"
+    ],
+    "tage": 50
+   },
+   "quelle": "Koordinationsstelle Schritt 7 (frühestens ab dem 20. des Folgemonats)"
+  },
+  {
+   "s": "uebergabe",
+   "label": "Übergabe und Einweisung der Organe",
+   "abschnitt": "betriebsbereit",
+   "phase": "betrieb",
+   "zustaendig": "oekoinvest",
+   "pakete": [
+    "check",
+    "gruendung",
+    "komplett"
+   ],
+   "pflichtFuer": [
+    "check",
+    "gruendung",
+    "komplett"
+   ],
+   "frist": {
+    "art": "nach",
+    "nach": [
+     "erste_abrechnung",
+     "eda_bereit",
+     "machbarkeitsbericht"
+    ],
+    "tage": 14
+   },
+   "quelle": "Fachkonzept 3.15"
+  }
+ ],
+ "WECHSEL_SCHRITTE": [
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "mandat_beschluss",
+   "label": "Vorstandsbeschluss über den Wechsel",
+   "abschnitt": "wechsel_mandat",
+   "zustaendig": "auftraggeber",
+   "frist": {
+    "art": "stichtag",
+    "tage": -56
+   },
+   "nachweis": "Beschluss (Beschlussregister)",
+   "quelle": "Fachkonzept 2.6 Punkt 1"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "dl_vertrag_avv",
+   "label": "Dienstleistungs- und Auftragsverarbeitungsvertrag",
+   "abschnitt": "wechsel_mandat",
+   "zustaendig": "auftraggeber",
+   "frist": {
+    "art": "stichtag",
+    "tage": -49
+   },
+   "vorlage": "avv",
+   "nachweis": "unterzeichnete Verträge",
+   "quelle": "DSGVO Art. 28; Fachkonzept 2.6 Punkt 1"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "organisator_vollmacht",
+   "label": "Organisator bestellen (Vollmacht)",
+   "abschnitt": "wechsel_mandat",
+   "zustaendig": "auftraggeber",
+   "frist": {
+    "art": "stichtag",
+    "tage": -49
+   },
+   "vorlage": "vollmacht_organisator",
+   "quelle": "ElWG § 68 Abs. 2"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "eda_bevollmaechtigung",
+   "label": "Übernahme der EDA-Rolle (Portal-Benutzer bzw. Plattformvertrag)",
+   "abschnitt": "wechsel_mandat",
+   "zustaendig": "oekoinvest",
+   "frist": {
+    "art": "stichtag",
+    "tage": -35
+   },
+   "feld": "edaAnbindung",
+   "text": "Die Marktpartner-ID bleibt bei der Gemeinschaft. ÖkoInvest erhält einen Benutzer im EDA-Anwenderportal der Gemeinschaft oder eine Bevollmächtigung im EDA-Plattformvertrag. Keine Ab- und Neuanmeldung der Zählpunkte.",
+   "quelle": "Fachkonzept 2.6 Punkt 2; HA II 6, 11"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "organisator_anzeige",
+   "label": "Anzeige des Organisators an den Netzbetreiber",
+   "abschnitt": "wechsel_mandat",
+   "zustaendig": "oekoinvest",
+   "frist": {
+    "art": "stichtag",
+    "tage": -35
+   },
+   "vorlage": "organisator_anzeige",
+   "quelle": "ElWG § 68 Abs. 2, § 70 Abs. 2"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "altdienstleister",
+   "label": "Bisherigen Dienstleister kündigen bzw. austragen",
+   "abschnitt": "wechsel_mandat",
+   "zustaendig": "auftraggeber",
+   "frist": {
+    "art": "stichtag",
+    "tage": -42
+   },
+   "nachweis": "Kündigung bzw. Widerruf der Bevollmächtigung",
+   "quelle": "Fachkonzept 2.6 Punkt 2"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "datenexport",
+   "label": "Datenexport aus dem bisherigen System",
+   "abschnitt": "wechsel_daten",
+   "zustaendig": "auftraggeber",
+   "frist": {
+    "art": "stichtag",
+    "tage": -35
+   },
+   "nachweis": "CSV- bzw. Excel-Export (Mitglieder, Zählpunkte, Tarife, offene Posten)",
+   "quelle": "Fachkonzept 2.6 Punkt 3"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "import",
+   "label": "Import mit Spaltenzuordnung und Plausibilitätsprüfung",
+   "abschnitt": "wechsel_daten",
+   "zustaendig": "oekoinvest",
+   "frist": {
+    "art": "stichtag",
+    "tage": -28
+   },
+   "hilfe": "import",
+   "quelle": "Fachkonzept 2.6 Punkt 3"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "podlist",
+   "label": "Abgleich mit dem Netzbetreiber (EC_PODLIST)",
+   "abschnitt": "wechsel_daten",
+   "zustaendig": "oekoinvest",
+   "frist": {
+    "art": "stichtag",
+    "tage": -21
+   },
+   "text": "Ist (Zählpunktliste des Netzbetreibers) gegen Soll (Import): Consent-IDs, Teilnahmefaktor, Verteilmodell. Altzuordnungen vor 03.10.2022 haben die Consent-ID „Migration“.",
+   "quelle": "Fachkonzept 2.6 Punkt 3; HA II 5.5, 7.2"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "elwg_anpassung",
+   "label": "ElWG-Anpassung der Statuten und Verträge",
+   "abschnitt": "wechsel_daten",
+   "zustaendig": "oekoinvest",
+   "frist": {
+    "art": "stichtag",
+    "tage": 0
+   },
+   "vorlage": "elwg_nachtrag",
+   "text": "Pflichtschritt bis zum Stichtag: Statuten und Verträge auf §§ 65–72 ElWG umstellen (Mustervorlagen), § 69-Schwelle prüfen, Organisator-Anzeige, Nahebereichs-ID im Betreibervertrag.",
+   "quelle": "Fachkonzept 2.6 Punkt 6; ElWG §§ 188, 189 Abs. 17"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "lieferantenpflichten",
+   "label": "AGB und Informationsblatt (§ 69 ElWG)",
+   "abschnitt": "wechsel_daten",
+   "zustaendig": "oekoinvest",
+   "nur": {
+    "wenn": "lieferantenpflicht"
+   },
+   "frist": {
+    "art": "stichtag",
+    "tage": 0
+   },
+   "vorlage": "agb",
+   "quelle": "ElWG § 69"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "mitgliederinfo",
+   "label": "Mitglieder informieren",
+   "abschnitt": "wechsel_parallel",
+   "zustaendig": "oekoinvest",
+   "frist": {
+    "art": "stichtag",
+    "tage": -28
+   },
+   "vorlage": "mitgliederinfo_wechsel",
+   "quelle": "Fachkonzept 2.6; Marktanalyse 5 Punkt 11"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "parallellauf",
+   "label": "Parallellauf über einen Monat (Abweichungsbericht)",
+   "abschnitt": "wechsel_parallel",
+   "zustaendig": "oekoinvest",
+   "frist": {
+    "art": "stichtag",
+    "tage": -3
+   },
+   "text": "Eigene Zuteilung gegen die Netzbetreiber-Werte vergleichen (WP3, Abweichungsbericht).",
+   "quelle": "Fachkonzept 2.6 Punkt 5"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "probeabrechnung",
+   "label": "Probe- bzw. Kontrollabrechnung",
+   "abschnitt": "wechsel_parallel",
+   "zustaendig": "oekoinvest",
+   "frist": {
+    "art": "stichtag",
+    "tage": -7
+   },
+   "hilfe": "probeabrechnung",
+   "text": "Abrechnung des letzten Monats beim Altdienstleister nachrechnen (WP4) und zeilengenau vergleichen.",
+   "quelle": "Marktanalyse 5 Punkt 11"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "stichtag",
+   "label": "Umstellung zum Stichtag",
+   "abschnitt": "wechsel_umstellung",
+   "zustaendig": "oekoinvest",
+   "frist": {
+    "art": "stichtag",
+    "tage": 0
+   },
+   "text": "Abrechnungen bis Monat M beim Altdienstleister, ab M+1 bei ÖkoInvest.",
+   "quelle": "Fachkonzept 2.6 Punkt 4"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "saldovortrag",
+   "label": "Saldovortrag offener Posten",
+   "abschnitt": "wechsel_umstellung",
+   "zustaendig": "oekoinvest",
+   "frist": {
+    "art": "stichtag",
+    "tage": 14
+   },
+   "quelle": "Fachkonzept 2.6 Punkt 4"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "nummernkreis",
+   "label": "Nummernkreis der Belege festlegen",
+   "abschnitt": "wechsel_umstellung",
+   "zustaendig": "oekoinvest",
+   "frist": {
+    "art": "stichtag",
+    "tage": -7
+   },
+   "text": "Neu oder fortgeführt – fortlaufend je Aussteller (UStG § 11, zu bestätigen).",
+   "quelle": "Fachkonzept 2.6 Punkt 4"
+  },
+  {
+   "phase": "betrieb",
+   "pakete": [
+    "wechsel"
+   ],
+   "pflichtFuer": [
+    "wechsel"
+   ],
+   "s": "uebergabe",
+   "label": "Abschluss des Wechsels",
+   "abschnitt": "betriebsbereit",
+   "zustaendig": "oekoinvest",
+   "frist": {
+    "art": "stichtag",
+    "tage": 30
+   },
+   "quelle": "Fachkonzept 2.6"
+  }
+ ],
+ "BUNDESLAENDER_GR": {
+  "W": "Wien",
+  "N": "Niederösterreich",
+  "O": "Oberösterreich",
+  "S": "Salzburg",
+  "T": "Tirol",
+  "V": "Vorarlberg",
+  "K": "Kärnten",
+  "St": "Steiermark",
+  "B": "Burgenland"
+ },
+ "ALTDIENSTLEISTER": {
+  "energiedigital": "energiedigital",
+  "eegfaktura": "EEG Faktura",
+  "egon": "EGON",
+  "eda_portal": "EDA-Anwenderportal / Excel-Tool",
+  "sonstige": "anderer Anbieter"
+ },
+ "ZONELEVEL_STANDARD": {
+  "eeg": 3,
+  "beg": 6,
+  "gea": 1,
+  "p2p": 3,
+  "eigenversorgung": 3
+ },
+ "SCHRITT_AKTIONEN": {
+  "starten": {
+   "von": [
+    "offen",
+    "wartet_extern"
+   ],
+   "nach": "in_arbeit",
+   "label": "Beginnen"
+  },
+  "warten": {
+   "von": [
+    "offen",
+    "in_arbeit"
+   ],
+   "nach": "wartet_extern",
+   "label": "Wartet auf Behörde/Netzbetreiber"
+  },
+  "erledigen": {
+   "von": [
+    "offen",
+    "in_arbeit",
+    "wartet_extern"
+   ],
+   "nach": "erledigt",
+   "label": "Erledigt"
+  },
+  "entfaellt": {
+   "von": [
+    "offen",
+    "in_arbeit",
+    "wartet_extern"
+   ],
+   "nach": "entfaellt",
+   "label": "Entfällt"
+  },
+  "wiedereroeffnen": {
+   "von": [
+    "erledigt",
+    "entfaellt"
+   ],
+   "nach": "in_arbeit",
+   "label": "Wieder öffnen"
+  },
+  "frist": {
+   "von": [
+    "offen",
+    "in_arbeit",
+    "wartet_extern"
+   ],
+   "nach": null,
+   "label": "Frist setzen"
+  },
+  "notiz": {
+   "von": [
+    "offen",
+    "in_arbeit",
+    "wartet_extern",
+    "erledigt",
+    "entfaellt"
+   ],
+   "nach": null,
+   "label": "Notiz"
+  }
+ },
+ "AUFTRAG_UEBERGAENGE": {
+  "angebot": {
+   "von": [
+    "anfrage",
+    "angebot"
+   ],
+   "nach": "angebot"
+  },
+  "annehmen": {
+   "von": [
+    "angebot"
+   ],
+   "nach": "beauftragt"
+  },
+  "beauftragt_manuell": {
+   "von": [
+    "anfrage",
+    "angebot"
+   ],
+   "nach": "beauftragt"
+  },
+  "ablehnen": {
+   "von": [
+    "angebot"
+   ],
+   "nach": "abgebrochen"
+  },
+  "abbrechen": {
+   "von": [
+    "anfrage",
+    "angebot",
+    "beauftragt",
+    "machbarkeit",
+    "rechtsform_statuten",
+    "konstituierung",
+    "behoerde",
+    "finanzamt_bank",
+    "marktpartner",
+    "nb_vertrag",
+    "eda",
+    "mitgliederaufnahme",
+    "wechsel_mandat",
+    "wechsel_daten",
+    "wechsel_parallel",
+    "wechsel_umstellung",
+    "betriebsbereit"
+   ],
+   "nach": "abgebrochen"
+  },
+  "uebergeben": {
+   "von": [
+    "betriebsbereit"
+   ],
+   "nach": "uebergeben"
+  }
+ },
+ "RECHTSFORM_PROFIL": {
+  "verein": {
+   "pro": [
+    "häufigste Form für EEG und BEG",
+    "gebührenfreie Errichtungsanzeige, Entstehung nach 4 (höchstens 6) Wochen",
+    "Einnahmen-Ausgaben-Rechnung bis 1 Mio. € Einnahmen bzw. Ausgaben",
+    "kein Mindestkapital"
+   ],
+   "contra": [
+    "Investitionen schwer finanzierbar (keine Geschäftsanteile)",
+    "Organe arbeiten meist ehrenamtlich und haften bei Pflichtverletzung"
+   ],
+   "quelle": "VerG 2002 §§ 13, 21, 22; Fachkonzept 2.3"
+  },
+  "egen": {
+   "pro": [
+    "Kapital über Geschäftsanteile – gut für eigene Anlagen und Speicher",
+    "Haftung über Geschäftsanteile begrenzt",
+    "Revision durch den Revisionsverband schafft Vertrauen"
+   ],
+   "contra": [
+    "Firmenbuch, Revisionsverband und Jahresabschluss verursachen laufende Kosten",
+    "höherer Formalaufwand bei der Gründung"
+   ],
+   "quelle": "GenG; GenRevG 1997; Fachkonzept 2.3"
+  },
+  "gmbh": {
+   "pro": [
+    "klare Haftungsbegrenzung",
+    "passt für wenige professionelle Beteiligte (z. B. Gemeinde mit Betrieben)"
+   ],
+   "contra": [
+    "Notariatsakt, Stammkapital und Bilanzierung",
+    "Gewinnorientierung der Rechtsform passt schlecht zum Hauptzweck „kein finanzieller Gewinn“",
+    "Mitgliederwechsel aufwendig"
+   ],
+   "quelle": "GmbHG (zu bestätigen); EAG § 79 Abs. 2"
+  },
+  "og_kg": {
+   "pro": [
+    "einfache Gründung für wenige Beteiligte"
+   ],
+   "contra": [
+    "unbeschränkte Haftung zumindest eines Gesellschafters",
+    "für offene Mitgliederkreise ungeeignet"
+   ],
+   "quelle": "UGB"
+  }
+ },
+ "UST_SATZ_PCT": 20,
+ "IMPORT_FELDER": {
+  "mitgliedsnummer": {
+   "label": "Mitgliedsnummer",
+   "syn": [
+    "mitgliedsnummer",
+    "mitgliedsnr",
+    "mitgliednr",
+    "mitgliednummer",
+    "teilnehmernummer",
+    "teilnehmernr",
+    "participantnumber",
+    "memberid",
+    "kundennummer",
+    "nr"
+   ]
+  },
+  "art": {
+   "label": "Mitgliedsart",
+   "syn": [
+    "mitgliedsart",
+    "art",
+    "typ",
+    "kundentyp",
+    "teilnehmertyp",
+    "participanttype",
+    "rolle"
+   ]
+  },
+  "vorname": {
+   "label": "Vorname",
+   "syn": [
+    "vorname",
+    "firstname",
+    "vname"
+   ]
+  },
+  "nachname": {
+   "label": "Nachname",
+   "syn": [
+    "nachname",
+    "familienname",
+    "zuname",
+    "lastname",
+    "name"
+   ]
+  },
+  "firma": {
+   "label": "Firma",
+   "syn": [
+    "firma",
+    "firmenname",
+    "unternehmen",
+    "organisation",
+    "company",
+    "companyname"
+   ]
+  },
+  "strasse": {
+   "label": "Straße",
+   "syn": [
+    "strasse",
+    "strassehausnummer",
+    "adresse",
+    "anschrift",
+    "street"
+   ]
+  },
+  "plz": {
+   "label": "PLZ",
+   "syn": [
+    "plz",
+    "postleitzahl",
+    "zip",
+    "zipcode"
+   ]
+  },
+  "ort": {
+   "label": "Ort",
+   "syn": [
+    "ort",
+    "wohnort",
+    "stadt",
+    "city"
+   ]
+  },
+  "email": {
+   "label": "E-Mail",
+   "syn": [
+    "email",
+    "emailadresse",
+    "mail"
+   ]
+  },
+  "telefon": {
+   "label": "Telefon",
+   "syn": [
+    "telefon",
+    "telefonnummer",
+    "tel",
+    "mobil",
+    "phone"
+   ]
+  },
+  "iban": {
+   "label": "IBAN",
+   "syn": [
+    "iban",
+    "bankverbindung",
+    "kontonummer"
+   ]
+  },
+  "sepa_referenz": {
+   "label": "SEPA-Mandatsreferenz",
+   "syn": [
+    "mandatsreferenz",
+    "mandatreferenz",
+    "sepamandat",
+    "separeferenz",
+    "mandat",
+    "mandatereference"
+   ]
+  },
+  "sepa_datum": {
+   "label": "SEPA-Mandatsdatum",
+   "syn": [
+    "mandatsdatum",
+    "mandatdatum",
+    "sepadatum",
+    "mandatedate"
+   ]
+  },
+  "steuerstatus": {
+   "label": "Steuerstatus Erzeuger",
+   "syn": [
+    "steuerstatus",
+    "ustatus",
+    "umsatzsteuerstatus",
+    "umsatzsteuer",
+    "taxstatus",
+    "steuer"
+   ]
+  },
+  "uid": {
+   "label": "UID",
+   "syn": [
+    "uid",
+    "uidnummer",
+    "ustid",
+    "vatid"
+   ]
+  },
+  "zaehlpunkt": {
+   "label": "Zählpunkt",
+   "syn": [
+    "zaehlpunkt",
+    "zaehlpunktnummer",
+    "zaehlpunktbezeichnung",
+    "zpnummer",
+    "zp",
+    "meteringpoint",
+    "meteringpointid",
+    "messpunkt"
+   ]
+  },
+  "richtung": {
+   "label": "Energierichtung",
+   "syn": [
+    "energierichtung",
+    "richtung",
+    "direction",
+    "zptyp",
+    "zaehlpunkttyp",
+    "bezugeinspeisung"
+   ]
+  },
+  "teilnahmefaktor": {
+   "label": "Teilnahmefaktor (%)",
+   "syn": [
+    "teilnahmefaktor",
+    "tf",
+    "tnf",
+    "participationfactor",
+    "anteilprozent",
+    "anteil"
+   ]
+  },
+  "aufteilungsschluessel": {
+   "label": "Aufteilungsschlüssel (%)",
+   "syn": [
+    "aufteilungsschluessel",
+    "verteilschluessel",
+    "statischeraufteilungsschluessel",
+    "allocation"
+   ]
+  },
+  "consent_id": {
+   "label": "Consent-ID",
+   "syn": [
+    "consentid",
+    "consent",
+    "zustimmungsid"
+   ]
+  },
+  "aktiv_seit": {
+   "label": "Aktiv seit",
+   "syn": [
+    "aktivseit",
+    "aktiviertam",
+    "gueltigab",
+    "teilnahmeab",
+    "validfrom",
+    "beginn"
+   ]
+  },
+  "kwp": {
+   "label": "Anlagenleistung (kWp)",
+   "syn": [
+    "kwp",
+    "anlagenleistung",
+    "pvleistung",
+    "engpassleistung",
+    "leistungkwp",
+    "leistung"
+   ]
+  },
+  "tarif_bezug_ct": {
+   "label": "Bezugspreis (ct/kWh netto)",
+   "syn": [
+    "bezugspreis",
+    "bezugspreisct",
+    "preisbezug",
+    "arbeitspreisbezug",
+    "verbrauchspreis",
+    "tarifbezug"
+   ]
+  },
+  "tarif_einspeisung_ct": {
+   "label": "Einspeisepreis (ct/kWh netto)",
+   "syn": [
+    "einspeisepreis",
+    "einspeisepreisct",
+    "preiseinspeisung",
+    "einspeisetarif",
+    "erzeugerpreis",
+    "tarifeinspeisung"
+   ]
+  },
+  "offener_saldo_eur": {
+   "label": "Offener Saldo (€)",
+   "syn": [
+    "offenersaldo",
+    "saldo",
+    "offenerbetrag",
+    "offeneposten",
+    "forderung"
+   ]
+  },
+  "beitritt_am": {
+   "label": "Beitritt am",
+   "syn": [
+    "beitrittam",
+    "beitrittsdatum",
+    "mitgliedseit",
+    "eintrittsdatum"
+   ]
+  },
+  "status": {
+   "label": "Status",
+   "syn": [
+    "mitgliedsstatus",
+    "status",
+    "zustand"
+   ]
+  }
+ },
+ "ANBIETER_PROFILE": {
+  "energiedigital": {
+   "label": "energiedigital",
+   "erkennung": [
+    "zaehlpunktbezeichnung",
+    "tarifgruppe",
+    "teilnehmerstatus"
+   ],
+   "export": "Export der Mitglieder- bzw. Zählpunktliste im Verwaltungsbereich als CSV bzw. Excel (Bezeichnung zu bestätigen).",
+   "quelle": "energiedigital.at (Datenimport aus Vorsystemen beworben)"
+  },
+  "eegfaktura": {
+   "label": "EEG Faktura",
+   "erkennung": [
+    "participantnumber",
+    "meteringpoint",
+    "participationfactor",
+    "tariffname"
+   ],
+   "export": "Teilnehmer- und Zählpunktliste exportieren; Beim Wechsel aus dem EDA-Portal erfolgt laut FAQ eine Neuerfassung per Excel.",
+   "quelle": "docs.eegfaktura.at (FAQ)"
+  },
+  "egon": {
+   "label": "EGON",
+   "erkennung": [
+    "mitgliedsnummer",
+    "zaehlpunktnummer",
+    "energierichtung",
+    "tarifname"
+   ],
+   "export": "Mitgliederliste aus der Verwaltung exportieren (Format zu bestätigen).",
+   "quelle": "egon.energy"
+  },
+  "eda_portal": {
+   "label": "EDA-Anwenderportal / Zählpunktliste",
+   "erkennung": [
+    "consentid",
+    "energierichtung",
+    "teilnahmefaktor",
+    "gueltigab"
+   ],
+   "export": "Zählpunktliste der Gemeinschaft (ECMPList) aus dem EDA-Anwenderportal; Personendaten aus der eigenen Mitgliederliste ergänzen.",
+   "quelle": "HA II 5.5; ebutilities.at/schemas/160"
+  },
+  "koordinationsstelle": {
+   "label": "Excel-Tool der Koordinationsstelle",
+   "erkennung": [
+    "zaehlpunkt",
+    "verbrauchkwh",
+    "erzeugungkwh"
+   ],
+   "export": "Tabellenblatt mit Teilnehmern als CSV speichern.",
+   "quelle": "energiegemeinschaften.gv.at/tools"
+  },
+  "generisch": {
+   "label": "Andere Tabelle",
+   "erkennung": [],
+   "export": "Erste Zeile mit Spaltennamen, eine Zeile je Zählpunkt eines Mitglieds.",
+   "quelle": ""
+  }
+ },
+ "WP1_CSV_SPALTEN": [
+  "mitgliedsnummer",
+  "art",
+  "vorname",
+  "nachname",
+  "firma",
+  "strasse",
+  "plz",
+  "ort",
+  "email",
+  "iban",
+  "sepa_referenz",
+  "sepa_datum",
+  "steuerstatus",
+  "uid",
+  "zaehlpunkt",
+  "richtung",
+  "teilnahmefaktor",
+  "kwp"
+ ],
+ "IMPORT_STATUS": {
+  "vorschau": "Vorschau",
+  "geprueft": "Geprüft",
+  "ausgefuehrt": "Übernommen",
+  "fehlgeschlagen": "Fehlgeschlagen",
+  "verworfen": "Verworfen"
+ },
+ "IMPORT_MAX_ZEILEN": 5000,
+ "BESCHLUSS_GREMIEN": {
+  "gv": "Mitglieder- bzw. Generalversammlung",
+  "vorstand": "Vorstand",
+  "umlauf": "Umlaufbeschluss (schriftlich bzw. elektronisch)"
+ },
+ "BESCHLUSS_KATEGORIEN": {
+  "tarif": "Tarife und Preisblatt",
+  "aufnahme": "Aufnahme bzw. Ausschluss",
+  "wahl": "Wahl der Organe",
+  "statuten": "Statutenänderung",
+  "entlastung": "Rechnungsabschluss und Entlastung",
+  "beitrag": "Mitgliedsbeiträge",
+  "organisator": "Organisator und Dienstleister",
+  "wechsel": "Wechsel des Dienstleisters",
+  "investition": "Anlagen und Investitionen",
+  "aufloesung": "Auflösung",
+  "sonstiges": "Sonstiges"
+ },
+ "BEITRAG_STATUS": {
+  "offen": "Offen",
+  "bezahlt": "Bezahlt",
+  "erlassen": "Erlassen"
+ },
+ "BEITRAG_ARTEN": {
+  "jahresbeitrag": "Mitgliedsbeitrag",
+  "beitrittsgebuehr": "Beitrittsgebühr"
+ },
+ "BEITRAG_EINHEBUNG": {
+  "abrechnung": "mit der Energieabrechnung (WP4)",
+  "gesondert": "gesondert (Vereinskasse)"
+ },
+ "VERG_PFLICHTINHALTE": [
+  {
+   "id": "name",
+   "text": "Vereinsname (Z 1)",
+   "abschnitt": "Name, Sitz und Tätigkeitsbereich"
+  },
+  {
+   "id": "sitz",
+   "text": "Vereinssitz (Z 2)",
+   "abschnitt": "Name, Sitz und Tätigkeitsbereich"
+  },
+  {
+   "id": "zweck",
+   "text": "Klare und umfassende Umschreibung des Vereinszwecks (Z 3)",
+   "abschnitt": "Zweck"
+  },
+  {
+   "id": "mittel",
+   "text": "Tätigkeiten und Aufbringung der finanziellen Mittel (Z 4)",
+   "abschnitt": "Mittel zur Erreichung des Vereinszwecks"
+  },
+  {
+   "id": "mitgliedschaft",
+   "text": "Erwerb und Beendigung der Mitgliedschaft (Z 5)",
+   "abschnitt": "Erwerb der Mitgliedschaft"
+  },
+  {
+   "id": "rechte",
+   "text": "Rechte und Pflichten der Mitglieder (Z 6)",
+   "abschnitt": "Rechte und Pflichten der Mitglieder"
+  },
+  {
+   "id": "organe",
+   "text": "Organe, Aufgaben, Geschäftsführung und Vertretung (Z 7)",
+   "abschnitt": "Vertretung und besondere Obliegenheiten"
+  },
+  {
+   "id": "bestellung",
+   "text": "Bestellung der Organe und Funktionsperiode (Z 8)",
+   "abschnitt": "Vorstand"
+  },
+  {
+   "id": "beschluesse",
+   "text": "Erfordernisse für gültige Beschlüsse (Z 9)",
+   "abschnitt": "Mitgliederversammlung"
+  },
+  {
+   "id": "schlichtung",
+   "text": "Schlichtung von Streitigkeiten (Z 10, § 8 VerG)",
+   "abschnitt": "Schiedsgericht"
+  },
+  {
+   "id": "aufloesung",
+   "text": "Freiwillige Auflösung und Vermögensverwertung (Z 11)",
+   "abschnitt": "Freiwillige Auflösung des Vereins"
+  }
+ ],
+ "VORLAGEN": {
+  "statuten_verein": {
+   "id": "statuten_verein",
+   "kurz": "Statuten (Verein)",
+   "gruppe": "statuten",
+   "titel": "Statuten des Vereins „{{name}}“",
+   "untertitel": "{{modellLabel}} – Muster nach VerG 2002, Stand ElWG 01.10.2026",
+   "art": "statuten",
+   "modelle": [
+    "eeg",
+    "beg"
+   ],
+   "rechtsformen": [
+    "verein"
+   ],
+   "quelle": "VerG 2002 § 3 Abs. 2, §§ 5, 8, 21, 22, 28; EAG § 79 Abs. 2; ElWG §§ 66–68, 70; Musterstatuten der Koordinationsstelle",
+   "stand": "2026-10-01",
+   "nummerierung": "paragraph",
+   "felder": [
+    {
+     "id": "name",
+     "label": "Vereinsname",
+     "pflicht": true
+    },
+    {
+     "id": "sitzOrt",
+     "label": "Sitz (Gemeinde)",
+     "pflicht": true
+    },
+    {
+     "id": "taetigkeitsgebiet",
+     "label": "Tätigkeitsbereich (z. B. Gemeindegebiet, Trafostation, Umspannwerk)",
+     "pflicht": true
+    },
+    {
+     "id": "zweckZusatz",
+     "label": "Zusätzlicher Zweck (optional, z. B. Bürgerbeteiligung an Anlagen)"
+    },
+    {
+     "id": "kuendigungsfristWochen",
+     "label": "Austrittsfrist in Wochen (üblich 3–7)",
+     "pflicht": true
+    },
+    {
+     "id": "funktionsperiodeJahre",
+     "label": "Funktionsperiode Vorstand und Rechnungsprüfer (Jahre)",
+     "pflicht": true
+    },
+    {
+     "id": "einladungsfristTage",
+     "label": "Einladungsfrist Mitgliederversammlung (Tage)",
+     "pflicht": true
+    },
+    {
+     "id": "gvTurnusJahre",
+     "label": "Ordentliche Mitgliederversammlung alle … Jahre (höchstens 5)"
+    },
+    {
+     "id": "onlineGv",
+     "label": "Virtuelle bzw. hybride Mitgliederversammlung zulassen"
+    },
+    {
+     "id": "tarifeDurch",
+     "label": "Tarife beschließt (vorstand | gv)"
+    },
+    {
+     "id": "vermoegensempfaenger",
+     "label": "Vermögensverwendung bei Auflösung",
+     "pflicht": true
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "Name, Sitz und Tätigkeitsbereich",
+     "absaetze": [
+      "Der Verein führt den Namen „{{name}}“.",
+      "Er hat seinen Sitz in {{sitzOrt}} und erstreckt seine Tätigkeit auf {{taetigkeitsgebiet}}.",
+      "Der Verein ist eine {{modellLabel}} im Sinne des {{rechtsgrundlage}}. Er nimmt an der gemeinsamen Energienutzung nach § 68 ElWG teil.",
+      "Die Errichtung von Zweigvereinen ist nicht beabsichtigt."
+     ]
+    },
+    {
+     "titel": "Zweck",
+     "absaetze": [
+      "Der Verein, dessen Tätigkeit nicht auf Gewinn gerichtet ist, bezweckt die gemeinsame Erzeugung, Speicherung, den Verbrauch und den Verkauf von elektrischer Energie aus erneuerbaren Quellen durch seine Mitglieder.",
+      "Hauptzweck des Vereins ist nicht die Erzielung finanzieller Gewinne. Der Verein soll seinen Mitgliedern bzw. dem Gebiet, in dem er tätig ist, vorrangig ökologische, wirtschaftliche oder sozialgemeinschaftliche Vorteile bringen.",
+      {
+       "text": "Darüber hinaus verfolgt der Verein folgenden Zweck: {{zweckZusatz}}",
+       "wenn": "zweckZusatz"
+      },
+      {
+       "text": "Der Verein wird ausschließlich von natürlichen Personen, Gebietskörperschaften und kleinen Unternehmen kontrolliert, die nicht als Elektrizitätsunternehmen tätig sind. Diese Mitglieder halten gemeinsam jedenfalls die für eine Statutenänderung erforderliche Mehrheit der Stimmen (§ 67 Abs. 3 ElWG).",
+       "wenn": "modell=beg"
+      },
+      "Die Teilnahme am Verein ist offen und freiwillig."
+     ]
+    },
+    {
+     "titel": "Mittel zur Erreichung des Vereinszwecks",
+     "absaetze": [
+      "Der Vereinszweck soll durch die in den folgenden Absätzen angeführten ideellen und materiellen Mittel erreicht werden.",
+      "Als ideelle Mittel dienen:",
+      {
+       "liste": [
+        "die Organisation der gemeinsamen Energienutzung, die Zuordnung der Zählpunkte und die Abwicklung der Marktprozesse mit dem Netzbetreiber über die EDA-Plattform,",
+        "Information und Beratung der Mitglieder zu Eigendeckung, Lastverschiebung und Energieeffizienz,",
+        "Mitgliederversammlungen, Informations- und Bildungsveranstaltungen,",
+        "die Zusammenarbeit mit Gemeinden, Netzbetreibern, Energiegemeinschaften und Fachorganisationen."
+       ]
+      },
+      "Die erforderlichen materiellen Mittel sollen aufgebracht werden durch:",
+      {
+       "liste": [
+        "Beitrittsgebühren und Mitgliedsbeiträge,",
+        "Entgelte der Mitglieder für die ihnen zugeordnete Energie und die Erlöse aus der Weitergabe von Energie,",
+        "Förderungen und Subventionen,",
+        "Spenden, Sammlungen, Vermächtnisse und sonstige Zuwendungen,",
+        "Erträge aus Veranstaltungen und vereinseigenen Anlagen."
+       ]
+      },
+      "Überschüsse sind ausschließlich für den Vereinszweck zu verwenden, insbesondere für die Preisgestaltung gegenüber den Mitgliedern, Rücklagen und Investitionen in Erzeugungs- und Speicheranlagen. Eine Ausschüttung von Gewinnen an die Mitglieder findet nicht statt."
+     ]
+    },
+    {
+     "titel": "Arten der Mitgliedschaft",
+     "absaetze": [
+      "Die Mitglieder gliedern sich in ordentliche und fördernde Mitglieder.",
+      "Ordentliche Mitglieder sind Netzbenutzer, die mit mindestens einem Zählpunkt an der gemeinsamen Energienutzung des Vereins teilnehmen (Verbraucher, Erzeuger oder beides). Fördernde Mitglieder unterstützen den Verein ohne eigenen Zählpunkt."
+     ]
+    },
+    {
+     "titel": "Erwerb der Mitgliedschaft",
+     "absaetze": [
+      "Mitglieder können werden: {{mitgliederkreisText}}.",
+      "Voraussetzung für die ordentliche Mitgliedschaft ist ein Zählpunkt {{nahebereichText}} sowie ein intelligentes Messgerät mit Viertelstundenwerten.",
+      "Über die Aufnahme entscheidet der Vorstand. Die Aufnahme darf nur aus sachlichen Gründen abgelehnt werden, insbesondere wenn die Voraussetzungen der vorstehenden Absätze nicht vorliegen, der Netzbetreiber die Teilnahme ablehnt oder der Vorstand einen Aufnahmestopp wegen fehlender Erzeugungskapazität beschlossen hat. Die Ablehnung ist zu begründen.",
+      "Die Mitgliedschaft entsteht mit dem Aufnahmebeschluss. Die Teilnahme an der Energiezuordnung beginnt mit der Aktivierung des Zählpunkts durch den Netzbetreiber; dafür ist die Zustimmung des Mitglieds im Portal des Netzbetreibers innerhalb der dort genannten Frist erforderlich.",
+      "Bis zur Entstehung des Vereins erfolgt die vorläufige Aufnahme von Mitgliedern durch die Proponentinnen und Proponenten, im Fall eines bereits bestellten Vorstands durch diesen. Diese Mitgliedschaft wird erst mit Entstehung des Vereins wirksam."
+     ]
+    },
+    {
+     "titel": "Beendigung der Mitgliedschaft",
+     "absaetze": [
+      "Die Mitgliedschaft erlischt durch Tod, bei juristischen Personen durch Verlust der Rechtspersönlichkeit, durch freiwilligen Austritt und durch Ausschluss.",
+      "Der Austritt ist jederzeit mit einer Frist von {{kuendigungsfristWochen}} Wochen zum Monatsende möglich. Er ist dem Vorstand schriftlich, per E-Mail oder über das Mitgliederportal mitzuteilen. Der Verein meldet die Zählpunkte des Mitglieds zum Austrittstermin beim Netzbetreiber ab; eine rückwirkende Abmeldung ist nicht möglich.",
+      "Widerruft ein Mitglied seine Zustimmung im Portal des Netzbetreibers oder endet die Netznutzung am Zählpunkt (z. B. Auszug), endet die Teilnahme des betroffenen Zählpunkts an der Energiezuordnung. Hat das Mitglied keinen weiteren Zählpunkt im Verein, gilt dies als Austritt zum Ende des Monats, sofern es nicht binnen vier Wochen die Fortsetzung als förderndes Mitglied erklärt.",
+      "Der Vorstand kann ein Mitglied ausschließen, wenn es trotz zweimaliger schriftlicher Mahnung unter Setzung einer angemessenen Nachfrist länger als drei Monate mit fälligen Zahlungen im Rückstand ist oder wenn es grob gegen die Mitgliedspflichten oder die Statuten verstößt. Gegen den Ausschluss ist binnen vier Wochen die Anrufung des Schiedsgerichts zulässig.",
+      "Mit der Beendigung der Mitgliedschaft erfolgt eine Schlussabrechnung. Bis dahin entstandene Forderungen bleiben unberührt."
+     ]
+    },
+    {
+     "titel": "Rechte und Pflichten der Mitglieder",
+     "absaetze": [
+      "Die Mitglieder sind berechtigt, an allen Veranstaltungen des Vereins teilzunehmen und die Einrichtungen des Vereins zu beanspruchen. Das Stimmrecht in der Mitgliederversammlung sowie das aktive und passive Wahlrecht stehen den ordentlichen Mitgliedern zu; jedes ordentliche Mitglied hat eine Stimme.",
+      "Jedes Mitglied ist berechtigt, vom Vorstand die Ausfolgung der Statuten zu verlangen. Der Vorstand informiert die Mitglieder in jeder Mitgliederversammlung über die Tätigkeit und die finanzielle Gebarung des Vereins; auf Verlangen von mindestens einem Zehntel der Mitglieder auch sonst binnen vier Wochen (§ 20 VerG).",
+      "Die Mitglieder sind verpflichtet, die Interessen des Vereins zu fördern, die Statuten und die Beschlüsse der Vereinsorgane zu beachten, die Beitrittsgebühr, die Mitgliedsbeiträge und die Entgelte fristgerecht zu bezahlen und Änderungen ihrer Daten (Anschrift, Bankverbindung, Zählpunkt, Erzeugungsanlage, Lieferant) unverzüglich mitzuteilen.",
+      "Die Mitglieder stimmen der Teilnahme im Portal ihres Netzbetreibers zu und gestatten dem Verein den Bezug ihrer Viertelstundenwerte über die EDA-Plattform, soweit dies für die Zuordnung und Abrechnung erforderlich ist.",
+      "Erzeugende Mitglieder bringen Energie nach Maßgabe ihres Erzeugervertrags ein. Eine Pflicht zur Volleinspeisung besteht nicht."
+     ]
+    },
+    {
+     "titel": "Vereinsorgane",
+     "absaetze": [
+      "Organe des Vereins sind die Mitgliederversammlung, der Vorstand, die Rechnungsprüferinnen bzw. Rechnungsprüfer und das Schiedsgericht."
+     ]
+    },
+    {
+     "titel": "Mitgliederversammlung",
+     "absaetze": [
+      "Die Mitgliederversammlung ist die Generalversammlung im Sinne des VerG 2002. Eine ordentliche Mitgliederversammlung findet {{gvTurnusText}} statt, jedenfalls aber mindestens alle fünf Jahre (§ 5 Abs. 2 VerG).",
+      "Eine außerordentliche Mitgliederversammlung findet binnen vier Wochen statt auf Beschluss des Vorstands oder der ordentlichen Mitgliederversammlung, auf schriftlichen Antrag von mindestens einem Zehntel der Mitglieder, auf Verlangen der Rechnungsprüfer (§ 21 Abs. 5 VerG) oder auf Beschluss eines gerichtlich bestellten Kurators.",
+      "Zu den Mitgliederversammlungen sind alle Mitglieder mindestens {{einladungsfristTage}} Tage vor dem Termin schriftlich, per E-Mail an die bekanntgegebene Adresse oder über das Mitgliederportal einzuladen. Die Einladung enthält die Tagesordnung.",
+      {
+       "text": "Die Mitgliederversammlung kann auch virtuell (über eine Videoplattform bzw. das Mitgliederportal) oder hybrid abgehalten werden. Der Vorstand stellt sicher, dass die Teilnehmenden zweifelsfrei identifiziert werden, der Versammlung folgen, sich zu Wort melden und ihre Stimme abgeben können. Beschlüsse können auch schriftlich bzw. elektronisch im Umlauf gefasst werden, wenn kein ordentliches Mitglied binnen der Abstimmungsfrist widerspricht; Wahlen und Statutenänderungen sind davon ausgenommen.",
+       "wenn": "onlineGv"
+      },
+      "Anträge zur Mitgliederversammlung sind mindestens sieben Tage vor dem Termin beim Vorstand schriftlich, per E-Mail oder über das Mitgliederportal einzureichen. Gültige Beschlüsse – ausgenommen über einen Antrag auf Einberufung einer außerordentlichen Mitgliederversammlung – können nur zur Tagesordnung gefasst werden.",
+      "Die Mitgliederversammlung ist bei Anwesenheit bzw. Teilnahme der Hälfte aller stimmberechtigten Mitglieder beschlussfähig. Ist sie zur festgesetzten Zeit nicht beschlussfähig, findet die Mitgliederversammlung 30 Minuten später mit derselben Tagesordnung statt und ist dann ohne Rücksicht auf die Anzahl der Erschienenen beschlussfähig.",
+      "Wahlen und Beschlüsse erfolgen mit einfacher Mehrheit der abgegebenen gültigen Stimmen; Stimmenthaltungen gelten nicht als abgegebene Stimmen. Beschlüsse über eine Änderung der Statuten oder die Auflösung des Vereins bedürfen einer Mehrheit von zwei Dritteln der abgegebenen gültigen Stimmen. Die Übertragung des Stimmrechts auf ein anderes ordentliches Mitglied mit schriftlicher Vollmacht ist zulässig; ein Mitglied darf höchstens zwei weitere Mitglieder vertreten.",
+      "Den Vorsitz führt die Obfrau bzw. der Obmann, bei Verhinderung die Stellvertretung. Über die Mitgliederversammlung ist ein Protokoll zu führen, das die gefassten Beschlüsse mit den Stimmenverhältnissen enthält."
+     ]
+    },
+    {
+     "titel": "Aufgaben der Mitgliederversammlung",
+     "absaetze": [
+      "Der Mitgliederversammlung sind folgende Aufgaben vorbehalten:",
+      {
+       "liste": [
+        "Entgegennahme und Genehmigung des Rechenschaftsberichts und des Rechnungsabschlusses unter Einbindung der Rechnungsprüfer,",
+        "Beschlussfassung über den Voranschlag,",
+        "Wahl und Enthebung der Mitglieder des Vorstands und der Rechnungsprüfer,",
+        "Genehmigung von Rechtsgeschäften zwischen Rechnungsprüfern und Verein,",
+        "Entlastung des Vorstands,",
+        "Festsetzung der Höhe der Beitrittsgebühr und der Mitgliedsbeiträge,",
+        {
+         "text": "Beschlussfassung über die Tarife (Bezugs- und Einspeisepreise) und das Preisblatt,",
+         "wenn": "tarifeDurch=gv"
+        },
+        {
+         "text": "Festlegung von Grundsätzen der Preisgestaltung; die Tarife selbst beschließt der Vorstand,",
+         "wenn": "tarifeDurch!=gv"
+        },
+        "Beschlussfassung über Statutenänderungen und die freiwillige Auflösung des Vereins,",
+        "Beratung und Beschlussfassung über sonstige auf der Tagesordnung stehende Fragen."
+       ]
+      }
+     ]
+    },
+    {
+     "titel": "Vorstand",
+     "absaetze": [
+      "Der Vorstand ist das Leitungsorgan im Sinne des VerG 2002. Er besteht aus {{leitungText}}.",
+      "Der Vorstand wird von der Mitgliederversammlung gewählt. Er hat bei Ausscheiden eines gewählten Mitglieds das Recht, an seine Stelle ein anderes wählbares Mitglied zu kooptieren; dazu ist die nachträgliche Genehmigung in der nächstfolgenden Mitgliederversammlung einzuholen.",
+      "Die Funktionsperiode des Vorstands beträgt {{funktionsperiodeJahre}} Jahre; Wiederwahl ist möglich. Jede Funktion im Vorstand ist persönlich auszuüben.",
+      "Der Vorstand wird von der Obfrau bzw. vom Obmann einberufen. Er ist beschlussfähig, wenn alle seine Mitglieder eingeladen wurden und mindestens die Hälfte von ihnen anwesend ist oder an einer Video- bzw. Telefonkonferenz teilnimmt. Er fasst seine Beschlüsse mit einfacher Stimmenmehrheit; bei Stimmengleichheit gibt die Stimme der bzw. des Vorsitzenden den Ausschlag. Umlaufbeschlüsse per E-Mail oder über das Portal sind zulässig, wenn kein Vorstandsmitglied widerspricht.",
+      "Die Mitgliederversammlung kann jederzeit den gesamten Vorstand oder einzelne seiner Mitglieder entheben."
+     ]
+    },
+    {
+     "titel": "Aufgaben des Vorstands",
+     "absaetze": [
+      "Dem Vorstand obliegt die Leitung des Vereins. Ihm kommen alle Aufgaben zu, die nicht durch die Statuten einem anderen Vereinsorgan zugewiesen sind. Insbesondere:",
+      {
+       "liste": [
+        "Einrichtung eines den Anforderungen des Vereins entsprechenden Rechnungswesens mit laufender Aufzeichnung der Einnahmen und Ausgaben und Führung eines Vermögensverzeichnisses (§§ 21, 22 VerG),",
+        "Erstellung des Jahresvoranschlags, des Rechenschaftsberichts und des Rechnungsabschlusses,",
+        "Vorbereitung und Einberufung der Mitgliederversammlung, Information der Mitglieder,",
+        "Verwaltung des Vereinsvermögens, Aufnahme und Ausschluss von Mitgliedern,",
+        "Abschluss und Pflege der Verträge mit dem Netzbetreiber, der Registrierung als Marktpartner und des Zugangs zur EDA-Plattform,",
+        {
+         "text": "Festsetzung der Tarife unter Einhaltung der Informationspflichten gegenüber den Mitgliedern,",
+         "wenn": "tarifeDurch!=gv"
+        },
+        "Bestellung eines Organisators im Sinne des § 68 Abs. 2 ElWG und Abschluss der Dienstleistungs- und Auftragsverarbeitungsverträge; die Bestellung ist dem Netzbetreiber anzuzeigen,",
+        "Aufnahme und Kündigung von Angestellten sowie Beauftragung Dritter."
+       ]
+      }
+     ]
+    },
+    {
+     "titel": "Vertretung und besondere Obliegenheiten",
+     "absaetze": [
+      "Die Obfrau bzw. der Obmann vertritt den Verein nach außen. Schriftliche Ausfertigungen des Vereins bedürfen zu ihrer Gültigkeit der Unterschriften der Obfrau bzw. des Obmanns und der Schriftführerin bzw. des Schriftführers, in Geldangelegenheiten (vermögenswerte Dispositionen) der Obfrau bzw. des Obmanns und der Kassierin bzw. des Kassiers (Vier-Augen-Prinzip).",
+      "Rechtsgeschäfte zwischen Vorstandsmitgliedern und dem Verein bedürfen der Zustimmung eines anderen Vorstandsmitglieds.",
+      "Rechtsgeschäftliche Bevollmächtigungen, den Verein nach außen zu vertreten bzw. für ihn zu zeichnen, können ausschließlich von den in Abs. 1 genannten Vorstandsmitgliedern erteilt werden. Die Bevollmächtigung eines Organisators für die Kommunikation mit dem Netzbetreiber und die Abrechnung ist zulässig.",
+      "Die Kassierin bzw. der Kassier ist für die ordnungsgemäße Geldgebarung verantwortlich, die Schriftführerin bzw. der Schriftführer für die Protokolle der Mitgliederversammlung und des Vorstands."
+     ]
+    },
+    {
+     "titel": "Rechnungsprüfer",
+     "absaetze": [
+      "Zwei Rechnungsprüferinnen bzw. Rechnungsprüfer werden von der Mitgliederversammlung auf die Dauer von {{funktionsperiodeJahre}} Jahren gewählt; Wiederwahl ist möglich. Sie dürfen keinem Organ – mit Ausnahme der Mitgliederversammlung – angehören, dessen Tätigkeit Gegenstand der Prüfung ist (§ 5 Abs. 5 VerG).",
+      "Den Rechnungsprüfern obliegen die laufende Geschäftskontrolle sowie die Prüfung der Finanzgebarung im Hinblick auf die Ordnungsmäßigkeit der Rechnungslegung und die statutengemäße Verwendung der Mittel binnen vier Monaten ab Erstellung der Einnahmen- und Ausgabenrechnung (§ 21 Abs. 2 VerG). Der Vorstand hat ihnen die erforderlichen Unterlagen vorzulegen und Auskünfte zu erteilen.",
+      "Die Rechnungsprüfer berichten der Mitgliederversammlung über das Ergebnis der Prüfung. Stellen sie fest, dass der Vorstand beharrlich und auf schwerwiegende Weise gegen die Rechnungslegungspflichten verstößt, ohne dass Abhilfe zu erwarten ist, verlangen sie die Einberufung einer Mitgliederversammlung."
+     ]
+    },
+    {
+     "titel": "Schiedsgericht",
+     "absaetze": [
+      "Zur Schlichtung von allen aus dem Vereinsverhältnis entstehenden Streitigkeiten ist das vereinsinterne Schiedsgericht berufen. Es ist eine Schlichtungseinrichtung im Sinne des § 8 VerG und kein Schiedsgericht nach den §§ 577 ff. ZPO.",
+      "Das Schiedsgericht setzt sich aus drei ordentlichen Mitgliedern zusammen. Jeder Streitteil macht binnen 14 Tagen ein Mitglied namhaft; diese wählen binnen weiterer 14 Tage ein drittes Mitglied zum Vorsitz. Die Mitglieder des Schiedsgerichts dürfen keinem Organ angehören, dessen Tätigkeit Gegenstand der Streitigkeit ist.",
+      "Das Schiedsgericht entscheidet nach Gewährung beiderseitigen Gehörs mit einfacher Stimmenmehrheit. Seine Entscheidungen sind vereinsintern endgültig. Der ordentliche Rechtsweg steht spätestens sechs Monate nach Anrufung des Schiedsgerichts offen (§ 8 Abs. 1 VerG)."
+     ]
+    },
+    {
+     "titel": "Datenschutz",
+     "absaetze": [
+      "Der Verein verarbeitet die personenbezogenen Daten seiner Mitglieder (Stammdaten, Zählpunkte, Bankverbindung, Viertelstundenwerte) zur Erfüllung des Vereinszwecks und der Mitgliedschaft (Art. 6 Abs. 1 lit. b DSGVO) sowie zur Erfüllung gesetzlicher Pflichten (Art. 6 Abs. 1 lit. c DSGVO). Viertelstundenwerte einzelner Mitglieder werden nur zweckgebunden für Zuordnung und Abrechnung verwendet; den Organen werden grundsätzlich zusammengefasste Werte angezeigt.",
+      "Der Verein kann Auftragsverarbeiter (Art. 28 DSGVO), insbesondere einen Organisator, einsetzen. Die Mitglieder erhalten eine Datenschutzinformation nach Art. 13 DSGVO."
+     ]
+    },
+    {
+     "titel": "Freiwillige Auflösung des Vereins",
+     "absaetze": [
+      "Die freiwillige Auflösung des Vereins kann nur in einer zu diesem Zweck einberufenen Mitgliederversammlung mit einer Mehrheit von zwei Dritteln der abgegebenen gültigen Stimmen beschlossen werden.",
+      "Die Mitgliederversammlung beschließt über die Abwicklung und bestellt eine Abwicklerin bzw. einen Abwickler. Vor dem Ende der Abwicklung sind alle Zählpunkte beim Netzbetreiber abzumelden, der Vertrag mit dem Netzbetreiber zu kündigen, die Schlussabrechnung mit den Mitgliedern zu erstellen und die Registrierung als Marktpartner zu beenden.",
+      "Das nach Abdeckung der Passiven verbleibende Vereinsvermögen fällt an {{vermoegensempfaenger}}. Eine Verteilung an die Mitglieder ist ausgeschlossen.",
+      "Die Abwicklerin bzw. der Abwickler hat die freiwillige Auflösung binnen vier Wochen nach Beschlussfassung der Vereinsbehörde anzuzeigen (§ 28 Abs. 2 VerG). Bücher und Belege sind sieben Jahre aufzubewahren (§ 132 BAO)."
+     ]
+    }
+   ],
+   "unterschriften": [
+    "Ort, Datum",
+    "Proponent/in bzw. Obfrau/Obmann",
+    "Proponent/in bzw. Schriftführer/in"
+   ]
+  },
+  "statuten_egen": {
+   "id": "statuten_egen",
+   "kurz": "Satzung (Genossenschaft)",
+   "gruppe": "statuten",
+   "titel": "Satzung der „{{name}} eGen“",
+   "untertitel": "{{modellLabel}} als eingetragene Genossenschaft – Muster nach GenG, Stand ElWG 01.10.2026",
+   "art": "statuten",
+   "modelle": [
+    "eeg",
+    "beg"
+   ],
+   "rechtsformen": [
+    "egen"
+   ],
+   "quelle": "GenG §§ 1, 2, 5, 15 ff., 24, 27 ff., 77; GenRevG 1997; EAG § 79 Abs. 2; ElWG §§ 66–68 (Details mit dem Revisionsverband abstimmen, zu bestätigen)",
+   "stand": "2026-10-01",
+   "nummerierung": "paragraph",
+   "felder": [
+    {
+     "id": "name",
+     "label": "Firma (ohne „eGen“)",
+     "pflicht": true
+    },
+    {
+     "id": "sitzOrt",
+     "label": "Sitz",
+     "pflicht": true
+    },
+    {
+     "id": "taetigkeitsgebiet",
+     "label": "Tätigkeitsbereich",
+     "pflicht": true
+    },
+    {
+     "id": "geschaeftsanteilEur",
+     "label": "Geschäftsanteil (Euro)",
+     "pflicht": true
+    },
+    {
+     "id": "kuendigungsfristMonate",
+     "label": "Kündigungsfrist (Monate zum Geschäftsjahresende)",
+     "pflicht": true
+    },
+    {
+     "id": "revisionsverband",
+     "label": "Revisionsverband",
+     "pflicht": true
+    },
+    {
+     "id": "aufsichtsrat",
+     "label": "Aufsichtsrat einrichten"
+    },
+    {
+     "id": "onlineGv",
+     "label": "Virtuelle Generalversammlung zulassen"
+    },
+    {
+     "id": "vermoegensempfaenger",
+     "label": "Vermögensverwendung bei Auflösung",
+     "pflicht": true
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "Firma und Sitz",
+     "absaetze": [
+      "Die Genossenschaft führt die Firma „{{name}} eGen“.",
+      "Sitz der Genossenschaft ist {{sitzOrt}}."
+     ]
+    },
+    {
+     "titel": "Zweck und Gegenstand",
+     "absaetze": [
+      "Zweck der Genossenschaft ist die Förderung des Erwerbs und der Wirtschaft ihrer Mitglieder (§ 1 GenG) durch die gemeinsame Erzeugung, Speicherung, den Verbrauch und den Verkauf von elektrischer Energie aus erneuerbaren Quellen als {{modellLabel}} ({{rechtsgrundlage}}).",
+      "Hauptzweck ist nicht die Erzielung finanzieller Gewinne; die Genossenschaft soll ihren Mitgliedern bzw. dem Gebiet {{taetigkeitsgebiet}} vorrangig ökologische, wirtschaftliche oder sozialgemeinschaftliche Vorteile bringen.",
+      "Gegenstand des Unternehmens sind insbesondere die Organisation der gemeinsamen Energienutzung nach § 68 ElWG, die Errichtung, der Erwerb, die Pacht und der Betrieb von Erzeugungs- und Speicheranlagen sowie die Abrechnung mit den Mitgliedern.",
+      {
+       "text": "Die Genossenschaft wird ausschließlich von natürlichen Personen, Gebietskörperschaften und kleinen Unternehmen kontrolliert, die nicht als Elektrizitätsunternehmen tätig sind; diese halten jedenfalls die für eine Satzungsänderung erforderliche Mehrheit (§ 67 Abs. 3 ElWG).",
+       "wenn": "modell=beg"
+      }
+     ]
+    },
+    {
+     "titel": "Mitgliedschaft",
+     "absaetze": [
+      "Mitglieder können werden: {{mitgliederkreisText}}. Die Teilnahme ist offen und freiwillig.",
+      "Die Mitgliedschaft wird durch eine unterzeichnete Beitrittserklärung und die Zulassung durch den Vorstand erworben. Die Zulassung darf nur aus sachlichen Gründen verweigert werden.",
+      "Die Mitglieder nehmen mit ihren Zählpunkten nach Maßgabe ihres Teilnahmevertrags an der gemeinsamen Energienutzung teil; die Zustimmung im Portal des Netzbetreibers ist Voraussetzung."
+     ]
+    },
+    {
+     "titel": "Geschäftsanteile und Haftung",
+     "absaetze": [
+      "Der Geschäftsanteil beträgt {{geschaeftsanteilEur}} Euro und ist bei Zulassung zur Gänze einzuzahlen. Jedes Mitglied hat mindestens einen Geschäftsanteil zu übernehmen.",
+      "Die Genossenschaft ist eine Genossenschaft mit beschränkter Haftung. Die Mitglieder haften im Fall der Insolvenz bzw. Liquidation mit ihren Geschäftsanteilen und zusätzlich mit einem Betrag in Höhe ihrer Geschäftsanteile (Haftsumme) (zu bestätigen)."
+     ]
+    },
+    {
+     "titel": "Ausscheiden",
+     "absaetze": [
+      "Ein Mitglied scheidet durch Kündigung, Tod, Ausschluss oder Übertragung aller Geschäftsanteile aus.",
+      "Die Kündigung ist schriftlich mit einer Frist von {{kuendigungsfristMonate}} Monaten zum Ende eines Geschäftsjahres zu erklären. Die Teilnahme der Zählpunkte an der Energiezuordnung endet mit Abmeldung beim Netzbetreiber; eine rückwirkende Abmeldung ist nicht möglich.",
+      "Das ausgeschiedene Mitglied hat Anspruch auf Auszahlung seines Geschäftsguthabens nach Feststellung des Jahresabschlusses; an Rücklagen und sonstigem Vermögen besteht kein Anspruch."
+     ]
+    },
+    {
+     "titel": "Organe",
+     "absaetze": [
+      {
+       "text": "Organe der Genossenschaft sind der Vorstand, der Aufsichtsrat und die Generalversammlung.",
+       "wenn": "aufsichtsrat"
+      },
+      {
+       "text": "Organe der Genossenschaft sind der Vorstand und die Generalversammlung. Ein Aufsichtsrat wird eingerichtet, sobald dies gesetzlich vorgeschrieben ist oder die Generalversammlung es beschließt (§ 24 GenG, zu bestätigen).",
+       "wenn": "!aufsichtsrat"
+      },
+      "Der Vorstand besteht aus mindestens zwei Mitgliedern, die von der Generalversammlung auf die Dauer von {{funktionsperiodeJahre}} Jahren gewählt werden. Er führt die Geschäfte und vertritt die Genossenschaft durch zwei Vorstandsmitglieder gemeinsam.",
+      {
+       "text": "Der Aufsichtsrat besteht aus mindestens drei Mitgliedern; er überwacht die Geschäftsführung des Vorstands.",
+       "wenn": "aufsichtsrat"
+      },
+      "Der Vorstand kann einen Organisator im Sinne des § 68 Abs. 2 ElWG bestellen; die Bestellung ist dem Netzbetreiber anzuzeigen."
+     ]
+    },
+    {
+     "titel": "Generalversammlung",
+     "absaetze": [
+      "Die ordentliche Generalversammlung findet jährlich innerhalb der ersten acht Monate nach Ende des Geschäftsjahres statt (zu bestätigen). Sie beschließt insbesondere über den Jahresabschluss, die Verwendung des Ergebnisses, die Entlastung, Wahlen, Satzungsänderungen und die Auflösung.",
+      "Die Einberufung erfolgt mindestens {{einladungsfristTage}} Tage vorher schriftlich bzw. per E-Mail unter Angabe der Tagesordnung.",
+      {
+       "text": "Die Generalversammlung kann virtuell oder hybrid abgehalten werden, sofern Identifikation, Teilnahme und Stimmabgabe aller Mitglieder sichergestellt sind.",
+       "wenn": "onlineGv"
+      },
+      "Jedes Mitglied hat eine Stimme. Beschlüsse werden mit einfacher Mehrheit gefasst; Satzungsänderungen und die Auflösung bedürfen einer Mehrheit von zwei Dritteln der abgegebenen Stimmen."
+     ]
+    },
+    {
+     "titel": "Revision",
+     "absaetze": [
+      "Die Genossenschaft ist Mitglied des Revisionsverbands {{revisionsverband}} und unterliegt der Revision nach dem Genossenschaftsrevisionsgesetz 1997. Der Revisionsbericht ist der Generalversammlung vorzulegen."
+     ]
+    },
+    {
+     "titel": "Geschäftsjahr, Jahresabschluss und Ergebnisverwendung",
+     "absaetze": [
+      "Das Geschäftsjahr ist das Kalenderjahr.",
+      "Überschüsse dienen vorrangig der Preisgestaltung, Rücklagen und Investitionen in Erzeugungs- und Speicheranlagen. Eine Rückvergütung an die Mitglieder nach dem Umfang ihrer Teilnahme kann die Generalversammlung beschließen; eine Gewinnerzielung als Hauptzweck ist ausgeschlossen."
+     ]
+    },
+    {
+     "titel": "Datenschutz",
+     "absaetze": [
+      "Die Genossenschaft verarbeitet personenbezogene Daten ihrer Mitglieder einschließlich der Viertelstundenwerte zweckgebunden für Zuordnung und Abrechnung (Art. 6 Abs. 1 lit. b DSGVO) und kann Auftragsverarbeiter nach Art. 28 DSGVO einsetzen."
+     ]
+    },
+    {
+     "titel": "Auflösung",
+     "absaetze": [
+      "Die Auflösung kann die Generalversammlung mit einer Mehrheit von zwei Dritteln der abgegebenen Stimmen beschließen. Vor der Liquidation sind alle Zählpunkte beim Netzbetreiber abzumelden und der Vertrag mit dem Netzbetreiber zu kündigen.",
+      "Das nach Rückzahlung der Geschäftsguthaben verbleibende Vermögen fällt an {{vermoegensempfaenger}}."
+     ]
+    }
+   ],
+   "unterschriften": [
+    "Ort, Datum",
+    "Gründungsmitglied",
+    "Gründungsmitglied"
+   ]
+  },
+  "gruendungsprotokoll": {
+   "id": "gruendungsprotokoll",
+   "kurz": "Protokoll der Gründungsversammlung",
+   "gruppe": "verein",
+   "titel": "Protokoll der Gründungsversammlung",
+   "untertitel": "{{name}} – {{versammlungAmDe}} in {{ort}}",
+   "art": "protokoll",
+   "modelle": [
+    "eeg",
+    "beg"
+   ],
+   "quelle": "VerG 2002 §§ 2, 11; GenG § 5 (eGen); Fachkonzept 2.3 (Gründungsversammlung, Wahl der Organe)",
+   "stand": "2026-10-01",
+   "nummerierung": "abschnitt",
+   "felder": [
+    {
+     "id": "versammlungAm",
+     "label": "Datum der Versammlung",
+     "pflicht": true
+    },
+    {
+     "id": "anwesende",
+     "label": "Anwesende (Anzahl)",
+     "pflicht": true
+    },
+    {
+     "id": "versammlungsleitung",
+     "label": "Versammlungsleitung",
+     "pflicht": true
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "Eröffnung",
+     "absaetze": [
+      "Die Versammlungsleitung {{versammlungsleitung}} eröffnet die Gründungsversammlung, begrüßt {{anwesende}} Anwesende und stellt die ordnungsgemäße Einladung fest."
+     ]
+    },
+    {
+     "titel": "Beschluss der Statuten",
+     "absaetze": [
+      "Die Statuten in der vorliegenden Fassung (Muster-Version vom {{heute}}) werden vorgestellt und beschlossen. Ergebnis: {{ergebnisStatuten}}."
+     ]
+    },
+    {
+     "titel": "Wahl des Vorstands",
+     "absaetze": [
+      "Gewählt werden: Obfrau/Obmann {{obmann}}; Kassier/in {{kassier}}; Schriftführer/in {{schriftfuehrer}}. Die Gewählten nehmen die Wahl an."
+     ]
+    },
+    {
+     "titel": "Wahl der Rechnungsprüfer",
+     "absaetze": [
+      "Gewählt werden: {{rechnungspruefer}}. Sie gehören dem Vorstand nicht an."
+     ],
+     "wenn": "rechtsform=verein"
+    },
+    {
+     "titel": "Beiträge",
+     "absaetze": [
+      "Beitrittsgebühr {{beitrittsgebuehr}}, Mitgliedsbeitrag {{mitgliedsbeitrag}}."
+     ],
+     "wenn": "mitgliedsbeitrag"
+    },
+    {
+     "titel": "Bestellung des Organisators",
+     "absaetze": [
+      "Der Vorstand wird ermächtigt, die {{organisatorName}} als Organisator nach § 68 Abs. 2 ElWG zu bestellen und den Dienstleistungs- sowie den Auftragsverarbeitungsvertrag abzuschließen."
+     ],
+     "wenn": "organisator"
+    },
+    {
+     "titel": "Nächste Schritte",
+     "absaetze": [
+      {
+       "text": "Die Proponentinnen und Proponenten zeigen die Errichtung bei der Vereinsbehörde an (§ 11 VerG); nach Ablauf der Frist von vier Wochen (verlängerbar auf sechs Wochen, § 13 VerG) bzw. nach Einladung zur Aufnahme der Tätigkeit entsteht der Verein.",
+       "wenn": "rechtsform=verein"
+      },
+      {
+       "text": "Der Vorstand meldet die Genossenschaft nach Aufnahme in den Revisionsverband zum Firmenbuch an.",
+       "wenn": "rechtsform=egen"
+      },
+      "Anschließend: Bankkonto, Finanzamt, Registrierung als Marktpartner, Vertrag mit dem Netzbetreiber, Zugang zur EDA-Plattform."
+     ]
+    }
+   ],
+   "unterschriften": [
+    "Versammlungsleitung",
+    "Protokollführung"
+   ]
+  },
+  "beitritt": {
+   "id": "beitritt",
+   "kurz": "Beitrittserklärung",
+   "gruppe": "mitglied",
+   "titel": "Beitrittserklärung und Antrag auf Aufnahme",
+   "untertitel": "{{name}} – {{modellLabel}}",
+   "art": "beitritt",
+   "quelle": "Statuten der Gemeinschaft; ElWG §§ 66–68, 70; Fachkonzept 2.4",
+   "stand": "2026-10-01",
+   "nummerierung": "abschnitt",
+   "felder": [
+    {
+     "id": "mitgliedName",
+     "label": "Name bzw. Firma",
+     "pflicht": true
+    },
+    {
+     "id": "mitgliedAnschrift",
+     "label": "Anschrift",
+     "pflicht": true
+    },
+    {
+     "id": "zaehlpunkt",
+     "label": "Zählpunktnummer",
+     "pflicht": true
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "Antragstellerin bzw. Antragsteller",
+     "absaetze": [
+      "Name bzw. Firma: {{mitgliedName}}",
+      "Anschrift: {{mitgliedAnschrift}}",
+      "E-Mail: {{mitgliedEmail}}",
+      "Zählpunkt(e): {{zaehlpunkt}}"
+     ]
+    },
+    {
+     "titel": "Erklärung",
+     "absaetze": [
+      "Ich beantrage die Aufnahme als ordentliches Mitglied in die {{modellLabel}} „{{name}}“. Ich habe die Statuten erhalten und erkenne sie an.",
+      {
+       "text": "Ich bestätige, dass ich zum Mitgliederkreis einer Erneuerbare-Energie-Gemeinschaft gehöre (natürliche Person, Gemeinde, sonstige juristische Person des öffentlichen Rechts oder kleines bzw. mittleres Unternehmen, bei dem die Teilnahme nicht die Haupttätigkeit ist). Großunternehmen sind ausgeschlossen (ElWG § 6 Abs. 1 Z 61).",
+       "wenn": "modell=eeg"
+      },
+      "Mir ist bekannt, dass der Netzbetreiber meine Teilnahme erst nach meiner Zustimmung in seinem Portal aktiviert. Ich stimme innerhalb der Frist des Netzbetreibers (derzeit 30 Tage ab Anfrage, zu bestätigen) zu.",
+      "Ein Zählpunkt kann an bis zu fünf gemeinsamen Energienutzungen teilnehmen; die Teilnahmefaktoren aller Teilnahmen eines Zählpunkts betragen zusammen höchstens 100 % (§ 71 Abs. 5 ElWG). Weitere Teilnahmen gebe ich bekannt.",
+      "Die Datenschutzinformation habe ich erhalten."
+     ]
+    }
+   ],
+   "unterschriften": [
+    "Ort, Datum",
+    "Unterschrift Antragsteller/in"
+   ]
+  },
+  "teilnahmevertrag": {
+   "id": "teilnahmevertrag",
+   "kurz": "Teilnahmevertrag (Bezug)",
+   "gruppe": "mitglied",
+   "titel": "Teilnahmevertrag über den Bezug von Gemeinschaftsstrom",
+   "untertitel": "zwischen der {{modellLabel}} „{{name}}“ und {{mitgliedName}}",
+   "art": "teilnahmevertrag",
+   "quelle": "ElWG §§ 68–71 (bei über 100 kW zusätzlich § 69 mit §§ 20, 21, 42); Fachkonzept 2.4, 2.5; Muster der Koordinationsstelle",
+   "stand": "2026-10-01",
+   "nummerierung": "paragraph",
+   "felder": [
+    {
+     "id": "mitgliedName",
+     "label": "Mitglied",
+     "pflicht": true
+    },
+    {
+     "id": "zaehlpunkt",
+     "label": "Zählpunkt (Verbrauch)",
+     "pflicht": true
+    },
+    {
+     "id": "bezugspreisCt",
+     "label": "Bezugspreis netto",
+     "pflicht": true
+    },
+    {
+     "id": "teilnahmefaktor",
+     "label": "Teilnahmefaktor (%)"
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "Vertragspartner und Gegenstand",
+     "absaetze": [
+      "Dieser Vertrag regelt die Teilnahme des Mitglieds {{mitgliedName}} (Mitgliedsnummer {{mitgliedsnummer}}) mit dem Zählpunkt {{zaehlpunkt}} an der gemeinsamen Energienutzung der {{modellLabel}} „{{name}}“.",
+      "Die Gemeinschaft liefert nur die ihr zugeordnete Energie (Eigendeckung je Viertelstunde). Den restlichen Strombedarf deckt weiterhin der Stromlieferant des Mitglieds; überschüssige Erzeugung nimmt weiterhin der Energieabnehmer des Erzeugers ab (§ 71 Abs. 3 ElWG).",
+      "Der Zählpunkt nimmt mit einem Teilnahmefaktor von {{teilnahmefaktor}} % teil. Die Aufteilung erfolgt nach dem {{verteilmodell}}en Verteilmodell; die Zuordnung je Viertelstunde berechnet der Netzbetreiber."
+     ]
+    },
+    {
+     "titel": "Preis",
+     "absaetze": [
+      "Für die zugeordnete Energie bezahlt das Mitglied den jeweils gültigen Bezugspreis laut Preisblatt, derzeit {{bezugspreisCt}} netto (gültig ab {{tarifAb}}), zuzüglich Umsatzsteuer, sofern die Gemeinschaft umsatzsteuerpflichtig ist.",
+      {
+       "text": "Mitgliedsbeitrag: {{mitgliedsbeitrag}}. Beitrittsgebühr: {{beitrittsgebuehr}}.",
+       "wenn": "mitgliedsbeitrag"
+      },
+      "Netzentgelte, Abgaben und eine allfällige Reduktion des Netzentgelts rechnet der Netzbetreiber auf der Netzrechnung ab; sie sind nicht Teil dieses Preises."
+     ]
+    },
+    {
+     "titel": "Abrechnung und Zahlung",
+     "absaetze": [
+      "Die Gemeinschaft rechnet {{abrechnungsrhythmus}} auf Basis der vom Netzbetreiber übermittelten Viertelstundenwerte ab, frühestens nach deren Bereitstellung. Rechnungen werden über das Mitgliederportal bzw. per E-Mail zugestellt.",
+      {
+       "text": "Das Mitglied kann zwischen einer monatlichen und einer jährlichen Rechnung wählen. Die Rechnung ist mindestens einmal jährlich kostenlos, enthält die Zählpunktbezeichnung und wird auf Verlangen erläutert (§ 69 ElWG).",
+       "wenn": "lieferantenpflicht"
+      },
+      "Fällige Beträge werden per SEPA-Lastschrift eingezogen, sofern ein Mandat erteilt wurde, andernfalls sind sie binnen 14 Tagen zu überweisen."
+     ]
+    },
+    {
+     "titel": "Mitwirkung des Mitglieds",
+     "absaetze": [
+      "Das Mitglied stimmt der Teilnahme im Portal des Netzbetreibers zu und hält die Freigabe der Viertelstundenwerte aufrecht. Für die Teilnahme ist ein intelligentes Messgerät mit Viertelstundenwerten nötig.",
+      "Das Mitglied teilt Änderungen (Auszug, Lieferantenwechsel, weitere Teilnahmen des Zählpunkts, Bankverbindung) unverzüglich mit."
+     ]
+    },
+    {
+     "titel": "Preisänderungen",
+     "absaetze": [
+      {
+       "text": "Änderungen des Preises teilt die Gemeinschaft mindestens einen Monat vor Wirksamkeit in verständlicher Form mit; das Mitglied kann den Vertrag bis zum Inkrafttreten kostenlos kündigen (§§ 21, 69 ElWG).",
+       "wenn": "lieferantenpflicht"
+      },
+      {
+       "text": "Änderungen des Preises beschließt das zuständige Organ; sie werden mindestens vier Wochen vor Wirksamkeit mitgeteilt. Das Mitglied kann den Vertrag bis zum Inkrafttreten kündigen.",
+       "wenn": "!lieferantenpflicht"
+      }
+     ]
+    },
+    {
+     "titel": "Laufzeit und Kündigung",
+     "absaetze": [
+      "Der Vertrag beginnt mit der Aktivierung des Zählpunkts durch den Netzbetreiber und läuft auf unbestimmte Zeit. Er kann von beiden Seiten mit einer Frist von {{kuendigungsfristWochen}} Wochen zum Monatsende gekündigt werden.",
+      "Die Gemeinschaft meldet den Zählpunkt zum Vertragsende beim Netzbetreiber ab; eine rückwirkende Abmeldung ist nicht möglich. Ein Widerruf im Portal des Netzbetreibers beendet die Teilnahme ebenfalls.",
+      "Der Vertrag endet jedenfalls mit dem Ende der Mitgliedschaft."
+     ]
+    },
+    {
+     "titel": "Haftung",
+     "absaetze": [
+      "Die Gemeinschaft schuldet keine bestimmte Liefermenge; die Versorgungssicherheit gewährleistet der Stromlieferant des Mitglieds. Die Haftung der Gemeinschaft ist – außer bei Vorsatz, grober Fahrlässigkeit und Personenschäden – auf den typischerweise vorhersehbaren Schaden begrenzt."
+     ]
+    },
+    {
+     "titel": "Vertragsbestandteile, Datenschutz",
+     "absaetze": [
+      "Bestandteile dieses Vertrags sind die Statuten, das Preisblatt und die Datenschutzinformation.",
+      {
+       "text": "Weiters gelten die Allgemeinen Lieferbedingungen; das Informationsblatt hat das Mitglied vor Vertragsabschluss erhalten (§ 69 Abs. 1 ElWG).",
+       "wenn": "lieferantenpflicht"
+      },
+      "Es gilt österreichisches Recht. Für Verbraucher bleiben die zwingenden Bestimmungen des Konsumentenschutzgesetzes unberührt."
+     ]
+    }
+   ],
+   "unterschriften": [
+    "Ort, Datum, für die Gemeinschaft",
+    "Ort, Datum, Mitglied"
+   ]
+  },
+  "erzeugervertrag": {
+   "id": "erzeugervertrag",
+   "kurz": "Erzeugervertrag (Einbringung)",
+   "gruppe": "mitglied",
+   "titel": "Erzeugervertrag über die Einbringung von Energie",
+   "untertitel": "zwischen der {{modellLabel}} „{{name}}“ und {{mitgliedName}}",
+   "art": "erzeugervertrag",
+   "quelle": "ElWG §§ 68, 71 Abs. 3 und 5; EAG § 80; UStG 1994 §§ 6 Abs. 1 Z 27, 19, 22 (laut Fachkonzept 4.5, zu bestätigen); Fachkonzept 2.4",
+   "stand": "2026-10-01",
+   "nummerierung": "paragraph",
+   "felder": [
+    {
+     "id": "mitgliedName",
+     "label": "Erzeuger",
+     "pflicht": true
+    },
+    {
+     "id": "zaehlpunkt",
+     "label": "Zählpunkt (Erzeugung)",
+     "pflicht": true
+    },
+    {
+     "id": "anlageBezeichnung",
+     "label": "Anlage",
+     "pflicht": true
+    },
+    {
+     "id": "anlageKwp",
+     "label": "Leistung kWp",
+     "pflicht": true
+    },
+    {
+     "id": "einspeisepreisCt",
+     "label": "Einspeisepreis netto",
+     "pflicht": true
+    },
+    {
+     "id": "steuerstatusText",
+     "label": "Steuerlicher Status des Erzeugers"
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "Gegenstand",
+     "absaetze": [
+      "Das Mitglied {{mitgliedName}} bringt Energie aus der Anlage „{{anlageBezeichnung}}“ ({{anlageKwp}} kWp) über den Erzeugungszählpunkt {{zaehlpunkt}} in die gemeinsame Energienutzung der {{modellLabel}} „{{name}}“ ein.",
+      {
+       "text": "Eingebracht wird nur der Überschuss, der nicht selbst verbraucht wird (Überschusseinspeisung).",
+       "wenn": "nutzungsmodell=ueberschuss"
+      },
+      {
+       "text": "Eingebracht wird die gesamte Erzeugung (Volleinspeisung).",
+       "wenn": "nutzungsmodell=volleinspeisung"
+      },
+      "Der Zählpunkt nimmt mit einem Teilnahmefaktor von {{teilnahmefaktor}} % teil. Nicht zugeordnete Erzeugung (Restüberschuss) übernimmt weiterhin der Energieabnehmer des Erzeugers (§ 71 Abs. 3 ElWG)."
+     ]
+    },
+    {
+     "titel": "Vergütung",
+     "absaetze": [
+      "Die Gemeinschaft vergütet die den Mitgliedern zugeordnete Energie mit dem Einspeisepreis laut Preisblatt, derzeit {{einspeisepreisCt}} netto (gültig ab {{tarifAb}}).",
+      "Die Abrechnung erfolgt per Gutschrift {{abrechnungsrhythmus}} auf Basis der Werte des Netzbetreibers.",
+      "Steuerlicher Status laut Angabe des Erzeugers: {{steuerstatusText}}. Bei regelbesteuerten Erzeugern geht die Steuerschuld nach derzeitigem Stand auf die Gemeinschaft über (Reverse Charge); pauschalierte Landwirte weisen 13 % aus (§ 22 UStG, zu bestätigen). Der Erzeuger meldet Änderungen seines Status unverzüglich. Keine Steuerberatung."
+     ]
+    },
+    {
+     "titel": "Betrieb und Förderung",
+     "absaetze": [
+      "Errichtung, Betrieb, Wartung und Versicherung der Anlage obliegen dem Erzeuger. Er informiert die Gemeinschaft über Stillstände von mehr als einer Woche.",
+      "Bezieht die Anlage eine Marktprämie nach dem EAG, gilt diese nur für die nicht in der Gemeinschaft verbrauchte Energie; der Erzeuger ist für die Einhaltung der Förderbedingungen verantwortlich (EAG § 80, zu bestätigen)."
+     ]
+    },
+    {
+     "titel": "Mehrfachteilnahme",
+     "absaetze": [
+      "Der Erzeugungszählpunkt kann an bis zu fünf gemeinsamen Energienutzungen teilnehmen. Die Summe der Teilnahmefaktoren beträgt höchstens 100 %; Änderungen des Teilnahmefaktors sind derzeit einmal je Tag möglich (§ 71 Abs. 5 ElWG)."
+     ]
+    },
+    {
+     "titel": "Laufzeit und Kündigung",
+     "absaetze": [
+      "Der Vertrag beginnt mit der Aktivierung des Zählpunkts und läuft auf unbestimmte Zeit. Kündigung beiderseits mit {{kuendigungsfristWochen}} Wochen zum Monatsende; die Abmeldung beim Netzbetreiber ist nicht rückwirkend möglich.",
+      "Bestandteile sind die Statuten, das Preisblatt und die Datenschutzinformation. Es gilt österreichisches Recht."
+     ]
+    }
+   ],
+   "unterschriften": [
+    "Ort, Datum, für die Gemeinschaft",
+    "Ort, Datum, Erzeuger"
+   ]
+  },
+  "datenschutz": {
+   "id": "datenschutz",
+   "kurz": "Datenschutzinformation (Art. 13 DSGVO)",
+   "gruppe": "mitglied",
+   "titel": "Datenschutzinformation für Mitglieder",
+   "untertitel": "{{name}} – Information nach Art. 13 DSGVO",
+   "art": "datenschutz",
+   "quelle": "DSGVO Art. 6, 13, 15–21, 28; ElWG §§ 70, 71; BAO § 132",
+   "stand": "2026-10-01",
+   "nummerierung": "abschnitt",
+   "felder": [
+    {
+     "id": "name",
+     "label": "Verantwortlicher",
+     "pflicht": true
+    },
+    {
+     "id": "datenschutzKontakt",
+     "label": "Kontakt für Datenschutzanfragen",
+     "pflicht": true
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "Verantwortlicher",
+     "absaetze": [
+      "Verantwortlich ist die {{modellLabel}} „{{name}}“, {{sitzAdresse}}. Kontakt für Datenschutzanfragen: {{datenschutzKontakt}}."
+     ]
+    },
+    {
+     "titel": "Zwecke und Rechtsgrundlagen",
+     "absaetze": [
+      {
+       "liste": [
+        "Mitgliederverwaltung, Verträge, Kommunikation (Art. 6 Abs. 1 lit. b DSGVO),",
+        "Anmeldung und Abmeldung der Zählpunkte beim Netzbetreiber, Empfang der Viertelstundenwerte über die EDA-Plattform, Zuordnung und Abrechnung (Art. 6 Abs. 1 lit. b DSGVO in Verbindung mit §§ 70 und 71 ElWG),",
+        "Buchhaltung, Steuer und Aufbewahrung (Art. 6 Abs. 1 lit. c DSGVO, § 132 BAO),",
+        "Auswertungen und Prognosen über die Abrechnung hinaus nur mit Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), die jederzeit widerrufen werden kann."
+       ]
+      }
+     ]
+    },
+    {
+     "titel": "Empfänger",
+     "absaetze": [
+      "Netzbetreiber und EDA-Plattform (Marktkommunikation), Banken (Zahlungsverkehr), Steuerberatung und Rechnungsprüfung, Behörden auf Verlangen (§ 70 Abs. 4 ElWG).",
+      {
+       "text": "{{organisatorName}}, {{organisatorAnschrift}}, als Organisator und Auftragsverarbeiter (Art. 28 DSGVO) mit Datenhaltung in der Europäischen Union.",
+       "wenn": "organisator"
+      }
+     ]
+    },
+    {
+     "titel": "Zweckbindung der Viertelstundenwerte",
+     "absaetze": [
+      "Einzelne Viertelstundenwerte werden nur für Zuordnung, Abrechnung und Plausibilisierung verwendet. Die Organe sehen grundsätzlich zusammengefasste Werte; jede Einsicht in Einzelwerte wird protokolliert."
+     ]
+    },
+    {
+     "titel": "Speicherdauer",
+     "absaetze": [
+      "Stammdaten für die Dauer der Mitgliedschaft, danach so lange Ansprüche geltend gemacht werden können; buchhaltungsrelevante Unterlagen sieben Jahre (§ 132 BAO)."
+     ]
+    },
+    {
+     "titel": "Ihre Rechte",
+     "absaetze": [
+      "Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit und Widerspruch (Art. 15–21 DSGVO) sowie auf Beschwerde bei der Österreichischen Datenschutzbehörde. Eine automatisierte Entscheidungsfindung findet nicht statt."
+     ]
+    }
+   ],
+   "unterschriften": []
+  },
+  "pachtvertrag": {
+   "id": "pachtvertrag",
+   "kurz": "Nutzungsvertrag Erzeugungsanlage",
+   "gruppe": "mitglied",
+   "titel": "Nutzungsvertrag über eine Erzeugungsanlage",
+   "untertitel": "zwischen {{mitgliedName}} (Eigentümer) und der {{modellLabel}} „{{name}}“",
+   "art": "pacht",
+   "modelle": [
+    "eeg",
+    "beg",
+    "gea"
+   ],
+   "quelle": "ABGB §§ 1090 ff.; GebG § 33 TP 5 (Rechtsgeschäftsgebühr, Formular Geb 1, laut EEG-Ratgeber Steuern, zu bestätigen); Fachkonzept 2.3",
+   "stand": "2026-10-01",
+   "nummerierung": "paragraph",
+   "felder": [
+    {
+     "id": "anlageBezeichnung",
+     "label": "Anlage",
+     "pflicht": true
+    },
+    {
+     "id": "anlageKwp",
+     "label": "Leistung kWp",
+     "pflicht": true
+    },
+    {
+     "id": "pachtzins",
+     "label": "Entgelt pro Jahr",
+     "pflicht": true
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "Gegenstand",
+     "absaetze": [
+      "Der Eigentümer überlässt der Gemeinschaft die Anlage „{{anlageBezeichnung}}“ ({{anlageKwp}} kWp) zur Nutzung. Die erzeugte Energie steht der Gemeinschaft zu."
+     ]
+    },
+    {
+     "titel": "Entgelt",
+     "absaetze": [
+      "Das Nutzungsentgelt beträgt {{pachtzins}} pro Jahr und ist jeweils zum Jahresende fällig."
+     ]
+    },
+    {
+     "titel": "Betrieb und Instandhaltung",
+     "absaetze": [
+      "Wartung, Versicherung und Instandhaltung trägt, soweit nicht anders vereinbart, der Eigentümer. Die Gemeinschaft meldet Störungen unverzüglich."
+     ]
+    },
+    {
+     "titel": "Gebühren",
+     "absaetze": [
+      "Für Bestandverträge kann eine Rechtsgeschäftsgebühr anfallen, die selbst zu berechnen und mit Formular Geb 1 anzuzeigen ist (zu bestätigen). Keine Steuerberatung."
+     ]
+    },
+    {
+     "titel": "Dauer",
+     "absaetze": [
+      "Der Vertrag wird auf {{laufzeitJahre}} Jahre geschlossen und verlängert sich jeweils um ein Jahr, wenn er nicht sechs Monate vor Ablauf gekündigt wird."
+     ]
+    }
+   ],
+   "unterschriften": [
+    "Ort, Datum, Eigentümer",
+    "Ort, Datum, für die Gemeinschaft"
+   ]
+  },
+  "agb": {
+   "id": "agb",
+   "kurz": "Allgemeine Lieferbedingungen (§ 69)",
+   "gruppe": "lieferant",
+   "titel": "Allgemeine Lieferbedingungen der „{{name}}“",
+   "untertitel": "für die Lieferung von Gemeinschaftsstrom an Mitglieder – nach § 69 Abs. 1 Z 1 ElWG",
+   "art": "agb",
+   "quelle": "ElWG § 69 Abs. 1 Z 1–6 und Abs. 3, §§ 20, 21, 42; Muster „Allgemeine Lieferbedingungen“ der Koordinationsstelle (zu bestätigen)",
+   "stand": "2026-10-01",
+   "nummerierung": "paragraph",
+   "felder": [
+    {
+     "id": "name",
+     "label": "Gemeinschaft",
+     "pflicht": true
+    },
+    {
+     "id": "bezugspreisCt",
+     "label": "Bezugspreis netto",
+     "pflicht": true
+    },
+    {
+     "id": "beschwerdeKontakt",
+     "label": "Kontakt für Beschwerden",
+     "pflicht": true
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "Geltungsbereich",
+     "absaetze": [
+      "Diese Bedingungen gelten für die Lieferung der den Mitgliedern im Rahmen der gemeinsamen Energienutzung zugeordneten Energie durch die {{modellLabel}} „{{name}}“ (im Folgenden „Gemeinschaft“).",
+      "Die Gemeinschaft liefert nur die ihr je Viertelstunde zugeordnete Energie (Eigendeckung). Die Vollversorgung bleibt beim Stromlieferanten des Mitglieds.",
+      {
+       "text": "Die Pflichten nach § 69 ElWG nimmt für die Gemeinschaft der Organisator {{organisatorName}}, {{organisatorAnschrift}}, wahr (§ 68 Abs. 2, § 69 Abs. 4 ElWG).",
+       "wenn": "organisator"
+      }
+     ]
+    },
+    {
+     "titel": "Vertragsabschluss",
+     "absaetze": [
+      "Vor Vertragsabschluss erhält das Mitglied das Informationsblatt und diese Bedingungen. Der Vertrag kommt mit Annahme der Beitrittserklärung bzw. des Teilnahmevertrags zustande und wird mit der Aktivierung des Zählpunkts durch den Netzbetreiber wirksam."
+     ]
+    },
+    {
+     "titel": "Preise und Preisänderungen",
+     "absaetze": [
+      "Es gilt der Bezugspreis laut Preisblatt, derzeit {{bezugspreisCt}} netto zuzüglich gesetzlicher Steuern. Netzentgelte und Abgaben sind nicht enthalten.",
+      "Preisänderungen werden dem Mitglied mindestens einen Monat vor ihrer Wirksamkeit schriftlich bzw. elektronisch in verständlicher Form mitgeteilt, mit Anlass, Umfang und Hinweis auf das Kündigungsrecht (§ 21 ElWG). Das Mitglied kann bis zum Inkrafttreten kostenlos kündigen."
+     ]
+    },
+    {
+     "titel": "Rechnung",
+     "absaetze": [
+      "Das Mitglied kann zwischen einer monatlichen Rechnung und einer Jahresrechnung wählen (§ 69 Abs. 3 ElWG). Eine Rechnung wird mindestens einmal jährlich kostenlos ausgestellt.",
+      "Die Rechnung enthält mindestens Rechnungsbetrag, Fälligkeit, die abgerechneten Energiewerte, Name und Anschrift des Vertragspartners mit Kontaktadresse und die Bezeichnung der Zählpunkte (§ 69 Abs. 1 Z 4 ElWG). Auf Verlangen wird die Rechnung kostenlos erläutert."
+     ]
+    },
+    {
+     "titel": "Zahlung und Verzug",
+     "absaetze": [
+      "Rechnungsbeträge sind binnen 14 Tagen ab Zugang fällig bzw. werden per SEPA-Lastschrift eingezogen.",
+      "Bei Zahlungsverzug erinnert die Gemeinschaft zunächst kostenlos. Mahnspesen werden höchstens in Höhe der tatsächlich entstandenen, angemessenen Kosten verrechnet. Vor einer Beendigung wegen Zahlungsverzugs wird das Mitglied unter Setzung einer Nachfrist von mindestens zwei Wochen schriftlich gewarnt; schutzbedürftige Haushalte werden auf Beratungsangebote hingewiesen."
+     ]
+    },
+    {
+     "titel": "Laufzeit und Kündigung",
+     "absaetze": [
+      "Der Vertrag läuft auf unbestimmte Zeit und ist mit {{kuendigungsfristWochen}} Wochen zum Monatsende kündbar. Die Abmeldung beim Netzbetreiber erfolgt zum Vertragsende und ist nicht rückwirkend möglich."
+     ]
+    },
+    {
+     "titel": "Beschwerden und Streitbeilegung",
+     "absaetze": [
+      "Beschwerden richtet das Mitglied an {{beschwerdeKontakt}}. Die Gemeinschaft beantwortet sie binnen vier Wochen.",
+      "Unbeschadet der Zuständigkeit der Gerichte kann das Mitglied Streit- oder Beschwerdefälle der Schlichtungsstelle der E-Control vorlegen (zu bestätigen)."
+     ]
+    },
+    {
+     "titel": "Datenschutz",
+     "absaetze": [
+      "Für die Verarbeitung personenbezogener Daten gilt die Datenschutzinformation der Gemeinschaft."
+     ]
+    },
+    {
+     "titel": "Änderungen dieser Bedingungen",
+     "absaetze": [
+      "Änderungen dieser Bedingungen werden wie Preisänderungen mindestens einen Monat vor Wirksamkeit mitgeteilt; das Mitglied kann bis dahin kostenlos kündigen."
+     ]
+    }
+   ],
+   "unterschriften": []
+  },
+  "informationsblatt": {
+   "id": "informationsblatt",
+   "kurz": "Informationsblatt (§ 69)",
+   "gruppe": "lieferant",
+   "titel": "Informationsblatt vor Vertragsabschluss",
+   "untertitel": "{{name}} – nach § 69 Abs. 1 Z 2 ElWG",
+   "art": "informationsblatt",
+   "quelle": "ElWG § 69 Abs. 1 Z 2, §§ 68, 71; Fachkonzept 1.2, 2.4",
+   "stand": "2026-10-01",
+   "nummerierung": "abschnitt",
+   "felder": [
+    {
+     "id": "name",
+     "label": "Gemeinschaft",
+     "pflicht": true
+    },
+    {
+     "id": "bezugspreisCt",
+     "label": "Bezugspreis netto",
+     "pflicht": true
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "Wer liefert?",
+     "absaetze": [
+      "Ihr Vertragspartner ist die {{modellLabel}} „{{name}}“, {{sitzAdresse}}.",
+      {
+       "text": "Organisator: {{organisatorName}}, {{organisatorAnschrift}}.",
+       "wenn": "organisator"
+      }
+     ]
+    },
+    {
+     "titel": "Was wird geliefert?",
+     "absaetze": [
+      "Sie erhalten je Viertelstunde einen Anteil an der Erzeugung der Gemeinschaft, höchstens so viel, wie Sie in dieser Viertelstunde verbrauchen. Den übrigen Strom liefert weiterhin Ihr Stromlieferant – Sie wechseln ihn nicht."
+     ]
+    },
+    {
+     "titel": "Was kostet es?",
+     "absaetze": [
+      "Bezugspreis: {{bezugspreisCt}} netto. {{mitgliedsbeitrag}}",
+      "Die Netzentgelt-Reduktion bzw. Abgabenbefreiung (nur bestimmte Modelle) erscheint auf Ihrer Netzrechnung. Ab 01.01.2027 richtet sich die Reduktion nach dem Nahebereich (neue Systemnutzungsentgelte-Verordnung, Höhe noch offen, zu bestätigen)."
+     ]
+    },
+    {
+     "titel": "Wie wird abgerechnet?",
+     "absaetze": [
+      "Sie wählen zwischen monatlicher Rechnung und Jahresrechnung. Mindestens einmal jährlich erhalten Sie kostenlos eine Rechnung; auf Wunsch wird sie erläutert."
+     ]
+    },
+    {
+     "titel": "Was müssen Sie tun?",
+     "absaetze": [
+      "Nach dem Beitritt meldet die Gemeinschaft Ihren Zählpunkt beim Netzbetreiber an. Sie stimmen im Portal Ihres Netzbetreibers zu (Frist derzeit 30 Tage, zu bestätigen). Ein Smart Meter mit Viertelstundenwerten ist Voraussetzung."
+     ]
+    },
+    {
+     "titel": "Wie kommen Sie wieder heraus?",
+     "absaetze": [
+      "Kündigung mit {{kuendigungsfristWochen}} Wochen zum Monatsende. Preisänderungen werden mindestens einen Monat vorher angekündigt; Sie können dann kostenlos kündigen."
+     ]
+    },
+    {
+     "titel": "Mehrfachteilnahme",
+     "absaetze": [
+      "Ihr Zählpunkt kann an bis zu fünf Gemeinschaften teilnehmen; die Teilnahmefaktoren betragen zusammen höchstens 100 % (§ 71 Abs. 5 ElWG)."
+     ]
+    }
+   ],
+   "unterschriften": []
+  },
+  "vollmacht_organisator": {
+   "id": "vollmacht_organisator",
+   "kurz": "Bestellung und Vollmacht Organisator",
+   "gruppe": "organisator",
+   "titel": "Bestellung und Vollmacht des Organisators",
+   "untertitel": "nach § 68 Abs. 2 ElWG – {{name}}",
+   "art": "vollmacht",
+   "quelle": "ElWG § 68 Abs. 2, § 69 Abs. 4, § 70 Abs. 2; Fachkonzept 1.1, 2.3, 2.6",
+   "stand": "2026-10-01",
+   "nummerierung": "paragraph",
+   "felder": [
+    {
+     "id": "name",
+     "label": "Gemeinschaft",
+     "pflicht": true
+    },
+    {
+     "id": "marktpartnerId",
+     "label": "Marktpartner-ID"
+    },
+    {
+     "id": "ab",
+     "label": "Wirksam ab"
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "Bestellung",
+     "absaetze": [
+      "Die {{modellLabel}} „{{name}}“ (Marktpartner-ID {{marktpartnerId}}) bestellt die {{organisatorName}}, {{organisatorAnschrift}}, {{organisatorFirmenbuch}}, ab {{abDe}} als Organisator im Sinne des § 68 Abs. 2 ElWG."
+     ]
+    },
+    {
+     "titel": "Umfang",
+     "absaetze": [
+      "Der Organisator ist bevollmächtigt:",
+      {
+       "liste": [
+        "die Kommunikation mit dem Netzbetreiber im Namen der Gemeinschaft zu führen und die Marktprozesse über die EDA-Plattform mit der Marktpartner-ID der Gemeinschaft abzuwickeln (An- und Abmeldung, Teilnahmefaktor, Zählpunktliste, Datenanforderung),",
+        "Verträge mit Mitgliedern nach den Beschlüssen der Gemeinschaft vorzubereiten und abzuschließen und die Abrechnung durchzuführen,",
+        {
+         "text": "die Pflichten nach § 69 ElWG (Allgemeine Lieferbedingungen, Informationsblatt, Rechnungen, Änderungsinformationen) für die Gemeinschaft zu erfüllen (§ 69 Abs. 4 ElWG),",
+         "wenn": "lieferantenpflicht"
+        },
+        "Daten der Mitglieder als Auftragsverarbeiter zu verarbeiten."
+       ]
+      },
+      "Der Organisator ist kein eigener Marktteilnehmer; die Marktpartner-ID bleibt bei der Gemeinschaft. Freigaben, die nach den Statuten Organen vorbehalten sind (insbesondere Abrechnungsfreigabe, Zahlungsdateien, Aufnahme von Mitgliedern), bleiben bei den Organen."
+     ]
+    },
+    {
+     "titel": "Anzeige",
+     "absaetze": [
+      "Die Bestellung wird dem Netzbetreiber angezeigt. Ab der Anzeige informiert der Netzbetreiber nur noch den Organisator (§ 70 Abs. 2 ElWG)."
+     ]
+    },
+    {
+     "titel": "Dauer und Widerruf",
+     "absaetze": [
+      "Die Vollmacht gilt bis auf Widerruf. Ein Widerruf ist dem Netzbetreiber anzuzeigen; der Organisator übergibt bei Beendigung alle Daten in einem gängigen Format."
+     ]
+    }
+   ],
+   "unterschriften": [
+    "Ort, Datum, für die Gemeinschaft (Obfrau/Obmann)",
+    "Ort, Datum, zweite zeichnungsberechtigte Person",
+    "Annahme: {{organisatorName}}"
+   ]
+  },
+  "organisator_anzeige": {
+   "id": "organisator_anzeige",
+   "kurz": "Anzeige an den Netzbetreiber",
+   "gruppe": "organisator",
+   "titel": "Anzeige der Bestellung eines Organisators",
+   "untertitel": "an {{netzbetreiberName}} – nach § 68 Abs. 2 ElWG",
+   "art": "anzeige",
+   "quelle": "ElWG § 68 Abs. 2 letzter Satz, § 70 Abs. 2; Fachkonzept 2.3",
+   "stand": "2026-10-01",
+   "nummerierung": "keine",
+   "felder": [
+    {
+     "id": "netzbetreiberName",
+     "label": "Netzbetreiber",
+     "pflicht": true
+    },
+    {
+     "id": "gemeinschaftsId",
+     "label": "Gemeinschafts-ID",
+     "pflicht": true
+    },
+    {
+     "id": "marktpartnerId",
+     "label": "Marktpartner-ID",
+     "pflicht": true
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "Betreff: Anzeige des Organisators",
+     "absaetze": [
+      "Sehr geehrte Damen und Herren,",
+      "die {{modellLabel}} „{{name}}“ (Gemeinschafts-ID {{gemeinschaftsId}}, Marktpartner-ID {{marktpartnerId}}) zeigt hiermit an, dass sie die {{organisatorName}}, {{organisatorAnschrift}}, ab {{abDe}} als Organisator im Sinne des § 68 Abs. 2 ElWG bestellt hat.",
+      "Wir ersuchen, Informationen zur gemeinsamen Energienutzung ab diesem Zeitpunkt an den Organisator zu richten (§ 70 Abs. 2 ElWG). Die Vollmacht liegt bei.",
+      "Mit freundlichen Grüßen"
+     ]
+    }
+   ],
+   "unterschriften": [
+    "Für die Gemeinschaft",
+    "Organisator"
+   ]
+  },
+  "avv": {
+   "id": "avv",
+   "kurz": "Auftragsverarbeitungsvertrag (Art. 28 DSGVO)",
+   "gruppe": "organisator",
+   "titel": "Vertrag über die Auftragsverarbeitung",
+   "untertitel": "nach Art. 28 DSGVO – {{name}} und {{organisatorName}}",
+   "art": "avv",
+   "quelle": "DSGVO Art. 28, 32, 33; Fachkonzept 2.6 (Mandat)",
+   "stand": "2026-10-01",
+   "nummerierung": "paragraph",
+   "felder": [
+    {
+     "id": "name",
+     "label": "Verantwortlicher",
+     "pflicht": true
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "Gegenstand",
+     "absaetze": [
+      "Der Auftragsverarbeiter {{organisatorName}} verarbeitet im Auftrag der {{modellLabel}} „{{name}}“ (Verantwortlicher) personenbezogene Daten für Mitgliederverwaltung, Marktkommunikation über die EDA-Plattform, Energiedaten, Abrechnung, Zahlungsverkehr und Kommunikation."
+     ]
+    },
+    {
+     "titel": "Daten und Betroffene",
+     "absaetze": [
+      "Betroffen sind Mitglieder, Interessenten und Ansprechpersonen. Verarbeitet werden Stamm- und Kontaktdaten, Zählpunkte, Viertelstundenwerte, Vertrags-, Abrechnungs- und Bankdaten."
+     ]
+    },
+    {
+     "titel": "Pflichten des Auftragsverarbeiters",
+     "absaetze": [
+      {
+       "liste": [
+        "Verarbeitung nur auf dokumentierte Weisung,",
+        "Vertraulichkeit aller befugten Personen,",
+        "technische und organisatorische Maßnahmen nach Art. 32 DSGVO, insbesondere Rollen- und Rechtekonzept, Protokollierung, Verschlüsselung und Datenhaltung in der Europäischen Union,",
+        "weitere Auftragsverarbeiter nur nach vorheriger Information mit Widerspruchsrecht,",
+        "Unterstützung bei Betroffenenrechten und Meldungen nach Art. 33 DSGVO,",
+        "Rückgabe bzw. Löschung nach Vertragsende, soweit keine Aufbewahrungspflicht besteht,",
+        "Nachweise und Kontrollen auf Anfrage."
+       ]
+      }
+     ]
+    },
+    {
+     "titel": "Dauer",
+     "absaetze": [
+      "Der Vertrag gilt für die Dauer der Dienstleistung."
+     ]
+    }
+   ],
+   "unterschriften": [
+    "Verantwortlicher",
+    "Auftragsverarbeiter"
+   ]
+  },
+  "gruendungsauftrag": {
+   "id": "gruendungsauftrag",
+   "kurz": "Angebot und Auftrag",
+   "gruppe": "auftrag",
+   "titel": "Angebot und Auftrag „{{paketLabel}}“",
+   "untertitel": "Angebot {{angebotNummer}} der {{organisatorName}} für {{auftraggeberName}}",
+   "art": "auftrag",
+   "quelle": "Fachkonzept 3.15 (Gründungsauftrag); Signatur: einfache elektronische Signatur (eIDAS Art. 3 Nr. 10)",
+   "stand": "2026-10-01",
+   "nummerierung": "paragraph",
+   "felder": [
+    {
+     "id": "auftraggeberName",
+     "label": "Auftraggeber",
+     "pflicht": true
+    },
+    {
+     "id": "paketLabel",
+     "label": "Leistungspaket",
+     "pflicht": true
+    },
+    {
+     "id": "angebotNetto",
+     "label": "Honorar netto",
+     "pflicht": true
+    },
+    {
+     "id": "angebotGueltigBis",
+     "label": "Angebot gültig bis",
+     "pflicht": true
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "Vertragspartner",
+     "absaetze": [
+      "Auftragnehmer: {{organisatorName}}, {{organisatorAnschrift}}, {{organisatorFirmenbuch}}.",
+      "Auftraggeber: {{auftraggeberName}}, {{auftraggeberAnschrift}}.",
+      "Vorhaben: {{name}} ({{modellLabel}})."
+     ]
+    },
+    {
+     "titel": "Leistungen",
+     "absaetze": [
+      "Der Auftragnehmer erbringt folgende Leistungen: {{leistungenText}}.",
+      "Der Fortschritt, Fristen und Nachweise sind für den Auftraggeber jederzeit im Portal einsehbar."
+     ]
+    },
+    {
+     "titel": "Mitwirkung des Auftraggebers",
+     "absaetze": [
+      "Der Auftraggeber stellt die erforderlichen Angaben und Unterlagen (Interessentenliste, Zählpunkte, Ausweise der Organe, Beschlüsse) rechtzeitig bereit und unterzeichnet Anträge und Erklärungen, die eine persönliche Unterschrift der Organe erfordern."
+     ]
+    },
+    {
+     "titel": "Honorar",
+     "absaetze": [
+      "Das Honorar beträgt {{angebotNetto}} netto zuzüglich 20 % Umsatzsteuer ({{angebotUst}}), gesamt {{angebotBrutto}}.",
+      "Behördliche Gebühren, Kosten des Netzbetreibers, der EDA-Plattform, notarieller Beurkundungen und einer anwaltlichen bzw. steuerlichen Prüfung sind nicht enthalten.",
+      "Das Angebot ist gültig bis {{angebotGueltigBis}}."
+     ]
+    },
+    {
+     "titel": "Keine Rechts- und Steuerberatung",
+     "absaetze": [
+      "Statuten, Verträge und Formularhilfen sind Muster auf Grundlage öffentlicher Vorlagen der Koordinationsstelle für Energiegemeinschaften. Sie ersetzen keine Rechts- oder Steuerberatung; der Auftragnehmer empfiehlt die Prüfung durch eine befugte Stelle und vermittelt diese auf Wunsch."
+     ]
+    },
+    {
+     "titel": "Datenschutz",
+     "absaetze": [
+      "Soweit der Auftragnehmer personenbezogene Daten von Interessenten und Mitgliedern verarbeitet, schließen die Parteien einen Auftragsverarbeitungsvertrag nach Art. 28 DSGVO."
+     ]
+    },
+    {
+     "titel": "Kündigung und Schlussbestimmungen",
+     "absaetze": [
+      "Der Auftrag kann von beiden Seiten aus wichtigem Grund jederzeit beendet werden; bis dahin erbrachte Leistungen werden anteilig abgerechnet.",
+      "Es gilt österreichisches Recht. Zwingende Bestimmungen zugunsten von Verbrauchern bleiben unberührt."
+     ]
+    }
+   ],
+   "unterschriften": [
+    "Ort, Datum, Auftraggeber",
+    "Ort, Datum, {{organisatorName}}"
+   ]
+  },
+  "mitgliederinfo_wechsel": {
+   "id": "mitgliederinfo_wechsel",
+   "kurz": "Mitgliederinformation zum Wechsel",
+   "gruppe": "wechsel",
+   "titel": "Information zum Wechsel der Betriebsführung",
+   "untertitel": "{{name}} – Umstellung zum {{stichtagDe}}",
+   "art": "information",
+   "quelle": "Fachkonzept 2.6 (Wechsel ohne Ab- und Neuanmeldung, Stichtag, Saldovortrag, Parallellauf)",
+   "stand": "2026-10-01",
+   "nummerierung": "abschnitt",
+   "felder": [
+    {
+     "id": "stichtag",
+     "label": "Stichtag (erster Abrechnungsmonat bei ÖkoInvest)",
+     "pflicht": true
+    },
+    {
+     "id": "letzteAltabrechnung",
+     "label": "Letzter Monat beim bisherigen Dienstleister",
+     "pflicht": true
+    },
+    {
+     "id": "altdienstleister",
+     "label": "Bisheriger Dienstleister"
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "",
+     "ohneNummer": true,
+     "absaetze": [
+      "Liebe Mitglieder,",
+      "der Vorstand hat beschlossen, die Betriebsführung unserer Gemeinschaft ab {{stichtagDe}} der {{organisatorName}} zu übertragen. Mit dieser Information erfahren Sie, was sich ändert – und was gleich bleibt."
+     ]
+    },
+    {
+     "titel": "Was gleich bleibt",
+     "absaetze": [
+      {
+       "liste": [
+        "Ihre Zählpunkte bleiben angemeldet. Eine neue Anmeldung oder eine neue Zustimmung im Portal des Netzbetreibers ist nicht nötig.",
+        "Ihre Mitgliedschaft, Ihr Teilnahmefaktor und Ihre Preise bleiben unverändert.",
+        "Ihr Stromlieferant bleibt Ihr Stromlieferant."
+       ]
+      }
+     ]
+    },
+    {
+     "titel": "Was sich ändert",
+     "absaetze": [
+      {
+       "liste": [
+        "Abrechnungen bis einschließlich {{letzteAltabrechnungDe}} erstellt noch {{altdienstleister}}; ab {{stichtagDe}} erhalten Sie Rechnungen bzw. Gutschriften über das neue Mitgliederportal.",
+        "Offene Beträge werden als Saldo übernommen und auf der ersten neuen Abrechnung ausgewiesen.",
+        "Sie erhalten eine Einladung zum Mitgliederportal mit Ihren Energiedaten, Belegen und Verträgen."
+       ]
+      }
+     ]
+    },
+    {
+     "titel": "Kontrolle der ersten Abrechnung",
+     "absaetze": [
+      "Vor der Umstellung rechnen wir einen Monat parallel und vergleichen die Ergebnisse mit den Werten des Netzbetreibers. Abweichungen erklären wir Ihnen auf Wunsch zeilengenau."
+     ]
+    },
+    {
+     "titel": "Datenschutz",
+     "absaetze": [
+      "Die {{organisatorName}} verarbeitet Ihre Daten als Auftragsverarbeiter der Gemeinschaft (Art. 28 DSGVO). Die aktualisierte Datenschutzinformation liegt bei."
+     ]
+    }
+   ],
+   "unterschriften": [
+    "Für den Vorstand"
+   ]
+  },
+  "elwg_nachtrag": {
+   "id": "elwg_nachtrag",
+   "kurz": "ElWG-Anpassung (Information und Nachtrag)",
+   "gruppe": "wechsel",
+   "titel": "Anpassung an das Elektrizitätswirtschaftsgesetz (ElWG)",
+   "untertitel": "Information und Nachtrag zum Teilnahmevertrag – {{name}}",
+   "art": "nachtrag",
+   "quelle": "ElWG §§ 65–72, 188 Abs. 1 und 3, 189 Abs. 17; Koordinationsstelle „Änderungen für bestehende Energiegemeinschaften“; Mustervorlagen Beratungsservice Erneuerbare Energie Wien",
+   "stand": "2026-10-01",
+   "nummerierung": "abschnitt",
+   "felder": [
+    {
+     "id": "frist",
+     "label": "Rückmeldung bis",
+     "pflicht": true
+    }
+   ],
+   "abschnitte": [
+    {
+     "titel": "Was ist passiert?",
+     "absaetze": [
+      "Seit 01.10.2026 gelten für Energiegemeinschaften die §§ 65–72 ElWG; die bisherigen §§ 16a–16e ElWOG 2010 sind außer Kraft getreten (§ 188 ElWG). Unsere Gemeinschaft wurde ohne Ihr Zutun übergeführt (§ 189 Abs. 17 ElWG). Die bisherigen Vertragsmuster sollen an die neue Rechtslage angepasst werden."
+     ]
+    },
+    {
+     "titel": "Was ändert sich im Vertrag?",
+     "absaetze": [
+      {
+       "liste": [
+        "Verweise auf das ElWOG 2010 werden durch die entsprechenden Bestimmungen des ElWG ersetzt.",
+        "Ihr Zählpunkt kann an bis zu fünf gemeinsamen Energienutzungen teilnehmen; die Teilnahmefaktoren betragen zusammen höchstens 100 % (§ 71 Abs. 5 ElWG).",
+        {
+         "text": "Die Gemeinschaft hat einen Organisator bestellt ({{organisatorName}}), der die Kommunikation mit dem Netzbetreiber und die Abrechnung übernimmt (§ 68 Abs. 2 ElWG).",
+         "wenn": "organisator"
+        },
+        {
+         "text": "Da die Erzeugungsleistung der Gemeinschaft über der Schwelle des § 69 ElWG liegt ({{erzeugungsleistungKw}} kW), gelten künftig Allgemeine Lieferbedingungen und ein Informationsblatt; Sie können zwischen Monats- und Jahresrechnung wählen.",
+         "wenn": "lieferantenpflicht"
+        },
+        "Die Netzentgelt-Reduktion richtet sich ab 01.01.2027 nach dem Nahebereich (neue Verordnung, Höhe noch offen, zu bestätigen)."
+       ]
+      }
+     ]
+    },
+    {
+     "titel": "Was müssen Sie tun?",
+     "absaetze": [
+      "Bitte bestätigen Sie den Nachtrag bis {{fristDe}} im Mitgliederportal oder mit Ihrer Unterschrift. Ohne Rückmeldung gilt der Vertrag zu den angepassten Bedingungen weiter, sofern Sie nicht widersprechen; Sie können den Vertrag in diesem Fall mit {{kuendigungsfristWochen}} Wochen zum Monatsende kündigen (zu bestätigen)."
+     ]
+    }
+   ],
+   "unterschriften": [
+    "Ort, Datum, Mitglied"
+   ]
+  }
+ },
+ "MUSTER_HINWEIS": "MUSTER zur rechtlichen Prüfung – kein Ersatz für Rechts- oder Steuerberatung. Rechtsstand ElWG 01.10.2026 (§§ 65–72 ElWG, EAG § 79). Vor Verwendung durch eine befugte Stelle prüfen lassen.",
+ "OEKOINVEST": {
+  "name": "ÖkoInvest GmbH",
+  "anschrift": "Gewerbegebiet 10, 5121 Ostermiething",
+  "firmenbuch": "FN 541505g, Landesgericht Ried im Innkreis",
+  "geschaeftsfuehrung": "Andreas Wegscheider, Manuel Thaler"
+ },
+ "VORLAGEN_STAND": "2026-10-01",
+ "FOERDER_PROGRAMME": {
+  "eag_invest_pv": {
+   "titel": "EAG-Investitionszuschuss Photovoltaik",
+   "traeger": "EAG-Förderabwicklungsstelle (OeMAG)",
+   "art": "zuschuss",
+   "ebene": "bund",
+   "quelle": "EAG § 56; EAG-Investitionszuschüsseverordnung-Strom; WKO „EAG-Investitionszuschuss 2026“",
+   "quelleUrl": "https://www.eag-abwicklungsstelle.at/wissen/investitionszuschuss-photovoltaik-und-speicher/",
+   "status": "zu_bestaetigen",
+   "text": "Einmaliger Zuschuss je kWp für neue PV-Anlagen in Fördercalls; Kategorien nach Leistung. Fördersätze, Calltermine und eine allfällige Obergrenze für Gemeinschaften laut aktuellem Call."
+  },
+  "eag_invest_speicher": {
+   "titel": "EAG-Investitionszuschuss Stromspeicher",
+   "traeger": "EAG-Förderabwicklungsstelle (OeMAG)",
+   "art": "zuschuss",
+   "ebene": "bund",
+   "quelle": "EAG § 56; EAG-Investitionszuschüsseverordnung-Strom",
+   "quelleUrl": "https://www.eag-abwicklungsstelle.at/wissen/investitionszuschuss-photovoltaik-und-speicher/",
+   "status": "zu_bestaetigen",
+   "text": "Zuschuss für Stromspeicher in Verbindung mit einer PV-Anlage; Mindestgröße im Verhältnis zur PV-Leistung laut Call."
+  },
+  "eag_marktpraemie": {
+   "titel": "EAG-Marktprämie",
+   "traeger": "EAG-Förderabwicklungsstelle (OeMAG)",
+   "art": "praemie",
+   "ebene": "bund",
+   "quelle": "EAG §§ 9 ff., § 80; Fachkonzept 1.2",
+   "quelleUrl": "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20011619",
+   "status": "zu_bestaetigen",
+   "text": "Laufende Prämie auf eingespeisten Strom (Ausschreibung bzw. Antrag je Technologie). In EEG und BEG nur für die nicht in der Gemeinschaft verbrauchte Menge; laut Fachkonzept für höchstens 50 % der Erzeugung."
+  },
+  "klimafonds": {
+   "titel": "Programme des Klima- und Energiefonds",
+   "traeger": "Klima- und Energiefonds",
+   "art": "programm",
+   "ebene": "bund",
+   "quelle": "klimafonds.gv.at (z. B. Klima- und Energie-Modellregionen, Leitprojekte; EEG Faktura entstand als KEM-Projekt)",
+   "quelleUrl": "https://www.klimafonds.gv.at/",
+   "status": "zu_bestaetigen",
+   "text": "Jährliche Ausschreibungen für Regionen, Gemeinden und Projekte – häufig für Beratung, Pilotierung und Bürgerbeteiligung. Laufende Calls prüfen."
+  },
+  "umweltfoerderung": {
+   "titel": "Umweltförderung im Inland (Betriebe)",
+   "traeger": "Kommunalkredit Public Consulting (KPC)",
+   "art": "zuschuss",
+   "ebene": "bund",
+   "quelle": "umweltfoerderung.at",
+   "quelleUrl": "https://www.umweltfoerderung.at/",
+   "status": "zu_bestaetigen",
+   "text": "Förderungen für Betriebe, Vereine und Gemeinden, z. B. Energieeffizienz und Energiemanagement; ob PV bzw. Speicher im konkreten Fall förderfähig sind, hängt von der Förderaktion ab."
+  },
+  "kommunal": {
+   "titel": "Kommunalinvestitionen (Gemeinden)",
+   "traeger": "Bund (KPC)",
+   "art": "zuschuss",
+   "ebene": "bund",
+   "quelle": "Kommunalinvestitionsgesetz (aktuelle Fassung, zu bestätigen)",
+   "quelleUrl": "https://www.umweltfoerderung.at/",
+   "status": "zu_bestaetigen",
+   "text": "Gemeinden können Investitionen in Energieeffizienz und erneuerbare Energie über kommunale Investitionsprogramme fördern lassen; Laufzeit und Mittel prüfen."
+  },
+  "koordinationsstelle": {
+   "titel": "Koordinationsstelle für Energiegemeinschaften",
+   "traeger": "Klima- und Energiefonds / Bund",
+   "art": "beratung",
+   "ebene": "bund",
+   "quelle": "energiegemeinschaften.gv.at",
+   "quelleUrl": "https://energiegemeinschaften.gv.at/",
+   "status": "gesichert",
+   "text": "Kostenlose Information, Muster (Statuten, Verträge, Lieferbedingungen), Benefit-Tool und Ansprechstellen in den Bundesländern."
+  },
+  "land_O": {
+   "titel": "OÖ Energiesparverband",
+   "traeger": "Land Oberösterreich",
+   "art": "beratung",
+   "ebene": "land",
+   "land": "O",
+   "quelle": "energiesparverband.at",
+   "quelleUrl": "https://www.energiesparverband.at/",
+   "status": "zu_bestaetigen",
+   "text": "Energieberatung und Informationen zu Landesförderungen in Oberösterreich."
+  },
+  "land_N": {
+   "titel": "Energie- und Umweltagentur NÖ (eNu)",
+   "traeger": "Land Niederösterreich",
+   "art": "beratung",
+   "ebene": "land",
+   "land": "N",
+   "quelle": "enu.at",
+   "quelleUrl": "https://www.enu.at/",
+   "status": "zu_bestaetigen",
+   "text": "Beratung zu Energiegemeinschaften und Landesförderungen in Niederösterreich."
+  },
+  "land_W": {
+   "titel": "Beratungsservice Erneuerbare Energie Wien",
+   "traeger": "Stadt Wien",
+   "art": "beratung",
+   "ebene": "land",
+   "land": "W",
+   "quelle": "erneuerbare-energie.wien (Mustervorlagen ElWG)",
+   "quelleUrl": "https://www.erneuerbare-energie.wien/",
+   "status": "gesichert",
+   "text": "Beratung und Mustervorlagen für Energiegemeinschaften in Wien."
+  },
+  "land_T": {
+   "titel": "Energieagentur Tirol",
+   "traeger": "Land Tirol",
+   "art": "beratung",
+   "ebene": "land",
+   "land": "T",
+   "quelle": "energieagentur.tirol",
+   "quelleUrl": "https://www.energieagentur.tirol/",
+   "status": "zu_bestaetigen",
+   "text": "Beratung und Landesförderungen in Tirol."
+  },
+  "land_V": {
+   "titel": "Energieinstitut Vorarlberg",
+   "traeger": "Land Vorarlberg",
+   "art": "beratung",
+   "ebene": "land",
+   "land": "V",
+   "quelle": "energieinstitut.at",
+   "quelleUrl": "https://www.energieinstitut.at/",
+   "status": "zu_bestaetigen",
+   "text": "Beratung und Landesförderungen in Vorarlberg."
+  },
+  "land_sonst": {
+   "titel": "Landesförderung und Energieberatung des Bundeslandes",
+   "traeger": "Land",
+   "art": "beratung",
+   "ebene": "land",
+   "quelle": "Ansprechstellen laut Koordinationsstelle",
+   "quelleUrl": "https://energiegemeinschaften.gv.at/",
+   "status": "zu_bestaetigen",
+   "text": "Landesförderungen für PV, Speicher und Energiegemeinschaften wechseln häufig – vor der Planung bei der Landes-Energieberatung prüfen."
+  }
+ },
+ "EAG_PV_KATEGORIEN": [
+  {
+   "id": "A",
+   "bisKwp": 10,
+   "label": "Kategorie A (bis 10 kWp)"
+  },
+  {
+   "id": "B",
+   "bisKwp": 20,
+   "label": "Kategorie B (über 10 bis 20 kWp)"
+  },
+  {
+   "id": "C",
+   "bisKwp": 100,
+   "label": "Kategorie C (über 20 bis 100 kWp)"
+  },
+  {
+   "id": "D",
+   "bisKwp": 1000,
+   "label": "Kategorie D (über 100 bis 1.000 kWp)"
+  }
+ ],
+ "FOERDER_ERGEBNIS": {
+  "geeignet": {
+   "label": "geeignet",
+   "ton": "ok"
+  },
+  "pruefen": {
+   "label": "prüfen",
+   "ton": "warn"
+  },
+  "nicht_geeignet": {
+   "label": "nicht geeignet",
+   "ton": "neutral"
+  }
+ },
+ "FOERDER_STAND": "2026-10-01",
+ "AENDERUNG_VORLAUF_TAGE": 30
+}

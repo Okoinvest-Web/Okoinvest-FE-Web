@@ -1,0 +1,241 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 16:00:00.000000",
+ "description": "Tagesblock 15-Minuten-Werte je Zählpunkt, Gemeinschaft, Lokaltag und Größe (96 bzw. 92/100 Werte, kWh, Qualität L1–L3; Fachkonzept 3.12).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "zaehlpunkt",
+  "gemeinschaft",
+  "tag",
+  "groesse",
+  "schluessel",
+  "beginn_utc",
+  "werte",
+  "qualitaet",
+  "summe_kwh",
+  "werte_soll",
+  "werte_ist",
+  "l3",
+  "anteil_l3",
+  "vollstaendig",
+  "abrechenbar",
+  "quelle_art",
+  "nachricht_id",
+  "message_id",
+  "datei",
+  "empfangen_am",
+  "erst_empfangen_am",
+  "version",
+  "historie"
+ ],
+ "fields": [
+  {
+   "fieldname": "zaehlpunkt",
+   "fieldtype": "Link",
+   "label": "Zählpunkt",
+   "options": "Plattform EG Zaehlpunkt",
+   "reqd": 1,
+   "search_index": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "gemeinschaft",
+   "fieldtype": "Link",
+   "label": "Gemeinschaft",
+   "options": "Plattform EG Gemeinschaft",
+   "search_index": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "tag",
+   "fieldtype": "Date",
+   "label": "Tag (Lokaldatum Wien)",
+   "reqd": 1,
+   "search_index": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "groesse",
+   "fieldtype": "Select",
+   "label": "Größe",
+   "options": "verbrauch_gemessen\nverbrauch_tf\nanteil_erzeugung\neigendeckung\neigendeckung_ee\nerzeugung_gemessen\nerzeugung_tf\nrestueberschuss",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "schluessel",
+   "fieldtype": "Data",
+   "label": "Schlüssel (ZP|Gemeinschaft|Tag|Größe)",
+   "unique": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "beginn_utc",
+   "fieldtype": "Data",
+   "label": "Beginn (UTC)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "werte",
+   "fieldtype": "Long Text",
+   "label": "Werte (JSON, kWh je Viertelstunde)"
+  },
+  {
+   "fieldname": "qualitaet",
+   "fieldtype": "Long Text",
+   "label": "Qualität (JSON, L1/L2/L3 je Viertelstunde)"
+  },
+  {
+   "fieldname": "summe_kwh",
+   "fieldtype": "Float",
+   "label": "Summe kWh",
+   "precision": "6",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "werte_soll",
+   "fieldtype": "Int",
+   "label": "Viertelstunden (Soll)"
+  },
+  {
+   "fieldname": "werte_ist",
+   "fieldtype": "Int",
+   "label": "Viertelstunden (geliefert)"
+  },
+  {
+   "fieldname": "l3",
+   "fieldtype": "Int",
+   "label": "L3-Werte"
+  },
+  {
+   "fieldname": "anteil_l3",
+   "fieldtype": "Float",
+   "label": "Anteil L3",
+   "precision": "6"
+  },
+  {
+   "fieldname": "vollstaendig",
+   "fieldtype": "Check",
+   "label": "Vollständig"
+  },
+  {
+   "fieldname": "abrechenbar",
+   "fieldtype": "Check",
+   "label": "Abrechenbar",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "quelle_art",
+   "fieldtype": "Select",
+   "label": "Quelle",
+   "options": "eda\ncsv\nmanuell\ndemo",
+   "default": "eda"
+  },
+  {
+   "fieldname": "nachricht_id",
+   "fieldtype": "Data",
+   "label": "EDA-Nachricht"
+  },
+  {
+   "fieldname": "message_id",
+   "fieldtype": "Data",
+   "label": "Message-ID",
+   "search_index": 1
+  },
+  {
+   "fieldname": "datei",
+   "fieldtype": "Data",
+   "label": "Importdatei"
+  },
+  {
+   "fieldname": "empfangen_am",
+   "fieldtype": "Data",
+   "label": "Empfangen am (ISO)"
+  },
+  {
+   "fieldname": "erst_empfangen_am",
+   "fieldtype": "Data",
+   "label": "Erstlieferung am (ISO)"
+  },
+  {
+   "fieldname": "version",
+   "fieldtype": "Int",
+   "label": "Version",
+   "default": "1"
+  },
+  {
+   "fieldname": "historie",
+   "fieldtype": "Long Text",
+   "label": "Historie (JSON, Vorversionen)"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 04:16:58.413568",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform EG Messreihe",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Energie",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "in_create": 1,
+ "title_field": "schluessel",
+ "search_fields": "zaehlpunkt,tag,groesse"
+}

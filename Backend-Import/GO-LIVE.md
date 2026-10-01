@@ -168,6 +168,41 @@ Technik und Schnittstelle: `docs/EID.md`. Ohne Konfiguration bleibt die eID in P
 - [ ] Je Verfahren ein echter Durchlauf in der Referenz-/Testumgebung: Nachweis im Portal, Hinweis im KYC-Fall (Quelle „eID …“, ohne DEMO), Vertrauensniveau korrekt, Abweichung bei fremdem Namen erkannt, Wiederholung des Rücksprung-Links abgewiesen
 - [ ] `oekoinvest_eid_demo` und `developer_mode` in Produktion NICHT gesetzt (sonst Simulator)
 
+## 10b. EDA-Anbindung (Energiegemeinschaften)
+
+Technik: `plattform/api/eg_eda.py` (Prozesse, Fristen, Journal), `plattform/eg_eda_kern.py` (Schemas, Parser, Automat), Scheduler `plattform/eg_eda_jobs.py`, Transport-Dienst `dienste/eda-gateway` (README dort). Quellen und Fristen: `docs/EG-FACHKONZEPT.md` Abschnitte 2.3–2.7, 3.14, 9. Stand 01.10.2026 – „zu bestätigen“ vor dem Livegang mit EDA GmbH, ebUtilities bzw. den Netzbetreibern klären.
+
+**Je Gemeinschaft (Gründung bzw. Wechsel)**
+- [ ] **Marktpartner-Registrierung** auf ebUtilities in der Rolle EEG/BEG/GEA (Identitätsnachweis, Vereinsregister- bzw. Firmenbuchauszug) → Marktpartner-ID `RC…` (EEG), `CC…` (BEG), `GC…` (GEA); ab 05.10.2026 optimierter Ablauf auch für P2P/Eigenversorgung, Präfixe dort zu bestätigen (HA II 11; ebUtilities 04/2026). Eintragen unter Stammdaten der Gemeinschaft
+- [ ] **Betreibervertrag** mit dem Netzbetreiber (Weg je Netzbetreiber siehe Netzbetreiber-Stammdaten) → **Gemeinschafts-ID** (33 Zeichen; bei BEG von ebUtilities), ab 10/2026 mit Nahebereichs-ID und Organisator (HA II 7.1; Fachkonzept 2.3)
+- [ ] **Organisator-Anzeige** an den Netzbetreiber, wenn ÖkoInvest Organisator ist (ElWG § 68 Abs. 2); Dienstleistungs- und AV-Vertrag in der Plattform hinterlegt (sonst keine Rolle „Organisator“ und keine EDA-Aktionen)
+- [ ] Beim **Wechsel** einer Bestandsgemeinschaft: EDA-Rolle bleibt bei der Gemeinschaft; ÖkoInvest als Benutzer im EDA-Anwenderportal bzw. bevollmächtigt im Plattformvertrag eintragen, Altdienstleister austragen. Danach Zählpunktliste (EC_PODLIST) anfordern und Abgleich prüfen – keine Neuanmeldung nötig (Fachkonzept 2.6)
+
+**Anbindungsart und Kosten**
+- [ ] Anbindungsart je Gemeinschaft festlegen (Feld „EDA-Anbindung“): **EDA-Anwenderportal** (laut Fachkonzept kostenlos bis 50 Zählpunkte je Marktteilnehmer; die Marktanalyse nennt 100 – zu bestätigen; Nachrichten exportieren und unter „EDA → Nachricht manuell einspielen“ importieren), **E-Mail-Anbindung** (bis ca. 200 Zählpunkte) oder **KEP** (unbegrenzt) – E-Mail und KEP mit **EDA-Plattformvertrag** (Fachkonzept 2.3)
+- [ ] Kosten: Preisliste der EDA GmbH für Anwenderportal über der Freigrenze, E-Mail-Anbindung, KEP/Plattformvertrag und Bedingungen für Dienstleister einholen (Fachkonzept 9 Nr. 7 – offen, zu bestätigen); KEP-Software bzw. -Dienstleister (Angebot) einplanen
+- [ ] Ein Dienstleister arbeitet immer mit der Marktpartner-ID der Gemeinschaft (Fachkonzept 2.3) – das Gateway hat daher keine eigene ÖkoInvest-Marktpartner-ID
+
+**Zertifikate und Zugangsdaten (nur im Gateway, nie im Repository)**
+- [ ] E-Mail-Anbindung: Postfach (SMTP/IMAP mit TLS), **S/MIME-Zertifikat und Schlüssel** der Gemeinschaft bzw. des Bevollmächtigten, Partnerzertifikate und **Empfängeradressen je Marktpartner** laut EDA (`EDA_EMAIL_ADRESSEN`) – Format der E-Mail-Nachrichten (Anhang, Signatur, Verschlüsselung) mit EDA bestätigen
+- [ ] KEP: Austauschordner bzw. HTTPS-Endpunkt der KEP-Software mit **Client-Zertifikat**; Schnittstelle des Anbieters bestätigen
+- [ ] Gateway-Benutzer in Frappe: API-Key/Secret, Rolle „ÖkoInvest EDA-Gateway“ (Fixture offen, bis dahin „ÖkoInvest API“); `.env` des Gateways mit Rechten 0600, `python gateway.py --pruefen` grün
+- [ ] **EDA-Adressen der Netzbetreiber** (`AT` + Netzbetreibernummer) gegen das ebUtilities-Marktpartnerverzeichnis prüfen (Netzbetreiber-Stammdaten, Status „zu bestätigen“)
+
+**Schemas und Prozesse**
+- [ ] Kanonisches Plattform-XML gegen die offiziellen ebUtilities-Schemas abbilden und validieren (CMRequest, CMNotification, CMRevoke, CPRequest/CPNotification, ECMPList, ConsumptionRecord – Versionen laut Sekundärquelle, ab 05.10.2026 neue Prozessversionen; Fachkonzept 9 Nr. 3, zu bestätigen); Responsecode-Liste (`eg/eda/codes.js` = `eg_eda_kern.RESPONSECODES`) und MeterCodes der Energiedaten abgleichen
+- [ ] Zustimmungsfrist 30 Tage (Fachkonzept) bzw. 10 Werktage (Altregel laut Marktanalyse) mit dem aktuellen Prozesshandbuch bestätigen (`EDA_FRISTEN.zustimmungTage`)
+- [ ] Netzbetreiber-Portale für die Mitglieder-Anleitung (Erinnerungen) je Netzbetreiber prüfen (`PORTAL_ANLEITUNGEN`, Portalnamen „zu bestätigen“)
+
+**Betrieb**
+- [ ] Scheduler aktiv (`eg_eda_jobs.stuendlich`, `eg_eda_jobs.taeglich`); Error Log auf „EDA: …“ beobachten; Klärfälle im Nachrichtenjournal
+- [ ] Produktion: `eg_eda_simulator` in `site_config` **nicht** gesetzt (sonst antwortet der Simulator-Netzbetreiber); Website ohne `EDA_SIM_ZEITRAFFER_MS`
+- [ ] Aufbewahrung: EDA-Nachrichten (Rohinhalt + SHA-256) 7 Jahre (BAO § 132), nicht löschen
+
+**Abnahme (Testumgebung mit Simulator, danach Pilot-Gemeinschaft)**
+- [ ] Anmeldung → Zustimmung → Aktivierung, Ablehnung mit Responsecode, Fristablauf und erneutes Anstoßen, TF-Änderung (1× täglich), Massen-Abmeldung mit Vier-Augen-Freigabe durch den Vorstand, Zählpunktliste mit Abgleich, Nachforderung, Energiedaten an „Energiedaten“, Reklamation mit Beschwerdeakte – `node scripts/plattform-test-eg-eda.mjs`, Python `test_eg_eda_kern`, Gateway `python -m unittest discover -s tests`
+- [ ] Pilot: ein Monat Parallelbetrieb, Nachrichtenjournal gegen das EDA-Anwenderportal abgleichen
+
 ## 11. Test-Durchlauf je Prozess (Staging, dann Produktion mit Testkonten)
 
 - [ ] Anfrage über jedes Formular → Vorgang im Desk + Notification „Neue Anfrage“ an Akquise

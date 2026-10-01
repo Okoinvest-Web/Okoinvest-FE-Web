@@ -338,6 +338,48 @@ MATRIX.update({
 	"Plattform Gemeinde Akte": {ADMIN: L, AKQUISE: L, PROJEKTLEITUNG: L, LESER: L},
 })
 
+# Energiegemeinschaften ElWG (WP1–WP6, plattform/api/eg_*.py): Pflege nur über die API (Kontext-Rollen je Gemeinschaft,
+# Zustandsautomaten, Protokoll) – im Desk lesend wie Bereich „eg“ der Rechte-Matrix (Leitung, Buchhaltung, Energie, Leser;
+# Mitglieder/Organe mit Personendaten und IBAN zusätzlich Compliance). Kindtabellen (istable) brauchen keinen Eintrag.
+_EG_LESEN = {ADMIN: L, ENERGIE: L, BUCHHALTUNG: L, LESER: L}
+MATRIX.update({
+	"Plattform EG Gemeinschaft": dict(_EG_LESEN),
+	"Plattform EG Organ": {ADMIN: L, BUCHHALTUNG: L, COMPLIANCE: L, LESER: L},
+	"Plattform EG Mitglied": {ADMIN: L, BUCHHALTUNG: L, COMPLIANCE: L, LESER: L},
+	"Plattform EG Zaehlpunkt": dict(_EG_LESEN),
+	"Plattform EG ZP Teilnahme": dict(_EG_LESEN),
+	"Plattform EG Anlage": dict(_EG_LESEN),
+	"Plattform EG Tarif": dict(_EG_LESEN),
+	"Plattform EG Verteilschluessel": dict(_EG_LESEN),
+	"Plattform EG Netzbetreiber": dict(_EG_LESEN),
+	"Plattform EG Netzentgelt Regel": dict(_EG_LESEN),
+	# WP2 EDA
+	"Plattform EG EDA Prozess": {ADMIN: L, ENERGIE: L, LESER: L},
+	"Plattform EG EDA Nachricht": {ADMIN: L, ENERGIE: L, LESER: L},
+	# WP4 Abrechnung
+	"Plattform EG Periode": {ADMIN: L, BUCHHALTUNG: L, ENERGIE: L, LESER: L},
+	"Plattform EG Beleg": {ADMIN: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform EG Zahlung": {ADMIN: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform EG Buchung": {ADMIN: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform EG Abrechnung Einstellung": {ADMIN: L, BUCHHALTUNG: L, LESER: L},
+	# WP5 Gründung, Wechsel, Verein (Stimmzettel nur System Manager – Wahlgeheimnis)
+	"Plattform EG Gruendungsauftrag": {ADMIN: L, ENERGIE: L, LESER: L},
+	"Plattform EG Import": {ADMIN: L, COMPLIANCE: L},
+	"Plattform EG Foerdercheck": {ADMIN: L, ENERGIE: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform EG Dokument": {ADMIN: L, COMPLIANCE: L, LESER: L},
+	"Plattform EG Versammlung": {ADMIN: L, BUCHHALTUNG: L, COMPLIANCE: L, LESER: L},
+	"Plattform EG Versammlung Stimme": {},
+	"Plattform EG Beschluss": {ADMIN: L, BUCHHALTUNG: L, COMPLIANCE: L, LESER: L},
+	"Plattform EG Beitrag": {ADMIN: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform EG Vereinsakte": {ADMIN: L, COMPLIANCE: L, LESER: L},
+	# WP3 Energiedaten (Messwerte nur aggregiert im Desk lesbar wie Bereich „eg“)
+	"Plattform EG Messreihe": {ADMIN: L, ENERGIE: L, LESER: L},
+	"Plattform EG Messmonat": {ADMIN: L, ENERGIE: L, BUCHHALTUNG: L, LESER: L},
+	"Plattform EG Simulation": {ADMIN: L, ENERGIE: L, LESER: L},
+	# WP6 Portale (Interessenten mit Personendaten)
+	"Plattform EG Interesse": {ADMIN: L, ENERGIE: L, COMPLIANCE: L, LESER: L},
+})
+
 SCHLUESSEL = ["create", "delete", "email", "export", "print", "read", "report", "share", "write"]
 
 

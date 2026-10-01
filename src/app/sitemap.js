@@ -42,6 +42,8 @@ const SEITEN = [
   { pfad: "/virtuelles-kraftwerk", prio: 0.8, freq: "monthly" },
   { pfad: "/reststrom", prio: 0.8, freq: "monthly" },
   { pfad: "/energiegemeinschaften", prio: 0.8, freq: "monthly" },
+  { pfad: "/energiegemeinschaften/software", prio: 0.8, freq: "monthly" },
+  { pfad: "/energiegemeinschaften/rechner", prio: 0.7, freq: "monthly" },
   { pfad: "/genossenschaft", prio: 0.7, freq: "monthly" },
   { pfad: "/energie-live", prio: 0.7, freq: "hourly" },
   // Rechner & Werkzeuge

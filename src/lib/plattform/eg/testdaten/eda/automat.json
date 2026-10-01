@@ -1,0 +1,6496 @@
+{
+ "stand": "2026-10-01",
+ "erzeugt": "node scripts/plattform-test-eg-eda.mjs --vektoren",
+ "faelle": [
+  {
+   "name": "edaId",
+   "fn": "edaId",
+   "args": [
+    "RC109417",
+    "2026-10-01T08:00:00.000Z",
+    "ab12"
+   ],
+   "ergebnis": "RC10941720261001080000AB1200"
+  },
+  {
+   "name": "gemeinschaftEdaPruefen",
+   "fn": "gemeinschaftEdaPruefen",
+   "args": [
+    {
+     "id": "EGG-26-TEST01",
+     "name": "Testgemeinschaft (Demo)",
+     "status": "in_gruendung",
+     "marktpartnerId": "",
+     "gemeinschaftsId": "AT00300004910RC109417000000000001",
+     "verteilmodell": "dynamisch"
+    }
+   ],
+   "ergebnis": [
+    "Marktpartner-ID (ebUtilities) fehlt – Registrierung als Marktpartner abschließen (Fachkonzept 2.3).",
+    "EDA-Prozesse sind erst ab dem Status „EDA-bereit“ möglich."
+   ]
+  },
+  {
+   "name": "Anmeldung Σ TF > 100",
+   "fn": "anmeldungPruefen",
+   "args": [
+    {
+     "gemeinschaft": {
+      "id": "EGG-26-TEST01",
+      "name": "Testgemeinschaft (Demo)",
+      "status": "aktiv",
+      "marktpartnerId": "RC109417",
+      "gemeinschaftsId": "AT00300004910RC109417000000000001",
+      "verteilmodell": "dynamisch"
+     },
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "entwurf"
+     },
+     "zaehlpunkt": {
+      "id": "EZP-26-A",
+      "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+      "richtung": "verbrauch",
+      "smartMeter": "ja",
+      "netzbetreiberId": "ENB-OOE"
+     },
+     "teilnahmenDesZp": [
+      {
+       "id": "ETN-26-A",
+       "zaehlpunktId": "EZP-26-A",
+       "gemeinschaftId": "EGG-26-TEST01",
+       "mitgliedId": "EMG-26-A",
+       "teilnahmefaktor": 100,
+       "aufteilungsschluesselPct": null,
+       "consentId": "",
+       "tfHistorie": [],
+       "status": "entwurf"
+      },
+      {
+       "id": "X",
+       "status": "aktiv",
+       "teilnahmefaktor": 40
+      }
+     ],
+     "offeneProzesse": [],
+     "heute": "2026-10-01"
+    }
+   ],
+   "ergebnis": {
+    "ok": false,
+    "fehler": [
+     "Summe der bekannten Teilnahmefaktoren 140 % > 100 % (ElWG § 71 Abs. 5)."
+    ],
+    "hinweise": [],
+    "ereignisseVorher": []
+   }
+  },
+  {
+   "name": "statisch ohne Schlüssel, erneut",
+   "fn": "anmeldungPruefen",
+   "args": [
+    {
+     "gemeinschaft": {
+      "id": "EGG-26-TEST02",
+      "name": "Testgemeinschaft (Demo)",
+      "status": "aktiv",
+      "marktpartnerId": "RC109417",
+      "gemeinschaftsId": "AT00300004910RC109417000000000001",
+      "verteilmodell": "statisch"
+     },
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 50,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "abgelehnt"
+     },
+     "zaehlpunkt": {
+      "id": "EZP-26-A",
+      "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+      "richtung": "verbrauch",
+      "smartMeter": "nein",
+      "netzbetreiberId": "ENB-OOE"
+     },
+     "teilnahmenDesZp": [],
+     "offeneProzesse": [],
+     "heute": "2026-10-01"
+    }
+   ],
+   "ergebnis": {
+    "ok": false,
+    "fehler": [
+     "Statisches Modell: Aufteilungsschlüssel des Verbrauchszählpunkts fehlt."
+    ],
+    "hinweise": [
+     "Neu aktivierte Gemeinschaften erhalten ab 05.10.2026 voraussichtlich nur noch das dynamische Modell (zu bestätigen).",
+     "Kein Smart Meter hinterlegt – der Netzbetreiber muss ggf. erst einbauen (bis zu 2 Monate, HA II 5.1.1)."
+    ],
+    "ereignisseVorher": [
+     "erneut"
+    ]
+   }
+  },
+  {
+   "name": "mehr als 5 Teilnahmen",
+   "fn": "anmeldungPruefen",
+   "args": [
+    {
+     "gemeinschaft": {
+      "id": "EGG-26-TEST01",
+      "name": "Testgemeinschaft (Demo)",
+      "status": "aktiv",
+      "marktpartnerId": "RC109417",
+      "gemeinschaftsId": "AT00300004910RC109417000000000001",
+      "verteilmodell": "dynamisch"
+     },
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 60,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "entwurf"
+     },
+     "zaehlpunkt": {
+      "id": "EZP-26-B",
+      "zaehlpunktnummer": "AT0030000491000000000000000D00002",
+      "richtung": "erzeugung",
+      "smartMeter": "nein",
+      "netzbetreiberId": "ENB-OOE"
+     },
+     "teilnahmenDesZp": [
+      {
+       "id": "X1",
+       "status": "aktiv",
+       "teilnahmefaktor": 5
+      },
+      {
+       "id": "X2",
+       "status": "aktiv",
+       "teilnahmefaktor": 5
+      },
+      {
+       "id": "X3",
+       "status": "aktiv",
+       "teilnahmefaktor": 5
+      },
+      {
+       "id": "X4",
+       "status": "aktiv",
+       "teilnahmefaktor": 5
+      },
+      {
+       "id": "X5",
+       "status": "aktiv",
+       "teilnahmefaktor": 5
+      }
+     ],
+     "offeneProzesse": [],
+     "heute": "2026-10-01"
+    }
+   ],
+   "ergebnis": {
+    "ok": false,
+    "fehler": [
+     "Der Zählpunkt nimmt bereits an 5 Gemeinschaften teil (höchstens 5, ElWG § 71 Abs. 5)."
+    ],
+    "hinweise": [
+     "Kein Smart Meter hinterlegt – der Netzbetreiber muss ggf. erst einbauen (bis zu 2 Monate, HA II 5.1.1)."
+    ],
+    "ereignisseVorher": []
+   }
+  },
+  {
+   "name": "TF zweimal am Tag",
+   "fn": "tfAenderungPruefen",
+   "args": [
+    {
+     "gemeinschaft": {
+      "id": "EGG-26-TEST01",
+      "name": "Testgemeinschaft (Demo)",
+      "status": "aktiv",
+      "marktpartnerId": "RC109417",
+      "gemeinschaftsId": "AT00300004910RC109417000000000001",
+      "verteilmodell": "dynamisch"
+     },
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "C-1",
+      "tfHistorie": [
+       {
+        "gueltigAb": "2026-10-02",
+        "tf": 100
+       }
+      ],
+      "status": "aktiv"
+     },
+     "teilnahmefaktor": 80,
+     "ab": "2026-10-02",
+     "teilnahmenDesZp": [],
+     "prozesse": [],
+     "heute": "2026-10-01"
+    }
+   ],
+   "ergebnis": {
+    "ok": false,
+    "fehler": [
+     "Je Gemeinschaft und Zählpunkt ist derzeit nur eine Änderung des Teilnahmefaktors pro Tag möglich (bis 01.04.2028)."
+    ],
+    "hinweise": []
+   }
+  },
+  {
+   "name": "TF ungültig, rückwirkend, Prozess läuft",
+   "fn": "tfAenderungPruefen",
+   "args": [
+    {
+     "gemeinschaft": {
+      "id": "EGG-26-TEST01",
+      "name": "Testgemeinschaft (Demo)",
+      "status": "aktiv",
+      "marktpartnerId": "RC109417",
+      "gemeinschaftsId": "AT00300004910RC109417000000000001",
+      "verteilmodell": "dynamisch"
+     },
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "aktiv"
+     },
+     "teilnahmefaktor": 101,
+     "ab": "2026-09-30",
+     "teilnahmenDesZp": [],
+     "prozesse": [
+      {
+       "teilnahmeId": "ETN-26-A",
+       "status": "gesendet",
+       "prozesscode": "CM_REV_SP"
+      }
+     ],
+     "heute": "2026-10-01"
+    }
+   ],
+   "ergebnis": {
+    "ok": false,
+    "fehler": [
+     "Teilnahmefaktor ganzzahlig 1–100 (ElWG § 71 Abs. 5).",
+     "Eine Änderung ist nicht rückwirkend möglich (frühestens heute).",
+     "Für diese Teilnahme läuft bereits ein EDA-Prozess (Responsecode 86 vermeiden).",
+     "Summe der bekannten Teilnahmefaktoren 101 % > 100 %."
+    ],
+    "hinweise": [
+     "Consent-ID fehlt – Zählpunktliste (EC_PODLIST) abgleichen."
+    ]
+   }
+  },
+  {
+   "name": "TF Σ > 100",
+   "fn": "tfAenderungPruefen",
+   "args": [
+    {
+     "gemeinschaft": {
+      "id": "EGG-26-TEST01",
+      "name": "Testgemeinschaft (Demo)",
+      "status": "aktiv",
+      "marktpartnerId": "RC109417",
+      "gemeinschaftsId": "AT00300004910RC109417000000000001",
+      "verteilmodell": "dynamisch"
+     },
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "C-1",
+      "tfHistorie": [],
+      "status": "aktiv"
+     },
+     "teilnahmefaktor": 70,
+     "ab": "2026-10-05",
+     "teilnahmenDesZp": [
+      {
+       "id": "Y",
+       "status": "aktiv",
+       "teilnahmefaktor": 40
+      }
+     ],
+     "prozesse": [],
+     "heute": "2026-10-01"
+    }
+   ],
+   "ergebnis": {
+    "ok": false,
+    "fehler": [
+     "Summe der bekannten Teilnahmefaktoren 110 % > 100 %."
+    ],
+    "hinweise": []
+   }
+  },
+  {
+   "name": "Abmeldung rückwirkend",
+   "fn": "abmeldungPruefen",
+   "args": [
+    {
+     "gemeinschaft": {
+      "id": "EGG-26-TEST01",
+      "name": "Testgemeinschaft (Demo)",
+      "status": "aktiv",
+      "marktpartnerId": "RC109417",
+      "gemeinschaftsId": "AT00300004910RC109417000000000001",
+      "verteilmodell": "dynamisch"
+     },
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "aktiv"
+     },
+     "zum": "2026-09-30",
+     "prozesse": [],
+     "heute": "2026-10-01"
+    }
+   ],
+   "ergebnis": {
+    "ok": false,
+    "fehler": [
+     "Eine Abmeldung ist nicht rückwirkend möglich (Prozessdatum frühestens heute, Fachkonzept 2.7)."
+    ],
+    "hinweise": [
+     "Consent-ID fehlt – wird als „Migration“ gesendet (Altfall vor 03.10.2022, HA II 7.2), bitte prüfen."
+    ]
+   }
+  },
+  {
+   "name": "Abmeldung ok",
+   "fn": "abmeldungPruefen",
+   "args": [
+    {
+     "gemeinschaft": {
+      "id": "EGG-26-TEST01",
+      "name": "Testgemeinschaft (Demo)",
+      "status": "aktiv",
+      "marktpartnerId": "RC109417",
+      "gemeinschaftsId": "AT00300004910RC109417000000000001",
+      "verteilmodell": "dynamisch"
+     },
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "C-1",
+      "tfHistorie": [],
+      "status": "aktiv"
+     },
+     "zum": "2026-10-31",
+     "prozesse": [],
+     "heute": "2026-10-01"
+    }
+   ],
+   "ergebnis": {
+    "ok": true,
+    "fehler": [],
+    "hinweise": []
+   }
+  },
+  {
+   "name": "Nachforderung vor Aktivierung/heute",
+   "fn": "nachforderungPruefen",
+   "args": [
+    {
+     "gemeinschaft": {
+      "id": "EGG-26-TEST01",
+      "name": "Testgemeinschaft (Demo)",
+      "status": "aktiv",
+      "marktpartnerId": "RC109417",
+      "gemeinschaftsId": "AT00300004910RC109417000000000001",
+      "verteilmodell": "dynamisch"
+     },
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "aktiv",
+      "gueltigAb": "2026-09-15"
+     },
+     "von": "2026-09-01",
+     "bis": "2026-10-01",
+     "heute": "2026-10-01"
+    }
+   ],
+   "ergebnis": {
+    "ok": false,
+    "fehler": [
+     "Nachforderung nur für vergangene Tage (Daten frühestens am Folgetag).",
+     "Vor der Aktivierung (15.09.2026) gibt es keine Gemeinschaftsdaten."
+    ],
+    "hinweise": []
+   }
+  },
+  {
+   "name": "vierAugenNoetig",
+   "fn": "vierAugenNoetig",
+   "args": [
+    "abmelden",
+    3
+   ],
+   "ergebnis": true
+  },
+  {
+   "name": "vierAugenNoetig",
+   "fn": "vierAugenNoetig",
+   "args": [
+    "anmelden",
+    30
+   ],
+   "ergebnis": false
+  },
+  {
+   "name": "prozessNeu",
+   "fn": "prozessNeu",
+   "args": [
+    {
+     "prozesscode": "CM_REV_SP",
+     "gemeinschaft": {
+      "id": "EGG-26-TEST01",
+      "name": "Testgemeinschaft (Demo)",
+      "status": "aktiv",
+      "marktpartnerId": "RC109417",
+      "gemeinschaftsId": "AT00300004910RC109417000000000001",
+      "verteilmodell": "dynamisch"
+     },
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "aktiv"
+     },
+     "zaehlpunkt": {
+      "id": "EZP-26-A",
+      "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+      "richtung": "verbrauch",
+      "smartMeter": "ja",
+      "netzbetreiberId": "ENB-OOE"
+     },
+     "netzbetreiber": {
+      "id": "ENB-OOE",
+      "name": "Netz Oberösterreich GmbH",
+      "kurzname": "Netz OÖ",
+      "marktpartnerId": "AT003000",
+      "kontaktEmail": ""
+     },
+     "prozessdatum": "2026-10-31",
+     "parameter": {
+      "zum": "2026-10-31"
+     },
+     "freigabeNoetig": true,
+     "jetzt": "2026-10-01T08:00:00.000Z",
+     "von": "U-1"
+    }
+   ],
+   "ergebnis": {
+    "gemeinschaftId": "EGG-26-TEST01",
+    "prozesscode": "CM_REV_SP",
+    "version": "01.10",
+    "teilnahmeId": "ETN-26-A",
+    "zaehlpunktId": "EZP-26-A",
+    "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+    "netzbetreiberId": "ENB-OOE",
+    "empfaenger": "AT003000",
+    "prozessdatum": "2026-10-31",
+    "status": "freigabe_offen",
+    "responsecode": "",
+    "responsetext": "",
+    "fristBis": "",
+    "gesendetAm": "",
+    "versuche": 0,
+    "freigabe": {
+     "status": "offen",
+     "beantragtVon": "U-1",
+     "von": null,
+     "am": ""
+    },
+    "massenId": "",
+    "parameter": {
+     "zum": "2026-10-31"
+    },
+    "ergebnis": {},
+    "erinnerungen": [],
+    "merker": [],
+    "nachfolgerId": "",
+    "verlauf": [
+     {
+      "am": "2026-10-01T08:00:00.000Z",
+      "von": "",
+      "nach": "freigabe_offen",
+      "nachricht": "",
+      "text": "Angelegt – Freigabe durch den Vorstand nötig (Vier-Augen)",
+      "konto": "U-1"
+     }
+    ]
+   }
+  },
+  {
+   "name": "Start Anmeldung statisch",
+   "fn": "startNachricht",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "entwurf",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "gemeinschaft": {
+      "id": "EGG-26-TEST02",
+      "name": "Testgemeinschaft (Demo)",
+      "status": "aktiv",
+      "marktpartnerId": "RC109417",
+      "gemeinschaftsId": "AT00300004910RC109417000000000001",
+      "verteilmodell": "statisch"
+     },
+     "zaehlpunkt": {
+      "id": "EZP-26-A",
+      "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+      "richtung": "verbrauch",
+      "smartMeter": "ja",
+      "netzbetreiberId": "ENB-OOE"
+     },
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": 12.5,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "entwurf"
+     },
+     "messageId": "RC10941720261001080000M00001",
+     "erstellt": "2026-10-01T08:00:00Z"
+    }
+   ],
+   "ergebnis": {
+    "code": "ANFORDERUNG_ECON",
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CMRequest xmlns=\"urn:oekoinvest:eda:CMRequest:01.30\" SchemaVersion=\"01.30\">\n  <MarketParticipantDirectory DocumentMode=\"PROD\" Duplicate=\"false\">\n    <RoutingHeader>\n      <Sender AddressType=\"EC_NUMBER\">\n        <MessageAddress>RC109417</MessageAddress>\n      </Sender>\n      <Receiver AddressType=\"EC_NUMBER\">\n        <MessageAddress>AT003000</MessageAddress>\n      </Receiver>\n      <DocumentCreationDateTime>2026-10-01T08:00:00Z</DocumentCreationDateTime>\n    </RoutingHeader>\n    <Sector>01</Sector>\n    <MessageCode>ANFORDERUNG_ECON</MessageCode>\n    <ProcessCode>EC_REQ_ONL</ProcessCode>\n  </MarketParticipantDirectory>\n  <ProcessDirectory>\n    <MessageId>RC10941720261001080000M00001</MessageId>\n    <ConversationId>RC10941720261001080000ABCDEF</ConversationId>\n    <ProcessDate>2026-10-01</ProcessDate>\n    <MeteringPoint>AT0030000491000000000000000D00001</MeteringPoint>\n    <CMRequestId>RC10941720261001080000ABCDEF</CMRequestId>\n    <ReqDatType>EnergyCommunityRegistration</ReqDatType>\n    <DateFrom>2026-10-01</DateFrom>\n    <ECID>AT00300004910RC109417000000000001</ECID>\n    <ECPartFact>100</ECPartFact>\n    <EnergyDirection>CONSUMPTION</EnergyDirection>\n    <ECShare>12.5</ECShare>\n    <ECDisModel>STATIC</ECDisModel>\n  </ProcessDirectory>\n</CMRequest>\n"
+   }
+  },
+  {
+   "name": "Start Abmeldung ohne Consent (Migration)",
+   "fn": "startNachricht",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "CM_REV_SP",
+     "version": "01.10",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "entwurf",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "zum": "2026-10-31"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "gemeinschaft": {
+      "id": "EGG-26-TEST01",
+      "name": "Testgemeinschaft (Demo)",
+      "status": "aktiv",
+      "marktpartnerId": "RC109417",
+      "gemeinschaftsId": "AT00300004910RC109417000000000001",
+      "verteilmodell": "dynamisch"
+     },
+     "zaehlpunkt": {
+      "id": "EZP-26-A",
+      "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+      "richtung": "verbrauch",
+      "smartMeter": "ja",
+      "netzbetreiberId": "ENB-OOE"
+     },
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "aktiv"
+     },
+     "messageId": "M5",
+     "erstellt": "2026-10-01T08:00:00Z",
+     "modus": "SIMU"
+    }
+   ],
+   "ergebnis": {
+    "code": "AUFHEBUNG_CCMS",
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CMRevoke xmlns=\"urn:oekoinvest:eda:CMRevoke:01.10\" SchemaVersion=\"01.10\">\n  <MarketParticipantDirectory DocumentMode=\"SIMU\" Duplicate=\"false\">\n    <RoutingHeader>\n      <Sender AddressType=\"EC_NUMBER\">\n        <MessageAddress>RC109417</MessageAddress>\n      </Sender>\n      <Receiver AddressType=\"EC_NUMBER\">\n        <MessageAddress>AT003000</MessageAddress>\n      </Receiver>\n      <DocumentCreationDateTime>2026-10-01T08:00:00Z</DocumentCreationDateTime>\n    </RoutingHeader>\n    <Sector>01</Sector>\n    <MessageCode>AUFHEBUNG_CCMS</MessageCode>\n    <ProcessCode>CM_REV_SP</ProcessCode>\n  </MarketParticipantDirectory>\n  <ProcessDirectory>\n    <MessageId>M5</MessageId>\n    <ConversationId>RC10941720261001080000ABCDEF</ConversationId>\n    <ProcessDate>2026-10-01</ProcessDate>\n    <MeteringPoint>AT0030000491000000000000000D00001</MeteringPoint>\n    <ECID>AT00300004910RC109417000000000001</ECID>\n    <ConsentId>Migration</ConsentId>\n    <ConsentEnd>2026-10-31</ConsentEnd>\n    <Reason>SP</Reason>\n  </ProcessDirectory>\n</CMRevoke>\n"
+   }
+  },
+  {
+   "name": "Start Nachforderung",
+   "fn": "startNachricht",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "CR_REQ_PT",
+     "version": "01.12",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "entwurf",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "vonUtc": "2026-09-19T22:00:00Z",
+      "bisUtc": "2026-09-21T22:00:00Z"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "gemeinschaft": {
+      "id": "EGG-26-TEST01",
+      "name": "Testgemeinschaft (Demo)",
+      "status": "aktiv",
+      "marktpartnerId": "RC109417",
+      "gemeinschaftsId": "AT00300004910RC109417000000000001",
+      "verteilmodell": "dynamisch"
+     },
+     "zaehlpunkt": {
+      "id": "EZP-26-A",
+      "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+      "richtung": "verbrauch",
+      "smartMeter": "ja",
+      "netzbetreiberId": "ENB-OOE"
+     },
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "aktiv"
+     },
+     "messageId": "M6",
+     "erstellt": "2026-10-01T08:00:00Z"
+    }
+   ],
+   "ergebnis": {
+    "code": "ANFORDERUNG_PT",
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CPRequest xmlns=\"urn:oekoinvest:eda:CPRequest:01.12\" SchemaVersion=\"01.12\">\n  <MarketParticipantDirectory DocumentMode=\"PROD\" Duplicate=\"false\">\n    <RoutingHeader>\n      <Sender AddressType=\"EC_NUMBER\">\n        <MessageAddress>RC109417</MessageAddress>\n      </Sender>\n      <Receiver AddressType=\"EC_NUMBER\">\n        <MessageAddress>AT003000</MessageAddress>\n      </Receiver>\n      <DocumentCreationDateTime>2026-10-01T08:00:00Z</DocumentCreationDateTime>\n    </RoutingHeader>\n    <Sector>01</Sector>\n    <MessageCode>ANFORDERUNG_PT</MessageCode>\n    <ProcessCode>CR_REQ_PT</ProcessCode>\n  </MarketParticipantDirectory>\n  <ProcessDirectory>\n    <MessageId>M6</MessageId>\n    <ConversationId>RC10941720261001080000ABCDEF</ConversationId>\n    <ProcessDate>2026-10-01</ProcessDate>\n    <MeteringPoint>AT0030000491000000000000000D00001</MeteringPoint>\n    <ECID>AT00300004910RC109417000000000001</ECID>\n    <DateTimeFrom>2026-09-19T22:00:00Z</DateTimeFrom>\n    <DateTimeTo>2026-09-21T22:00:00Z</DateTimeTo>\n  </ProcessDirectory>\n</CPRequest>\n"
+   }
+  },
+  {
+   "name": "eingehender Prozess nicht startbar",
+   "fn": "startNachricht",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "CM_REV_CUS",
+     "version": "01.10",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "entwurf",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "gemeinschaft": {
+      "id": "EGG-26-TEST01",
+      "name": "Testgemeinschaft (Demo)",
+      "status": "aktiv",
+      "marktpartnerId": "RC109417",
+      "gemeinschaftsId": "AT00300004910RC109417000000000001",
+      "verteilmodell": "dynamisch"
+     },
+     "messageId": "M7",
+     "erstellt": "2026-10-01T08:00:00Z"
+    }
+   ],
+   "fehler": "Prozess CM_REV_CUS wird nicht von der Gemeinschaft gestartet."
+  },
+  {
+   "name": "alsGesendet",
+   "fn": "alsGesendet",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "entwurf",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "jetzt": "2026-10-01T08:00:00.000Z",
+     "messageId": "M1"
+    }
+   ],
+   "ergebnis": {
+    "gemeinschaftId": "EGG-26-TEST01",
+    "prozesscode": "EC_REQ_ONL",
+    "version": "01.30",
+    "teilnahmeId": "ETN-26-A",
+    "zaehlpunktId": "EZP-26-A",
+    "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+    "netzbetreiberId": "ENB-OOE",
+    "empfaenger": "AT003000",
+    "prozessdatum": "2026-10-01",
+    "status": "gesendet",
+    "responsecode": "",
+    "responsetext": "",
+    "fristBis": "",
+    "gesendetAm": "2026-10-01T08:00:00.000Z",
+    "versuche": 1,
+    "freigabe": {
+     "status": "",
+     "beantragtVon": null,
+     "von": null,
+     "am": ""
+    },
+    "massenId": "",
+    "parameter": {},
+    "ergebnis": {},
+    "erinnerungen": [],
+    "merker": [],
+    "nachfolgerId": "",
+    "verlauf": [
+     {
+      "am": "2026-10-01T08:00:00.000Z",
+      "von": "",
+      "nach": "entwurf",
+      "nachricht": "",
+      "text": "Angelegt",
+      "konto": null
+     },
+     {
+      "am": "2026-10-01T08:00:00.000Z",
+      "von": "entwurf",
+      "nach": "gesendet",
+      "nachricht": "ANFORDERUNG_ECON",
+      "text": "Gesendet (M1)",
+      "konto": null
+     }
+    ],
+    "id": "EDP-26-T1",
+    "conversationId": "RC10941720261001080000ABCDEF"
+   }
+  },
+  {
+   "name": "alsGesendet",
+   "fn": "alsGesendet",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "jetzt": "2026-10-01T08:00:00.000Z",
+     "messageId": "M1b",
+     "wiederholung": true
+    }
+   ],
+   "ergebnis": {
+    "gemeinschaftId": "EGG-26-TEST01",
+    "prozesscode": "EC_REQ_ONL",
+    "version": "01.30",
+    "teilnahmeId": "ETN-26-A",
+    "zaehlpunktId": "EZP-26-A",
+    "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+    "netzbetreiberId": "ENB-OOE",
+    "empfaenger": "AT003000",
+    "prozessdatum": "2026-10-01",
+    "status": "gesendet",
+    "responsecode": "",
+    "responsetext": "",
+    "fristBis": "",
+    "gesendetAm": "2026-10-01T08:00:00.000Z",
+    "versuche": 2,
+    "freigabe": {
+     "status": "",
+     "beantragtVon": null,
+     "von": null,
+     "am": ""
+    },
+    "massenId": "",
+    "parameter": {},
+    "ergebnis": {},
+    "erinnerungen": [],
+    "merker": [],
+    "nachfolgerId": "",
+    "verlauf": [
+     {
+      "am": "2026-10-01T08:00:00.000Z",
+      "von": "",
+      "nach": "entwurf",
+      "nachricht": "",
+      "text": "Angelegt",
+      "konto": null
+     },
+     {
+      "am": "2026-10-01T08:00:00.000Z",
+      "von": "gesendet",
+      "nach": "gesendet",
+      "nachricht": "ANFORDERUNG_ECON",
+      "text": "Erneut gesendet (Versuch 2, M1b)",
+      "konto": null
+     }
+    ],
+    "id": "EDP-26-T1",
+    "conversationId": "RC10941720261001080000ABCDEF"
+   }
+  },
+  {
+   "name": "Vier-Augen selbst",
+   "fn": "freigabeAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "CM_REV_SP",
+     "version": "01.10",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "freigabe_offen",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "offen",
+      "beantragtVon": "U-1",
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "entscheidung": "erteilen",
+     "von": "U-1",
+     "jetzt": "2026-10-01T08:00:00.000Z"
+    }
+   ],
+   "fehler": "Vier-Augen-Prinzip: Die beantragende Person kann nicht selbst freigeben."
+  },
+  {
+   "name": "Vier-Augen erteilt",
+   "fn": "freigabeAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "CM_REV_SP",
+     "version": "01.10",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "freigabe_offen",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "offen",
+      "beantragtVon": "U-1",
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "entscheidung": "erteilen",
+     "von": "U-2",
+     "jetzt": "2026-10-01T08:00:00.000Z"
+    }
+   ],
+   "ergebnis": {
+    "gemeinschaftId": "EGG-26-TEST01",
+    "prozesscode": "CM_REV_SP",
+    "version": "01.10",
+    "teilnahmeId": "ETN-26-A",
+    "zaehlpunktId": "EZP-26-A",
+    "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+    "netzbetreiberId": "ENB-OOE",
+    "empfaenger": "AT003000",
+    "prozessdatum": "2026-10-01",
+    "status": "entwurf",
+    "responsecode": "",
+    "responsetext": "",
+    "fristBis": "",
+    "gesendetAm": "",
+    "versuche": 0,
+    "freigabe": {
+     "status": "erteilt",
+     "beantragtVon": "U-1",
+     "von": "U-2",
+     "am": "2026-10-01T08:00:00.000Z"
+    },
+    "massenId": "",
+    "parameter": {},
+    "ergebnis": {},
+    "erinnerungen": [],
+    "merker": [],
+    "nachfolgerId": "",
+    "verlauf": [
+     {
+      "am": "2026-10-01T08:00:00.000Z",
+      "von": "",
+      "nach": "entwurf",
+      "nachricht": "",
+      "text": "Angelegt",
+      "konto": null
+     },
+     {
+      "am": "2026-10-01T08:00:00.000Z",
+      "von": "freigabe_offen",
+      "nach": "entwurf",
+      "nachricht": "",
+      "text": "Freigegeben (Vier-Augen)",
+      "konto": "U-2"
+     }
+    ],
+    "id": "EDP-26-T1",
+    "conversationId": "RC10941720261001080000ABCDEF"
+   }
+  },
+  {
+   "name": "Vier-Augen abgelehnt",
+   "fn": "freigabeAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "CM_REV_SP",
+     "version": "01.10",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "freigabe_offen",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "offen",
+      "beantragtVon": "U-1",
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "entscheidung": "ablehnen",
+     "von": "U-2",
+     "jetzt": "2026-10-01T08:00:00.000Z",
+     "grund": "falsches Datum"
+    }
+   ],
+   "ergebnis": {
+    "gemeinschaftId": "EGG-26-TEST01",
+    "prozesscode": "CM_REV_SP",
+    "version": "01.10",
+    "teilnahmeId": "ETN-26-A",
+    "zaehlpunktId": "EZP-26-A",
+    "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+    "netzbetreiberId": "ENB-OOE",
+    "empfaenger": "AT003000",
+    "prozessdatum": "2026-10-01",
+    "status": "verworfen",
+    "responsecode": "",
+    "responsetext": "",
+    "fristBis": "",
+    "gesendetAm": "",
+    "versuche": 0,
+    "freigabe": {
+     "status": "abgelehnt",
+     "beantragtVon": "U-1",
+     "von": "U-2",
+     "am": "2026-10-01T08:00:00.000Z"
+    },
+    "massenId": "",
+    "parameter": {},
+    "ergebnis": {},
+    "erinnerungen": [],
+    "merker": [],
+    "nachfolgerId": "",
+    "verlauf": [
+     {
+      "am": "2026-10-01T08:00:00.000Z",
+      "von": "",
+      "nach": "entwurf",
+      "nachricht": "",
+      "text": "Angelegt",
+      "konto": null
+     },
+     {
+      "am": "2026-10-01T08:00:00.000Z",
+      "von": "freigabe_offen",
+      "nach": "verworfen",
+      "nachricht": "",
+      "text": "Freigabe abgelehnt: falsches Datum",
+      "konto": "U-2"
+     }
+    ],
+    "id": "EDP-26-T1",
+    "conversationId": "RC10941720261001080000ABCDEF"
+   }
+  },
+  {
+   "name": "ANTWORT_ECON 99 → Zustimmung angefordert",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CMNotification",
+      "version": "01.30",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ANTWORT_ECON",
+      "prozesscode": "EC_REQ_ONL",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "CMRequestId": "RC10941720261001080000ABCDEF",
+      "ResponseCode": "99"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "angefragt"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "99",
+     "responsetext": "Meldung erhalten – Anfrage angenommen",
+     "fristBis": "2026-11-01",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "gesendet",
+       "nach": "bestaetigt",
+       "nachricht": "ANTWORT_ECON",
+       "text": "Netzbetreiber hat die Anmeldung angenommen und die Zustimmung beim Mitglied angefordert (Frist 30 Tage)",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [
+     {
+      "ereignis": "anforderung_econ",
+      "responsecode": "99",
+      "datum": "2026-10-02"
+     }
+    ],
+    "energiedaten": false,
+    "hinweise": [],
+    "klaerfall": "",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "ZUSTIMMUNG_ECON ohne vorherige Antwort (Reihenfolge)",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CMNotification",
+      "version": "01.30",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ZUSTIMMUNG_ECON",
+      "prozesscode": "EC_REQ_ONL",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "CMRequestId": "RC10941720261001080000ABCDEF",
+      "ResponseCode": "175",
+      "ConsentId": "CONS-1"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "angefragt"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "175",
+     "responsetext": "Zustimmung erteilt",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "gesendet",
+       "nach": "bestaetigt",
+       "nachricht": "ZUSTIMMUNG_ECON",
+       "text": "Mitglied hat zugestimmt (Consent-ID CONS-1)",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [
+     {
+      "ereignis": "anforderung_econ",
+      "responsecode": "175",
+      "datum": "2026-10-02"
+     },
+     {
+      "ereignis": "zustimmung_econ",
+      "responsecode": "175",
+      "consentId": "CONS-1",
+      "datum": "2026-10-02"
+     }
+    ],
+    "energiedaten": false,
+    "hinweise": [],
+    "klaerfall": "",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "ANTWORT_ECON 182 nach Zustimmung → Technik",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CMNotification",
+      "version": "01.30",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ANTWORT_ECON",
+      "prozesscode": "EC_REQ_ONL",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "CMRequestId": "RC10941720261001080000ABCDEF",
+      "ResponseCode": "182"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "zugestimmt"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "182",
+     "responsetext": "Kein fernauslesbarer Zähler (Smart Meter fehlt)",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "bestaetigt",
+       "nach": "bestaetigt",
+       "nachricht": "ANTWORT_ECON",
+       "text": "Technik ausständig: Kein fernauslesbarer Zähler (Smart Meter fehlt)",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF",
+     "technikSeit": "2026-10-02"
+    },
+    "ereignisse": [
+     {
+      "ereignis": "antwort_econ",
+      "responsecode": "182",
+      "datum": "2026-10-02"
+     }
+    ],
+    "energiedaten": false,
+    "hinweise": [],
+    "klaerfall": "",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "ABSCHLUSS_ECON mit TF-Abweichung",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "ECMPList",
+      "version": "01.30",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ABSCHLUSS_ECON",
+      "prozesscode": "EC_REQ_ONL",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "ECID": "AT00300004910RC109417000000000001",
+      "ConsentId": "CONS-1",
+      "DateActivate": "2026-10-03",
+      "ECPartFact": "90",
+      "EnergyDirection": "CONSUMPTION"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "wartet_technik"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "abgeschlossen",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {
+      "aktivAb": "2026-10-03",
+      "consentId": "CONS-1"
+     },
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "bestaetigt",
+       "nach": "abgeschlossen",
+       "nachricht": "ABSCHLUSS_ECON",
+       "text": "Zuordnung aktiv ab 03.10.2026",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [
+     {
+      "ereignis": "abschluss_econ",
+      "datum": "2026-10-03",
+      "consentId": "CONS-1"
+     }
+    ],
+    "energiedaten": false,
+    "hinweise": [],
+    "klaerfall": "Netzbetreiber meldet Teilnahmefaktor 90 %, Plattform 100 % – bitte abgleichen (EC_PODLIST).",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "ABLEHNUNG_ECON 173 → Frist abgelaufen",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CMNotification",
+      "version": "01.30",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ABLEHNUNG_ECON",
+      "prozesscode": "EC_REQ_ONL",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "CMRequestId": "RC10941720261001080000ABCDEF",
+      "ResponseCode": "173"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "zustimmung_offen"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "zeitueberschreitung",
+     "responsecode": "173",
+     "responsetext": "Kunde hat nicht fristgerecht zugestimmt (Zeitüberschreitung)",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "bestaetigt",
+       "nach": "zeitueberschreitung",
+       "nachricht": "ABLEHNUNG_ECON",
+       "text": "Abgelehnt: 173 Kunde hat nicht fristgerecht zugestimmt (Zeitüberschreitung)",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [
+     {
+      "ereignis": "frist_abgelaufen",
+      "responsecode": "173",
+      "datum": "2026-10-02"
+     }
+    ],
+    "energiedaten": false,
+    "hinweise": [],
+    "klaerfall": "",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "ABLEHNUNG_ECON 183 im Status angefragt",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CMNotification",
+      "version": "01.30",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ABLEHNUNG_ECON",
+      "prozesscode": "EC_REQ_ONL",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "CMRequestId": "RC10941720261001080000ABCDEF",
+      "ResponseCode": "183"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "angefragt"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "abgelehnt",
+     "responsecode": "183",
+     "responsetext": "Summe der Teilnahmefaktoren über 100 %",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "gesendet",
+       "nach": "abgelehnt",
+       "nachricht": "ABLEHNUNG_ECON",
+       "text": "Abgelehnt: 183 Summe der Teilnahmefaktoren über 100 %",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [
+     {
+      "ereignis": "ablehnung_econ",
+      "responsecode": "183",
+      "datum": "2026-10-02"
+     }
+    ],
+    "energiedaten": false,
+    "hinweise": [],
+    "klaerfall": "",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "ABLEHNUNG nach Zustimmung",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CMNotification",
+      "version": "01.30",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ABLEHNUNG_ECON",
+      "prozesscode": "EC_REQ_ONL",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "CMRequestId": "RC10941720261001080000ABCDEF",
+      "ResponseCode": "57"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "zugestimmt"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "abgelehnt",
+     "responsecode": "57",
+     "responsetext": "Zählpunkt nicht versorgt bzw. nicht aktiv",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "bestaetigt",
+       "nach": "abgelehnt",
+       "nachricht": "ABLEHNUNG_ECON",
+       "text": "Abgelehnt: 57 Zählpunkt nicht versorgt bzw. nicht aktiv",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [
+     {
+      "ereignis": "antwort_econ",
+      "responsecode": "57",
+      "datum": "2026-10-02"
+     },
+     {
+      "ereignis": "ablehnung_econ",
+      "responsecode": "57",
+      "datum": "2026-10-02"
+     }
+    ],
+    "energiedaten": false,
+    "hinweise": [],
+    "klaerfall": "",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "EDASendError",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "EDASendError",
+      "version": "01.30",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "EDASendError",
+      "prozesscode": "EC_REQ_ONL",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "ResponseCode": "76",
+      "ErrorText": "Empfänger unbekannt"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "angefragt"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "fehler",
+     "responsecode": "76",
+     "responsetext": "Ungültige Anforderungsdaten",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "gesendet",
+       "nach": "fehler",
+       "nachricht": "EDASendError",
+       "text": "Zustellfehler der EDA-Plattform: Empfänger unbekannt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [
+     {
+      "ereignis": "fehler",
+      "responsecode": "76"
+     }
+    ],
+    "energiedaten": false,
+    "hinweise": [],
+    "klaerfall": "Zustellfehler – Adressierung (Marktpartner-ID des Netzbetreibers) und Gateway prüfen, dann erneut senden.",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "Nachricht zu abgeschlossenem Prozess",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "abgeschlossen",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CMNotification",
+      "version": "01.30",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ANTWORT_ECON",
+      "prozesscode": "EC_REQ_ONL",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "CMRequestId": "RC10941720261001080000ABCDEF",
+      "ResponseCode": "99"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "aktiv"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "abgeschlossen",
+     "responsecode": "99",
+     "responsetext": "Meldung erhalten – Anfrage angenommen",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "abgeschlossen",
+       "nach": "abgeschlossen",
+       "nachricht": "ANTWORT_ECON",
+       "text": "Nachricht zu bereits abgeschlossenem Prozess – nur protokolliert",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [],
+    "energiedaten": false,
+    "hinweise": [
+     "Prozess ist bereits „Abgeschlossen“ – Nachricht ANTWORT_ECON nur protokolliert."
+    ],
+    "klaerfall": "",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "TF bestätigt",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_PRTFACT_CHG",
+     "version": "01.12",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "teilnahmefaktor": 80,
+      "ab": "2026-10-05"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CPNotification",
+      "version": "01.12",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ANTWORT_CPF",
+      "prozesscode": "EC_PRTFACT_CHG",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "ResponseCode": "99",
+      "DateFrom": "2026-10-05"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "aktiv"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_PRTFACT_CHG",
+     "version": "01.12",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "abgeschlossen",
+     "responsecode": "99",
+     "responsetext": "Meldung erhalten – Anfrage angenommen",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "teilnahmefaktor": 80,
+      "ab": "2026-10-05"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "gesendet",
+       "nach": "abgeschlossen",
+       "nachricht": "ANTWORT_CPF",
+       "text": "Teilnahmefaktor 80 % ab 05.10.2026 bestätigt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [
+     {
+      "ereignis": "tf_geaendert",
+      "responsecode": "99",
+      "teilnahmefaktor": 80,
+      "datum": "2026-10-05"
+     }
+    ],
+    "energiedaten": false,
+    "hinweise": [],
+    "klaerfall": "",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "TF abgelehnt 86",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_PRTFACT_CHG",
+     "version": "01.12",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "teilnahmefaktor": 80,
+      "ab": "2026-10-05"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CPNotification",
+      "version": "01.12",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ABLEHNUNG_CPF",
+      "prozesscode": "EC_PRTFACT_CHG",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "ResponseCode": "86"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "aktiv"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_PRTFACT_CHG",
+     "version": "01.12",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "abgelehnt",
+     "responsecode": "86",
+     "responsetext": "Konflikt mit einem laufenden Prozess",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "teilnahmefaktor": 80,
+      "ab": "2026-10-05"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "gesendet",
+       "nach": "abgelehnt",
+       "nachricht": "ABLEHNUNG_CPF",
+       "text": "Abgelehnt: 86 Konflikt mit einem laufenden Prozess",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [],
+    "energiedaten": false,
+    "hinweise": [],
+    "klaerfall": "",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "Schlüssel bestätigt",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_PRT_CHANGE",
+     "version": "01.12",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "pct": 12.5,
+      "ab": "2026-10-05"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CPNotification",
+      "version": "01.12",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ANTWORT_CPF",
+      "prozesscode": "EC_PRT_CHANGE",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "ResponseCode": "99"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "aktiv"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_PRT_CHANGE",
+     "version": "01.12",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "abgeschlossen",
+     "responsecode": "99",
+     "responsetext": "Meldung erhalten – Anfrage angenommen",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "pct": 12.5,
+      "ab": "2026-10-05"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "gesendet",
+       "nach": "abgeschlossen",
+       "nachricht": "ANTWORT_CPF",
+       "text": "Aufteilungsschlüssel bestätigt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [],
+    "energiedaten": false,
+    "hinweise": [],
+    "klaerfall": "",
+    "verteilschluessel": "gueltig"
+   }
+  },
+  {
+   "name": "Abmeldung bestätigt",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "CM_REV_SP",
+     "version": "01.10",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "zum": "2026-10-31"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CMNotification",
+      "version": "01.10",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ANTWORT_CCMS",
+      "prozesscode": "CM_REV_SP",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "ResponseCode": "99",
+      "ConsentEnd": "2026-10-31"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "abmeldung_angefragt"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "CM_REV_SP",
+     "version": "01.10",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "abgeschlossen",
+     "responsecode": "99",
+     "responsetext": "Meldung erhalten – Anfrage angenommen",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "zum": "2026-10-31"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "gesendet",
+       "nach": "abgeschlossen",
+       "nachricht": "ANTWORT_CCMS",
+       "text": "Abmeldung zum 31.10.2026 bestätigt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [
+     {
+      "ereignis": "abmeldung_ok",
+      "responsecode": "99",
+      "datum": "2026-10-31"
+     }
+    ],
+    "energiedaten": false,
+    "hinweise": [],
+    "klaerfall": "",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "Abmeldung abgelehnt",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "CM_REV_SP",
+     "version": "01.10",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "zum": "2026-10-31"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CMNotification",
+      "version": "01.10",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ABLEHNUNG_CCMS",
+      "prozesscode": "CM_REV_SP",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "ResponseCode": "82"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "abmeldung_angefragt"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "CM_REV_SP",
+     "version": "01.10",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "abgelehnt",
+     "responsecode": "82",
+     "responsetext": "Prozessdatum ungültig",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "zum": "2026-10-31"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "gesendet",
+       "nach": "abgelehnt",
+       "nachricht": "ABLEHNUNG_CCMS",
+       "text": "Abmeldung abgelehnt: 82 Prozessdatum ungültig",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [
+     {
+      "ereignis": "abmeldung_abgelehnt",
+      "responsecode": "82"
+     }
+    ],
+    "energiedaten": false,
+    "hinweise": [],
+    "klaerfall": "",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "Nachforderung angenommen",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "CR_REQ_PT",
+     "version": "01.12",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "von": "2026-09-20",
+      "bis": "2026-09-21"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CPNotification",
+      "version": "01.12",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ANTWORT_PT",
+      "prozesscode": "CR_REQ_PT",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "ResponseCode": "99"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "aktiv"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "CR_REQ_PT",
+     "version": "01.12",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "99",
+     "responsetext": "Meldung erhalten – Anfrage angenommen",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "von": "2026-09-20",
+      "bis": "2026-09-21"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "gesendet",
+       "nach": "bestaetigt",
+       "nachricht": "ANTWORT_PT",
+       "text": "Nachforderung angenommen – Daten folgen",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF",
+     "bestaetigtAm": "2026-10-02T09:00:01.000Z"
+    },
+    "ereignisse": [],
+    "energiedaten": false,
+    "hinweise": [],
+    "klaerfall": "",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "Nachforderung Daten",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "CR_REQ_PT",
+     "version": "01.12",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "abgeschlossen",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "von": "2026-09-20",
+      "bis": "2026-09-21"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "ConsumptionRecord",
+      "version": "01.12",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "DATEN_CRMSG",
+      "prozesscode": "CR_REQ_PT",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "Energy": {
+       "start": "2026-09-19T22:00:00Z",
+       "ende": "2026-09-20T22:00:00Z",
+       "reihen": [
+        {
+         "meterCode": "1-1:1.9.0 G.01",
+         "werte": [
+          0.058,
+          0.05,
+          0.058,
+          0.05,
+          0.05,
+          0.059,
+          0.055,
+          0.057,
+          0.047,
+          0.051,
+          0.048,
+          0.048,
+          0.057,
+          0.046,
+          0.056,
+          0.06,
+          0.058,
+          0.045,
+          0.056,
+          0.05,
+          0.049,
+          0.063,
+          0.055,
+          0.079,
+          0.084,
+          0.09,
+          0.092,
+          0.102,
+          0.125,
+          0.125,
+          0.11,
+          0.114,
+          0.093,
+          0.099,
+          0.094,
+          0.076,
+          0.068,
+          0.072,
+          0.059,
+          0.054,
+          0.063,
+          0.065,
+          0.058,
+          0.072,
+          0.062,
+          0.06,
+          0.075,
+          0.073,
+          0.068,
+          0.086,
+          0.069,
+          0.072,
+          0.062,
+          0.061,
+          0.07,
+          0.07,
+          0.066,
+          0.059,
+          0.051,
+          0.056,
+          0.055,
+          0.057,
+          0.052,
+          0.058,
+          0.073,
+          0.069,
+          0.073,
+          0.084,
+          0.086,
+          0.092,
+          0.107,
+          0.134,
+          0.136,
+          0.135,
+          0.152,
+          0.16,
+          0.134,
+          0.162,
+          0.141,
+          0.131,
+          0.137,
+          0.109,
+          0.114,
+          0.098,
+          0.091,
+          0.077,
+          0.073,
+          0.061,
+          0.068,
+          0.06,
+          0.05,
+          0.047,
+          0.049,
+          0.055,
+          0.046,
+          0.047
+         ],
+         "qualitaet": [
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1"
+         ]
+        },
+        {
+         "meterCode": "1-1:1.9.0 P.01",
+         "werte": [
+          0.058,
+          0.05,
+          0.058,
+          0.05,
+          0.05,
+          0.059,
+          0.055,
+          0.057,
+          0.047,
+          0.051,
+          0.048,
+          0.048,
+          0.057,
+          0.046,
+          0.056,
+          0.06,
+          0.058,
+          0.045,
+          0.056,
+          0.05,
+          0.049,
+          0.063,
+          0.055,
+          0.079,
+          0.084,
+          0.09,
+          0.092,
+          0.102,
+          0.125,
+          0.125,
+          0.11,
+          0.114,
+          0.093,
+          0.099,
+          0.094,
+          0.076,
+          0.068,
+          0.072,
+          0.059,
+          0.054,
+          0.063,
+          0.065,
+          0.058,
+          0.072,
+          0.062,
+          0.06,
+          0.075,
+          0.073,
+          0.068,
+          0.086,
+          0.069,
+          0.072,
+          0.062,
+          0.061,
+          0.07,
+          0.07,
+          0.066,
+          0.059,
+          0.051,
+          0.056,
+          0.055,
+          0.057,
+          0.052,
+          0.058,
+          0.073,
+          0.069,
+          0.073,
+          0.084,
+          0.086,
+          0.092,
+          0.107,
+          0.134,
+          0.136,
+          0.135,
+          0.152,
+          0.16,
+          0.134,
+          0.162,
+          0.141,
+          0.131,
+          0.137,
+          0.109,
+          0.114,
+          0.098,
+          0.091,
+          0.077,
+          0.073,
+          0.061,
+          0.068,
+          0.06,
+          0.05,
+          0.047,
+          0.049,
+          0.055,
+          0.046,
+          0.047
+         ],
+         "qualitaet": [
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1"
+         ]
+        },
+        {
+         "meterCode": "1-1:2.9.0 G.02",
+         "werte": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.001,
+          0.004,
+          0.007,
+          0.011,
+          0.018,
+          0.022,
+          0.023,
+          0.027,
+          0.025,
+          0.03,
+          0.031,
+          0.027,
+          0.026,
+          0.03,
+          0.026,
+          0.025,
+          0.03,
+          0.033,
+          0.03,
+          0.039,
+          0.034,
+          0.034,
+          0.043,
+          0.043,
+          0.041,
+          0.052,
+          0.042,
+          0.044,
+          0.038,
+          0.037,
+          0.043,
+          0.042,
+          0.039,
+          0.035,
+          0.029,
+          0.032,
+          0.03,
+          0.03,
+          0.027,
+          0.029,
+          0.035,
+          0.031,
+          0.032,
+          0.034,
+          0.033,
+          0.032,
+          0.035,
+          0.04,
+          0.036,
+          0.032,
+          0.031,
+          0.027,
+          0.018,
+          0.017,
+          0.01,
+          0.005,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+         ],
+         "qualitaet": [
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1"
+         ]
+        },
+        {
+         "meterCode": "1-1:2.9.0 G.03",
+         "werte": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.001,
+          0.004,
+          0.007,
+          0.011,
+          0.018,
+          0.022,
+          0.023,
+          0.027,
+          0.025,
+          0.03,
+          0.031,
+          0.027,
+          0.026,
+          0.03,
+          0.026,
+          0.025,
+          0.03,
+          0.033,
+          0.03,
+          0.039,
+          0.034,
+          0.034,
+          0.043,
+          0.043,
+          0.041,
+          0.052,
+          0.042,
+          0.044,
+          0.038,
+          0.037,
+          0.043,
+          0.042,
+          0.039,
+          0.035,
+          0.029,
+          0.032,
+          0.03,
+          0.03,
+          0.027,
+          0.029,
+          0.035,
+          0.031,
+          0.032,
+          0.034,
+          0.033,
+          0.032,
+          0.035,
+          0.04,
+          0.036,
+          0.032,
+          0.031,
+          0.027,
+          0.018,
+          0.017,
+          0.01,
+          0.005,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+         ],
+         "qualitaet": [
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1",
+          "L1"
+         ]
+        }
+       ]
+      }
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "aktiv"
+     },
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "CR_REQ_PT",
+     "version": "01.12",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "abgeschlossen",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {
+      "von": "2026-09-20",
+      "bis": "2026-09-21"
+     },
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "abgeschlossen",
+       "nach": "abgeschlossen",
+       "nachricht": "DATEN_CRMSG",
+       "text": "Nachgeforderte Energiedaten empfangen",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [],
+    "energiedaten": true,
+    "hinweise": [],
+    "klaerfall": "",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "Zählpunktliste",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_PODLIST",
+     "version": "01.10",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "ECMPList",
+      "version": "01.10",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "SENDEN_ECP",
+      "prozesscode": "EC_PODLIST",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "ECID": "AT00300004910RC109417000000000001",
+      "MPListData": [
+       {
+        "MeteringPoint": "AT0030000491000000000000000D00001",
+        "ConsentId": "C-1",
+        "EnergyDirection": "CONSUMPTION",
+        "ECPartFact": "100"
+       }
+      ]
+     }
+    },
+    {
+     "teilnahme": null,
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_PODLIST",
+     "version": "01.10",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "abgeschlossen",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {
+      "liste": [
+       {
+        "MeteringPoint": "AT0030000491000000000000000D00001",
+        "ConsentId": "C-1",
+        "EnergyDirection": "CONSUMPTION",
+        "ECPartFact": "100"
+       }
+      ],
+      "modell": ""
+     },
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "gesendet",
+       "nach": "abgeschlossen",
+       "nachricht": "SENDEN_ECP",
+       "text": "Zählpunktliste empfangen (1 Einträge)",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [],
+    "energiedaten": false,
+    "hinweise": [],
+    "klaerfall": "",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "Unerwartet",
+   "fn": "eingangAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_PODLIST",
+     "version": "01.10",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CPNotification",
+      "version": "01.12",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ANTWORT_CPF",
+      "prozesscode": "EC_PRTFACT_CHG",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "ResponseCode": "99"
+     }
+    },
+    {
+     "teilnahme": null,
+     "jetzt": "2026-10-02T09:00:01.000Z"
+    }
+   ],
+   "ergebnis": {
+    "prozess": {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_PODLIST",
+     "version": "01.10",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "99",
+     "responsetext": "Meldung erhalten – Anfrage angenommen",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      },
+      {
+       "am": "2026-10-02T09:00:01.000Z",
+       "von": "gesendet",
+       "nach": "gesendet",
+       "nachricht": "ANTWORT_CPF",
+       "text": "Unerwartete Nachricht – nur protokolliert",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "ereignisse": [],
+    "energiedaten": false,
+    "hinweise": [
+     "Nachricht ANTWORT_CPF ist im Prozess EC_PODLIST nicht vorgesehen."
+    ],
+    "klaerfall": "Unerwartete Nachricht ANTWORT_CPF im Prozess EC_PODLIST.",
+    "verteilschluessel": ""
+   }
+  },
+  {
+   "name": "Widerruf",
+   "fn": "eingangOhneProzess",
+   "args": [
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CMRevoke",
+      "version": "01.10",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "AUFHEBUNG_CCMS",
+      "prozesscode": "CM_REV_CUS",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "ECID": "AT00300004910RC109417000000000001",
+      "ConsentId": "C-1",
+      "ConsentEnd": "2026-10-15",
+      "Reason": "CUS"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "aktiv"
+     }
+    }
+   ],
+   "ergebnis": {
+    "prozesscode": "CM_REV_CUS",
+    "ereignisse": [
+     {
+      "ereignis": "cm_rev_cus",
+      "datum": "2026-10-15"
+     }
+    ],
+    "energiedaten": false,
+    "text": "Mitglied hat die Zuordnung im Netzbetreiber-Portal widerrufen (Ende 15.10.2026) – Vertragsende prüfen",
+    "hinweise": []
+   }
+  },
+  {
+   "name": "Implizit bei beendet",
+   "fn": "eingangOhneProzess",
+   "args": [
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CMRevoke",
+      "version": "01.10",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "AUFHEBUNG_CCMS",
+      "prozesscode": "CM_REV_IMP",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "ECID": "AT00300004910RC109417000000000001",
+      "ConsentId": "C-1",
+      "ConsentEnd": "2026-10-15"
+     }
+    },
+    {
+     "teilnahme": {
+      "id": "ETN-26-A",
+      "zaehlpunktId": "EZP-26-A",
+      "gemeinschaftId": "EGG-26-TEST01",
+      "mitgliedId": "EMG-26-A",
+      "teilnahmefaktor": 100,
+      "aufteilungsschluesselPct": null,
+      "consentId": "",
+      "tfHistorie": [],
+      "status": "beendet"
+     }
+    }
+   ],
+   "ergebnis": {
+    "prozesscode": "CM_REV_IMP",
+    "ereignisse": [],
+    "energiedaten": false,
+    "text": "Implizite Abmeldung (Auszug bzw. vertragsloser Zustand) zum 15.10.2026 – Nachmieter muss sich neu anmelden",
+    "hinweise": [
+     "Aufhebung durch den Netzbetreiber, aber Teilnahme ist „beendet“."
+    ]
+   }
+  },
+  {
+   "name": "ohne Prozess",
+   "fn": "eingangOhneProzess",
+   "args": [
+    {
+     "ok": true,
+     "fehler": [],
+     "hinweise": [],
+     "kopf": {
+      "schema": "CMNotification",
+      "version": "01.30",
+      "absender": "AT003000",
+      "empfaenger": "RC109417",
+      "erstellt": "2026-10-02T09:00:00Z",
+      "sektor": "01",
+      "nachrichtencode": "ANTWORT_ECON",
+      "prozesscode": "EC_REQ_ONL",
+      "modus": "PROD",
+      "duplikat": false,
+      "messageId": "AT00300020261002090000M00001",
+      "conversationId": "RC10941720261001080000ABCDEF",
+      "prozessdatum": "2026-10-02"
+     },
+     "daten": {
+      "MeteringPoint": "AT0030000491000000000000000D00001",
+      "CMRequestId": "RC10941720261001080000ABCDEF",
+      "ResponseCode": "99"
+     }
+    },
+    {
+     "teilnahme": null
+    }
+   ],
+   "ergebnis": {
+    "prozesscode": "",
+    "ereignisse": [],
+    "energiedaten": false,
+    "text": "",
+    "hinweise": [
+     "Nachricht ANTWORT_ECON ohne zugehörigen Prozess (ConversationId RC10941720261001080000ABCDEF)."
+    ]
+   }
+  },
+  {
+   "name": "fristenPruefen",
+   "fn": "fristenPruefen",
+   "args": [
+    {
+     "prozesse": [
+      {
+       "gemeinschaftId": "EGG-26-TEST01",
+       "prozesscode": "EC_REQ_ONL",
+       "version": "01.30",
+       "teilnahmeId": "ETN-Z",
+       "zaehlpunktId": "EZP-26-A",
+       "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+       "netzbetreiberId": "ENB-OOE",
+       "empfaenger": "AT003000",
+       "prozessdatum": "2026-10-01",
+       "status": "bestaetigt",
+       "responsecode": "",
+       "responsetext": "",
+       "fristBis": "2026-10-31",
+       "gesendetAm": "2026-10-01T08:00:00.000Z",
+       "versuche": 1,
+       "freigabe": {
+        "status": "",
+        "beantragtVon": null,
+        "von": null,
+        "am": ""
+       },
+       "massenId": "",
+       "parameter": {},
+       "ergebnis": {},
+       "erinnerungen": [
+        {
+         "stufe": 1,
+         "am": "2026-10-03"
+        }
+       ],
+       "merker": [],
+       "nachfolgerId": "",
+       "verlauf": [
+        {
+         "am": "2026-10-01T08:00:00.000Z",
+         "von": "",
+         "nach": "entwurf",
+         "nachricht": "",
+         "text": "Angelegt",
+         "konto": null
+        }
+       ],
+       "id": "EDP-Z",
+       "conversationId": "RC10941720261001080000ABCDEF"
+      },
+      {
+       "gemeinschaftId": "EGG-26-TEST01",
+       "prozesscode": "EC_REQ_ONL",
+       "version": "01.30",
+       "teilnahmeId": "",
+       "zaehlpunktId": "EZP-26-A",
+       "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+       "netzbetreiberId": "ENB-OOE",
+       "empfaenger": "AT003000",
+       "prozessdatum": "2026-10-01",
+       "status": "gesendet",
+       "responsecode": "",
+       "responsetext": "",
+       "fristBis": "",
+       "gesendetAm": "2026-09-29T08:00:00.000Z",
+       "versuche": 1,
+       "freigabe": {
+        "status": "",
+        "beantragtVon": null,
+        "von": null,
+        "am": ""
+       },
+       "massenId": "",
+       "parameter": {},
+       "ergebnis": {},
+       "erinnerungen": [],
+       "merker": [],
+       "nachfolgerId": "",
+       "verlauf": [
+        {
+         "am": "2026-10-01T08:00:00.000Z",
+         "von": "",
+         "nach": "entwurf",
+         "nachricht": "",
+         "text": "Angelegt",
+         "konto": null
+        }
+       ],
+       "id": "EDP-G1",
+       "conversationId": "RC10941720261001080000ABCDEF"
+      },
+      {
+       "gemeinschaftId": "EGG-26-TEST01",
+       "prozesscode": "EC_REQ_ONL",
+       "version": "01.30",
+       "teilnahmeId": "",
+       "zaehlpunktId": "EZP-26-A",
+       "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+       "netzbetreiberId": "ENB-OOE",
+       "empfaenger": "AT003000",
+       "prozessdatum": "2026-10-01",
+       "status": "gesendet",
+       "responsecode": "",
+       "responsetext": "",
+       "fristBis": "",
+       "gesendetAm": "2026-09-20T08:00:00.000Z",
+       "versuche": 3,
+       "freigabe": {
+        "status": "",
+        "beantragtVon": null,
+        "von": null,
+        "am": ""
+       },
+       "massenId": "",
+       "parameter": {},
+       "ergebnis": {},
+       "erinnerungen": [],
+       "merker": [],
+       "nachfolgerId": "",
+       "verlauf": [
+        {
+         "am": "2026-10-01T08:00:00.000Z",
+         "von": "",
+         "nach": "entwurf",
+         "nachricht": "",
+         "text": "Angelegt",
+         "konto": null
+        }
+       ],
+       "id": "EDP-G3",
+       "conversationId": "RC10941720261001080000ABCDEF"
+      },
+      {
+       "gemeinschaftId": "EGG-26-TEST01",
+       "prozesscode": "EC_REQ_ONL",
+       "version": "01.30",
+       "teilnahmeId": "ETN-Z",
+       "zaehlpunktId": "EZP-26-A",
+       "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+       "netzbetreiberId": "ENB-OOE",
+       "empfaenger": "AT003000",
+       "prozessdatum": "2026-10-01",
+       "status": "bestaetigt",
+       "responsecode": "",
+       "responsetext": "",
+       "fristBis": "2026-09-30",
+       "gesendetAm": "2026-10-01T08:00:00.000Z",
+       "versuche": 1,
+       "freigabe": {
+        "status": "",
+        "beantragtVon": null,
+        "von": null,
+        "am": ""
+       },
+       "massenId": "",
+       "parameter": {},
+       "ergebnis": {},
+       "erinnerungen": [],
+       "merker": [],
+       "nachfolgerId": "",
+       "verlauf": [
+        {
+         "am": "2026-10-01T08:00:00.000Z",
+         "von": "",
+         "nach": "entwurf",
+         "nachricht": "",
+         "text": "Angelegt",
+         "konto": null
+        }
+       ],
+       "id": "EDP-Z2",
+       "conversationId": "RC10941720261001080000ABCDEF"
+      },
+      {
+       "gemeinschaftId": "EGG-26-TEST01",
+       "prozesscode": "EC_REQ_ONL",
+       "version": "01.30",
+       "teilnahmeId": "ETN-W",
+       "zaehlpunktId": "EZP-26-A",
+       "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+       "netzbetreiberId": "ENB-OOE",
+       "empfaenger": "AT003000",
+       "prozessdatum": "2026-10-01",
+       "status": "bestaetigt",
+       "responsecode": "",
+       "responsetext": "",
+       "fristBis": "",
+       "gesendetAm": "2026-10-01T08:00:00.000Z",
+       "versuche": 1,
+       "freigabe": {
+        "status": "",
+        "beantragtVon": null,
+        "von": null,
+        "am": ""
+       },
+       "massenId": "",
+       "parameter": {},
+       "ergebnis": {},
+       "erinnerungen": [],
+       "merker": [],
+       "nachfolgerId": "",
+       "verlauf": [
+        {
+         "am": "2026-10-01T08:00:00.000Z",
+         "von": "",
+         "nach": "entwurf",
+         "nachricht": "",
+         "text": "Angelegt",
+         "konto": null
+        }
+       ],
+       "id": "EDP-W",
+       "conversationId": "RC10941720261001080000ABCDEF",
+       "technikSeit": "2026-07-01"
+      },
+      {
+       "gemeinschaftId": "EGG-26-TEST01",
+       "prozesscode": "CR_REQ_PT",
+       "version": "01.12",
+       "teilnahmeId": "",
+       "zaehlpunktId": "EZP-26-A",
+       "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+       "netzbetreiberId": "ENB-OOE",
+       "empfaenger": "AT003000",
+       "prozessdatum": "2026-10-01",
+       "status": "bestaetigt",
+       "responsecode": "",
+       "responsetext": "",
+       "fristBis": "",
+       "gesendetAm": "",
+       "versuche": 0,
+       "freigabe": {
+        "status": "",
+        "beantragtVon": null,
+        "von": null,
+        "am": ""
+       },
+       "massenId": "",
+       "parameter": {},
+       "ergebnis": {},
+       "erinnerungen": [],
+       "merker": [],
+       "nachfolgerId": "",
+       "verlauf": [
+        {
+         "am": "2026-10-01T08:00:00.000Z",
+         "von": "",
+         "nach": "entwurf",
+         "nachricht": "",
+         "text": "Angelegt",
+         "konto": null
+        }
+       ],
+       "id": "EDP-P",
+       "conversationId": "RC10941720261001080000ABCDEF",
+       "bestaetigtAm": "2026-09-20T08:00:00.000Z"
+      },
+      {
+       "gemeinschaftId": "EGG-26-TEST01",
+       "prozesscode": "REKLAMATION",
+       "version": "",
+       "teilnahmeId": "",
+       "zaehlpunktId": "EZP-26-A",
+       "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+       "netzbetreiberId": "ENB-OOE",
+       "empfaenger": "AT003000",
+       "prozessdatum": "2026-10-01",
+       "status": "gesendet",
+       "responsecode": "",
+       "responsetext": "",
+       "fristBis": "2026-09-15",
+       "gesendetAm": "2026-09-01T08:00:00.000Z",
+       "versuche": 0,
+       "freigabe": {
+        "status": "",
+        "beantragtVon": null,
+        "von": null,
+        "am": ""
+       },
+       "massenId": "",
+       "parameter": {},
+       "ergebnis": {},
+       "erinnerungen": [],
+       "merker": [],
+       "nachfolgerId": "",
+       "verlauf": [
+        {
+         "am": "2026-10-01T08:00:00.000Z",
+         "von": "",
+         "nach": "entwurf",
+         "nachricht": "",
+         "text": "Angelegt",
+         "konto": null
+        }
+       ],
+       "id": "EDP-R",
+       "conversationId": "RC10941720261001080000ABCDEF"
+      }
+     ],
+     "teilnahmen": {
+      "ETN-Z": {
+       "id": "ETN-Z",
+       "zaehlpunktId": "EZP-26-A",
+       "gemeinschaftId": "EGG-26-TEST01",
+       "mitgliedId": "EMG-26-A",
+       "teilnahmefaktor": 100,
+       "aufteilungsschluesselPct": null,
+       "consentId": "",
+       "tfHistorie": [],
+       "status": "zustimmung_offen"
+      },
+      "ETN-W": {
+       "id": "ETN-W",
+       "zaehlpunktId": "EZP-26-A",
+       "gemeinschaftId": "EGG-26-TEST01",
+       "mitgliedId": "EMG-26-A",
+       "teilnahmefaktor": 100,
+       "aufteilungsschluesselPct": null,
+       "consentId": "",
+       "tfHistorie": [],
+       "status": "wartet_technik"
+      }
+     },
+     "heute": "2026-10-12"
+    }
+   ],
+   "ergebnis": [
+    {
+     "art": "erinnern",
+     "prozessId": "EDP-Z",
+     "teilnahmeId": "ETN-Z",
+     "text": "Erinnerung 2 an das Mitglied (noch 19 Tage).",
+     "stufe": 2
+    },
+    {
+     "art": "wiederholen",
+     "prozessId": "EDP-G1",
+     "teilnahmeId": "",
+     "text": "Keine Antwort seit 2 Tagen – erneut senden (Versuch 2)."
+    },
+    {
+     "art": "zeitueberschreitung",
+     "prozessId": "EDP-G3",
+     "teilnahmeId": "",
+     "text": "Keine Antwort nach 3 Versuchen – Klärfall (Gateway, Adressierung, Netzbetreiber)."
+    },
+    {
+     "art": "frist_abgelaufen",
+     "prozessId": "EDP-Z2",
+     "teilnahmeId": "ETN-Z",
+     "text": "Zustimmungsfrist am 30.09.2026 abgelaufen."
+    },
+    {
+     "art": "hinweis_technik",
+     "prozessId": "EDP-W",
+     "teilnahmeId": "ETN-W",
+     "text": "Seit 103 Tagen wartet die Aktivierung auf den Netzbetreiber (Smart Meter) – nachfragen bzw. Reklamation."
+    },
+    {
+     "art": "hinweis_nachforderung",
+     "prozessId": "EDP-P",
+     "teilnahmeId": "",
+     "text": "Nachgeforderte Daten fehlen seit 5 Tagen – Reklamation vorbereiten."
+    },
+    {
+     "art": "reklamation_eskalation",
+     "prozessId": "EDP-R",
+     "teilnahmeId": "",
+     "text": "Keine Antwort des Netzbetreibers bis 15.09.2026 – Eskalation (Schlichtungsstelle der E-Control) vorbereiten."
+    }
+   ]
+  },
+  {
+   "name": "erinnerungFaellig",
+   "fn": "erinnerungFaellig",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "2026-10-31",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-Z",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "id": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "gemeinschaftId": "EGG-26-TEST01",
+     "mitgliedId": "EMG-26-A",
+     "teilnahmefaktor": 100,
+     "aufteilungsschluesselPct": null,
+     "consentId": "",
+     "tfHistorie": [],
+     "status": "zustimmung_offen"
+    },
+    "2026-10-03"
+   ],
+   "ergebnis": 1
+  },
+  {
+   "name": "erinnerungFaellig",
+   "fn": "erinnerungFaellig",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "2026-10-31",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-Z",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "id": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "gemeinschaftId": "EGG-26-TEST01",
+     "mitgliedId": "EMG-26-A",
+     "teilnahmefaktor": 100,
+     "aufteilungsschluesselPct": null,
+     "consentId": "",
+     "tfHistorie": [],
+     "status": "zustimmung_offen"
+    },
+    "2026-10-09"
+   ],
+   "ergebnis": 2
+  },
+  {
+   "name": "erinnerungFaellig",
+   "fn": "erinnerungFaellig",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "2026-10-31",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-Z",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "id": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "gemeinschaftId": "EGG-26-TEST01",
+     "mitgliedId": "EMG-26-A",
+     "teilnahmefaktor": 100,
+     "aufteilungsschluesselPct": null,
+     "consentId": "",
+     "tfHistorie": [],
+     "status": "zustimmung_offen"
+    },
+    "2026-10-29"
+   ],
+   "ergebnis": 5
+  },
+  {
+   "name": "erinnerungFaellig",
+   "fn": "erinnerungFaellig",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "2026-10-31",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-Z",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "id": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "gemeinschaftId": "EGG-26-TEST01",
+     "mitgliedId": "EMG-26-A",
+     "teilnahmefaktor": 100,
+     "aufteilungsschluesselPct": null,
+     "consentId": "",
+     "tfHistorie": [],
+     "status": "zustimmung_offen"
+    },
+    "2026-11-01"
+   ],
+   "ergebnis": 0
+  },
+  {
+   "name": "Stufe 1 schon erledigt",
+   "fn": "erinnerungFaellig",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "2026-10-31",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [
+      {
+       "stufe": 1,
+       "am": "2026-10-03"
+      }
+     ],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-Z",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "id": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "gemeinschaftId": "EGG-26-TEST01",
+     "mitgliedId": "EMG-26-A",
+     "teilnahmefaktor": 100,
+     "aufteilungsschluesselPct": null,
+     "consentId": "",
+     "tfHistorie": [],
+     "status": "zustimmung_offen"
+    },
+    "2026-10-04"
+   ],
+   "ergebnis": 0
+  },
+  {
+   "name": "Ampel EDP-Z",
+   "fn": "fristAmpel",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "2026-10-31",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [
+      {
+       "stufe": 1,
+       "am": "2026-10-03"
+      }
+     ],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-Z",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "id": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "gemeinschaftId": "EGG-26-TEST01",
+     "mitgliedId": "EMG-26-A",
+     "teilnahmefaktor": 100,
+     "aufteilungsschluesselPct": null,
+     "consentId": "",
+     "tfHistorie": [],
+     "status": "zustimmung_offen"
+    },
+    "2026-10-12"
+   ],
+   "ergebnis": {
+    "ampel": "gruen",
+    "tageRest": 19,
+    "text": "Zustimmung offen – noch 19 Tage"
+   }
+  },
+  {
+   "name": "Ampel EDP-G1",
+   "fn": "fristAmpel",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-09-29T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-G1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    null,
+    "2026-10-12"
+   ],
+   "ergebnis": {
+    "ampel": "gruen",
+    "tageRest": null,
+    "text": "Antwort offen"
+   }
+  },
+  {
+   "name": "Ampel EDP-G3",
+   "fn": "fristAmpel",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-09-20T08:00:00.000Z",
+     "versuche": 3,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-G3",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    null,
+    "2026-10-12"
+   ],
+   "ergebnis": {
+    "ampel": "gelb",
+    "tageRest": null,
+    "text": "Antwort offen – Versuch 3"
+   }
+  },
+  {
+   "name": "Ampel EDP-Z2",
+   "fn": "fristAmpel",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "2026-09-30",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-Z2",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    {
+     "id": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "gemeinschaftId": "EGG-26-TEST01",
+     "mitgliedId": "EMG-26-A",
+     "teilnahmefaktor": 100,
+     "aufteilungsschluesselPct": null,
+     "consentId": "",
+     "tfHistorie": [],
+     "status": "zustimmung_offen"
+    },
+    "2026-10-12"
+   ],
+   "ergebnis": {
+    "ampel": "rot",
+    "tageRest": -12,
+    "text": "Frist abgelaufen"
+   }
+  },
+  {
+   "name": "Ampel EDP-W",
+   "fn": "fristAmpel",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-W",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-W",
+     "conversationId": "RC10941720261001080000ABCDEF",
+     "technikSeit": "2026-07-01"
+    },
+    {
+     "id": "ETN-W",
+     "zaehlpunktId": "EZP-26-A",
+     "gemeinschaftId": "EGG-26-TEST01",
+     "mitgliedId": "EMG-26-A",
+     "teilnahmefaktor": 100,
+     "aufteilungsschluesselPct": null,
+     "consentId": "",
+     "tfHistorie": [],
+     "status": "wartet_technik"
+    },
+    "2026-10-12"
+   ],
+   "ergebnis": {
+    "ampel": "rot",
+    "tageRest": null,
+    "text": "Wartet auf Technik seit 103 Tagen"
+   }
+  },
+  {
+   "name": "Ampel EDP-P",
+   "fn": "fristAmpel",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "CR_REQ_PT",
+     "version": "01.12",
+     "teilnahmeId": "",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-P",
+     "conversationId": "RC10941720261001080000ABCDEF",
+     "bestaetigtAm": "2026-09-20T08:00:00.000Z"
+    },
+    null,
+    "2026-10-12"
+   ],
+   "ergebnis": {
+    "ampel": "gruen",
+    "tageRest": null,
+    "text": "Vom Netzbetreiber angenommen – läuft"
+   }
+  },
+  {
+   "name": "Ampel EDP-R",
+   "fn": "fristAmpel",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "REKLAMATION",
+     "version": "",
+     "teilnahmeId": "",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "2026-09-15",
+     "gesendetAm": "2026-09-01T08:00:00.000Z",
+     "versuche": 0,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-R",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    null,
+    "2026-10-12"
+   ],
+   "ergebnis": {
+    "ampel": "rot",
+    "tageRest": -27,
+    "text": "Antwort des Netzbetreibers bis 15.09.2026"
+   }
+  },
+  {
+   "name": "Ampel abgelehnt",
+   "fn": "fristAmpel",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "abgelehnt",
+     "responsecode": "183",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    null,
+    "2026-10-01"
+   ],
+   "ergebnis": {
+    "ampel": "rot",
+    "tageRest": null,
+    "text": "Abgelehnt (183)"
+   }
+  },
+  {
+   "name": "Ampel neu gestartet",
+   "fn": "fristAmpel",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "abgelehnt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "EDP-N",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    null,
+    "2026-10-01"
+   ],
+   "ergebnis": {
+    "ampel": "grau",
+    "tageRest": null,
+    "text": "Neu gestartet"
+   }
+  },
+  {
+   "name": "Ampel Wiederholung",
+   "fn": "fristAmpel",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-26-A",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "gesendet",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 2,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-26-T1",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    null,
+    "2026-10-01"
+   ],
+   "ergebnis": {
+    "ampel": "gelb",
+    "tageRest": null,
+    "text": "Antwort offen – Versuch 2"
+   }
+  },
+  {
+   "name": "fristAnwenden",
+   "fn": "fristAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "2026-10-31",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [
+      {
+       "stufe": 1,
+       "am": "2026-10-03"
+      }
+     ],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-Z",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "frist_abgelaufen",
+    {
+     "jetzt": "2026-10-01T08:00:00.000Z",
+     "text": "Frist abgelaufen"
+    }
+   ],
+   "ergebnis": {
+    "gemeinschaftId": "EGG-26-TEST01",
+    "prozesscode": "EC_REQ_ONL",
+    "version": "01.30",
+    "teilnahmeId": "ETN-Z",
+    "zaehlpunktId": "EZP-26-A",
+    "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+    "netzbetreiberId": "ENB-OOE",
+    "empfaenger": "AT003000",
+    "prozessdatum": "2026-10-01",
+    "status": "zeitueberschreitung",
+    "responsecode": "",
+    "responsetext": "",
+    "fristBis": "2026-10-31",
+    "gesendetAm": "2026-10-01T08:00:00.000Z",
+    "versuche": 1,
+    "freigabe": {
+     "status": "",
+     "beantragtVon": null,
+     "von": null,
+     "am": ""
+    },
+    "massenId": "",
+    "parameter": {},
+    "ergebnis": {},
+    "erinnerungen": [
+     {
+      "stufe": 1,
+      "am": "2026-10-03"
+     }
+    ],
+    "merker": [],
+    "nachfolgerId": "",
+    "verlauf": [
+     {
+      "am": "2026-10-01T08:00:00.000Z",
+      "von": "",
+      "nach": "entwurf",
+      "nachricht": "",
+      "text": "Angelegt",
+      "konto": null
+     },
+     {
+      "am": "2026-10-01T08:00:00.000Z",
+      "von": "bestaetigt",
+      "nach": "zeitueberschreitung",
+      "nachricht": "",
+      "text": "Frist abgelaufen",
+      "konto": null
+     }
+    ],
+    "id": "EDP-Z",
+    "conversationId": "RC10941720261001080000ABCDEF"
+   }
+  },
+  {
+   "name": "fristAnwenden",
+   "fn": "fristAnwenden",
+   "args": [
+    {
+     "gemeinschaftId": "EGG-26-TEST01",
+     "prozesscode": "EC_REQ_ONL",
+     "version": "01.30",
+     "teilnahmeId": "ETN-Z",
+     "zaehlpunktId": "EZP-26-A",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "netzbetreiberId": "ENB-OOE",
+     "empfaenger": "AT003000",
+     "prozessdatum": "2026-10-01",
+     "status": "bestaetigt",
+     "responsecode": "",
+     "responsetext": "",
+     "fristBis": "2026-10-31",
+     "gesendetAm": "2026-10-01T08:00:00.000Z",
+     "versuche": 1,
+     "freigabe": {
+      "status": "",
+      "beantragtVon": null,
+      "von": null,
+      "am": ""
+     },
+     "massenId": "",
+     "parameter": {},
+     "ergebnis": {},
+     "erinnerungen": [
+      {
+       "stufe": 1,
+       "am": "2026-10-03"
+      }
+     ],
+     "merker": [],
+     "nachfolgerId": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T08:00:00.000Z",
+       "von": "",
+       "nach": "entwurf",
+       "nachricht": "",
+       "text": "Angelegt",
+       "konto": null
+      }
+     ],
+     "id": "EDP-Z",
+     "conversationId": "RC10941720261001080000ABCDEF"
+    },
+    "hinweis_technik",
+    {
+     "jetzt": "2026-10-01T08:00:00.000Z"
+    }
+   ],
+   "ergebnis": {
+    "gemeinschaftId": "EGG-26-TEST01",
+    "prozesscode": "EC_REQ_ONL",
+    "version": "01.30",
+    "teilnahmeId": "ETN-Z",
+    "zaehlpunktId": "EZP-26-A",
+    "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+    "netzbetreiberId": "ENB-OOE",
+    "empfaenger": "AT003000",
+    "prozessdatum": "2026-10-01",
+    "status": "bestaetigt",
+    "responsecode": "",
+    "responsetext": "",
+    "fristBis": "2026-10-31",
+    "gesendetAm": "2026-10-01T08:00:00.000Z",
+    "versuche": 1,
+    "freigabe": {
+     "status": "",
+     "beantragtVon": null,
+     "von": null,
+     "am": ""
+    },
+    "massenId": "",
+    "parameter": {},
+    "ergebnis": {},
+    "erinnerungen": [
+     {
+      "stufe": 1,
+      "am": "2026-10-03"
+     }
+    ],
+    "merker": [
+     "technik"
+    ],
+    "nachfolgerId": "",
+    "verlauf": [
+     {
+      "am": "2026-10-01T08:00:00.000Z",
+      "von": "",
+      "nach": "entwurf",
+      "nachricht": "",
+      "text": "Angelegt",
+      "konto": null
+     },
+     {
+      "am": "2026-10-01T08:00:00.000Z",
+      "von": "bestaetigt",
+      "nach": "bestaetigt",
+      "nachricht": "",
+      "text": "hinweis_technik",
+      "konto": null
+     }
+    ],
+    "id": "EDP-Z",
+    "conversationId": "RC10941720261001080000ABCDEF"
+   }
+  },
+  {
+   "name": "erinnerungText",
+   "fn": "erinnerungText",
+   "args": [
+    {
+     "name": "Eva Esche (Demo)",
+     "gemeinschaftName": "Testgemeinschaft (Demo)",
+     "gemeinschaftsId": "AT00300004910RC109417000000000001",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "teilnahmefaktor": 100,
+     "fristBis": "2026-10-03",
+     "netzbetreiberId": "ENB-OOE",
+     "netzbetreiberName": "Netz OÖ",
+     "stufe": 4,
+     "heute": "2026-10-01"
+    }
+   ],
+   "ergebnis": {
+    "betreff": "Dringend: Bitte Teilnahme an „Testgemeinschaft (Demo)“ im Portal Ihres Netzbetreibers bestätigen",
+    "text": "Guten Tag Eva Esche (Demo),\n\nIhre Anmeldung zur Energiegemeinschaft „Testgemeinschaft (Demo)“ liegt bei Netz OÖ. Damit sie wirksam wird, müssen Sie selbst im eService-Portal der Netz Oberösterreich (zu bestätigen) zustimmen – bis spätestens 03.10.2026 (noch 2 Tage).\n\nIhre Angaben zum Vergleich:\n• Zählpunkt: AT0030000491000000000000000D00001\n• Gemeinschafts-ID: AT00300004910RC109417000000000001\n• Teilnahmefaktor: 100 %\n\nSo geht es:\n1. Im Smart-Meter- bzw. Kundenportal Ihres Netzbetreibers anmelden. Noch kein Zugang? Registrieren Sie sich mit Zählpunktnummer und Kunden- bzw. Vertragskontonummer von Ihrer Netzrechnung; manche Netzbetreiber senden einen Aktivierungscode per Post.\n2. Den Bereich „Energiegemeinschaften“ bzw. „Datenfreigaben“ öffnen.\n3. Die Anfrage der Gemeinschaft prüfen: Name, Gemeinschafts-ID, Zählpunkt und Teilnahmefaktor müssen mit unserer E-Mail übereinstimmen.\n4. „Zustimmen“ wählen und bestätigen. Fertig – wir sehen die Zustimmung automatisch.\n\nOhne Zustimmung lehnt der Netzbetreiber die Anmeldung nach Fristablauf ab. Sie können die Zustimmung jederzeit im Portal widerrufen.\nBrauchen Sie Hilfe? Antworten Sie im Portal von ÖkoInvest unter „Nachrichten“ – wir rufen Sie gerne zurück."
+   }
+  },
+  {
+   "name": "erinnerungText",
+   "fn": "erinnerungText",
+   "args": [
+    {
+     "name": "",
+     "gemeinschaftName": "Testgemeinschaft (Demo)",
+     "gemeinschaftsId": "AT00300004910RC109417000000000001",
+     "zaehlpunktnummer": "AT0030000491000000000000000D00001",
+     "teilnahmefaktor": 50,
+     "fristBis": "",
+     "netzbetreiberId": "ENB-XYZ",
+     "netzbetreiberName": "",
+     "stufe": 1,
+     "heute": "2026-10-01"
+    }
+   ],
+   "ergebnis": {
+    "betreff": "Bitte Teilnahme an „Testgemeinschaft (Demo)“ im Portal Ihres Netzbetreibers bestätigen",
+    "text": "Guten Tag,\n\nIhre Anmeldung zur Energiegemeinschaft „Testgemeinschaft (Demo)“ liegt bei Ihrem Netzbetreiber. Damit sie wirksam wird, müssen Sie selbst im Smart-Meter- bzw. Kundenportal Ihres Netzbetreibers zustimmen.\n\nIhre Angaben zum Vergleich:\n• Zählpunkt: AT0030000491000000000000000D00001\n• Gemeinschafts-ID: AT00300004910RC109417000000000001\n• Teilnahmefaktor: 50 %\n\nSo geht es:\n1. Im Smart-Meter- bzw. Kundenportal Ihres Netzbetreibers anmelden. Noch kein Zugang? Registrieren Sie sich mit Zählpunktnummer und Kunden- bzw. Vertragskontonummer von Ihrer Netzrechnung; manche Netzbetreiber senden einen Aktivierungscode per Post.\n2. Den Bereich „Energiegemeinschaften“ bzw. „Datenfreigaben“ öffnen.\n3. Die Anfrage der Gemeinschaft prüfen: Name, Gemeinschafts-ID, Zählpunkt und Teilnahmefaktor müssen mit unserer E-Mail übereinstimmen.\n4. „Zustimmen“ wählen und bestätigen. Fertig – wir sehen die Zustimmung automatisch.\n\nOhne Zustimmung lehnt der Netzbetreiber die Anmeldung nach Fristablauf ab. Sie können die Zustimmung jederzeit im Portal widerrufen.\nBrauchen Sie Hilfe? Antworten Sie im Portal von ÖkoInvest unter „Nachrichten“ – wir rufen Sie gerne zurück."
+   }
+  }
+ ]
+}

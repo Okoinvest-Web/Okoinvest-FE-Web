@@ -1,0 +1,100 @@
+{
+ "stand": "2026-10-01",
+ "erzeugt": "node scripts/plattform-test-eg-eda.mjs --vektoren",
+ "faelle": [
+  {
+   "name": "responsecodeInfo",
+   "fn": "responsecodeInfo",
+   "args": [
+    "99"
+   ],
+   "ergebnis": {
+    "code": "99",
+    "text": "Meldung erhalten – Anfrage angenommen",
+    "kategorie": "ok",
+    "erneut": false,
+    "loesung": "",
+    "bekannt": true
+   }
+  },
+  {
+   "name": "responsecodeInfo",
+   "fn": "responsecodeInfo",
+   "args": [
+    "183"
+   ],
+   "ergebnis": {
+    "code": "183",
+    "text": "Summe der Teilnahmefaktoren über 100 %",
+    "kategorie": "konflikt",
+    "erneut": true,
+    "loesung": "Mitglied nach Teilnahmen in anderen Gemeinschaften fragen; Teilnahmefaktor senken (Σ ≤ 100 %, ElWG § 71 Abs. 5) und erneut anmelden.",
+    "bekannt": true
+   }
+  },
+  {
+   "name": "responsecodeInfo",
+   "fn": "responsecodeInfo",
+   "args": [
+    "999"
+   ],
+   "ergebnis": {
+    "code": "999",
+    "text": "Responsecode 999",
+    "kategorie": "unbekannt",
+    "erneut": false,
+    "loesung": "Code in der Responsecode-Liste auf ebutilities.at nachschlagen und in eda/codes.js ergänzen.",
+    "bekannt": false
+   }
+  },
+  {
+   "name": "responsecodeInfo",
+   "fn": "responsecodeInfo",
+   "args": [
+    ""
+   ],
+   "ergebnis": {
+    "code": "",
+    "text": "",
+    "kategorie": "",
+    "erneut": false,
+    "loesung": "",
+    "bekannt": false
+   }
+  },
+  {
+   "name": "portalAnleitung",
+   "fn": "portalAnleitung",
+   "args": [
+    "ENB-OOE"
+   ],
+   "ergebnis": {
+    "portal": "eService-Portal der Netz Oberösterreich (zu bestätigen)",
+    "schritte": [
+     "Im Smart-Meter- bzw. Kundenportal Ihres Netzbetreibers anmelden. Noch kein Zugang? Registrieren Sie sich mit Zählpunktnummer und Kunden- bzw. Vertragskontonummer von Ihrer Netzrechnung; manche Netzbetreiber senden einen Aktivierungscode per Post.",
+     "Den Bereich „Energiegemeinschaften“ bzw. „Datenfreigaben“ öffnen.",
+     "Die Anfrage der Gemeinschaft prüfen: Name, Gemeinschafts-ID, Zählpunkt und Teilnahmefaktor müssen mit unserer E-Mail übereinstimmen.",
+     "„Zustimmen“ wählen und bestätigen. Fertig – wir sehen die Zustimmung automatisch."
+    ],
+    "hinweis": "Ohne Zustimmung lehnt der Netzbetreiber die Anmeldung nach Fristablauf ab. Sie können die Zustimmung jederzeit im Portal widerrufen."
+   }
+  },
+  {
+   "name": "portalAnleitung",
+   "fn": "portalAnleitung",
+   "args": [
+    "ENB-XYZ"
+   ],
+   "ergebnis": {
+    "portal": "Smart-Meter- bzw. Kundenportal Ihres Netzbetreibers",
+    "schritte": [
+     "Im Smart-Meter- bzw. Kundenportal Ihres Netzbetreibers anmelden. Noch kein Zugang? Registrieren Sie sich mit Zählpunktnummer und Kunden- bzw. Vertragskontonummer von Ihrer Netzrechnung; manche Netzbetreiber senden einen Aktivierungscode per Post.",
+     "Den Bereich „Energiegemeinschaften“ bzw. „Datenfreigaben“ öffnen.",
+     "Die Anfrage der Gemeinschaft prüfen: Name, Gemeinschafts-ID, Zählpunkt und Teilnahmefaktor müssen mit unserer E-Mail übereinstimmen.",
+     "„Zustimmen“ wählen und bestätigen. Fertig – wir sehen die Zustimmung automatisch."
+    ],
+    "hinweis": "Ohne Zustimmung lehnt der Netzbetreiber die Anmeldung nach Fristablauf ab. Sie können die Zustimmung jederzeit im Portal widerrufen."
+   }
+  }
+ ]
+}

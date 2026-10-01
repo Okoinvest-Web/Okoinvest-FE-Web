@@ -1,0 +1,145 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 16:00:00.000000",
+ "description": "WP5 Beschlussregister (Versammlung, Vorstand, Umlauf) mit Stimmenverhältnis und Mehrheit.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "gemeinschaft",
+  "datum",
+  "gremium",
+  "kategorie",
+  "gegenstand",
+  "angenommen",
+  "versammlung",
+  "daten"
+ ],
+ "fields": [
+  {
+   "fieldname": "gemeinschaft",
+   "fieldtype": "Link",
+   "label": "Gemeinschaft",
+   "options": "Plattform EG Gemeinschaft",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "datum",
+   "fieldtype": "Date",
+   "label": "Datum",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "gremium",
+   "fieldtype": "Select",
+   "label": "Gremium",
+   "options": "gv\nvorstand\numlauf",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "kategorie",
+   "fieldtype": "Data",
+   "label": "Kategorie"
+  },
+  {
+   "fieldname": "gegenstand",
+   "fieldtype": "Data",
+   "label": "Gegenstand",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "angenommen",
+   "fieldtype": "Check",
+   "label": "Angenommen"
+  },
+  {
+   "fieldname": "versammlung",
+   "fieldtype": "Link",
+   "label": "Versammlung",
+   "options": "Plattform EG Versammlung"
+  },
+  {
+   "fieldname": "daten",
+   "fieldtype": "JSON",
+   "label": "Wortlaut und Stimmen"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform EG Beschluss",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Buchhaltung"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Compliance"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  }
+ ],
+ "title_field": "gegenstand",
+ "search_fields": "gegenstand"
+}

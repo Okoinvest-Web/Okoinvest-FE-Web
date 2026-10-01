@@ -1,0 +1,3669 @@
+{
+ "beschreibung": "Ablauf nach der Vorschau (Freigabe, Nummern, Zahlungsläufe, pain.008, Storno, Buchhaltung, UVA, Exporte, Mahnwesen, Probe-Vergleich). Eingabe ist abrechnung_monat.json; „erwartet“ ist der Gleichheits-Schnappschuss (JS = Python), erzeugt mit: node scripts/plattform-test-eg-abrechnung.mjs --nur-logik --schnappschuss",
+ "freigabe": [
+  {
+   "name": "Kassier gibt als Erster frei",
+   "periode": {
+    "status": "vorschau",
+    "fingerabdruck": "F",
+    "freigaben": []
+   },
+   "stufen": {
+    "freigabe1": 2,
+    "freigabe2": 0
+   },
+   "kontoId": "K",
+   "fingerabdruck": "F",
+   "fehler": 0,
+   "erwartet": {
+    "ok": true,
+    "auge": 1,
+    "vollstaendig": false
+   }
+  },
+  {
+   "name": "Vorstand komplettiert",
+   "periode": {
+    "status": "freigabe_teilweise",
+    "fingerabdruck": "F",
+    "freigaben": [
+     {
+      "auge": 1,
+      "kontoId": "K",
+      "fingerabdruck": "F"
+     }
+    ]
+   },
+   "stufen": {
+    "freigabe1": 0,
+    "freigabe2": 2
+   },
+   "kontoId": "O",
+   "fingerabdruck": "F",
+   "fehler": 0,
+   "erwartet": {
+    "ok": true,
+    "auge": 2,
+    "vollstaendig": true
+   }
+  },
+  {
+   "name": "Dieselbe Person zweimal",
+   "periode": {
+    "status": "freigabe_teilweise",
+    "fingerabdruck": "F",
+    "freigaben": [
+     {
+      "auge": 1,
+      "kontoId": "K",
+      "fingerabdruck": "F"
+     }
+    ]
+   },
+   "stufen": {
+    "freigabe1": 2,
+    "freigabe2": 2
+   },
+   "kontoId": "K",
+   "fingerabdruck": "F",
+   "fehler": 0,
+   "erwartet": {
+    "ok": false,
+    "auge": null,
+    "vollstaendig": false
+   }
+  },
+  {
+   "name": "Zahlen geändert",
+   "periode": {
+    "status": "vorschau",
+    "fingerabdruck": "F",
+    "freigaben": []
+   },
+   "stufen": {
+    "freigabe1": 2
+   },
+   "kontoId": "K",
+   "fingerabdruck": "G",
+   "fehler": 0,
+   "erwartet": {
+    "ok": false,
+    "auge": null,
+    "vollstaendig": false
+   }
+  },
+  {
+   "name": "Blockierende Prüfungen",
+   "periode": {
+    "status": "vorschau",
+    "fingerabdruck": "F",
+    "freigaben": []
+   },
+   "stufen": {
+    "freigabe1": 2
+   },
+   "kontoId": "K",
+   "fingerabdruck": "F",
+   "fehler": 2,
+   "erwartet": {
+    "ok": false,
+    "auge": null,
+    "vollstaendig": false
+   }
+  },
+  {
+   "name": "Organisator ohne Freigaberecht",
+   "periode": {
+    "status": "vorschau",
+    "fingerabdruck": "F",
+    "freigaben": []
+   },
+   "stufen": {
+    "freigabe1": 0,
+    "freigabe2": 0
+   },
+   "kontoId": "X",
+   "fingerabdruck": "F",
+   "fehler": 0,
+   "erwartet": {
+    "ok": false,
+    "auge": null,
+    "vollstaendig": false
+   }
+  },
+  {
+   "name": "Probe nie freigebbar",
+   "periode": {
+    "status": "probe",
+    "probe": true,
+    "fingerabdruck": "F",
+    "freigaben": []
+   },
+   "stufen": {
+    "freigabe1": 2
+   },
+   "kontoId": "K",
+   "fingerabdruck": "F",
+   "fehler": 0,
+   "erwartet": {
+    "ok": false,
+    "auge": null,
+    "vollstaendig": false
+   }
+  }
+ ],
+ "zaehler": {
+  "RE-2026": 4
+ },
+ "datum": "2026-09-25",
+ "erstelltAm": "2026-09-25T08:00:00Z",
+ "einzugAm": "2026-10-10",
+ "zahlungAm": "2026-10-10",
+ "kassa": [
+  {
+   "datum": "2026-09-02",
+   "konto": "4890",
+   "betrag": "50,00",
+   "ustSatz": 0,
+   "text": "Spende Sommerfest",
+   "geldkonto": "2700",
+   "belegNr": "Q-1"
+  },
+  {
+   "datum": "2026-09-03",
+   "konto": "7600",
+   "betrag": "12,40",
+   "ustSatz": 20,
+   "text": "Porto Einladungen GV",
+   "geldkonto": "2700",
+   "belegNr": "Q-2"
+  },
+  {
+   "datum": "2026-09-30",
+   "konto": "7300",
+   "betrag": "120",
+   "ustSatz": 20,
+   "text": "Plattformgebühr September",
+   "geldkonto": "2800",
+   "belegNr": "ER-77"
+  }
+ ],
+ "mahnTage": [
+  "2026-10-20",
+  "2026-11-12",
+  "2026-12-01"
+ ],
+ "altwerte": "mitgliedsnummer;typ;netto\n1;rechnung;11,63\n2;rechnung;7,90\n2;gutschrift;10,20\n4;rechnung;36,25\n9;rechnung;5,00",
+ "erwartet": {
+  "abrechnung": {
+   "belege": [
+    {
+     "datum": "2026-09-25",
+     "faelligAm": "2026-10-09",
+     "lieferantenpflichten": true,
+     "gemeinschaftId": "EGG-T1",
+     "periodeId": "EPR-T1",
+     "mitgliedId": "M1",
+     "mitgliedsnummer": 1,
+     "kontoId": null,
+     "von": "2026-08-01",
+     "bis": "2026-08-31",
+     "aussteller": {
+      "name": "Testgemeinschaft Sonnenhang (Demo)",
+      "strasse": "Hauptplatz 1",
+      "plz": "4910",
+      "ort": "Ried im Innkreis",
+      "email": "test@example.com",
+      "telefon": "",
+      "uid": "ATU99999901",
+      "zvr": "999000001",
+      "fn": "",
+      "iban": "AT611904300234573201",
+      "bic": "",
+      "creditorId": "AT98ZZZ00000000417",
+      "gemeinschaftsId": "",
+      "ustStatus": "kleinunternehmer"
+     },
+     "empfaenger": {
+      "name": "Mia Muster",
+      "strasse": "Weg 1",
+      "plz": "4910",
+      "ort": "Ried",
+      "email": "m1@example.com",
+      "uid": "",
+      "unternehmer": false
+     },
+     "status": "entwurf",
+     "herkunft": {
+      "anteile": [
+       {
+        "art": "pv",
+        "label": "Photovoltaik",
+        "kwh": 120,
+        "pct": 52.2
+       },
+       {
+        "art": "wasser",
+        "label": "Wasserkraft",
+        "kwh": 110,
+        "pct": 47.8
+       }
+      ],
+      "summeKwh": 230,
+      "text": "100 % erneuerbare Energie aus Anlagen der Gemeinschaft: Photovoltaik 52,2 %, Wasserkraft 47,8 %.",
+      "quelle": "ElWG §§ 66–68 (nur erneuerbare Energie); Stromkennzeichnung im Sinn der Lieferantenpflichten (zu bestätigen)"
+     },
+     "typ": "rechnung",
+     "positionen": [
+      {
+       "nr": 1,
+       "art": "bezug",
+       "text": "Gemeinschaftsstrom (Eigendeckung)",
+       "zaehlpunkt": "AT0030000049100000000000000000001",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 60,
+       "mengeRoh": 60,
+       "einheit": "kWh",
+       "preis": 11.5,
+       "preisEinheit": "ct/kWh",
+       "netto": 6.9,
+       "zeitfenster": "",
+       "preisHerkunft": "Grundpreis Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Menge",
+         "antwort": "60,000 kWh Eigendeckung laut Netzbetreiber (Teilnahmefaktor 100 %)",
+         "quelle": "ElWG § 71 Abs. 1 und 4; HA II 13 (Netzbetreiberwerte maßgeblich, L3 nicht abrechenbar)"
+        },
+        {
+         "frage": "Preis",
+         "antwort": "11,5 ct/kWh – Grundpreis Preisblatt 2026",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      },
+      {
+       "nr": 2,
+       "art": "bezug",
+       "text": "Gemeinschaftsstrom (Eigendeckung) – Mittagsstrom",
+       "zaehlpunkt": "AT0030000049100000000000000000001",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 40,
+       "mengeRoh": 40,
+       "einheit": "kWh",
+       "preis": 9.5,
+       "preisEinheit": "ct/kWh",
+       "netto": 3.8,
+       "zeitfenster": "Z1",
+       "preisHerkunft": "Zeitfenster „Mittagsstrom“",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Menge",
+         "antwort": "40,000 kWh Eigendeckung laut Netzbetreiber (Teilnahmefaktor 100 %)",
+         "quelle": "ElWG § 71 Abs. 1 und 4; HA II 13 (Netzbetreiberwerte maßgeblich, L3 nicht abrechenbar)"
+        },
+        {
+         "frage": "Preis",
+         "antwort": "9,5 ct/kWh – Zeitfenster „Mittagsstrom“",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      },
+      {
+       "nr": 3,
+       "art": "grundgebuehr",
+       "text": "Grundgebühr (1 Monat)",
+       "zaehlpunkt": "",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 1,
+       "einheit": "Monat",
+       "preis": 1.5,
+       "preisEinheit": "€",
+       "netto": 1.5,
+       "zeitfenster": "",
+       "preisHerkunft": "Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Gebühr",
+          "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+          "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Grundlage",
+         "antwort": "Grundgebühr (1 Monat)",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10, 4.5)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Gebühr",
+         "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+         "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      },
+      {
+       "nr": 4,
+       "art": "zp_gebuehr",
+       "text": "Zählpunktgebühr (1 Zählpunkt × 1 Monat)",
+       "zaehlpunkt": "",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 1,
+       "einheit": "ZP-Monat",
+       "preis": 0.5,
+       "preisEinheit": "€",
+       "netto": 0.5,
+       "zeitfenster": "",
+       "preisHerkunft": "Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Gebühr",
+          "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+          "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Grundlage",
+         "antwort": "Zählpunktgebühr (1 Zählpunkt × 1 Monat)",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10, 4.5)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Gebühr",
+         "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+         "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      },
+      {
+       "nr": 5,
+       "art": "rabatt",
+       "text": "Treuebonus (10 %)",
+       "zaehlpunkt": "",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 1,
+       "einheit": "Stk",
+       "preis": -1.07,
+       "preisEinheit": "€",
+       "netto": -1.07,
+       "zeitfenster": "",
+       "preisHerkunft": "Rabatt laut Beschluss",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Gebühr",
+          "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+          "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Rabatt",
+         "antwort": "Treuebonus auf 10,70 €",
+         "quelle": "Einstellungen der Gemeinschaft"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Gebühr",
+         "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+         "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      }
+     ],
+     "summen": {
+      "zeilen": [
+       {
+        "art": "befreit",
+        "satz": 0,
+        "regel": "EG_KU",
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "basis": 11.63,
+        "betrag": 0,
+        "rcBetrag": 0
+       }
+      ],
+      "netto": 11.63,
+      "ust": 0,
+      "brutto": 11.63,
+      "rcSteuer": 0,
+      "hinweise": [
+       "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG."
+      ]
+     },
+     "zaehlpunkte": [
+      {
+       "nummer": "AT0030000049100000000000000000001",
+       "richtung": "verbrauch",
+       "bezeichnung": "",
+       "teilnahmefaktor": 100
+      }
+     ],
+     "energie": {
+      "verbrauchGemessen": 300,
+      "eigendeckung": 100,
+      "quoteEigendeckung": 33.3
+     },
+     "ersparnis": {
+      "netzEur": 2.85,
+      "abgabeEur": 0.1,
+      "efbEur": 0,
+      "energieEur": 3.3,
+      "summeEur": 6.25,
+      "reduktionPct": 57,
+      "platzhalter": false,
+      "quellen": [
+       "SNE-V 2018 § 5 Abs. 1a (EEG lokal, NE 6/7)",
+       "Senkung der Elektrizitätsabgabe 2026 (EY Steuernachrichten) (zu bestätigen)",
+       "Annahme der Gemeinschaft (Einstellungen) – bitte mit der Netzrechnung abgleichen"
+      ],
+      "text": "Ihr Vorteil durch die Energiegemeinschaft (Schätzung, die Abrechnung erfolgt durch Ihren Netzbetreiber)"
+     },
+     "zahlweg": {
+      "art": "lastschrift",
+      "mandatRef": "SONNENHANG-0001",
+      "mandatDatum": "2025-01-10",
+      "creditorId": "AT98ZZZ00000000417",
+      "iban": "AT611904300234573201"
+     },
+     "verrechnet": [],
+     "fehler": [],
+     "warnungen": []
+    },
+    {
+     "datum": "2026-09-25",
+     "faelligAm": "2026-10-09",
+     "lieferantenpflichten": true,
+     "gemeinschaftId": "EGG-T1",
+     "periodeId": "EPR-T1",
+     "mitgliedId": "M2",
+     "mitgliedsnummer": 2,
+     "kontoId": null,
+     "von": "2026-08-01",
+     "bis": "2026-08-31",
+     "aussteller": {
+      "name": "Testgemeinschaft Sonnenhang (Demo)",
+      "strasse": "Hauptplatz 1",
+      "plz": "4910",
+      "ort": "Ried im Innkreis",
+      "email": "test@example.com",
+      "telefon": "",
+      "uid": "ATU99999901",
+      "zvr": "999000001",
+      "fn": "",
+      "iban": "AT611904300234573201",
+      "bic": "",
+      "creditorId": "AT98ZZZ00000000417",
+      "gemeinschaftsId": "",
+      "ustStatus": "kleinunternehmer"
+     },
+     "empfaenger": {
+      "name": "Lukas Land",
+      "strasse": "Hof 2",
+      "plz": "4910",
+      "ort": "Ried",
+      "email": "m2@example.com",
+      "uid": "",
+      "unternehmer": true
+     },
+     "status": "entwurf",
+     "herkunft": {
+      "anteile": [
+       {
+        "art": "pv",
+        "label": "Photovoltaik",
+        "kwh": 120,
+        "pct": 52.2
+       },
+       {
+        "art": "wasser",
+        "label": "Wasserkraft",
+        "kwh": 110,
+        "pct": 47.8
+       }
+      ],
+      "summeKwh": 230,
+      "text": "100 % erneuerbare Energie aus Anlagen der Gemeinschaft: Photovoltaik 52,2 %, Wasserkraft 47,8 %.",
+      "quelle": "ElWG §§ 66–68 (nur erneuerbare Energie); Stromkennzeichnung im Sinn der Lieferantenpflichten (zu bestätigen)"
+     },
+     "typ": "rechnung",
+     "positionen": [
+      {
+       "nr": 1,
+       "art": "bezug",
+       "text": "Gemeinschaftsstrom (Eigendeckung)",
+       "zaehlpunkt": "AT0030000049100000000000000000002",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 30,
+       "mengeRoh": 30,
+       "einheit": "kWh",
+       "preis": 11.5,
+       "preisEinheit": "ct/kWh",
+       "netto": 3.45,
+       "zeitfenster": "",
+       "preisHerkunft": "Grundpreis Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Menge",
+         "antwort": "30,000 kWh Eigendeckung laut Netzbetreiber (Teilnahmefaktor 100 %)",
+         "quelle": "ElWG § 71 Abs. 1 und 4; HA II 13 (Netzbetreiberwerte maßgeblich, L3 nicht abrechenbar)"
+        },
+        {
+         "frage": "Preis",
+         "antwort": "11,5 ct/kWh – Grundpreis Preisblatt 2026",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      },
+      {
+       "nr": 2,
+       "art": "bezug",
+       "text": "Gemeinschaftsstrom (Eigendeckung) – Mittagsstrom",
+       "zaehlpunkt": "AT0030000049100000000000000000002",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 20,
+       "mengeRoh": 20,
+       "einheit": "kWh",
+       "preis": 9.5,
+       "preisEinheit": "ct/kWh",
+       "netto": 1.9,
+       "zeitfenster": "Z1",
+       "preisHerkunft": "Zeitfenster „Mittagsstrom“",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Menge",
+         "antwort": "20,000 kWh Eigendeckung laut Netzbetreiber (Teilnahmefaktor 100 %)",
+         "quelle": "ElWG § 71 Abs. 1 und 4; HA II 13 (Netzbetreiberwerte maßgeblich, L3 nicht abrechenbar)"
+        },
+        {
+         "frage": "Preis",
+         "antwort": "9,5 ct/kWh – Zeitfenster „Mittagsstrom“",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      },
+      {
+       "nr": 3,
+       "art": "grundgebuehr",
+       "text": "Grundgebühr (1 Monat)",
+       "zaehlpunkt": "",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 1,
+       "einheit": "Monat",
+       "preis": 1.5,
+       "preisEinheit": "€",
+       "netto": 1.5,
+       "zeitfenster": "",
+       "preisHerkunft": "Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Gebühr",
+          "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+          "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Grundlage",
+         "antwort": "Grundgebühr (1 Monat)",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10, 4.5)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Gebühr",
+         "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+         "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      },
+      {
+       "nr": 4,
+       "art": "zp_gebuehr",
+       "text": "Zählpunktgebühr (2 Zählpunkte × 1 Monat)",
+       "zaehlpunkt": "",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 2,
+       "einheit": "ZP-Monat",
+       "preis": 0.5,
+       "preisEinheit": "€",
+       "netto": 1,
+       "zeitfenster": "",
+       "preisHerkunft": "Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Gebühr",
+          "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+          "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Grundlage",
+         "antwort": "Zählpunktgebühr (2 Zählpunkte × 1 Monat)",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10, 4.5)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Gebühr",
+         "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+         "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      }
+     ],
+     "summen": {
+      "zeilen": [
+       {
+        "art": "befreit",
+        "satz": 0,
+        "regel": "EG_KU",
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "basis": 7.85,
+        "betrag": 0,
+        "rcBetrag": 0
+       }
+      ],
+      "netto": 7.85,
+      "ust": 0,
+      "brutto": 7.85,
+      "rcSteuer": 0,
+      "hinweise": [
+       "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG."
+      ]
+     },
+     "zaehlpunkte": [
+      {
+       "nummer": "AT0030000049100000000000000000002",
+       "richtung": "verbrauch",
+       "bezeichnung": "",
+       "teilnahmefaktor": 100
+      }
+     ],
+     "energie": {
+      "verbrauchGemessen": 200,
+      "eigendeckung": 50,
+      "quoteEigendeckung": 25
+     },
+     "ersparnis": {
+      "netzEur": 1.43,
+      "abgabeEur": 0.41,
+      "efbEur": 0,
+      "energieEur": 1.65,
+      "summeEur": 3.49,
+      "reduktionPct": 57,
+      "platzhalter": false,
+      "quellen": [
+       "SNE-V 2018 § 5 Abs. 1a (EEG lokal, NE 6/7)",
+       "Senkung der Elektrizitätsabgabe 2026 (EY Steuernachrichten) (zu bestätigen)",
+       "Annahme der Gemeinschaft (Einstellungen) – bitte mit der Netzrechnung abgleichen"
+      ],
+      "text": "Ihr Vorteil durch die Energiegemeinschaft (Schätzung, die Abrechnung erfolgt durch Ihren Netzbetreiber)"
+     },
+     "zahlweg": {
+      "art": "lastschrift",
+      "mandatRef": "SONNENHANG-0002",
+      "mandatDatum": "2025-02-01",
+      "creditorId": "AT98ZZZ00000000417",
+      "iban": "AT611904300234573201"
+     },
+     "verrechnet": [],
+     "fehler": [],
+     "warnungen": []
+    },
+    {
+     "datum": "2026-09-25",
+     "faelligAm": "2026-10-09",
+     "lieferantenpflichten": true,
+     "gemeinschaftId": "EGG-T1",
+     "periodeId": "EPR-T1",
+     "mitgliedId": "M2",
+     "mitgliedsnummer": 2,
+     "kontoId": null,
+     "von": "2026-08-01",
+     "bis": "2026-08-31",
+     "aussteller": {
+      "name": "Testgemeinschaft Sonnenhang (Demo)",
+      "strasse": "Hauptplatz 1",
+      "plz": "4910",
+      "ort": "Ried im Innkreis",
+      "email": "test@example.com",
+      "telefon": "",
+      "uid": "ATU99999901",
+      "zvr": "999000001",
+      "fn": "",
+      "iban": "AT611904300234573201",
+      "bic": "",
+      "creditorId": "AT98ZZZ00000000417",
+      "gemeinschaftsId": "",
+      "ustStatus": "kleinunternehmer"
+     },
+     "empfaenger": {
+      "name": "Lukas Land",
+      "strasse": "Hof 2",
+      "plz": "4910",
+      "ort": "Ried",
+      "email": "m2@example.com",
+      "uid": "",
+      "unternehmer": true
+     },
+     "status": "entwurf",
+     "herkunft": {
+      "anteile": [
+       {
+        "art": "pv",
+        "label": "Photovoltaik",
+        "kwh": 120,
+        "pct": 52.2
+       },
+       {
+        "art": "wasser",
+        "label": "Wasserkraft",
+        "kwh": 110,
+        "pct": 47.8
+       }
+      ],
+      "summeKwh": 230,
+      "text": "100 % erneuerbare Energie aus Anlagen der Gemeinschaft: Photovoltaik 52,2 %, Wasserkraft 47,8 %.",
+      "quelle": "ElWG §§ 66–68 (nur erneuerbare Energie); Stromkennzeichnung im Sinn der Lieferantenpflichten (zu bestätigen)"
+     },
+     "typ": "gutschrift",
+     "positionen": [
+      {
+       "nr": 1,
+       "art": "einspeisung",
+       "text": "In die Gemeinschaft eingebrachter Strom",
+       "zaehlpunkt": "AT0030000049100000000000000000003",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 120,
+       "mengeRoh": 120,
+       "einheit": "kWh",
+       "preis": 8.5,
+       "preisEinheit": "ct/kWh",
+       "netto": 10.2,
+       "zeitfenster": "",
+       "preisHerkunft": "Grundpreis Preisblatt 2026",
+       "ust": {
+        "regel": "ERZ_LW",
+        "label": "Erzeuger pauschalierter Landwirt",
+        "satz": 13,
+        "art": "ust",
+        "rcSatz": 0,
+        "hinweis": "Durchschnittssteuersatz für pauschalierte Land- und Forstwirte gem. § 22 UStG (13 %) – Gutschrift gem. § 11 Abs. 7 UStG. Zuordnung der Stromlieferung zum land- und forstwirtschaftlichen Betrieb (zu bestätigen).",
+        "quelle": "§ 22 UStG 1994 (Durchschnittssatz 13 %); EEG-Ratgeber Steuern 2024; § 11 Abs. 7 und 8 UStG 1994 (Gutschrift als Rechnung)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Steuerstatus des Erzeugers",
+          "antwort": "pauschalierter_landwirt",
+          "quelle": "Fachkonzept 3.6 / 4.5"
+         },
+         {
+          "frage": "Durchschnittssatz",
+          "antwort": "13 % auf der Gutschrift, kein Reverse Charge",
+          "quelle": "§ 22 UStG 1994 (Durchschnittssatz 13 %); EEG-Ratgeber Steuern 2024"
+         },
+         {
+          "frage": "Vorsteuerabzug der Gemeinschaft",
+          "antwort": "nein (Kleinunternehmer)",
+          "quelle": "§ 12 UStG 1994"
+         },
+         {
+          "frage": "Gutschriftverfahren",
+          "antwort": "Gutschrift gilt als Rechnung, wenn vereinbart und nicht widersprochen",
+          "quelle": "§ 11 Abs. 7 und 8 UStG 1994 (Gutschrift als Rechnung)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Menge",
+         "antwort": "120,000 kWh = Erzeugung × Teilnahmefaktor − Restüberschuss (Teilnahmefaktor 60 %)",
+         "quelle": "Fachkonzept 4.5; HA II 13"
+        },
+        {
+         "frage": "Preis",
+         "antwort": "8,5 ct/kWh – Grundpreis Preisblatt 2026",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Steuerstatus des Erzeugers",
+         "antwort": "pauschalierter_landwirt",
+         "quelle": "Fachkonzept 3.6 / 4.5"
+        },
+        {
+         "frage": "Durchschnittssatz",
+         "antwort": "13 % auf der Gutschrift, kein Reverse Charge",
+         "quelle": "§ 22 UStG 1994 (Durchschnittssatz 13 %); EEG-Ratgeber Steuern 2024"
+        },
+        {
+         "frage": "Vorsteuerabzug der Gemeinschaft",
+         "antwort": "nein (Kleinunternehmer)",
+         "quelle": "§ 12 UStG 1994"
+        },
+        {
+         "frage": "Gutschriftverfahren",
+         "antwort": "Gutschrift gilt als Rechnung, wenn vereinbart und nicht widersprochen",
+         "quelle": "§ 11 Abs. 7 und 8 UStG 1994 (Gutschrift als Rechnung)"
+        }
+       ]
+      }
+     ],
+     "summen": {
+      "zeilen": [
+       {
+        "art": "ust",
+        "satz": 13,
+        "regel": "ERZ_LW",
+        "hinweis": "Durchschnittssteuersatz für pauschalierte Land- und Forstwirte gem. § 22 UStG (13 %) – Gutschrift gem. § 11 Abs. 7 UStG. Zuordnung der Stromlieferung zum land- und forstwirtschaftlichen Betrieb (zu bestätigen).",
+        "basis": 10.2,
+        "betrag": 1.33,
+        "rcBetrag": 0
+       }
+      ],
+      "netto": 10.2,
+      "ust": 1.33,
+      "brutto": 11.53,
+      "rcSteuer": 0,
+      "hinweise": [
+       "Durchschnittssteuersatz für pauschalierte Land- und Forstwirte gem. § 22 UStG (13 %) – Gutschrift gem. § 11 Abs. 7 UStG. Zuordnung der Stromlieferung zum land- und forstwirtschaftlichen Betrieb (zu bestätigen)."
+      ]
+     },
+     "zaehlpunkte": [
+      {
+       "nummer": "AT0030000049100000000000000000003",
+       "richtung": "erzeugung",
+       "bezeichnung": "",
+       "teilnahmefaktor": 60
+      }
+     ],
+     "energie": {
+      "erzeugungTf": 200,
+      "restueberschuss": 80,
+      "eingebracht": 120
+     },
+     "erzeugervorteilEur": 3,
+     "gutschriftZustimmung": true,
+     "zahlweg": {
+      "art": "gutschrift_ueberweisung",
+      "iban": "AT611904300234573201"
+     },
+     "fehler": [],
+     "warnungen": []
+    },
+    {
+     "datum": "2026-09-25",
+     "faelligAm": "2026-10-09",
+     "lieferantenpflichten": true,
+     "gemeinschaftId": "EGG-T1",
+     "periodeId": "EPR-T1",
+     "mitgliedId": "M3",
+     "mitgliedsnummer": 3,
+     "kontoId": null,
+     "von": "2026-08-01",
+     "bis": "2026-08-31",
+     "aussteller": {
+      "name": "Testgemeinschaft Sonnenhang (Demo)",
+      "strasse": "Hauptplatz 1",
+      "plz": "4910",
+      "ort": "Ried im Innkreis",
+      "email": "test@example.com",
+      "telefon": "",
+      "uid": "ATU99999901",
+      "zvr": "999000001",
+      "fn": "",
+      "iban": "AT611904300234573201",
+      "bic": "",
+      "creditorId": "AT98ZZZ00000000417",
+      "gemeinschaftsId": "",
+      "ustStatus": "kleinunternehmer"
+     },
+     "empfaenger": {
+      "name": "Gasthof Linde",
+      "strasse": "Platz 3",
+      "plz": "4910",
+      "ort": "Ried",
+      "email": "m3@example.com",
+      "uid": "ATU99999918",
+      "unternehmer": true
+     },
+     "status": "entwurf",
+     "herkunft": {
+      "anteile": [
+       {
+        "art": "pv",
+        "label": "Photovoltaik",
+        "kwh": 120,
+        "pct": 52.2
+       },
+       {
+        "art": "wasser",
+        "label": "Wasserkraft",
+        "kwh": 110,
+        "pct": 47.8
+       }
+      ],
+      "summeKwh": 230,
+      "text": "100 % erneuerbare Energie aus Anlagen der Gemeinschaft: Photovoltaik 52,2 %, Wasserkraft 47,8 %.",
+      "quelle": "ElWG §§ 66–68 (nur erneuerbare Energie); Stromkennzeichnung im Sinn der Lieferantenpflichten (zu bestätigen)"
+     },
+     "typ": "rechnung",
+     "positionen": [
+      {
+       "nr": 1,
+       "art": "grundgebuehr",
+       "text": "Grundgebühr (1 Monat)",
+       "zaehlpunkt": "",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 1,
+       "einheit": "Monat",
+       "preis": 1.5,
+       "preisEinheit": "€",
+       "netto": 1.5,
+       "zeitfenster": "",
+       "preisHerkunft": "Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Gebühr",
+          "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+          "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Grundlage",
+         "antwort": "Grundgebühr (1 Monat)",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10, 4.5)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Gebühr",
+         "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+         "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      },
+      {
+       "nr": 2,
+       "art": "zp_gebuehr",
+       "text": "Zählpunktgebühr (1 Zählpunkt × 1 Monat)",
+       "zaehlpunkt": "",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 1,
+       "einheit": "ZP-Monat",
+       "preis": 0.5,
+       "preisEinheit": "€",
+       "netto": 0.5,
+       "zeitfenster": "",
+       "preisHerkunft": "Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Gebühr",
+          "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+          "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Grundlage",
+         "antwort": "Zählpunktgebühr (1 Zählpunkt × 1 Monat)",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10, 4.5)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Gebühr",
+         "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+         "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      }
+     ],
+     "summen": {
+      "zeilen": [
+       {
+        "art": "befreit",
+        "satz": 0,
+        "regel": "EG_KU",
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "basis": 2,
+        "betrag": 0,
+        "rcBetrag": 0
+       }
+      ],
+      "netto": 2,
+      "ust": 0,
+      "brutto": 2,
+      "rcSteuer": 0,
+      "hinweise": [
+       "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG."
+      ]
+     },
+     "zaehlpunkte": [
+      {
+       "nummer": "AT0030000049100000000000000000004",
+       "richtung": "erzeugung",
+       "bezeichnung": "",
+       "teilnahmefaktor": 100
+      }
+     ],
+     "energie": {
+      "verbrauchGemessen": 0,
+      "eigendeckung": 0,
+      "quoteEigendeckung": null
+     },
+     "ersparnis": null,
+     "zahlweg": {
+      "art": "ueberweisung",
+      "iban": "AT611904300234573201",
+      "bic": ""
+     },
+     "verrechnet": [],
+     "fehler": [],
+     "warnungen": []
+    },
+    {
+     "datum": "2026-09-25",
+     "faelligAm": "2026-10-09",
+     "lieferantenpflichten": true,
+     "gemeinschaftId": "EGG-T1",
+     "periodeId": "EPR-T1",
+     "mitgliedId": "M3",
+     "mitgliedsnummer": 3,
+     "kontoId": null,
+     "von": "2026-08-01",
+     "bis": "2026-08-31",
+     "aussteller": {
+      "name": "Testgemeinschaft Sonnenhang (Demo)",
+      "strasse": "Hauptplatz 1",
+      "plz": "4910",
+      "ort": "Ried im Innkreis",
+      "email": "test@example.com",
+      "telefon": "",
+      "uid": "ATU99999901",
+      "zvr": "999000001",
+      "fn": "",
+      "iban": "AT611904300234573201",
+      "bic": "",
+      "creditorId": "AT98ZZZ00000000417",
+      "gemeinschaftsId": "",
+      "ustStatus": "kleinunternehmer"
+     },
+     "empfaenger": {
+      "name": "Gasthof Linde",
+      "strasse": "Platz 3",
+      "plz": "4910",
+      "ort": "Ried",
+      "email": "m3@example.com",
+      "uid": "ATU99999918",
+      "unternehmer": true
+     },
+     "status": "entwurf",
+     "herkunft": {
+      "anteile": [
+       {
+        "art": "pv",
+        "label": "Photovoltaik",
+        "kwh": 120,
+        "pct": 52.2
+       },
+       {
+        "art": "wasser",
+        "label": "Wasserkraft",
+        "kwh": 110,
+        "pct": 47.8
+       }
+      ],
+      "summeKwh": 230,
+      "text": "100 % erneuerbare Energie aus Anlagen der Gemeinschaft: Photovoltaik 52,2 %, Wasserkraft 47,8 %.",
+      "quelle": "ElWG §§ 66–68 (nur erneuerbare Energie); Stromkennzeichnung im Sinn der Lieferantenpflichten (zu bestätigen)"
+     },
+     "typ": "gutschrift",
+     "positionen": [
+      {
+       "nr": 1,
+       "art": "einspeisung",
+       "text": "In die Gemeinschaft eingebrachter Strom",
+       "zaehlpunkt": "AT0030000049100000000000000000004",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 110,
+       "mengeRoh": 110,
+       "einheit": "kWh",
+       "preis": 8.5,
+       "preisEinheit": "ct/kWh",
+       "netto": 9.35,
+       "zeitfenster": "",
+       "preisHerkunft": "Grundpreis Preisblatt 2026",
+       "ust": {
+        "regel": "ERZ_RC",
+        "label": "Erzeuger regelbesteuert – Reverse Charge",
+        "satz": 0,
+        "art": "rc",
+        "rcSatz": 20,
+        "hinweis": "Übergang der Steuerschuld auf den Leistungsempfänger gem. § 19 Abs. 1c UStG (Gutschrift gem. § 11 Abs. 7 UStG).",
+        "quelle": "§ 19 Abs. 1c UStG 1994 (Strom an Wiederverkäufer); BMF-Anfragebeantwortung 03.11.2023; § 11 Abs. 7 und 8 UStG 1994 (Gutschrift als Rechnung)",
+        "steuerschuldEg": true,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Steuerstatus des Erzeugers",
+          "antwort": "regelbesteuert",
+          "quelle": "Fachkonzept 3.6 / 4.5"
+         },
+         {
+          "frage": "Lieferung von Strom an einen Wiederverkäufer (Gemeinschaft)?",
+          "antwort": "ja – Steuerschuld geht auf die Gemeinschaft über",
+          "quelle": "§ 19 Abs. 1c UStG 1994 (Strom an Wiederverkäufer); BMF-Anfragebeantwortung 03.11.2023"
+         },
+         {
+          "frage": "UID des Erzeugers",
+          "antwort": "ATU99999918",
+          "quelle": "§ 11 Abs. 1a UStG 1994"
+         },
+         {
+          "frage": "UID der Gemeinschaft",
+          "antwort": "ATU99999901",
+          "quelle": "§ 11 Abs. 1a UStG 1994"
+         },
+         {
+          "frage": "Steuerschuld der Gemeinschaft",
+          "antwort": "20 % auf das Entgelt – auch als Kleinunternehmer (UVA bzw. Erklärung)",
+          "quelle": "§ 19 Abs. 1c UStG 1994 (Strom an Wiederverkäufer); BMF-Anfragebeantwortung 03.11.2023"
+         },
+         {
+          "frage": "Vorsteuerabzug der Gemeinschaft",
+          "antwort": "nein – die Steuer ist Aufwand der Gemeinschaft",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Gutschriftverfahren",
+          "antwort": "Gutschrift gilt als Rechnung, wenn vereinbart und nicht widersprochen",
+          "quelle": "§ 11 Abs. 7 und 8 UStG 1994 (Gutschrift als Rechnung)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Menge",
+         "antwort": "110,000 kWh = Erzeugung × Teilnahmefaktor − Restüberschuss (Teilnahmefaktor 100 %)",
+         "quelle": "Fachkonzept 4.5; HA II 13"
+        },
+        {
+         "frage": "Preis",
+         "antwort": "8,5 ct/kWh – Grundpreis Preisblatt 2026",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Steuerstatus des Erzeugers",
+         "antwort": "regelbesteuert",
+         "quelle": "Fachkonzept 3.6 / 4.5"
+        },
+        {
+         "frage": "Lieferung von Strom an einen Wiederverkäufer (Gemeinschaft)?",
+         "antwort": "ja – Steuerschuld geht auf die Gemeinschaft über",
+         "quelle": "§ 19 Abs. 1c UStG 1994 (Strom an Wiederverkäufer); BMF-Anfragebeantwortung 03.11.2023"
+        },
+        {
+         "frage": "UID des Erzeugers",
+         "antwort": "ATU99999918",
+         "quelle": "§ 11 Abs. 1a UStG 1994"
+        },
+        {
+         "frage": "UID der Gemeinschaft",
+         "antwort": "ATU99999901",
+         "quelle": "§ 11 Abs. 1a UStG 1994"
+        },
+        {
+         "frage": "Steuerschuld der Gemeinschaft",
+         "antwort": "20 % auf das Entgelt – auch als Kleinunternehmer (UVA bzw. Erklärung)",
+         "quelle": "§ 19 Abs. 1c UStG 1994 (Strom an Wiederverkäufer); BMF-Anfragebeantwortung 03.11.2023"
+        },
+        {
+         "frage": "Vorsteuerabzug der Gemeinschaft",
+         "antwort": "nein – die Steuer ist Aufwand der Gemeinschaft",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Gutschriftverfahren",
+         "antwort": "Gutschrift gilt als Rechnung, wenn vereinbart und nicht widersprochen",
+         "quelle": "§ 11 Abs. 7 und 8 UStG 1994 (Gutschrift als Rechnung)"
+        }
+       ]
+      }
+     ],
+     "summen": {
+      "zeilen": [
+       {
+        "art": "rc",
+        "satz": 0,
+        "regel": "ERZ_RC",
+        "hinweis": "Übergang der Steuerschuld auf den Leistungsempfänger gem. § 19 Abs. 1c UStG (Gutschrift gem. § 11 Abs. 7 UStG).",
+        "basis": 9.35,
+        "betrag": 0,
+        "rcBetrag": 1.87
+       }
+      ],
+      "netto": 9.35,
+      "ust": 0,
+      "brutto": 9.35,
+      "rcSteuer": 1.87,
+      "hinweise": [
+       "Übergang der Steuerschuld auf den Leistungsempfänger gem. § 19 Abs. 1c UStG (Gutschrift gem. § 11 Abs. 7 UStG)."
+      ]
+     },
+     "zaehlpunkte": [
+      {
+       "nummer": "AT0030000049100000000000000000004",
+       "richtung": "erzeugung",
+       "bezeichnung": "",
+       "teilnahmefaktor": 100
+      }
+     ],
+     "energie": {
+      "erzeugungTf": 150,
+      "restueberschuss": 40,
+      "eingebracht": 110
+     },
+     "erzeugervorteilEur": 2.75,
+     "gutschriftZustimmung": true,
+     "zahlweg": {
+      "art": "gutschrift_ueberweisung",
+      "iban": "AT611904300234573201"
+     },
+     "fehler": [],
+     "warnungen": []
+    },
+    {
+     "datum": "2026-09-25",
+     "faelligAm": "2026-10-09",
+     "lieferantenpflichten": true,
+     "gemeinschaftId": "EGG-T1",
+     "periodeId": "EPR-T1",
+     "mitgliedId": "M4",
+     "mitgliedsnummer": 4,
+     "kontoId": null,
+     "von": "2026-08-01",
+     "bis": "2026-08-31",
+     "aussteller": {
+      "name": "Testgemeinschaft Sonnenhang (Demo)",
+      "strasse": "Hauptplatz 1",
+      "plz": "4910",
+      "ort": "Ried im Innkreis",
+      "email": "test@example.com",
+      "telefon": "",
+      "uid": "ATU99999901",
+      "zvr": "999000001",
+      "fn": "",
+      "iban": "AT611904300234573201",
+      "bic": "",
+      "creditorId": "AT98ZZZ00000000417",
+      "gemeinschaftsId": "",
+      "ustStatus": "kleinunternehmer"
+     },
+     "empfaenger": {
+      "name": "Bernd Birke",
+      "strasse": "Gasse 4",
+      "plz": "4910",
+      "ort": "Ried",
+      "email": "m4@example.com",
+      "uid": "",
+      "unternehmer": false
+     },
+     "status": "entwurf",
+     "herkunft": {
+      "anteile": [
+       {
+        "art": "pv",
+        "label": "Photovoltaik",
+        "kwh": 120,
+        "pct": 52.2
+       },
+       {
+        "art": "wasser",
+        "label": "Wasserkraft",
+        "kwh": 110,
+        "pct": 47.8
+       }
+      ],
+      "summeKwh": 230,
+      "text": "100 % erneuerbare Energie aus Anlagen der Gemeinschaft: Photovoltaik 52,2 %, Wasserkraft 47,8 %.",
+      "quelle": "ElWG §§ 66–68 (nur erneuerbare Energie); Stromkennzeichnung im Sinn der Lieferantenpflichten (zu bestätigen)"
+     },
+     "typ": "rechnung",
+     "positionen": [
+      {
+       "nr": 1,
+       "art": "bezug",
+       "text": "Gemeinschaftsstrom (Eigendeckung)",
+       "zaehlpunkt": "AT0030000049100000000000000000005",
+       "von": "2026-08-05",
+       "bis": "2026-08-31",
+       "menge": 30,
+       "mengeRoh": 30,
+       "einheit": "kWh",
+       "preis": 7.5,
+       "preisEinheit": "ct/kWh",
+       "netto": 2.25,
+       "zeitfenster": "",
+       "preisHerkunft": "Sozialtarif für schutzbedürftige Haushalte (ElWG § 68 Abs. 6)",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Menge",
+         "antwort": "30,000 kWh Eigendeckung laut Netzbetreiber (Teilnahmefaktor 100 %)",
+         "quelle": "ElWG § 71 Abs. 1 und 4; HA II 13 (Netzbetreiberwerte maßgeblich, L3 nicht abrechenbar)"
+        },
+        {
+         "frage": "Preis",
+         "antwort": "7,5 ct/kWh – Sozialtarif für schutzbedürftige Haushalte (ElWG § 68 Abs. 6)",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      },
+      {
+       "nr": 2,
+       "art": "grundgebuehr",
+       "text": "Grundgebühr (1 Monat)",
+       "zaehlpunkt": "",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 1,
+       "einheit": "Monat",
+       "preis": 1.5,
+       "preisEinheit": "€",
+       "netto": 1.5,
+       "zeitfenster": "",
+       "preisHerkunft": "Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Gebühr",
+          "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+          "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Grundlage",
+         "antwort": "Grundgebühr (1 Monat)",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10, 4.5)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Gebühr",
+         "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+         "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      },
+      {
+       "nr": 3,
+       "art": "zp_gebuehr",
+       "text": "Zählpunktgebühr (1 Zählpunkt × 1 Monat)",
+       "zaehlpunkt": "",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 1,
+       "einheit": "ZP-Monat",
+       "preis": 0.5,
+       "preisEinheit": "€",
+       "netto": 0.5,
+       "zeitfenster": "",
+       "preisHerkunft": "Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Gebühr",
+          "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+          "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Grundlage",
+         "antwort": "Zählpunktgebühr (1 Zählpunkt × 1 Monat)",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10, 4.5)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Gebühr",
+         "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+         "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      },
+      {
+       "nr": 4,
+       "art": "beitrittsgebuehr",
+       "text": "Einmalige Beitrittsgebühr",
+       "zaehlpunkt": "",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 1,
+       "einheit": "Stk",
+       "preis": 20,
+       "preisEinheit": "€",
+       "netto": 20,
+       "zeitfenster": "",
+       "preisHerkunft": "Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Gebühr",
+          "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+          "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Grundlage",
+         "antwort": "Einmalige Beitrittsgebühr",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10, 4.5)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Gebühr",
+         "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+         "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ],
+       "verrechnet": "beitritt:M4"
+      },
+      {
+       "nr": 5,
+       "art": "mitgliedsbeitrag",
+       "text": "Mitgliedsbeitrag 2026 (Leistungsentgelt)",
+       "zaehlpunkt": "",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 1,
+       "einheit": "Jahr",
+       "preis": 12,
+       "preisEinheit": "€",
+       "netto": 12,
+       "zeitfenster": "",
+       "preisHerkunft": "Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Mitgliedsbeitrag",
+          "antwort": "unecht (Leistungsaustausch) – wie die Lieferung",
+          "quelle": "VereinsR 2001 Rz 339 ff.; EEG-Ratgeber Steuern 2024 (echter/unechter Mitgliedsbeitrag)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Grundlage",
+         "antwort": "Mitgliedsbeitrag 2026 (Leistungsentgelt)",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10, 4.5)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Mitgliedsbeitrag",
+         "antwort": "unecht (Leistungsaustausch) – wie die Lieferung",
+         "quelle": "VereinsR 2001 Rz 339 ff.; EEG-Ratgeber Steuern 2024 (echter/unechter Mitgliedsbeitrag)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ],
+       "verrechnet": "beitrag:M4:2026"
+      }
+     ],
+     "summen": {
+      "zeilen": [
+       {
+        "art": "befreit",
+        "satz": 0,
+        "regel": "EG_KU",
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "basis": 36.25,
+        "betrag": 0,
+        "rcBetrag": 0
+       }
+      ],
+      "netto": 36.25,
+      "ust": 0,
+      "brutto": 36.25,
+      "rcSteuer": 0,
+      "hinweise": [
+       "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG."
+      ]
+     },
+     "zaehlpunkte": [
+      {
+       "nummer": "AT0030000049100000000000000000005",
+       "richtung": "verbrauch",
+       "bezeichnung": "",
+       "teilnahmefaktor": 100
+      }
+     ],
+     "energie": {
+      "verbrauchGemessen": 90,
+      "eigendeckung": 30,
+      "quoteEigendeckung": 33.3
+     },
+     "ersparnis": {
+      "netzEur": 0.86,
+      "abgabeEur": 0.03,
+      "efbEur": 0,
+      "energieEur": 1.95,
+      "summeEur": 2.84,
+      "reduktionPct": 57,
+      "platzhalter": false,
+      "quellen": [
+       "SNE-V 2018 § 5 Abs. 1a (EEG lokal, NE 6/7)",
+       "Senkung der Elektrizitätsabgabe 2026 (EY Steuernachrichten) (zu bestätigen)",
+       "Annahme der Gemeinschaft (Einstellungen) – bitte mit der Netzrechnung abgleichen"
+      ],
+      "text": "Ihr Vorteil durch die Energiegemeinschaft (Schätzung, die Abrechnung erfolgt durch Ihren Netzbetreiber)"
+     },
+     "zahlweg": {
+      "art": "lastschrift",
+      "mandatRef": "SONNENHANG-0004",
+      "mandatDatum": "2026-08-05",
+      "creditorId": "AT98ZZZ00000000417",
+      "iban": "AT611904300234573201"
+     },
+     "verrechnet": [
+      "beitritt:M4",
+      "beitrag:M4:2026"
+     ],
+     "fehler": [],
+     "warnungen": []
+    },
+    {
+     "datum": "2026-09-25",
+     "faelligAm": "2026-10-09",
+     "lieferantenpflichten": true,
+     "gemeinschaftId": "EGG-T1",
+     "periodeId": "EPR-T1",
+     "mitgliedId": "M5",
+     "mitgliedsnummer": 5,
+     "kontoId": null,
+     "von": "2026-08-01",
+     "bis": "2026-08-31",
+     "aussteller": {
+      "name": "Testgemeinschaft Sonnenhang (Demo)",
+      "strasse": "Hauptplatz 1",
+      "plz": "4910",
+      "ort": "Ried im Innkreis",
+      "email": "test@example.com",
+      "telefon": "",
+      "uid": "ATU99999901",
+      "zvr": "999000001",
+      "fn": "",
+      "iban": "AT611904300234573201",
+      "bic": "",
+      "creditorId": "AT98ZZZ00000000417",
+      "gemeinschaftsId": "",
+      "ustStatus": "kleinunternehmer"
+     },
+     "empfaenger": {
+      "name": "Clara Celler",
+      "strasse": "Ring 5",
+      "plz": "4910",
+      "ort": "Ried",
+      "email": "m5@example.com",
+      "uid": "",
+      "unternehmer": false
+     },
+     "status": "entwurf",
+     "herkunft": {
+      "anteile": [
+       {
+        "art": "pv",
+        "label": "Photovoltaik",
+        "kwh": 120,
+        "pct": 52.2
+       },
+       {
+        "art": "wasser",
+        "label": "Wasserkraft",
+        "kwh": 110,
+        "pct": 47.8
+       }
+      ],
+      "summeKwh": 230,
+      "text": "100 % erneuerbare Energie aus Anlagen der Gemeinschaft: Photovoltaik 52,2 %, Wasserkraft 47,8 %.",
+      "quelle": "ElWG §§ 66–68 (nur erneuerbare Energie); Stromkennzeichnung im Sinn der Lieferantenpflichten (zu bestätigen)"
+     },
+     "typ": "rechnung",
+     "positionen": [
+      {
+       "nr": 1,
+       "art": "bezug",
+       "text": "Gemeinschaftsstrom (Eigendeckung)",
+       "zaehlpunkt": "AT0030000049100000000000000000006",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 10,
+       "mengeRoh": 10,
+       "einheit": "kWh",
+       "preis": 11.5,
+       "preisEinheit": "ct/kWh",
+       "netto": 1.15,
+       "zeitfenster": "",
+       "preisHerkunft": "Grundpreis Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Menge",
+         "antwort": "10,000 kWh Eigendeckung laut Netzbetreiber (Teilnahmefaktor 100 %)",
+         "quelle": "ElWG § 71 Abs. 1 und 4; HA II 13 (Netzbetreiberwerte maßgeblich, L3 nicht abrechenbar)"
+        },
+        {
+         "frage": "Preis",
+         "antwort": "11,5 ct/kWh – Grundpreis Preisblatt 2026",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      },
+      {
+       "nr": 2,
+       "art": "grundgebuehr",
+       "text": "Grundgebühr (1 Monat)",
+       "zaehlpunkt": "",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 1,
+       "einheit": "Monat",
+       "preis": 1.5,
+       "preisEinheit": "€",
+       "netto": 1.5,
+       "zeitfenster": "",
+       "preisHerkunft": "Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Gebühr",
+          "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+          "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Grundlage",
+         "antwort": "Grundgebühr (1 Monat)",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10, 4.5)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Gebühr",
+         "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+         "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      },
+      {
+       "nr": 3,
+       "art": "zp_gebuehr",
+       "text": "Zählpunktgebühr (1 Zählpunkt × 1 Monat)",
+       "zaehlpunkt": "",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 1,
+       "einheit": "ZP-Monat",
+       "preis": 0.5,
+       "preisEinheit": "€",
+       "netto": 0.5,
+       "zeitfenster": "",
+       "preisHerkunft": "Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Gebühr",
+          "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+          "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Grundlage",
+         "antwort": "Zählpunktgebühr (1 Zählpunkt × 1 Monat)",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10, 4.5)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Gebühr",
+         "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+         "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      }
+     ],
+     "summen": {
+      "zeilen": [
+       {
+        "art": "befreit",
+        "satz": 0,
+        "regel": "EG_KU",
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "basis": 3.15,
+        "betrag": 0,
+        "rcBetrag": 0
+       }
+      ],
+      "netto": 3.15,
+      "ust": 0,
+      "brutto": 3.15,
+      "rcSteuer": 0,
+      "hinweise": [
+       "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG."
+      ]
+     },
+     "zaehlpunkte": [
+      {
+       "nummer": "AT0030000049100000000000000000006",
+       "richtung": "verbrauch",
+       "bezeichnung": "",
+       "teilnahmefaktor": 100
+      }
+     ],
+     "energie": {
+      "verbrauchGemessen": 80,
+      "eigendeckung": 10,
+      "quoteEigendeckung": 12.5
+     },
+     "ersparnis": {
+      "netzEur": 0.29,
+      "abgabeEur": 0.01,
+      "efbEur": 0,
+      "energieEur": 0.25,
+      "summeEur": 0.55,
+      "reduktionPct": 57,
+      "platzhalter": false,
+      "quellen": [
+       "SNE-V 2018 § 5 Abs. 1a (EEG lokal, NE 6/7)",
+       "Senkung der Elektrizitätsabgabe 2026 (EY Steuernachrichten) (zu bestätigen)",
+       "Annahme der Gemeinschaft (Einstellungen) – bitte mit der Netzrechnung abgleichen"
+      ],
+      "text": "Ihr Vorteil durch die Energiegemeinschaft (Schätzung, die Abrechnung erfolgt durch Ihren Netzbetreiber)"
+     },
+     "zahlweg": {
+      "art": "ueberweisung",
+      "iban": "AT611904300234573201",
+      "bic": ""
+     },
+     "verrechnet": [],
+     "fehler": [],
+     "warnungen": []
+    },
+    {
+     "datum": "2026-09-25",
+     "faelligAm": "2026-10-09",
+     "lieferantenpflichten": true,
+     "gemeinschaftId": "EGG-T1",
+     "periodeId": "EPR-T1",
+     "mitgliedId": "M7",
+     "mitgliedsnummer": 7,
+     "kontoId": null,
+     "von": "2026-08-01",
+     "bis": "2026-08-31",
+     "aussteller": {
+      "name": "Testgemeinschaft Sonnenhang (Demo)",
+      "strasse": "Hauptplatz 1",
+      "plz": "4910",
+      "ort": "Ried im Innkreis",
+      "email": "test@example.com",
+      "telefon": "",
+      "uid": "ATU99999901",
+      "zvr": "999000001",
+      "fn": "",
+      "iban": "AT611904300234573201",
+      "bic": "",
+      "creditorId": "AT98ZZZ00000000417",
+      "gemeinschaftsId": "",
+      "ustStatus": "kleinunternehmer"
+     },
+     "empfaenger": {
+      "name": "Sportverein Sonnenhang",
+      "strasse": "Feld 7",
+      "plz": "4910",
+      "ort": "Ried",
+      "email": "m7@example.com",
+      "uid": "",
+      "unternehmer": false
+     },
+     "status": "entwurf",
+     "herkunft": {
+      "anteile": [
+       {
+        "art": "pv",
+        "label": "Photovoltaik",
+        "kwh": 120,
+        "pct": 52.2
+       },
+       {
+        "art": "wasser",
+        "label": "Wasserkraft",
+        "kwh": 110,
+        "pct": 47.8
+       }
+      ],
+      "summeKwh": 230,
+      "text": "100 % erneuerbare Energie aus Anlagen der Gemeinschaft: Photovoltaik 52,2 %, Wasserkraft 47,8 %.",
+      "quelle": "ElWG §§ 66–68 (nur erneuerbare Energie); Stromkennzeichnung im Sinn der Lieferantenpflichten (zu bestätigen)"
+     },
+     "typ": "rechnung",
+     "positionen": [
+      {
+       "nr": 1,
+       "art": "bezug",
+       "text": "Gemeinschaftsstrom (Eigendeckung)",
+       "zaehlpunkt": "AT0030000049100000000000000000008",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 15,
+       "mengeRoh": 15,
+       "einheit": "kWh",
+       "preis": 10,
+       "preisEinheit": "ct/kWh",
+       "netto": 1.5,
+       "zeitfenster": "",
+       "preisHerkunft": "Tarifgruppe „Vereinstarif“",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Menge",
+         "antwort": "15,000 kWh Eigendeckung laut Netzbetreiber (Teilnahmefaktor 100 %)",
+         "quelle": "ElWG § 71 Abs. 1 und 4; HA II 13 (Netzbetreiberwerte maßgeblich, L3 nicht abrechenbar)"
+        },
+        {
+         "frage": "Preis",
+         "antwort": "10 ct/kWh – Tarifgruppe „Vereinstarif“",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      },
+      {
+       "nr": 2,
+       "art": "grundgebuehr",
+       "text": "Grundgebühr (1 Monat)",
+       "zaehlpunkt": "",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 1,
+       "einheit": "Monat",
+       "preis": 1.5,
+       "preisEinheit": "€",
+       "netto": 1.5,
+       "zeitfenster": "",
+       "preisHerkunft": "Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Gebühr",
+          "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+          "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Grundlage",
+         "antwort": "Grundgebühr (1 Monat)",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10, 4.5)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Gebühr",
+         "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+         "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      },
+      {
+       "nr": 3,
+       "art": "zp_gebuehr",
+       "text": "Zählpunktgebühr (1 Zählpunkt × 1 Monat)",
+       "zaehlpunkt": "",
+       "von": "2026-08-01",
+       "bis": "2026-08-31",
+       "menge": 1,
+       "einheit": "ZP-Monat",
+       "preis": 0.5,
+       "preisEinheit": "€",
+       "netto": 0.5,
+       "zeitfenster": "",
+       "preisHerkunft": "Preisblatt 2026",
+       "ust": {
+        "regel": "EG_KU",
+        "label": "Gemeinschaft Kleinunternehmer",
+        "satz": 0,
+        "art": "befreit",
+        "rcSatz": 0,
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)",
+        "steuerschuldEg": false,
+        "vorsteuerEg": false,
+        "pruefpfad": [
+         {
+          "frage": "Umsatzsteuerstatus der Gemeinschaft",
+          "antwort": "Kleinunternehmer",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         },
+         {
+          "frage": "Gebühr",
+          "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+          "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+         },
+         {
+          "frage": "Ergebnis",
+          "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+          "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+         }
+        ],
+        "fehler": [],
+        "warnungen": []
+       },
+       "pruefpfad": [
+        {
+         "frage": "Grundlage",
+         "antwort": "Zählpunktgebühr (1 Zählpunkt × 1 Monat)",
+         "quelle": "Tarif der Gemeinschaft (Fachkonzept 3.10, 4.5)"
+        },
+        {
+         "frage": "Umsatzsteuerstatus der Gemeinschaft",
+         "antwort": "Kleinunternehmer",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        },
+        {
+         "frage": "Gebühr",
+         "antwort": "unselbständige Nebenleistung zur Stromlieferung – Steuersatz wie die Lieferung",
+         "quelle": "UStR 2000 Rz 347 (Nebenleistung)"
+        },
+        {
+         "frage": "Ergebnis",
+         "antwort": "0 % – Hinweis Kleinunternehmer, kein Vorsteuerabzug",
+         "quelle": "§ 6 Abs. 1 Z 27 UStG 1994 (Kleinunternehmer, ab 01.01.2025)"
+        }
+       ]
+      }
+     ],
+     "summen": {
+      "zeilen": [
+       {
+        "art": "befreit",
+        "satz": 0,
+        "regel": "EG_KU",
+        "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+        "basis": 3.5,
+        "betrag": 0,
+        "rcBetrag": 0
+       }
+      ],
+      "netto": 3.5,
+      "ust": 0,
+      "brutto": 3.5,
+      "rcSteuer": 0,
+      "hinweise": [
+       "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG."
+      ]
+     },
+     "zaehlpunkte": [
+      {
+       "nummer": "AT0030000049100000000000000000008",
+       "richtung": "verbrauch",
+       "bezeichnung": "",
+       "teilnahmefaktor": 100
+      }
+     ],
+     "energie": {
+      "verbrauchGemessen": 120,
+      "eigendeckung": 15,
+      "quoteEigendeckung": 12.5
+     },
+     "ersparnis": {
+      "netzEur": 0.43,
+      "abgabeEur": 0.12,
+      "efbEur": 0,
+      "energieEur": 0.6,
+      "summeEur": 1.15,
+      "reduktionPct": 57,
+      "platzhalter": false,
+      "quellen": [
+       "SNE-V 2018 § 5 Abs. 1a (EEG lokal, NE 6/7)",
+       "Senkung der Elektrizitätsabgabe 2026 (EY Steuernachrichten) (zu bestätigen)",
+       "Annahme der Gemeinschaft (Einstellungen) – bitte mit der Netzrechnung abgleichen"
+      ],
+      "text": "Ihr Vorteil durch die Energiegemeinschaft (Schätzung, die Abrechnung erfolgt durch Ihren Netzbetreiber)"
+     },
+     "zahlweg": {
+      "art": "lastschrift",
+      "mandatRef": "SONNENHANG-0007",
+      "mandatDatum": "2025-01-10",
+      "creditorId": "AT98ZZZ00000000417",
+      "iban": "AT611904300234573201"
+     },
+     "verrechnet": [],
+     "fehler": [],
+     "warnungen": []
+    }
+   ],
+   "kennzahlen": {
+    "mitglieder": 6,
+    "rechnungen": 6,
+    "gutschriften": 2,
+    "verbrauch": 1190,
+    "eigendeckung": 230,
+    "erzeugungTf": 350,
+    "eingebracht": 230,
+    "restueberschuss": 120,
+    "quoteEigendeckung": 19.3,
+    "nettoRechnungen": 64.38,
+    "bruttoRechnungen": 64.38,
+    "nettoGutschriften": 19.55,
+    "bruttoGutschriften": 20.88,
+    "ust": 1.33,
+    "rcSteuer": 1.87,
+    "deckungsbeitrag": 1.4,
+    "nichtAbrechenbar": 1,
+    "ersparnisSumme": 14.28
+   },
+   "kontrolle": {
+    "eigendeckung": 230,
+    "eingebracht": 230,
+    "differenz": 0,
+    "toleranz": 1.15,
+    "ok": true
+   },
+   "pruefung": {
+    "fehler": [
+     {
+      "code": "daten",
+      "mitgliedId": "M5",
+      "text": "Zählpunkt AT0030000049100000000000000000006 (2026-08-01 bis 2026-08-31): 5 % L3-Werte – nicht abrechenbar, Nachforderung (CR_REQ_PT) auslösen.",
+      "quelle": "ElWG § 71 Abs. 1 und 4; HA II 13 (Netzbetreiberwerte maßgeblich, L3 nicht abrechenbar)"
+     }
+    ],
+    "warnungen": [],
+    "hinweise": [
+     "Lieferantenpflichten nach § 69 ElWG: Rechnungsinhalt nach § 69 Abs. 1 Z 4–6, Wahl Monats-/Jahresrechnung je Mitglied, Erläuterung auf Verlangen kostenlos."
+    ]
+   },
+   "ausgeschlossen": [
+    {
+     "mitgliedId": "M6",
+     "grund": "Abrechnungsrhythmus „quartal“ – wird in der entsprechenden Periode abgerechnet."
+    }
+   ],
+   "herkunft": {
+    "anteile": [
+     {
+      "art": "pv",
+      "label": "Photovoltaik",
+      "kwh": 120,
+      "pct": 52.2
+     },
+     {
+      "art": "wasser",
+      "label": "Wasserkraft",
+      "kwh": 110,
+      "pct": 47.8
+     }
+    ],
+    "summeKwh": 230,
+    "text": "100 % erneuerbare Energie aus Anlagen der Gemeinschaft: Photovoltaik 52,2 %, Wasserkraft 47,8 %.",
+    "quelle": "ElWG §§ 66–68 (nur erneuerbare Energie); Stromkennzeichnung im Sinn der Lieferantenpflichten (zu bestätigen)"
+   },
+   "heute": "2026-09-25"
+  },
+  "fingerabdruck": "M1:rechnung:11.63:11.63:5|M2:gutschrift:10.20:11.53:1|M2:rechnung:7.85:7.85:4|M3:gutschrift:9.35:9.35:1|M3:rechnung:2.00:2.00:2|M4:rechnung:36.25:36.25:5|M5:rechnung:3.15:3.15:3|M7:rechnung:3.50:3.50:3",
+  "freigaben": [
+   {
+    "ok": true,
+    "auge": 1,
+    "vollstaendig": false,
+    "grund": ""
+   },
+   {
+    "ok": true,
+    "auge": 2,
+    "vollstaendig": true,
+    "grund": ""
+   },
+   {
+    "ok": false,
+    "auge": null,
+    "vollstaendig": false,
+    "grund": "Vier-Augen-Prinzip: Die zweite Freigabe muss eine andere Person erteilen."
+   },
+   {
+    "ok": false,
+    "auge": null,
+    "vollstaendig": false,
+    "grund": "Die Zahlen haben sich seit der Vorschau geändert – bitte Vorschau neu berechnen."
+   },
+   {
+    "ok": false,
+    "auge": null,
+    "vollstaendig": false,
+    "grund": "Die Vorschau enthält 2 blockierende Prüfungen – bitte zuerst klären."
+   },
+   {
+    "ok": false,
+    "auge": null,
+    "vollstaendig": false,
+    "grund": "Freigeben dürfen Kassier (1. Auge) und Obmann bzw. Vorstand (2. Auge)."
+   },
+   {
+    "ok": false,
+    "auge": null,
+    "vollstaendig": false,
+    "grund": "Eine Probe-Abrechnung kann nicht freigegeben werden."
+   }
+  ],
+  "nummern": {
+   "nummern": {
+    "B1": "RE-2026-00005",
+    "B2": "RE-2026-00006",
+    "B4": "RE-2026-00007",
+    "B6": "RE-2026-00008",
+    "B7": "RE-2026-00009",
+    "B8": "RE-2026-00010",
+    "B3": "GU-2026-00001",
+    "B5": "GU-2026-00002"
+   },
+   "zaehler": {
+    "RE-2026": 10,
+    "GU-2026": 2
+   }
+  },
+  "lauf8": {
+   "posten": [
+    {
+     "belegId": "B1",
+     "nummer": "RE-2026-00005",
+     "mitgliedId": "M1",
+     "name": "Mia Muster",
+     "iban": "AT611904300234573201",
+     "betrag": 11.63,
+     "mandatRef": "SONNENHANG-0001",
+     "mandatDatum": "2025-01-10",
+     "seqTp": "FRST",
+     "endToEndId": "RE-2026-00005",
+     "verwendungszweck": "RE-2026-00005 Sonnenhang 2026-08",
+     "verrechnet": []
+    },
+    {
+     "belegId": "B6",
+     "nummer": "RE-2026-00008",
+     "mitgliedId": "M4",
+     "name": "Bernd Birke",
+     "iban": "AT611904300234573201",
+     "betrag": 36.25,
+     "mandatRef": "SONNENHANG-0004",
+     "mandatDatum": "2026-08-05",
+     "seqTp": "FRST",
+     "endToEndId": "RE-2026-00008",
+     "verwendungszweck": "RE-2026-00008 Sonnenhang 2026-08",
+     "verrechnet": []
+    },
+    {
+     "belegId": "B8",
+     "nummer": "RE-2026-00010",
+     "mitgliedId": "M7",
+     "name": "Sportverein Sonnenhang",
+     "iban": "AT611904300234573201",
+     "betrag": 3.5,
+     "mandatRef": "SONNENHANG-0007",
+     "mandatDatum": "2025-01-10",
+     "seqTp": "FRST",
+     "endToEndId": "RE-2026-00010",
+     "verwendungszweck": "RE-2026-00010 Sonnenhang 2026-08",
+     "verrechnet": []
+    }
+   ],
+   "uebersprungen": [
+    {
+     "belegId": "B2",
+     "nummer": "RE-2026-00006",
+     "grund": "Wird mit GU-2026-00001 verrechnet (Aufrechnung) – Auszahlung bzw. Einzug nur über den Gegenbeleg."
+    },
+    {
+     "belegId": "B4",
+     "nummer": "RE-2026-00007",
+     "grund": "Wird mit GU-2026-00002 verrechnet (Aufrechnung) – Auszahlung bzw. Einzug nur über den Gegenbeleg."
+    },
+    {
+     "belegId": "B7",
+     "nummer": "RE-2026-00009",
+     "grund": "Mandatsreferenz fehlt. Datum der Mandatserteilung fehlt. Mandat nicht aktiv. IBAN des Mitglieds fehlt oder ist ungültig."
+    }
+   ],
+   "verrechnungen": [],
+   "summe": 51.38,
+   "anzahl": 3
+  },
+  "lauf1": {
+   "posten": [
+    {
+     "belegId": "B3",
+     "nummer": "GU-2026-00001",
+     "mitgliedId": "M2",
+     "name": "Lukas Land",
+     "iban": "AT611904300234573201",
+     "betrag": 3.68,
+     "endToEndId": "GU-2026-00001",
+     "verwendungszweck": "GU-2026-00001 Sonnenhang 2026-08 abzgl. RE-2026-00006",
+     "verrechnet": [
+      "B2"
+     ]
+    },
+    {
+     "belegId": "B5",
+     "nummer": "GU-2026-00002",
+     "mitgliedId": "M3",
+     "name": "Gasthof Linde",
+     "iban": "AT611904300234573201",
+     "betrag": 7.35,
+     "endToEndId": "GU-2026-00002",
+     "verwendungszweck": "GU-2026-00002 Sonnenhang 2026-08 abzgl. RE-2026-00007",
+     "verrechnet": [
+      "B4"
+     ]
+    }
+   ],
+   "uebersprungen": [],
+   "verrechnungen": [
+    {
+     "belegId": "B3",
+     "nummer": "GU-2026-00001",
+     "gegen": [
+      {
+       "belegId": "B2",
+       "nummer": "RE-2026-00006",
+       "betrag": 7.85
+      }
+     ],
+     "betrag": 7.85
+    },
+    {
+     "belegId": "B5",
+     "nummer": "GU-2026-00002",
+     "gegen": [
+      {
+       "belegId": "B4",
+       "nummer": "RE-2026-00007",
+       "betrag": 2
+      }
+     ],
+     "betrag": 2
+    }
+   ],
+   "summe": 11.03,
+   "anzahl": 2
+  },
+  "xml8": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Document xmlns=\"urn:iso:std:iso:20022:tech:xsd:pain.008.001.08\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n  <CstmrDrctDbtInitn>\n    <GrpHdr>\n      <MsgId>EG-T1-DD-1</MsgId>\n      <CreDtTm>2026-09-25T08:00:00Z</CreDtTm>\n      <NbOfTxs>3</NbOfTxs>\n      <CtrlSum>51.38</CtrlSum>\n      <InitgPty><Nm>Testgemeinschaft Sonnenhang (Demo)</Nm></InitgPty>\n    </GrpHdr>\n    <PmtInf>\n      <PmtInfId>EG-T1-DD-1-1</PmtInfId>\n      <PmtMtd>DD</PmtMtd>\n      <BtchBookg>true</BtchBookg>\n      <NbOfTxs>3</NbOfTxs>\n      <CtrlSum>51.38</CtrlSum>\n      <PmtTpInf><SvcLvl><Cd>SEPA</Cd></SvcLvl><LclInstrm><Cd>CORE</Cd></LclInstrm><SeqTp>FRST</SeqTp></PmtTpInf>\n      <ReqdColltnDt>2026-10-10</ReqdColltnDt>\n      <Cdtr><Nm>Testgemeinschaft Sonnenhang (Demo)</Nm></Cdtr>\n      <CdtrAcct><Id><IBAN>AT611904300234573201</IBAN></Id></CdtrAcct>\n      <CdtrAgt><FinInstnId><Othr><Id>NOTPROVIDED</Id></Othr></FinInstnId></CdtrAgt>\n      <ChrgBr>SLEV</ChrgBr>\n      <CdtrSchmeId><Id><PrvtId><Othr><Id>AT98ZZZ00000000417</Id><SchmeNm><Prtry>SEPA</Prtry></SchmeNm></Othr></PrvtId></Id></CdtrSchmeId>\n      <DrctDbtTxInf>\n        <PmtId><EndToEndId>RE-2026-00005</EndToEndId></PmtId>\n        <InstdAmt Ccy=\"EUR\">11.63</InstdAmt>\n        <DrctDbtTx><MndtRltdInf><MndtId>SONNENHANG-0001</MndtId><DtOfSgntr>2025-01-10</DtOfSgntr></MndtRltdInf></DrctDbtTx>\n        <DbtrAgt><FinInstnId><Othr><Id>NOTPROVIDED</Id></Othr></FinInstnId></DbtrAgt>\n        <Dbtr><Nm>Mia Muster</Nm></Dbtr>\n        <DbtrAcct><Id><IBAN>AT611904300234573201</IBAN></Id></DbtrAcct>\n        <RmtInf><Ustrd>RE-2026-00005 Sonnenhang 2026-08</Ustrd></RmtInf>\n      </DrctDbtTxInf>\n      <DrctDbtTxInf>\n        <PmtId><EndToEndId>RE-2026-00008</EndToEndId></PmtId>\n        <InstdAmt Ccy=\"EUR\">36.25</InstdAmt>\n        <DrctDbtTx><MndtRltdInf><MndtId>SONNENHANG-0004</MndtId><DtOfSgntr>2026-08-05</DtOfSgntr></MndtRltdInf></DrctDbtTx>\n        <DbtrAgt><FinInstnId><Othr><Id>NOTPROVIDED</Id></Othr></FinInstnId></DbtrAgt>\n        <Dbtr><Nm>Bernd Birke</Nm></Dbtr>\n        <DbtrAcct><Id><IBAN>AT611904300234573201</IBAN></Id></DbtrAcct>\n        <RmtInf><Ustrd>RE-2026-00008 Sonnenhang 2026-08</Ustrd></RmtInf>\n      </DrctDbtTxInf>\n      <DrctDbtTxInf>\n        <PmtId><EndToEndId>RE-2026-00010</EndToEndId></PmtId>\n        <InstdAmt Ccy=\"EUR\">3.50</InstdAmt>\n        <DrctDbtTx><MndtRltdInf><MndtId>SONNENHANG-0007</MndtId><DtOfSgntr>2025-01-10</DtOfSgntr></MndtRltdInf></DrctDbtTx>\n        <DbtrAgt><FinInstnId><Othr><Id>NOTPROVIDED</Id></Othr></FinInstnId></DbtrAgt>\n        <Dbtr><Nm>Sportverein Sonnenhang</Nm></Dbtr>\n        <DbtrAcct><Id><IBAN>AT611904300234573201</IBAN></Id></DbtrAcct>\n        <RmtInf><Ustrd>RE-2026-00010 Sonnenhang 2026-08</Ustrd></RmtInf>\n      </DrctDbtTxInf>\n    </PmtInf>\n  </CstmrDrctDbtInitn>\n</Document>\n",
+  "pruef8": [],
+  "storno": {
+   "summen": {
+    "zeilen": [
+     {
+      "art": "befreit",
+      "satz": 0,
+      "regel": "EG_KU",
+      "hinweis": "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG.",
+      "basis": -11.63,
+      "betrag": 0,
+      "rcBetrag": 0
+     }
+    ],
+    "netto": -11.63,
+    "ust": 0,
+    "brutto": -11.63,
+    "rcSteuer": 0,
+    "hinweise": [
+     "Umsatzsteuerbefreit – Kleinunternehmer gem. § 6 Abs. 1 Z 27 UStG."
+    ]
+   },
+   "positionen": [
+    -6.9,
+    -3.8,
+    -1.5,
+    -0.5,
+    1.07
+   ],
+   "text": "Storno der Rechnung RE-2026-00005 vom 25.09.2026. Grund: Zählpunktwerte korrigiert",
+   "nummer": "ST-2026-00001"
+  },
+  "buchungen": [
+   {
+    "datum": "2026-10-10",
+    "belegId": "B1",
+    "belegNr": "RE-2026-00005",
+    "zahlungId": "Z-B1",
+    "geldkonto": "2800",
+    "quelle": "zahlung",
+    "mitgliedId": "M1",
+    "konto": "4000",
+    "kategorie": "einnahme",
+    "text": "Rechnung RE-2026-00005 – Erlöse Stromlieferung an Mitglieder",
+    "betrag": 10.7,
+    "ust": 0,
+    "ustArt": ""
+   },
+   {
+    "datum": "2026-10-10",
+    "belegId": "B1",
+    "belegNr": "RE-2026-00005",
+    "zahlungId": "Z-B1",
+    "geldkonto": "2800",
+    "quelle": "zahlung",
+    "mitgliedId": "M1",
+    "konto": "4010",
+    "kategorie": "einnahme",
+    "text": "Rechnung RE-2026-00005 – Erlöse Gebühren (Grund-, Zählpunkt-, Beitrittsgebühr)",
+    "betrag": 3.07,
+    "ust": 0,
+    "ustArt": ""
+   },
+   {
+    "datum": "2026-10-10",
+    "belegId": "B6",
+    "belegNr": "RE-2026-00008",
+    "zahlungId": "Z-B6",
+    "geldkonto": "2800",
+    "quelle": "zahlung",
+    "mitgliedId": "M4",
+    "konto": "4000",
+    "kategorie": "einnahme",
+    "text": "Rechnung RE-2026-00008 – Erlöse Stromlieferung an Mitglieder",
+    "betrag": 2.25,
+    "ust": 0,
+    "ustArt": ""
+   },
+   {
+    "datum": "2026-10-10",
+    "belegId": "B6",
+    "belegNr": "RE-2026-00008",
+    "zahlungId": "Z-B6",
+    "geldkonto": "2800",
+    "quelle": "zahlung",
+    "mitgliedId": "M4",
+    "konto": "4010",
+    "kategorie": "einnahme",
+    "text": "Rechnung RE-2026-00008 – Erlöse Gebühren (Grund-, Zählpunkt-, Beitrittsgebühr)",
+    "betrag": 22,
+    "ust": 0,
+    "ustArt": ""
+   },
+   {
+    "datum": "2026-10-10",
+    "belegId": "B6",
+    "belegNr": "RE-2026-00008",
+    "zahlungId": "Z-B6",
+    "geldkonto": "2800",
+    "quelle": "zahlung",
+    "mitgliedId": "M4",
+    "konto": "4800",
+    "kategorie": "einnahme",
+    "text": "Rechnung RE-2026-00008 – Mitgliedsbeiträge",
+    "betrag": 12,
+    "ust": 0,
+    "ustArt": ""
+   },
+   {
+    "datum": "2026-10-10",
+    "belegId": "B8",
+    "belegNr": "RE-2026-00010",
+    "zahlungId": "Z-B8",
+    "geldkonto": "2800",
+    "quelle": "zahlung",
+    "mitgliedId": "M7",
+    "konto": "4000",
+    "kategorie": "einnahme",
+    "text": "Rechnung RE-2026-00010 – Erlöse Stromlieferung an Mitglieder",
+    "betrag": 1.5,
+    "ust": 0,
+    "ustArt": ""
+   },
+   {
+    "datum": "2026-10-10",
+    "belegId": "B8",
+    "belegNr": "RE-2026-00010",
+    "zahlungId": "Z-B8",
+    "geldkonto": "2800",
+    "quelle": "zahlung",
+    "mitgliedId": "M7",
+    "konto": "4010",
+    "kategorie": "einnahme",
+    "text": "Rechnung RE-2026-00010 – Erlöse Gebühren (Grund-, Zählpunkt-, Beitrittsgebühr)",
+    "betrag": 2,
+    "ust": 0,
+    "ustArt": ""
+   },
+   {
+    "datum": "2026-10-10",
+    "belegId": "B3",
+    "belegNr": "GU-2026-00001",
+    "zahlungId": "Z-B3",
+    "geldkonto": "2800",
+    "quelle": "zahlung",
+    "mitgliedId": "M2",
+    "konto": "5000",
+    "kategorie": "ausgabe",
+    "text": "Gutschrift GU-2026-00001 – Stromeinkauf Erzeuger (Gutschriften)",
+    "betrag": 10.2,
+    "ust": 0,
+    "ustArt": ""
+   },
+   {
+    "datum": "2026-10-10",
+    "belegId": "B3",
+    "belegNr": "GU-2026-00001",
+    "zahlungId": "Z-B3",
+    "geldkonto": "2800",
+    "quelle": "zahlung",
+    "mitgliedId": "M2",
+    "konto": "2500",
+    "kategorie": "ausgabe",
+    "text": "Vorsteuer 13 % GU-2026-00001",
+    "betrag": 1.33,
+    "ust": 1.33,
+    "ustArt": "ust13"
+   },
+   {
+    "datum": "2026-10-10",
+    "belegId": "B5",
+    "belegNr": "GU-2026-00002",
+    "zahlungId": "Z-B5",
+    "geldkonto": "2800",
+    "quelle": "zahlung",
+    "mitgliedId": "M3",
+    "konto": "5000",
+    "kategorie": "ausgabe",
+    "text": "Gutschrift GU-2026-00002 – Stromeinkauf Erzeuger (Gutschriften)",
+    "betrag": 9.35,
+    "ust": 0,
+    "ustArt": ""
+   },
+   {
+    "id": "K1",
+    "datum": "2026-09-02",
+    "konto": "4890",
+    "kategorie": "einnahme",
+    "betrag": 50,
+    "ust": 0,
+    "ustArt": "",
+    "text": "Spende Sommerfest",
+    "geldkonto": "2700",
+    "belegNr": "Q-1",
+    "quelle": "kassa"
+   },
+   {
+    "id": "K2",
+    "datum": "2026-09-03",
+    "konto": "7600",
+    "kategorie": "ausgabe",
+    "betrag": 12.4,
+    "ust": 2.07,
+    "ustArt": "ust20",
+    "text": "Porto Einladungen GV",
+    "geldkonto": "2700",
+    "belegNr": "Q-2",
+    "quelle": "kassa"
+   },
+   {
+    "id": "K3",
+    "datum": "2026-09-30",
+    "konto": "7300",
+    "kategorie": "ausgabe",
+    "betrag": 120,
+    "ust": 20,
+    "ustArt": "ust20",
+    "text": "Plattformgebühr September",
+    "geldkonto": "2800",
+    "belegNr": "ER-77",
+    "quelle": "manuell"
+   }
+  ],
+  "ea": {
+   "jahr": 2026,
+   "einnahmen": [
+    {
+     "konto": "4000",
+     "label": "Erlöse Stromlieferung an Mitglieder",
+     "betrag": 14.45
+    },
+    {
+     "konto": "4010",
+     "label": "Erlöse Gebühren (Grund-, Zählpunkt-, Beitrittsgebühr)",
+     "betrag": 27.07
+    },
+    {
+     "konto": "4800",
+     "label": "Mitgliedsbeiträge",
+     "betrag": 12
+    },
+    {
+     "konto": "4890",
+     "label": "Sonstige Einnahmen (Förderungen, Zinsen, Spenden)",
+     "betrag": 50
+    }
+   ],
+   "ausgaben": [
+    {
+     "konto": "2500",
+     "label": "Vorsteuer",
+     "betrag": 1.33
+    },
+    {
+     "konto": "5000",
+     "label": "Stromeinkauf Erzeuger (Gutschriften)",
+     "betrag": 19.55
+    },
+    {
+     "konto": "7300",
+     "label": "Plattform, Dienstleistung, Organisator",
+     "betrag": 120
+    },
+    {
+     "konto": "7600",
+     "label": "Verwaltung (Porto, Büro, Versicherung)",
+     "betrag": 12.4
+    }
+   ],
+   "summeEinnahmen": 103.52,
+   "summeAusgaben": 153.28,
+   "ergebnis": -49.76,
+   "vermoegen": {
+    "bankAnfang": 1000,
+    "kassaAnfang": 20,
+    "bankEnde": 912.64,
+    "kassaEnde": 57.6,
+    "geldEnde": 970.24,
+    "offeneForderungen": 3.15,
+    "offeneVerbindlichkeiten": 0,
+    "reinvermoegen": 973.39
+   },
+   "vereinsgroesse": "klein",
+   "vereinsText": "Einnahmen-Ausgaben-Rechnung mit Vermögensübersicht genügt (VerG § 21).",
+   "anzahlBuchungen": 13,
+   "quelle": "VerG 2002 §§ 21, 22"
+  },
+  "kassa": {
+   "zeilen": [
+    {
+     "nr": 1,
+     "datum": "2026-09-02",
+     "belegNr": "Q-1",
+     "text": "Spende Sommerfest",
+     "einnahme": 50,
+     "ausgabe": 0,
+     "saldo": 70
+    },
+    {
+     "nr": 2,
+     "datum": "2026-09-03",
+     "belegNr": "Q-2",
+     "text": "Porto Einladungen GV",
+     "einnahme": 0,
+     "ausgabe": 12.4,
+     "saldo": 57.6
+    }
+   ],
+   "endbestand": 57.6,
+   "fehler": []
+  },
+  "uva": {
+   "von": "2026-07-01",
+   "bis": "2026-09-30",
+   "ustStatus": "kleinunternehmer",
+   "kennzahlen": [
+    {
+     "kz": "000",
+     "label": "Gesamtbetrag der Bemessungsgrundlagen (Lieferungen, sonstige Leistungen)",
+     "betrag": 52.75
+    },
+    {
+     "kz": "016",
+     "label": "davon steuerfrei ohne Vorsteuerabzug – Kleinunternehmer § 6 Abs. 1 Z 27",
+     "betrag": 52.75
+    },
+    {
+     "kz": "022",
+     "label": "davon 20 % Normalsteuersatz (Bemessungsgrundlage)",
+     "betrag": 0,
+     "steuer": 0
+    },
+    {
+     "kz": "057",
+     "label": "Steuerschuld gemäß § 19 Abs. 1c (Strom an Wiederverkäufer) – Bemessungsgrundlage",
+     "betrag": 9.35,
+     "steuer": 1.87
+    },
+    {
+     "kz": "060",
+     "label": "Gesamtbetrag der Vorsteuern (u. a. 13 % pauschalierte Landwirte)",
+     "betrag": 0
+    },
+    {
+     "kz": "066",
+     "label": "Vorsteuern betreffend die Steuerschuld gemäß § 19 Abs. 1c",
+     "betrag": 0
+    }
+   ],
+   "zahllast": 1.87,
+   "hinweis": "Kleinunternehmer: keine Vorsteuer; die Steuerschuld aus Reverse Charge ist trotzdem zu erklären und abzuführen (Fachkonzept 4.5) (zu bestätigen).",
+   "quelle": "Formular U 30 – Kennzahlen (zu bestätigen); UStG §§ 19, 21"
+  },
+  "exporte": {
+   "bmd": "﻿satzart;konto;gkonto;belegnr;belegdat;buchsymbol;buchcode;prozent;steuercode;betrag;steuer;text\r\n0;2700;4890;Q-1;02.09.2026;AR;1;;;50,00;;Spende Sommerfest\r\n0;7600;2700;Q-2;03.09.2026;ER;1;20;;12,40;2,07;Porto Einladungen GV\r\n0;7300;2800;ER-77;30.09.2026;ER;1;20;;120,00;20,00;Plattformgebühr September\r\n0;2800;4000;RE-2026-00005;10.10.2026;AR;1;;;10,70;;Rechnung RE-2026-00005 – Erlöse Stromlieferung an Mitglieder\r\n0;2800;4010;RE-2026-00005;10.10.2026;AR;1;;;3,07;;Rechnung RE-2026-00005 – Erlöse Gebühren (Grund-, Zählpunkt-\r\n0;2800;4000;RE-2026-00008;10.10.2026;AR;1;;;2,25;;Rechnung RE-2026-00008 – Erlöse Stromlieferung an Mitglieder\r\n0;2800;4010;RE-2026-00008;10.10.2026;AR;1;;;22,00;;Rechnung RE-2026-00008 – Erlöse Gebühren (Grund-, Zählpunkt-\r\n0;2800;4800;RE-2026-00008;10.10.2026;AR;1;;;12,00;;Rechnung RE-2026-00008 – Mitgliedsbeiträge\r\n0;2800;4000;RE-2026-00010;10.10.2026;AR;1;;;1,50;;Rechnung RE-2026-00010 – Erlöse Stromlieferung an Mitglieder\r\n0;2800;4010;RE-2026-00010;10.10.2026;AR;1;;;2,00;;Rechnung RE-2026-00010 – Erlöse Gebühren (Grund-, Zählpunkt-\r\n0;5000;2800;GU-2026-00001;10.10.2026;ER;1;;;10,20;;Gutschrift GU-2026-00001 – Stromeinkauf Erzeuger (Gutschrift\r\n0;2500;2800;GU-2026-00001;10.10.2026;ER;1;13;;1,33;1,33;Vorsteuer 13 % GU-2026-00001\r\n0;5000;2800;GU-2026-00002;10.10.2026;ER;1;;;9,35;;Gutschrift GU-2026-00002 – Stromeinkauf Erzeuger (Gutschrift\r\n",
+   "rzl": "﻿Belegdatum;Belegnummer;Konto;Gegenkonto;Betrag;Steuerprozent;Steuerbetrag;Buchungstext\r\n02.09.2026;Q-1;2700;4890;50,00;;;Spende Sommerfest\r\n03.09.2026;Q-2;7600;2700;12,40;20;2,07;Porto Einladungen GV\r\n30.09.2026;ER-77;7300;2800;120,00;20;20,00;Plattformgebühr September\r\n10.10.2026;RE-2026-00005;2800;4000;10,70;;;Rechnung RE-2026-00005 – Erlöse Stromlieferung an Mitglieder\r\n10.10.2026;RE-2026-00005;2800;4010;3,07;;;Rechnung RE-2026-00005 – Erlöse Gebühren (Grund-, Zählpunkt-, Beitrittsgebühr)\r\n10.10.2026;RE-2026-00008;2800;4000;2,25;;;Rechnung RE-2026-00008 – Erlöse Stromlieferung an Mitglieder\r\n10.10.2026;RE-2026-00008;2800;4010;22,00;;;Rechnung RE-2026-00008 – Erlöse Gebühren (Grund-, Zählpunkt-, Beitrittsgebühr)\r\n10.10.2026;RE-2026-00008;2800;4800;12,00;;;Rechnung RE-2026-00008 – Mitgliedsbeiträge\r\n10.10.2026;RE-2026-00010;2800;4000;1,50;;;Rechnung RE-2026-00010 – Erlöse Stromlieferung an Mitglieder\r\n10.10.2026;RE-2026-00010;2800;4010;2,00;;;Rechnung RE-2026-00010 – Erlöse Gebühren (Grund-, Zählpunkt-, Beitrittsgebühr)\r\n10.10.2026;GU-2026-00001;5000;2800;10,20;;;Gutschrift GU-2026-00001 – Stromeinkauf Erzeuger (Gutschriften)\r\n10.10.2026;GU-2026-00001;2500;2800;1,33;13;1,33;Vorsteuer 13 % GU-2026-00001\r\n10.10.2026;GU-2026-00002;5000;2800;9,35;;;Gutschrift GU-2026-00002 – Stromeinkauf Erzeuger (Gutschriften)\r\n",
+   "datev": "\"EXTF\";700;21;\"Buchungsstapel\";13;20261231000000000;;\"RE\";\"OekoInvest\";\"\";;;20260101;4;20260101;20261231;\"OekoInvest Plattform\";\"\";1;0;0;\"EUR\";;\"\";;;\"\";\"\"\r\n\"Umsatz (ohne Soll/Haben-Kz)\";\"Soll/Haben-Kennzeichen\";\"WKZ Umsatz\";\"Kurs\";\"Basis-Umsatz\";\"WKZ Basis-Umsatz\";\"Konto\";\"Gegenkonto (ohne BU-Schlüssel)\";\"BU-Schlüssel\";\"Belegdatum\";\"Belegfeld 1\";\"Belegfeld 2\";\"Skonto\";\"Buchungstext\"\r\n50,00;\"S\";\"EUR\";;;;2700;4890;\"\";0209;\"Q-1\";\"\";;\"Spende Sommerfest\"\r\n12,40;\"S\";\"EUR\";;;;7600;2700;\"\";0309;\"Q-2\";\"\";;\"Porto Einladungen GV\"\r\n120,00;\"S\";\"EUR\";;;;7300;2800;\"\";3009;\"ER-77\";\"\";;\"Plattformgebühr September\"\r\n10,70;\"S\";\"EUR\";;;;2800;4000;\"\";1010;\"RE-2026-00005\";\"\";;\"Rechnung RE-2026-00005 – Erlöse Stromlieferung an Mitglieder\"\r\n3,07;\"S\";\"EUR\";;;;2800;4010;\"\";1010;\"RE-2026-00005\";\"\";;\"Rechnung RE-2026-00005 – Erlöse Gebühren (Grund-, Zählpunkt-\"\r\n2,25;\"S\";\"EUR\";;;;2800;4000;\"\";1010;\"RE-2026-00008\";\"\";;\"Rechnung RE-2026-00008 – Erlöse Stromlieferung an Mitglieder\"\r\n22,00;\"S\";\"EUR\";;;;2800;4010;\"\";1010;\"RE-2026-00008\";\"\";;\"Rechnung RE-2026-00008 – Erlöse Gebühren (Grund-, Zählpunkt-\"\r\n12,00;\"S\";\"EUR\";;;;2800;4800;\"\";1010;\"RE-2026-00008\";\"\";;\"Rechnung RE-2026-00008 – Mitgliedsbeiträge\"\r\n1,50;\"S\";\"EUR\";;;;2800;4000;\"\";1010;\"RE-2026-00010\";\"\";;\"Rechnung RE-2026-00010 – Erlöse Stromlieferung an Mitglieder\"\r\n2,00;\"S\";\"EUR\";;;;2800;4010;\"\";1010;\"RE-2026-00010\";\"\";;\"Rechnung RE-2026-00010 – Erlöse Gebühren (Grund-, Zählpunkt-\"\r\n10,20;\"S\";\"EUR\";;;;5000;2800;\"\";1010;\"GU-2026-00001\";\"\";;\"Gutschrift GU-2026-00001 – Stromeinkauf Erzeuger (Gutschrift\"\r\n1,33;\"S\";\"EUR\";;;;2500;2800;\"\";1010;\"GU-2026-00001\";\"\";;\"Vorsteuer 13 % GU-2026-00001\"\r\n9,35;\"S\";\"EUR\";;;;5000;2800;\"\";1010;\"GU-2026-00002\";\"\";;\"Gutschrift GU-2026-00002 – Stromeinkauf Erzeuger (Gutschrift\"\r\n",
+   "ea": "﻿Art;Konto;Bezeichnung;Betrag\r\nEinnahme;4000;Erlöse Stromlieferung an Mitglieder;14,45\r\nEinnahme;4010;Erlöse Gebühren (Grund-, Zählpunkt-, Beitrittsgebühr);27,07\r\nEinnahme;4800;Mitgliedsbeiträge;12,00\r\nEinnahme;4890;Sonstige Einnahmen (Förderungen, Zinsen, Spenden);50,00\r\nSumme Einnahmen;;;103,52\r\nAusgabe;2500;Vorsteuer;1,33\r\nAusgabe;5000;Stromeinkauf Erzeuger (Gutschriften);19,55\r\nAusgabe;7300;Plattform, Dienstleistung, Organisator;120,00\r\nAusgabe;7600;Verwaltung (Porto, Büro, Versicherung);12,40\r\nSumme Ausgaben;;;153,28\r\nErgebnis (Überschuss/Fehlbetrag);;;-49,76\r\nVermögen: Bank zum Jahresende;2800;;912,64\r\nVermögen: Kassa zum Jahresende;2700;;57,60\r\nOffene Forderungen;2000;;3,15\r\nOffene Verbindlichkeiten;3300;;0,00\r\n",
+   "kassabuch": "﻿Lfd. Nr.;Datum;Beleg;Text;Einnahme;Ausgabe;Kassastand\r\n1;2026-09-02;Q-1;Spende Sommerfest;50,00;0,00;70,00\r\n2;2026-09-03;Q-2;Porto Einladungen GV;0,00;12,40;57,60\r\n",
+   "belegjournal": "﻿Nummer;Typ;Datum;Mitgliedsnr.;Empfänger;Zeitraum;Netto;USt;Brutto;RC-Steuer;Status;Prüfsumme\r\nGU-2026-00001;gutschrift;2026-09-25;2;Lukas Land;2026-08-01 bis 2026-08-31;10,20;1,33;11,53;0,00;final;\r\nGU-2026-00002;gutschrift;2026-09-25;3;Gasthof Linde;2026-08-01 bis 2026-08-31;9,35;0,00;9,35;1,87;final;\r\nRE-2026-00005;rechnung;2026-09-25;1;Mia Muster;2026-08-01 bis 2026-08-31;11,63;0,00;11,63;0,00;final;\r\nRE-2026-00006;rechnung;2026-09-25;2;Lukas Land;2026-08-01 bis 2026-08-31;7,85;0,00;7,85;0,00;final;\r\nRE-2026-00007;rechnung;2026-09-25;3;Gasthof Linde;2026-08-01 bis 2026-08-31;2,00;0,00;2,00;0,00;final;\r\nRE-2026-00008;rechnung;2026-09-25;4;Bernd Birke;2026-08-01 bis 2026-08-31;36,25;0,00;36,25;0,00;final;\r\nRE-2026-00009;rechnung;2026-09-25;5;Clara Celler;2026-08-01 bis 2026-08-31;3,15;0,00;3,15;0,00;final;\r\nRE-2026-00010;rechnung;2026-09-25;7;Sportverein Sonnenhang;2026-08-01 bis 2026-08-31;3,50;0,00;3,50;0,00;final;\r\n"
+  },
+  "jb": {
+   "jahr": 2026,
+   "kwh": 120,
+   "netto": 10.2,
+   "ust": 1.33,
+   "brutto": 11.53,
+   "belege": [
+    "GU-2026-00001"
+   ],
+   "estg": {
+    "befreitMoeglich": true,
+    "text": "Einkünfte aus der Einspeisung bis 12.500 kWh sind bei Anlagen bis 35 kWp und 25 kW Anschlussleistung in der Regel einkommensteuerfrei (§ 3 Abs. 1 Z 39 EStG).",
+    "quelle": "§ 3 Abs. 1 Z 39 EStG 1988 (Einspeisung natürlicher Personen; gilt auch bei Lieferung an Energiegemeinschaften, BMF)"
+   },
+   "hinweis": "Diese Bescheinigung ersetzt keine Steuerberatung."
+  },
+  "mahn": [
+   {
+    "tag": "2026-10-20",
+    "m5": {
+     "tage": 11,
+     "offen": 11.63,
+     "stufe": 1,
+     "label": "Freundliche Zahlungserinnerung",
+     "faellig": true,
+     "gebuehr": 0,
+     "zinsen": 0,
+     "zinssatz": null,
+     "zinsNorm": "",
+     "pauschale": 0,
+     "pauschaleNorm": "",
+     "kostenGesamt": 0,
+     "gesamt": 11.63,
+     "frist": "2026-11-03",
+     "eskalation": false,
+     "b2b": false,
+     "sozial": false,
+     "hinweisEskalation": ""
+    },
+    "m4": {
+     "tage": 11,
+     "offen": 36.25,
+     "stufe": 1,
+     "label": "Freundliche Zahlungserinnerung",
+     "faellig": true,
+     "gebuehr": 0,
+     "zinsen": 0,
+     "zinssatz": null,
+     "zinsNorm": "",
+     "pauschale": 0,
+     "pauschaleNorm": "",
+     "kostenGesamt": 0,
+     "gesamt": 36.25,
+     "frist": "2026-11-03",
+     "eskalation": false,
+     "b2b": false,
+     "sozial": true,
+     "hinweisSozial": "Schutzbedürftiger Haushalt: keine Mahngebühr, Ratenzahlung anbieten."
+    }
+   },
+   {
+    "tag": "2026-11-12",
+    "m5": {
+     "tage": 34,
+     "offen": 11.63,
+     "stufe": 1,
+     "label": "Freundliche Zahlungserinnerung",
+     "faellig": true,
+     "gebuehr": 0,
+     "zinsen": 0,
+     "zinssatz": null,
+     "zinsNorm": "",
+     "pauschale": 0,
+     "pauschaleNorm": "",
+     "kostenGesamt": 0,
+     "gesamt": 11.63,
+     "frist": "2026-11-26",
+     "eskalation": false,
+     "b2b": false,
+     "sozial": false,
+     "hinweisEskalation": ""
+    },
+    "m4": {
+     "tage": 34,
+     "offen": 36.25,
+     "stufe": 1,
+     "label": "Freundliche Zahlungserinnerung",
+     "faellig": true,
+     "gebuehr": 0,
+     "zinsen": 0,
+     "zinssatz": null,
+     "zinsNorm": "",
+     "pauschale": 0,
+     "pauschaleNorm": "",
+     "kostenGesamt": 0,
+     "gesamt": 36.25,
+     "frist": "2026-11-26",
+     "eskalation": false,
+     "b2b": false,
+     "sozial": true,
+     "hinweisSozial": "Schutzbedürftiger Haushalt: keine Mahngebühr, Ratenzahlung anbieten."
+    }
+   },
+   {
+    "tag": "2026-12-01",
+    "m5": {
+     "tage": 53,
+     "offen": 11.63,
+     "stufe": 1,
+     "label": "Freundliche Zahlungserinnerung",
+     "faellig": true,
+     "gebuehr": 0,
+     "zinsen": 0,
+     "zinssatz": null,
+     "zinsNorm": "",
+     "pauschale": 0,
+     "pauschaleNorm": "",
+     "kostenGesamt": 0,
+     "gesamt": 11.63,
+     "frist": "2026-12-15",
+     "eskalation": false,
+     "b2b": false,
+     "sozial": false,
+     "hinweisEskalation": ""
+    },
+    "m4": {
+     "tage": 53,
+     "offen": 36.25,
+     "stufe": 1,
+     "label": "Freundliche Zahlungserinnerung",
+     "faellig": true,
+     "gebuehr": 0,
+     "zinsen": 0,
+     "zinssatz": null,
+     "zinsNorm": "",
+     "pauschale": 0,
+     "pauschaleNorm": "",
+     "kostenGesamt": 0,
+     "gesamt": 36.25,
+     "frist": "2026-12-15",
+     "eskalation": false,
+     "b2b": false,
+     "sozial": true,
+     "hinweisSozial": "Schutzbedürftiger Haushalt: keine Mahngebühr, Ratenzahlung anbieten."
+    }
+   }
+  ],
+  "alt": {
+   "werte": [
+    {
+     "mitgliedsnummer": 1,
+     "typ": "rechnung",
+     "netto": 11.63
+    },
+    {
+     "mitgliedsnummer": 2,
+     "typ": "rechnung",
+     "netto": 7.9
+    },
+    {
+     "mitgliedsnummer": 2,
+     "typ": "gutschrift",
+     "netto": 10.2
+    },
+    {
+     "mitgliedsnummer": 4,
+     "typ": "rechnung",
+     "netto": 36.25
+    },
+    {
+     "mitgliedsnummer": 9,
+     "typ": "rechnung",
+     "netto": 5
+    }
+   ],
+   "fehler": []
+  },
+  "probe": {
+   "zeilen": [
+    {
+     "mitgliedsnummer": 1,
+     "typ": "rechnung",
+     "name": "Mia Muster",
+     "neu": 11.63,
+     "alt": 11.63,
+     "differenz": 0,
+     "pct": 0,
+     "auffaellig": false,
+     "nurNeu": false,
+     "nurAlt": false
+    },
+    {
+     "mitgliedsnummer": 2,
+     "typ": "gutschrift",
+     "name": "Lukas Land",
+     "neu": 10.2,
+     "alt": 10.2,
+     "differenz": 0,
+     "pct": 0,
+     "auffaellig": false,
+     "nurNeu": false,
+     "nurAlt": false
+    },
+    {
+     "mitgliedsnummer": 2,
+     "typ": "rechnung",
+     "name": "Lukas Land",
+     "neu": 7.85,
+     "alt": 7.9,
+     "differenz": -0.05,
+     "pct": -0.6,
+     "auffaellig": false,
+     "nurNeu": false,
+     "nurAlt": false
+    },
+    {
+     "mitgliedsnummer": 3,
+     "typ": "gutschrift",
+     "name": "Gasthof Linde",
+     "neu": 9.35,
+     "alt": 0,
+     "differenz": 9.35,
+     "pct": null,
+     "auffaellig": true,
+     "nurNeu": true,
+     "nurAlt": false
+    },
+    {
+     "mitgliedsnummer": 3,
+     "typ": "rechnung",
+     "name": "Gasthof Linde",
+     "neu": 2,
+     "alt": 0,
+     "differenz": 2,
+     "pct": null,
+     "auffaellig": true,
+     "nurNeu": true,
+     "nurAlt": false
+    },
+    {
+     "mitgliedsnummer": 4,
+     "typ": "rechnung",
+     "name": "Bernd Birke",
+     "neu": 36.25,
+     "alt": 36.25,
+     "differenz": 0,
+     "pct": 0,
+     "auffaellig": false,
+     "nurNeu": false,
+     "nurAlt": false
+    },
+    {
+     "mitgliedsnummer": 5,
+     "typ": "rechnung",
+     "name": "Clara Celler",
+     "neu": 3.15,
+     "alt": 0,
+     "differenz": 3.15,
+     "pct": null,
+     "auffaellig": true,
+     "nurNeu": true,
+     "nurAlt": false
+    },
+    {
+     "mitgliedsnummer": 7,
+     "typ": "rechnung",
+     "name": "Sportverein Sonnenhang",
+     "neu": 3.5,
+     "alt": 0,
+     "differenz": 3.5,
+     "pct": null,
+     "auffaellig": true,
+     "nurNeu": true,
+     "nurAlt": false
+    },
+    {
+     "mitgliedsnummer": 9,
+     "typ": "rechnung",
+     "name": "",
+     "neu": 0,
+     "alt": 5,
+     "differenz": -5,
+     "pct": -100,
+     "auffaellig": true,
+     "nurNeu": false,
+     "nurAlt": true
+    }
+   ],
+   "summeNeu": 83.93,
+   "summeAlt": 70.98,
+   "auffaellig": 5
+  }
+ }
+}

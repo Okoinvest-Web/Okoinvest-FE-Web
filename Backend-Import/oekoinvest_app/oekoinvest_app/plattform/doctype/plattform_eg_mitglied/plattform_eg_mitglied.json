@@ -1,0 +1,300 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 14:00:00.000000",
+ "description": "Mitglied einer Energiegemeinschaft mit Bezug zum Konto, Mitgliedsart, Steuerstatus, SEPA-Mandat und Status.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "gemeinschaft",
+  "konto",
+  "mitgliedsnummer",
+  "art",
+  "sb_person",
+  "person_vorname",
+  "person_nachname",
+  "person_firma",
+  "person_strasse",
+  "person_plz",
+  "person_ort",
+  "person_email",
+  "person_telefon",
+  "mitarbeiter",
+  "umsatz_mio_eur",
+  "bilanz_mio_eur",
+  "groesse_nachweis",
+  "sb_steuer",
+  "steuerstatus_erzeuger",
+  "uid",
+  "schutzbeduerftig",
+  "iban",
+  "sepa_referenz",
+  "sepa_datum",
+  "sepa_status",
+  "rechnungsweg",
+  "abrechnungsrhythmus",
+  "vertraege",
+  "beitritt_am",
+  "austritt_zum",
+  "status",
+  "migriert_aus"
+ ],
+ "fields": [
+  {
+   "fieldname": "gemeinschaft",
+   "fieldtype": "Link",
+   "label": "Gemeinschaft",
+   "options": "Plattform EG Gemeinschaft",
+   "reqd": 1,
+   "search_index": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "konto",
+   "fieldtype": "Link",
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "search_index": 1
+  },
+  {
+   "fieldname": "mitgliedsnummer",
+   "fieldtype": "Int",
+   "label": "Mitgliedsnummer",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "label": "Mitgliedsart",
+   "options": "privat\nlandwirt\nkmu\ngrossunternehmen\ngemeinde\noeffentlich\nverein",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sb_person",
+   "fieldtype": "Section Break",
+   "label": "Person / Organisation"
+  },
+  {
+   "fieldname": "person_vorname",
+   "fieldtype": "Data",
+   "label": "Vorname"
+  },
+  {
+   "fieldname": "person_nachname",
+   "fieldtype": "Data",
+   "label": "Nachname"
+  },
+  {
+   "fieldname": "person_firma",
+   "fieldtype": "Data",
+   "label": "Firma"
+  },
+  {
+   "fieldname": "person_strasse",
+   "fieldtype": "Data",
+   "label": "Straße"
+  },
+  {
+   "fieldname": "person_plz",
+   "fieldtype": "Data",
+   "label": "PLZ"
+  },
+  {
+   "fieldname": "person_ort",
+   "fieldtype": "Data",
+   "label": "Ort"
+  },
+  {
+   "fieldname": "person_email",
+   "fieldtype": "Data",
+   "label": "E-Mail"
+  },
+  {
+   "fieldname": "person_telefon",
+   "fieldtype": "Data",
+   "label": "Telefon"
+  },
+  {
+   "fieldname": "mitarbeiter",
+   "fieldtype": "Int",
+   "label": "Mitarbeitende"
+  },
+  {
+   "fieldname": "umsatz_mio_eur",
+   "fieldtype": "Float",
+   "label": "Umsatz (Mio. €)"
+  },
+  {
+   "fieldname": "bilanz_mio_eur",
+   "fieldtype": "Float",
+   "label": "Bilanzsumme (Mio. €)"
+  },
+  {
+   "fieldname": "groesse_nachweis",
+   "fieldtype": "Data",
+   "label": "Nachweis Unternehmensgröße"
+  },
+  {
+   "fieldname": "sb_steuer",
+   "fieldtype": "Section Break",
+   "label": "Steuer, Zahlung, Rechnung"
+  },
+  {
+   "fieldname": "steuerstatus_erzeuger",
+   "fieldtype": "Select",
+   "label": "Steuerstatus Erzeuger",
+   "options": "nicht_unternehmerisch\nkleinunternehmer\npauschalierter_landwirt\nregelbesteuert\ngemeinde_bga",
+   "default": "kleinunternehmer"
+  },
+  {
+   "fieldname": "uid",
+   "fieldtype": "Data",
+   "label": "UID"
+  },
+  {
+   "fieldname": "schutzbeduerftig",
+   "fieldtype": "Check",
+   "label": "Schutzbedürftiger Haushalt (§ 68 Abs. 6)",
+   "default": "0"
+  },
+  {
+   "fieldname": "iban",
+   "fieldtype": "Data",
+   "label": "IBAN"
+  },
+  {
+   "fieldname": "sepa_referenz",
+   "fieldtype": "Data",
+   "label": "Mandatsreferenz"
+  },
+  {
+   "fieldname": "sepa_datum",
+   "fieldtype": "Date",
+   "label": "Mandat vom"
+  },
+  {
+   "fieldname": "sepa_status",
+   "fieldtype": "Select",
+   "label": "Mandatsstatus",
+   "options": "\naktiv\nwiderrufen"
+  },
+  {
+   "fieldname": "rechnungsweg",
+   "fieldtype": "Select",
+   "label": "Rechnungsweg",
+   "options": "portal\nemail\npost",
+   "default": "portal"
+  },
+  {
+   "fieldname": "abrechnungsrhythmus",
+   "fieldtype": "Select",
+   "label": "Abrechnungsrhythmus",
+   "options": "\nmonat\nquartal\njahr"
+  },
+  {
+   "fieldname": "vertraege",
+   "fieldtype": "JSON",
+   "label": "Verträge (Art, Dokument, Version, Datum)"
+  },
+  {
+   "fieldname": "beitritt_am",
+   "fieldtype": "Date",
+   "label": "Beitritt am"
+  },
+  {
+   "fieldname": "austritt_zum",
+   "fieldtype": "Date",
+   "label": "Austritt zum"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "interessent\nantrag\ngeprueft\naufgenommen\naktiv\ngekuendigt\nausgeschieden\nabgelehnt\nausgeschlossen",
+   "default": "antrag",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "migriert_aus",
+   "fieldtype": "Data",
+   "label": "Migriert aus (Prototyp)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 03:20:23.737338",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform EG Mitglied",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Compliance",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "naming_rule": "By script"
+}

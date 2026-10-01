@@ -1,0 +1,150 @@
+{
+ "stand": "2026-10-01",
+ "erzeugt": "node scripts/plattform-test-eg-eda.mjs --vektoren",
+ "faelle": [
+  {
+   "name": "tagBeginnUtc",
+   "fn": "tagBeginnUtc",
+   "args": [
+    "2026-03-29"
+   ],
+   "ergebnis": "2026-03-28T23:00:00Z"
+  },
+  {
+   "name": "qhAnzahl",
+   "fn": "qhAnzahl",
+   "args": [
+    "2026-03-29"
+   ],
+   "ergebnis": 92
+  },
+  {
+   "name": "tagBeginnUtc",
+   "fn": "tagBeginnUtc",
+   "args": [
+    "2026-10-25"
+   ],
+   "ergebnis": "2026-10-24T22:00:00Z"
+  },
+  {
+   "name": "qhAnzahl",
+   "fn": "qhAnzahl",
+   "args": [
+    "2026-10-25"
+   ],
+   "ergebnis": 100
+  },
+  {
+   "name": "tagBeginnUtc",
+   "fn": "tagBeginnUtc",
+   "args": [
+    "2026-10-01"
+   ],
+   "ergebnis": "2026-09-30T22:00:00Z"
+  },
+  {
+   "name": "qhAnzahl",
+   "fn": "qhAnzahl",
+   "args": [
+    "2026-10-01"
+   ],
+   "ergebnis": 96
+  },
+  {
+   "name": "tagBeginnUtc",
+   "fn": "tagBeginnUtc",
+   "args": [
+    "2027-03-28"
+   ],
+   "ergebnis": "2027-03-27T23:00:00Z"
+  },
+  {
+   "name": "qhAnzahl",
+   "fn": "qhAnzahl",
+   "args": [
+    "2027-03-28"
+   ],
+   "ergebnis": 92
+  },
+  {
+   "name": "tagBeginnUtc",
+   "fn": "tagBeginnUtc",
+   "args": [
+    "2026-12-31"
+   ],
+   "ergebnis": "2026-12-30T23:00:00Z"
+  },
+  {
+   "name": "qhAnzahl",
+   "fn": "qhAnzahl",
+   "args": [
+    "2026-12-31"
+   ],
+   "ergebnis": 96
+  },
+  {
+   "name": "wienOffsetMinuten",
+   "fn": "wienOffsetMinuten",
+   "args": [
+    1792889999000
+   ],
+   "ergebnis": 120
+  },
+  {
+   "name": "wienOffsetMinuten",
+   "fn": "wienOffsetMinuten",
+   "args": [
+    1792890000000
+   ],
+   "ergebnis": 60
+  },
+  {
+   "name": "lokalTag",
+   "fn": "lokalTag",
+   "args": [
+    "2026-10-24T22:00:00Z"
+   ],
+   "ergebnis": "2026-10-25"
+  },
+  {
+   "name": "lokalTag",
+   "fn": "lokalTag",
+   "args": [
+    "2026-12-31T23:30:00Z"
+   ],
+   "ergebnis": "2027-01-01"
+  },
+  {
+   "name": "plusTage",
+   "fn": "plusTage",
+   "args": [
+    "2026-10-01",
+    30
+   ],
+   "ergebnis": "2026-10-31"
+  },
+  {
+   "name": "tageZwischen",
+   "fn": "tageZwischen",
+   "args": [
+    "2026-10-01",
+    "2026-10-31"
+   ],
+   "ergebnis": 30
+  },
+  {
+   "name": "tageListe",
+   "fn": "tageListe",
+   "args": [
+    "2026-10-30",
+    "2026-11-02"
+   ],
+   "ergebnis": [
+    "2026-10-30",
+    "2026-10-31",
+    "2026-11-01",
+    "2026-11-02"
+   ]
+  }
+ ]
+}

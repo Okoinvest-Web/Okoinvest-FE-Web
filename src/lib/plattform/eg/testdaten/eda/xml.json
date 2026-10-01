@@ -1,0 +1,99 @@
+{
+ "stand": "2026-10-01",
+ "erzeugt": "node scripts/plattform-test-eg-eda.mjs --vektoren",
+ "faelle": [
+  {
+   "name": "xmlSchreiben",
+   "fn": "xmlSchreiben",
+   "args": [
+    {
+     "name": "A",
+     "attrs": {
+      "x": "1 & 2",
+      "y": "\"q\""
+     },
+     "kinder": [
+      {
+       "name": "B",
+       "text": "<ä>"
+      },
+      {
+       "name": "C"
+      },
+      {
+       "name": "D",
+       "text": 5
+      }
+     ]
+    }
+   ],
+   "ergebnis": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<A x=\"1 &amp; 2\" y=\"&quot;q&quot;\">\n  <B>&lt;ä&gt;</B>\n  <C/>\n  <D>5</D>\n</A>\n"
+  },
+  {
+   "name": "xmlLesen",
+   "fn": "xmlLesen",
+   "args": [
+    "<?xml version=\"1.0\"?><!-- k --><p:A xmlns:p=\"urn:x\" a=\"1\"><p:B>x &amp; y &#228;</p:B><C/><D><!\u005bCDATA\u005b<roh>\u005d\u005d></D></p:A>"
+   ],
+   "ergebnis": {
+    "name": "A",
+    "attrs": {
+     "a": "1"
+    },
+    "kinder": [
+     {
+      "name": "B",
+      "attrs": {},
+      "kinder": [],
+      "text": "x & y ä"
+     },
+     {
+      "name": "C",
+      "attrs": {},
+      "kinder": [],
+      "text": ""
+     },
+     {
+      "name": "D",
+      "attrs": {},
+      "kinder": [],
+      "text": "<roh>"
+     }
+    ],
+    "text": ""
+   }
+  },
+  {
+   "name": "DOCTYPE abgelehnt",
+   "fn": "xmlLesen",
+   "args": [
+    "<!DOCTYPE x \u005b<!ENTITY a \"b\">\u005d><A/>"
+   ],
+   "fehler": "DOCTYPE und Deklarationen sind nicht erlaubt."
+  },
+  {
+   "name": "falsches Endtag",
+   "fn": "xmlLesen",
+   "args": [
+    "<A><B></A>"
+   ],
+   "fehler": "Endtag „A“ passt nicht."
+  },
+  {
+   "name": "unbekannte Entität",
+   "fn": "xmlLesen",
+   "args": [
+    "<A>&foo;</A>"
+   ],
+   "fehler": "Unbekannte Entität „foo“."
+  },
+  {
+   "name": "zwei Wurzeln",
+   "fn": "xmlLesen",
+   "args": [
+    "<A/><B/>"
+   ],
+   "fehler": "Mehr als ein Wurzelelement."
+  }
+ ]
+}

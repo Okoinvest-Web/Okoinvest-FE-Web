@@ -1,0 +1,289 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 09:00:00.000000",
+ "description": "Ein- und ausgehende EDA-Nachricht (ebUtilities) mit Rohinhalt und SHA-256 (Beweissicherung), Zuordnung zu Prozess und Teilnahme; Eingänge idempotent je Absender und Message-ID (WP2).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "richtung",
+  "nachrichtencode",
+  "prozesscode",
+  "prozess",
+  "gemeinschaft",
+  "teilnahme",
+  "zaehlpunktnummer",
+  "cb_1",
+  "schluessel",
+  "message_id",
+  "conversation_id",
+  "absender",
+  "empfaenger",
+  "zeitpunkt",
+  "tag",
+  "sb_verarbeitung",
+  "kanal",
+  "versand_status",
+  "versuche",
+  "verarbeitet",
+  "verarbeitet_am",
+  "weitergeleitet",
+  "cb_2",
+  "fehler",
+  "hinweise",
+  "kennzahlen",
+  "sb_roh",
+  "sha256",
+  "groesse",
+  "betreff",
+  "rohinhalt"
+ ],
+ "fields": [
+  {
+   "fieldname": "richtung",
+   "fieldtype": "Select",
+   "label": "Richtung",
+   "options": "ausgang\neingang",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "nachrichtencode",
+   "fieldtype": "Data",
+   "label": "Nachrichtencode",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "prozesscode",
+   "fieldtype": "Data",
+   "label": "Prozess"
+  },
+  {
+   "fieldname": "prozess",
+   "fieldtype": "Link",
+   "label": "EDA-Prozess",
+   "options": "Plattform EG EDA Prozess",
+   "search_index": 1
+  },
+  {
+   "fieldname": "gemeinschaft",
+   "fieldtype": "Link",
+   "label": "Gemeinschaft",
+   "options": "Plattform EG Gemeinschaft",
+   "search_index": 1
+  },
+  {
+   "fieldname": "teilnahme",
+   "fieldtype": "Link",
+   "label": "Teilnahme",
+   "options": "Plattform EG ZP Teilnahme"
+  },
+  {
+   "fieldname": "zaehlpunktnummer",
+   "fieldtype": "Data",
+   "label": "Zählpunktnummer",
+   "search_index": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "schluessel",
+   "fieldtype": "Data",
+   "label": "Eindeutiger Schlüssel (Absender|Message-ID)",
+   "unique": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "message_id",
+   "fieldtype": "Data",
+   "label": "Message-ID",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "conversation_id",
+   "fieldtype": "Data",
+   "label": "Conversation-ID",
+   "search_index": 1
+  },
+  {
+   "fieldname": "absender",
+   "fieldtype": "Data",
+   "label": "Absender"
+  },
+  {
+   "fieldname": "empfaenger",
+   "fieldtype": "Data",
+   "label": "Empfänger"
+  },
+  {
+   "fieldname": "zeitpunkt",
+   "fieldtype": "Datetime",
+   "label": "Zeitpunkt",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "tag",
+   "fieldtype": "Date",
+   "label": "Datentag (CR_MSG)"
+  },
+  {
+   "fieldname": "sb_verarbeitung",
+   "fieldtype": "Section Break",
+   "label": "Übermittlung und Verarbeitung"
+  },
+  {
+   "fieldname": "kanal",
+   "fieldtype": "Select",
+   "label": "Kanal",
+   "options": "simulator\nemail\nkep\ndatei\nmanuell\nportal",
+   "default": "simulator"
+  },
+  {
+   "fieldname": "versand_status",
+   "fieldtype": "Select",
+   "label": "Versand",
+   "options": "\nwartend\ngesendet\nquittiert\nfehler"
+  },
+  {
+   "fieldname": "versuche",
+   "fieldtype": "Int",
+   "label": "Versuche",
+   "default": "0"
+  },
+  {
+   "fieldname": "verarbeitet",
+   "fieldtype": "Check",
+   "label": "Verarbeitet",
+   "default": "0"
+  },
+  {
+   "fieldname": "verarbeitet_am",
+   "fieldtype": "Datetime",
+   "label": "Verarbeitet am"
+  },
+  {
+   "fieldname": "weitergeleitet",
+   "fieldtype": "Check",
+   "label": "An Energiedaten (WP3) weitergegeben",
+   "default": "0"
+  },
+  {
+   "fieldname": "cb_2",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "fehler",
+   "fieldtype": "Small Text",
+   "label": "Fehler"
+  },
+  {
+   "fieldname": "hinweise",
+   "fieldtype": "JSON",
+   "label": "Hinweise"
+  },
+  {
+   "fieldname": "kennzahlen",
+   "fieldtype": "JSON",
+   "label": "Kennzahlen"
+  },
+  {
+   "fieldname": "sb_roh",
+   "fieldtype": "Section Break",
+   "label": "Rohinhalt (Beweissicherung)"
+  },
+  {
+   "fieldname": "sha256",
+   "fieldtype": "Data",
+   "label": "SHA-256",
+   "read_only": 1
+  },
+  {
+   "fieldname": "groesse",
+   "fieldtype": "Int",
+   "label": "Größe (Zeichen)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "betreff",
+   "fieldtype": "Data",
+   "label": "Betreff (E-Mail)"
+  },
+  {
+   "fieldname": "rohinhalt",
+   "fieldtype": "Long Text",
+   "label": "Rohinhalt"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform EG EDA Nachricht",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "naming_rule": "By script",
+ "search_fields": "nachrichtencode,message_id,zaehlpunktnummer",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Admin"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Energie"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 0,
+   "write": 0,
+   "role": "ÖkoInvest Leser"
+  }
+ ]
+}

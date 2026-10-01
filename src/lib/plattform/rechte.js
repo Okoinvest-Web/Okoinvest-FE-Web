@@ -24,6 +24,7 @@ export const BACKOFFICE_ROLLEN = {
   compliance: { label: "Compliance", text: "KYC/KYB: Verifizierungen prüfen, Unterlagen einsehen, Sanktionsabgleich, Risikoeinstufung." }, // KYC/KYB
   projektleitung: { label: "Projektleitung", text: "Projektentwicklung: Entwicklungsprojekte, Meilensteine, Risiken, Kosten, Gutachter; CRM und Aufgaben." }, // Projektentwicklung
   energie: { label: "Energie", text: "Energiebeschaffung: Handelsdesk, Terminkurve, Pool-Portfolio, Kundenanalyse, Ausschreibungen, Lieferantenstamm." }, // Energiebeschaffung
+  eg: { label: "Energiegemeinschaften", text: "Betriebsführung und Gründung von Energiegemeinschaften (ElWG): Stammdaten, Mitglieder, Zählpunkte, EDA, Abrechnung als Organisator." }, // Energiegemeinschaften ElWG (WP1)
 };
 export const BACKOFFICE_ROLLEN_IDS = Object.keys(BACKOFFICE_ROLLEN);
 
@@ -59,6 +60,7 @@ export const BEREICHE = {
   genossenschaft: "Genossenschaft & Energiegemeinschaften", kommunen: "Kommunen & Gemeinden", // Mitglied/Genossenschaft und Gemeindecockpit (Team 5)
   pachtakte: "Pachtakten (Kündigung, Eigentümerwechsel, Rückbau)", // Team 1: Pachtakte nach Vertragsschluss
   portfolio: "Portfolio & Beteiligungen", // Investor-Portfolio nach dem Kauf (Kapitalabrufe, Ausschüttungen, Berichte)
+  eg: "Energiegemeinschaften (ElWG)", // Energiegemeinschaften ElWG (WP1): /portal/admin/eg, /api/admin/eg
 };
 export const BEREICH_IDS = Object.keys(BEREICHE);
 
@@ -125,6 +127,12 @@ for (const [b, z] of Object.entries(M)) z[8] = ENERGIE_SPALTE[b] ?? 0; // Energi
 // und Energie (Energiegemeinschaften), Compliance liest; Kommunen schreiben Leitung/Akquise/Projektleitung.
 M.genossenschaft = [2, 1, 1, 2, 1, 0, 1, 0, 2];
 M.kommunen = [2, 2, 1, 1, 1, 0, 0, 2, 0];
+// Energiegemeinschaften ElWG (WP1): Bereich „eg“ (Leitung schreiben; Buchhaltung, Lesen, Compliance, Energie lesen) und Spalte
+// „eg“ (10.) – Betriebsführung/Organisator: eg schreiben, CRM/Aufgaben/Signatur/Kalender schreiben, Kernbereiche lesen.
+M.eg = [2, 0, 0, 1, 1, 0, 1, 0, 1];
+const EG_SPALTE = { cockpit: 1, vorgaenge: 1, aufgaben: 2, crm: 2, vorlagen: 1, berichte: 1, nutzer: 1, signatur: 2, kalender: 2, support: 1, wissen: 1, genossenschaft: 1, kommunen: 1, eg: 2 };
+SPALTE.eg = 9;
+for (const [b, z] of Object.entries(M)) { while (z.length < 9) z.push(0); z[9] = EG_SPALTE[b] ?? 0; }
 
 /** Rechte-Matrix { bereich: { rolle: stufe } } – für Anzeige und Prüfung */
 export const RECHTE_MATRIX = Object.fromEntries(
@@ -200,6 +208,7 @@ const API_BEREICH = {
   gutachter: "entwicklung", // Gutachteraufträge (Angebot, Beauftragung, Abnahme, Rechnung) – Zahlung zusätzlich „finanzen“ (Route)
   pachtakte: "pachtakte", // Pachtakte (Team 1)
   portfolio: "portfolio", // Investor-Portfolio
+  eg: "eg", // Energiegemeinschaften ElWG (WP1–WP6): /api/admin/eg/**
 };
 
 /**
@@ -266,6 +275,7 @@ const SEITEN_BEREICH = {
   gutachter: "entwicklung", // Gutachteraufträge (Angebot, Beauftragung, Abnahme, Rechnung) – Zahlung zusätzlich „finanzen“ (Route)
   pachtakten: "pachtakte", // Pachtakte (Team 1)
   portfolio: "portfolio", // Investor-Portfolio
+  eg: "eg", // Energiegemeinschaften ElWG (WP1–WP6): /portal/admin/eg/**
   hinweis: "cockpit", // Team 8: vertraulicher Geldwäsche-Hinweis an Compliance (alle Backoffice-Rollen)
 };
 

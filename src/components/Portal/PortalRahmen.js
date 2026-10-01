@@ -32,6 +32,8 @@ import { MessageSquareWarning } from "lucide-react"; // Kundenseite Energie (Tea
 import { BookOpenCheck, FileLock2, ShieldQuestion } from "lucide-react"; // Team 8: Buchhaltung, Datenschutz, Hinweis an Compliance
 import { BadgeCheck, ScanFace } from "lucide-react"; // KYC/KYB
 import { HandHeart, Zap } from "lucide-react"; // Fachprüfung Kapitalseite
+import { Factory, Network, Sprout, SunMedium as EgSonne } from "lucide-react"; // Energiegemeinschaften ElWG (WP1)
+import { EG_BROTKRUMEN, EG_SEITEN } from "@/lib/plattform/eg/navigation"; // Energiegemeinschaften ElWG (WP1)
 import { HardHat, Milestone } from "lucide-react"; // Projektentwicklung
 import { Landmark, ReceiptText } from "lucide-react"; // ERPNext-Finanzen & Abrechnung
 import { Banknote, Calculator } from "lucide-react"; // Finanzierung
@@ -64,6 +66,8 @@ function navigation(rollen, nutzer = { rollen }) {
         hat("unternehmen") && { href: "/portal/energie/beschaffung", label: "Energiebeschaffung", icon: PlugZap }, // Energiebeschaffung: Vertrag, Ausschreibung, Freigabe, Vollmacht
         hat("lieferant") && { href: "/portal/ausschreibungen", label: "Angebotsanfragen", icon: FileSpreadsheet }, // Energiebeschaffung: Versorger-Portal
         hat("mitglied") && { href: "/portal/beteiligung", label: "Genossenschaft & Gemeinschaft", icon: HandHeart }, // Fachprüfung Kapitalseite
+        hat("mitglied", "kommune", "landwirt", "unternehmen") && { href: EG_SEITEN.portal.href, label: EG_SEITEN.portal.label, icon: EgSonne }, // Energiegemeinschaften ElWG: Mitglied, Organe (WP6/WP1)
+        { href: EG_SEITEN.portalGruendung.href, label: EG_SEITEN.portalGruendung.label, icon: Sprout }, // Energiegemeinschaften WP5: Gründungsauftrag (alle Konten)
         hat("kommune") && { href: "/portal/kommune", label: "Gemeinde", icon: Landmark }, // Onboarding B1: Rolle Kommune → Gemeinde-Sicht
         hat("gutachter") && { href: "/portal/gutachter", label: "Auftragsverwaltung", icon: ClipboardList }, // Gutachteraufträge: Angebote, Beauftragung, Lieferungen, Rechnungen
         hat("flaeche", "landwirt", "investor", "gutachter") && { href: "/portal/entwicklung", label: hat("gutachter") ? "Aufträge & Projekte" : "Projektentwicklung", icon: HardHat }, // Projektentwicklung: „Wo steht mein Projekt?“, Co-Development, Gutachter
@@ -117,12 +121,22 @@ function navigation(rollen, nutzer = { rollen }) {
         { href: "/portal/admin/finanzen/buchhaltung", label: "Buchhaltung (OP, Mahnwesen)", icon: BookOpenCheck }, // Team 8: OP, Mahnwesen, Zahlungseingang, Export, Abschluss
         { href: "/portal/admin/finanzierung", label: "Finanzierung & Banken", icon: Banknote }, // Finanzierung: Bankfinanzierung Eigenbetrieb, Covenants
         { href: "/portal/admin/genossenschaft", label: "Genossenschaft", icon: HandHeart }, // Team 5: Mitglieder, GV, Ausschüttungen
-        { href: "/portal/admin/energiegemeinschaften", label: "Energiegemeinschaften", icon: Zap }, // Team 5: Teilnehmer, Monatsläufe
+        { href: "/portal/admin/energiegemeinschaften", label: "Energiegemeinschaften (Prototyp)", icon: Zap }, // Team 5: Teilnehmer, Monatsläufe – abgelöst durch /portal/admin/eg (WP1), DE/CH bleiben hier
         { href: "/portal/admin/nutzer", label: "Nutzer & Protokoll", icon: Users },
         { href: "/portal/admin/postausgang", label: "E-Mail-Postausgang", icon: Mail },
         { href: "/portal/admin/kalender", label: "Kalender", icon: CalendarDays }, // Termine
         { href: "/portal/admin/support", label: "Support-Tickets", icon: LifeBuoy }, // Service
         { href: "/portal/admin/hinweis", label: "Hinweis an Compliance", icon: ShieldQuestion }, // Team 8: vertraulicher GwG-Hinweis
+      ].filter((e) => darfLesen(nutzer, seitenBereich(e.href))),
+    });
+    // Energiegemeinschaften ElWG (WP1–WP6): eigener Bereich „eg“ der Rechte-Matrix
+    bereiche.push({
+      titel: "Energiegemeinschaften",
+      eintraege: [
+        { href: EG_SEITEN.adminListe.href, label: "Gemeinschaften", icon: EgSonne, exakt: true },
+        { href: EG_SEITEN.adminGruendung.href, label: EG_SEITEN.adminGruendung.label, icon: Sprout }, // WP5
+        { href: EG_SEITEN.adminSimulation.href, label: EG_SEITEN.adminSimulation.label, icon: Factory }, // WP3
+        { href: EG_SEITEN.adminNetz.href, label: EG_SEITEN.adminNetz.label, icon: Network }, // WP1
       ].filter((e) => darfLesen(nutzer, seitenBereich(e.href))),
     });
     // Backoffice-Ausbau: CRM, Akquise, Automationen, Vorlagen, Berichte, Revisionsprotokoll, Rechte
@@ -196,7 +210,7 @@ const LABELS = {
 
 function brotkrumen(pfad) {
   const teile = pfad.split("/").filter(Boolean);
-  return teile.map((t, i) => ({ href: "/" + teile.slice(0, i + 1).join("/"), label: (t === "energie" && teile[i - 1] === "admin" ? "Energie-Handelsdesk" : LABELS[t]) || decodeURIComponent(t) })); // Energiebeschaffung: /portal/admin/energie
+  return teile.map((t, i) => ({ href: "/" + teile.slice(0, i + 1).join("/"), label: (teile.includes("eg") && EG_BROTKRUMEN[t]) || (t === "energie" && teile[i - 1] === "admin" ? "Energie-Handelsdesk" : LABELS[t]) || decodeURIComponent(t) })); // Energiebeschaffung: /portal/admin/energie
 }
 
 function aktiv(pfad, e) {

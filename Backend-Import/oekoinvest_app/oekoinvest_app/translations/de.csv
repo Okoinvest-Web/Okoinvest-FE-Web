@@ -692,3 +692,159 @@ ausgezahlt,Ausgezahlt
 angemeldet,Angemeldet
 Plattform Anteilsuebertragung,Plattform Anteilsübertragung
 Plattform Genossenschaft Ausschuettung,Plattform Genossenschaft Ausschüttung
+Plattform EG Verteilschluessel,Plattform EG Verteilschlüssel
+Plattform EG Verteilschluessel Position,Plattform EG Verteilschlüssel Position
+Plattform EG Zaehlpunkt,Plattform EG Zählpunkt
+abgeloest,Abgelöst
+abmeldung,Abmeldung
+abmeldung_angefragt,Abmeldung angefragt
+antrag,Antrag
+anwenderportal,EDA-Anwenderportal
+aufgenommen,Aufgenommen
+aufnahmestopp,Aufnahmestopp
+aufsichtsrat,Aufsichtsrat
+beg,BEG
+beides,Beides
+biomasse,Biomasse
+dynamisch,Dynamisch
+eda_bereit,EDA-bereit
+egen,Genossenschaft (eGen)
+eigenanlage_eg,Eigene Anlage der Gemeinschaft
+eigenversorgung,Eigenversorgung
+formular,Online-Formular
+gea,GEA
+gemeinde_bga,Gemeinde mit Betrieb gewerblicher Art
+geprueft,Geprüft
+geschaeftsfuehrer,Geschäftsführung
+gesendet,Gesendet
+gmbh,GmbH
+grossunternehmen,Großunternehmen
+gueltig,Gültig
+gv,Generalversammlung
+implizit,Implizit (Auszug)
+in_aufloesung,In Auflösung
+interessent,Interessent
+investzuschuss,EAG-Investitionszuschuss
+jahr,Jährlich
+kassier,Kassier
+kep,KEP
+kleinunternehmer,Kleinunternehmer
+kmu,Unternehmen (KMU)
+landwirt,Landwirt
+machbarkeit,Machbarkeit
+marktpartner,Marktpartner (ebUtilities)
+modell,Nach Modell
+monat,Monatlich
+nicht_unternehmerisch,Nicht unternehmerisch (unentgeltlich)
+obmann,Obmann / Obfrau
+obmann_stv,Obmann-Stellvertretung
+oeffentlich,Sonstige juristische Person öffentlichen Rechts
+og_kg,OG/KG
+organisator,Organisator
+p2p,P2P
+pauschalierter_landwirt,"Pauschalierter Landwirt (§ 22 UStG, 13 %)"
+platzhalter,Platzhalter
+post,Post
+pv,Photovoltaik
+quartal,Quartalsweise
+rechnungspruefer,Rechnungsprüfer/in
+rechtsperson,Rechtsperson (ZVR/FN)
+regelbesteuert,Regelbesteuert
+schriftfuehrer,Schriftführer/in
+statisch,Statisch
+stillgelegt,Stillgelegt
+ueberschuss,Überschusseinspeisung
+umgewandelt,Umgewandelt (Nachfolger)
+verein,Verein
+vertrag_nb,Vertrag mit dem Netzbetreiber
+volleinspeisung,Volleinspeisung
+vorstand,Vorstand
+wartet_technik,Wartet auf Technik (z. B. Smart Meter)
+wasser,Wasserkraft
+widerruf,Widerruf
+wind,Wind
+zonelevel,Nach Zonelevel
+zu_bestaetigen,Zu bestätigen
+zugestimmt,Zugestimmt
+zustimmung_offen,Zustimmung des Mitglieds offen
+ausgang,Ausgang (an Netzbetreiber)
+eingang,Eingang (vom Netzbetreiber)
+simulator,Simulator
+datei,Datei (KEP-Ordner)
+wartend,Wartend
+quittiert,Quittiert
+zeitueberschreitung,Zeitüberschreitung
+freigabe_offen,Freigabe offen (Vier-Augen)
+PROD,Produktion
+SIMU,Simulation
+REKLAMATION,Reklamation an den Netzbetreiber
+CR_MSG,Energiedaten (CR_MSG)
+CR_REQ_PT,Nachforderung (CR_REQ_PT)
+EC_PODLIST,Zählpunktliste (EC_PODLIST)
+EC_PRTFACT_CHG,Änderung Teilnahmefaktor (EC_PRTFACT_CHG)
+EC_PRT_CHANGE,Änderung Aufteilungsschlüssel (EC_PRT_CHANGE)
+EC_REQ_OFF,Anmeldung offline (EC_REQ_OFF)
+EC_REQ_ONL,Anmeldung online (EC_REQ_ONL)
+CM_REV_SP,Abmeldung (CM_REV_SP)
+CM_REV_CUS,Widerruf durch Mitglied (CM_REV_CUS)
+CM_REV_IMP,Implizite Abmeldung (CM_REV_IMP)
+erzeuger,Erzeuger/in
+oekovolt,ÖKOVOLT-PV-Kunde
+prosumer,Prosumer
+rechner,Ersparnis-Rechner
+verbraucher,Verbraucher/in
+zugeordnet,Zugeordnet
+ausgabe,Ausgabe
+camt,Kontoauszug (camt)
+einnahme,Einnahme
+erzeugt,Erzeugt
+final,Freigegeben
+freigabe_teilweise,1 von 2 Freigaben
+gemahnt,Gemahnt
+kassa,Kassa
+neutral,Neutral
+pain001,SEPA-Überweisung (pain.001)
+pain008,SEPA-Lastschrift (pain.008)
+probe,Probe-Abrechnung
+schluss,Schlussabrechnung
+schlussrechnung,Schlussrechnung
+storno,Storno
+teilbezahlt,Teilbezahlt
+versendet,Versendet
+vorschau,Vorschau
+zahlung,Zahlung
+anteil_erzeugung,Anteil an der Erzeugung
+csv,CSV
+eda,EDA
+eigendeckung,Eigendeckung
+eigendeckung_ee,Eigendeckung aus Erneuerbaren (BEG)
+erzeugung_gemessen,Erzeugung laut Messung
+erzeugung_tf,Erzeugung × Teilnahmefaktor
+gespeichert,Gespeichert
+restueberschuss,Restüberschuss
+verbrauch_gemessen,Verbrauch laut Messung
+verbrauch_tf,Verbrauch × Teilnahmefaktor
+Plattform EG Foerdercheck,EG Förder-Check
+Plattform EG Gruendungsauftrag,EG Gründungsauftrag
+Plattform EG Gruendungsschritt,EG Gründungsschritt
+beitrittsgebuehr,Beitrittsgebühr
+betriebsbereit,Betriebsbereit
+check,Gründungs-Check
+erlassen,Erlassen
+fehlgeschlagen,Fehlgeschlagen
+finanzamt_bank,Finanzamt und Bank
+gesondert,Gesondert
+gruendung,Gründung
+jahresbeitrag,Jahresbeitrag
+komplett,Komplettbetreuung
+konstituierung,Konstituierung
+mitgliederaufnahme,Mitgliederaufnahme
+nb_vertrag,Netzbetreibervertrag
+rechtsform_statuten,Rechtsform und Statuten
+umlauf,Umlaufbeschluss
+wartet_extern,Wartet auf Dritte
+wechsel,Wechsel
+wechsel_daten,Wechsel: Datenübernahme
+wechsel_mandat,Wechsel: Mandat
+wechsel_parallel,Wechsel: Parallelbetrieb
+wechsel_umstellung,Wechsel: Umstellung

@@ -214,7 +214,8 @@ scheduler_events = {
 		"oekoinvest_app.plattform.api.onboarding.mail_lauf_taeglich",  # Onboarding B1: Erinnerung an offene Einstiegsschritte nach 3/7 Tagen
 		"oekoinvest_app.plattform.api.akquise_kampagne.nachfassen_taeglich",  # Akquise A1b: Nachfassstufen der Kampagnen (Aufgaben)
 		"oekoinvest_app.plattform.api.querschnitt.digest_taeglich",  # Querschnitt: Tages-Digest der Benachrichtigungen (E-Mail ohne Inhalte)
-		"oekoinvest_app.plattform.api.frist_erinnerung.erinnerungen_taeglich",  # Integration: Fristerinnerungen Pachtakte, Genossenschaft (Einzahlung), Gemeinde (Stellungnahme)
+		"oekoinvest_app.plattform.api.frist_erinnerung.erinnerungen_taeglich",
+		"oekoinvest_app.plattform.eg_eda_jobs.taeglich",  # Energiegemeinschaften WP2: EDA-Fristen (30 Tage Zustimmung), Erinnerungen  # Integration: Fristerinnerungen Pachtakte, Genossenschaft (Einzahlung), Gemeinde (Stellungnahme)
 	],
 	# Deal-Room: Erinnerung 48 h vor Ende einer Angebotsfrist
 	"hourly": [
@@ -222,6 +223,7 @@ scheduler_events = {
 		"oekoinvest_app.plattform.api.termine.erinnerungen_senden",  # Termine: Erinnerung 24 h vorher (E-Mail mit ICS)
 		"oekoinvest_app.plattform.api.support.sla_pruefen",  # Service: SLA-Verletzungen melden (einmal je Ticket)
 		# ↓ weitere stündliche Jobs
+		"oekoinvest_app.plattform.eg_eda_jobs.stuendlich",  # Energiegemeinschaften WP2: EDA-Gateway-Postfach, Wiederholungen
 	],
 	# Energiebeschaffung: Wechselanalyse aller Kundenverträge gegen die Terminkurve
 	"weekly": [

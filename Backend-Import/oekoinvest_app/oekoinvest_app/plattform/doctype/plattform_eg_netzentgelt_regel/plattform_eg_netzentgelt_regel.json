@@ -1,0 +1,168 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:kennung",
+ "creation": "2026-10-01 14:00:00.000000",
+ "description": "Netzentgelt-Regel (versioniert, nach Modell bis 2026 bzw. Zonelevel ab 2027; Status gesichert/entwurf/platzhalter).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "kennung",
+  "gueltig_ab",
+  "gueltig_bis",
+  "bezug",
+  "modelle",
+  "zonelevel",
+  "netzebenen",
+  "reduktion_pct",
+  "abgaben_befreit_modelle",
+  "quelle",
+  "quelle_url",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "kennung",
+   "fieldtype": "Data",
+   "label": "Kennung (ENR-…)",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "gueltig_ab",
+   "fieldtype": "Date",
+   "label": "Gültig ab"
+  },
+  {
+   "fieldname": "gueltig_bis",
+   "fieldtype": "Date",
+   "label": "Gültig bis"
+  },
+  {
+   "fieldname": "bezug",
+   "fieldtype": "Select",
+   "label": "Bezug",
+   "options": "modell\nzonelevel",
+   "reqd": 1
+  },
+  {
+   "fieldname": "modelle",
+   "fieldtype": "Data",
+   "label": "Modelle (kommagetrennt)"
+  },
+  {
+   "fieldname": "zonelevel",
+   "fieldtype": "Data",
+   "label": "Zonelevel (kommagetrennt)"
+  },
+  {
+   "fieldname": "netzebenen",
+   "fieldtype": "Data",
+   "label": "Netzebenen (kommagetrennt)"
+  },
+  {
+   "fieldname": "reduktion_pct",
+   "fieldtype": "Float",
+   "label": "Reduktion (%)",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "abgaben_befreit_modelle",
+   "fieldtype": "Data",
+   "label": "Abgabenbefreit für Modelle"
+  },
+  {
+   "fieldname": "quelle",
+   "fieldtype": "Data",
+   "label": "Quelle"
+  },
+  {
+   "fieldname": "quelle_url",
+   "fieldtype": "Data",
+   "label": "Quelle (URL)"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "gesichert\nentwurf\nplatzhalter",
+   "default": "entwurf",
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 03:20:23.744065",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform EG Netzentgelt Regel",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Energie",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "naming_rule": "By fieldname"
+}

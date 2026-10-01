@@ -1,0 +1,735 @@
+{
+  "stand": "2026-10-01",
+  "hinweis": "Gemeinsame Testvektoren WP6 (JS: scripts/plattform-test-eg-portal.mjs, Python: plattform/tests/test_eg_portal_kern.py). Alle Daten fiktiv.",
+  "netzbetreiber": [
+    {
+      "id": "ENB-OOE",
+      "nbNummer": "003000",
+      "kurzname": "Netz OÖ",
+      "name": "Netz Oberösterreich GmbH"
+    },
+    {
+      "id": "ENB-WIEN",
+      "nbNummer": "001000",
+      "kurzname": "Wiener Netze",
+      "name": "Wiener Netze GmbH"
+    }
+  ],
+  "gemeinschaften": [
+    {
+      "id": "EGG-T1",
+      "name": "Sonnenland Test",
+      "modell": "eeg",
+      "zonelevel": 3,
+      "status": "aktiv",
+      "netzbetreiber": [
+        "ENB-OOE"
+      ],
+      "sitzAdresse": {
+        "plz": "4910",
+        "ort": "Ried"
+      },
+      "gemeinschaftsId": "AT00300004910RC109417000000000001"
+    },
+    {
+      "id": "EGG-T2",
+      "name": "BEG Test",
+      "modell": "beg",
+      "zonelevel": 7,
+      "status": "in_gruendung",
+      "netzbetreiber": [
+        "ENB-OOE"
+      ],
+      "sitzAdresse": {
+        "plz": "5121",
+        "ort": "Ostermiething"
+      }
+    },
+    {
+      "id": "EGG-T3",
+      "name": "Gruendung Test",
+      "modell": "eeg",
+      "zonelevel": 4,
+      "status": "aufgeloest",
+      "netzbetreiber": [
+        "ENB-WIEN"
+      ],
+      "sitzAdresse": {
+        "plz": "1140",
+        "ort": "Wien"
+      }
+    }
+  ],
+  "tarif": {
+    "bezugspreisCt": 11.5,
+    "einspeisepreisCt": 8.5,
+    "mitgliedsbeitragJahr": 12,
+    "einmalgebuehrBeitritt": 20,
+    "zeitfenster": [
+      {
+        "id": "Z1",
+        "label": "Mittagsstrom",
+        "tage": [],
+        "von": "11:00",
+        "bis": "15:00",
+        "monate": [
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "bezugspreisCt": 9.5
+      },
+      {
+        "id": "Z2",
+        "label": "Wochenende",
+        "tage": [
+          "sa",
+          "so"
+        ],
+        "von": "10:00",
+        "bis": "16:00",
+        "monate": [],
+        "bezugspreisCt": 10
+      }
+    ],
+    "sozialtarif": {
+      "bezugspreisCt": 7.5,
+      "kontingentPct": 10
+    }
+  },
+  "interesse": [
+    {
+      "eingabe": {
+        "vorname": "Ina",
+        "nachname": "Test",
+        "email": " INA@Example.com ",
+        "plz": "4910",
+        "rolle": "prosumer",
+        "zaehlpunktnummer": "AT003000049100000000000000D000001",
+        "kwp": "9,9",
+        "einwilligung": true
+      },
+      "erwartet": {
+        "email": "ina@example.com",
+        "rolle": "prosumer",
+        "kwp": 9.9
+      }
+    },
+    {
+      "eingabe": {
+        "nachname": "Ohne",
+        "email": "x@example.com",
+        "plz": "4910"
+      },
+      "fehler": "einwilligung"
+    },
+    {
+      "eingabe": {
+        "nachname": "Plz",
+        "email": "x@example.com",
+        "plz": "49100",
+        "einwilligung": true
+      },
+      "fehler": "plz"
+    },
+    {
+      "eingabe": {
+        "nachname": "Zp",
+        "email": "x@example.com",
+        "plz": "4910",
+        "einwilligung": true,
+        "zaehlpunktnummer": "AT12"
+      },
+      "fehler": "zaehlpunktnummer"
+    }
+  ],
+  "eignung": [
+    {
+      "daten": {
+        "zaehlpunktnummer": "AT003000049100000000000000D000001",
+        "richtung": "verbrauch",
+        "art": "privat",
+        "smartMeter": "ja"
+      },
+      "gemeinschaft": 0,
+      "erwartet": "pruefen"
+    },
+    {
+      "daten": {
+        "zaehlpunktnummer": "AT001000011400000000000000D000001",
+        "richtung": "verbrauch",
+        "art": "privat",
+        "smartMeter": "ja"
+      },
+      "gemeinschaft": 0,
+      "erwartet": "nicht_geeignet"
+    },
+    {
+      "daten": {
+        "zaehlpunktnummer": "AT003000049100000000000000D000001",
+        "richtung": "verbrauch",
+        "art": "grossunternehmen",
+        "smartMeter": "ja"
+      },
+      "gemeinschaft": 0,
+      "erwartet": "nicht_geeignet"
+    },
+    {
+      "daten": {
+        "zaehlpunktnummer": "AT001000011400000000000000D000001",
+        "richtung": "erzeugung",
+        "art": "grossunternehmen",
+        "smartMeter": "nein"
+      },
+      "gemeinschaft": 1,
+      "erwartet": "pruefen"
+    },
+    {
+      "daten": {
+        "zaehlpunktnummer": "AT003000049100000000000000D000001",
+        "art": "privat",
+        "smartMeter": "ja"
+      },
+      "gemeinschaft": 2,
+      "erwartet": "nicht_geeignet"
+    }
+  ],
+  "suche": [
+    {
+      "plz": "4910",
+      "erwartet": [
+        "EGG-T1:nahe",
+        "EGG-T2:oesterreichweit"
+      ]
+    },
+    {
+      "plz": "4950",
+      "erwartet": [
+        "EGG-T1:netzgebiet",
+        "EGG-T2:oesterreichweit"
+      ]
+    },
+    {
+      "plz": "6020",
+      "erwartet": [
+        "EGG-T2:oesterreichweit"
+      ]
+    }
+  ],
+  "beitritt": [
+    {
+      "daten": {
+        "art": "privat",
+        "person": {
+          "vorname": "Ina",
+          "nachname": "Test",
+          "strasse": "Weg 1",
+          "plz": "4910",
+          "ort": "Ried"
+        },
+        "iban": "AT61 1904 3002 3457 3201",
+        "zaehlpunkte": [
+          {
+            "zaehlpunktnummer": "AT003000049100000000000000D000001",
+            "richtung": "verbrauch",
+            "teilnahmefaktor": 80,
+            "smartMeter": "ja"
+          }
+        ],
+        "zustimmungen": {
+          "statuten": true,
+          "vertrag": true,
+          "datenschutz": true,
+          "sepa": true
+        },
+        "unterschrift": {
+          "name": "Ina Test",
+          "bestaetigt": true
+        }
+      },
+      "gemeinschaft": 0,
+      "erwartet": {
+        "zustimmungen": [
+          "statuten",
+          "vertrag",
+          "datenschutz",
+          "sepa"
+        ],
+        "tf": 80
+      }
+    },
+    {
+      "daten": {
+        "art": "privat",
+        "person": {
+          "vorname": "Ina",
+          "nachname": "Test",
+          "strasse": "Weg 1",
+          "plz": "4910",
+          "ort": "Ried"
+        },
+        "zaehlpunkte": [
+          {
+            "zaehlpunktnummer": "AT003000049100000000000000D000001",
+            "richtung": "verbrauch"
+          }
+        ],
+        "zustimmungen": {
+          "statuten": true,
+          "vertrag": true,
+          "datenschutz": true
+        },
+        "unterschrift": {
+          "name": "Max Muster",
+          "bestaetigt": true
+        }
+      },
+      "gemeinschaft": 0,
+      "fehler": "unterschrift.name"
+    },
+    {
+      "daten": {
+        "art": "privat",
+        "person": {
+          "vorname": "Ina",
+          "nachname": "Test",
+          "strasse": "Weg 1",
+          "plz": "4910",
+          "ort": "Ried"
+        },
+        "iban": "AT61 1904 3002 3457 3201",
+        "zaehlpunkte": [
+          {
+            "zaehlpunktnummer": "AT003000049100000000000000D000001",
+            "richtung": "verbrauch"
+          }
+        ],
+        "zustimmungen": {
+          "statuten": true,
+          "vertrag": true,
+          "datenschutz": true
+        },
+        "unterschrift": {
+          "name": "Ina Test",
+          "bestaetigt": true
+        }
+      },
+      "gemeinschaft": 0,
+      "fehler": "zustimmungen.sepa"
+    },
+    {
+      "daten": {
+        "art": "privat",
+        "person": {
+          "vorname": "Ina",
+          "nachname": "Test",
+          "strasse": "Weg 1",
+          "plz": "4910",
+          "ort": "Ried"
+        },
+        "zaehlpunkte": [
+          {
+            "zaehlpunktnummer": "AT003000049100000000000000D000001",
+            "richtung": "verbrauch"
+          },
+          {
+            "zaehlpunktnummer": "AT003000049100000000000000D000001",
+            "richtung": "verbrauch"
+          }
+        ],
+        "zustimmungen": {
+          "statuten": true,
+          "vertrag": true,
+          "datenschutz": true
+        },
+        "unterschrift": {
+          "name": "Ina Test",
+          "bestaetigt": true
+        }
+      },
+      "gemeinschaft": 0,
+      "fehler": "zaehlpunkte.1.zaehlpunktnummer"
+    }
+  ],
+  "rechner": [
+    {
+      "eingabe": {},
+      "erwartet": {
+        "nettoEur": 68.63,
+        "bezugKwh": 1302
+      }
+    },
+    {
+      "eingabe": {
+        "rolle": "prosumer",
+        "modell": "eeg_regional",
+        "jahr": 2027,
+        "deckung": "reichlich",
+        "profil": "haushalt_flex",
+        "verbrauchKwh": 4500,
+        "kwp": 12
+      }
+    },
+    {
+      "eingabe": {
+        "modell": "beg",
+        "deckung": "knapp",
+        "profil": "gewerbe",
+        "verbrauchKwh": "25000"
+      }
+    },
+    {
+      "eingabe": {
+        "rolle": "erzeuger",
+        "modell": "gea",
+        "kwp": 30,
+        "eigenverbrauchPct": 50,
+        "einspeiseEgCt": 7,
+        "marktCt": 6
+      }
+    },
+    {
+      "eingabe": {
+        "modell": "eeg_lokal",
+        "lieferantCt": 9,
+        "gemeinschaftCt": 12,
+        "gebuehrenJahr": 60,
+        "verbrauchKwh": 1500
+      }
+    }
+  ],
+  "kennzahlen": [
+    {
+      "eintraege": [
+        {
+          "richtung": "verbrauch",
+          "groessen": {
+            "verbrauch_gemessen": 300.25,
+            "eigendeckung": 90.5
+          },
+          "vollstaendig": true,
+          "anteilL3": 0
+        },
+        {
+          "richtung": "erzeugung",
+          "groessen": {
+            "erzeugung_gemessen": 400,
+            "erzeugung_tf": 240,
+            "restueberschuss": 60
+          },
+          "vollstaendig": false,
+          "anteilL3": 0.02
+        }
+      ],
+      "preise": {
+        "bezugspreisCt": 11.5,
+        "einspeisepreisCt": 8.5,
+        "lieferantCt": 12,
+        "netzApCt": 7,
+        "reduktionPct": 57,
+        "abgabenBefreit": true,
+        "abgabenCt": 0.82,
+        "co2KgJeKwh": 0.65
+      }
+    },
+    {
+      "eintraege": [],
+      "preise": {}
+    }
+  ],
+  "schritte": [
+    {
+      "mitgliedStatus": "antrag",
+      "teilnahme": {
+        "status": "entwurf"
+      },
+      "heute": "2026-10-01",
+      "erwartet": "aufnahme"
+    },
+    {
+      "mitgliedStatus": "aufgenommen",
+      "teilnahme": {
+        "status": "zustimmung_offen",
+        "fristBis": "2026-10-05"
+      },
+      "heute": "2026-10-01",
+      "erwartet": "zustimmung",
+      "frist": 4
+    },
+    {
+      "mitgliedStatus": "aktiv",
+      "teilnahme": {
+        "status": "aktiv"
+      },
+      "heute": "2026-10-01",
+      "erwartet": "aktiv"
+    },
+    {
+      "mitgliedStatus": "aufgenommen",
+      "teilnahme": {
+        "status": "abgelaufen"
+      },
+      "heute": "2026-10-01",
+      "erwartet": "zustimmung"
+    },
+    {
+      "mitgliedStatus": "aufgenommen",
+      "teilnahme": {
+        "status": "wartet_technik"
+      },
+      "heute": "2026-10-01",
+      "erwartet": "technik"
+    }
+  ],
+  "mehrfach": {
+    "zaehlpunkte": [
+      {
+        "id": "Z1",
+        "zaehlpunktnummer": "AT003000049100000000000000D000002",
+        "richtung": "erzeugung"
+      },
+      {
+        "id": "Z2",
+        "zaehlpunktnummer": "AT003000049100000000000000D000003",
+        "richtung": "verbrauch"
+      }
+    ],
+    "teilnahmen": [
+      {
+        "id": "T1",
+        "zaehlpunktId": "Z1",
+        "gemeinschaftId": "EGG-T1",
+        "teilnahmefaktor": 60,
+        "status": "aktiv"
+      },
+      {
+        "id": "T2",
+        "zaehlpunktId": "Z1",
+        "gemeinschaftId": "EGG-T2",
+        "teilnahmefaktor": 40,
+        "status": "entwurf"
+      },
+      {
+        "id": "T3",
+        "zaehlpunktId": "Z2",
+        "gemeinschaftId": "EGG-T1",
+        "teilnahmefaktor": 70,
+        "status": "aktiv"
+      },
+      {
+        "id": "T4",
+        "zaehlpunktId": "Z2",
+        "gemeinschaftId": "EGG-T3",
+        "teilnahmefaktor": 30,
+        "status": "beendet"
+      }
+    ]
+  },
+  "sozialquote": [
+    {
+      "eingabe": {
+        "erzeugungKwh": 40000,
+        "anSchutzbeduerftigeKwh": 4600,
+        "schutzbeduerftigeHaushalte": 3,
+        "sozialtarif": {
+          "kontingentPct": 10
+        }
+      },
+      "erwartet": "erfuellt"
+    },
+    {
+      "eingabe": {
+        "erzeugungKwh": 40000,
+        "anSchutzbeduerftigeKwh": 1250,
+        "schutzbeduerftigeHaushalte": 1,
+        "sozialtarif": {
+          "kontingentPct": 5
+        }
+      },
+      "erwartet": "unter"
+    },
+    {
+      "eingabe": {
+        "erzeugungKwh": 0
+      },
+      "erwartet": "keine_daten"
+    }
+  ],
+  "prognosen": [
+    {
+      "prognose": null,
+      "heute": "2026-10-01"
+    },
+    {
+      "prognose": {
+        "stunden": [
+          {
+            "stunde": 10,
+            "ueberschussKwh": 1
+          },
+          {
+            "stunde": 11,
+            "ueberschussKwh": 4
+          },
+          {
+            "stunde": 12,
+            "ueberschussKwh": 5
+          },
+          {
+            "stunde": 13,
+            "ueberschussKwh": 0
+          },
+          {
+            "stunde": 14,
+            "ueberschussKwh": 2
+          }
+        ]
+      },
+      "heute": "2026-07-01"
+    },
+    {
+      "prognose": {
+        "tage": [
+          {
+            "datum": "2026-07-02",
+            "fenster": [
+              {
+                "von": "11:00",
+                "bis": "15:00"
+              }
+            ]
+          },
+          {
+            "datum": "2026-07-01",
+            "fenster": [
+              {
+                "beginn": "12",
+                "ende": "14",
+                "staerke": "mittel"
+              }
+            ]
+          }
+        ]
+      },
+      "heute": "2026-07-01"
+    },
+    {
+      "prognose": [
+        {
+          "beginn": "2026-07-01T10:00",
+          "ende": "2026-07-01T13:00"
+        }
+      ],
+      "heute": "2026-07-01"
+    },
+    {
+      "prognose": {
+        "tage": []
+      },
+      "heute": "2026-01-15"
+    },
+    {
+      "prognose": {
+        "heute": "2026-07-01",
+        "tage": [
+          {
+            "tag": "2026-07-01",
+            "quote": 0.4123,
+            "gruenFenster": [
+              {
+                "von": "10:00",
+                "bis": "15:00",
+                "stunden": 5
+              }
+            ],
+            "stunden": []
+          },
+          {
+            "tag": "2026-07-02",
+            "quote": 0.3,
+            "gruenFenster": [],
+            "stunden": [
+              {
+                "stunde": 11,
+                "e": 5,
+                "v": 2
+              },
+              {
+                "stunde": 12,
+                "e": 6,
+                "v": 1
+              },
+              {
+                "stunde": 13,
+                "e": 1,
+                "v": 3
+              }
+            ]
+          }
+        ]
+      },
+      "heute": "2026-07-01"
+    }
+  ],
+  "zeitfenster": [
+    {
+      "datum": "2026-07-04"
+    },
+    {
+      "datum": "2026-07-06"
+    },
+    {
+      "datum": "2026-12-06"
+    }
+  ],
+  "meilensteine": [
+    {
+      "kwh": 650.5,
+      "anteilPct": 31.2
+    },
+    {
+      "kwh": 0,
+      "anteilPct": 0
+    }
+  ],
+  "tfEmpfehlung": [
+    {
+      "vorschlaege": [
+        {
+          "gemeinschaftId": "EGG-T1",
+          "tf": 55.4
+        },
+        {
+          "teilnahmeId": "T2",
+          "teilnahmefaktor": 45
+        }
+      ],
+      "mehrwertEur": "12.345"
+    },
+    {
+      "x": 1
+    },
+    null,
+    {
+      "richtung": "erzeugung",
+      "empfehlung": [
+        {
+          "gemeinschaftId": "EGG-T1",
+          "label": "Sonnenland",
+          "aktuellTf": 60,
+          "empfohlenTf": 70
+        },
+        {
+          "gemeinschaftId": "EGG-T2",
+          "label": "BEG",
+          "aktuellTf": 40,
+          "empfohlenTf": 30
+        }
+      ],
+      "verbesserungEur": 18.4
+    }
+  ]
+}

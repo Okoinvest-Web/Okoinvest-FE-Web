@@ -1,0 +1,81 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 14:00:00.000000",
+ "description": "Zeitfenster eines Tarifs (Kindtabelle).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "zf_id",
+  "label",
+  "tage",
+  "von",
+  "bis",
+  "monate",
+  "bezugspreis_ct",
+  "einspeisepreis_ct"
+ ],
+ "fields": [
+  {
+   "fieldname": "zf_id",
+   "fieldtype": "Data",
+   "label": "Kennung"
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "label": "Bezeichnung",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "tage",
+   "fieldtype": "Data",
+   "label": "Wochentage (mo,di,…)"
+  },
+  {
+   "fieldname": "von",
+   "fieldtype": "Data",
+   "label": "Von (HH:MM)",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "bis",
+   "fieldtype": "Data",
+   "label": "Bis (HH:MM)",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "monate",
+   "fieldtype": "Data",
+   "label": "Monate (1–12, kommagetrennt)"
+  },
+  {
+   "fieldname": "bezugspreis_ct",
+   "fieldtype": "Float",
+   "label": "Bezugspreis (ct/kWh)",
+   "precision": "4"
+  },
+  {
+   "fieldname": "einspeisepreis_ct",
+   "fieldtype": "Float",
+   "label": "Einspeisepreis (ct/kWh)",
+   "precision": "4"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform EG Tarif Zeitfenster",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "permissions": [],
+ "istable": 1,
+ "editable_grid": 1
+}

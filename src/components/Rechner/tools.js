@@ -1,4 +1,4 @@
-import { BatteryCharging, Cable, Car, Factory, Gauge, Warehouse, FileSearch, HandCoins, Handshake, Landmark, LineChart, MapPinned, Scale, Share2, Sprout, Users } from "lucide-react";
+import { Calculator, BatteryCharging, Cable, Car, Factory, Gauge, Warehouse, FileSearch, HandCoins, Handshake, Landmark, LineChart, MapPinned, Scale, Share2, Sprout, Users } from "lucide-react";
 
 /** Alle Rechner & Tools – eine Quelle für Hub, Querverweise und Schema. */
 export const TOOLS = [
@@ -16,6 +16,7 @@ export const TOOLS = [
   { id: "grossspeicher", href: "/rechner/grossspeicher", titel: "Großspeicher-Rechner", kurz: "BESS-Rendite mit Erlösmix", text: "Arbitrage, aFRR und FCR, Co-Location oder Stand-alone, Baukostenzuschuss und Netzentgelte – IRR, Amortisation und Cashflow.", icon: BatteryCharging, zielgruppe: "Investoren", tag: "Profi" },
   { id: "beteiligung", href: "/rechner/beteiligung", titel: "Beteiligungsrechner", kurz: "Genossenschaft: Ausschüttung in drei Szenarien", text: "Wie aus dem Cashflow eines Solarparks eine Ausschüttung entstehen kann – vorsichtig gerechnet, Risiken offen, keine Anlageberatung.", icon: Users, zielgruppe: "Bürger" },
   { id: "energy-sharing", href: "/rechner/energy-sharing", titel: "Energy-Sharing-Rechner", kurz: "Energiegemeinschaft in DE, AT und CH", text: "Anlage und Teilnehmende eingeben – geteilter Strom, Netzentgelt-Abschlag, Vorteil je Teilnehmer und Erlös für den Erzeuger.", icon: Share2, zielgruppe: "Kommunen" },
+  { id: "eg-ersparnis", href: "/energiegemeinschaften/rechner", titel: "Ersparnis-Rechner Energiegemeinschaft", kurz: "EEG, BEG oder GEA in Österreich", text: "Verbrauch, Netzgebiet und Erzeugung eingeben – Anteil Gemeinschaftsstrom, Netzentgelt-Ersparnis nach ElWG und Ersparnis je Mitglied.", icon: Calculator, zielgruppe: "Kommunen", tag: "Neu" },
   { id: "dachpacht", href: "/rechner/dachpacht", titel: "Dachpacht-Rechner", kurz: "Pachtspanne und Ertrag Ihres Gewerbedachs", text: "Dachfläche, Dachart, Ausrichtung und Region eingeben – Leistung, Ertrag und Pachtspanne, dazu Dachpacht, Dachstrom-PPA und Eigeninvestition im Vergleich.", icon: Warehouse, zielgruppe: "Eigentümer", tag: "Neu" },
   { id: "bestandsanlage", href: "/rechner/bestandsanlage", titel: "Bestandsanlagen-Bewertung", kurz: "Ertragswert laufender PV-Anlagen", text: "Förderrestlaufzeit, gemessener Ertrag, Betriebskosten, Pacht, Wechselrichtertausch und Marktpreis nach Förderende – Ertragswert mit Spanne, Wert je kWp und Sensitivität.", icon: Gauge, zielgruppe: "Investoren", tag: "Profi" },
 ];

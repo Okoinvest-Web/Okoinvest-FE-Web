@@ -1258,3 +1258,38 @@ Seiten: `/portal/beteiligung` (Übersicht), `/portal/beteiligung/genossenschaft`
 | Abrechnungslauf Pacht (`finanzen.abrechnung.lauf_ausfuehren`) | Scheduler/Backoffice | Pachtakte: `kuendigung_zum`, `rueckbau.beendetAm`, `aufteilung` → Ende anteilig; je Empfänger eigener Beleg (`schluessel` `…:A<nr>`, `bezug.aufteilung { nr, anteilProzent, gesamtNetto }`) |
 | `portfolio.aendern` `{ anlageId }` · `portfolio.aktion` `{ aktion: "ertrag_uebernehmen" }` | Backoffice „portfolio“ schreiben | Feld `anlage_id` (Link Plattform Anlage); Ertragseinträge `{ monat, kwh, quelle, automatisch: true, herkunft: zaehler_geprueft\|zaehler }`; Ausgabe `monitoring { anlageId, anlageName, monateAuto }`, `stammdaten.anlageId` |
 | `frist_erinnerung.lauf` · `POST /api/admin/fristen/erinnerungen` | Backoffice (pachtakte, genossenschaft oder kommunen schreiben) | `{ ok, erinnerungen, benachrichtigungen, pacht, genossenschaft, gemeinde }`; Scheduler täglich `frist_erinnerung.erinnerungen_taeglich`. Gemeldet = `Plattform Aktivitaet` (`aktion` „frist_erinnerung“, `objekt_id` = Schlüssel) |
+
+## Energiegemeinschaften (ElWG §§ 65–72) – WP1 Kern-Stammdaten, Rechte, Integration
+
+Schnittstellenvertrag aller Pakete (Zuständigkeiten, Datenmodell, Fassade, Ereignisse): [`docs/EG-SCHNITTSTELLEN.md`](./EG-SCHNITTSTELLEN.md). Fachkonzept: [`docs/EG-FACHKONZEPT.md`](./EG-FACHKONZEPT.md). Weitere Pakete (EDA, Energiedaten, Abrechnung, Gründung, Portale) ergänzen hier eigene Unterabschnitte.
+
+- **Fassade** `src/lib/plattform/backend/eg.js` → `egBackend()` (Demo `backend/demo/eg-*.js`, Frappe `backend/frappe/eg-*.js` → `oekoinvest_app.plattform.api.eg_<paket>`), `egSystem()`, `egEreignisSenden(name, payload)`.
+- **Regeln** `src/lib/plattform/eg/*.js` = `plattform/eg_stamm_kern.py`, Modell `eg/modell.js` = `plattform/eg_modell.py` (erzeugt), gemeinsame Testvektoren `src/lib/plattform/eg/testdaten/stamm/vektoren.json`.
+- **DocTypes** (normalisiert, `track_changes`): `Plattform EG Gemeinschaft` (EGG, Kind „… Gemeinschaft Netzbetreiber“), `… Organ` (EGO), `… Mitglied` (EMG), `… Zaehlpunkt` (EZP, Nummer eindeutig), `… ZP Teilnahme` (ETN, Kind „Plattform EG TF Historie“), `… Anlage` (EAN), `… Tarif` (ETF, Kind „… Tarif Zeitfenster“), `… Verteilschluessel` (EVS, Kind „… Verteilschluessel Position“), `… Netzbetreiber` (Name = Kennung ENB-…, Kinder PLZ und Netzentgelt AP), `… Netzentgelt Regel` (Name = ENR-…). Feldnamen snake_case, API-Ausgabe camelCase (Abbildung `_SPEZ`/`_FELD` in `api/eg_stamm.py`; `name` ↔ `titel`, `kontoId` ↔ `konto`, `gemeinschaftId` ↔ `gemeinschaft`). Desk: nur lesen (`werkzeuge/desk_rechte.py`). Migration aus dem Prototyp: Patch `oekoinvest_app.patches.eg_migration_stamm`.
+
+| Methode (`eg_stamm.…`) | Next.js-Route | Recht | Ergebnis |
+|---|---|---|---|
+| `kontext` `{gemeinschaftId?}` | – (Server-Komponenten) | angemeldet | `{gemeinschaften:[{id,name,modell,status,rollen[],organ,rechte{}}]}` |
+| `gemeinschaften` `{filter:{status,modell,q}}` | `GET /api/admin/eg` | Bereich „eg“ ≥ 1 | Liste mit `kennzahlen`, `hinweise`, `netzentgelt`, `tarifAktuell`; Summen |
+| `gemeinschaft_speichern` `{id?, daten}` | `POST /api/admin/eg` `{aktion:"anlegen"}` · `POST /api/admin/eg/[id]` `{aktion:"speichern"}` | neu: „eg“ 2; ändern: `organe_statuten` 2 | Gemeinschaft (422 bei Zonelevel/Modell/Rechtsform/IDs, 409 doppelte Gemeinschafts-ID) |
+| `gemeinschaft` `{id}` | `GET /api/admin/eg/[id]` | `mitgliederliste` ≥ 1 | Gemeinschaft, Organe, Mitglieder (Details ab `stammdaten` ≥ 1, IBAN maskiert ohne Schreibrecht), Zählpunkte, Teilnahmen, Anlagen, Tarife, Verteilschlüssel, Rollen, Rechte, Hinweise |
+| `gemeinschaft_status` `{id, daten:{nach, grund?, nachfolgerId?}}` | `… {aktion:"status"}` | `organe_statuten` 2 (aktiv/eda_bereit/aufnahmestopp: Vorstand oder Backoffice) | Lebenszyklus 3.4 (409 bei unzulässigem Wechsel) |
+| `organ_speichern` · `organ_beenden` | `… {aktion:"organ"}` bzw. `"organ_beenden"` | `organe_statuten` 2 | Organ (E-Mail verknüpft Konto, Benachrichtigung mit Link zur Verwaltung) |
+| `mitglied_speichern` · `mitglied_status` | `… {aktion:"mitglied"}` bzw. `"mitglied_status"` | `stammdaten` 2 · aufnehmen/ablehnen/ausschließen `mitglied_aufnehmen` 2 | Mitglied (409 Großunternehmen in EEG, UID-Pflicht bei Reverse Charge, SEPA-Mandat vollständig) |
+| `zaehlpunkt_speichern` | `… {aktion:"zaehlpunkt"}` | `stammdaten` 2 | `{zaehlpunkt, hinweise[]}` – bekannte Nummer wird wiederverwendet (Mehrfachteilnahme), Netzbetreiber aus Stelle 3–8 |
+| `teilnahme_speichern` | `… {aktion:"teilnahme"}` | `stammdaten` 2 | Entwurf; 409 bei Σ TF > 100, > 5 Teilnahmen, doppelter Gemeinschaft, Änderung nach Entwurf |
+| `teilnahme_uebergang` `{teilnahmeId, daten:{ereignis,…}}` | `… {aktion:"teilnahme_uebergang"}` (Korrektur) | `eda_ausloesen` 2 (senden/verwerfen: `stammdaten` 2); ohne Prozess-ID Begründung Pflicht | Teilnahme (Automat 3.8; Benachrichtigung des Mitglieds) |
+| `anlage_speichern` · `tarif_speichern` · `verteilschluessel_speichern` | `… {aktion:"anlage"}`, `"tarif"`, `"verteilschluessel"` | `stammdaten` 2 · `tarife` (Entwurf 1, beschlossen 2 + Vorstand/Backoffice) · `stammdaten` 2 (nur statisch) | Tarif: Vorgänger endet am Vortag (`abgeloest`) |
+| `massenaktion` `{daten:{aktion, ids[], werte}}` | `… {aktion:"massen", massenaktion}` | je Aktion | `{geaendert, fehler[]}` (mitglied_status, rechnungsweg, abrechnungsrhythmus, schutzbeduerftig, zp_smartmeter, zp_netzebene, tf_entwurf, anmeldung_vormerken) |
+| `csv_import` `{daten:{csv, ausfuehren}}` | `… {aktion:"csv_import"}` | Vorschau `stammdaten` 1, Ausführen 2 | Vorschau je Zeile; Ausführen bricht bei Fehlern mit 409 ab |
+| `csv_export` `{art}` | `GET /api/admin/eg/[id]?export=mitglieder` bzw. `zaehlpunkte` | `mitgliederliste` 1 | CSV (BOM, Semikolon, Formelschutz), protokolliert |
+| `netzbetreiber` · `netzentgelt_regeln` `{stichtag?}` | `GET /api/admin/eg/netzbetreiber?stichtag=` | angemeldet (Route: Backoffice) | Stammliste (12 VNB) und Regeltabelle (2026 gesichert, 2027 Platzhalter) |
+| `verwaltung` `{gemeinschaftId}` | `GET/POST /api/portal/eg/[id]/verwaltung` | Organ-Rolle oder Backoffice | Organe-Sicht (Aufgaben, Kennzahlen, Mitglieder, Tarife, Reiter je Recht); POST: mitglied_status, mitglied, organ, organ_beenden, tarif, massen |
+| `migration_vorschau` · `migration_ausfuehren` | `POST /api/admin/eg` `{aktion:"migration_vorschau"}` bzw. `"migration"` | „eg“ 2 | Anzahlen, Warnungen, Übersprungenes (DE/CH) |
+
+Python-Schnittstelle für andere Pakete: `api.eg_stamm.zugriff(n, gemeinschaft_id, recht, stufe)` → `(g, k)`, `teilnahme_uebergang_intern(n, teilnahme_id, daten)`, `system_nutzer()`, `gemeinschaft_daten(gid)`; Schreibfunktionen akzeptieren `_n=<nutzer>` für Aufrufe ohne erneute API-Prüfung (z. B. WP6 nach eigener Rollenprüfung). Kontext-Rollen: `eg_stamm_kern.rollen_von` / `stufe_von`.
+
+### Energiegemeinschaften – Energiedaten (WP3, Nachtrag durch WP1)
+
+Routen `GET/POST /api/admin/eg/[id]/energiedaten`, `GET/POST /api/admin/eg/simulation`, `GET /api/portal/eg/[id]/energie` (Organ-Reiter, Recht `qh_aggregiert`). `enPeriodenwerte` liefert je Zählpunkt zusätzlich `groessenJeZeitfenster` (`{Z1:{…}, "":{…}}`) und `groessenJeTarif` (`{tarifId:{zf:{groesse:kWh}}}`); neue Operation `enDashboard(n, gemeinschaftId)`. Signaturen und abwärtskompatible Ergänzungen: [`docs/eg/energie.md`](./eg/energie.md).
+

@@ -1,0 +1,6 @@
+// GET /api/portal/eg/gemeinde – Gemeinde-Sicht (WP6): Gemeindegebäude-Zählpunkte, Sozialquote (§ 68 Abs. 6 ElWG),
+// Bürgerbeteiligung (nur Summen), Gründungsaufträge. Für Gemeinden (Mitgliedsart „gemeinde“ bzw. Rolle kommune).
+import { route } from "@/lib/plattform/server/route";
+import { egBackend } from "@/lib/plattform/backend/eg";
+
+export const GET = route({}, async ({ nutzer }) => ({ ok: true, ...(await egBackend().ptGemeindeSicht(nutzer)) }));

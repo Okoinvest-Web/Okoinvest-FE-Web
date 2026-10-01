@@ -1,0 +1,137 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 12:00:00.000000",
+ "description": "Position eines Belegs der Energiegemeinschaft (Zählpunkt, Zeitfenster, Menge, Preis, Netto, USt-Regel, Prüfpfad).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "nr",
+  "art",
+  "text",
+  "zaehlpunkt",
+  "von",
+  "bis",
+  "menge",
+  "einheit",
+  "preis",
+  "preis_einheit",
+  "netto",
+  "zeitfenster",
+  "ust_regel",
+  "ust_satz",
+  "ust_art",
+  "preis_herkunft",
+  "pruefpfad"
+ ],
+ "fields": [
+  {
+   "fieldname": "nr",
+   "fieldtype": "Int",
+   "label": "Nr.",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Data",
+   "label": "Art",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "text",
+   "fieldtype": "Data",
+   "label": "Leistung",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "zaehlpunkt",
+   "fieldtype": "Data",
+   "label": "Zählpunkt"
+  },
+  {
+   "fieldname": "von",
+   "fieldtype": "Date",
+   "label": "Von"
+  },
+  {
+   "fieldname": "bis",
+   "fieldtype": "Date",
+   "label": "Bis"
+  },
+  {
+   "fieldname": "menge",
+   "fieldtype": "Float",
+   "label": "Menge",
+   "precision": "3",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "einheit",
+   "fieldtype": "Data",
+   "label": "Einheit"
+  },
+  {
+   "fieldname": "preis",
+   "fieldtype": "Float",
+   "label": "Preis",
+   "precision": "4"
+  },
+  {
+   "fieldname": "preis_einheit",
+   "fieldtype": "Data",
+   "label": "Preiseinheit"
+  },
+  {
+   "fieldname": "netto",
+   "fieldtype": "Currency",
+   "label": "Netto",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "zeitfenster",
+   "fieldtype": "Data",
+   "label": "Zeitfenster"
+  },
+  {
+   "fieldname": "ust_regel",
+   "fieldtype": "Data",
+   "label": "USt-Regel"
+  },
+  {
+   "fieldname": "ust_satz",
+   "fieldtype": "Float",
+   "label": "USt-Satz"
+  },
+  {
+   "fieldname": "ust_art",
+   "fieldtype": "Data",
+   "label": "USt-Art"
+  },
+  {
+   "fieldname": "preis_herkunft",
+   "fieldtype": "Small Text",
+   "label": "Preisherkunft"
+  },
+  {
+   "fieldname": "pruefpfad",
+   "fieldtype": "Long Text",
+   "label": "Prüfpfad (JSON)"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 0,
+ "links": [],
+ "modified": "2026-10-01 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform EG Beleg Position",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "istable": 1,
+ "editable_grid": 1,
+ "permissions": []
+}

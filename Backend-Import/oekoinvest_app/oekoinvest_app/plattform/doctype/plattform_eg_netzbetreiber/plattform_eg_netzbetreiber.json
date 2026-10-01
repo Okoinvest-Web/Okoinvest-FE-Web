@@ -1,0 +1,191 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:kennung",
+ "creation": "2026-10-01 14:00:00.000000",
+ "description": "Verteilnetzbetreiber (Stammdaten für Energiegemeinschaften: Netzbetreibernummer, EDA-Adresse, Vertragsweg, PLZ, Netzentgelte).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "kennung",
+  "nb_nummer",
+  "nb_nummer_status",
+  "titel",
+  "kurzname",
+  "bundesland",
+  "marktpartner_id",
+  "vertragsweg",
+  "kontakt_email",
+  "portal_url",
+  "formular_url",
+  "plz_liste",
+  "netzentgelt_ap",
+  "besonderheiten",
+  "quelle"
+ ],
+ "fields": [
+  {
+   "fieldname": "kennung",
+   "fieldtype": "Data",
+   "label": "Kennung (ENB-…)",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "nb_nummer",
+   "fieldtype": "Data",
+   "label": "Netzbetreibernummer (Zählpunkt Stelle 3–8)",
+   "search_index": 1
+  },
+  {
+   "fieldname": "nb_nummer_status",
+   "fieldtype": "Select",
+   "label": "Status der Nummer",
+   "options": "gesichert\nzu_bestaetigen\noffen",
+   "default": "offen"
+  },
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "kurzname",
+   "fieldtype": "Data",
+   "label": "Kurzname"
+  },
+  {
+   "fieldname": "bundesland",
+   "fieldtype": "Data",
+   "label": "Bundesland (Kürzel, kommagetrennt)"
+  },
+  {
+   "fieldname": "marktpartner_id",
+   "fieldtype": "Data",
+   "label": "EDA-Marktpartner-ID"
+  },
+  {
+   "fieldname": "vertragsweg",
+   "fieldtype": "Select",
+   "label": "Vertragsweg",
+   "options": "email\nportal\nformular\npost"
+  },
+  {
+   "fieldname": "kontakt_email",
+   "fieldtype": "Data",
+   "label": "Kontakt-E-Mail"
+  },
+  {
+   "fieldname": "portal_url",
+   "fieldtype": "Data",
+   "label": "Portal"
+  },
+  {
+   "fieldname": "formular_url",
+   "fieldtype": "Data",
+   "label": "Formular"
+  },
+  {
+   "fieldname": "plz_liste",
+   "fieldtype": "Table",
+   "label": "PLZ",
+   "options": "Plattform EG Netzbetreiber PLZ"
+  },
+  {
+   "fieldname": "netzentgelt_ap",
+   "fieldtype": "Table",
+   "label": "Netznutzungs-Arbeitspreise",
+   "options": "Plattform EG Netzentgelt AP"
+  },
+  {
+   "fieldname": "besonderheiten",
+   "fieldtype": "Small Text",
+   "label": "Besonderheiten"
+  },
+  {
+   "fieldname": "quelle",
+   "fieldtype": "Data",
+   "label": "Quelle"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 03:20:23.739981",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform EG Netzbetreiber",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Energie",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "naming_rule": "By fieldname",
+ "title_field": "titel",
+ "show_title_field_in_link": 1,
+ "search_fields": "titel"
+}

@@ -1,0 +1,206 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 14:00:00.000000",
+ "description": "Zählpunkt (AT, 33 Zeichen) – global eindeutig, bis zu 5 Teilnahmen (Mehrfachteilnahme).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "zaehlpunktnummer",
+  "netzbetreiber",
+  "nb_nummer",
+  "plz",
+  "richtung",
+  "anlage",
+  "inhaber_konto",
+  "inhaber_name",
+  "bezeichnung",
+  "smart_meter",
+  "qh_aktiv",
+  "nahebereich_ref",
+  "auskunft_am",
+  "netzebene",
+  "lieferant",
+  "energieabnehmer",
+  "migriert_aus"
+ ],
+ "fields": [
+  {
+   "fieldname": "zaehlpunktnummer",
+   "fieldtype": "Data",
+   "label": "Zählpunktnummer",
+   "reqd": 1,
+   "unique": 1,
+   "search_index": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "netzbetreiber",
+   "fieldtype": "Link",
+   "label": "Netzbetreiber",
+   "options": "Plattform EG Netzbetreiber"
+  },
+  {
+   "fieldname": "nb_nummer",
+   "fieldtype": "Data",
+   "label": "Netzbetreibernummer"
+  },
+  {
+   "fieldname": "plz",
+   "fieldtype": "Data",
+   "label": "PLZ (aus Zählpunkt)"
+  },
+  {
+   "fieldname": "richtung",
+   "fieldtype": "Select",
+   "label": "Richtung",
+   "options": "verbrauch\nerzeugung",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "anlage",
+   "fieldtype": "Link",
+   "label": "Anlage",
+   "options": "Plattform EG Anlage"
+  },
+  {
+   "fieldname": "inhaber_konto",
+   "fieldtype": "Link",
+   "label": "Inhaber (Konto)",
+   "options": "Plattform Konto"
+  },
+  {
+   "fieldname": "inhaber_name",
+   "fieldtype": "Data",
+   "label": "Inhaber"
+  },
+  {
+   "fieldname": "bezeichnung",
+   "fieldtype": "Data",
+   "label": "Bezeichnung"
+  },
+  {
+   "fieldname": "smart_meter",
+   "fieldtype": "Select",
+   "label": "Smart Meter",
+   "options": "ja\nnein\nunbekannt",
+   "default": "unbekannt"
+  },
+  {
+   "fieldname": "qh_aktiv",
+   "fieldtype": "Check",
+   "label": "Viertelstundenwerte aktiv",
+   "default": "0"
+  },
+  {
+   "fieldname": "nahebereich_ref",
+   "fieldtype": "Data",
+   "label": "Nahebereich laut Auskunft"
+  },
+  {
+   "fieldname": "auskunft_am",
+   "fieldtype": "Date",
+   "label": "Auskunft am"
+  },
+  {
+   "fieldname": "netzebene",
+   "fieldtype": "Int",
+   "label": "Netzebene"
+  },
+  {
+   "fieldname": "lieferant",
+   "fieldtype": "Data",
+   "label": "Lieferant"
+  },
+  {
+   "fieldname": "energieabnehmer",
+   "fieldtype": "Data",
+   "label": "Energieabnehmer"
+  },
+  {
+   "fieldname": "migriert_aus",
+   "fieldtype": "Data",
+   "label": "Migriert aus (Prototyp)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 03:20:23.752218",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform EG Zaehlpunkt",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Energie",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "naming_rule": "By script",
+ "title_field": "zaehlpunktnummer",
+ "show_title_field_in_link": 1,
+ "search_fields": "zaehlpunktnummer"
+}

@@ -1,4 +1,5 @@
-import { Building, FileCheck2, Handshake, Receipt, Sun, Users } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Building, Calculator, FileCheck2, Handshake, LayoutDashboard, Receipt, Sun, Users } from "lucide-react"; // ArrowRight, Calculator, LayoutDashboard, Link: WP6
 import PageHero from "@/components/ui/PageHero";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
@@ -149,6 +150,25 @@ export default function EnergiegemeinschaftenPage() {
             nutzen den Strom gemeinsam.
           </p>
         </Reveal>
+      </Section>
+
+      {/* WP6 Energiegemeinschaften (AT): Rechner und Plattform */}
+      <Section tone="white" space="md">
+        <div className="grid gap-4 md:grid-cols-2">
+          {[
+            { href: "/energiegemeinschaften/rechner", icon: Calculator, eyebrow: "Österreich · Rechner", titel: "Was bringt mir eine Energiegemeinschaft?", text: "Ersparnis aus Energiepreis, reduziertem Netzentgelt und Abgabe – für EEG, BEG und GEA, mit den Regeln 2026 und ab 2027." },
+            { href: "/energiegemeinschaften/software", icon: LayoutDashboard, eyebrow: "Österreich · Plattform & Betrieb", titel: "Gemeinschaften gründen, führen und betreiben", text: "Mitgliederportal mit geführter Zustimmung beim Netzbetreiber, Mehrfachteilnahme, Abrechnung und Betriebsführung." },
+          ].map((k) => (
+            <Link key={k.href} href={k.href} className="group flex gap-4 rounded-[2rem] bg-navy-950 p-6 text-white transition-shadow hover:shadow-[0_24px_60px_-30px_rgba(3,18,43,0.7)] md:p-8">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-ov-500"><k.icon aria-hidden="true" className="h-6 w-6" /></span>
+              <span className="min-w-0">
+                <span className="block text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-300">{k.eyebrow}</span>
+                <span className="mt-1 flex items-center gap-1.5 font-display text-[20px] font-bold">{k.titel}<ArrowRight aria-hidden="true" className="h-5 w-5 shrink-0 transition-transform group-hover:translate-x-1" /></span>
+                <span className="mt-2 block text-[14.5px] leading-relaxed text-white/70">{k.text}</span>
+              </span>
+            </Link>
+          ))}
+        </div>
       </Section>
 
       <Section tone="sand" space="lg" id="anfrage" className="scroll-mt-24">

@@ -1,0 +1,5138 @@
+[
+ {
+  "fn": "zaehlpunktPruefen",
+  "a": [
+   "AT003000049100000000000000D000001",
+   "§NB"
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "AT003000049100000000000000D000001",
+   "fehler": "",
+   "nbNummer": "003000",
+   "plz": "04910",
+   "netzbetreiberId": "ENB-OOE",
+   "hinweise": []
+  }
+ },
+ {
+  "fn": "zaehlpunktPruefen",
+  "a": [
+   "at 003000 04910 0000000000000D000001",
+   "§NB"
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "AT003000049100000000000000D000001",
+   "fehler": "",
+   "nbNummer": "003000",
+   "plz": "04910",
+   "netzbetreiberId": "ENB-OOE",
+   "hinweise": []
+  }
+ },
+ {
+  "fn": "zaehlpunktPruefen",
+  "a": [
+   "AT0030000491000000000000000D000001",
+   "§NB"
+  ],
+  "erwartet": {
+   "ok": false,
+   "wert": "AT0030000491000000000000000D000001",
+   "fehler": "Die Zählpunktnummer hat 33 Zeichen (derzeit 34).",
+   "nbNummer": "",
+   "plz": "",
+   "netzbetreiberId": "",
+   "hinweise": []
+  }
+ },
+ {
+  "fn": "zaehlpunktPruefen",
+  "a": [
+   "",
+   "§NB"
+  ],
+  "erwartet": {
+   "ok": false,
+   "wert": "",
+   "fehler": "Bitte geben Sie die Zählpunktnummer an.",
+   "nbNummer": "",
+   "plz": "",
+   "netzbetreiberId": "",
+   "hinweise": []
+  }
+ },
+ {
+  "fn": "zaehlpunktPruefen",
+  "a": [
+   "DE0030000491000000000000000D00000",
+   "§NB"
+  ],
+  "erwartet": {
+   "ok": false,
+   "wert": "DE0030000491000000000000000D00000",
+   "fehler": "Die Zählpunktnummer beginnt mit „AT“.",
+   "nbNummer": "",
+   "plz": "",
+   "netzbetreiberId": "",
+   "hinweise": []
+  }
+ },
+ {
+  "fn": "zaehlpunktPruefen",
+  "a": [
+   "AT0099990491000000000000000D0000a",
+   "§NB"
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "AT0099990491000000000000000D0000A",
+   "fehler": "",
+   "nbNummer": "009999",
+   "plz": "04910",
+   "netzbetreiberId": "",
+   "hinweise": [
+    "Netzbetreibernummer 009999 ist in den Stammdaten nicht hinterlegt – bitte Netzbetreiber zuordnen."
+   ]
+  }
+ },
+ {
+  "fn": "zaehlpunktPruefen",
+  "a": [
+   "AT00999904910000000000000D0000001",
+   "§NB"
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "AT00999904910000000000000D0000001",
+   "fehler": "",
+   "nbNummer": "009999",
+   "plz": "04910",
+   "netzbetreiberId": "",
+   "hinweise": [
+    "Netzbetreibernummer 009999 ist in den Stammdaten nicht hinterlegt – bitte Netzbetreiber zuordnen."
+   ]
+  }
+ },
+ {
+  "fn": "zaehlpunktPruefen",
+  "a": [
+   "AT00300051210000000000000D0000001",
+   "§NB"
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "AT00300051210000000000000D0000001",
+   "fehler": "",
+   "nbNummer": "003000",
+   "plz": "51210",
+   "netzbetreiberId": "ENB-OOE",
+   "hinweise": [
+    "Die Postleitzahl im Zählpunkt (51210) ist für Österreich ungewöhnlich (erwartet 0 + vierstellige PLZ). Bitte mit der Netzrechnung vergleichen."
+   ]
+  }
+ },
+ {
+  "fn": "zaehlpunktPruefen",
+  "a": [
+   "AT00300000000000000000000D0000001",
+   null
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "AT00300000000000000000000D0000001",
+   "fehler": "",
+   "nbNummer": "003000",
+   "plz": "00000",
+   "netzbetreiberId": "",
+   "hinweise": []
+  }
+ },
+ {
+  "fn": "zaehlpunktPruefen",
+  "a": [
+   "AT0010000114000000000000000000009",
+   "§NB"
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "AT0010000114000000000000000000009",
+   "fehler": "",
+   "nbNummer": "001000",
+   "plz": "01140",
+   "netzbetreiberId": "ENB-WIEN",
+   "hinweise": []
+  }
+ },
+ {
+  "fn": "plzAusZaehlpunkt",
+  "a": [
+   "AT003000049100000000000000D000001"
+  ],
+  "erwartet": "4910"
+ },
+ {
+  "fn": "plzAusZaehlpunkt",
+  "a": [
+   "AT00300000000000000000000D0000001"
+  ],
+  "erwartet": ""
+ },
+ {
+  "fn": "marktpartnerIdPruefen",
+  "a": [
+   "RC100015",
+   "eeg"
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "RC100015",
+   "fehler": "",
+   "nummer": "100015"
+  }
+ },
+ {
+  "fn": "marktpartnerIdPruefen",
+  "a": [
+   "cc 123456",
+   "beg"
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "CC123456",
+   "fehler": "",
+   "nummer": "123456"
+  }
+ },
+ {
+  "fn": "marktpartnerIdPruefen",
+  "a": [
+   "RC100015",
+   "beg"
+  ],
+  "erwartet": {
+   "ok": false,
+   "wert": "RC100015",
+   "fehler": "Die Marktpartner-ID einer BEG beginnt mit „CC“ und hat 6 Ziffern (z. B. CC100015)."
+  }
+ },
+ {
+  "fn": "marktpartnerIdPruefen",
+  "a": [
+   "",
+   "eeg"
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "",
+   "fehler": ""
+  }
+ },
+ {
+  "fn": "marktpartnerIdPruefen",
+  "a": [
+   "PP123456",
+   "p2p"
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "PP123456",
+   "fehler": ""
+  }
+ },
+ {
+  "fn": "marktpartnerIdPruefen",
+  "a": [
+   "P123",
+   "p2p"
+  ],
+  "erwartet": {
+   "ok": false,
+   "wert": "P123",
+   "fehler": "Marktpartner-ID: 2 Buchstaben + 6 Ziffern."
+  }
+ },
+ {
+  "fn": "gemeinschaftsIdPruefen",
+  "a": [
+   "AT00300004910RC109417000000000001",
+   "eeg",
+   "RC109417",
+   "dynamisch"
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "AT00300004910RC109417000000000001",
+   "fehler": "",
+   "hinweise": [],
+   "nbNummer": "003000"
+  }
+ },
+ {
+  "fn": "gemeinschaftsIdPruefen",
+  "a": [
+   "AT00300004910RC109417000000000001",
+   "eeg",
+   "RC100015",
+   ""
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "AT00300004910RC109417000000000001",
+   "fehler": "",
+   "hinweise": [
+    "Die Nummer in der Gemeinschafts-ID (109417) weicht von der Marktpartner-ID (100015) ab."
+   ],
+   "nbNummer": "003000"
+  }
+ },
+ {
+  "fn": "gemeinschaftsIdPruefen",
+  "a": [
+   "AT00300004910GC109417000000000001",
+   "eeg",
+   "",
+   ""
+  ],
+  "erwartet": {
+   "ok": false,
+   "wert": "AT00300004910GC109417000000000001",
+   "fehler": "Aufbau EEG: AT + Netzbetreibernummer (6) + PLZ (5, auch 00000) + RC + 6 Ziffern + 12 Zeichen.",
+   "hinweise": [],
+   "nbNummer": ""
+  }
+ },
+ {
+  "fn": "gemeinschaftsIdPruefen",
+  "a": [
+   "ATCC9999DYNAMCC123456ABCDEF123456",
+   "beg",
+   "CC123456",
+   "statisch"
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "ATCC9999DYNAMCC123456ABCDEF123456",
+   "fehler": "",
+   "hinweise": [
+    "Verteilmodell der Gemeinschafts-ID (DYNAM/STATI) passt nicht zum gespeicherten Verteilmodell."
+   ],
+   "nbNummer": ""
+  }
+ },
+ {
+  "fn": "gemeinschaftsIdPruefen",
+  "a": [
+   "ATCC9999XXXXXCC123456ABCDEF123456",
+   "beg",
+   "",
+   ""
+  ],
+  "erwartet": {
+   "ok": false,
+   "wert": "ATCC9999XXXXXCC123456ABCDEF123456",
+   "fehler": "Aufbau BEG: AT + CC9999 + DYNAM oder STATI + CC + 6 Ziffern + 12 Zeichen.",
+   "hinweise": [],
+   "nbNummer": ""
+  }
+ },
+ {
+  "fn": "gemeinschaftsIdPruefen",
+  "a": [
+   "AT00100001140GC100733000000000001",
+   "gea",
+   "GC100733",
+   "statisch"
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "AT00100001140GC100733000000000001",
+   "fehler": "",
+   "hinweise": [],
+   "nbNummer": "001000"
+  }
+ },
+ {
+  "fn": "gemeinschaftsIdPruefen",
+  "a": [
+   "AT123",
+   "eeg",
+   "",
+   ""
+  ],
+  "erwartet": {
+   "ok": false,
+   "wert": "AT123",
+   "fehler": "Die Gemeinschafts-ID hat 33 Zeichen (derzeit 5).",
+   "hinweise": [],
+   "nbNummer": ""
+  }
+ },
+ {
+  "fn": "gemeinschaftsIdPruefen",
+  "a": [
+   "AT0000000000000000000000000000001",
+   "p2p",
+   "",
+   ""
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "AT0000000000000000000000000000001",
+   "fehler": "",
+   "hinweise": [],
+   "nbNummer": ""
+  }
+ },
+ {
+  "fn": "gemeinschaftsIdPruefen",
+  "a": [
+   "",
+   "eeg",
+   "",
+   ""
+  ],
+  "erwartet": {
+   "ok": true,
+   "wert": "",
+   "fehler": "",
+   "hinweise": [],
+   "nbNummer": ""
+  }
+ },
+ {
+  "fn": "netzentgeltRegel",
+  "a": [
+   "2026-11-03",
+   "eeg",
+   3,
+   7
+  ],
+  "erwartet": {
+   "regel": "ENR-2026-EEG-LOKAL",
+   "reduktionPct": 57,
+   "faktor": 0.57,
+   "abgabenBefreit": true,
+   "status": "gesichert",
+   "quelle": "SNE-V 2018 § 5 Abs. 1a (EEG lokal, NE 6/7)",
+   "text": "−57 % Netznutzungs-Arbeitspreis"
+  }
+ },
+ {
+  "fn": "netzentgeltRegel",
+  "a": [
+   "2026-11-03",
+   "eeg",
+   4,
+   6
+  ],
+  "erwartet": {
+   "regel": "ENR-2026-EEG-REG-NS",
+   "reduktionPct": 28,
+   "faktor": 0.28,
+   "abgabenBefreit": true,
+   "status": "gesichert",
+   "quelle": "SNE-V 2018 § 5 Abs. 1a (EEG regional, NE 6/7)",
+   "text": "−28 % Netznutzungs-Arbeitspreis"
+  }
+ },
+ {
+  "fn": "netzentgeltRegel",
+  "a": [
+   "2026-11-03",
+   "eeg",
+   5,
+   4
+  ],
+  "erwartet": {
+   "regel": "ENR-2026-EEG-REG-MS",
+   "reduktionPct": 64,
+   "faktor": 0.64,
+   "abgabenBefreit": true,
+   "status": "gesichert",
+   "quelle": "SNE-V 2018 § 5 Abs. 1a (EEG regional, NE 4/5)",
+   "text": "−64 % Netznutzungs-Arbeitspreis"
+  }
+ },
+ {
+  "fn": "netzentgeltRegel",
+  "a": [
+   "2026-11-03",
+   "beg",
+   6,
+   7
+  ],
+  "erwartet": {
+   "regel": "ENR-2026-BEG",
+   "reduktionPct": 0,
+   "faktor": 0,
+   "abgabenBefreit": false,
+   "status": "gesichert",
+   "quelle": "SNE-V 2018 § 5 Abs. 1a gilt nur für EEG",
+   "text": "keine Netzentgelt-Reduktion"
+  }
+ },
+ {
+  "fn": "netzentgeltRegel",
+  "a": [
+   "2026-11-03",
+   "gea",
+   1,
+   7
+  ],
+  "erwartet": {
+   "regel": "ENR-2026-GEA",
+   "reduktionPct": 100,
+   "faktor": 1,
+   "abgabenBefreit": true,
+   "status": "entwurf",
+   "quelle": "Eigendeckung hinter dem Netzanschluss ohne Netznutzung (ElWG § 68; Koordinationsstelle)",
+   "text": "−100 % Netznutzungs-Arbeitspreis"
+  }
+ },
+ {
+  "fn": "netzentgeltRegel",
+  "a": [
+   "2026-12-31",
+   "eeg",
+   3,
+   6
+  ],
+  "erwartet": {
+   "regel": "ENR-2026-EEG-LOKAL",
+   "reduktionPct": 57,
+   "faktor": 0.57,
+   "abgabenBefreit": true,
+   "status": "gesichert",
+   "quelle": "SNE-V 2018 § 5 Abs. 1a (EEG lokal, NE 6/7)",
+   "text": "−57 % Netznutzungs-Arbeitspreis"
+  }
+ },
+ {
+  "fn": "netzentgeltRegel",
+  "a": [
+   "2027-01-01",
+   "eeg",
+   3,
+   7
+  ],
+  "erwartet": {
+   "regel": "ENR-2027-Z3",
+   "reduktionPct": 57,
+   "faktor": 0.57,
+   "abgabenBefreit": true,
+   "status": "platzhalter",
+   "quelle": "Arbeitshypothese Fachkonzept 1.3 (Lokalbereich, neue SNE-VO)",
+   "text": "−57 % Netznutzungs-Arbeitspreis (Platzhalter bis zur neuen SNE-VO)"
+  }
+ },
+ {
+  "fn": "netzentgeltRegel",
+  "a": [
+   "2027-01-01",
+   "beg",
+   3,
+   7
+  ],
+  "erwartet": {
+   "regel": "ENR-2027-Z3",
+   "reduktionPct": 57,
+   "faktor": 0.57,
+   "abgabenBefreit": false,
+   "status": "platzhalter",
+   "quelle": "Arbeitshypothese Fachkonzept 1.3 (Lokalbereich, neue SNE-VO)",
+   "text": "−57 % Netznutzungs-Arbeitspreis (Platzhalter bis zur neuen SNE-VO)"
+  }
+ },
+ {
+  "fn": "netzentgeltRegel",
+  "a": [
+   "2027-03-01",
+   "beg",
+   1,
+   7
+  ],
+  "erwartet": {
+   "regel": "ENR-2027-Z1-2",
+   "reduktionPct": 100,
+   "faktor": 1,
+   "abgabenBefreit": false,
+   "status": "platzhalter",
+   "quelle": "Arbeitshypothese Fachkonzept 1.3: keine Netzkosten für Eigendeckung (neue SNE-VO)",
+   "text": "−100 % Netznutzungs-Arbeitspreis (Platzhalter bis zur neuen SNE-VO)"
+  }
+ },
+ {
+  "fn": "netzentgeltRegel",
+  "a": [
+   "2027-03-01",
+   "p2p",
+   6,
+   5
+  ],
+  "erwartet": {
+   "regel": "ENR-2027-Z6-7",
+   "reduktionPct": 0,
+   "faktor": 0,
+   "abgabenBefreit": false,
+   "status": "platzhalter",
+   "quelle": "Arbeitshypothese Fachkonzept 1.3 (keine Verbindung)",
+   "text": "keine Netzentgelt-Reduktion (Platzhalter bis zur neuen SNE-VO)"
+  }
+ },
+ {
+  "fn": "netzentgeltRegel",
+  "a": [
+   "2026-11-03",
+   "eeg",
+   3,
+   5
+  ],
+  "erwartet": {
+   "regel": null,
+   "reduktionPct": 0,
+   "faktor": 0,
+   "abgabenBefreit": false,
+   "status": "gesichert",
+   "quelle": "keine Reduktion",
+   "text": "keine Netzentgelt-Reduktion"
+  }
+ },
+ {
+  "fn": "netzentgeltRegel",
+  "a": [
+   "2026-11-03",
+   "eeg",
+   3,
+   null
+  ],
+  "erwartet": {
+   "regel": "ENR-2026-EEG-LOKAL",
+   "reduktionPct": 57,
+   "faktor": 0.57,
+   "abgabenBefreit": true,
+   "status": "gesichert",
+   "quelle": "SNE-V 2018 § 5 Abs. 1a (EEG lokal, NE 6/7)",
+   "text": "−57 % Netznutzungs-Arbeitspreis"
+  }
+ },
+ {
+  "fn": "reduzierterAp",
+  "a": [
+   5.005,
+   57
+  ],
+  "erwartet": 2.15
+ },
+ {
+  "fn": "reduzierterAp",
+  "a": [
+   4.3,
+   28
+  ],
+  "erwartet": 3.1
+ },
+ {
+  "fn": "reduzierterAp",
+  "a": [
+   3.125,
+   64
+  ],
+  "erwartet": 1.13
+ },
+ {
+  "fn": "reduzierterAp",
+  "a": [
+   6,
+   0
+  ],
+  "erwartet": 6
+ },
+ {
+  "fn": "rundeCt2",
+  "a": [
+   1.005
+  ],
+  "erwartet": 1.01
+ },
+ {
+  "fn": "rundeCt2",
+  "a": [
+   2.675
+  ],
+  "erwartet": 2.68
+ },
+ {
+  "fn": "rundeCt2",
+  "a": [
+   -1.005
+  ],
+  "erwartet": -1.01
+ },
+ {
+  "fn": "egRollen",
+  "a": [
+   {
+    "id": "U-1",
+    "rollen": [
+     "mitglied"
+    ]
+   },
+   "2026-10-01"
+  ],
+  "erwartet": {
+   "rollen": [
+    "mitglied"
+   ],
+   "backofficeStufe": 0,
+   "selbstverwaltung": false
+  }
+ },
+ {
+  "fn": "egRollen",
+  "a": [
+   {
+    "id": "U-2",
+    "rollen": [
+     "kommune"
+    ]
+   },
+   "2026-10-01"
+  ],
+  "erwartet": {
+   "rollen": [
+    "gemeinde"
+   ],
+   "backofficeStufe": 0,
+   "selbstverwaltung": false
+  }
+ },
+ {
+  "fn": "egRollen",
+  "a": [
+   {
+    "id": "U-3",
+    "rollen": [
+     "mitglied"
+    ]
+   },
+   "2026-10-01"
+  ],
+  "erwartet": {
+   "rollen": [
+    "interessent"
+   ],
+   "backofficeStufe": 0,
+   "selbstverwaltung": false
+  }
+ },
+ {
+  "fn": "egRollen",
+  "a": [
+   {
+    "id": "U-5",
+    "rollen": [
+     "mitglied"
+    ]
+   },
+   "2026-10-01"
+  ],
+  "erwartet": {
+   "rollen": [
+    "kassier"
+   ],
+   "backofficeStufe": 0,
+   "selbstverwaltung": false
+  }
+ },
+ {
+  "fn": "egRollen",
+  "a": [
+   {
+    "id": "U-6",
+    "rollen": [
+     "mitglied"
+    ]
+   },
+   "2026-10-01"
+  ],
+  "erwartet": {
+   "rollen": [],
+   "backofficeStufe": 0,
+   "selbstverwaltung": false
+  }
+ },
+ {
+  "fn": "egRollen",
+  "a": [
+   {
+    "id": "U-6",
+    "rollen": [
+     "mitglied"
+    ]
+   },
+   "2026-06-30"
+  ],
+  "erwartet": {
+   "rollen": [
+    "vorstand"
+   ],
+   "backofficeStufe": 0,
+   "selbstverwaltung": false
+  }
+ },
+ {
+  "fn": "egRollen",
+  "a": [
+   {
+    "id": "U-7",
+    "rollen": [
+     "mitglied"
+    ]
+   },
+   "2026-10-01"
+  ],
+  "erwartet": {
+   "rollen": [],
+   "backofficeStufe": 0,
+   "selbstverwaltung": false
+  }
+ },
+ {
+  "fn": "egRollen",
+  "a": [
+   {
+    "id": "A",
+    "rollen": [
+     "admin"
+    ]
+   },
+   "2026-10-01"
+  ],
+  "erwartet": {
+   "rollen": [
+    "organisator"
+   ],
+   "backofficeStufe": 2,
+   "selbstverwaltung": false
+  }
+ },
+ {
+  "fn": "egRollen",
+  "a": [
+   {
+    "id": "A",
+    "rollen": [
+     "admin"
+    ],
+    "backofficeRollen": [
+     "lesen"
+    ]
+   },
+   "2026-10-01"
+  ],
+  "erwartet": {
+   "rollen": [
+    "organisator"
+   ],
+   "backofficeStufe": 1,
+   "selbstverwaltung": false
+  }
+ },
+ {
+  "fn": "egRollen",
+  "a": [
+   {
+    "id": "A",
+    "rollen": [
+     "admin"
+    ],
+    "backofficeRollen": [
+     "akquise"
+    ]
+   },
+   "2026-10-01"
+  ],
+  "erwartet": {
+   "rollen": [],
+   "backofficeStufe": 0,
+   "selbstverwaltung": false
+  }
+ },
+ {
+  "fn": "egRollen",
+  "a": [
+   {
+    "id": "A",
+    "rollen": [
+     "admin"
+    ],
+    "backofficeRollen": [
+     "eg"
+    ]
+   },
+   "2026-10-01"
+  ],
+  "erwartet": {
+   "rollen": [
+    "organisator"
+   ],
+   "backofficeStufe": 2,
+   "selbstverwaltung": false
+  }
+ },
+ {
+  "fn": "egStufe",
+  "a": [
+   {
+    "rollen": [
+     "kassier"
+    ],
+    "backofficeStufe": 0
+   },
+   "abrechnung_freigabe_1"
+  ],
+  "erwartet": 2
+ },
+ {
+  "fn": "egStufe",
+  "a": [
+   {
+    "rollen": [
+     "kassier"
+    ],
+    "backofficeStufe": 0
+   },
+   "abrechnung_freigabe_2"
+  ],
+  "erwartet": 0
+ },
+ {
+  "fn": "egStufe",
+  "a": [
+   {
+    "rollen": [
+     "vorstand"
+    ],
+    "backofficeStufe": 0
+   },
+   "abrechnung_freigabe_2"
+  ],
+  "erwartet": 2
+ },
+ {
+  "fn": "egStufe",
+  "a": [
+   {
+    "rollen": [
+     "rechnungspruefer"
+    ],
+    "backofficeStufe": 0
+   },
+   "buchhaltung_pruefen"
+  ],
+  "erwartet": 2
+ },
+ {
+  "fn": "egStufe",
+  "a": [
+   {
+    "rollen": [
+     "mitglied"
+    ],
+    "backofficeStufe": 0
+   },
+   "mitgliederliste"
+  ],
+  "erwartet": 0
+ },
+ {
+  "fn": "egStufe",
+  "a": [
+   {
+    "rollen": [
+     "organisator"
+    ],
+    "backofficeStufe": 0
+   },
+   "eda_ausloesen"
+  ],
+  "erwartet": 0
+ },
+ {
+  "fn": "egStufe",
+  "a": [
+   {
+    "rollen": [
+     "organisator"
+    ],
+    "backofficeStufe": 1
+   },
+   "eda_ausloesen"
+  ],
+  "erwartet": 1
+ },
+ {
+  "fn": "egStufe",
+  "a": [
+   {
+    "rollen": [
+     "vorstand"
+    ],
+    "backofficeStufe": 0,
+    "selbstverwaltung": true
+   },
+   "abrechnung_versand"
+  ],
+  "erwartet": 2
+ },
+ {
+  "fn": "egStufe",
+  "a": [
+   {
+    "rollen": [
+     "kassier"
+    ],
+    "backofficeStufe": 0,
+    "selbstverwaltung": false
+   },
+   "abrechnung_versand"
+  ],
+  "erwartet": 1
+ },
+ {
+  "fn": "egStufe",
+  "a": [
+   {
+    "rollen": [
+     "rechnungspruefer"
+    ],
+    "selbstverwaltung": true
+   },
+   "abrechnung_versand"
+  ],
+  "erwartet": 0
+ },
+ {
+  "fn": "egStufe",
+  "a": [
+   {
+    "rollen": [
+     "organisator"
+    ],
+    "backofficeStufe": 2,
+    "selbstverwaltung": false
+   },
+   "abrechnung_versand"
+  ],
+  "erwartet": 2
+ },
+ {
+  "fn": "egStufe",
+  "a": [
+   {
+    "rollen": [],
+    "backofficeStufe": 2
+   },
+   "stammdaten"
+  ],
+  "erwartet": 2
+ },
+ {
+  "fn": "egStufe",
+  "a": [
+   {
+    "rollen": [],
+    "backofficeStufe": 2
+   },
+   "sepa"
+  ],
+  "erwartet": 0
+ },
+ {
+  "fn": "egStufe",
+  "a": [
+   {
+    "rollen": [
+     "mitglied",
+     "kassier"
+    ],
+    "backofficeStufe": 0
+   },
+   "sepa"
+  ],
+  "erwartet": 2
+ },
+ {
+  "fn": "egStufe",
+  "a": [
+   {
+    "rollen": [
+     "x"
+    ]
+   },
+   "unbekannt"
+  ],
+  "erwartet": 0
+ },
+ {
+  "fn": "erzeugungsleistung",
+  "a": [
+   [
+    {
+     "gemeinschaftId": "EGG-26-AAAAAA",
+     "art": "pv",
+     "engpassleistungKw": 80,
+     "status": "aktiv"
+    },
+    {
+     "gemeinschaftId": "EGG-26-AAAAAA",
+     "art": "pv",
+     "kwp": 31.25,
+     "status": "aktiv",
+     "haushalt": true
+    },
+    {
+     "gemeinschaftId": "EGG-26-AAAAAA",
+     "art": "pv",
+     "kwp": 500,
+     "status": "geplant"
+    }
+   ]
+  ],
+  "erwartet": {
+   "gesamtKw": 111.25,
+   "haushaltKw": 31.25,
+   "lieferantenpflichten": true
+  }
+ },
+ {
+  "fn": "erzeugungsleistung",
+  "a": [
+   [
+    {
+     "art": "pv",
+     "kwp": 30.5,
+     "status": "aktiv",
+     "haushalt": true
+    }
+   ]
+  ],
+  "erwartet": {
+   "gesamtKw": 30.5,
+   "haushaltKw": 30.5,
+   "lieferantenpflichten": true
+  }
+ },
+ {
+  "fn": "erzeugungsleistung",
+  "a": [
+   [
+    {
+     "art": "speicher",
+     "speicherKwh": 200,
+     "status": "aktiv"
+    },
+    {
+     "art": "wind",
+     "engpassleistungKw": 100,
+     "status": "aktiv"
+    }
+   ]
+  ],
+  "erwartet": {
+   "gesamtKw": 100,
+   "haushaltKw": 0,
+   "lieferantenpflichten": false
+  }
+ },
+ {
+  "fn": "anlageBereinigen",
+  "a": [
+   {
+    "bezeichnung": "PV Dach",
+    "art": "pv",
+    "kwp": "9,9",
+    "ausrichtung": 10.4,
+    "standort": {
+     "lat": 48.2,
+     "lon": 13.5
+    }
+   }
+  ],
+  "erwartet": {
+   "bezeichnung": "PV Dach",
+   "art": "pv",
+   "engpassleistungKw": null,
+   "kwp": 9.9,
+   "ausrichtung": 10,
+   "neigung": null,
+   "standort": {
+    "lat": 48.2,
+    "lon": 13.5,
+    "adresse": ""
+   },
+   "eigentuemerMitgliedId": null,
+   "betreiber": "",
+   "betriebsfuehrung": "",
+   "nutzungsmodell": "ueberschuss",
+   "foerderung": "keine",
+   "inbetriebnahme": "",
+   "hknRegistriert": false,
+   "speicherKwh": null,
+   "speicherLadequelle": "",
+   "iotQuelle": "",
+   "haushalt": false,
+   "status": "aktiv"
+  }
+ },
+ {
+  "fn": "anlageBereinigen",
+  "a": [
+   {
+    "bezeichnung": "PV",
+    "art": "pv"
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte Engpassleistung (kW) oder Modulleistung (kWp) angeben."
+  }
+ },
+ {
+  "fn": "anlageBereinigen",
+  "a": [
+   {
+    "bezeichnung": "Speicher",
+    "art": "speicher"
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte die Speicherkapazität (kWh) angeben."
+  }
+ },
+ {
+  "fn": "anlageBereinigen",
+  "a": [
+   {
+    "bezeichnung": "Groß",
+    "art": "wind",
+    "engpassleistungKw": 7000
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Mehr als 6 MW Erzeugungsleistung je Zählpunkt sind für die gemeinsame Energienutzung nicht zulässig (ElWG § 67)."
+  }
+ },
+ {
+  "fn": "anlageBereinigen",
+  "a": [
+   {
+    "art": "pv",
+    "kwp": 1
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte geben Sie eine Bezeichnung der Anlage an."
+  }
+ },
+ {
+  "fn": "gemeinschaftBereinigen",
+  "a": [
+   {
+    "name": "Neu (Test)",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "marktpartnerId": "rc109417",
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "sitzAdresse": {
+     "plz": "4910"
+    },
+    "iban": "AT61 1904 3002 3457 3201",
+    "uid": "atu12345678",
+    "dienstleistung": {
+     "aktiv": true,
+     "seit": "2026-01-01"
+    }
+   }
+  ],
+  "erwartet": {
+   "name": "Neu (Test)",
+   "kurzname": "",
+   "modell": "eeg",
+   "zonelevel": 3,
+   "nahebereichRef": "",
+   "rechtsform": "verein",
+   "zvrZahl": "",
+   "firmenbuchnummer": "",
+   "sitzAdresse": {
+    "strasse": "",
+    "plz": "4910",
+    "ort": ""
+   },
+   "email": "",
+   "telefon": "",
+   "uid": "ATU12345678",
+   "steuernummer": "",
+   "finanzamt": "",
+   "ustStatus": "kleinunternehmer",
+   "ustOptionSeit": "",
+   "iban": "AT611904300234573201",
+   "bic": "",
+   "creditorId": "",
+   "netzbetreiber": [
+    "ENB-OOE"
+   ],
+   "marktpartnerId": "RC109417",
+   "gemeinschaftsId": "AT00300004910RC109417000000000001",
+   "verteilmodell": "dynamisch",
+   "edaAnbindung": "anwenderportal",
+   "organisatorAngezeigtAm": "",
+   "dienstleistung": {
+    "aktiv": true,
+    "paket": "",
+    "seit": "2026-01-01",
+    "avvAm": ""
+   },
+   "abrechnungsrhythmus": "monat",
+   "statutenVersion": "",
+   "betreibervertragDatum": "",
+   "beschreibung": "",
+   "gruendungsauftragId": ""
+  }
+ },
+ {
+  "fn": "gemeinschaftBereinigen",
+  "a": [
+   {
+    "name": "X",
+    "modell": "eeg",
+    "zonelevel": 6,
+    "netzbetreiber": [
+     "ENB-OOE"
+    ]
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Zonelevel 6 („Keine Verbindung, ein Netzgebiet“) ist für EEG nicht zulässig."
+  }
+ },
+ {
+  "fn": "gemeinschaftBereinigen",
+  "a": [
+   {
+    "name": "X",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "keine",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ]
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Eine EEG braucht eine Rechtsperson (Verein, Genossenschaft, GmbH, OG/KG)."
+  }
+ },
+ {
+  "fn": "gemeinschaftBereinigen",
+  "a": [
+   {
+    "name": "X",
+    "modell": "gea",
+    "zonelevel": 1,
+    "netzbetreiber": [
+     "ENB-WIEN"
+    ]
+   }
+  ],
+  "erwartet": {
+   "name": "X",
+   "kurzname": "",
+   "modell": "gea",
+   "zonelevel": 1,
+   "nahebereichRef": "",
+   "rechtsform": "keine",
+   "zvrZahl": "",
+   "firmenbuchnummer": "",
+   "sitzAdresse": {
+    "strasse": "",
+    "plz": "",
+    "ort": ""
+   },
+   "email": "",
+   "telefon": "",
+   "uid": "",
+   "steuernummer": "",
+   "finanzamt": "",
+   "ustStatus": "kleinunternehmer",
+   "ustOptionSeit": "",
+   "iban": "",
+   "bic": "",
+   "creditorId": "",
+   "netzbetreiber": [
+    "ENB-WIEN"
+   ],
+   "marktpartnerId": "",
+   "gemeinschaftsId": "",
+   "verteilmodell": "dynamisch",
+   "edaAnbindung": "anwenderportal",
+   "organisatorAngezeigtAm": "",
+   "dienstleistung": {
+    "aktiv": false,
+    "paket": "",
+    "seit": "",
+    "avvAm": ""
+   },
+   "abrechnungsrhythmus": "monat",
+   "statutenVersion": "",
+   "betreibervertragDatum": "",
+   "beschreibung": "",
+   "gruendungsauftragId": ""
+  }
+ },
+ {
+  "fn": "gemeinschaftBereinigen",
+  "a": [
+   {
+    "name": "X",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "netzbetreiber": [
+     "ENB-OOE",
+     "ENB-SBG"
+    ]
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Mehrere Netzbetreiber sind nur bei BEG bzw. Zonelevel 5 oder 7 möglich."
+  }
+ },
+ {
+  "fn": "gemeinschaftBereinigen",
+  "a": [
+   {
+    "name": "X",
+    "modell": "beg",
+    "zonelevel": 7,
+    "netzbetreiber": [
+     "ENB-OOE",
+     "ENB-SBG"
+    ],
+    "gemeinschaftsId": "ATCC9999DYNAMCC123456ABCDEF123456",
+    "marktpartnerId": "CC123456"
+   }
+  ],
+  "erwartet": {
+   "name": "X",
+   "kurzname": "",
+   "modell": "beg",
+   "zonelevel": 7,
+   "nahebereichRef": "",
+   "rechtsform": "verein",
+   "zvrZahl": "",
+   "firmenbuchnummer": "",
+   "sitzAdresse": {
+    "strasse": "",
+    "plz": "",
+    "ort": ""
+   },
+   "email": "",
+   "telefon": "",
+   "uid": "",
+   "steuernummer": "",
+   "finanzamt": "",
+   "ustStatus": "kleinunternehmer",
+   "ustOptionSeit": "",
+   "iban": "",
+   "bic": "",
+   "creditorId": "",
+   "netzbetreiber": [
+    "ENB-OOE",
+    "ENB-SBG"
+   ],
+   "marktpartnerId": "CC123456",
+   "gemeinschaftsId": "ATCC9999DYNAMCC123456ABCDEF123456",
+   "verteilmodell": "dynamisch",
+   "edaAnbindung": "anwenderportal",
+   "organisatorAngezeigtAm": "",
+   "dienstleistung": {
+    "aktiv": false,
+    "paket": "",
+    "seit": "",
+    "avvAm": ""
+   },
+   "abrechnungsrhythmus": "monat",
+   "statutenVersion": "",
+   "betreibervertragDatum": "",
+   "beschreibung": "",
+   "gruendungsauftragId": ""
+  }
+ },
+ {
+  "fn": "gemeinschaftBereinigen",
+  "a": [
+   {
+    "name": "X",
+    "modell": "beg",
+    "zonelevel": 7,
+    "netzbetreiber": [
+     "ENB-XYZ"
+    ]
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Unbekannter Netzbetreiber."
+  }
+ },
+ {
+  "fn": "gemeinschaftBereinigen",
+  "a": [
+   {
+    "modell": "eeg",
+    "zonelevel": 3,
+    "netzbetreiber": [
+     "ENB-OOE"
+    ]
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte geben Sie den Namen der Gemeinschaft an."
+  }
+ },
+ {
+  "fn": "gemeinschaftBereinigen",
+  "a": [
+   {
+    "name": "X",
+    "zonelevel": 3
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte wählen Sie das Modell (EEG, BEG, GEA, P2P oder Eigenversorgung)."
+  }
+ },
+ {
+  "fn": "gemeinschaftBereinigen",
+  "a": [
+   {
+    "name": "X",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "ustStatus": "regelbesteuert"
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bei Regelbesteuerung bitte die UID-Nummer angeben."
+  }
+ },
+ {
+  "fn": "gemeinschaftBereinigen",
+  "a": [
+   {
+    "name": "X",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "iban": "AT00123"
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Die IBAN ist ungültig (Prüfsumme)."
+  }
+ },
+ {
+  "fn": "gemeinschaftBereinigen",
+  "a": [
+   {
+    "name": "X",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "netzbetreiber": [],
+    "marktpartnerId": "CC100015"
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Die Marktpartner-ID einer EEG beginnt mit „RC“ und hat 6 Ziffern (z. B. RC100015)."
+  }
+ },
+ {
+  "fn": "gemeinschaftBereinigen",
+  "a": [
+   {
+    "name": "P",
+    "modell": "p2p",
+    "zonelevel": 6,
+    "netzbetreiber": []
+   }
+  ],
+  "erwartet": {
+   "name": "P",
+   "kurzname": "",
+   "modell": "p2p",
+   "zonelevel": 6,
+   "nahebereichRef": "",
+   "rechtsform": "keine",
+   "zvrZahl": "",
+   "firmenbuchnummer": "",
+   "sitzAdresse": {
+    "strasse": "",
+    "plz": "",
+    "ort": ""
+   },
+   "email": "",
+   "telefon": "",
+   "uid": "",
+   "steuernummer": "",
+   "finanzamt": "",
+   "ustStatus": "kleinunternehmer",
+   "ustOptionSeit": "",
+   "iban": "",
+   "bic": "",
+   "creditorId": "",
+   "netzbetreiber": [],
+   "marktpartnerId": "",
+   "gemeinschaftsId": "",
+   "verteilmodell": "dynamisch",
+   "edaAnbindung": "anwenderportal",
+   "organisatorAngezeigtAm": "",
+   "dienstleistung": {
+    "aktiv": false,
+    "paket": "",
+    "seit": "",
+    "avvAm": ""
+   },
+   "abrechnungsrhythmus": "monat",
+   "statutenVersion": "",
+   "betreibervertragDatum": "",
+   "beschreibung": "",
+   "gruendungsauftragId": ""
+  }
+ },
+ {
+  "fn": "gemeinschaftBereinigen",
+  "a": [
+   {
+    "name": "X",
+    "modell": "eeg",
+    "zonelevel": "abc",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ]
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte wählen Sie den Nahebereich (Zonelevel 1–7)."
+  }
+ },
+ {
+  "fn": "organBereinigen",
+  "a": [
+   {
+    "funktion": "kassier",
+    "name": "K",
+    "von": "2026-01-01",
+    "zeichnungsberechtigt": true
+   }
+  ],
+  "erwartet": {
+   "kontoId": null,
+   "name": "K",
+   "email": "",
+   "funktion": "kassier",
+   "von": "2026-01-01",
+   "bis": "",
+   "gewaehltIn": "",
+   "zeichnungsberechtigt": true
+  }
+ },
+ {
+  "fn": "organBereinigen",
+  "a": [
+   {
+    "funktion": "x",
+    "name": "K",
+    "von": "2026-01-01"
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte wählen Sie die Funktion."
+  }
+ },
+ {
+  "fn": "organBereinigen",
+  "a": [
+   {
+    "funktion": "obmann",
+    "von": "2026-01-01"
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte Person angeben (Konto, E-Mail oder Name)."
+  }
+ },
+ {
+  "fn": "organBereinigen",
+  "a": [
+   {
+    "funktion": "obmann",
+    "name": "O",
+    "von": "2026-05-01",
+    "bis": "2026-01-01"
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Das Ende der Funktionsperiode liegt vor dem Beginn."
+  }
+ },
+ {
+  "fn": "organHinweise",
+  "a": [
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   },
+   "2026-10-01"
+  ],
+  "erwartet": [
+   {
+    "stufe": "warn",
+    "text": "Das Leitungsorgan eines Vereins besteht aus mindestens 2 Personen (VerG § 5) (zu bestätigen)."
+   },
+   {
+    "stufe": "warn",
+    "text": "Ein Verein braucht 2 Rechnungsprüfer (VerG § 21) (zu bestätigen)."
+   },
+   {
+    "stufe": "info",
+    "text": "Noch keine zeichnungsberechtigte Person – Vier-Augen-Freigaben (Abrechnung, Zahlungsdateien) brauchen mindestens zwei."
+   }
+  ]
+ },
+ {
+  "fn": "organHinweise",
+  "a": [
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "egen",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   },
+   "2026-10-01"
+  ],
+  "erwartet": [
+   {
+    "stufe": "warn",
+    "text": "Der Vorstand einer Genossenschaft besteht aus mindestens 2 Personen (GenG) (zu bestätigen)."
+   },
+   {
+    "stufe": "info",
+    "text": "Noch keine zeichnungsberechtigte Person – Vier-Augen-Freigaben (Abrechnung, Zahlungsdateien) brauchen mindestens zwei."
+   }
+  ]
+ },
+ {
+  "fn": "organHinweise",
+  "a": [
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "gea",
+    "zonelevel": 3,
+    "rechtsform": "keine",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   },
+   "2026-10-01"
+  ],
+  "erwartet": []
+ },
+ {
+  "fn": "kennzahlen",
+  "a": [
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   }
+  ],
+  "erwartet": {
+   "mitgliederAktiv": 3,
+   "mitgliederOffen": 1,
+   "zaehlpunkteAktiv": 2,
+   "verbrauchAktiv": 1,
+   "erzeugungAktiv": 1,
+   "teilnahmenOffen": 1,
+   "erzeugungsleistungKw": 111.25,
+   "lieferantenpflichten": true
+  }
+ },
+ {
+  "fn": "gemeinschaftHinweise",
+  "a": [
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   },
+   "2026-10-01"
+  ],
+  "erwartet": [
+   {
+    "stufe": "warn",
+    "text": "Erzeugungsleistung 111,25 kW: Lieferantenpflichten nach § 69 ElWG (AGB, Informationsblatt, Rechnungsinhalte, Wahl Monats-/Jahresrechnung). Ein Organisator kann sie übernehmen."
+   },
+   {
+    "stufe": "warn",
+    "text": "ÖkoInvest ist als Organisator tätig – die Anzeige an den Netzbetreiber (§ 68 Abs. 2 ElWG) ist noch nicht vermerkt."
+   },
+   {
+    "stufe": "fehler",
+    "text": "Großunternehmen dürfen nicht Mitglied einer EEG sein (ElWG § 6 Abs. 1 Z 61; EAG § 79 Abs. 2)."
+   }
+  ]
+ },
+ {
+  "fn": "gemeinschaftHinweise",
+  "a": [
+   {
+    "id": "LEER",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "statisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "in_gruendung",
+    "dienstleistung": {
+     "aktiv": false
+    },
+    "gemeinschaftsId": "",
+    "organisatorAngezeigtAm": ""
+   },
+   "2026-10-05"
+  ],
+  "erwartet": [
+   {
+    "stufe": "warn",
+    "text": "Neu aktivierte Gemeinschaften erhalten ab 05.10.2026 voraussichtlich nur noch das dynamische Modell (zu bestätigen)."
+   }
+  ]
+ },
+ {
+  "fn": "gemeinschaftHinweise",
+  "a": [
+   {
+    "id": "LEER2",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "",
+    "organisatorAngezeigtAm": ""
+   },
+   "2026-10-01"
+  ],
+  "erwartet": [
+   {
+    "stufe": "fehler",
+    "text": "Eine EEG bzw. BEG braucht mindestens 2 Mitglieder."
+   },
+   {
+    "stufe": "warn",
+    "text": "ÖkoInvest ist als Organisator tätig – die Anzeige an den Netzbetreiber (§ 68 Abs. 2 ElWG) ist noch nicht vermerkt."
+   },
+   {
+    "stufe": "fehler",
+    "text": "Aktive Gemeinschaft ohne Gemeinschafts-ID – bitte aus dem Betreibervertrag übernehmen."
+   }
+  ]
+ },
+ {
+  "fn": "istGrossunternehmen",
+  "a": [
+   {
+    "mitarbeiter": 250
+   }
+  ],
+  "erwartet": true
+ },
+ {
+  "fn": "istGrossunternehmen",
+  "a": [
+   {
+    "mitarbeiter": 249,
+    "umsatzMioEur": 60,
+    "bilanzMioEur": 40
+   }
+  ],
+  "erwartet": false
+ },
+ {
+  "fn": "istGrossunternehmen",
+  "a": [
+   {
+    "umsatzMioEur": 51,
+    "bilanzMioEur": 44
+   }
+  ],
+  "erwartet": true
+ },
+ {
+  "fn": "istGrossunternehmen",
+  "a": [
+   {}
+  ],
+  "erwartet": false
+ },
+ {
+  "fn": "istGrossunternehmen",
+  "a": [
+   {
+    "mitarbeiter": null,
+    "umsatzMioEur": 51
+   }
+  ],
+  "erwartet": false
+ },
+ {
+  "fn": "mitgliedBereinigen",
+  "a": [
+   {
+    "art": "privat",
+    "person": {
+     "vorname": "Mia",
+     "nachname": "Muster",
+     "plz": "4910",
+     "email": "MIA@Example.com"
+    },
+    "iban": "AT611904300234573201",
+    "sepaMandat": {
+     "referenz": "R1",
+     "datum": "2026-01-02",
+     "status": "aktiv"
+    }
+   },
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   }
+  ],
+  "erwartet": {
+   "kontoId": null,
+   "art": "privat",
+   "person": {
+    "vorname": "Mia",
+    "nachname": "Muster",
+    "firma": "",
+    "strasse": "",
+    "plz": "4910",
+    "ort": "",
+    "email": "mia@example.com",
+    "telefon": ""
+   },
+   "unternehmensgroesse": {
+    "mitarbeiter": null,
+    "umsatzMioEur": null,
+    "bilanzMioEur": null,
+    "nachweis": ""
+   },
+   "steuerstatusErzeuger": "kleinunternehmer",
+   "uid": "",
+   "schutzbeduerftig": false,
+   "iban": "AT611904300234573201",
+   "sepaMandat": {
+    "referenz": "R1",
+    "datum": "2026-01-02",
+    "status": "aktiv"
+   },
+   "rechnungsweg": "portal",
+   "abrechnungsrhythmus": "",
+   "beitrittAm": ""
+  }
+ },
+ {
+  "fn": "mitgliedBereinigen",
+  "a": [
+   {
+    "art": "kmu",
+    "person": {
+     "firma": "Groß AG"
+    },
+    "unternehmensgroesse": {
+     "mitarbeiter": 300
+    }
+   },
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   }
+  ],
+  "fehler": {
+   "status": 409,
+   "text": "Großunternehmen dürfen nicht Mitglied einer Erneuerbare-Energie-Gemeinschaft sein (ElWG § 6 Abs. 1 Z 61, EAG § 79 Abs. 2) – möglich ist eine BEG."
+  }
+ },
+ {
+  "fn": "mitgliedBereinigen",
+  "a": [
+   {
+    "art": "kmu",
+    "person": {
+     "firma": "Groß AG"
+    },
+    "unternehmensgroesse": {
+     "mitarbeiter": 300
+    }
+   },
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "beg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   }
+  ],
+  "erwartet": {
+   "kontoId": null,
+   "art": "grossunternehmen",
+   "person": {
+    "vorname": "",
+    "nachname": "",
+    "firma": "Groß AG",
+    "strasse": "",
+    "plz": "",
+    "ort": "",
+    "email": "",
+    "telefon": ""
+   },
+   "unternehmensgroesse": {
+    "mitarbeiter": 300,
+    "umsatzMioEur": null,
+    "bilanzMioEur": null,
+    "nachweis": ""
+   },
+   "steuerstatusErzeuger": "kleinunternehmer",
+   "uid": "",
+   "schutzbeduerftig": false,
+   "iban": "",
+   "sepaMandat": {
+    "referenz": "",
+    "datum": "",
+    "status": ""
+   },
+   "rechnungsweg": "portal",
+   "abrechnungsrhythmus": "",
+   "beitrittAm": ""
+  }
+ },
+ {
+  "fn": "mitgliedBereinigen",
+  "a": [
+   {
+    "art": "landwirt",
+    "person": {
+     "nachname": "L"
+    },
+    "steuerstatusErzeuger": "regelbesteuert"
+   },
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Für regelbesteuerte Erzeuger bzw. Gemeinden mit BgA ist die UID-Nummer Pflicht (Reverse Charge)."
+  }
+ },
+ {
+  "fn": "mitgliedBereinigen",
+  "a": [
+   {
+    "art": "privat",
+    "person": {}
+   },
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte Name bzw. Firma des Mitglieds angeben."
+  }
+ },
+ {
+  "fn": "mitgliedBereinigen",
+  "a": [
+   {
+    "person": {
+     "nachname": "X"
+    }
+   },
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte wählen Sie die Mitgliedsart."
+  }
+ },
+ {
+  "fn": "mitgliedBereinigen",
+  "a": [
+   {
+    "art": "privat",
+    "person": {
+     "nachname": "X"
+    },
+    "sepaMandat": {
+     "status": "aktiv"
+    }
+   },
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Ein aktives SEPA-Mandat braucht IBAN, Mandatsreferenz und Datum."
+  }
+ },
+ {
+  "fn": "naechsteMitgliedsnummer",
+  "a": [
+   [
+    {
+     "gemeinschaftId": "A",
+     "mitgliedsnummer": 7
+    },
+    {
+     "gemeinschaftId": "A",
+     "mitgliedsnummer": 3
+    },
+    {
+     "gemeinschaftId": "B",
+     "mitgliedsnummer": 99
+    }
+   ],
+   "A"
+  ],
+  "erwartet": 8
+ },
+ {
+  "fn": "naechsteMitgliedsnummer",
+  "a": [
+   [],
+   "A"
+  ],
+  "erwartet": 1
+ },
+ {
+  "fn": "zaehlpunktBereinigen",
+  "a": [
+   {
+    "zaehlpunktnummer": "AT003000049100000000000000D000001",
+    "richtung": "verbrauch",
+    "netzebene": "7",
+    "smartMeter": "ja"
+   },
+   "§NB"
+  ],
+  "erwartet": {
+   "zaehlpunkt": {
+    "zaehlpunktnummer": "AT003000049100000000000000D000001",
+    "nbNummer": "003000",
+    "plz": "04910",
+    "netzbetreiberId": "ENB-OOE",
+    "richtung": "verbrauch",
+    "anlageId": null,
+    "inhaberKontoId": null,
+    "inhaberName": "",
+    "smartMeter": "ja",
+    "qhAktiv": false,
+    "nahebereichRef": "",
+    "auskunftAm": "",
+    "netzebene": 7,
+    "lieferant": "",
+    "energieabnehmer": ""
+   },
+   "hinweise": []
+  }
+ },
+ {
+  "fn": "zaehlpunktBereinigen",
+  "a": [
+   {
+    "zaehlpunktnummer": "AT003000049100000000000000D000001"
+   },
+   "§NB"
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte die Energierichtung wählen (Verbrauch oder Erzeugung)."
+  }
+ },
+ {
+  "fn": "zaehlpunktBereinigen",
+  "a": [
+   {
+    "zaehlpunktnummer": "AT1",
+    "richtung": "verbrauch"
+   },
+   "§NB"
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Die Zählpunktnummer hat 33 Zeichen (derzeit 3)."
+  }
+ },
+ {
+  "fn": "zaehlpunktBereinigen",
+  "a": [
+   {
+    "zaehlpunktnummer": "AT003000049100000000000000D000001",
+    "richtung": "erzeugung",
+    "netzebene": 9
+   },
+   "§NB"
+  ],
+  "erwartet": {
+   "zaehlpunkt": {
+    "zaehlpunktnummer": "AT003000049100000000000000D000001",
+    "nbNummer": "003000",
+    "plz": "04910",
+    "netzbetreiberId": "ENB-OOE",
+    "richtung": "erzeugung",
+    "anlageId": null,
+    "inhaberKontoId": null,
+    "inhaberName": "",
+    "smartMeter": "unbekannt",
+    "qhAktiv": false,
+    "nahebereichRef": "",
+    "auskunftAm": "",
+    "netzebene": null,
+    "lieferant": "",
+    "energieabnehmer": ""
+   },
+   "hinweise": []
+  }
+ },
+ {
+  "fn": "teilnahmeBereinigen",
+  "a": [
+   {
+    "zaehlpunktId": "Z",
+    "mitgliedId": "M"
+   },
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   }
+  ],
+  "erwartet": {
+   "zaehlpunktId": "Z",
+   "mitgliedId": "M",
+   "teilnahmefaktor": 100,
+   "aufteilungsschluesselPct": null,
+   "consentId": ""
+  }
+ },
+ {
+  "fn": "teilnahmeBereinigen",
+  "a": [
+   {
+    "zaehlpunktId": "Z",
+    "mitgliedId": "M",
+    "teilnahmefaktor": "60"
+   },
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   }
+  ],
+  "erwartet": {
+   "zaehlpunktId": "Z",
+   "mitgliedId": "M",
+   "teilnahmefaktor": 60,
+   "aufteilungsschluesselPct": null,
+   "consentId": ""
+  }
+ },
+ {
+  "fn": "teilnahmeBereinigen",
+  "a": [
+   {
+    "zaehlpunktId": "Z",
+    "mitgliedId": "M",
+    "teilnahmefaktor": 0
+   },
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Der Teilnahmefaktor ist eine ganze Zahl von 1 bis 100 %."
+  }
+ },
+ {
+  "fn": "teilnahmeBereinigen",
+  "a": [
+   {
+    "zaehlpunktId": "Z",
+    "mitgliedId": "M",
+    "teilnahmefaktor": 101
+   },
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Der Teilnahmefaktor ist eine ganze Zahl von 1 bis 100 %."
+  }
+ },
+ {
+  "fn": "teilnahmeBereinigen",
+  "a": [
+   {
+    "zaehlpunktId": "Z",
+    "mitgliedId": "M",
+    "aufteilungsschluesselPct": "10,55"
+   },
+   {
+    "verteilmodell": "statisch"
+   }
+  ],
+  "erwartet": {
+   "zaehlpunktId": "Z",
+   "mitgliedId": "M",
+   "teilnahmefaktor": 100,
+   "aufteilungsschluesselPct": 10.6,
+   "consentId": ""
+  }
+ },
+ {
+  "fn": "teilnahmeBereinigen",
+  "a": [
+   {
+    "zaehlpunktId": "Z",
+    "mitgliedId": "M",
+    "aufteilungsschluesselPct": 0
+   },
+   {
+    "verteilmodell": "statisch"
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Aufteilungsschlüssel: 0,1 bis 100 % (eine Nachkommastelle)."
+  }
+ },
+ {
+  "fn": "teilnahmeBereinigen",
+  "a": [
+   {
+    "mitgliedId": "M"
+   },
+   {
+    "id": "EGG-26-AAAAAA",
+    "name": "Test-EEG",
+    "modell": "eeg",
+    "zonelevel": 3,
+    "rechtsform": "verein",
+    "netzbetreiber": [
+     "ENB-OOE"
+    ],
+    "verteilmodell": "dynamisch",
+    "edaAnbindung": "anwenderportal",
+    "status": "aktiv",
+    "dienstleistung": {
+     "aktiv": true
+    },
+    "gemeinschaftsId": "AT00300004910RC109417000000000001",
+    "organisatorAngezeigtAm": ""
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte den Zählpunkt wählen."
+  }
+ },
+ {
+  "fn": "teilnahmeRegeln",
+  "a": [
+   [
+    {
+     "id": "T2",
+     "gemeinschaftId": "EGG-26-AAAAAA",
+     "zaehlpunktId": "EZP-2",
+     "status": "aktiv",
+     "teilnahmefaktor": 60
+    }
+   ],
+   {
+    "gemeinschaftId": "B",
+    "teilnahmefaktor": 40
+   },
+   0,
+   0
+  ],
+  "erwartet": {
+   "ok": true,
+   "fehler": "",
+   "summeTf": 100,
+   "anzahl": 2,
+   "freiTf": 40
+  }
+ },
+ {
+  "fn": "teilnahmeRegeln",
+  "a": [
+   [
+    {
+     "id": "T2",
+     "gemeinschaftId": "EGG-26-AAAAAA",
+     "zaehlpunktId": "EZP-2",
+     "status": "aktiv",
+     "teilnahmefaktor": 60
+    }
+   ],
+   {
+    "gemeinschaftId": "B",
+    "teilnahmefaktor": 41
+   },
+   0,
+   0
+  ],
+  "erwartet": {
+   "ok": false,
+   "fehler": "Die Summe der Teilnahmefaktoren dieses Zählpunkts läge bei 101 % – höchstens 100 % (frei: 40 %).",
+   "summeTf": 101,
+   "anzahl": 2,
+   "freiTf": 40
+  }
+ },
+ {
+  "fn": "teilnahmeRegeln",
+  "a": [
+   [
+    {
+     "id": "T2",
+     "gemeinschaftId": "EGG-26-AAAAAA",
+     "zaehlpunktId": "EZP-2",
+     "status": "aktiv",
+     "teilnahmefaktor": 60
+    }
+   ],
+   {
+    "gemeinschaftId": "EGG-26-AAAAAA",
+    "teilnahmefaktor": 10
+   },
+   0,
+   0
+  ],
+  "erwartet": {
+   "ok": false,
+   "fehler": "Der Zählpunkt nimmt an dieser Gemeinschaft bereits teil (bzw. eine Anmeldung läuft).",
+   "summeTf": 70,
+   "anzahl": 2,
+   "freiTf": 40
+  }
+ },
+ {
+  "fn": "teilnahmeRegeln",
+  "a": [
+   [
+    {
+     "id": "X1",
+     "gemeinschaftId": "G1",
+     "status": "aktiv",
+     "teilnahmefaktor": 10
+    },
+    {
+     "id": "X2",
+     "gemeinschaftId": "G2",
+     "status": "aktiv",
+     "teilnahmefaktor": 10
+    },
+    {
+     "id": "X3",
+     "gemeinschaftId": "G3",
+     "status": "aktiv",
+     "teilnahmefaktor": 10
+    },
+    {
+     "id": "X4",
+     "gemeinschaftId": "G4",
+     "status": "aktiv",
+     "teilnahmefaktor": 10
+    }
+   ],
+   {
+    "gemeinschaftId": "G5",
+    "teilnahmefaktor": 10
+   },
+   0,
+   0
+  ],
+  "erwartet": {
+   "ok": true,
+   "fehler": "",
+   "summeTf": 50,
+   "anzahl": 5,
+   "freiTf": 60
+  }
+ },
+ {
+  "fn": "teilnahmeRegeln",
+  "a": [
+   [
+    {
+     "id": "X1",
+     "gemeinschaftId": "G1",
+     "status": "aktiv",
+     "teilnahmefaktor": 10
+    },
+    {
+     "id": "X2",
+     "gemeinschaftId": "G2",
+     "status": "aktiv",
+     "teilnahmefaktor": 10
+    },
+    {
+     "id": "X3",
+     "gemeinschaftId": "G3",
+     "status": "aktiv",
+     "teilnahmefaktor": 10
+    },
+    {
+     "id": "X4",
+     "gemeinschaftId": "G4",
+     "status": "aktiv",
+     "teilnahmefaktor": 10
+    }
+   ],
+   {
+    "gemeinschaftId": "G5",
+    "teilnahmefaktor": 10
+   },
+   0,
+   1
+  ],
+  "erwartet": {
+   "ok": false,
+   "fehler": "Ein Zählpunkt darf an höchstens 5 gemeinsamen Energienutzungen teilnehmen (ElWG § 71 Abs. 5).",
+   "summeTf": 50,
+   "anzahl": 6,
+   "freiTf": 60
+  }
+ },
+ {
+  "fn": "teilnahmeRegeln",
+  "a": [
+   [
+    {
+     "id": "X1",
+     "gemeinschaftId": "G1",
+     "status": "beendet",
+     "teilnahmefaktor": 100
+    },
+    {
+     "id": "X2",
+     "gemeinschaftId": "G2",
+     "status": "aktiv",
+     "teilnahmefaktor": 30
+    }
+   ],
+   {
+    "id": "X2",
+    "gemeinschaftId": "G2",
+    "teilnahmefaktor": 100
+   },
+   0,
+   0
+  ],
+  "erwartet": {
+   "ok": true,
+   "fehler": "",
+   "summeTf": 100,
+   "anzahl": 1,
+   "freiTf": 100
+  }
+ },
+ {
+  "fn": "teilnahmeRegeln",
+  "a": [
+   [
+    {
+     "id": "X2",
+     "gemeinschaftId": "G2",
+     "status": "aktiv",
+     "teilnahmefaktor": 30
+    }
+   ],
+   {
+    "gemeinschaftId": "G3",
+    "teilnahmefaktor": 50
+   },
+   25,
+   1
+  ],
+  "erwartet": {
+   "ok": false,
+   "fehler": "Die Summe der Teilnahmefaktoren dieses Zählpunkts läge bei 105 % – höchstens 100 % (frei: 45 %).",
+   "summeTf": 105,
+   "anzahl": 3,
+   "freiTf": 45
+  }
+ },
+ {
+  "fn": "tfAm",
+  "a": [
+   {
+    "teilnahmefaktor": 70,
+    "tfHistorie": [
+     {
+      "gueltigAb": "2026-01-01",
+      "tf": 100
+     },
+     {
+      "gueltigAb": "2026-06-01",
+      "tf": 70
+     }
+    ]
+   },
+   "2026-03-01"
+  ],
+  "erwartet": 100
+ },
+ {
+  "fn": "tfAm",
+  "a": [
+   {
+    "teilnahmefaktor": 70,
+    "tfHistorie": [
+     {
+      "gueltigAb": "2026-06-01",
+      "tf": 70
+     }
+    ]
+   },
+   "2026-01-01"
+  ],
+  "erwartet": 70
+ },
+ {
+  "fn": "tarifBereinigen",
+  "a": [
+   {
+    "bezeichnung": "P",
+    "gueltigAb": "2026-01-01",
+    "bezugspreisCt": "11,12345",
+    "einspeisepreisCt": 8,
+    "zeitfenster": [
+     {
+      "label": "Mittag",
+      "von": "11:00",
+      "bis": "15:00",
+      "bezugspreisCt": 9.5,
+      "tage": [
+       "mo",
+       "xx",
+       "mo"
+      ],
+      "monate": [
+       5,
+       4,
+       13
+      ]
+     }
+    ],
+    "status": "beschlossen",
+    "beschluss": {
+     "art": "gv",
+     "datum": "2025-12-01"
+    }
+   }
+  ],
+  "erwartet": {
+   "bezeichnung": "P",
+   "gueltigAb": "2026-01-01",
+   "gueltigBis": "",
+   "beschluss": {
+    "art": "gv",
+    "datum": "2025-12-01",
+    "referenz": ""
+   },
+   "bezugspreisCt": 11.1235,
+   "einspeisepreisCt": 8,
+   "zeitfenster": [
+    {
+     "id": "Z1",
+     "label": "Mittag",
+     "tage": [
+      "mo"
+     ],
+     "von": "11:00",
+     "bis": "15:00",
+     "monate": [
+      4,
+      5
+     ],
+     "bezugspreisCt": 9.5,
+     "einspeisepreisCt": null
+    }
+   ],
+   "grundgebuehrMonat": 0,
+   "zaehlpunktgebuehrMonat": 0,
+   "einmalgebuehrBeitritt": 0,
+   "mitgliedsbeitragJahr": 0,
+   "sozialtarif": {
+    "bezugspreisCt": null,
+    "kontingentPct": null
+   },
+   "individuell": [],
+   "status": "beschlossen"
+  }
+ },
+ {
+  "fn": "tarifBereinigen",
+  "a": [
+   {
+    "gueltigAb": "2026-01-01",
+    "bezugspreisCt": 8,
+    "einspeisepreisCt": 9
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Der Einspeisepreis liegt über dem Bezugspreis – die Gemeinschaft könnte ihre Kosten nicht decken."
+  }
+ },
+ {
+  "fn": "tarifBereinigen",
+  "a": [
+   {
+    "bezugspreisCt": 8,
+    "einspeisepreisCt": 7
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte das Gültigkeitsdatum (ab) angeben."
+  }
+ },
+ {
+  "fn": "tarifBereinigen",
+  "a": [
+   {
+    "gueltigAb": "2026-01-01",
+    "bezugspreisCt": 8,
+    "einspeisepreisCt": 7,
+    "status": "aktiv"
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Für einen beschlossenen Tarif bitte das Beschlussdatum angeben."
+  }
+ },
+ {
+  "fn": "tarifBereinigen",
+  "a": [
+   {
+    "gueltigAb": "2026-01-01",
+    "bezugspreisCt": 8,
+    "einspeisepreisCt": 7,
+    "zeitfenster": [
+     {
+      "label": "x",
+      "von": "11:10",
+      "bis": "12:00",
+      "bezugspreisCt": 1
+     }
+    ]
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Zeitfenster: Beginn und Ende im Viertelstundenraster (HH:MM)."
+  }
+ },
+ {
+  "fn": "tarifBereinigen",
+  "a": [
+   {
+    "gueltigAb": "2026-01-01",
+    "bezugspreisCt": 8,
+    "einspeisepreisCt": 7,
+    "individuell": [
+     {
+      "mitgliedId": "M1",
+      "bezugspreisCt": 7
+     }
+    ]
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Individuelle Preise brauchen Mitglied und dokumentierten Grund."
+  }
+ },
+ {
+  "fn": "tarifBereinigen",
+  "a": [
+   {
+    "gueltigAb": "2026-05-01",
+    "gueltigBis": "2026-01-01",
+    "bezugspreisCt": 8,
+    "einspeisepreisCt": 7
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "„Gültig bis“ liegt vor „gültig ab“."
+  }
+ },
+ {
+  "fn": "tarifAm",
+  "a": [
+   [
+    {
+     "id": "A",
+     "status": "abgeloest",
+     "gueltigAb": "2025-01-01",
+     "gueltigBis": "2025-12-31"
+    },
+    {
+     "id": "B",
+     "status": "aktiv",
+     "gueltigAb": "2026-01-01",
+     "gueltigBis": ""
+    },
+    {
+     "id": "C",
+     "status": "entwurf",
+     "gueltigAb": "2026-02-01"
+    }
+   ],
+   "2026-03-01"
+  ],
+  "erwartet": {
+   "id": "B",
+   "status": "aktiv",
+   "gueltigAb": "2026-01-01",
+   "gueltigBis": ""
+  }
+ },
+ {
+  "fn": "tarifAm",
+  "a": [
+   [
+    {
+     "id": "B",
+     "status": "aktiv",
+     "gueltigAb": "2026-01-01",
+     "gueltigBis": ""
+    }
+   ],
+   "2025-12-31"
+  ],
+  "erwartet": null
+ },
+ {
+  "fn": "tarifVersionieren",
+  "a": [
+   [
+    {
+     "id": "A",
+     "status": "aktiv",
+     "gueltigAb": "2025-01-01",
+     "gueltigBis": ""
+    },
+    {
+     "id": "B",
+     "status": "entwurf",
+     "gueltigAb": "2025-06-01",
+     "gueltigBis": ""
+    }
+   ],
+   {
+    "id": "N",
+    "status": "aktiv",
+    "gueltigAb": "2026-03-01"
+   }
+  ],
+  "erwartet": [
+   {
+    "id": "A",
+    "status": "abgeloest",
+    "gueltigAb": "2025-01-01",
+    "gueltigBis": "2026-02-28"
+   },
+   {
+    "id": "B",
+    "status": "entwurf",
+    "gueltigAb": "2025-06-01",
+    "gueltigBis": ""
+   }
+  ]
+ },
+ {
+  "fn": "preisFuer",
+  "a": [
+   {
+    "id": "TA",
+    "status": "aktiv",
+    "gueltigAb": "2026-01-01",
+    "gueltigBis": "",
+    "bezugspreisCt": 11.5,
+    "einspeisepreisCt": 8.5,
+    "zeitfenster": [
+     {
+      "id": "Z1",
+      "label": "Mittag",
+      "tage": [],
+      "von": "11:00",
+      "bis": "15:00",
+      "monate": [
+       4,
+       5,
+       6,
+       7,
+       8,
+       9
+      ],
+      "bezugspreisCt": 9.5,
+      "einspeisepreisCt": null
+     },
+     {
+      "id": "Z2",
+      "label": "Nacht",
+      "tage": [
+       "sa",
+       "so"
+      ],
+      "von": "22:00",
+      "bis": "06:00",
+      "monate": [],
+      "bezugspreisCt": 10,
+      "einspeisepreisCt": 7
+     }
+    ],
+    "individuell": [
+     {
+      "mitgliedId": "M1",
+      "bezugspreisCt": 9,
+      "einspeisepreisCt": null,
+      "grund": "Sozialtarif"
+     }
+    ]
+   },
+   "2026-07-15T12:00",
+   ""
+  ],
+  "erwartet": {
+   "bezugspreisCt": 9.5,
+   "einspeisepreisCt": 8.5,
+   "zeitfenster": "Z1"
+  }
+ },
+ {
+  "fn": "preisFuer",
+  "a": [
+   {
+    "id": "TA",
+    "status": "aktiv",
+    "gueltigAb": "2026-01-01",
+    "gueltigBis": "",
+    "bezugspreisCt": 11.5,
+    "einspeisepreisCt": 8.5,
+    "zeitfenster": [
+     {
+      "id": "Z1",
+      "label": "Mittag",
+      "tage": [],
+      "von": "11:00",
+      "bis": "15:00",
+      "monate": [
+       4,
+       5,
+       6,
+       7,
+       8,
+       9
+      ],
+      "bezugspreisCt": 9.5,
+      "einspeisepreisCt": null
+     },
+     {
+      "id": "Z2",
+      "label": "Nacht",
+      "tage": [
+       "sa",
+       "so"
+      ],
+      "von": "22:00",
+      "bis": "06:00",
+      "monate": [],
+      "bezugspreisCt": 10,
+      "einspeisepreisCt": 7
+     }
+    ],
+    "individuell": [
+     {
+      "mitgliedId": "M1",
+      "bezugspreisCt": 9,
+      "einspeisepreisCt": null,
+      "grund": "Sozialtarif"
+     }
+    ]
+   },
+   "2026-07-15T15:00",
+   ""
+  ],
+  "erwartet": {
+   "bezugspreisCt": 11.5,
+   "einspeisepreisCt": 8.5,
+   "zeitfenster": ""
+  }
+ },
+ {
+  "fn": "preisFuer",
+  "a": [
+   {
+    "id": "TA",
+    "status": "aktiv",
+    "gueltigAb": "2026-01-01",
+    "gueltigBis": "",
+    "bezugspreisCt": 11.5,
+    "einspeisepreisCt": 8.5,
+    "zeitfenster": [
+     {
+      "id": "Z1",
+      "label": "Mittag",
+      "tage": [],
+      "von": "11:00",
+      "bis": "15:00",
+      "monate": [
+       4,
+       5,
+       6,
+       7,
+       8,
+       9
+      ],
+      "bezugspreisCt": 9.5,
+      "einspeisepreisCt": null
+     },
+     {
+      "id": "Z2",
+      "label": "Nacht",
+      "tage": [
+       "sa",
+       "so"
+      ],
+      "von": "22:00",
+      "bis": "06:00",
+      "monate": [],
+      "bezugspreisCt": 10,
+      "einspeisepreisCt": 7
+     }
+    ],
+    "individuell": [
+     {
+      "mitgliedId": "M1",
+      "bezugspreisCt": 9,
+      "einspeisepreisCt": null,
+      "grund": "Sozialtarif"
+     }
+    ]
+   },
+   "2026-01-10T23:00",
+   ""
+  ],
+  "erwartet": {
+   "bezugspreisCt": 10,
+   "einspeisepreisCt": 7,
+   "zeitfenster": "Z2"
+  }
+ },
+ {
+  "fn": "preisFuer",
+  "a": [
+   {
+    "id": "TA",
+    "status": "aktiv",
+    "gueltigAb": "2026-01-01",
+    "gueltigBis": "",
+    "bezugspreisCt": 11.5,
+    "einspeisepreisCt": 8.5,
+    "zeitfenster": [
+     {
+      "id": "Z1",
+      "label": "Mittag",
+      "tage": [],
+      "von": "11:00",
+      "bis": "15:00",
+      "monate": [
+       4,
+       5,
+       6,
+       7,
+       8,
+       9
+      ],
+      "bezugspreisCt": 9.5,
+      "einspeisepreisCt": null
+     },
+     {
+      "id": "Z2",
+      "label": "Nacht",
+      "tage": [
+       "sa",
+       "so"
+      ],
+      "von": "22:00",
+      "bis": "06:00",
+      "monate": [],
+      "bezugspreisCt": 10,
+      "einspeisepreisCt": 7
+     }
+    ],
+    "individuell": [
+     {
+      "mitgliedId": "M1",
+      "bezugspreisCt": 9,
+      "einspeisepreisCt": null,
+      "grund": "Sozialtarif"
+     }
+    ]
+   },
+   "2026-01-10T05:45",
+   ""
+  ],
+  "erwartet": {
+   "bezugspreisCt": 10,
+   "einspeisepreisCt": 7,
+   "zeitfenster": "Z2"
+  }
+ },
+ {
+  "fn": "preisFuer",
+  "a": [
+   {
+    "id": "TA",
+    "status": "aktiv",
+    "gueltigAb": "2026-01-01",
+    "gueltigBis": "",
+    "bezugspreisCt": 11.5,
+    "einspeisepreisCt": 8.5,
+    "zeitfenster": [
+     {
+      "id": "Z1",
+      "label": "Mittag",
+      "tage": [],
+      "von": "11:00",
+      "bis": "15:00",
+      "monate": [
+       4,
+       5,
+       6,
+       7,
+       8,
+       9
+      ],
+      "bezugspreisCt": 9.5,
+      "einspeisepreisCt": null
+     },
+     {
+      "id": "Z2",
+      "label": "Nacht",
+      "tage": [
+       "sa",
+       "so"
+      ],
+      "von": "22:00",
+      "bis": "06:00",
+      "monate": [],
+      "bezugspreisCt": 10,
+      "einspeisepreisCt": 7
+     }
+    ],
+    "individuell": [
+     {
+      "mitgliedId": "M1",
+      "bezugspreisCt": 9,
+      "einspeisepreisCt": null,
+      "grund": "Sozialtarif"
+     }
+    ]
+   },
+   "2026-01-12T23:00",
+   ""
+  ],
+  "erwartet": {
+   "bezugspreisCt": 11.5,
+   "einspeisepreisCt": 8.5,
+   "zeitfenster": ""
+  }
+ },
+ {
+  "fn": "preisFuer",
+  "a": [
+   {
+    "id": "TA",
+    "status": "aktiv",
+    "gueltigAb": "2026-01-01",
+    "gueltigBis": "",
+    "bezugspreisCt": 11.5,
+    "einspeisepreisCt": 8.5,
+    "zeitfenster": [
+     {
+      "id": "Z1",
+      "label": "Mittag",
+      "tage": [],
+      "von": "11:00",
+      "bis": "15:00",
+      "monate": [
+       4,
+       5,
+       6,
+       7,
+       8,
+       9
+      ],
+      "bezugspreisCt": 9.5,
+      "einspeisepreisCt": null
+     },
+     {
+      "id": "Z2",
+      "label": "Nacht",
+      "tage": [
+       "sa",
+       "so"
+      ],
+      "von": "22:00",
+      "bis": "06:00",
+      "monate": [],
+      "bezugspreisCt": 10,
+      "einspeisepreisCt": 7
+     }
+    ],
+    "individuell": [
+     {
+      "mitgliedId": "M1",
+      "bezugspreisCt": 9,
+      "einspeisepreisCt": null,
+      "grund": "Sozialtarif"
+     }
+    ]
+   },
+   "2026-03-01T12:00",
+   ""
+  ],
+  "erwartet": {
+   "bezugspreisCt": 11.5,
+   "einspeisepreisCt": 8.5,
+   "zeitfenster": ""
+  }
+ },
+ {
+  "fn": "preisFuer",
+  "a": [
+   {
+    "id": "TA",
+    "status": "aktiv",
+    "gueltigAb": "2026-01-01",
+    "gueltigBis": "",
+    "bezugspreisCt": 11.5,
+    "einspeisepreisCt": 8.5,
+    "zeitfenster": [
+     {
+      "id": "Z1",
+      "label": "Mittag",
+      "tage": [],
+      "von": "11:00",
+      "bis": "15:00",
+      "monate": [
+       4,
+       5,
+       6,
+       7,
+       8,
+       9
+      ],
+      "bezugspreisCt": 9.5,
+      "einspeisepreisCt": null
+     },
+     {
+      "id": "Z2",
+      "label": "Nacht",
+      "tage": [
+       "sa",
+       "so"
+      ],
+      "von": "22:00",
+      "bis": "06:00",
+      "monate": [],
+      "bezugspreisCt": 10,
+      "einspeisepreisCt": 7
+     }
+    ],
+    "individuell": [
+     {
+      "mitgliedId": "M1",
+      "bezugspreisCt": 9,
+      "einspeisepreisCt": null,
+      "grund": "Sozialtarif"
+     }
+    ]
+   },
+   "2026-07-15T12:00",
+   "M1"
+  ],
+  "erwartet": {
+   "bezugspreisCt": 9,
+   "einspeisepreisCt": 8.5,
+   "zeitfenster": "Z1"
+  }
+ },
+ {
+  "fn": "preisFuer",
+  "a": [
+   null,
+   "2026-07-15T12:00",
+   ""
+  ],
+  "erwartet": {
+   "bezugspreisCt": 0,
+   "einspeisepreisCt": 0,
+   "zeitfenster": ""
+  }
+ },
+ {
+  "fn": "verteilschluesselBereinigen",
+  "a": [
+   {
+    "gueltigAb": "2026-01-01",
+    "positionen": [
+     {
+      "teilnahmeId": "A",
+      "pct": 40
+     },
+     {
+      "teilnahmeId": "B",
+      "pct": "60,04"
+     }
+    ]
+   }
+  ],
+  "erwartet": {
+   "gueltigAb": "2026-01-01",
+   "positionen": [
+    {
+     "teilnahmeId": "A",
+     "pct": 40
+    },
+    {
+     "teilnahmeId": "B",
+     "pct": 60
+    }
+   ],
+   "summePct": 100,
+   "hinweis": ""
+  }
+ },
+ {
+  "fn": "verteilschluesselBereinigen",
+  "a": [
+   {
+    "gueltigAb": "2026-01-01",
+    "positionen": [
+     {
+      "teilnahmeId": "A",
+      "pct": 40
+     },
+     {
+      "teilnahmeId": "B",
+      "pct": 90
+     }
+    ]
+   }
+  ],
+  "erwartet": {
+   "gueltigAb": "2026-01-01",
+   "positionen": [
+    {
+     "teilnahmeId": "A",
+     "pct": 40
+    },
+    {
+     "teilnahmeId": "B",
+     "pct": 90
+    }
+   ],
+   "summePct": 130,
+   "hinweis": "Summe über 100 % – der Netzbetreiber normiert die Anteile (HA II 12.2)."
+  }
+ },
+ {
+  "fn": "verteilschluesselBereinigen",
+  "a": [
+   {
+    "gueltigAb": "2026-01-01",
+    "positionen": [
+     {
+      "teilnahmeId": "A",
+      "pct": 40
+     },
+     {
+      "teilnahmeId": "A",
+      "pct": 10
+     }
+    ]
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Jede Teilnahme darf nur einmal vorkommen."
+  }
+ },
+ {
+  "fn": "verteilschluesselBereinigen",
+  "a": [
+   {
+    "gueltigAb": "2026-01-01",
+    "positionen": []
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte mindestens eine Position mit Anteil angeben."
+  }
+ },
+ {
+  "fn": "gemeinschaftUebergang",
+  "a": [
+   {
+    "status": "in_gruendung",
+    "rechtsform": "verein"
+   },
+   "rechtsperson",
+   ""
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Für den Status „Rechtsperson“ bitte ZVR-Zahl bzw. Firmenbuchnummer eintragen."
+  }
+ },
+ {
+  "fn": "gemeinschaftUebergang",
+  "a": [
+   {
+    "status": "in_gruendung",
+    "rechtsform": "verein",
+    "zvrZahl": "1"
+   },
+   "rechtsperson",
+   ""
+  ],
+  "erwartet": {
+   "status": "rechtsperson"
+  }
+ },
+ {
+  "fn": "gemeinschaftUebergang",
+  "a": [
+   {
+    "status": "aktiv"
+   },
+   "interesse",
+   ""
+  ],
+  "fehler": {
+   "status": 409,
+   "text": "Wechsel von „Aktiv“ nach „Interesse“ ist nicht vorgesehen."
+  }
+ },
+ {
+  "fn": "gemeinschaftUebergang",
+  "a": [
+   {
+    "status": "aktiv"
+   },
+   "in_aufloesung",
+   ""
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte den Beschluss bzw. Grund angeben."
+  }
+ },
+ {
+  "fn": "gemeinschaftUebergang",
+  "a": [
+   {
+    "status": "aktiv"
+   },
+   "aufnahmestopp",
+   ""
+  ],
+  "erwartet": {
+   "status": "aufnahmestopp"
+  }
+ },
+ {
+  "fn": "gemeinschaftUebergang",
+  "a": [
+   {
+    "status": "vertrag_nb"
+   },
+   "xyz",
+   ""
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Unbekannter Status der Gemeinschaft."
+  }
+ },
+ {
+  "fn": "gemeinschaftUebergang",
+  "a": [
+   {
+    "status": "marktpartner"
+   },
+   "vertrag_nb",
+   ""
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Für den Status „Vertrag mit dem Netzbetreiber“ bitte die Gemeinschafts-ID eintragen."
+  }
+ },
+ {
+  "fn": "mitgliedUebergang",
+  "a": [
+   {
+    "status": "antrag"
+   },
+   "geprueft",
+   "",
+   ""
+  ],
+  "erwartet": {
+   "status": "geprueft"
+  }
+ },
+ {
+  "fn": "mitgliedUebergang",
+  "a": [
+   {
+    "status": "aktiv"
+   },
+   "gekuendigt",
+   "",
+   "2026-12-31"
+  ],
+  "erwartet": {
+   "status": "gekuendigt",
+   "austrittZum": "2026-12-31"
+  }
+ },
+ {
+  "fn": "mitgliedUebergang",
+  "a": [
+   {
+    "status": "aktiv"
+   },
+   "gekuendigt",
+   "",
+   ""
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte das Austrittsdatum (Kündigung zum) angeben."
+  }
+ },
+ {
+  "fn": "mitgliedUebergang",
+  "a": [
+   {
+    "status": "antrag"
+   },
+   "abgelehnt",
+   "",
+   ""
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Bitte einen Grund angeben."
+  }
+ },
+ {
+  "fn": "mitgliedUebergang",
+  "a": [
+   {
+    "status": "ausgeschieden"
+   },
+   "aktiv",
+   "",
+   ""
+  ],
+  "fehler": {
+   "status": 409,
+   "text": "Wechsel von „Ausgeschieden“ nach „Aktiv“ ist nicht vorgesehen."
+  }
+ },
+ {
+  "fn": "teilnahmeUebergang",
+  "a": [
+   {
+    "id": "T9",
+    "status": "entwurf",
+    "teilnahmefaktor": 40,
+    "tfHistorie": [],
+    "verlauf": [],
+    "gueltigBis": ""
+   },
+   "senden",
+   {
+    "heute": "2026-10-01",
+    "am": "2026-10-01T08:00:00.000Z"
+   }
+  ],
+  "erwartet": {
+   "id": "T9",
+   "status": "angefragt",
+   "teilnahmefaktor": 40,
+   "tfHistorie": [],
+   "verlauf": [
+    {
+     "am": "2026-10-01T08:00:00.000Z",
+     "von": "entwurf",
+     "nach": "angefragt",
+     "ereignis": "senden",
+     "prozessId": "",
+     "text": "",
+     "vonKonto": null
+    }
+   ],
+   "gueltigBis": ""
+  }
+ },
+ {
+  "fn": "teilnahmeUebergang",
+  "a": [
+   {
+    "id": "T9",
+    "status": "angefragt",
+    "teilnahmefaktor": 40,
+    "tfHistorie": [],
+    "verlauf": [],
+    "gueltigBis": ""
+   },
+   "anforderung_econ",
+   {
+    "heute": "2026-10-01",
+    "datum": "2026-10-02",
+    "prozessId": "EDP-1",
+    "responsecode": "99",
+    "am": "X"
+   }
+  ],
+  "erwartet": {
+   "id": "T9",
+   "status": "zustimmung_offen",
+   "teilnahmefaktor": 40,
+   "tfHistorie": [],
+   "verlauf": [
+    {
+     "am": "X",
+     "von": "angefragt",
+     "nach": "zustimmung_offen",
+     "ereignis": "anforderung_econ",
+     "prozessId": "EDP-1",
+     "text": "",
+     "vonKonto": null
+    }
+   ],
+   "gueltigBis": "",
+   "responsecode": "99",
+   "fristBis": "2026-11-01"
+  }
+ },
+ {
+  "fn": "teilnahmeUebergang",
+  "a": [
+   {
+    "id": "T9",
+    "status": "zustimmung_offen",
+    "teilnahmefaktor": 40,
+    "tfHistorie": [],
+    "verlauf": [],
+    "gueltigBis": "",
+    "fristBis": "2026-11-01"
+   },
+   "zustimmung_econ",
+   {
+    "heute": "2026-10-01",
+    "consentId": "C-1",
+    "am": "X"
+   }
+  ],
+  "erwartet": {
+   "id": "T9",
+   "status": "zugestimmt",
+   "teilnahmefaktor": 40,
+   "tfHistorie": [],
+   "verlauf": [
+    {
+     "am": "X",
+     "von": "zustimmung_offen",
+     "nach": "zugestimmt",
+     "ereignis": "zustimmung_econ",
+     "prozessId": "",
+     "text": "",
+     "vonKonto": null
+    }
+   ],
+   "gueltigBis": "",
+   "fristBis": "",
+   "consentId": "C-1"
+  }
+ },
+ {
+  "fn": "teilnahmeUebergang",
+  "a": [
+   {
+    "id": "T9",
+    "status": "zugestimmt",
+    "teilnahmefaktor": 40,
+    "tfHistorie": [],
+    "verlauf": [],
+    "gueltigBis": ""
+   },
+   "abschluss_econ",
+   {
+    "heute": "2026-10-01",
+    "am": "X"
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Für die Aktivierung bitte das Aktivierungsdatum laut ABSCHLUSS_ECON angeben."
+  }
+ },
+ {
+  "fn": "teilnahmeUebergang",
+  "a": [
+   {
+    "id": "T9",
+    "status": "zugestimmt",
+    "teilnahmefaktor": 40,
+    "tfHistorie": [],
+    "verlauf": [],
+    "gueltigBis": ""
+   },
+   "abschluss_econ",
+   {
+    "heute": "2026-10-01",
+    "datum": "2026-10-10",
+    "prozessId": "EDP-2",
+    "am": "X"
+   }
+  ],
+  "erwartet": {
+   "id": "T9",
+   "status": "aktiv",
+   "teilnahmefaktor": 40,
+   "tfHistorie": [
+    {
+     "gueltigAb": "2026-10-10",
+     "tf": 40,
+     "prozessId": "EDP-2"
+    }
+   ],
+   "verlauf": [
+    {
+     "am": "X",
+     "von": "zugestimmt",
+     "nach": "aktiv",
+     "ereignis": "abschluss_econ",
+     "prozessId": "EDP-2",
+     "text": "",
+     "vonKonto": null
+    }
+   ],
+   "gueltigBis": "",
+   "gueltigAb": "2026-10-10"
+  }
+ },
+ {
+  "fn": "teilnahmeUebergang",
+  "a": [
+   {
+    "id": "T9",
+    "status": "aktiv",
+    "teilnahmefaktor": 40,
+    "tfHistorie": [
+     {
+      "gueltigAb": "2026-10-10",
+      "tf": 40,
+      "prozessId": ""
+     }
+    ],
+    "verlauf": [],
+    "gueltigBis": ""
+   },
+   "tf_geaendert",
+   {
+    "heute": "2026-10-01",
+    "datum": "2026-10-10",
+    "teilnahmefaktor": 50,
+    "am": "X"
+   }
+  ],
+  "fehler": {
+   "status": 409,
+   "text": "Je Gemeinschaft und Zählpunkt ist derzeit nur eine Änderung des Teilnahmefaktors pro Tag möglich."
+  }
+ },
+ {
+  "fn": "teilnahmeUebergang",
+  "a": [
+   {
+    "id": "T9",
+    "status": "aktiv",
+    "teilnahmefaktor": 40,
+    "tfHistorie": [
+     {
+      "gueltigAb": "2026-10-10",
+      "tf": 40,
+      "prozessId": ""
+     }
+    ],
+    "verlauf": [],
+    "gueltigBis": ""
+   },
+   "tf_geaendert",
+   {
+    "heute": "2026-10-01",
+    "datum": "2026-10-11",
+    "teilnahmefaktor": 50,
+    "am": "X"
+   }
+  ],
+  "erwartet": {
+   "id": "T9",
+   "status": "aktiv",
+   "teilnahmefaktor": 50,
+   "tfHistorie": [
+    {
+     "gueltigAb": "2026-10-10",
+     "tf": 40,
+     "prozessId": ""
+    },
+    {
+     "gueltigAb": "2026-10-11",
+     "tf": 50,
+     "prozessId": ""
+    }
+   ],
+   "verlauf": [
+    {
+     "am": "X",
+     "von": "aktiv",
+     "nach": "aktiv",
+     "ereignis": "tf_geaendert",
+     "prozessId": "",
+     "text": "",
+     "vonKonto": null
+    }
+   ],
+   "gueltigBis": ""
+  }
+ },
+ {
+  "fn": "teilnahmeUebergang",
+  "a": [
+   {
+    "id": "T9",
+    "status": "aktiv",
+    "teilnahmefaktor": 40,
+    "tfHistorie": [],
+    "verlauf": [],
+    "gueltigBis": ""
+   },
+   "tf_geaendert",
+   {
+    "heute": "2026-10-01",
+    "teilnahmefaktor": 0.5,
+    "am": "X"
+   }
+  ],
+  "fehler": {
+   "status": 422,
+   "text": "Der Teilnahmefaktor ist eine ganze Zahl von 1 bis 100 %."
+  }
+ },
+ {
+  "fn": "teilnahmeUebergang",
+  "a": [
+   {
+    "id": "T9",
+    "status": "aktiv",
+    "teilnahmefaktor": 40,
+    "tfHistorie": [],
+    "verlauf": [],
+    "gueltigBis": ""
+   },
+   "cm_rev_sp",
+   {
+    "heute": "2026-10-01",
+    "datum": "2026-09-30",
+    "am": "X"
+   }
+  ],
+  "fehler": {
+   "status": 409,
+   "text": "Eine Abmeldung ist nicht rückwirkend möglich (Prozessdatum frühestens heute)."
+  }
+ },
+ {
+  "fn": "teilnahmeUebergang",
+  "a": [
+   {
+    "id": "T9",
+    "status": "aktiv",
+    "teilnahmefaktor": 40,
+    "tfHistorie": [],
+    "verlauf": [],
+    "gueltigBis": ""
+   },
+   "cm_rev_sp",
+   {
+    "heute": "2026-10-01",
+    "datum": "2026-10-31",
+    "am": "X"
+   }
+  ],
+  "erwartet": {
+   "id": "T9",
+   "status": "abmeldung_angefragt",
+   "teilnahmefaktor": 40,
+   "tfHistorie": [],
+   "verlauf": [
+    {
+     "am": "X",
+     "von": "aktiv",
+     "nach": "abmeldung_angefragt",
+     "ereignis": "cm_rev_sp",
+     "prozessId": "",
+     "text": "",
+     "vonKonto": null
+    }
+   ],
+   "gueltigBis": "2026-10-31"
+  }
+ },
+ {
+  "fn": "teilnahmeUebergang",
+  "a": [
+   {
+    "id": "T9",
+    "status": "abmeldung_angefragt",
+    "teilnahmefaktor": 40,
+    "tfHistorie": [],
+    "verlauf": [],
+    "gueltigBis": "2026-10-31"
+   },
+   "abmeldung_ok",
+   {
+    "heute": "2026-10-01",
+    "am": "X"
+   }
+  ],
+  "erwartet": {
+   "id": "T9",
+   "status": "beendet",
+   "teilnahmefaktor": 40,
+   "tfHistorie": [],
+   "verlauf": [
+    {
+     "am": "X",
+     "von": "abmeldung_angefragt",
+     "nach": "beendet",
+     "ereignis": "abmeldung_ok",
+     "prozessId": "",
+     "text": "",
+     "vonKonto": null
+    }
+   ],
+   "gueltigBis": "2026-10-31",
+   "beendetGrund": "abmeldung"
+  }
+ },
+ {
+  "fn": "teilnahmeUebergang",
+  "a": [
+   {
+    "id": "T9",
+    "status": "aktiv",
+    "teilnahmefaktor": 40,
+    "tfHistorie": [],
+    "verlauf": [],
+    "gueltigBis": ""
+   },
+   "cm_rev_cus",
+   {
+    "heute": "2026-10-01",
+    "datum": "2026-10-05",
+    "am": "X",
+    "grund": "Widerruf"
+   }
+  ],
+  "erwartet": {
+   "id": "T9",
+   "status": "beendet",
+   "teilnahmefaktor": 40,
+   "tfHistorie": [],
+   "verlauf": [
+    {
+     "am": "X",
+     "von": "aktiv",
+     "nach": "beendet",
+     "ereignis": "cm_rev_cus",
+     "prozessId": "",
+     "text": "Widerruf",
+     "vonKonto": null
+    }
+   ],
+   "gueltigBis": "2026-10-05",
+   "beendetGrund": "widerruf"
+  }
+ },
+ {
+  "fn": "teilnahmeUebergang",
+  "a": [
+   {
+    "id": "T9",
+    "status": "aktiv",
+    "teilnahmefaktor": 40,
+    "tfHistorie": [],
+    "verlauf": [],
+    "gueltigBis": ""
+   },
+   "senden",
+   {
+    "heute": "2026-10-01",
+    "am": "X"
+   }
+  ],
+  "fehler": {
+   "status": 409,
+   "text": "Ereignis „senden“ ist im Status „Aktiv“ nicht vorgesehen."
+  }
+ },
+ {
+  "fn": "teilnahmeUebergang",
+  "a": [
+   {
+    "id": "T9",
+    "status": "abgelaufen",
+    "teilnahmefaktor": 40,
+    "tfHistorie": [],
+    "verlauf": [],
+    "gueltigBis": "",
+    "consentId": "C",
+    "fristBis": "x"
+   },
+   "erneut",
+   {
+    "heute": "2026-10-01",
+    "am": "X",
+    "von": "U-1"
+   }
+  ],
+  "erwartet": {
+   "id": "T9",
+   "status": "entwurf",
+   "teilnahmefaktor": 40,
+   "tfHistorie": [],
+   "verlauf": [
+    {
+     "am": "X",
+     "von": "abgelaufen",
+     "nach": "entwurf",
+     "ereignis": "erneut",
+     "prozessId": "",
+     "text": "",
+     "vonKonto": "U-1"
+    }
+   ],
+   "gueltigBis": "",
+   "consentId": "",
+   "fristBis": "",
+   "responsecode": ""
+  }
+ },
+ {
+  "fn": "teilnahmeUebergang",
+  "a": [
+   {
+    "id": "T9",
+    "status": "abmeldung_angefragt",
+    "teilnahmefaktor": 40,
+    "tfHistorie": [],
+    "verlauf": [],
+    "gueltigBis": "2026-10-31"
+   },
+   "abmeldung_abgelehnt",
+   {
+    "heute": "2026-10-01",
+    "am": "X"
+   }
+  ],
+  "erwartet": {
+   "id": "T9",
+   "status": "aktiv",
+   "teilnahmefaktor": 40,
+   "tfHistorie": [],
+   "verlauf": [
+    {
+     "am": "X",
+     "von": "abmeldung_angefragt",
+     "nach": "aktiv",
+     "ereignis": "abmeldung_abgelehnt",
+     "prozessId": "",
+     "text": "",
+     "vonKonto": null
+    }
+   ],
+   "gueltigBis": ""
+  }
+ },
+ {
+  "fn": "migrationAusPrototyp",
+  "a": [
+   {
+    "gemeinschaften": [
+     {
+      "id": "EGM-1",
+      "name": "Alt-EEG (Demo)",
+      "land": "AT",
+      "form": "eeg_regional",
+      "status": "aktiv",
+      "rechtsform": "Verein (Demo)",
+      "netzbetreiber": "Netzbetreiber Oberösterreich (Demo)",
+      "gebiet": "UW Süd",
+      "plzListe": [
+       "5120"
+      ],
+      "tarifBezugCt": 11,
+      "tarifEinspeisungCt": 9,
+      "grundgebuehrMonat": 1.5,
+      "verteilschluessel": "dynamisch",
+      "gemeinschaftsId": "AT00300000RC100000000000000000001 (Demo)",
+      "info": "Info",
+      "demo": true
+     },
+     {
+      "id": "EGM-2",
+      "name": "DE (Demo)",
+      "land": "DE",
+      "form": "energy_sharing",
+      "status": "aufbau"
+     },
+     {
+      "id": "EGM-3",
+      "name": "GEA alt",
+      "land": "AT",
+      "form": "gea",
+      "status": "geschlossen",
+      "rechtsform": "",
+      "netzbetreiber": "Wiener Netze",
+      "verteilschluessel": "statisch",
+      "gemeinschaftsId": "",
+      "tarifBezugCt": null
+     }
+    ],
+    "teilnahmen": [
+     {
+      "id": "ET-1",
+      "egId": "EGM-1",
+      "nutzerId": "U-1",
+      "status": "aktiv",
+      "ab": "2026-03-01",
+      "stamm": {
+       "rolle": "bezug",
+       "zaehlpunkt": "AT0030000000000000000000000054321",
+       "plz": "5121",
+       "smartMeter": true
+      }
+     },
+     {
+      "id": "ET-2",
+      "egId": "EGM-1",
+      "nutzerId": null,
+      "name": "Hofladen Demo (Demo)",
+      "status": "beendet",
+      "ab": "2026-01-01",
+      "bis": "2026-08-31",
+      "stamm": {
+       "rolle": "beides",
+       "zaehlpunkt": "AT0030000000000000000000000077702",
+       "zaehlpunktEinspeisung": "AT0030000000000000000000000077703",
+       "anlageKwp": 30
+      }
+     },
+     {
+      "id": "ET-3",
+      "egId": "EGM-1",
+      "nutzerId": "U-9",
+      "status": "beantragt",
+      "stamm": {
+       "rolle": "bezug",
+       "zaehlpunkt": "falsch"
+      }
+     },
+     {
+      "id": "ET-4",
+      "egId": "EGM-3",
+      "nutzerId": null,
+      "name": "Top 1",
+      "status": "angemeldet",
+      "anteilPct": 12.5,
+      "stamm": {
+       "rolle": "bezug",
+       "zaehlpunkt": "AT0010000114000000000000000000009",
+       "smartMeter": "nein"
+      }
+     },
+     {
+      "id": "ET-5",
+      "egId": "EGM-3",
+      "nutzerId": null,
+      "name": "Top 2",
+      "status": "abgelehnt",
+      "stamm": {
+       "rolle": "bezug"
+      }
+     }
+    ]
+   },
+   "2026-10-01"
+  ],
+  "erwartet": {
+   "gemeinschaften": [
+    {
+     "id": "EGG-26-000001",
+     "migriertAus": "EGM-1",
+     "name": "Alt-EEG (Demo)",
+     "kurzname": "",
+     "modell": "eeg",
+     "zonelevel": 4,
+     "nahebereichRef": "UW Süd",
+     "rechtsform": "verein",
+     "zvrZahl": "",
+     "firmenbuchnummer": "",
+     "sitzAdresse": {
+      "strasse": "",
+      "plz": "5120",
+      "ort": ""
+     },
+     "email": "",
+     "telefon": "",
+     "uid": "",
+     "steuernummer": "",
+     "finanzamt": "",
+     "ustStatus": "kleinunternehmer",
+     "ustOptionSeit": "",
+     "iban": "",
+     "bic": "",
+     "creditorId": "",
+     "netzbetreiber": [
+      "ENB-OOE"
+     ],
+     "marktpartnerId": "",
+     "gemeinschaftsId": "",
+     "verteilmodell": "dynamisch",
+     "vorgaengerId": null,
+     "nachfolgerId": null,
+     "edaAnbindung": "anwenderportal",
+     "organisatorOrgId": null,
+     "organisatorAngezeigtAm": "",
+     "dienstleistung": {
+      "aktiv": true,
+      "paket": "migration",
+      "seit": "2026-10-01",
+      "avvAm": ""
+     },
+     "abrechnungsrhythmus": "monat",
+     "statutenVersion": "",
+     "betreibervertragDatum": "",
+     "beschreibung": "Info\nGemeinschafts-ID laut Prototyp: AT00300000RC100000000000000000001 (Demo)",
+     "status": "aktiv",
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null,
+     "demo": true
+    },
+    {
+     "id": "EGG-26-000013",
+     "migriertAus": "EGM-3",
+     "name": "GEA alt",
+     "kurzname": "",
+     "modell": "gea",
+     "zonelevel": 1,
+     "nahebereichRef": "",
+     "rechtsform": "keine",
+     "zvrZahl": "",
+     "firmenbuchnummer": "",
+     "sitzAdresse": {
+      "strasse": "",
+      "plz": "",
+      "ort": ""
+     },
+     "email": "",
+     "telefon": "",
+     "uid": "",
+     "steuernummer": "",
+     "finanzamt": "",
+     "ustStatus": "kleinunternehmer",
+     "ustOptionSeit": "",
+     "iban": "",
+     "bic": "",
+     "creditorId": "",
+     "netzbetreiber": [
+      "ENB-WIEN"
+     ],
+     "marktpartnerId": "",
+     "gemeinschaftsId": "",
+     "verteilmodell": "statisch",
+     "vorgaengerId": null,
+     "nachfolgerId": null,
+     "edaAnbindung": "anwenderportal",
+     "organisatorOrgId": null,
+     "organisatorAngezeigtAm": "",
+     "dienstleistung": {
+      "aktiv": false,
+      "paket": "migration",
+      "seit": "2026-10-01",
+      "avvAm": ""
+     },
+     "abrechnungsrhythmus": "monat",
+     "statutenVersion": "",
+     "betreibervertragDatum": "",
+     "beschreibung": "",
+     "status": "aufnahmestopp",
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    }
+   ],
+   "mitglieder": [
+    {
+     "id": "EMG-26-000003",
+     "migriertAus": "ET-1",
+     "gemeinschaftId": "EGG-26-000001",
+     "kontoId": "U-1",
+     "mitgliedsnummer": 1,
+     "art": "privat",
+     "person": {
+      "vorname": "Mia",
+      "nachname": "Muster",
+      "firma": "",
+      "strasse": "",
+      "plz": "5121",
+      "ort": "",
+      "email": "mia@example.com",
+      "telefon": ""
+     },
+     "unternehmensgroesse": {
+      "mitarbeiter": null,
+      "umsatzMioEur": null,
+      "bilanzMioEur": null,
+      "nachweis": ""
+     },
+     "steuerstatusErzeuger": "kleinunternehmer",
+     "uid": "",
+     "schutzbeduerftig": false,
+     "iban": "",
+     "sepaMandat": {
+      "referenz": "",
+      "datum": "",
+      "status": ""
+     },
+     "rechnungsweg": "portal",
+     "abrechnungsrhythmus": "",
+     "vertraege": [],
+     "beitrittAm": "2026-03-01",
+     "austrittZum": "",
+     "status": "aktiv",
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    },
+    {
+     "id": "EMG-26-000006",
+     "migriertAus": "ET-2",
+     "gemeinschaftId": "EGG-26-000001",
+     "kontoId": null,
+     "mitgliedsnummer": 2,
+     "art": "kmu",
+     "person": {
+      "vorname": "",
+      "nachname": "",
+      "firma": "Hofladen Demo (Demo)",
+      "strasse": "",
+      "plz": "",
+      "ort": "",
+      "email": "",
+      "telefon": ""
+     },
+     "unternehmensgroesse": {
+      "mitarbeiter": null,
+      "umsatzMioEur": null,
+      "bilanzMioEur": null,
+      "nachweis": ""
+     },
+     "steuerstatusErzeuger": "kleinunternehmer",
+     "uid": "",
+     "schutzbeduerftig": false,
+     "iban": "",
+     "sepaMandat": {
+      "referenz": "",
+      "datum": "",
+      "status": ""
+     },
+     "rechnungsweg": "email",
+     "abrechnungsrhythmus": "",
+     "vertraege": [],
+     "beitrittAm": "2026-01-01",
+     "austrittZum": "2026-08-31",
+     "status": "ausgeschieden",
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    },
+    {
+     "id": "EMG-26-000012",
+     "migriertAus": "ET-3",
+     "gemeinschaftId": "EGG-26-000001",
+     "kontoId": "U-9",
+     "mitgliedsnummer": 3,
+     "art": "privat",
+     "person": {
+      "vorname": "",
+      "nachname": "",
+      "firma": "",
+      "strasse": "",
+      "plz": "",
+      "ort": "",
+      "email": "",
+      "telefon": ""
+     },
+     "unternehmensgroesse": {
+      "mitarbeiter": null,
+      "umsatzMioEur": null,
+      "bilanzMioEur": null,
+      "nachweis": ""
+     },
+     "steuerstatusErzeuger": "kleinunternehmer",
+     "uid": "",
+     "schutzbeduerftig": false,
+     "iban": "",
+     "sepaMandat": {
+      "referenz": "",
+      "datum": "",
+      "status": ""
+     },
+     "rechnungsweg": "portal",
+     "abrechnungsrhythmus": "",
+     "vertraege": [],
+     "beitrittAm": "",
+     "austrittZum": "",
+     "status": "antrag",
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    },
+    {
+     "id": "EMG-26-000014",
+     "migriertAus": "ET-4",
+     "gemeinschaftId": "EGG-26-000013",
+     "kontoId": null,
+     "mitgliedsnummer": 1,
+     "art": "privat",
+     "person": {
+      "vorname": "",
+      "nachname": "",
+      "firma": "Top 1",
+      "strasse": "",
+      "plz": "",
+      "ort": "",
+      "email": "",
+      "telefon": ""
+     },
+     "unternehmensgroesse": {
+      "mitarbeiter": null,
+      "umsatzMioEur": null,
+      "bilanzMioEur": null,
+      "nachweis": ""
+     },
+     "steuerstatusErzeuger": "kleinunternehmer",
+     "uid": "",
+     "schutzbeduerftig": false,
+     "iban": "",
+     "sepaMandat": {
+      "referenz": "",
+      "datum": "",
+      "status": ""
+     },
+     "rechnungsweg": "email",
+     "abrechnungsrhythmus": "",
+     "vertraege": [],
+     "beitrittAm": "",
+     "austrittZum": "",
+     "status": "aufgenommen",
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    },
+    {
+     "id": "EMG-26-000017",
+     "migriertAus": "ET-5",
+     "gemeinschaftId": "EGG-26-000013",
+     "kontoId": null,
+     "mitgliedsnummer": 2,
+     "art": "privat",
+     "person": {
+      "vorname": "",
+      "nachname": "",
+      "firma": "Top 2",
+      "strasse": "",
+      "plz": "",
+      "ort": "",
+      "email": "",
+      "telefon": ""
+     },
+     "unternehmensgroesse": {
+      "mitarbeiter": null,
+      "umsatzMioEur": null,
+      "bilanzMioEur": null,
+      "nachweis": ""
+     },
+     "steuerstatusErzeuger": "kleinunternehmer",
+     "uid": "",
+     "schutzbeduerftig": false,
+     "iban": "",
+     "sepaMandat": {
+      "referenz": "",
+      "datum": "",
+      "status": ""
+     },
+     "rechnungsweg": "email",
+     "abrechnungsrhythmus": "",
+     "vertraege": [],
+     "beitrittAm": "",
+     "austrittZum": "",
+     "status": "abgelehnt",
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    }
+   ],
+   "zaehlpunkte": [
+    {
+     "id": "EZP-26-000004",
+     "migriertAus": "ET-1",
+     "zaehlpunktnummer": "AT0030000000000000000000000054321",
+     "netzbetreiberId": "ENB-OOE",
+     "nbNummer": "003000",
+     "plz": "00000",
+     "richtung": "verbrauch",
+     "anlageId": null,
+     "inhaberKontoId": "U-1",
+     "inhaberName": "Mia Muster",
+     "bezeichnung": "",
+     "smartMeter": "ja",
+     "qhAktiv": true,
+     "nahebereichRef": "UW Süd",
+     "auskunftAm": "",
+     "netzebene": 7,
+     "lieferant": "",
+     "energieabnehmer": "",
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    },
+    {
+     "id": "EZP-26-000007",
+     "migriertAus": "ET-2",
+     "zaehlpunktnummer": "AT0030000000000000000000000077702",
+     "netzbetreiberId": "ENB-OOE",
+     "nbNummer": "003000",
+     "plz": "00000",
+     "richtung": "verbrauch",
+     "anlageId": null,
+     "inhaberKontoId": null,
+     "inhaberName": "Hofladen Demo (Demo)",
+     "bezeichnung": "",
+     "smartMeter": "unbekannt",
+     "qhAktiv": false,
+     "nahebereichRef": "UW Süd",
+     "auskunftAm": "",
+     "netzebene": 7,
+     "lieferant": "",
+     "energieabnehmer": "",
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    },
+    {
+     "id": "EZP-26-000010",
+     "migriertAus": "ET-2",
+     "zaehlpunktnummer": "AT0030000000000000000000000077703",
+     "netzbetreiberId": "ENB-OOE",
+     "nbNummer": "003000",
+     "plz": "00000",
+     "richtung": "erzeugung",
+     "anlageId": "EAN-26-000009",
+     "inhaberKontoId": null,
+     "inhaberName": "Hofladen Demo (Demo)",
+     "bezeichnung": "",
+     "smartMeter": "unbekannt",
+     "qhAktiv": false,
+     "nahebereichRef": "UW Süd",
+     "auskunftAm": "",
+     "netzebene": 7,
+     "lieferant": "",
+     "energieabnehmer": "",
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    },
+    {
+     "id": "EZP-26-000015",
+     "migriertAus": "ET-4",
+     "zaehlpunktnummer": "AT0010000114000000000000000000009",
+     "netzbetreiberId": "ENB-WIEN",
+     "nbNummer": "001000",
+     "plz": "01140",
+     "richtung": "verbrauch",
+     "anlageId": null,
+     "inhaberKontoId": null,
+     "inhaberName": "Top 1",
+     "bezeichnung": "",
+     "smartMeter": "nein",
+     "qhAktiv": false,
+     "nahebereichRef": "",
+     "auskunftAm": "",
+     "netzebene": 7,
+     "lieferant": "",
+     "energieabnehmer": "",
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    }
+   ],
+   "teilnahmen": [
+    {
+     "id": "ETN-26-000005",
+     "migriertAus": "ET-1",
+     "zaehlpunktId": "EZP-26-000004",
+     "gemeinschaftId": "EGG-26-000001",
+     "mitgliedId": "EMG-26-000003",
+     "teilnahmefaktor": 100,
+     "aufteilungsschluesselPct": null,
+     "consentId": "",
+     "gueltigAb": "2026-03-01",
+     "gueltigBis": "",
+     "tfHistorie": [
+      {
+       "gueltigAb": "2026-03-01",
+       "tf": 100,
+       "prozessId": ""
+      }
+     ],
+     "status": "aktiv",
+     "beendetGrund": "",
+     "responsecode": "",
+     "fristBis": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T00:00:00.000Z",
+       "von": "",
+       "nach": "aktiv",
+       "ereignis": "migration",
+       "prozessId": "",
+       "text": "Übernahme aus dem Prototyp (Status „aktiv“)",
+       "vonKonto": null
+      }
+     ],
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    },
+    {
+     "id": "ETN-26-000008",
+     "migriertAus": "ET-2",
+     "zaehlpunktId": "EZP-26-000007",
+     "gemeinschaftId": "EGG-26-000001",
+     "mitgliedId": "EMG-26-000006",
+     "teilnahmefaktor": 100,
+     "aufteilungsschluesselPct": null,
+     "consentId": "",
+     "gueltigAb": "2026-01-01",
+     "gueltigBis": "2026-08-31",
+     "tfHistorie": [
+      {
+       "gueltigAb": "2026-01-01",
+       "tf": 100,
+       "prozessId": ""
+      }
+     ],
+     "status": "beendet",
+     "beendetGrund": "abmeldung",
+     "responsecode": "",
+     "fristBis": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T00:00:00.000Z",
+       "von": "",
+       "nach": "beendet",
+       "ereignis": "migration",
+       "prozessId": "",
+       "text": "Übernahme aus dem Prototyp (Status „beendet“)",
+       "vonKonto": null
+      }
+     ],
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    },
+    {
+     "id": "ETN-26-000011",
+     "migriertAus": "ET-2",
+     "zaehlpunktId": "EZP-26-000010",
+     "gemeinschaftId": "EGG-26-000001",
+     "mitgliedId": "EMG-26-000006",
+     "teilnahmefaktor": 100,
+     "aufteilungsschluesselPct": null,
+     "consentId": "",
+     "gueltigAb": "2026-01-01",
+     "gueltigBis": "2026-08-31",
+     "tfHistorie": [
+      {
+       "gueltigAb": "2026-01-01",
+       "tf": 100,
+       "prozessId": ""
+      }
+     ],
+     "status": "beendet",
+     "beendetGrund": "abmeldung",
+     "responsecode": "",
+     "fristBis": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T00:00:00.000Z",
+       "von": "",
+       "nach": "beendet",
+       "ereignis": "migration",
+       "prozessId": "",
+       "text": "Übernahme aus dem Prototyp (Status „beendet“)",
+       "vonKonto": null
+      }
+     ],
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    },
+    {
+     "id": "ETN-26-000016",
+     "migriertAus": "ET-4",
+     "zaehlpunktId": "EZP-26-000015",
+     "gemeinschaftId": "EGG-26-000013",
+     "mitgliedId": "EMG-26-000014",
+     "teilnahmefaktor": 100,
+     "aufteilungsschluesselPct": 12.5,
+     "consentId": "",
+     "gueltigAb": "",
+     "gueltigBis": "",
+     "tfHistorie": [],
+     "status": "angefragt",
+     "beendetGrund": "",
+     "responsecode": "",
+     "fristBis": "",
+     "verlauf": [
+      {
+       "am": "2026-10-01T00:00:00.000Z",
+       "von": "",
+       "nach": "angefragt",
+       "ereignis": "migration",
+       "prozessId": "",
+       "text": "Übernahme aus dem Prototyp (Status „angemeldet“)",
+       "vonKonto": null
+      }
+     ],
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    }
+   ],
+   "anlagen": [
+    {
+     "id": "EAN-26-000009",
+     "migriertAus": "ET-2",
+     "gemeinschaftId": "EGG-26-000001",
+     "bezeichnung": "PV Hofladen Demo (Demo)",
+     "art": "pv",
+     "engpassleistungKw": null,
+     "kwp": 30,
+     "ausrichtung": null,
+     "neigung": null,
+     "standort": {
+      "lat": null,
+      "lon": null,
+      "adresse": ""
+     },
+     "eigentuemerMitgliedId": "EMG-26-000006",
+     "betreiber": "",
+     "betriebsfuehrung": "",
+     "nutzungsmodell": "ueberschuss",
+     "foerderung": "keine",
+     "inbetriebnahme": "",
+     "hknRegistriert": false,
+     "speicherKwh": null,
+     "speicherLadequelle": "",
+     "iotQuelle": "",
+     "haushalt": false,
+     "status": "aktiv",
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    }
+   ],
+   "tarife": [
+    {
+     "id": "ETF-26-000002",
+     "gemeinschaftId": "EGG-26-000001",
+     "bezeichnung": "Übernahme aus dem Prototyp",
+     "gueltigAb": "2026-01-01",
+     "gueltigBis": "",
+     "beschluss": {
+      "art": "vorstand",
+      "datum": "2026-01-01",
+      "referenz": "Migration Prototyp – Beschluss nachtragen"
+     },
+     "bezugspreisCt": 11,
+     "einspeisepreisCt": 9,
+     "zeitfenster": [],
+     "grundgebuehrMonat": 1.5,
+     "zaehlpunktgebuehrMonat": 0,
+     "einmalgebuehrBeitritt": 0,
+     "mitgliedsbeitragJahr": 0,
+     "sozialtarif": {
+      "bezugspreisCt": null,
+      "kontingentPct": null
+     },
+     "individuell": [],
+     "status": "aktiv",
+     "erstelltAm": "2026-10-01T00:00:00.000Z",
+     "erstelltVon": null,
+     "geaendertAm": "2026-10-01T00:00:00.000Z",
+     "geaendertVon": null
+    }
+   ],
+   "warnungen": [
+    "Alt-EEG (Demo): Gemeinschafts-ID „AT00300000RC100000000000000000001 (Demo)“ entspricht nicht dem Format (Aufbau EEG: AT + Netzbetreibernummer (6) + PLZ (5, auch 00000) + RC + 6 Ziffern + 12 Zeichen.) – in die Beschreibung übernommen.",
+    "Alt-EEG (Demo): „Hofladen Demo (Demo)“ als KMU übernommen – Mitgliedsart und Steuerstatus prüfen.",
+    "Alt-EEG (Demo): Zählpunkt „falsch“ ungültig (Die Zählpunktnummer hat 33 Zeichen (derzeit 6).) – übersprungen.",
+    "Alt-EEG (Demo): Consent-IDs fehlen im Prototyp – nach der Übernahme EC_PODLIST anfordern und abgleichen.",
+    "GEA alt: Teilnahme ET-5 ohne Zählpunkt – nur Mitglied übernommen."
+   ],
+   "uebersprungen": [
+    {
+     "id": "EGM-2",
+     "name": "DE (Demo)",
+     "grund": "Land DE: bleibt im Prototyp (international, vereinfacht)."
+    }
+   ]
+  }
+ }
+]

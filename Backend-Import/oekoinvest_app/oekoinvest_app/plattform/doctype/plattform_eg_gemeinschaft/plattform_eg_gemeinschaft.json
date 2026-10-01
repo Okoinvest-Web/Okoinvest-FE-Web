@@ -1,0 +1,398 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 14:00:00.000000",
+ "description": "Energiegemeinschaft (EEG, BEG, GEA, P2P, Eigenversorgung) nach ElWG §§ 65–72 – Stammdaten, Nahebereich, Kennungen, Organisator.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "titel",
+  "kurzname",
+  "modell",
+  "zonelevel",
+  "nahebereich_ref",
+  "rechtsform",
+  "zvr_zahl",
+  "firmenbuchnummer",
+  "sb_sitz",
+  "sitz_strasse",
+  "sitz_plz",
+  "sitz_ort",
+  "email",
+  "telefon",
+  "sb_steuer",
+  "uid",
+  "steuernummer",
+  "finanzamt",
+  "ust_status",
+  "ust_option_seit",
+  "iban",
+  "bic",
+  "creditor_id",
+  "sb_netz",
+  "netzbetreiber",
+  "marktpartner_id",
+  "gemeinschafts_id",
+  "verteilmodell",
+  "eda_anbindung",
+  "vorgaenger",
+  "nachfolger",
+  "sb_dl",
+  "organisator_organisation",
+  "organisator_angezeigt_am",
+  "dienstleistung_aktiv",
+  "dienstleistung_paket",
+  "dienstleistung_seit",
+  "avv_am",
+  "abrechnungsrhythmus",
+  "statuten_version",
+  "betreibervertrag_datum",
+  "beschreibung",
+  "status",
+  "migriert_aus",
+  "seed_schluessel",
+  "gruendungsauftrag_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "titel",
+   "fieldtype": "Data",
+   "label": "Name",
+   "reqd": 1,
+   "in_list_view": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "kurzname",
+   "fieldtype": "Data",
+   "label": "Kurzname"
+  },
+  {
+   "fieldname": "modell",
+   "fieldtype": "Select",
+   "label": "Modell",
+   "options": "eeg\nbeg\ngea\np2p\neigenversorgung",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "zonelevel",
+   "fieldtype": "Int",
+   "label": "Zonelevel (Nahebereich)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "nahebereich_ref",
+   "fieldtype": "Data",
+   "label": "Nahebereichs-Referenz (Trafo/UW/Anschlussobjekt)"
+  },
+  {
+   "fieldname": "rechtsform",
+   "fieldtype": "Select",
+   "label": "Rechtsform",
+   "options": "verein\negen\ngmbh\nog_kg\nkeine"
+  },
+  {
+   "fieldname": "zvr_zahl",
+   "fieldtype": "Data",
+   "label": "ZVR-Zahl"
+  },
+  {
+   "fieldname": "firmenbuchnummer",
+   "fieldtype": "Data",
+   "label": "Firmenbuchnummer"
+  },
+  {
+   "fieldname": "sb_sitz",
+   "fieldtype": "Section Break",
+   "label": "Sitz und Kontakt"
+  },
+  {
+   "fieldname": "sitz_strasse",
+   "fieldtype": "Data",
+   "label": "Straße"
+  },
+  {
+   "fieldname": "sitz_plz",
+   "fieldtype": "Data",
+   "label": "PLZ"
+  },
+  {
+   "fieldname": "sitz_ort",
+   "fieldtype": "Data",
+   "label": "Ort"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "E-Mail"
+  },
+  {
+   "fieldname": "telefon",
+   "fieldtype": "Data",
+   "label": "Telefon"
+  },
+  {
+   "fieldname": "sb_steuer",
+   "fieldtype": "Section Break",
+   "label": "Steuer und Bank"
+  },
+  {
+   "fieldname": "uid",
+   "fieldtype": "Data",
+   "label": "UID"
+  },
+  {
+   "fieldname": "steuernummer",
+   "fieldtype": "Data",
+   "label": "Steuernummer"
+  },
+  {
+   "fieldname": "finanzamt",
+   "fieldtype": "Data",
+   "label": "Finanzamt"
+  },
+  {
+   "fieldname": "ust_status",
+   "fieldtype": "Select",
+   "label": "USt-Status",
+   "options": "kleinunternehmer\nregelbesteuert",
+   "default": "kleinunternehmer"
+  },
+  {
+   "fieldname": "ust_option_seit",
+   "fieldtype": "Date",
+   "label": "Option U 12 seit"
+  },
+  {
+   "fieldname": "iban",
+   "fieldtype": "Data",
+   "label": "IBAN"
+  },
+  {
+   "fieldname": "bic",
+   "fieldtype": "Data",
+   "label": "BIC"
+  },
+  {
+   "fieldname": "creditor_id",
+   "fieldtype": "Data",
+   "label": "SEPA-Gläubiger-ID"
+  },
+  {
+   "fieldname": "sb_netz",
+   "fieldtype": "Section Break",
+   "label": "Netz und EDA"
+  },
+  {
+   "fieldname": "netzbetreiber",
+   "fieldtype": "Table",
+   "label": "Netzbetreiber",
+   "options": "Plattform EG Gemeinschaft Netzbetreiber"
+  },
+  {
+   "fieldname": "marktpartner_id",
+   "fieldtype": "Data",
+   "label": "Marktpartner-ID",
+   "search_index": 1
+  },
+  {
+   "fieldname": "gemeinschafts_id",
+   "fieldtype": "Data",
+   "label": "Gemeinschafts-ID",
+   "unique": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "verteilmodell",
+   "fieldtype": "Select",
+   "label": "Verteilmodell",
+   "options": "dynamisch\nstatisch",
+   "default": "dynamisch"
+  },
+  {
+   "fieldname": "eda_anbindung",
+   "fieldtype": "Select",
+   "label": "EDA-Anbindung",
+   "options": "anwenderportal\nemail\nkep",
+   "default": "anwenderportal"
+  },
+  {
+   "fieldname": "vorgaenger",
+   "fieldtype": "Link",
+   "label": "Vorgänger (Umwandlung)",
+   "options": "Plattform EG Gemeinschaft"
+  },
+  {
+   "fieldname": "nachfolger",
+   "fieldtype": "Link",
+   "label": "Nachfolger (Umwandlung)",
+   "options": "Plattform EG Gemeinschaft"
+  },
+  {
+   "fieldname": "sb_dl",
+   "fieldtype": "Section Break",
+   "label": "Organisator und Dienstleistung"
+  },
+  {
+   "fieldname": "organisator_organisation",
+   "fieldtype": "Link",
+   "label": "Organisator (Organisation)",
+   "options": "Plattform Organisation"
+  },
+  {
+   "fieldname": "organisator_angezeigt_am",
+   "fieldtype": "Date",
+   "label": "Organisator angezeigt am"
+  },
+  {
+   "fieldname": "dienstleistung_aktiv",
+   "fieldtype": "Check",
+   "label": "Dienstleistungs-/AV-Vertrag aktiv",
+   "default": "0"
+  },
+  {
+   "fieldname": "dienstleistung_paket",
+   "fieldtype": "Data",
+   "label": "Paket"
+  },
+  {
+   "fieldname": "dienstleistung_seit",
+   "fieldtype": "Date",
+   "label": "Dienstleistung seit"
+  },
+  {
+   "fieldname": "avv_am",
+   "fieldtype": "Date",
+   "label": "AV-Vertrag am"
+  },
+  {
+   "fieldname": "abrechnungsrhythmus",
+   "fieldtype": "Select",
+   "label": "Abrechnungsrhythmus",
+   "options": "monat\nquartal\njahr",
+   "default": "monat"
+  },
+  {
+   "fieldname": "statuten_version",
+   "fieldtype": "Data",
+   "label": "Statuten-Version"
+  },
+  {
+   "fieldname": "betreibervertrag_datum",
+   "fieldtype": "Date",
+   "label": "Betreibervertrag vom"
+  },
+  {
+   "fieldname": "beschreibung",
+   "fieldtype": "Small Text",
+   "label": "Beschreibung"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "interesse\nmachbarkeit\nin_gruendung\nrechtsperson\nmarktpartner\nvertrag_nb\neda_bereit\naktiv\naufnahmestopp\nin_aufloesung\naufgeloest\numgewandelt",
+   "default": "interesse",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "migriert_aus",
+   "fieldtype": "Data",
+   "label": "Migriert aus (Prototyp)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "seed_schluessel",
+   "fieldtype": "Data",
+   "label": "Demo-Schlüssel",
+   "read_only": 1
+  },
+  {
+   "fieldname": "gruendungsauftrag_id",
+   "fieldtype": "Data",
+   "label": "Gründungsauftrag (WP5)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 03:20:23.735155",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform EG Gemeinschaft",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Buchhaltung",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Leser",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Energie",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "naming_rule": "By script",
+ "title_field": "titel",
+ "show_title_field_in_link": 1,
+ "search_fields": "titel"
+}

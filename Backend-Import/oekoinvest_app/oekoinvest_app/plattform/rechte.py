@@ -105,6 +105,17 @@ BEREICHE["genossenschaft"] = "Genossenschaft & Energiegemeinschaften"
 BEREICHE["kommunen"] = "Kommunen & Gemeinden"
 _M["genossenschaft"] = [2, 1, 1, 2, 1, 0, 1, 0, 2]
 _M["kommunen"] = [2, 2, 1, 1, 1, 0, 0, 2, 0]
+# Energiegemeinschaften ElWG (WP1): Bereich „eg“ und Spalte „eg“ (Betriebsführung/Organisator), wie rechte.js
+BEREICHE["eg"] = "Energiegemeinschaften (ElWG)"
+_M["eg"] = [2, 0, 0, 1, 1, 0, 1, 0, 1]
+_EG = {"cockpit": 1, "vorgaenge": 1, "aufgaben": 2, "crm": 2, "vorlagen": 1, "berichte": 1, "nutzer": 1, "signatur": 2, "kalender": 2, "support": 1, "wissen": 1, "genossenschaft": 1, "kommunen": 1, "eg": 2}
+if "eg" not in BACKOFFICE_ROLLEN:
+	BACKOFFICE_ROLLEN.append("eg")
+for _b, _z in _M.items():
+	while len(_z) < len(BACKOFFICE_ROLLEN) - 1:
+		_z.append(0)
+	if len(_z) < len(BACKOFFICE_ROLLEN):
+		_z.append(_EG.get(_b, 0))
 RECHTE_MATRIX = {b: dict(zip(BACKOFFICE_ROLLEN, s)) for b, s in _M.items()}
 STUFE_LABEL = ["–", "lesen", "schreiben"]
 BEREICH_FUER_ART = {"vorgang": "vorgaenge", "flaeche": "flaechen", "projekt": "projekte", "interesse": "interessen", "provision": "provisionen"}

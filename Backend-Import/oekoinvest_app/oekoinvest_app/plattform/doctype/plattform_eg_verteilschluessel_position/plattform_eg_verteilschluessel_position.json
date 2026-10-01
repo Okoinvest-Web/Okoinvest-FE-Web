@@ -1,0 +1,45 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 14:00:00.000000",
+ "description": "Position eines Verteilschlüssels (Kindtabelle).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "teilnahme",
+  "pct"
+ ],
+ "fields": [
+  {
+   "fieldname": "teilnahme",
+   "fieldtype": "Link",
+   "label": "Teilnahme",
+   "options": "Plattform EG ZP Teilnahme",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "pct",
+   "fieldtype": "Float",
+   "label": "Anteil (%)",
+   "precision": "1",
+   "reqd": 1,
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 14:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform EG Verteilschluessel Position",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "permissions": [],
+ "istable": 1,
+ "editable_grid": 1
+}

@@ -1,0 +1,124 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-01 16:00:00.000000",
+ "description": "WP5 Schritt eines Gründungs- bzw. Wechselauftrags (Kindtabelle): Vorlage, Zuständigkeit, Status, Datum, Wert, Nachweise.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "schluessel",
+  "reihenfolge",
+  "label",
+  "abschnitt",
+  "phase",
+  "zustaendig",
+  "pflicht",
+  "status",
+  "gestartet_am",
+  "datum",
+  "wert",
+  "notiz",
+  "frist_manuell",
+  "nachweise",
+  "von_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "schluessel",
+   "fieldtype": "Data",
+   "label": "Schlüssel",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "reihenfolge",
+   "fieldtype": "Int",
+   "label": "Reihenfolge"
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "label": "Schritt",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "abschnitt",
+   "fieldtype": "Data",
+   "label": "Abschnitt"
+  },
+  {
+   "fieldname": "phase",
+   "fieldtype": "Data",
+   "label": "Phase"
+  },
+  {
+   "fieldname": "zustaendig",
+   "fieldtype": "Data",
+   "label": "Zuständig"
+  },
+  {
+   "fieldname": "pflicht",
+   "fieldtype": "Check",
+   "label": "Pflicht"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "offen\nin_arbeit\nwartet_extern\nerledigt\nentfaellt",
+   "default": "offen",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "gestartet_am",
+   "fieldtype": "Date",
+   "label": "Begonnen am"
+  },
+  {
+   "fieldname": "datum",
+   "fieldtype": "Date",
+   "label": "Erledigt am",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "wert",
+   "fieldtype": "Data",
+   "label": "Wert"
+  },
+  {
+   "fieldname": "notiz",
+   "fieldtype": "Small Text",
+   "label": "Notiz"
+  },
+  {
+   "fieldname": "frist_manuell",
+   "fieldtype": "Date",
+   "label": "Frist (manuell)"
+  },
+  {
+   "fieldname": "nachweise",
+   "fieldtype": "JSON",
+   "label": "Nachweise"
+  },
+  {
+   "fieldname": "von_id",
+   "fieldtype": "Link",
+   "label": "Bearbeitet von",
+   "options": "Plattform Konto"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-01 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform EG Gruendungsschritt",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "istable": 1,
+ "editable_grid": 0,
+ "permissions": []
+}

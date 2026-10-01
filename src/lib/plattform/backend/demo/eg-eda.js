@@ -829,9 +829,13 @@ export async function edaSimulator(n, gemeinschaftId, { simulatorAktion = "statu
     let nachrichten = 0;
     let luecken = 0;
     let weitergeleitet = 0;
+    let bereits = 0; // schon empfangen (Simulator am selben Tag erneut aufgerufen)
     const nb = nbFuer(db, g, null);
     for (const { zp } of teilnahmenMitZp(db, g.id).filter(({ t }) => t.status === "aktiv").slice(0, 80)) {
-      if ((empfangen[zp.zaehlpunktnummer] || []).includes(tag)) continue;
+      if ((empfangen[zp.zaehlpunktnummer] || []).includes(tag)) {
+        bereits++;
+        continue;
+      }
       if (!simulatorLiefertTag(zp.zaehlpunktnummer, tag, seed)) {
         luecken++;
         continue;
@@ -843,7 +847,7 @@ export async function edaSimulator(n, gemeinschaftId, { simulatorAktion = "statu
       if (r.ok) nachrichten++;
       if (r.weitergeleitet) weitergeleitet++;
     }
-    return { tag, nachrichten, luecken, weitergeleitet };
+    return { tag, nachrichten, luecken, weitergeleitet, bereits };
   }
   return { ausstehend: X(db).simulator.ausstehend.filter((a) => a.gemeinschaftId === g.id).map((a) => ({ code: a.code, prozessId: a.prozessId, faelligAm: new Date(a.faelligAm).toISOString() })) };
 }

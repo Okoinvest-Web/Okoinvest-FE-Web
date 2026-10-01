@@ -170,6 +170,13 @@ fall("W", "umstellungsplan", { stichtag: "2026-10-15", heute: H });
 fall("W", "umstellungsplan", { stichtag: "", heute: H });
 fall("W", "kontrollVergleich", [{ schluessel: "1", name: "A", kwh: 100, betragEur: 11.5 }, { schluessel: "2", kwh: 50, betragEur: 5.75 }, { schluessel: "3", kwh: 10, betragEur: 1 }], [{ schluessel: "1", kwh: 100.2, betragEur: 11.52 }, { schluessel: "2", kwh: 60, betragEur: 6.9 }, { schluessel: "4", kwh: 5, betragEur: 0.5 }], {});
 fall("W", "kontrollVergleich", [{ schluessel: "1", kwh: 10, betragEur: 1 }], [{ schluessel: "1", kwh: 10, betragEur: 1.2 }], { toleranzEur: 0.1 });
+// Integration WP4 → WP5: Probe-Periode und Belege der Probe-Abrechnung als Kontrollwerte
+fall("W", "probePeriode", { von: "2026-09-01", bis: "2026-09-30" });
+fall("W", "probePeriode", { von: "2026-07-01", bis: "2026-09-30" });
+fall("W", "probePeriode", { von: "2026-01-01", bis: "2026-09-30" });
+fall("W", "probePeriode", {});
+fall("W", "probeKontrollwerte", [{ mitgliedsnummer: 1, typ: "rechnung", empfaenger: { name: "A" }, energie: { eigendeckung: 120.5 }, summen: { netto: 13.86 } }, { mitgliedsnummer: 1, typ: "gutschrift", empfaenger: { name: "A" }, energie: { eingebracht: 300 }, summen: { netto: 24 } }, { mitgliedsnummer: 2, typ: "rechnung", summen: { netto: 5 } }, { typ: "rechnung" }]);
+fall("W", "probeKontrollwerte", null);
 fall("W", "elwgAnpassung", { ...gVoll, modell: "beg", kennzahlen: { lieferantenpflichten: true }, organisatorAngezeigtAm: "" }, { mitglieder: [{ status: "aktiv", abrechnungsrhythmus: "" }, { status: "ausgeschieden" }], dokumente: [{ vorlage: "datenschutz", stand: "2026-10-01" }, { vorlage: "agb", stand: "2025-01-01" }], stichtag: "2027-01-01" });
 fall("W", "elwgAnpassung", { modell: "eeg", rechtsform: "verein", statutenVersion: "Statuten ElWG 2026", zonelevel: 3, nahebereichRef: "TS", kennzahlen: {} }, { mitglieder: [{ status: "aktiv", art: "grossunternehmen" }] });
 fall("W", "wechselNachricht", { name: "EEG X", stichtag: "2026-12-01", altdienstleister: "EEG Faktura" });

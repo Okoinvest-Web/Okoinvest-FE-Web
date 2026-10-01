@@ -7,8 +7,10 @@ import { Badge, Hinweis, Karte, Kennzahl, Leer, SeitenKopf, Tabelle, zelle } fro
 import EgReiter from "@/components/Portal/EG/Stamm/EgReiter";
 import { Ampel, EdaUnterNav, Zp, zeit } from "@/components/Portal/EG/Eda/EdaTeile";
 import { EdaMassenaktionen, EdaTeilnahmen } from "@/components/Portal/EG/Eda/EdaAktionen";
+import TfWuensche from "@/components/Portal/EG/Mitglied/TfWuensche";
 import { portalNutzer, laden } from "@/lib/plattform/server/seite";
 import { egBackend } from "@/lib/plattform/backend/eg";
+import { EG_TEAMROLLEN } from "@/lib/plattform/eg/modell";
 
 export const metadata = { title: "EDA-Marktkommunikation" };
 
@@ -23,11 +25,12 @@ export default async function EdaSeite({ params }) {
   const fristen = d.prozesse.filter((p) => ["rot", "gelb"].includes(p.ampel?.ampel) && p.prozesscode !== "CR_MSG").sort((a, b) => (a.ampel.ampel === b.ampel.ampel ? (a.ampel.tageRest ?? 999) - (b.ampel.tageRest ?? 999) : a.ampel.ampel === "rot" ? -1 : 1));
   const liste = d.prozesse.filter((p) => p.prozesscode !== "CR_MSG").slice(0, 60);
   const empfang = d.prozesse.filter((p) => p.prozesscode === "CR_MSG").slice(0, 3);
+  const tfw = await egBackend().ptTfWuensche(n, g.id).catch(() => null);
   return (
     <div className="space-y-6">
       <SeitenKopf eyebrow={`EDA · Marktpartner ${g.marktpartnerId || "–"} · ${g.edaAnbindung === "kep" ? "KEP" : g.edaAnbindung === "email" ? "E-Mail-Anbindung" : "EDA-Anwenderportal"}`} titel={g.name} text={g.gemeinschaftsId ? `Gemeinschafts-ID ${g.gemeinschaftsId} · Verteilmodell ${g.verteilmodell}` : "Gemeinschafts-ID noch nicht vergeben"}>
         <div className="mt-3 flex flex-wrap gap-2">
-          {d.rollen.map((r) => <Badge key={r} ton="info">{r}</Badge>)}
+          {d.rollen.map((r) => <Badge key={r} ton="info">{EG_TEAMROLLEN[r]?.label || r}</Badge>)}
           {d.simulator?.aktiv && <Badge ton="warn">Simulator-Netzbetreiber</Badge>}
         </div>
       </SeitenKopf>
@@ -67,6 +70,12 @@ export default async function EdaSeite({ params }) {
       <Karte titel="Massenaktionen" untertitel="Abgelehnte und abgelaufene Anmeldungen neu starten, offene Zustimmungen mit Anleitung erinnern, Bestand abgleichen">
         <EdaMassenaktionen url={url} darf={darf} simulator={d.simulator} kennzahlen={k} />
       </Karte>
+
+      {tfw && tfw.wuensche.length > 0 && (
+        <Karte titel={`Wünsche zum Teilnahmefaktor (${tfw.wuensche.length})`} untertitel="Von Mitgliedern im Portal gestellt – als TF-Änderung (EC_PRTFACT_CHG) melden; eine Änderung pro Tag, Summe höchstens 100 %">
+          <TfWuensche gemeinschaftId={g.id} wuensche={tfw.wuensche} darfAusloesen={tfw.darfAusloesen} ab={tfw.ab} />
+        </Karte>
+      )}
 
       <Karte titel="Teilnahmen" untertitel="EDA-Prozesse je Zählpunkt auslösen – Status ändert sich nur durch die Antworten des Netzbetreibers">
         <EdaTeilnahmen teilnahmen={d.teilnahmen} url={url} darf={darf} vierAugenAb={d.vierAugenAb} />

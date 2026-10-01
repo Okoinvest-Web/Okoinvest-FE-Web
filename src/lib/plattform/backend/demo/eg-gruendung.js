@@ -23,7 +23,7 @@ import {
   AUFTRAG_UEBERGAENGE, GR_AKTIV, GR_PAKETE, GR_STATUS, SCHRITT_STATUS, angebotBereinigen, auftraegeKennzahlen, auftragBereinigen, auftragFortschritt, auftragHinweise, auftragStatusAusSchritten,
   auftragUebergang, edaBereitPruefen, formularHilfe, rechtsformEmpfehlung, schrittAktion, schrittDefinition, schritteAnreichern, schritteErzeugen, schrittWirkung, statusPfad, gemeinschaftAusAuftrag,
 } from "../../eg/gruendung";
-import { IMPORT_FELDER, ANBIETER_PROFILE, anbieterErkennen, elwgAnpassung, importPlan, kontrollVergleich, plausibilitaet, tabelleLesen, umstellungsplan, wechselNachricht, zeilenAbbilden, zuordnungBereinigen, zuordnungVorschlagen } from "../../eg/wechsel";
+import { IMPORT_FELDER, ANBIETER_PROFILE, anbieterErkennen, elwgAnpassung, importPlan, kontrollVergleich, plausibilitaet, probeKontrollwerte, probePeriode, tabelleLesen, umstellungsplan, wechselNachricht, zeilenAbbilden, zuordnungBereinigen, zuordnungVorschlagen } from "../../eg/wechsel";
 import { BEITRAG_EINHEBUNG, aufloesungCheckliste, beitraegeVorschreiben, beitragsUebersicht, beschlussBereinigen, beschluesseAusVersammlung, gvKonfig, gvPflicht, gvTagesordnungVorlage, organCheck } from "../../eg/verein";
 import { statutenEingaben, statutenPruefen } from "../../eg/statuten";
 import { VORLAGEN, dokumentDaten, vorlageRendern, vorlagenFuer } from "../../eg/vertraege";
@@ -351,11 +351,11 @@ export async function grAuftragAktion(n, id, { aktion = "", ...d } = {}) {
     let neu = [];
     let wp4;
     try {
-      const p = await abrechnung.abPeriodeAnlegen(n, a0.gemeinschaftId, { von, bis, art: "probe" });
+      const p = await abrechnung.abPeriodeAnlegen(n, a0.gemeinschaftId, probePeriode({ von, bis }));
       const pid = p?.id || p?.periode?.id;
       const v = await abrechnung.abPeriodeAktion(n, pid, { aktion: "vorschau" });
-      const pos = v?.vorschau?.positionen || v?.positionen || v?.belege || [];
-      neu = liste(pos.map((x) => ({ schluessel: x.mitgliedsnummer || x.zaehlpunkt || x.mitgliedId, name: x.name || x.mitgliedName, kwh: x.kwh ?? x.mengeKwh ?? x.eigendeckungKwh, betragEur: x.betragEur ?? x.bruttoEur ?? x.summeEur })));
+      // WP4 liefert die Vorschau als { periode: { vorschau: { belege[] } } } – Belege → Kontrollzeilen (eg/wechsel.js)
+      neu = liste(probeKontrollwerte(v?.periode?.vorschau?.belege || v?.vorschau?.belege || []));
       wp4 = { ok: true, text: `Probe-Periode ${pid || ""} angelegt (${datumDe(von)} bis ${datumDe(bis)}).` };
     } catch (e) {
       wp4 = { ok: false, text: e?.status === 501 ? "Die Probe-Abrechnung (WP4) ist noch nicht verfügbar – Vergleich mit den übergebenen Werten." : `Probe-Abrechnung nicht möglich: ${e.message}` };

@@ -17062,6 +17062,145 @@
    }
   },
   {
+   "id": "W.probePeriode#1",
+   "modul": "W",
+   "fn": "probePeriode",
+   "args": [
+    {
+     "von": "2026-09-01",
+     "bis": "2026-09-30"
+    }
+   ],
+   "erwartet": {
+    "von": "2026-09-01",
+    "bis": "2026-09-30",
+    "art": "monat",
+    "probe": true
+   }
+  },
+  {
+   "id": "W.probePeriode#2",
+   "modul": "W",
+   "fn": "probePeriode",
+   "args": [
+    {
+     "von": "2026-07-01",
+     "bis": "2026-09-30"
+    }
+   ],
+   "erwartet": {
+    "von": "2026-07-01",
+    "bis": "2026-09-30",
+    "art": "quartal",
+    "probe": true
+   }
+  },
+  {
+   "id": "W.probePeriode#3",
+   "modul": "W",
+   "fn": "probePeriode",
+   "args": [
+    {
+     "von": "2026-01-01",
+     "bis": "2026-09-30"
+    }
+   ],
+   "erwartet": {
+    "von": "2026-01-01",
+    "bis": "2026-09-30",
+    "art": "jahr",
+    "probe": true
+   }
+  },
+  {
+   "id": "W.probePeriode#4",
+   "modul": "W",
+   "fn": "probePeriode",
+   "args": [
+    {}
+   ],
+   "erwartet": {
+    "von": "",
+    "bis": "",
+    "art": "monat",
+    "probe": true
+   }
+  },
+  {
+   "id": "W.probeKontrollwerte#1",
+   "modul": "W",
+   "fn": "probeKontrollwerte",
+   "args": [
+    [
+     {
+      "mitgliedsnummer": 1,
+      "typ": "rechnung",
+      "empfaenger": {
+       "name": "A"
+      },
+      "energie": {
+       "eigendeckung": 120.5
+      },
+      "summen": {
+       "netto": 13.86
+      }
+     },
+     {
+      "mitgliedsnummer": 1,
+      "typ": "gutschrift",
+      "empfaenger": {
+       "name": "A"
+      },
+      "energie": {
+       "eingebracht": 300
+      },
+      "summen": {
+       "netto": 24
+      }
+     },
+     {
+      "mitgliedsnummer": 2,
+      "typ": "rechnung",
+      "summen": {
+       "netto": 5
+      }
+     },
+     {
+      "typ": "rechnung"
+     }
+    ]
+   ],
+   "erwartet": [
+    {
+     "schluessel": "1",
+     "name": "A",
+     "kwh": 120.5,
+     "betragEur": 13.86
+    },
+    {
+     "schluessel": "1-G",
+     "name": "A",
+     "kwh": 300,
+     "betragEur": 24
+    },
+    {
+     "schluessel": "2",
+     "name": "",
+     "kwh": 0,
+     "betragEur": 5
+    }
+   ]
+  },
+  {
+   "id": "W.probeKontrollwerte#2",
+   "modul": "W",
+   "fn": "probeKontrollwerte",
+   "args": [
+    null
+   ],
+   "erwartet": []
+  },
+  {
    "id": "W.elwgAnpassung#1",
    "modul": "W",
    "fn": "elwgAnpassung",

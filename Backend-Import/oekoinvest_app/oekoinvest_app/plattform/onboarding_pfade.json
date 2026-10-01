@@ -38,6 +38,9 @@
     },
     "projektleitung": {
      "label": "Projektleitung"
+    },
+    "eg": {
+     "label": "Energiegemeinschaften"
     }
    },
    "schritte": [
@@ -499,6 +502,74 @@
      "bestaetigenText": "Kennengelernt"
     },
     {
+     "id": "eg",
+     "titel": "Energiegemeinschaften betreuen",
+     "kurz": "Energiegemeinschaften betreuen",
+     "art": "info",
+     "text": "Je Gemeinschaft: Stammdaten, Mitglieder und Zählpunkte, Anlagen und Tarife; Gründungs- und Wechselaufträge mit Fahrplan; Netzbetreiber und Netzentgelte. Organisator-Rechte gelten nur mit aktivem Dienstleistungsvertrag (AVV).",
+     "punkte": [
+      "Mitglieder- und Zählpunktdaten sind personenbezogen – Einzelwerte (Viertelstunden) nur zweckgebunden ansehen, jede Einsicht wird protokolliert.",
+      "Teilnahmefaktor: ganzzahlig 1–100 %, Summe je Zählpunkt höchstens 100 %, bis zu 5 Gemeinschaften."
+     ],
+     "links": [
+      {
+       "href": "/portal/admin/eg",
+       "label": "Gemeinschaften"
+      },
+      {
+       "href": "/portal/admin/eg/gruendung",
+       "label": "Gründungsaufträge"
+      },
+      {
+       "href": "/portal/admin/eg/netzbetreiber",
+       "label": "Netzbetreiber & Netzentgelte"
+      }
+     ],
+     "nurFuer": [
+      "eg"
+     ],
+     "pflicht": [
+      "eg"
+     ],
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kennengelernt"
+    },
+    {
+     "id": "eg_eda",
+     "titel": "EDA, Energiedaten und Abrechnung",
+     "kurz": "EDA, Energiedaten und Abrechnung",
+     "art": "info",
+     "text": "Anmeldungen, TF-Änderungen (auch Wünsche der Mitglieder) und Abmeldungen laufen über die EDA-Seite der Gemeinschaft mit Fristen-Ampel; Massenvorgänge gibt der Vorstand im Vier-Augen-Prinzip frei. Energiedaten mit Qualitäts-Ampel, danach Abrechnung mit zwei Freigaben (Kassier, Vorstand).",
+     "punkte": [
+      "Zustimmung im Netzbetreiber-Portal erteilt das Mitglied selbst – Erinnerungen mit Anleitung je Netzbetreiber versenden.",
+      "Abrechnung erst mit L1/L2-Werten (frühestens nach dem Clearing); Simulation vor jeder Gründung bzw. Erweiterung."
+     ],
+     "links": [
+      {
+       "href": "/portal/admin/eg",
+       "label": "EDA je Gemeinschaft"
+      },
+      {
+       "href": "/portal/admin/eg/simulation",
+       "label": "Simulation"
+      }
+     ],
+     "nurFuer": [
+      "eg"
+     ],
+     "pflicht": [
+      "eg"
+     ],
+     "kriterium": {
+      "merker": true
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Kennengelernt"
+    },
+    {
      "id": "ueberblick",
      "titel": "Überblick verschaffen",
      "kurz": "Überblick verschaffen",
@@ -549,7 +620,8 @@
       "compliance",
       "energie",
       "lesen",
-      "projektleitung"
+      "projektleitung",
+      "eg"
      ],
      "pflicht": false,
      "kriterium": {
@@ -579,7 +651,8 @@
       "betrieb",
       "compliance",
       "energie",
-      "projektleitung"
+      "projektleitung",
+      "eg"
      ],
      "kriterium": {
       "fakt": "aufgabenErledigt"
@@ -592,7 +665,8 @@
       "betrieb",
       "compliance",
       "energie",
-      "projektleitung"
+      "projektleitung",
+      "eg"
      ]
     }
    ]

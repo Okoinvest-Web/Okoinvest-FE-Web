@@ -25,12 +25,13 @@ import { MESS_GROESSEN, TEILNAHME_ZAEHLT } from "../../eg/modell";
 import { egStufe } from "../../eg/rechte";
 import { netzentgeltRegel } from "../../eg/netzentgelt";
 import { preisFuer, tarifAm } from "../../eg/tarif";
-import { QH_MS, blockBereinigen, blockKennzahlen, bloeckeZusammenfuehren, csvParsen, csvZuBloecken, lokalZeit, monatPlus, monatVon, payloadZerlegen, plusTag, rund, tageDesMonats, tageZwischen, werteJeTag } from "../../eg/messwerte";
+import { QH_MS, blockBereinigen, hash32, blockKennzahlen, bloeckeZusammenfuehren, csvParsen, csvZuBloecken, lokalZeit, monatPlus, monatVon, payloadZerlegen, plusTag, rund, tageDesMonats, tageZwischen, werteJeTag } from "../../eg/messwerte";
 import { AMPEL, QUALITAET_REGELN, gemeinschaftPruefen, lieferstatistik, qualitaetsZusammenfassung, reklamationsFaelle, reklamationsText, tagesAmpel } from "../../eg/qualitaet";
 import { nbAbgleich, sozialquote } from "../../eg/verteilung";
 import { SIM_STANDARD, apReduziert, lastprofil, pvJahr, simulationRechnen, simulationSaat, spezErtragStandard } from "../../eg/simulation";
 import { prognose } from "../../eg/prognose";
-import { repraesentativeTage, tfOptimieren } from "../../eg/optimierung";
+import { beitragAddieren, beitragLeer } from "../../eg/periodenbeitrag";
+import { optimierungsHinweise, optimierungsKandidat, optimierungsTeilnahmen, repraesentativeTage, reihenSumme, tfOptimieren } from "../../eg/optimierung";
 import { MitgliedFehler } from "../../mitglied/basis";
 import { intern } from "../demo";
 import { jetzt, neueId } from "./hilfen";
@@ -343,44 +344,48 @@ function einarbeiten(db, en, gid, neu, am) {
   }
   if (en.bloecke.length > 4000) en.bloecke = en.bloecke.slice(-4000);
   en.stand = (en.stand || 0) + 1;
+  en.standJe = { ...(en.standJe || {}), [gid]: ((en.standJe || {})[gid] || 0) + 1 };
+  periodenCacheVerwerfen(gid, new Set([...tage].map((t) => monatVon(t))));
   return { bloecke: neu.length, tage: tage.size, geaendertWerte: geaendert, konflikte, hinweis: konflikte ? `${konflikte} L3-Werte nicht übernommen (vorhandene L1/L2-Werte bleiben).` : "" };
 }
 
 // ================================================================ Periodenwerte (Eingang WP4)
 
-/**
- * Periodensummen je Zählpunkt und Größe (Netzbetreiber-Werte, ElWG § 71 Abs. 1 und 4) – gerundet wird auf Belegebene (WP4).
- * Zusätzlich je Zeitfenster des gültigen Tarifs (TOU) und je Tarif-Version, Vollständigkeit und L3-Anteil.
- */
-export async function enPeriodenwerte(n, gemeinschaftId, von, bis) {
-  const db = await lesenBereit();
-  const vonT = pruefTag(von, "„von“");
-  const bisT = pruefTag(bis, "„bis“");
-  if (bisT < vonT) throw new PlattformFehler(422, "„bis“ liegt vor „von“.");
-  if (tageZwischen(vonT, bisT) > 400) throw new PlattformFehler(422, "Höchstens 400 Tage je Periode.");
-  let g;
-  if (n?.system) {
-    g = gemeinschaftVon(db, gemeinschaftId);
-    if (!g) throw nichtGefunden("Gemeinschaft nicht gefunden.");
-  } else g = zugriff(db, n, gemeinschaftId, "abrechnung_vorschau", 1).g;
+// Periodenwerte-Cache: Beitrag je Gemeinschaft × Monat (je Tag und als Monatssumme, je Zählpunkt). Gültig, solange
+// Stichtag, Teilnahmen, Tarife, Zählpunkte und Eingangsstand der Gemeinschaft gleich sind; ein neuer Dateneingang
+// (EDA, CSV) verwirft die betroffenen Monate sofort (einarbeiten → periodenCacheVerwerfen). Python: _monats_beitrag.
+const periodenCache = new Map();
+function periodenSignatur(db, g) {
+  const e = E(db);
+  const tarife = e.tarife.filter((t) => t.gemeinschaftId === g.id).map((t) => `${t.id}:${t.status}:${t.gueltigAb}:${t.geaendertAm || ""}`).join(",");
+  const zps = zpInfo(db, g.id).map((i) => `${i.zp.id}:${i.zp.richtung}:${i.zp.anlageId || ""}`).join(",");
+  return `${heute()}|${g.modell}|${stammSignatur(e, g.id)}|${hash32(`${tarife}|${zps}`)}|${EN(db).standJe?.[g.id] || 0}`;
+}
+/** Monatsbeitrag {tage: {tag: {zpId: Beitrag}}, summe: {zpId: Beitrag}} – Rechnung wie bisher je Tag und Viertelstunde */
+function monatsBeitrag(db, g, monat, infos) {
+  const key = `${g.id}|${monat}`;
+  const sig = periodenSignatur(db, g);
+  const c = periodenCache.get(key);
+  if (c && c.sig === sig) return c.daten;
   const h = heute();
   const tarife = E(db).tarife.filter((t) => t.gemeinschaftId === g.id);
-  const infos = zpInfo(db, g.id);
   const ov = ueberschreibungen(db, g.id);
-  const acc = new Map(infos.map((i) => [i.zp.id, { groessen: {}, fenster: {}, tarif: {}, l3: 0, soll: 0, fehlend: 0, aktivTage: 0 }]));
   const add = (o, k, gr, w) => {
     o[k] ||= {};
     o[k][gr] = (o[k][gr] || 0) + w;
   };
-  for (let tag = vonT; tag <= bisT; tag = plusTag(tag)) {
+  const tage = {};
+  const summe = {};
+  for (const tag of tageDesMonats(monat)) {
     const d = tag < h ? tagDaten(db, g.id, tag, ov) : { bloecke: new Map() };
     const t = tarifAm(tarife, tag);
+    const jeZp = {};
     for (const i of infos) {
       if (!i.teilnahmen.some((tt) => teilnahmeAktivAm(tt, tag))) continue;
-      const x = acc.get(i.zp.id);
-      x.aktivTage++;
+      const x = beitragLeer();
+      x.aktivTage = 1;
       const ew = erwartet(i.zp.richtung, g.modell);
-      x.soll += werteJeTag(tag) * ew.length;
+      x.soll = werteJeTag(tag) * ew.length;
       for (const gr of ew) {
         const b = d.bloecke.get(`${i.zp.id}|${gr}`);
         if (!b) {
@@ -407,6 +412,52 @@ export async function enPeriodenwerte(n, gemeinschaftId, von, bis) {
           add(x.tarif[t.id], "", gr, k.summeKwh);
         }
       }
+      jeZp[i.zp.id] = x;
+      beitragAddieren((summe[i.zp.id] ||= beitragLeer()), x);
+    }
+    tage[tag] = jeZp;
+  }
+  const daten = { tage, summe };
+  if (periodenCache.size > 120) periodenCache.clear();
+  periodenCache.set(key, { sig, daten });
+  return daten;
+}
+/** Neuer Dateneingang: betroffene Monate der Gemeinschaft verwerfen (Signatur ändert sich zusätzlich über standJe) */
+export function periodenCacheVerwerfen(gid, monate = null) {
+  for (const k of [...periodenCache.keys()]) {
+    const [g, m] = k.split("|");
+    if (g === gid && (!monate || monate.has(m))) periodenCache.delete(k);
+  }
+}
+
+/**
+ * Periodensummen je Zählpunkt und Größe (Netzbetreiber-Werte, ElWG § 71 Abs. 1 und 4) – gerundet wird auf Belegebene (WP4).
+ * Zusätzlich je Zeitfenster des gültigen Tarifs (TOU) und je Tarif-Version, Vollständigkeit und L3-Anteil.
+ */
+export async function enPeriodenwerte(n, gemeinschaftId, von, bis) {
+  const db = await lesenBereit();
+  const vonT = pruefTag(von, "„von“");
+  const bisT = pruefTag(bis, "„bis“");
+  if (bisT < vonT) throw new PlattformFehler(422, "„bis“ liegt vor „von“.");
+  if (tageZwischen(vonT, bisT) > 400) throw new PlattformFehler(422, "Höchstens 400 Tage je Periode.");
+  let g;
+  if (n?.system) {
+    g = gemeinschaftVon(db, gemeinschaftId);
+    if (!g) throw nichtGefunden("Gemeinschaft nicht gefunden.");
+  } else g = zugriff(db, n, gemeinschaftId, "abrechnung_vorschau", 1).g;
+  const infos = zpInfo(db, g.id);
+  const acc = new Map(infos.map((i) => [i.zp.id, beitragLeer()]));
+  // Ganze Monate aus dem Monatsbeitrag, angeschnittene Monate Tag für Tag (beides zwischengespeichert)
+  for (let m = monatVon(vonT); m <= monatVon(bisT); m = monatPlus(m, 1)) {
+    const mb = monatsBeitrag(db, g, m, infos);
+    const tage = tageDesMonats(m);
+    if (vonT <= tage[0] && bisT >= tage[tage.length - 1]) {
+      for (const [zp, b] of Object.entries(mb.summe)) if (acc.has(zp)) beitragAddieren(acc.get(zp), b);
+      continue;
+    }
+    for (const tag of tage) {
+      if (tag < vonT || tag > bisT) continue;
+      for (const [zp, b] of Object.entries(mb.tage[tag] || {})) if (acc.has(zp)) beitragAddieren(acc.get(zp), b);
     }
   }
   const zaehlpunkte = infos.filter((i) => acc.get(i.zp.id).aktivTage).map((i) => {
@@ -701,13 +752,15 @@ function schaetzReihe(z, anlage, tag) {
   if (z.richtung === "erzeugung") return pvProfil(j, anlage).slice(d * 96, d * 96 + 96).map((x) => x * (anlage?.kwp || 10));
   return cache(`H0|${j}`, () => lastprofil("H0", j)).slice(d * 96, d * 96 + 96).map((x) => x * 3500);
 }
+/** Mitglieder, die in die Schätzung eingehen: ab Antrag (Interessenten noch nicht), ohne Ausgeschiedene/Abgelehnte */
+const SCHAETZ_MITGLIED = ["antrag", "geprueft", "aufgenommen", "aktiv", "gekuendigt"];
 /** Gemeinschaft ohne Messdaten (z. B. in Gründung): Verbrauch der Mitglieder nach Standardlastprofil, Erzeugung der Anlagen */
 function schaetzGemeinschaft(db, g, tag, ohneZp) {
   const { j, d } = tagImJahr(tag);
   const v = new Array(96).fill(0);
   const e = new Array(96).fill(0);
   const ART = { privat: ["H0", 3500], landwirt: ["L0", 12000], kmu: ["G0", 30000], grossunternehmen: ["G0", 1500000], gemeinde: ["G1", 30000], oeffentlich: ["G1", 30000], verein: ["G0", 8000] };
-  for (const m of E(db).mitglieder.filter((x) => x.gemeinschaftId === g.id && !["abgelehnt", "ausgeschieden", "ausgeschlossen"].includes(x.status))) {
+  for (const m of E(db).mitglieder.filter((x) => x.gemeinschaftId === g.id && SCHAETZ_MITGLIED.includes(x.status))) {
     const [p, kwh] = ART[m.art] || ART.privat;
     const prof = cache(`${p}|${j}`, () => lastprofil(p, j));
     for (let q = 0; q < 96; q++) v[q] += prof[d * 96 + q] * kwh;
@@ -719,13 +772,15 @@ function schaetzGemeinschaft(db, g, tag, ohneZp) {
   }
   return { e, v };
 }
+const TEILNAHME_AKTIV_OPT = ["aktiv", "abmeldung_angefragt"];
 const auf96 = (w) => (w.length === 96 ? w : w.length === 92 ? [...w.slice(0, 8), 0, 0, 0, 0, ...w.slice(8)] : [...w.slice(0, 12), ...w.slice(16)]);
 
 export async function enOptimierung(n, { zaehlpunktId = "" } = {}) {
   const db = await lesenBereit();
   if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
   const z = E(db).zaehlpunkte.find((x) => x.id === zaehlpunktId);
-  const tns = z ? E(db).teilnahmen.filter((t) => t.zaehlpunktId === z.id && TEILNAHME_ZAEHLT.includes(t.status)) : [];
+  // Entwürfe und laufende Anmeldungen zählen mit (belegen TF), verworfene/abgelehnte/beendete nicht (eg/optimierung.js)
+  const tns = z ? optimierungsTeilnahmen(E(db).teilnahmen.filter((t) => t.zaehlpunktId === z.id)) : [];
   if (!z || !tns.length) throw nichtGefunden("Zählpunkt nicht gefunden.");
   const eigen = tns.some((t) => E(db).mitglieder.find((m) => m.id === t.mitgliedId)?.kontoId === n.id);
   const berechtigt = n.system || eigen || tns.some((t) => {
@@ -736,7 +791,8 @@ export async function enOptimierung(n, { zaehlpunktId = "" } = {}) {
   const h = heute();
   const richtung = z.richtung;
   const mess = richtung === "verbrauch" ? "verbrauch_gemessen" : "erzeugung_gemessen";
-  const mitDaten = tns.map((t) => gemeinschaftVon(db, t.gemeinschaftId)).find((g) => g && ctxVon(db, g.id));
+  // eigene Messwerte aus einer Gemeinschaft, in der der Zählpunkt bereits aktiv ist (Entwürfe liefern keine Werte)
+  const mitDaten = [...tns].sort((a, b) => (TEILNAHME_AKTIV_OPT.includes(b.status) ? 1 : 0) - (TEILNAHME_AKTIV_OPT.includes(a.status) ? 1 : 0)).map((t) => gemeinschaftVon(db, t.gemeinschaftId)).find((g) => g && ctxVon(db, g.id));
   const alleTage = [];
   for (let t = `${monatPlus(monatVon(h), -12)}-01`; t < `${monatVon(h)}-01`; t = plusTag(t)) alleTage.push(t);
   const { tage, hochrechnung } = repraesentativeTage(alleTage);
@@ -762,13 +818,14 @@ export async function enOptimierung(n, { zaehlpunktId = "" } = {}) {
     const bezug = tarif?.bezugspreisCt ?? SIM_STANDARD.bezugCt;
     const einspeis = tarif?.einspeisepreisCt ?? SIM_STANDARD.einspeisCt;
     const vorteil = richtung === "verbrauch" ? SIM_STANDARD.lieferantCt - bezug + (SIM_STANDARD.netzApCt - apReduziert(SIM_STANDARD.netzApCt, regel.reduktionPct)) + (regel.abgabenBefreit ? SIM_STANDARD.elAbgSonstCt : 0) : einspeis - SIM_STANDARD.marktwertCt;
+    // Messwerte der übrigen Teilnehmer (synthetisch bzw. Eingänge); liefern sie nichts (z. B. Gemeinschaft in Gründung,
+    // Zählpunkt nur als Entwurf) → Schätzung aus der Mitgliederliste statt einer Nullkurve
     const ctx = ctxVon(db, g.id);
-    const E1 = [];
-    const D1 = [];
-    for (const tg of tage) {
-      let e = new Array(96).fill(0);
-      let dd = new Array(96).fill(0);
-      if (ctx) {
+    const messung = ctx ? { erzeugung: [], verbrauch: [] } : null;
+    if (ctx) {
+      for (const tg of tage) {
+        const e = new Array(96).fill(0);
+        const dd = new Array(96).fill(0);
         for (const [key, b] of tagVon(g.id, tg).bloecke) {
           const [zpId, gr] = key.split("|");
           if (zpId === z.id || (gr !== "erzeugung_tf" && gr !== "verbrauch_tf")) continue;
@@ -776,23 +833,30 @@ export async function enOptimierung(n, { zaehlpunktId = "" } = {}) {
           const ziel = gr === "erzeugung_tf" ? e : dd;
           for (let q = 0; q < 96; q++) ziel[q] += w[q];
         }
-      } else {
-        const s = schaetzGemeinschaft(db, g, tg, z.id);
-        e = s.e;
-        dd = s.v;
+        messung.erzeugung.push(...e);
+        messung.verbrauch.push(...dd);
       }
-      E1.push(...e);
-      D1.push(...dd);
     }
-    return { gemeinschaftId: g.id, label: g.name, vorteilCtKwh: rund(vorteil, 2), erzeugung: E1, verbrauch: D1, aktuellTf: t.teilnahmefaktor, status: t.status, datenbasis: ctx ? "Messwerte des Netzbetreibers" : "Schätzung aus der Mitgliederliste (Standardlastprofile)", tarif: tarif ? tarif.bezeichnung : "Standardannahme (kein gültiger Tarif)", netz: regel.text };
+    let schaetzung = null;
+    if (!(reihenSumme(messung) > 0)) {
+      schaetzung = { erzeugung: [], verbrauch: [] };
+      for (const tg of tage) {
+        const sg = schaetzGemeinschaft(db, g, tg, z.id);
+        schaetzung.erzeugung.push(...sg.e);
+        schaetzung.verbrauch.push(...sg.v);
+      }
+    }
+    const k = optimierungsKandidat({ gemeinschaftId: g.id, label: g.name, vorteilCtKwh: rund(vorteil, 2), aktuellTf: t.teilnahmefaktor, status: t.status, messung, schaetzung });
+    return { ...k, tarif: tarif ? tarif.bezeichnung : "Standardannahme (kein gültiger Tarif)", netz: regel.text };
   });
   const erg = fach(() => tfOptimieren({ richtung, werte, kandidaten, hochrechnung }));
   return {
     zaehlpunktId: z.id, zaehlpunktnummer: z.zaehlpunktnummer, richtung, datenbasis: gemessen === tage.length ? "Messwerte (repräsentative Wochen je Monat)" : gemessen ? "teilweise Messwerte, Rest Standardprofil" : "Standardprofil (keine Messwerte)", stichprobeTage: tage.length, hochrechnung: rund(hochrechnung, 3),
     ...erg,
+    hinweise: [...erg.hinweise, ...optimierungsHinweise(kandidaten, erg.empfehlung)],
     empfehlung: erg.empfehlung.map((x) => {
       const k = kandidaten.find((c) => c.gemeinschaftId === x.gemeinschaftId);
-      return { ...x, status: k.status, datenbasis: k.datenbasis, tarif: k.tarif, netz: k.netz };
+      return { ...x, status: k.status, datenbasis: k.datenbasisText, datenbasisArt: k.datenbasis, tarif: k.tarif, netz: k.netz };
     }),
     eigen,
   };

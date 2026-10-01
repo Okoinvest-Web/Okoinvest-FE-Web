@@ -27,7 +27,7 @@ import { KUENDIGUNG_FRIST_TAGE, energieKennzahlen, kuendigungFruehestens, mehrfa
 import { anreizeFuer, meilensteine, tarifZeitfensterAm } from "../../eg/anreize";
 import { grueneStunden } from "../../eg/empfehlung";
 import { GEMEINSCHAFTEN } from "../../../invest/markt";
-import { MitgliedFehler, datum as datumPruefen, ganz, ibanMaskiert, tageZwischen } from "../../mitglied/basis";
+import { MitgliedFehler, datum as datumPruefen, ganz, ibanMaskiert, plusTage, tageZwischen } from "../../mitglied/basis";
 import { intern } from "../demo";
 import { aendern, lesen } from "./speicher";
 import { jetzt, neueId, sha256 } from "./hilfen";
@@ -35,6 +35,7 @@ import { egAnlageSpeichern, egIntern, egMitgliedSpeichern, egMitgliedStatus, egT
 import * as energie from "./eg-energie";
 import * as abrechnung from "./eg-abrechnung";
 import * as gruendung from "./eg-gruendung";
+import * as eda from "./eg-eda";
 
 const { protokoll, benachrichtigen, nutzerById } = intern;
 const { lesenBereit, zugriff, kontext, heute, E } = egIntern;
@@ -362,6 +363,78 @@ export async function ptTfWunsch(n, teilnahmeId, { teilnahmefaktor } = {}) {
     protokoll(d, n, "eg_tf_wunsch", "eg_gemeinschaft", t.gemeinschaftId, `TF-Wunsch ${t.teilnahmefaktor} → ${tf} % (an die Gemeinschaft, EC_PRTFACT_CHG)`);
   });
   return { ok: true, umgesetzt: false, wunsch, text: "Ihr Wunsch ist bei der Gemeinschaft. Sie meldet die Änderung elektronisch beim Netzbetreiber; derzeit ist eine Änderung pro Tag möglich." };
+}
+
+// ================================================================ TF-Wünsche in der Gemeinschaft (Verwaltung / Backoffice)
+
+/**
+ * Offene TF-Wünsche der Mitglieder einer Gemeinschaft mit Vorprüfung (Σ ≤ 100 %, eine Änderung pro Tag, laufender Prozess).
+ * Sehen: mitgliederliste ≥ 1 (Organe, Backoffice-Pflege). Auslösen (darfAusloesen): eda_ausloesen 2 (Organisator/Gründung).
+ */
+const TF_TAG_BELEGT = ["gesendet", "bestaetigt", "abgeschlossen", "freigabe_offen", "entwurf"]; // wie eda/automat.js tfAenderungPruefen
+export async function ptTfWuensche(n, gemeinschaftId) {
+  anmelden(n);
+  const db = await lesenBereit();
+  const { g, k } = zugriff(db, n, gemeinschaftId, "mitgliederliste", 1);
+  const x = E(db);
+  const prozesse = (db.egEda?.prozesse || []).filter((p) => p.gemeinschaftId === g.id);
+  const ab = plusTage(heute(), 1);
+  const wuensche = P(db).tfWuensche.filter((w) => w.gemeinschaftId === g.id && w.status === "offen").map((w) => {
+    const t = x.teilnahmen.find((y) => y.id === w.teilnahmeId);
+    const z = t ? x.zaehlpunkte.find((y) => y.id === t.zaehlpunktId) : null;
+    const m = x.mitglieder.find((y) => y.id === w.mitgliedId);
+    const fehler = [];
+    if (!t || t.status !== "aktiv") fehler.push("Die Teilnahme ist nicht (mehr) aktiv.");
+    else {
+      if (t.teilnahmefaktor === w.nach) fehler.push("Der gewünschte Teilnahmefaktor gilt bereits.");
+      const r = teilnahmeRegeln(x.teilnahmen.filter((y) => y.zaehlpunktId === t.zaehlpunktId), { id: t.id, gemeinschaftId: g.id, teilnahmefaktor: w.nach });
+      if (!r.ok) fehler.push(r.fehler);
+      if ((t.tfHistorie || []).some((h) => h.gueltigAb === ab) || prozesse.some((p) => p.teilnahmeId === t.id && p.prozesscode === "EC_PRTFACT_CHG" && p.parameter?.ab === ab && TF_TAG_BELEGT.includes(p.status))) fehler.push("Für morgen ist bereits eine Änderung gemeldet (eine Änderung pro Tag).");
+    }
+    return { id: w.id, teilnahmeId: w.teilnahmeId, mitgliedId: w.mitgliedId, mitgliedName: m ? mitgliedName(m) : "", mitgliedsnummer: m?.mitgliedsnummer || null, zaehlpunktnummer: z?.zaehlpunktnummer || "", richtung: z?.richtung || "", aktuellTf: t?.teilnahmefaktor ?? null, von: w.von, nach: w.nach, am: w.am, ab, ok: !fehler.length, fehler };
+  });
+  return { gemeinschaftId: g.id, wuensche, darfAusloesen: egStufe(k, "eda_ausloesen") >= 2, ab, heute: heute() };
+}
+
+/**
+ * TF-Wünsche umsetzen: entscheidung "melden" → edaTfAendern (EC_PRTFACT_CHG, WP2 prüft 1 Änderung/Tag und Σ ≤ 100 %,
+ * Vier-Augen ab Masse) bzw. "ablehnen" (mit Grund). Recht eda_ausloesen 2. Ergebnis je Wunsch; offene Fehlerfälle bleiben offen.
+ */
+export async function ptTfWunschUmsetzen(n, gemeinschaftId, { wunschIds = [], entscheidung = "melden", ab = "", grund = "" } = {}) {
+  anmelden(n);
+  if (!["melden", "ablehnen"].includes(entscheidung)) throw ungueltig("Entscheidung: melden oder ablehnen.");
+  const ids = [...new Set((Array.isArray(wunschIds) ? wunschIds : []).map(String))].slice(0, 200);
+  if (!ids.length) throw ungueltig("Bitte mindestens einen Wunsch auswählen.");
+  const db = await lesenBereit();
+  const { g } = zugriff(db, n, gemeinschaftId, "eda_ausloesen", 2);
+  const offen = P(db).tfWuensche.filter((w) => ids.includes(w.id) && w.gemeinschaftId === g.id && w.status === "offen");
+  if (!offen.length) throw nichtGefunden("Keine offenen Wünsche ausgewählt.");
+  const am = jetzt();
+  if (entscheidung === "ablehnen") {
+    const text = String(grund || "").trim().slice(0, 300);
+    if (!text) throw ungueltig("Bitte einen Grund für die Ablehnung angeben.");
+    await aendern((d) => {
+      for (const w of portalDaten(d).tfWuensche.filter((y) => offen.some((o) => o.id === y.id))) Object.assign(w, { status: "abgelehnt", grund: text, erledigtAm: am, erledigtVon: n.id });
+      protokoll(d, n, "eg_tf_wunsch_erledigt", "eg_gemeinschaft", g.id, `${offen.length} TF-Wunsch/Wünsche abgelehnt: ${text}`);
+    });
+    return { gemeldet: 0, abgelehnt: offen.length, fehler: [], prozesse: [], freigabeNoetig: false };
+  }
+  const abT = datumPruefen(ab) || plusTage(heute(), 1);
+  // je Teilnahme nur der jüngste Wunsch (eine Änderung pro Tag)
+  const jeTn = new Map();
+  for (const w of offen) if (!jeTn.has(w.teilnahmeId) || jeTn.get(w.teilnahmeId).am < w.am) jeTn.set(w.teilnahmeId, w);
+  const r = await eda.edaTfAendern(n, g.id, { aenderungen: [...jeTn.values()].map((w) => ({ teilnahmeId: w.teilnahmeId, teilnahmefaktor: w.nach, ab: abT })) });
+  const prozessJeTn = new Map((r.prozesse || []).map((p) => [p.teilnahmeId, p]));
+  const fehler = (r.fehler || []).map((f) => ({ id: [...jeTn.values()].find((w) => w.teilnahmeId === f.id)?.id || f.id, teilnahmeId: f.id, fehler: f.fehler }));
+  await aendern((d) => {
+    for (const w of portalDaten(d).tfWuensche) {
+      if (!offen.some((o) => o.id === w.id)) continue;
+      const p = prozessJeTn.get(w.teilnahmeId);
+      if (p) Object.assign(w, { status: "gemeldet", prozessId: p.id, ab: abT, erledigtAm: am, erledigtVon: n.id, freigabeOffen: p.status === "freigabe_offen" });
+    }
+    protokoll(d, n, "eg_tf_wunsch_erledigt", "eg_gemeinschaft", g.id, `${prozessJeTn.size} TF-Wunsch/Wünsche als EC_PRTFACT_CHG ab ${abT} gemeldet${fehler.length ? `, ${fehler.length} nicht möglich` : ""}`);
+  });
+  return { gemeldet: prozessJeTn.size, abgelehnt: 0, fehler, prozesse: r.prozesse || [], freigabeNoetig: !!r.freigabeNoetig, ab: abT };
 }
 
 // ================================================================ Interessent, Gemeinde, Auskunft, Rechner

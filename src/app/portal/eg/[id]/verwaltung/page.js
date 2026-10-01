@@ -2,13 +2,15 @@
 // Gemeinschaft: offene Aufgaben (Aufnahmen, Zustimmungen beim Netzbetreiber), Kennzahlen, Mitgliederliste (Details je Recht),
 // Organe, Tarife mit Vorschlag/Beschluss. Rechte je Kontext-Rolle (eg/rechte.js); ohne Rolle 404. WP1.
 
-import { CalendarClock, ClipboardCheck, Factory, ReceiptText, Users } from "lucide-react";
+import { CalendarClock, ClipboardCheck, Factory, ReceiptText, ShieldCheck, SlidersHorizontal, Users } from "lucide-react";
 import { Badge, Hinweis, Karte, Kennzahl, Leer, SeitenKopf, Tabelle, zelle } from "@/components/Portal/ui";
 import { Klappe } from "@/components/Portal/Mitglied/teile";
 import EgReiter from "@/components/Portal/EG/Stamm/EgReiter";
 import { OrganNeu, TarifNeu } from "@/components/Portal/EG/Stamm/Formulare";
 import { MitgliederTabelle } from "@/components/Portal/EG/Stamm/Mitglieder";
 import { AufnahmeKnoepfe } from "@/components/Portal/EG/Stamm/Aufnahme";
+import { EdaFreigaben } from "@/components/Portal/EG/Eda/EdaAktionen";
+import TfWuensche from "@/components/Portal/EG/Mitglied/TfWuensche";
 import { portalNutzer, laden } from "@/lib/plattform/server/seite";
 import { egBackend } from "@/lib/plattform/backend/eg";
 import { GEMEINSCHAFT_STATUS, TARIF_STATUS, TEILNAHME_STATUS } from "@/lib/plattform/eg/modell";
@@ -25,6 +27,9 @@ export default async function Verwaltung({ params }) {
   const r = d.rechte;
   const url = `/api/portal/eg/${g.id}/verwaltung`;
   const z = g.kennzahlen;
+  // Vier-Augen-Freigaben (WP2, Vorstand) und TF-Wünsche der Mitglieder (WP6) – Nachbarpakete fehlertolerant lesen
+  const eda = r.eda_freigeben >= 1 ? await egBackend().edaFreigaben(n, g.id).catch(() => null) : null;
+  const tfw = r.mitgliederliste >= 1 ? await egBackend().ptTfWuensche(n, g.id).catch(() => null) : null;
   return (
     <div className="space-y-6">
       <SeitenKopf eyebrow={`Verwaltung · ${d.rollenLabels.join(", ")}`} titel={g.name} text={`${g.modellLabel} · ${g.zonelevelLabel} · ${g.netzbetreiberNamen.join(", ")}`}>
@@ -50,6 +55,18 @@ export default async function Verwaltung({ params }) {
           </ul>
         ) : <Leer titel="Alles erledigt" text="Keine offenen Aufnahmen oder Zustimmungen." />}
       </Karte>
+
+      {eda && (
+        <Karte titel="Freigaben (Vier-Augen)" untertitel="Massenänderungen beim Netzbetreiber – Abmeldungen und Teilnahmefaktoren" aktion={<ShieldCheck aria-hidden="true" className="h-5 w-5 text-ov-600" />}>
+          <EdaFreigaben gemeinschaftId={g.id} freigaben={eda.freigaben} darf={eda.darfFreigeben} />
+        </Karte>
+      )}
+
+      {tfw && tfw.wuensche.length > 0 && (
+        <Karte titel="Wünsche zum Teilnahmefaktor" untertitel="Von Mitgliedern im Portal gestellt" aktion={<SlidersHorizontal aria-hidden="true" className="h-5 w-5 text-ov-600" />}>
+          <TfWuensche gemeinschaftId={g.id} wuensche={tfw.wuensche} darfAusloesen={tfw.darfAusloesen} ab={tfw.ab} />
+        </Karte>
+      )}
 
       {d.hinweise.length > 0 && <Hinweis ton={d.hinweise.some((h) => h.stufe === "fehler") ? "warn" : "info"} titel="Hinweise"><ul className="list-disc space-y-1 pl-5">{d.hinweise.map((h, i) => <li key={i}>{h.text}</li>)}</ul></Hinweis>}
 

@@ -263,6 +263,16 @@ class TestSpeicherPrognoseOptimierung(unittest.TestCase):
 		self.assertAlmostEqual(r["hochrechnung"], st["hochrechnung"], 12)
 		gleich(fehler_von(k.tf_optimieren, "verbrauch", [], []), V["optimierung"]["fehler"])
 
+	def test_optimierung_kandidaten(self):
+		kv = V["optimierung"]["kandidaten"]
+		kand = [k.optimierungs_kandidat(f) for f in kv["faelle"]]
+		gleich(kand, kv["aus"], "kandidaten", 1e-12, 1e-12)
+		self.assertEqual([x["datenbasis"] for x in kand], ["messwerte", "schaetzung", "keine"])
+		erg = k.tf_optimieren("erzeugung", kv["werte"], kand, 365)
+		gleich(erg, kv["erg"], "kandidaten_erg", 1e-9, 1e-6)
+		self.assertEqual(k.optimierungs_hinweise(kand, erg["empfehlung"]), kv["hinweise"])
+		self.assertEqual([t["id"] for t in k.optimierungs_teilnahmen(kv["teilnahmen"])], kv["teilnahmenAus"])
+
 
 if __name__ == "__main__":
 	unittest.main()

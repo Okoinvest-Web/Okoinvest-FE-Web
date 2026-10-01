@@ -23,6 +23,8 @@ Stand 01.10.2026. Vertrag: [EG-SCHNITTSTELLEN.md](../EG-SCHNITTSTELLEN.md), Absc
 - `enCsvImport(n, gid, {csv, zaehlpunktId?, datei?, ausfuehren = true})` – `ausfuehren: false` = Vorschau.
 - `enSimulation(n, {daten: {…, gemeinschaftId?, nurVorlage?, speichern?}})`, `enPrognose(n, gid, {tage?, wetter?})`.
 - Zusatz-Export `enDashboard(n, gid)` (Demo und Frappe), nicht in `EG_OPERATIONEN`.
+- Integration: `enPeriodenwerte` aus zwischengespeicherten Monatsbeiträgen (`eg/periodenbeitrag.js`; Demo Speicher-Cache, Frappe `frappe.cache`, Invalidierung bei jedem Dateneingang), siehe EG-SCHNITTSTELLEN.md Abschnitt 12.
+- Integration: `enOptimierung` – Kandidaten über `optimierungsTeilnahmen`/`optimierungsKandidat` (Entwürfe zählen, verworfene nicht; ohne Messwerte der übrigen Teilnehmer Schätzung aus der Mitgliederliste ab „antrag“ statt Nullkurve), Empfehlung je Gemeinschaft mit `datenbasisArt` und zusätzlichen `hinweise` (`optimierungsHinweise`).
 - Öffentlicher Simulationskern für WP6: `simulationOeffentlich(daten)` aus `eg/simulation.js` (keine Namen, ≤ 30 Teilnehmer, ohne Eingabe im Ergebnis).
 
 ## Patch an WP1

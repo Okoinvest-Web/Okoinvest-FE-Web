@@ -17,7 +17,7 @@ import { createHash } from "node:crypto";
 import { METHODEN, frappeAufruf as aufruf } from "../frappe";
 import { EG_EREIGNISSE, GEMEINSCHAFT_STATUS } from "../../eg/modell";
 import { GR_PAKETE, gemeinschaftAusAuftrag, statusPfad } from "../../eg/gruendung";
-import { umstellungsplan } from "../../eg/wechsel";
+import { probeKontrollwerte, probePeriode, umstellungsplan } from "../../eg/wechsel";
 import { VORLAGEN, dokumentDaten, vorlageRendern } from "../../eg/vertraege";
 import { egDokumentPdf } from "../../server/eg-gruendung-pdf";
 import { egCsvImport, egGemeinschaft, egGemeinschaftSpeichern, egGemeinschaftStatus, egMassenaktion, egNetzbetreiber, egOrganBeenden, egOrganSpeichern, egTarifSpeichern } from "./eg-stamm";
@@ -98,11 +98,11 @@ export async function grAuftragAktion(n, id, { aktion = "", ...d } = {}) {
   let neu = [];
   let wp4;
   try {
-    const p = await abrechnung.abPeriodeAnlegen(n, a.gemeinschaftId, { von, bis, art: "probe" });
+    const p = await abrechnung.abPeriodeAnlegen(n, a.gemeinschaftId, probePeriode({ von, bis }));
     const pid = p?.id || p?.periode?.id;
     const v = await abrechnung.abPeriodeAktion(n, pid, { aktion: "vorschau" });
-    const pos = v?.vorschau?.positionen || v?.positionen || v?.belege || [];
-    neu = liste(pos.map((x) => ({ schluessel: x.mitgliedsnummer || x.zaehlpunkt || x.mitgliedId, name: x.name || x.mitgliedName, kwh: x.kwh ?? x.mengeKwh ?? x.eigendeckungKwh, betragEur: x.betragEur ?? x.bruttoEur ?? x.summeEur })));
+    // WP4 liefert die Vorschau als { periode: { vorschau: { belege[] } } } – Belege → Kontrollzeilen (eg/wechsel.js)
+    neu = liste(probeKontrollwerte(v?.periode?.vorschau?.belege || v?.vorschau?.belege || []));
     wp4 = { ok: true, text: `Probe-Periode ${pid || ""} angelegt (${datumDe(von)} bis ${datumDe(bis)}).` };
   } catch (e) {
     wp4 = { ok: false, text: e?.status === 501 ? "Die Probe-Abrechnung (WP4) ist noch nicht verfügbar – Vergleich mit den übergebenen Werten." : `Probe-Abrechnung nicht möglich: ${e.message}` };

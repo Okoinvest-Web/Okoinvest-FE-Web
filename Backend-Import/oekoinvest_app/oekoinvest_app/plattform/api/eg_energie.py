@@ -150,6 +150,7 @@ def _einarbeiten(gid, neu, am):
 		betroffen.add((b["zaehlpunktId"], K.monat_von(b["tag"])))
 	for zp, monat in betroffen:
 		_monat_aktualisieren(zp, gid, monat)
+	_perioden_cache_verwerfen(gid, {monat for _zp, monat in betroffen})
 	return {"bloecke": len(neu), "tage": len({b["tag"] for b in neu}), "geaendertWerte": geaendert, "konflikte": konflikte, "hinweis": f"{konflikte} L3-Werte nicht übernommen (vorhandene L1/L2-Werte bleiben)." if konflikte else ""}
 
 
@@ -374,43 +375,77 @@ def energiedaten_empfangen(payload=None, als_benutzer=None):
 # ================================================================ Periodenwerte (Eingang WP4)
 
 
-@frappe.whitelist(methods=["POST"])
-def periodenwerte(gemeinschaftId=None, von=None, bis=None, als_benutzer=None):  # noqa: N803, C901
-	n = _n(als_benutzer)
-	von = _tag(von, "„von“")
-	bis = _tag(bis, "„bis“")
-	if bis < von:
-		ungueltig("„bis“ liegt vor „von“.")
-	if K.tage_zwischen(von, bis) > 400:
-		ungueltig("Höchstens 400 Tage je Periode.")
-	if n.get("system"):
-		if not frappe.db.exists(S.DT["gemeinschaft"], gemeinschaftId or ""):
-			nicht_gefunden("Gemeinschaft nicht gefunden.")
-		g = S.aus_doc("gemeinschaft", frappe.get_doc(S.DT["gemeinschaft"], gemeinschaftId))
-	else:
-		g, _k = S.zugriff(n, gemeinschaftId, "abrechnung_vorschau", 1)
-	infos, daten = _infos(g["id"])
-	tarife = daten.get("tarife") or []
+# Periodenwerte-Cache (= Demo monatsBeitrag): Beitrag je Gemeinschaft × Monat, je Tag und als Monatssumme je Zählpunkt,
+# in frappe.cache unter "eg_periode|<gid>|<monat>". Gültig, solange Signatur (Stichtag, Modell, Teilnahmen, Tarife,
+# Zählpunkte, letzter Messreihen-Eingang) gleich bleibt; _einarbeiten verwirft die betroffenen Monate sofort.
+CACHE_PERIODE = "eg_periode"
+CACHE_SEKUNDEN = 26 * 3600
+
+
+def _beitrag_leer():
+	return {"groessen": {}, "fenster": {}, "tarif": {}, "l3": 0, "soll": 0, "fehlend": 0, "aktivTage": 0}
+
+
+def _zu_addieren(z, q):
+	for k, v in q.items():
+		if isinstance(v, dict):
+			_zu_addieren(z.setdefault(k, {}), v)
+		else:
+			z[k] = z.get(k, 0) + v
+
+
+def _beitrag_addieren(z, q):
+	for k in ("l3", "soll", "fehlend", "aktivTage"):
+		z[k] += q[k]
+	for k in ("groessen", "fenster", "tarif"):
+		_zu_addieren(z[k], q[k])
+
+
+def _perioden_signatur(g, infos, tarife):
+	tn = "|".join(f"{t['id']}:{t['status']}:{t.get('teilnahmefaktor')}:{t.get('gueltigAb')}:{t.get('gueltigBis')}:{len(t.get('tfHistorie') or [])}" for i in infos for t in i["teilnahmen"])
+	tf = ",".join(f"{t['id']}:{t.get('status')}:{t.get('gueltigAb')}:{t.get('geaendertAm') or ''}" for t in tarife)
+	zp = ",".join(f"{i['zp']['id']}:{i['zp']['richtung']}:{i['zp'].get('anlageId') or ''}" for i in infos)
+	stand = frappe.db.sql(f"select max(modified) from `tab{DT_REIHE}` where gemeinschaft=%s", (g["id"],))[0][0]
+	return f"{_heute()}|{g['modell']}|{K.hash32(tn)}|{K.hash32(tf + '|' + zp)}|{stand or ''}"
+
+
+def _cache_schluessel(gid, monat):
+	return f"{CACHE_PERIODE}|{gid}|{monat}"
+
+
+def _perioden_cache_verwerfen(gid, monate):
+	for m in monate:
+		frappe.cache().delete_value(_cache_schluessel(gid, m))
+
+
+def _monats_beitrag(g, monat, infos, tarife, sig):  # noqa: C901
+	schluessel = _cache_schluessel(g["id"], monat)
+	c = frappe.cache().get_value(schluessel)
+	if c and c.get("sig") == sig:
+		return c
+	tage_liste = K.tage_des_monats(monat)
+	h = _heute()
 	je = {}
-	for b in _bloecke(g["id"], von, bis):
+	for b in _bloecke(g["id"], tage_liste[0], min(tage_liste[-1], K.plus_tag(h, -1))) if tage_liste[0] < h else []:
 		je.setdefault(b["tag"], {})[f"{b['zaehlpunktId']}|{b['groesse']}"] = b
-	acc = {i["zp"]["id"]: {"groessen": {}, "fenster": {}, "tarif": {}, "l3": 0, "soll": 0, "fehlend": 0, "aktivTage": 0} for i in infos}
 
 	def add(o, k, gr, w):
 		o.setdefault(k, {})
 		o[k][gr] = o[k].get(gr, 0) + w
 
-	tag = von
-	while tag <= bis:
+	tage = {}
+	summe = {}
+	for tag in tage_liste:
 		d = je.get(tag, {})
 		t = SK.tarif_am(tarife, tag)
+		je_zp = {}
 		for i in infos:
 			if not any(_aktiv_am(tt, tag) for tt in i["teilnahmen"]):
 				continue
-			x = acc[i["zp"]["id"]]
-			x["aktivTage"] += 1
+			x = _beitrag_leer()
+			x["aktivTage"] = 1
 			ew = _erwartet(i["zp"]["richtung"], g["modell"])
-			x["soll"] += K.werte_je_tag(tag) * len(ew)
+			x["soll"] = K.werte_je_tag(tag) * len(ew)
 			for gr in ew:
 				b = d.get(f"{i['zp']['id']}|{gr}")
 				if not b:
@@ -433,7 +468,49 @@ def periodenwerte(gemeinschaftId=None, von=None, bis=None, als_benutzer=None):  
 				else:
 					add(x["fenster"], "", gr, b["summeKwh"])
 					add(x["tarif"][t["id"]], "", gr, b["summeKwh"])
-		tag = K.plus_tag(tag)
+			je_zp[i["zp"]["id"]] = x
+			_beitrag_addieren(summe.setdefault(i["zp"]["id"], _beitrag_leer()), x)
+		tage[tag] = je_zp
+	daten = {"sig": sig, "tage": tage, "summe": summe}
+	frappe.cache().set_value(schluessel, daten, expires_in_sec=CACHE_SEKUNDEN)
+	return daten
+
+
+@frappe.whitelist(methods=["POST"])
+def periodenwerte(gemeinschaftId=None, von=None, bis=None, als_benutzer=None):  # noqa: N803, C901
+	n = _n(als_benutzer)
+	von = _tag(von, "„von“")
+	bis = _tag(bis, "„bis“")
+	if bis < von:
+		ungueltig("„bis“ liegt vor „von“.")
+	if K.tage_zwischen(von, bis) > 400:
+		ungueltig("Höchstens 400 Tage je Periode.")
+	if n.get("system"):
+		if not frappe.db.exists(S.DT["gemeinschaft"], gemeinschaftId or ""):
+			nicht_gefunden("Gemeinschaft nicht gefunden.")
+		g = S.aus_doc("gemeinschaft", frappe.get_doc(S.DT["gemeinschaft"], gemeinschaftId))
+	else:
+		g, _k = S.zugriff(n, gemeinschaftId, "abrechnung_vorschau", 1)
+	infos, daten = _infos(g["id"])
+	tarife = daten.get("tarife") or []
+	sig = _perioden_signatur(g, infos, tarife)
+	acc = {i["zp"]["id"]: _beitrag_leer() for i in infos}
+	# Ganze Monate aus dem Monatsbeitrag, angeschnittene Monate Tag für Tag (beides in frappe.cache, siehe _monats_beitrag)
+	m = K.monat_von(von)
+	while m <= K.monat_von(bis):
+		mb = _monats_beitrag(g, m, infos, tarife, sig)
+		tage = K.tage_des_monats(m)
+		if von <= tage[0] and bis >= tage[-1]:
+			for zp, b in mb["summe"].items():
+				if zp in acc:
+					_beitrag_addieren(acc[zp], b)
+		else:
+			for tag in tage:
+				if von <= tag <= bis:
+					for zp, b in (mb["tage"].get(tag) or {}).items():
+						if zp in acc:
+							_beitrag_addieren(acc[zp], b)
+		m = K.monat_plus(m, 1)
 	zps = []
 	for i in infos:
 		x = acc[i["zp"]["id"]]
@@ -736,13 +813,80 @@ def prognose(gemeinschaftId=None, daten=None, als_benutzer=None):  # noqa: N803
 # ================================================================ Mehrfachteilnahme-Optimierer
 
 
+# ---------------------------------------------------------------- Schätzung ohne Messwerte (= Demo schaetzReihe/schaetzGemeinschaft)
+_SCHAETZ_CACHE = {}
+_SCHAETZ_ART = {"privat": ("H0", 3500), "landwirt": ("L0", 12000), "kmu": ("G0", 30000), "grossunternehmen": ("G0", 1500000), "gemeinde": ("G1", 30000), "oeffentlich": ("G1", 30000), "verein": ("G0", 8000)}
+_SCHAETZ_MITGLIED = ("antrag", "geprueft", "aufgenommen", "aktiv", "gekuendigt")  # ab Antrag, Interessenten noch nicht
+_OPT_AKTIV = ("aktiv", "abmeldung_angefragt")
+
+
+def _schaetz_cache(k, fn):
+	if k not in _SCHAETZ_CACHE:
+		if len(_SCHAETZ_CACHE) > 30:
+			_SCHAETZ_CACHE.clear()
+		_SCHAETZ_CACHE[k] = fn()
+	return _SCHAETZ_CACHE[k]
+
+
+def _tag_im_jahr(t):
+	j, m, d = (int(x) for x in t.split("-"))
+	from datetime import date
+
+	return j, (date(j, m, d) - date(j, 1, 1)).days
+
+
+def _wert_oder(x, standard):
+	return standard if x is None else x
+
+
+def _pv_profil(j, a):
+	a = a or {}
+	st = a.get("standort") or {}
+	lat = _wert_oder(st.get("lat"), 48.2)
+	lon = _wert_oder(st.get("lon"), 13.5)
+	ausr = _wert_oder(a.get("ausrichtung"), 0)
+	neig = _wert_oder(a.get("neigung"), 30)
+	return _schaetz_cache(f"pv|{j}|{ausr}|{neig}", lambda: K.pv_jahr(jahr=j, lat=lat, lon=lon, ausrichtung=ausr, neigung=neig, spez_ertrag=K.spez_ertrag_standard(lat), saat=7))
+
+
+def _schaetz_reihe(z, anlage, tag):
+	j, d = _tag_im_jahr(tag)
+	if z.get("richtung") == "erzeugung":
+		return [x * ((anlage or {}).get("kwp") or 10) for x in _pv_profil(j, anlage)[d * 96:d * 96 + 96]]
+	return [x * 3500 for x in _schaetz_cache(f"H0|{j}", lambda: K.lastprofil("H0", j))[d * 96:d * 96 + 96]]
+
+
+def _schaetz_gemeinschaft(g, daten, tag, ohne_zp):
+	j, d = _tag_im_jahr(tag)
+	v = [0.0] * 96
+	e = [0.0] * 96
+	for m in daten.get("mitglieder") or []:
+		if m.get("status") not in _SCHAETZ_MITGLIED:
+			continue
+		p, kwh = _SCHAETZ_ART.get(m.get("art")) or _SCHAETZ_ART["privat"]
+		prof = _schaetz_cache(f"{p}|{j}", lambda p=p: K.lastprofil(p, j))
+		for q in range(96):
+			v[q] += prof[d * 96 + q] * kwh
+	zps = daten.get("zaehlpunkte") or []
+	for a in daten.get("anlagen") or []:
+		if a.get("art") != "pv" or a.get("status") == "stillgelegt":
+			continue
+		if next((x["id"] for x in zps if x.get("anlageId") == a["id"]), None) == ohne_zp:
+			continue
+		pv = _pv_profil(j, a)
+		for q in range(96):
+			e[q] += pv[d * 96 + q] * (a.get("kwp") or 0)
+	return e, v
+
+
 @frappe.whitelist(methods=["POST"])
 def optimierung(zaehlpunktId=None, als_benutzer=None):  # noqa: N803, C901
 	n = _n(als_benutzer)
 	if not zaehlpunktId or not frappe.db.exists(S.DT["zaehlpunkt"], zaehlpunktId):
 		nicht_gefunden("Zählpunkt nicht gefunden.")
 	z = S.aus_doc("zaehlpunkt", frappe.get_doc(S.DT["zaehlpunkt"], zaehlpunktId))
-	tns = [t for t in S._alle("teilnahme", {"zaehlpunkt": zaehlpunktId}) if t["status"] in ZAEHLT]
+	# Entwürfe und laufende Anmeldungen zählen mit, verworfene/abgelehnte/beendete nicht (eg_energie_kern.optimierungs_teilnahmen)
+	tns = K.optimierungs_teilnahmen(S._alle("teilnahme", {"zaehlpunkt": zaehlpunktId}))
 	if not tns:
 		nicht_gefunden("Zählpunkt nicht gefunden.")
 	gem = {}
@@ -770,16 +914,18 @@ def optimierung(zaehlpunktId=None, als_benutzer=None):  # noqa: N803, C901
 	mess = "verbrauch_gemessen" if richtung == "verbrauch" else "erzeugung_gemessen"
 	werte = []
 	gemessen = 0
+	reihenfolge = sorted(tns, key=lambda t: 0 if t["status"] in _OPT_AKTIV else 1)
+	anlage = next((a for g_, _i, dt in gem.values() for a in dt.get("anlagen") or [] if a["id"] == z.get("anlageId")), None) if z.get("anlageId") else None
 	for tag in stich["tage"]:
 		reihe = None
-		for t in tns:
+		for t in reihenfolge:
 			bl = _bloecke(t["gemeinschaftId"], tag, tag, zaehlpunktId, [mess])
 			if bl:
 				reihe = _auf96([x or 0 for x in bl[0]["werte"]])
 				break
 		if reihe:
 			gemessen += 1
-		werte += reihe or [0.0] * 96
+		werte += reihe or _schaetz_reihe(z, anlage, tag)
 	kandidaten = []
 	for t in tns:
 		g, infos, daten = gem[t["gemeinschaftId"]]
@@ -789,7 +935,8 @@ def optimierung(zaehlpunktId=None, als_benutzer=None):  # noqa: N803, C901
 		einspeis = (tarif or {}).get("einspeisepreisCt") or K.SIM_STANDARD["einspeisCt"]
 		st = K.SIM_STANDARD
 		vorteil = (st["lieferantCt"] - bezug + (st["netzApCt"] - K.ap_reduziert(st["netzApCt"], regel["reduktionPct"])) + (st["elAbgSonstCt"] if regel["abgabenBefreit"] else 0)) if richtung == "verbrauch" else einspeis - st["marktwertCt"]
-		E1, D1 = [], []
+		# Messwerte der übrigen Teilnehmer; ohne Werte (z. B. in Gründung, nur Entwurf) Schätzung aus der Mitgliederliste
+		messung = {"erzeugung": [], "verbrauch": []}
 		for tag in stich["tage"]:
 			e = [0.0] * 96
 			dd = [0.0] * 96
@@ -799,13 +946,22 @@ def optimierung(zaehlpunktId=None, als_benutzer=None):  # noqa: N803, C901
 				ziel = e if b["groesse"] == "erzeugung_tf" else dd
 				for q, w in enumerate(_auf96([x or 0 for x in b["werte"]])):
 					ziel[q] += w
-			E1 += e
-			D1 += dd
-		kandidaten.append({"gemeinschaftId": g["id"], "label": g["name"], "vorteilCtKwh": K.rund(vorteil, 2), "erzeugung": E1, "verbrauch": D1, "aktuellTf": t.get("teilnahmefaktor"), "status": t["status"], "tarif": (tarif or {}).get("bezeichnung") or "Standardannahme (kein gültiger Tarif)", "netz": regel["text"]})
+			messung["erzeugung"] += e
+			messung["verbrauch"] += dd
+		schaetzung = None
+		if not K.reihen_summe(messung) > 0:
+			schaetzung = {"erzeugung": [], "verbrauch": []}
+			for tag in stich["tage"]:
+				se, sv = _schaetz_gemeinschaft(g, daten, tag, zaehlpunktId)
+				schaetzung["erzeugung"] += se
+				schaetzung["verbrauch"] += sv
+		k = K.optimierungs_kandidat({"gemeinschaftId": g["id"], "label": g["name"], "vorteilCtKwh": K.rund(vorteil, 2), "aktuellTf": t.get("teilnahmefaktor"), "status": t["status"], "messung": messung, "schaetzung": schaetzung})
+		kandidaten.append({**k, "tarif": (tarif or {}).get("bezeichnung") or "Standardannahme (kein gültiger Tarif)", "netz": regel["text"]})
 	erg = _fach(K.tf_optimieren, richtung, werte, kandidaten, stich["hochrechnung"])
 	for e in erg["empfehlung"]:
 		k = next(c for c in kandidaten if c["gemeinschaftId"] == e["gemeinschaftId"])
-		e.update({"status": k["status"], "datenbasis": "Messwerte des Netzbetreibers" if any(k["verbrauch"]) or any(k["erzeugung"]) else "keine Messwerte der übrigen Teilnehmer", "tarif": k["tarif"], "netz": k["netz"]})
+		e.update({"status": k["status"], "datenbasis": k["datenbasisText"], "datenbasisArt": k["datenbasis"], "tarif": k["tarif"], "netz": k["netz"]})
+	erg["hinweise"] = erg["hinweise"] + K.optimierungs_hinweise(kandidaten, erg["empfehlung"])
 	n_tage = len(stich["tage"])
-	return {"zaehlpunktId": zaehlpunktId, "zaehlpunktnummer": z["zaehlpunktnummer"], "richtung": richtung, "datenbasis": "Messwerte (repräsentative Wochen je Monat)" if gemessen == n_tage else ("teilweise Messwerte" if gemessen else "keine Messwerte"), "stichprobeTage": n_tage, "hochrechnung": K.rund(stich["hochrechnung"], 3), **erg, "eigen": eigen}
+	return {"zaehlpunktId": zaehlpunktId, "zaehlpunktnummer": z["zaehlpunktnummer"], "richtung": richtung, "datenbasis": "Messwerte (repräsentative Wochen je Monat)" if gemessen == n_tage else ("teilweise Messwerte, Rest Standardprofil" if gemessen else "Standardprofil (keine Messwerte)"), "stichprobeTage": n_tage, "hochrechnung": K.rund(stich["hochrechnung"], 3), **erg, "eigen": eigen}
 

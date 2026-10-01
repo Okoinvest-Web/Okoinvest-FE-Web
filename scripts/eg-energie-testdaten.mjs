@@ -220,6 +220,22 @@ export async function vektorenErzeugen() {
       return { anzahl: r.tage.length, erste: r.tage.slice(0, 3), hochrechnung: r.hochrechnung };
     })(),
     fehler: fehlerVon(() => O.tfOptimieren({ richtung: "verbrauch", werte: [], kandidaten: [] })),
+    // Integration: Datenbasis je Kandidat (Entwurf in Gemeinschaft ohne Messwerte → Schätzung statt Nullkurve)
+    kandidaten: (() => {
+      const null4 = { erzeugung: reihe(8, () => 0), verbrauch: reihe(8, () => 0) };
+      const mess = { erzeugung: reihe(8, (q) => q), verbrauch: reihe(8, () => 2) };
+      const sch = { erzeugung: reihe(8, () => 0), verbrauch: reihe(8, () => 50) };
+      const faelle = [
+        { gemeinschaftId: "EEG", label: "EEG", vorteilCtKwh: 3.5, aktuellTf: 60, status: "aktiv", messung: mess, schaetzung: sch },
+        { gemeinschaftId: "BEG", label: "BEG", vorteilCtKwh: 3, aktuellTf: 40, status: "entwurf", messung: null4, schaetzung: sch },
+        { gemeinschaftId: "GEA", label: "GEA", vorteilCtKwh: 2, aktuellTf: 10, status: "angefragt", messung: null, schaetzung: null },
+      ];
+      const kand = faelle.map((k) => O.optimierungsKandidat(k));
+      const werte = reihe(8, () => 4);
+      const erg = O.tfOptimieren({ richtung: "erzeugung", werte, kandidaten: kand, hochrechnung: 365 });
+      const teilnahmen = ["entwurf", "angefragt", "aktiv", "verworfen", "abgelehnt", "abgelaufen", "beendet", "abmeldung_angefragt"].map((status, i) => ({ id: `T${i}`, status }));
+      return { faelle, aus: kand, werte, erg, hinweise: O.optimierungsHinweise(kand, erg.empfehlung), teilnahmen, teilnahmenAus: O.optimierungsTeilnahmen(teilnahmen).map((t) => t.id) };
+    })(),
   };
 
   return { stand: "2026-10-01", quelle: "scripts/eg-energie-testdaten.mjs", zeit, verteilung, bloecke, csv, qualitaet, simulation, speicher, prognose: prognoseV, optimierung };

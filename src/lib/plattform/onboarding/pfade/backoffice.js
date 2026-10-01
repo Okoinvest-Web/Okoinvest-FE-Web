@@ -3,7 +3,7 @@
 
 import { benachrichtigungenSchritt, profilSchritt, schnellsucheSchritt, zweiFaktorSchritt } from "./gemeinsam";
 
-const ALLE = ["leitung", "akquise", "transaktion", "buchhaltung", "betrieb", "compliance", "energie", "lesen", "projektleitung"];
+const ALLE = ["leitung", "akquise", "transaktion", "buchhaltung", "betrieb", "compliance", "energie", "lesen", "projektleitung", "eg"];
 const ohne = (...r) => ALLE.filter((x) => !r.includes(x));
 
 /** Modul-Kurzanleitung als Einarbeitungsschritt */
@@ -22,6 +22,7 @@ export const backoffice = {
   untertypen: {
     leitung: { label: "Leitung" }, akquise: { label: "Akquise" }, transaktion: { label: "Transaktion" }, buchhaltung: { label: "Buchhaltung" },
     betrieb: { label: "Betrieb" }, compliance: { label: "Compliance" }, energie: { label: "Energie" }, lesen: { label: "Nur lesen" }, projektleitung: { label: "Projektleitung" },
+    eg: { label: "Energiegemeinschaften" },
   },
   schritte: [
     zweiFaktorSchritt({ pflicht: true, text: "Pflicht für alle Backoffice-Konten: Sie sehen personenbezogene und vertrauliche Daten. Einrichtung unter „Sicherheit“ mit einer Authenticator-App, Wiederherstellungscodes sicher ablegen." }),
@@ -70,6 +71,13 @@ export const backoffice = {
     // Projektleitung
     modul("entwicklung", ["projektleitung"], "Projektentwicklung", "Entwicklungsakte je Projekt mit Gantt, Meilensteinen, Risiken, Budget und Gutachter-Einladung; Übergabe an Börse oder Betrieb.",
       [], [{ href: "/portal/admin/entwicklung", label: "Projektentwicklung" }], true),
+    // Energiegemeinschaften (Betriebsführung/Organisator, ElWG)
+    modul("eg", ["eg"], "Energiegemeinschaften betreuen", "Je Gemeinschaft: Stammdaten, Mitglieder und Zählpunkte, Anlagen und Tarife; Gründungs- und Wechselaufträge mit Fahrplan; Netzbetreiber und Netzentgelte. Organisator-Rechte gelten nur mit aktivem Dienstleistungsvertrag (AVV).",
+      ["Mitglieder- und Zählpunktdaten sind personenbezogen – Einzelwerte (Viertelstunden) nur zweckgebunden ansehen, jede Einsicht wird protokolliert.", "Teilnahmefaktor: ganzzahlig 1–100 %, Summe je Zählpunkt höchstens 100 %, bis zu 5 Gemeinschaften."],
+      [{ href: "/portal/admin/eg", label: "Gemeinschaften" }, { href: "/portal/admin/eg/gruendung", label: "Gründungsaufträge" }, { href: "/portal/admin/eg/netzbetreiber", label: "Netzbetreiber & Netzentgelte" }], true),
+    modul("eg_eda", ["eg"], "EDA, Energiedaten und Abrechnung", "Anmeldungen, TF-Änderungen (auch Wünsche der Mitglieder) und Abmeldungen laufen über die EDA-Seite der Gemeinschaft mit Fristen-Ampel; Massenvorgänge gibt der Vorstand im Vier-Augen-Prinzip frei. Energiedaten mit Qualitäts-Ampel, danach Abrechnung mit zwei Freigaben (Kassier, Vorstand).",
+      ["Zustimmung im Netzbetreiber-Portal erteilt das Mitglied selbst – Erinnerungen mit Anleitung je Netzbetreiber versenden.", "Abrechnung erst mit L1/L2-Werten (frühestens nach dem Clearing); Simulation vor jeder Gründung bzw. Erweiterung."],
+      [{ href: "/portal/admin/eg", label: "EDA je Gemeinschaft" }, { href: "/portal/admin/eg/simulation", label: "Simulation" }], true),
     // Nur lesen
     modul("ueberblick", ["lesen"], "Überblick verschaffen", "Sie sehen alle Bereiche außer der Rechteverwaltung, ändern aber nichts. Einstieg: Cockpit für Kennzahlen, Berichte für Entwicklungen, Revisionsprotokoll für Nachvollziehbarkeit.",
       [], [{ href: "/portal/admin", label: "Cockpit" }, { href: "/portal/admin/berichte", label: "Berichte" }], true),

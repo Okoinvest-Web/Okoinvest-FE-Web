@@ -77,6 +77,7 @@ import { EG_EREIGNISSE } from "../eg/modell";
  *   ptUebersicht(n) · ptGemeinschaft(n,gemeinschaftId) · ptBeitrittAntrag(n,gemeinschaftId,{daten},{ip}) · ptKuendigung(n,mitgliedId,{zum})
  *   ptTfWunsch(n,teilnahmeId,{teilnahmefaktor}) · ptInteresse(null|n,{daten},{ip}) · ptGemeindeSicht(n) · ptDatenauskunft(n)
  *   ptRechner(null,{daten}) (öffentlich, ohne Personendaten) · ptBelege(n) · ptEnergie(n,{zaehlpunktId,von,bis})
+ *   ptTfWuensche(n,gemeinschaftId) · ptTfWunschUmsetzen(n,gemeinschaftId,{wunschIds[],entscheidung:"melden"|"ablehnen",ab?,grund?})
  */
 export const EG_OPERATIONEN = {
   stamm: [
@@ -91,7 +92,8 @@ export const EG_OPERATIONEN = {
   abrechnung: ["abPerioden", "abPeriodeAnlegen", "abPeriodeAktion", "abBelege", "abBelegPdf", "abZahlungslauf", "abCamtImport", "abMahnlauf", "abBuchungen", "abExport", "abKleinunternehmer", "abJahresbescheinigung",
     "abZahlungslaufAktion", "abZahlungErfassen", "abMandate", "abBuchungSpeichern", "abPruefvermerk", "abEinstellungenSpeichern"], // WP4-Ergänzung
   gruendung: ["grAuftraege", "grAuftrag", "grAuftragAnlegen", "grAuftragAktion", "grSchrittAktion", "grDokumentErzeugen", "grImportVorschau", "grImportAusfuehren", "grFoerdercheck", "grVersammlungen", "grAufloesung"],
-  portal: ["ptUebersicht", "ptGemeinschaft", "ptBeitrittAntrag", "ptKuendigung", "ptTfWunsch", "ptInteresse", "ptGemeindeSicht", "ptDatenauskunft", "ptRechner", "ptBelege", "ptEnergie"],
+  portal: ["ptUebersicht", "ptGemeinschaft", "ptBeitrittAntrag", "ptKuendigung", "ptTfWunsch", "ptInteresse", "ptGemeindeSicht", "ptDatenauskunft", "ptRechner", "ptBelege", "ptEnergie",
+    "ptTfWuensche", "ptTfWunschUmsetzen"], // Integration: TF-Wünsche in Verwaltung/Backoffice (→ edaTfAendern)
 };
 export const EG_ALLE_OPERATIONEN = Object.values(EG_OPERATIONEN).flat();
 

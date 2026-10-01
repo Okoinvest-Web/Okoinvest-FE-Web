@@ -424,6 +424,29 @@ export function umstellungsplan({ stichtag = "", heute = "" } = {}) {
 }
 
 /**
+ * Probe-Periode für WP4 (abPeriodeAnlegen mit probe: true): Art nach Länge des Parallelzeitraums (Monat, Quartal, Jahr) –
+ * WP4 kennt keine Art „probe“, Probe-Perioden sind normale Perioden mit probe = true (ohne Überlappungsprüfung, nie freigebbar).
+ */
+export function probePeriode({ von = "", bis = "" } = {}) {
+  const v = String(von || "").slice(0, 10);
+  const b = String(bis || "").slice(0, 10);
+  const monate = /^\d{4}-\d{2}/.test(v) && /^\d{4}-\d{2}/.test(b) ? (Number(b.slice(0, 4)) - Number(v.slice(0, 4))) * 12 + Number(b.slice(5, 7)) - Number(v.slice(5, 7)) + 1 : 1;
+  return { von: v, bis: b, art: monate <= 1 ? "monat" : monate <= 3 ? "quartal" : "jahr", probe: true };
+}
+
+/**
+ * Belege der WP4-Probe-Abrechnung → Zeilen für kontrollVergleich: Schlüssel = Mitgliedsnummer (Rechnung) bzw.
+ * „Mitgliedsnummer-G“ (Gutschrift), kWh = Eigendeckung bzw. eingebrachte Menge, Betrag = Netto des Belegs.
+ * @param {{mitgliedsnummer:number, typ:string, empfaenger?:{name?:string}, energie?:object, summen?:{netto:number}}[]} belege
+ */
+export function probeKontrollwerte(belege = []) {
+  return (Array.isArray(belege) ? belege : []).filter((b) => b && b.mitgliedsnummer !== undefined && b.mitgliedsnummer !== null && b.mitgliedsnummer !== "").map((b) => {
+    const gut = b.typ === "gutschrift";
+    return { schluessel: gut ? `${b.mitgliedsnummer}-G` : String(b.mitgliedsnummer), name: String(b.empfaenger?.name || ""), kwh: Number(gut ? b.energie?.eingebracht : b.energie?.eigendeckung) || 0, betragEur: Number(b.summen?.netto) || 0 };
+  });
+}
+
+/**
  * Kontrollabrechnung: Werte der letzten Altabrechnung gegen die Probe-Abrechnung (WP4) bzw. eigene Rechnung vergleichen.
  * alt/neu: [{ schluessel, name?, kwh, betragEur }]
  */

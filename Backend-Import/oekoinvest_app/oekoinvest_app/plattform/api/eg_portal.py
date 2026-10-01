@@ -15,9 +15,10 @@
 import importlib
 import inspect
 import json
+import re
 
 import frappe
-from frappe.utils import nowdate
+from frappe.utils import add_days, getdate, nowdate
 
 from oekoinvest_app.plattform import eg_modell as M
 from oekoinvest_app.plattform import eg_portal_kern as P
@@ -127,6 +128,7 @@ def _mitglied_eigen(m):
 
 def _teilnahmen_eigen(g, m, nb):
 	aus = []
+	wuensche = {w["teilnahmeId"]: w for w in _tf_wuensche_offen(g["id"])}
 	for t in _liste("teilnahme", {"mitglied": m["id"], "gemeinschaft": g["id"]}):
 		if t["status"] == "verworfen":
 			continue
@@ -137,7 +139,7 @@ def _teilnahmen_eigen(g, m, nb):
 		aus.append({
 			"id": t["id"], "zaehlpunktId": z.get("id"), "zaehlpunktnummer": z.get("zaehlpunktnummer"), "bezeichnung": z.get("bezeichnung") or "", "richtung": z.get("richtung"), "richtungLabel": (M.ZP_RICHTUNGEN.get(z.get("richtung") or "") or {}).get("label", ""),
 			"smartMeter": z.get("smartMeter"), "teilnahmefaktor": t["teilnahmefaktor"], "status": t["status"], "statusLabel": s.get("label", t["status"]), "ton": s.get("ton", "neutral"), "gueltigAb": t.get("gueltigAb"), "gueltigBis": t.get("gueltigBis"), "fristBis": t.get("fristBis"),
-			"schritte": P.teilnahme_schritte(m["status"], t, _heute()), "anleitung": P.zustimmungs_anleitung(nbz, g, t, z.get("zaehlpunktnummer")) if offen else None, "tfWunsch": None,
+			"schritte": P.teilnahme_schritte(m["status"], t, _heute()), "anleitung": P.zustimmungs_anleitung(nbz, g, t, z.get("zaehlpunktnummer")) if offen else None, "tfWunsch": wuensche.get(t["id"]),
 		})
 	return aus
 
@@ -390,6 +392,104 @@ def tf_wunsch(teilnahmeId=None, teilnahmefaktor=None, als_benutzer=None):  # noq
 	return {"ok": True, "umgesetzt": False, "wunsch": wunsch, "text": "Ihr Wunsch ist bei der Gemeinschaft. Sie meldet die Änderung elektronisch beim Netzbetreiber; derzeit ist eine Änderung pro Tag möglich."}
 
 
+# ================================================================ TF-Wünsche in der Gemeinschaft (Verwaltung / Backoffice)
+# Ablage wie bisher im Protokoll (Plattform Aktivitaet, aktion eg_tf_wunsch, Text „TF-Wunsch Teilnahme <id>: <von> → <nach> %“);
+# erledigt (gemeldet/abgelehnt) über aktion eg_tf_wunsch_erledigt mit Text „TF-Wunsch <Aktivitaet> Teilnahme <id>: …“.
+# Ein jüngerer Wunsch derselben Teilnahme ersetzt den älteren (= Demo status „ersetzt“).
+
+_RE_WUNSCH = re.compile(r"^TF-Wunsch Teilnahme (\S+): (\d+) → (\d+) %")
+_RE_ERLEDIGT = re.compile(r"^TF-Wunsch (\S+) Teilnahme ")
+_TF_TAG_BELEGT = ("gesendet", "bestaetigt", "abgeschlossen", "freigabe_offen", "entwurf")  # wie eg_eda_kern.tf_aenderung_pruefen
+
+
+def _tf_wuensche_offen(gid):
+	eintraege = frappe.get_all("Plattform Aktivitaet", filters={"objekt_art": "eg_gemeinschaft", "objekt_id": gid, "aktion": ["in", ["eg_tf_wunsch", "eg_tf_wunsch_erledigt"]]}, fields=["name", "am", "nutzer_id", "aktion", "text"], order_by="creation asc", limit_page_length=5000)
+	erledigt = set()
+	offen = {}
+	for e in eintraege:
+		if e.aktion == "eg_tf_wunsch_erledigt":
+			m = _RE_ERLEDIGT.match(e.text or "")
+			if m:
+				erledigt.add(m.group(1))
+			continue
+		m = _RE_WUNSCH.match(e.text or "")
+		if m:
+			offen[m.group(1)] = {"id": e.name, "teilnahmeId": m.group(1), "gemeinschaftId": gid, "kontoId": e.nutzer_id, "von": int(m.group(2)), "nach": int(m.group(3)), "am": str(e.am or ""), "status": "offen"}
+	return [w for w in offen.values() if w["id"] not in erledigt]
+
+
+def _morgen():
+	return str(add_days(getdate(_heute()), 1))
+
+
+@frappe.whitelist(methods=["POST"])
+def tf_wuensche(gemeinschaftId=None, als_benutzer=None):  # noqa: N803
+	"""Offene TF-Wünsche mit Vorprüfung (= Demo ptTfWuensche). Sehen: mitgliederliste ≥ 1; auslösen: eda_ausloesen 2."""
+	n = nutzer(als_benutzer)
+	g, k = S.zugriff(n, gemeinschaftId, "mitgliederliste", 1)
+	from oekoinvest_app.plattform.api import eg_eda as EDA
+
+	ab = _morgen()
+	aus = []
+	for w in _tf_wuensche_offen(g["id"]):
+		t = _doc("teilnahme", w["teilnahmeId"]) if frappe.db.exists(S.DT["teilnahme"], w["teilnahmeId"]) else None
+		z = _doc("zaehlpunkt", t["zaehlpunktId"]) if t and frappe.db.exists(S.DT["zaehlpunkt"], t["zaehlpunktId"]) else None
+		m = _doc("mitglied", t["mitgliedId"]) if t and frappe.db.exists(S.DT["mitglied"], t["mitgliedId"]) else None
+		fehler = []
+		if not t or t["status"] != "aktiv":
+			fehler.append("Die Teilnahme ist nicht (mehr) aktiv.")
+		else:
+			if t["teilnahmefaktor"] == w["nach"]:
+				fehler.append("Der gewünschte Teilnahmefaktor gilt bereits.")
+			r = K.teilnahme_regeln(_liste("teilnahme", {"zaehlpunkt": t["zaehlpunktId"]}), {"id": t["id"], "gemeinschaftId": g["id"], "teilnahmefaktor": w["nach"]})
+			if not r["ok"]:
+				fehler.append(r["fehler"])
+			belegt = any(h.get("gueltigAb") == ab for h in t.get("tfHistorie") or []) or any(p.get("prozesscode") == "EC_PRTFACT_CHG" and (p.get("parameter") or {}).get("ab") == ab and p.get("status") in _TF_TAG_BELEGT for p in EDA._prozesse({"teilnahme": t["id"]}))
+			if belegt:
+				fehler.append("Für morgen ist bereits eine Änderung gemeldet (eine Änderung pro Tag).")
+		aus.append({"id": w["id"], "teilnahmeId": w["teilnahmeId"], "mitgliedId": (t or {}).get("mitgliedId"), "mitgliedName": K.mitglied_name(m) if m else "", "mitgliedsnummer": (m or {}).get("mitgliedsnummer"), "zaehlpunktnummer": (z or {}).get("zaehlpunktnummer") or "", "richtung": (z or {}).get("richtung") or "", "aktuellTf": (t or {}).get("teilnahmefaktor"), "von": w["von"], "nach": w["nach"], "am": w["am"], "ab": ab, "ok": not fehler, "fehler": fehler})
+	return {"gemeinschaftId": g["id"], "wuensche": aus, "darfAusloesen": K.eg_stufe(k, "eda_ausloesen") >= 2, "ab": ab, "heute": _heute()}
+
+
+@frappe.whitelist(methods=["POST"])
+def tf_wunsch_umsetzen(gemeinschaftId=None, daten=None, als_benutzer=None):  # noqa: N803
+	"""TF-Wünsche melden (eg_eda.tf_aendern, EC_PRTFACT_CHG) oder ablehnen (= Demo ptTfWunschUmsetzen). Recht eda_ausloesen 2."""
+	n = nutzer(als_benutzer)
+	d = _daten(daten)
+	entscheidung = d.get("entscheidung") or "melden"
+	if entscheidung not in ("melden", "ablehnen"):
+		ungueltig("Entscheidung: melden oder ablehnen.")
+	ids = list(dict.fromkeys(str(x) for x in (d.get("wunschIds") or [])))[:200]
+	if not ids:
+		ungueltig("Bitte mindestens einen Wunsch auswählen.")
+	g, _k = S.zugriff(n, gemeinschaftId, "eda_ausloesen", 2)
+	offen = [w for w in _tf_wuensche_offen(g["id"]) if w["id"] in ids]
+	if not offen:
+		nicht_gefunden("Keine offenen Wünsche ausgewählt.")
+	if entscheidung == "ablehnen":
+		grund = str(d.get("grund") or "").strip()[:200]
+		if not grund:
+			ungueltig("Bitte einen Grund für die Ablehnung angeben.")
+		for w in offen:
+			protokoll(n, "eg_tf_wunsch_erledigt", "eg_gemeinschaft", g["id"], f"TF-Wunsch {w['id']} Teilnahme {w['teilnahmeId']}: abgelehnt – {grund}")
+		return {"gemeldet": 0, "abgelehnt": len(offen), "fehler": [], "prozesse": [], "freigabeNoetig": False}
+	ab = str(d.get("ab") or "")[:10]
+	try:
+		ab = str(getdate(ab)) if ab else _morgen()
+	except Exception:  # noqa: BLE001 – ungültiges Datum → Standard (morgen)
+		ab = _morgen()
+	from oekoinvest_app.plattform.api import eg_eda as EDA
+
+	r = EDA.tf_aendern(gemeinschaftId=g["id"], daten={"aenderungen": [{"teilnahmeId": w["teilnahmeId"], "teilnahmefaktor": w["nach"], "ab": ab} for w in offen]}, als_benutzer=als_benutzer)
+	je_tn = {p["teilnahmeId"]: p for p in r.get("prozesse") or []}
+	for w in offen:
+		p = je_tn.get(w["teilnahmeId"])
+		if p:
+			protokoll(n, "eg_tf_wunsch_erledigt", "eg_gemeinschaft", g["id"], f"TF-Wunsch {w['id']} Teilnahme {w['teilnahmeId']}: gemeldet ({p['id']}) ab {ab}")
+	fehler = [{"id": next((w["id"] for w in offen if w["teilnahmeId"] == f.get("id")), f.get("id")), "teilnahmeId": f.get("id"), "fehler": f.get("fehler")} for f in r.get("fehler") or []]
+	return {"gemeldet": len(je_tn), "abgelehnt": 0, "fehler": fehler, "prozesse": r.get("prozesse") or [], "freigabeNoetig": bool(r.get("freigabeNoetig")), "ab": ab}
+
+
 # ================================================================ Interessent, Gemeinde, Auskunft, Rechner
 
 @frappe.whitelist(methods=["POST"])
@@ -496,4 +596,4 @@ def rechner(daten=None, als_benutzer=None):
 	return P.rechner_oeffentlich(_daten(daten))
 
 
-__all__ = ["uebersicht", "gemeinschaft", "belege", "energie", "beitritt_antrag", "kuendigung", "tf_wunsch", "interesse", "gemeinde_sicht", "datenauskunft", "rechner", "nicht_angemeldet"]
+__all__ = ["uebersicht", "gemeinschaft", "belege", "energie", "beitritt_antrag", "kuendigung", "tf_wunsch", "tf_wuensche", "tf_wunsch_umsetzen", "interesse", "gemeinde_sicht", "datenauskunft", "rechner", "nicht_angemeldet"]

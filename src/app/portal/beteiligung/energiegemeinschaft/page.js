@@ -2,7 +2,8 @@
 // CH LEG/ZEV): Stammdaten mit Zählpunkt bzw. Marktlokation, Auswahl der Gemeinschaft im Netzgebiet, Status der Anmeldung,
 // Verteilschlüssel, monatliche Abrechnung bzw. Gutschrift (PDF), Kündigung.
 
-import { Receipt, Users, Zap } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Info, Receipt, Users, Zap } from "lucide-react";
 import Begriff from "@/components/Portal/Bedienung/Begriff";
 import { Angaben, Badge, Hinweis, Karte, Leer, SeitenKopf, Tabelle, zelle } from "@/components/Portal/ui";
 import { EgFormular } from "@/components/Portal/Fach/Beteiligung";
@@ -25,6 +26,10 @@ export default async function EnergiegemeinschaftSeite() {
   return (
     <div className="space-y-6">
       <SeitenKopf eyebrow="Mitglied · Energiegemeinschaft" titel="Strom aus der Nachbarschaft" text="Teilnahmedaten, Anmeldung beim Netzbetreiber, Verteilschlüssel und Ihre monatliche Abrechnung." />
+      <Hinweis ton="info" icon={Info} titel="Ihre Energiegemeinschaft hat ein neues Zuhause">
+        Für Gemeinschaften in Österreich finden Sie Status je Zählpunkt, Gemeinschaftsstrom, Preisblatt und Belege jetzt unter „Energiegemeinschaft“. Die Angaben auf dieser Seite bleiben bis zur Umstellung sichtbar.{" "}
+        <Link href="/portal/eg" className="inline-flex items-center gap-1 font-semibold text-ov-700 hover:text-ov-800">Zur neuen Übersicht<ArrowRight aria-hidden="true" className="h-4 w-4" /></Link>
+      </Hinweis>
 
       {laufend.map((t) => {
         const g = gemeinschaften.find((x) => x.id === t.egId);

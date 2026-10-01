@@ -34,3 +34,8 @@ export const ptDatenauskunft = (n) => aufruf("ptDatenauskunft", {}, n);
 export const ptRechner = (_n, { daten = {} } = {}) => aufruf("ptRechner", { daten }, null);
 export const ptBelege = (n) => aufruf("ptBelege", {}, n);
 export const ptEnergie = (n, { zaehlpunktId = "", von = "", bis = "" } = {}) => aufruf("ptEnergie", { zaehlpunktId, von, bis }, n);
+
+// Integration: TF-Wünsche der Mitglieder in Verwaltung/Backoffice (Frappe: Protokoll eg_tf_wunsch → edaTfAendern)
+Object.assign(METHODEN, { ptTfWuensche: "eg_portal.tf_wuensche", ptTfWunschUmsetzen: "eg_portal.tf_wunsch_umsetzen" });
+export const ptTfWuensche = (n, gemeinschaftId) => aufruf("ptTfWuensche", { gemeinschaftId }, n);
+export const ptTfWunschUmsetzen = (n, gemeinschaftId, { wunschIds = [], entscheidung = "melden", ab = "", grund = "" } = {}) => aufruf("ptTfWunschUmsetzen", { gemeinschaftId, daten: { wunschIds, entscheidung, ab, grund } }, n);

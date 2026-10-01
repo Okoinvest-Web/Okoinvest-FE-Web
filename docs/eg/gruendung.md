@@ -54,4 +54,4 @@ Stand 01.10.2026 (ElWG-Stand 01.10.2026). Vertrag: [EG-SCHNITTSTELLEN.md](../EG-
 
 - Frappe-Pfad ist ohne Bench nur statisch geprüft (py_compile, ruff, `pruefen.py`); Bench-Test `bench run-tests --app oekoinvest_app` steht aus.
 - Formate der Exporte von energiedigital/EGON und Formularnummern der Behörden sind „(zu bestätigen)“.
-- WP4-Probeperiode (`art: "probe"`) wird genutzt, sobald WP4 sie anbietet; bis dahin Vergleich mit übergebenen Werten.
+- Probe-Abrechnung: angebunden (Integration) – `probePeriode` legt die WP4-Periode mit `probe: true` an, `probeKontrollwerte` übernimmt die Belege der Vorschau in den Kontrollvergleich; ohne Rechenrecht in WP4 (Kassier/Vorstand/Organisator) Vergleich mit den übergebenen Werten.

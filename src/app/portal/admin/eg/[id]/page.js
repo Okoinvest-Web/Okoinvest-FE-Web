@@ -10,7 +10,7 @@ import { AnlageNeu, OrganBeenden, OrganNeu, StammdatenFormular, StatusWechsel, T
 import { CsvImport, MitgliedNeu, MitgliederTabelle, TeilnahmeKorrektur } from "@/components/Portal/EG/Stamm/Mitglieder";
 import { portalNutzer, laden } from "@/lib/plattform/server/seite";
 import { egBackend } from "@/lib/plattform/backend/eg";
-import { ANLAGE_ARTEN, GEMEINSCHAFT_STATUS, NUTZUNGSMODELLE, TARIF_STATUS } from "@/lib/plattform/eg/modell";
+import { ANLAGE_ARTEN, GEMEINSCHAFT_STATUS, NUTZUNGSMODELLE, TARIF_STATUS, EG_TEAMROLLEN } from "@/lib/plattform/eg/modell";
 import { datum } from "@/lib/plattform/format";
 
 export const metadata = { title: "Energiegemeinschaft" };
@@ -30,7 +30,7 @@ export default async function EgDetail({ params, searchParams }) {
   return (
     <div className="space-y-6">
       <SeitenKopf eyebrow={`${g.modellKurz} · Zonelevel ${g.zonelevel} · ${g.netzbetreiberNamen.join(", ") || "ohne Netzbetreiber"}`} titel={g.name} text={g.gemeinschaftsId ? `Gemeinschafts-ID ${g.gemeinschaftsId}${g.marktpartnerId ? ` · Marktpartner ${g.marktpartnerId}` : ""}` : "Gemeinschafts-ID noch nicht vergeben"}>
-        <div className="mt-3 flex flex-wrap gap-2"><Badge ton={GEMEINSCHAFT_STATUS[g.status]?.ton}>{g.statusLabel}</Badge>{d.rollen.length > 0 && <Badge ton="info">{d.rollen.join(", ")}</Badge>}{g.demo && <Badge>Demo</Badge>}</div>
+        <div className="mt-3 flex flex-wrap gap-2"><Badge ton={GEMEINSCHAFT_STATUS[g.status]?.ton}>{g.statusLabel}</Badge>{d.rollen.length > 0 && <Badge ton="info">{d.rollen.map((r) => EG_TEAMROLLEN[r]?.label || r).join(", ")}</Badge>}{g.demo && <Badge>Demo</Badge>}</div>
       </SeitenKopf>
       <EgReiter gemeinschaftId={g.id} aktiv={reiter} art="admin" />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

@@ -267,18 +267,28 @@ async function teilB() {
   abschnitt("B3. Beitritt (Landwirt als Interessent in der BEG), TF-Wunsch, Zurückziehen");
   r = await landwirt.get("/api/portal/eg");
   const beg = r.json.mitgliedschaften?.find((m) => /Alpenvorland/.test(m.gemeinschaft.name));
-  pruefe(r.status === 200 && beg?.mitglied.status === "interessent", "Landwirt ist Interessent der BEG", beg?.mitglied);
   const lwZp = (r.json.mehrfach || []).find((z) => z.richtung === "erzeugung");
-  pruefe(lwZp?.mehrfach && lwZp.summeTf === 100, "Mehrfachteilnahme: Landwirt-Erzeugung 60 % + 40 % = 100 %", lwZp);
-  if (beg && beg.mitglied.status === "interessent") {
+  // Wiederholbar: Der erste Lauf zieht den Antrag zurück (Mitglied abgelehnt, Entwürfe verworfen) – danach ist der
+  // Seed-Zustand verbraucht; der Beitritt selbst lässt sich erneut prüfen (neuer Antrag nach Ablehnung ist zulässig).
+  const ersterLauf = beg?.mitglied.status === "interessent";
+  const begG = beg?.gemeinschaft || r.json.offeneGemeinschaften?.find((g) => /Alpenvorland/.test(g.name)) || null;
+  if (ersterLauf) {
+    pruefe(r.status === 200, "Landwirt ist Interessent der BEG", beg?.mitglied);
+    pruefe(lwZp?.mehrfach && lwZp.summeTf === 100, "Mehrfachteilnahme: Landwirt-Erzeugung 60 % + 40 % = 100 %", lwZp);
+  } else {
+    console.log("  (Wiederholungslauf: Seed-Zustand der BEG bereits verbraucht – Interessent und 60/40-Mehrfachteilnahme nicht erneut geprüft)");
+    pruefe(r.status === 200 && !!begG && (!beg || ["abgelehnt", "ausgeschieden"].includes(beg.mitglied.status)), "BEG für erneuten Beitritt offen", { beg: beg?.mitglied?.status, begG: !!begG });
+  }
+  if (begG) {
     const daten = { art: "landwirt", person: { vorname: "Lukas", nachname: "Landwirt (Demo)", strasse: "Hof 1", plz: "5121", ort: "Ostermiething" }, zaehlpunkte: [{ zaehlpunktnummer: "AT003000051210000000000000W600001", richtung: "verbrauch", teilnahmefaktor: 50, smartMeter: "ja" }], zustimmungen: { statuten: true, vertrag: true, datenschutz: true }, unterschrift: { name: "Lukas Landwirt", bestaetigt: false } };
-    r = await landwirt.post(`/api/portal/eg/${beg.gemeinschaft.id}/beitritt`, { daten });
+    r = await landwirt.post(`/api/portal/eg/${begG.id}/beitritt`, { daten });
     pruefe(r.status === 422, "Beitritt ohne bestätigte Unterschrift 422", r.json);
-    r = await landwirt.post(`/api/portal/eg/${beg.gemeinschaft.id}/beitritt`, { daten: { ...daten, unterschrift: { name: "Lukas Landwirt (Demo)", bestaetigt: true } } });
+    r = await landwirt.post(`/api/portal/eg/${begG.id}/beitritt`, { daten: { ...daten, unterschrift: { name: "Lukas Landwirt (Demo)", bestaetigt: true } } });
+    const neuMitglied = r.json.mitglied?.id;
     pruefe(r.status === 200 && r.json.mitglied?.status === "antrag" && r.json.nachweis?.hash?.length === 64, "Beitrittsantrag mit Nachweis-Hash", r.json);
     const tn = r.json.teilnahmen?.find((t) => t.zaehlpunktnummer?.endsWith("W600001"));
     pruefe(tn?.status === "entwurf" && tn.schritte.aktuell === "aufnahme" && tn.anleitung?.schritte?.length === 5, "Neue Teilnahme im Entwurf, nächster Schritt Aufnahme, Anleitung vorbereitet", tn);
-    r = await landwirt.post(`/api/portal/eg/${beg.gemeinschaft.id}/beitritt`, { daten: { ...daten, unterschrift: { name: "Lukas Landwirt (Demo)", bestaetigt: true } } });
+    r = await landwirt.post(`/api/portal/eg/${begG.id}/beitritt`, { daten: { ...daten, unterschrift: { name: "Lukas Landwirt (Demo)", bestaetigt: true } } });
     pruefe(r.status === 409, "Zweiter Antrag 409");
     if (tn) {
       r = await landwirt.post("/api/portal/eg/tf-wunsch", { teilnahmeId: tn.id, teilnahmefaktor: 70 });
@@ -291,7 +301,7 @@ async function teilB() {
       r = await landwirt.post("/api/portal/eg/tf-wunsch", { teilnahmeId: begTn.teilnahmeId, teilnahmefaktor: 50 });
       pruefe(r.status === 409, "TF-Wunsch über 100 % Summe 409", r.json);
     }
-    r = await landwirt.post("/api/portal/eg/kuendigung", { mitgliedId: beg.mitglied.id });
+    r = await landwirt.post("/api/portal/eg/kuendigung", { mitgliedId: neuMitglied || beg?.mitglied.id });
     pruefe(r.status === 200 && r.json.art === "zurueckgezogen", "Antrag zurückgezogen", r.json);
   }
   r = await landwirt.post("/api/portal/eg/kuendigung", { mitgliedId: sonnen?.mitglied.id || "x" });

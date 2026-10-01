@@ -1048,9 +1048,10 @@ def simulator(gemeinschaftId=None, daten=None, als_benutzer=None):  # noqa: N803
 		tag = K.plus_tage(_heute(), -1)
 		empf = _empfangene_tage(g["id"])
 		seed = frappe.conf.get("eg_eda_sim_seed") or "oekoinvest"
-		zahl, luecken = 0, 0
+		zahl, luecken, bereits = 0, 0, 0
 		for t, zp in [x for x in _teilnahmen_mit_zp(g["id"]) if x[0]["status"] == "aktiv"][:80]:
 			if tag in (empf.get(zp["zaehlpunktnummer"]) or []):
+				bereits += 1
 				continue
 			if not K.simulator_liefert_tag(zp["zaehlpunktnummer"], tag, seed):
 				luecken += 1
@@ -1061,7 +1062,7 @@ def simulator(gemeinschaftId=None, daten=None, als_benutzer=None):  # noqa: N803
 			if _eingang(S.system_nutzer(), xml, "simulator").get("ok"):
 				zahl += 1
 			_ = t
-		return {"tag": tag, "nachrichten": zahl, "luecken": luecken}
+		return {"tag": tag, "nachrichten": zahl, "luecken": luecken, "bereits": bereits}
 	return {"ausstehend": sum(len((aus_json(x.ergebnis, {}) or {}).get("simulator") or []) for x in frappe.get_all(DP, filters={"gemeinschaft": g["id"]}, fields=["ergebnis"]))}
 
 

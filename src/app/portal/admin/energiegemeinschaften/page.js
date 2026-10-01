@@ -2,7 +2,7 @@
 // Sharing, CH LEG/ZEV), Teilnehmer mit Anmeldung beim Netzbetreiber, Monatsläufe mit Abrechnung je Teilnehmer.
 
 import Link from "next/link";
-import { Receipt, Users, Zap } from "lucide-react";
+import { ArrowRight, Info, Receipt, Users, Zap } from "lucide-react";
 import { Badge, Hinweis, Karte, SeitenKopf, Tabelle, zelle } from "@/components/Portal/ui";
 import { EgStammdaten, Monatslauf, TeilnahmeAktionen } from "@/components/Portal/Mitglied/EgAdmin";
 import { Klappe } from "@/components/Portal/Mitglied/teile";
@@ -24,6 +24,10 @@ export default async function EnergiegemeinschaftenAdmin() {
   return (
     <div className="space-y-6">
       <SeitenKopf eyebrow="Backoffice" titel="Energiegemeinschaften" text="Teilnehmer beim Netzbetreiber anmelden, Teilnahme aktivieren und monatlich abrechnen. Die Viertelstunden-Zuordnung liefert in Österreich der Netzbetreiber über EDA, in Deutschland und der Schweiz der Messstellenbetreiber." aktionen={<Link href="/portal/admin/genossenschaft" className="text-[14px] font-semibold text-ov-700 hover:text-ov-800">Genossenschaft</Link>} />
+      <Hinweis ton="info" icon={Info} titel="Neues Modul Energiegemeinschaften (ElWG)">
+        Diese Seite ist der bisherige Prototyp und bleibt bis zur Migration lesbar. Österreichische Gemeinschaften (EEG, BEG, GEA) betreuen Sie im neuen Modul mit Stammdaten, EDA, Energiedaten, Abrechnung und Gründung; Formen für Deutschland und die Schweiz bleiben hier.{" "}
+        <Link href="/portal/admin/eg" className="inline-flex items-center gap-1 font-semibold text-ov-700 hover:text-ov-800">Zum neuen Modul<ArrowRight aria-hidden="true" className="h-4 w-4" /></Link>
+      </Hinweis>
       {d.gemeinschaften.map((g) => (
         <section key={g.id} aria-label={g.name} className="space-y-6">
           <Karte titel={<span className="inline-flex flex-wrap items-center gap-2">{g.name} <Badge ton={GEMEINSCHAFT_STATUS[g.status]?.ton}>{g.statusLabel}</Badge></span>} untertitel={`${g.formLabel} · ${g.netzbetreiber} · ${g.rabatt?.label || ""}`} aktion={<Zap aria-hidden="true" className="h-5 w-5 text-ov-600" />}>

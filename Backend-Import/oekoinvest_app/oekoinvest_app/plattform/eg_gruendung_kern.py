@@ -1186,6 +1186,40 @@ def umstellungsplan(o=None):
 	return {"stichtag": s, "letzteAltabrechnung": _erster_des_monats(s, -1)[:7], "parallelVon": _erster_des_monats(s, -1), "parallelBis": plus_tage(s, -1), "ersteAbrechnungAb": erste_ab, "termine": termine, "warnungen": w}
 
 
+def probe_periode(d=None):
+	"""Probe-Periode für WP4 (= probePeriode): Art nach Länge, probe = True."""
+	d = d or {}
+	v = str(d.get("von") or "")[:10]
+	b = str(d.get("bis") or "")[:10]
+	if re.match(r"^\d{4}-\d{2}", v) and re.match(r"^\d{4}-\d{2}", b):
+		monate = (int(b[:4]) - int(v[:4])) * 12 + int(b[5:7]) - int(v[5:7]) + 1
+	else:
+		monate = 1
+	return {"von": v, "bis": b, "art": "monat" if monate <= 1 else "quartal" if monate <= 3 else "jahr", "probe": True}
+
+
+def _zahl0(x):
+	try:
+		f = float(x)
+	except (TypeError, ValueError):
+		return 0
+	return 0 if math.isnan(f) or math.isinf(f) else (int(f) if f == int(f) else f)
+
+
+def probe_kontrollwerte(belege=None):
+	"""Belege der WP4-Probe-Abrechnung → Zeilen für kontroll_vergleich (= probeKontrollwerte)."""
+	aus = []
+	for b in belege if isinstance(belege, list) else []:
+		if not b or b.get("mitgliedsnummer") in (None, ""):
+			continue
+		gut = b.get("typ") == "gutschrift"
+		e = b.get("energie") or {}
+		nr = b["mitgliedsnummer"]
+		nr = int(nr) if isinstance(nr, float) and nr == int(nr) else nr
+		aus.append({"schluessel": f"{nr}-G" if gut else str(nr), "name": str((b.get("empfaenger") or {}).get("name") or ""), "kwh": _zahl0(e.get("eingebracht") if gut else e.get("eigendeckung")), "betragEur": _zahl0((b.get("summen") or {}).get("netto"))})
+	return aus
+
+
 def kontroll_vergleich(alt=None, neu=None, o=None):
 	alt, neu, o = alt or [], neu or [], o or {}
 	tol_eur = o.get("toleranzEur", 0.05)

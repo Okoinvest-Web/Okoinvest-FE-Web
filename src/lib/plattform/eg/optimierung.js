@@ -12,7 +12,7 @@
 // (K ≤ 5, Budget 100 → vernachlässigbarer Aufwand). Rechengrundlage: repräsentative Viertelstunden (z. B. je Monat eine
 // Woche), hochgerechnet auf ein Jahr. Umsetzung über EC_PRTFACT_CHG (WP2), derzeit 1 Änderung je Tag (bis 01.04.2028).
 
-import { MAX_TEILNAHMEN_JE_ZP } from "./modell.js";
+import { MAX_TEILNAHMEN_JE_ZP, TEILNAHME_ZAEHLT } from "./modell.js";
 import { energieFehler, rund } from "./messwerte.js";
 
 /** Geteilte Menge (kWh) eines Zählpunkts in einer Gemeinschaft bei Teilnahmefaktor t */
@@ -99,6 +99,50 @@ export function tfOptimieren({ richtung = "verbrauch", werte = [], kandidaten = 
       "Empfehlung auf Basis repräsentativer Viertelstunden; fremde Gemeinschaften nur mit Daten, die das Mitglied selbst bereitstellt.",
     ],
   };
+}
+
+/**
+ * Teilnahmen eines Zählpunkts, die der Optimierer berücksichtigt: alle zählenden (TEILNAHME_ZAEHLT – auch Entwürfe und
+ * laufende Anmeldungen, denn sie belegen Teilnahmefaktor); verworfene, abgelehnte, abgelaufene und beendete nicht.
+ */
+export const optimierungsTeilnahmen = (teilnahmen = []) => teilnahmen.filter((t) => TEILNAHME_ZAEHLT.includes(t?.status));
+
+/** Summe einer Kandidaten-Datenreihe {erzeugung[], verbrauch[]} (0 = keine Werte) */
+export const reihenSumme = (r) => [...(r?.erzeugung || []), ...(r?.verbrauch || [])].reduce((s, x) => s + (Number(x) || 0), 0);
+
+export const OPTIMIERUNG_DATENBASIS = {
+  messwerte: "Messwerte des Netzbetreibers",
+  schaetzung: "Schätzung aus der Mitgliederliste (Standardlastprofile)",
+  keine: "keine Daten der übrigen Teilnehmer",
+};
+
+/**
+ * Kandidat für tfOptimieren mit Datenbasis: Messwerte der übrigen Teilnehmer nur, wenn sie in der Stichprobe tatsächlich
+ * vorliegen (Summe > 0). Sonst – z. B. Gemeinschaft in Gründung, in der der Zählpunkt erst als Entwurf geplant ist und noch
+ * niemand Werte liefert – die Schätzung aus Standardlastprofilen/PV-Profilen der Mitglieder; ohne beides Kurve 0 („keine“).
+ * @param {{gemeinschaftId:string, messung?:{erzeugung:number[],verbrauch:number[]}|null, schaetzung?:{erzeugung:number[],verbrauch:number[]}|null}} k
+ */
+export function optimierungsKandidat({ messung = null, schaetzung = null, ...k } = {}) {
+  const basis = reihenSumme(messung) > 0 ? "messwerte" : reihenSumme(schaetzung) > 0 ? "schaetzung" : "keine";
+  const q = basis === "messwerte" ? messung : basis === "schaetzung" ? schaetzung : {};
+  return { ...k, erzeugung: q.erzeugung || [], verbrauch: q.verbrauch || [], datenbasis: basis, datenbasisText: OPTIMIERUNG_DATENBASIS[basis] };
+}
+
+/**
+ * Zusätzliche Hinweise zur Empfehlung je Kandidat (Datenbasis Schätzung/keine, Teilnahme noch nicht aktiv).
+ * @param {{gemeinschaftId:string, label?:string, datenbasis?:string, status?:string}[]} kandidaten · @param {{gemeinschaftId:string, aktuellTf:number, empfohlenTf:number}[]} empfehlung
+ */
+export function optimierungsHinweise(kandidaten = [], empfehlung = []) {
+  const h = [];
+  for (const k of kandidaten) {
+    const name = k.label || k.gemeinschaftId;
+    const e = empfehlung.find((x) => x.gemeinschaftId === k.gemeinschaftId);
+    if (k.datenbasis === "schaetzung") h.push(`${name}: noch keine Messwerte der übrigen Teilnehmer – Wert geschätzt aus Standardlastprofilen der Mitglieder (unsicher).`);
+    else if (k.datenbasis === "keine") h.push(`${name}: keine Daten der übrigen Teilnehmer – mit 0 bewertet.`);
+    if (k.status === "entwurf") h.push(`${name}: Teilnahme ist noch ein Entwurf – der Teilnahmefaktor gilt erst mit der Anmeldung; Anteile aus einer aktiven Gemeinschaft erst nach der Aktivierung verschieben.`);
+    else if (k.status && !["aktiv", "abmeldung_angefragt"].includes(k.status) && e && e.empfohlenTf !== e.aktuellTf) h.push(`${name}: Anmeldung läuft – eine Änderung ist erst nach der Aktivierung möglich (EC_PRTFACT_CHG).`);
+  }
+  return h;
 }
 
 /** Repräsentative Stichprobe: je Monat die ersten 7 Tage (Indizes in einem Tages-Array), Hochrechnung auf ein Jahr */

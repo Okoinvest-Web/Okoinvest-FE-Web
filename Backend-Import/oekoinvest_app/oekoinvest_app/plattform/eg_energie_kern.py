@@ -2032,6 +2032,53 @@ def tf_optimieren(richtung="verbrauch", werte=None, kandidaten=None, hochrechnun
 	return {"richtung": richtung, "empfehlung": empfehlung, "summeTf": summe_tf, "restTf": 100 - summe_tf, "wertEur": rund(wert, 2), "aktuellWertEur": rund(aktuell_wert, 2), "verbesserungEur": rund(wert - aktuell_wert, 2), "mengeKwh": rund(gesamt, 3), "aenderungen": len([x for x in empfehlung if x["aktuellTf"] != x["empfohlenTf"]]), "hinweise": hinweise}
 
 
+OPTIMIERUNG_ZAEHLT = ("entwurf", "angefragt", "zustimmung_offen", "zugestimmt", "wartet_technik", "aktiv", "abmeldung_angefragt")  # = TEILNAHME_ZAEHLT
+OPTIMIERUNG_DATENBASIS = {
+	"messwerte": "Messwerte des Netzbetreibers",
+	"schaetzung": "Schätzung aus der Mitgliederliste (Standardlastprofile)",
+	"keine": "keine Daten der übrigen Teilnehmer",
+}
+
+
+def optimierungs_teilnahmen(teilnahmen):
+	"""Zählende Teilnahmen (auch Entwurf); verworfen/abgelehnt/abgelaufen/beendet nicht (= optimierungsTeilnahmen)."""
+	return [t for t in teilnahmen or [] if (t or {}).get("status") in OPTIMIERUNG_ZAEHLT]
+
+
+def reihen_summe(r):
+	s = 0.0
+	for x in list((r or {}).get("erzeugung") or []) + list((r or {}).get("verbrauch") or []):
+		s += _f(x) if x else 0
+	return s
+
+
+def optimierungs_kandidat(k):
+	"""Kandidat mit Datenbasis (= optimierungsKandidat): Messwerte nur mit Summe > 0, sonst Schätzung, sonst keine."""
+	k = dict(k or {})
+	messung = k.pop("messung", None)
+	schaetzung = k.pop("schaetzung", None)
+	basis = "messwerte" if reihen_summe(messung) > 0 else "schaetzung" if reihen_summe(schaetzung) > 0 else "keine"
+	q = messung if basis == "messwerte" else schaetzung if basis == "schaetzung" else {}
+	return {**k, "erzeugung": list(q.get("erzeugung") or []), "verbrauch": list(q.get("verbrauch") or []), "datenbasis": basis, "datenbasisText": OPTIMIERUNG_DATENBASIS[basis]}
+
+
+def optimierungs_hinweise(kandidaten, empfehlung):
+	"""Hinweise je Kandidat (= optimierungsHinweise)."""
+	h = []
+	for k in kandidaten or []:
+		name = k.get("label") or k.get("gemeinschaftId")
+		e = next((x for x in empfehlung or [] if x.get("gemeinschaftId") == k.get("gemeinschaftId")), None)
+		if k.get("datenbasis") == "schaetzung":
+			h.append(f"{name}: noch keine Messwerte der übrigen Teilnehmer – Wert geschätzt aus Standardlastprofilen der Mitglieder (unsicher).")
+		elif k.get("datenbasis") == "keine":
+			h.append(f"{name}: keine Daten der übrigen Teilnehmer – mit 0 bewertet.")
+		if k.get("status") == "entwurf":
+			h.append(f"{name}: Teilnahme ist noch ein Entwurf – der Teilnahmefaktor gilt erst mit der Anmeldung; Anteile aus einer aktiven Gemeinschaft erst nach der Aktivierung verschieben.")
+		elif k.get("status") and k.get("status") not in ("aktiv", "abmeldung_angefragt") and e and e.get("empfohlenTf") != e.get("aktuellTf"):
+			h.append(f"{name}: Anmeldung läuft – eine Änderung ist erst nach der Aktivierung möglich (EC_PRTFACT_CHG).")
+	return h
+
+
 def repraesentative_tage(tage):
 	je = {}
 	for t in tage:

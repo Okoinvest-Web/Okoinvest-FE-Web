@@ -405,7 +405,15 @@ async function serverPruefen() {
   const j = await admin.get(`${basis}?journal=1`);
   pruefe(j.status === 200 && j.json?.nachrichten?.length > 0 && j.json.nachrichten.every((n) => /^[0-9a-f]{64}$/.test(n.sha256)), "Nachrichtenjournal mit SHA-256");
   // Anmeldung eines Entwurfs (Norbert)
-  const entwurf = u.json.teilnahmen?.find((t) => t.status === "entwurf");
+  let entwurf = u.json.teilnahmen?.find((t) => t.status === "entwurf");
+  if (!entwurf) {
+    // wiederholbar: frühere Läufe haben die Seed-Entwürfe angemeldet → eigenen Entwurf über WP1 anlegen (Testkonto-Präfix)
+    const su = `/api/admin/eg/${gid}`;
+    const mg = await admin.post(su, { aktion: "mitglied", daten: { art: "privat", person: { vorname: "EDA", nachname: `Testlauf ${String(Date.now()).slice(-6)} (Demo)` } } });
+    const zp = await admin.post(su, { aktion: "zaehlpunkt", daten: { zaehlpunktnummer: `AT00300004910000000000000E${String(Date.now()).slice(-7)}`, richtung: "verbrauch", smartMeter: "ja" } });
+    const tn = mg.json?.mitglied?.id && zp.json?.zaehlpunkt?.id ? await admin.post(su, { aktion: "teilnahme", daten: { zaehlpunktId: zp.json.zaehlpunkt.id, mitgliedId: mg.json.mitglied.id, teilnahmefaktor: 100 } }) : null;
+    entwurf = tn?.json?.teilnahme?.status === "entwurf" ? tn.json.teilnahme : null;
+  }
   if (pruefe(!!entwurf, "Teilnahme im Entwurf vorhanden")) {
     const a = await admin.post(basis, { aktion: "anmelden", teilnahmeIds: [entwurf.id] });
     pruefe(a.status === 200 && a.json?.prozesse?.length === 1 && !a.json.fehler?.length, "EC_REQ_ONL erzeugt und gesendet", a.json);
@@ -425,9 +433,17 @@ async function serverPruefen() {
   // TF-Änderung
   const aktiv = u.json.teilnahmen?.filter((t) => t.status === "aktiv") || [];
   const ab = new Date(Date.now() + 2 * 864e5).toISOString().slice(0, 10);
-  const tf = await admin.post(basis, { aktion: "tf", aenderungen: [{ teilnahmeId: aktiv[0]?.id, teilnahmefaktor: 90, ab }] });
-  pruefe(tf.status === 200 && tf.json?.prozesse?.length === 1, "EC_PRTFACT_CHG gesendet", tf.json);
-  const tf2 = await admin.post(basis, { aktion: "tf", aenderungen: [{ teilnahmeId: aktiv[0]?.id, teilnahmefaktor: 80, ab }] });
+  // wiederholbar: erste aktive Teilnahme ohne laufenden Prozess bzw. Änderung an diesem Tag, TF ≠ aktueller Wert
+  let tf = null;
+  let tfZiel = aktiv[0];
+  // aktiv[1] (Nachforderung) und aktiv[3..5] (Massen-Abmeldung) bleiben frei
+  for (const t of [aktiv[0], aktiv[2], ...aktiv.slice(6, 16)].filter(Boolean)) {
+    tf = await admin.post(basis, { aktion: "tf", aenderungen: [{ teilnahmeId: t.id, teilnahmefaktor: t.teilnahmefaktor === 90 ? 89 : 90, ab }] });
+    tfZiel = t;
+    if (tf.json?.prozesse?.length === 1) break;
+  }
+  pruefe(tf?.status === 200 && tf.json?.prozesse?.length === 1, "EC_PRTFACT_CHG gesendet", tf?.json);
+  const tf2 = await admin.post(basis, { aktion: "tf", aenderungen: [{ teilnahmeId: tfZiel?.id, teilnahmefaktor: 80, ab }] });
   pruefe(tf2.json?.fehler?.length === 1, "Zweite TF-Änderung desselben Tages abgelehnt", tf2.json);
   // Massen-Abmeldung → Vier-Augen
   const zum = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
@@ -438,9 +454,9 @@ async function serverPruefen() {
   pruefe(selbst.status === 403 || selbst.json?.fehler?.length, "Backoffice darf nicht selbst freigeben", selbst.json);
   const pf = `/api/portal/eg/${gid}/eda`;
   const fl = await obmann.get(pf);
-  pruefe(fl.status === 200 && fl.json?.freigaben?.length >= 3, "Obmann sieht offene Freigaben", fl.json);
+  pruefe(fl.status === 200 && (m.json?.prozesse || []).every((p) => fl.json?.freigaben?.some((x) => x.id === p.id)) && fl.json.freigaben.length >= 3, "Obmann sieht offene Freigaben", fl.json);
   const fg = await obmann.post(pf, { prozessIds: m.json?.prozesse?.map((p) => p.id) || [], entscheidung: "erteilen" });
-  pruefe(fg.status === 200 && fg.json?.freigegeben === 3, "Obmann gibt frei → CM_REV_SP gesendet", fg.json);
+  pruefe(fg.status === 200 && fg.json?.freigegeben === (m.json?.prozesse || []).length && fg.json.freigegeben >= 1, "Obmann gibt frei → CM_REV_SP gesendet", fg.json);
   pruefe([403, 404].includes((await mitglied.get(pf)).status), "Mitglied sieht keine Freigaben");
   // Zählpunktliste, Nachforderung, Energiedaten
   const pl = await admin.post(basis, { aktion: "podlist" });
@@ -451,7 +467,8 @@ async function serverPruefen() {
   const nf = await admin.post(basis, { aktion: "nachforderung", teilnahmeId: aktiv[1]?.id, von: new Date(Date.now() - 6 * 864e5).toISOString().slice(0, 10), bis: new Date(Date.now() - 5 * 864e5).toISOString().slice(0, 10) });
   pruefe(nf.status === 200 && nf.json?.prozess?.prozesscode === "CR_REQ_PT", "CR_REQ_PT gesendet", nf.json);
   const en = await admin.post(basis, { aktion: "simulator", simulatorAktion: "energiedaten" });
-  pruefe(en.status === 200 && en.json?.nachrichten >= 1, "Simulator liefert Energiedaten (CR_MSG) und reicht sie an WP3 weiter", en.json);
+  // wiederholbar: beim zweiten Lauf desselben Tages sind die Werte schon empfangen („bereits“)
+  pruefe(en.status === 200 && (en.json?.nachrichten >= 1 ? en.json.weitergeleitet >= 1 : en.json?.bereits >= 1), "Simulator liefert Energiedaten (CR_MSG) und reicht sie an WP3 weiter", en.json);
   // Erinnerungen und erneut anstoßen
   const er = await admin.post(basis, { aktion: "erinnern" });
   pruefe(er.status === 200 && er.json?.erinnert >= 1, "Erinnerungen an Mitglieder mit Anleitung je Netzbetreiber", er.json);

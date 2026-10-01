@@ -137,7 +137,8 @@ export function SchnellFormular({ felder, start = {}, onSenden, knopf = "Speiche
 }
 
 /** Kleiner Knopf, der eine Aktion ausführt (z. B. Löschen, Übergabe) – optional mit Rückfrage */
-export function AktionKnopf({ fn, children, meldung = "", frage = "", variante = "sekundaer", klein = false, className }) {
+// abfrage (optional): async () => Wert | null – null bricht ab, der Wert geht an fn(wert)
+export function AktionKnopf({ fn, abfrage, children, meldung = "", frage = "", variante = "sekundaer", klein = false, className }) {
   const a = useAktion();
   return (
     <span className={cn("inline-flex flex-col gap-2", className)}>
@@ -146,7 +147,12 @@ export function AktionKnopf({ fn, children, meldung = "", frage = "", variante =
         disabled={a.laeuft}
         onClick={async () => {
           if (frage && !(await bestaetigen({ titel: frage, bestaetigenText: typeof children === "string" ? children : undefined, gefahr: variante === "gefahr" }))) return;
-          await a.ausfuehren(fn, { meldung });
+          let wert;
+          if (abfrage) {
+            wert = await abfrage();
+            if (wert === null) return;
+          }
+          await a.ausfuehren(abfrage ? () => fn(wert) : fn, { meldung });
         }}
         className={cn(
           "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition-colors disabled:opacity-60",

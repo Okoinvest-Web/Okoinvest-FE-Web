@@ -68,11 +68,12 @@ export default function ProzessPage() {
         }
         lead="Wie lange dauert was? Wer macht welchen Schritt? Welche Unterlagen brauchen Sie – und was sehen Sie im Portal? Wählen Sie Ihre Rolle und sehen Sie Ihren Weg."
         points={ZIELGRUPPEN.map((z) => z.label)}
-      >
-        <HeroSzene>
-          <Netzanschluss ton="dunkel" animiert />
-        </HeroSzene>
-      </PageHero>
+        szene={
+          <HeroSzene>
+            <Netzanschluss ton="dunkel" animiert />
+          </HeroSzene>
+        }
+      />
 
       <Section tone="sand" space="lg" id="ablauf" className="scroll-mt-24">
         <ProzessTabs />

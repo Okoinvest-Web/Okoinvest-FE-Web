@@ -128,6 +128,11 @@ export default async function VirtuellesKraftwerkPage() {
         }
         lead="Wir verbinden Solarparks, Agri-PV, Solarcarports und Speicher mit dem Strombedarf mittelständischer Unternehmen. Eine Leitwarte plant im Viertelstundenraster, vermarktet gemeinsam und beschafft gemeinsam – das senkt Kosten auf beiden Seiten."
         points={["Erzeugung, Speicher und Verbrauch im Verbund", "Direktvermarktung und Flexibilität", "Gebündelte Beschaffung für den Mittelstand"]}
+        szene={
+          <HeroSzene>
+            <Grossspeicher ton="dunkel" animiert />
+          </HeroSzene>
+        }
         actions={[
           { label: "Energiefluss ansehen", href: "#energiefluss" },
           { label: "Reststrom-Pool", href: "/reststrom" },
@@ -136,9 +141,6 @@ export default async function VirtuellesKraftwerkPage() {
         <div className="ov-hero-in mt-12 max-w-2xl" style={{ "--ov-delay": "380ms" }}>
           <VppLiveSignal initial={live} />
         </div>
-        <HeroSzene>
-          <Grossspeicher ton="dunkel" animiert />
-        </HeroSzene>
       </PageHero>
 
       <Section tone="white" space="lg">

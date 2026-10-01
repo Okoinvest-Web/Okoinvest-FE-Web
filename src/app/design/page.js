@@ -21,6 +21,7 @@ import IllustrationRahmen from "@/components/ui/IllustrationRahmen";
 import { ILLU, iso, punkte, quader } from "@/components/ui/illustration";
 import { DIVERGIEREND, ENERGIE, KATEGORIE_DUNKEL, KATEGORIE_HELL, SEQUENZ_GRUEN, SEQUENZ_NAVY } from "@/components/ui/datenfarben";
 import { Hinweis, Karte, Kennzahl, Leer, PfeilLink, Tabelle, zelle } from "@/components/Portal/ui";
+import DiagrammVitrine from "@/components/diagramme/Vitrine";
 import { AnsichtDemo, FeedbackDemo, OverlayDemo, RueckfrageDemo, TabsDemo } from "./Demos";
 
 export const metadata = {
@@ -84,6 +85,7 @@ const NAV = [
   ["interaktion", "Interaktion"],
   ["motion", "Motion"],
   ["daten", "Daten"],
+  ["diagramme", "Diagramme"],
   ["illustration", "Illustration"],
 ];
 
@@ -529,6 +531,13 @@ export default function DesignSeite() {
               </div>
             </div>
           </div>
+        </Block>
+      </Section>
+
+      {/* ---------------- Diagramme (T4) ---------------- */}
+      <Section tone="ink" space="md">
+        <Block id="diagramme" titel="Diagramme" text="Chart-System aus src/components/diagramme (T4): Linie, Balken, Heatmap, Donut, Wasserfall, Energiefluss, Gauge – mit Tastatur-Tooltip, Datentabelle, CSV und PNG.">
+          <DiagrammVitrine />
         </Block>
       </Section>
 

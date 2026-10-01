@@ -108,11 +108,12 @@ export default async function Projektboerse({ searchParams }) {
               ]
             : []
         }
-      >
-        <HeroSzene>
-          <InvestorenDashboard ton="dunkel" animiert />
-        </HeroSzene>
-      </PageHero>
+        szene={
+          <HeroSzene>
+            <InvestorenDashboard ton="dunkel" animiert />
+          </HeroSzene>
+        }
+      />
 
       <Section tone="sand" space="md" id="projekte">
         {demo && (

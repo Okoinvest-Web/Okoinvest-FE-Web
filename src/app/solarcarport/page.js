@@ -108,11 +108,12 @@ export default function SolarcarportSeite() {
           { label: "Carport-Rechner", href: "/rechner/solarcarport", icon: Calculator },
         ]}
         className="[&>div.ov-container]:pb-28 md:[&>div.ov-container]:pb-36"
-      >
-        <HeroSzene>
-          <Solarcarport ton="dunkel" animiert />
-        </HeroSzene>
-      </PageHero>
+        szene={
+          <HeroSzene>
+            <Solarcarport ton="dunkel" animiert />
+          </HeroSzene>
+        }
+      />
 
       <section aria-label="Solarcarport in Zahlen" className="relative z-10 -mt-20 md:-mt-28">
         <div className="ov-container">

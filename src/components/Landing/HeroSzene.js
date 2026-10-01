@@ -1,29 +1,23 @@
 import IllustrationRahmen from "@/components/ui/IllustrationRahmen";
 
 /**
- * Illustrations-Ebene für dunkle Landingpage-Heros (`PageHero variant="dark"`).
- * Wird als `children` übergeben und schwebt ab 1280 px rechts neben dem Text –
- * darunter entfällt sie, damit Text und Aktionen mobil nicht nach unten rutschen.
+ * Illustration für den Slot `szene` von `PageHero variant="dark"`
+ * (Position, Breite und Einstieg regelt PageHero; ab 1280 px sichtbar).
  *
- *   <PageHero variant="dark" …><HeroSzene><Solarcarport ton="dunkel" animiert /></HeroSzene></PageHero>
+ *   <PageHero variant="dark" … szene={<HeroSzene><Solarcarport ton="dunkel" animiert /></HeroSzene>} />
  *
- * Dekorativ (aria-hidden über IllustrationRahmen ohne label). Fester 16:10-Rahmen →
- * kein Layout-Sprung. Schweben nur per transform, unter reduced-motion still.
+ * Dekorativ (IllustrationRahmen ohne label → aria-hidden). Fester 16:10-Rahmen →
+ * kein Layout-Sprung. Lichtschein dahinter, sanftes Schweben nur per transform,
+ * unter reduced-motion still.
  */
-export default function HeroSzene({ children, delay = 320 }) {
+export default function HeroSzene({ children }) {
   return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-y-0 right-0 -z-10 hidden items-center xl:flex"
-      style={{ paddingRight: "max(2rem, calc((100vw - 80rem) / 2 + 2rem))" }}
-    >
-      <div className="ov-hero-in relative w-[min(34vw,500px)]" style={{ "--ov-delay": `${delay}ms` }}>
-        <div className="absolute -inset-10 -z-10 rounded-full bg-ov-500/15 blur-3xl" />
-        <div className="motion-safe:animate-ov-float">
-          <IllustrationRahmen ton="navy" format="16/10" className="shadow-e5">
-            {children}
-          </IllustrationRahmen>
-        </div>
+    <div className="relative isolate">
+      <div aria-hidden="true" className="absolute -inset-10 -z-10 rounded-full bg-ov-500/15 blur-3xl" />
+      <div className="motion-safe:animate-ov-float">
+        <IllustrationRahmen ton="navy" format="16/10" className="shadow-e5">
+          {children}
+        </IllustrationRahmen>
       </div>
     </div>
   );

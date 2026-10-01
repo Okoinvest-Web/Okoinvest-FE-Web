@@ -90,16 +90,17 @@ export function useTeilbarerZustand(werte, uebernehmen, einstellungen = {}) {
   }, []);
 
   // Beim Rahmen anmelden (Szenario wiederherstellen)
+  const zustandRef = rahmen?.zustand;
   useEffect(() => {
-    if (!rahmen?.zustand) return undefined;
-    rahmen.zustand.current = {
+    if (!zustandRef) return undefined;
+    zustandRef.current = {
       lesen: () => ({ ...aktuell.current }),
       setzen: (z) => uebernehmenRef.current(z),
     };
     return () => {
-      rahmen.zustand.current = null;
+      zustandRef.current = null;
     };
-  }, [rahmen]);
+  }, [zustandRef]);
 
   // Änderungen verzögert in die Adresszeile schreiben (ohne Verlaufseintrag)
   const schluessel = JSON.stringify(werte);
@@ -133,8 +134,15 @@ export function useTeilbarerZustand(werte, uebernehmen, einstellungen = {}) {
 export function useKurzwerteMelden(werte) {
   const rahmen = useRahmen();
   const schluessel = werte.map(([k, v]) => `${k}\u0000${typeof v === "string" || typeof v === "number" ? v : ""}`).join("\u0001");
+  const setKurz = rahmen?.setKurz;
   useEffect(() => {
-    rahmen?.setKurz(werte.map(([k, v]) => [String(k), typeof v === "string" || typeof v === "number" ? String(v) : ""]));
+    if (!setKurz) return;
+    // Nur bei echter Änderung setzen (sonst Endlosschleife über den Kontext)
+    setKurz((alt) => {
+      const neu = werte.map(([k, v]) => [String(k), typeof v === "string" || typeof v === "number" ? String(v) : ""]);
+      const gleich = alt && alt.length === neu.length && alt.every(([k, v], i) => k === neu[i][0] && v === neu[i][1]);
+      return gleich ? alt : neu;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schluessel, rahmen]);
+  }, [schluessel, setKurz]);
 }

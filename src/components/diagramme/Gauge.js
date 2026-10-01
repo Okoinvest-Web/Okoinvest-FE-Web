@@ -34,7 +34,7 @@ export default function Gauge({ wert, min = 0, max = 1, ziel, label, wertText, p
   const bogen = bogenLinie(cx, cy, r, A0, A1);
 
   return (
-    <div className={cn("ov-reveal inline-flex flex-col items-center", className)} data-dir="ohne" style={{ width: w }}>
+    <div suppressHydrationWarning className={cn("ov-reveal inline-flex flex-col items-center", className)} data-dir="ohne" style={{ width: w }}>
       <div
         role="meter"
         aria-valuemin={prozent ? min * 100 : min}

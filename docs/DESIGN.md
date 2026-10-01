@@ -275,6 +275,10 @@ Kurzform: `bestaetigen("Entwurf verwerfen?")`. Mehrere Aufrufe werden nacheinand
 ### Tabs
 - `linie` für Seiten-Unterbereiche, `pille` für Ansichtswechsel (Liste/Karte, Tag/Monat/Jahr). Max. 6 Tabs, Zähler optional. Wechsel animiert über `ov-tab-panel`.
 
+### Tooltips
+- `Tooltip` aus `ui/Tooltip.js` für kurze Hinweise (Hover + Fokus, Esc). Diagramm-Tooltips liefert das Chart-System (§ 7.1).
+- **Achtung:** `.ov-tooltip` animiert `transform` mit `fill-mode: both` und überschreibt damit jede Inline-Positionierung per `transform` am selben Element. Positionieren über ein äußeres Wrapper-Element (oder Tailwind-`translate-*`, das die eigene Eigenschaft `translate` nutzt).
+
 ### Badges
 - Immer mit Text. Punkt für Status, Icon für Typ, `live` nur für Echtzeitdaten. Größe `sm` in Tabellen/Listen, `md` in Köpfen.
 
@@ -310,6 +314,30 @@ Palette in `ui/datenfarben.js`. Regeln:
 - Achsen/Raster: `ACHSE.hell|dunkel`; Raster nur horizontal, Achsenbeschriftung 12 px `ink-500`, keine 3D-Effekte, keine Tortendiagramme mit > 3 Segmenten (lieber Balken).
 - Jedes Diagramm: Titel + Einheit, `role="img"` + `aria-label` mit Kernaussage, zusätzlich Datentabelle (z. B. `<details>`) oder Tooltip-Werte per Tastatur erreichbar.
 - Einlauf: einmal beim Einscrollen (`Reveal dir="ohne"` + `ov-balken-y`/`ov-linie`), Datenaktualisierung ohne erneuten Einlauf (nur Übergang der Werte).
+
+### 7.1 Chart-System (`src/components/diagramme`, Team T4)
+
+Schaufenster: `/design#diagramme` (`<DiagrammVitrine />`). Für neue Diagramme **immer** diese Bausteine verwenden, keine eigenen SVG-Charts.
+
+| Baustein | Zweck |
+|---|---|
+| `LinienDiagramm` | Linie/Fläche/Treppe/gestapelte Fläche, rechte 2. Achse, `referenz` (Soll-/Ziellinie), `markierungen`, `direktLabels` |
+| `BalkenDiagramm` | Säulen gruppiert/gestapelt (auch negativ), `linie` (Mittel), `soll` (Strich je Kategorie), `referenz`, direkte Werte bei Platz |
+| `HeatmapDiagramm` | Matrix 7×24 bis 24×365 (Lastgang), 9 Stufen `SEQUENZ_NAVY`/`SEQUENZ_GRUEN`/`DIVERGIEREND`, Stufenlegende |
+| `DonutDiagramm` | Anteile, max. 4 Segmente (Rest „Sonstige“ ink-300), Legende mit Wert + % |
+| `WasserfallDiagramm` | Brücke Start → Zu-/Abgänge → Summe (Navy/Grün/Sonne + Vorzeichen) |
+| `EnergieFluss` | Sankey-artig Erzeugung → Gemeinschaft → Verbrauch, Bänder ∝ Energie |
+| `Gauge` | Halbkreis für Eigendeckung/PR/Auslastung mit Ziel, `role="meter"` (server-tauglich) |
+| `DiagrammRahmen`, `Plot`, `Legende`, `DatenTabelle` | gemeinsamer Rahmen bzw. Interaktion |
+
+Regeln (verbindlich):
+- **Gemessene Breite statt skalierter viewBox:** Schrift bleibt 12 px, Achsen dünnen Beschriftungen ohne Überlappung aus, der y-Rand passt sich der längsten Zahl an. Feste Höhe → kein Layout-Sprung.
+- **Interaktion:** Fadenkreuz + Tooltip per Zeiger UND Tastatur (Fokus auf Diagramm, ← → Pos1 Ende Bild↑/↓, Esc; Heatmap ↑↓ = Zeile). Werte werden über `aria-live` angesagt.
+- **Werkzeugleiste je Diagramm:** „Tabelle“ (Datentabelle statt Diagramm), „CSV“ (Semikolon, Dezimalkomma, BOM), „PNG“ (2×, mit Titel).
+- **Einlauf:** Linien `ov-linie`, Säulen `ov-balken-y` gestaffelt (max. ~0,7 s gesamt), Flächen/gestrichelte Linien `ov-flaeche-ein`, Gauge `ov-ring-wert`; einmalig beim Einscrollen, Datenänderung ohne erneuten Einlauf; reduced-motion = Endzustand.
+- **Props serialisierbar:** Server-Komponenten übergeben fertige Texte (`texte`, `xTitel`, `xBeschriftung`); Formatfunktionen (`format`, `xTitelFn`) nur in Client-Komponenten.
+- **Farben** nur aus `ui/datenfarben.js`; Energie-Bedeutungen über `ENERGIE`; gestrichelte Reihen über `LINIENSTIL` als zweites Merkmal; Direktbeschriftung in dunkler Schrift + Farbstrich (Sonne nie als Text).
+- **Bestand:** `Portal/Energie/Diagramme.js` (`LinienChart`, `BalkenChart`, `Heatmap`, `Legende`) ist eine Hülle um das Chart-System – Schnittstellen bleiben.
 
 ---
 

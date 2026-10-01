@@ -33,8 +33,8 @@ export function RechnerRahmen({ eingaben, ergebnis, unten, breiteLinks = 410, mi
   return (
     <RahmenKontext.Provider value={wert}>
       <div data-rechner="" className="overflow-clip rounded-[2rem] bg-white shadow-[0_40px_80px_-40px_rgba(3,18,43,0.45)] ring-1 ring-ink-200/70 print:shadow-none">
-        <div className="grid lg:grid-cols-[minmax(0,var(--links))_minmax(0,1fr)]" style={{ "--links": `${breiteLinks}px` }}>
-          <div ref={eingabenRef} className="relative border-b border-ink-100 bg-sand-50 p-5 sm:p-6 md:p-8 lg:border-b-0 lg:border-r">
+        <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,var(--links))_minmax(0,1fr)]" style={{ "--links": `${breiteLinks}px` }}>
+          <div ref={eingabenRef} className="relative min-w-0 border-b border-ink-100 bg-sand-50 p-5 sm:p-6 md:p-8 lg:border-b-0 lg:border-r">
             {eingaben}
           </div>
           <div ref={ergebnisRef} id={ergebnisId} tabIndex={-1} className="min-w-0 scroll-mt-24 p-5 outline-none sm:p-6 md:p-8">
@@ -63,10 +63,12 @@ export function MobilKurz({ werte }) {
   const [bereit, setBereit] = useState(false);
   const [sichtbar, setSichtbar] = useState(false);
 
+  const eingabenRef = rahmen?.eingabenRef;
+  const ergebnisRef = rahmen?.ergebnisRef;
   useEffect(() => {
     setBereit(true);
-    const eingaben = rahmen?.eingabenRef?.current;
-    const ergebnis = rahmen?.ergebnisRef?.current;
+    const eingaben = eingabenRef?.current;
+    const ergebnis = ergebnisRef?.current;
     if (!eingaben || !ergebnis || typeof IntersectionObserver === "undefined") return undefined;
     let eingabenImBild = false;
     let ergebnisImBild = false;
@@ -89,7 +91,7 @@ export function MobilKurz({ werte }) {
       ioE.disconnect();
       ioR.disconnect();
     };
-  }, [rahmen]);
+  }, [eingabenRef, ergebnisRef]);
 
   // Die globale Handlungsleiste der Website weicht, solange die Ergebnisleiste steht
   useEffect(() => {

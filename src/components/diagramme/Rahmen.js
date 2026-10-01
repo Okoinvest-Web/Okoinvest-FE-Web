@@ -18,19 +18,21 @@ import Legende from "./Legende";
 
 /** Breite des Elements in px (Startwert für Server-HTML, danach gemessen). */
 export function useBreite(standard = 720) {
-  const ref = useRef(null);
+  // Callback-Ref: misst auch dann, wenn das Element erst nach dem ersten Rendern erscheint (Daten laden nach).
+  const [el, setEl] = useState(null);
   const [breite, setBreite] = useState(standard);
   useEffect(() => {
-    const el = ref.current;
     if (!el || typeof ResizeObserver === "undefined") return;
+    const w0 = Math.floor(el.getBoundingClientRect().width);
+    if (w0 > 0) setBreite(w0);
     const ro = new ResizeObserver(([e]) => {
       const w = Math.floor(e.contentRect.width);
       if (w > 0) setBreite((alt) => (Math.abs(alt - w) >= 1 ? w : alt));
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
-  return [ref, breite];
+  }, [el]);
+  return [setEl, breite];
 }
 
 function herunterladen(blob, name) {
@@ -156,7 +158,7 @@ export function DiagrammRahmen({ titel, einheit, untertitel, beschreibung, tabel
   }, [titel, beschreibung, dunkel]);
 
   return (
-    <figure ref={ref} className={cn("ov-reveal min-w-0", className)} data-dir="ohne" aria-labelledby={titel ? `${id}-t` : undefined}>
+    <figure ref={ref} suppressHydrationWarning className={cn("ov-reveal min-w-0", className)} data-dir="ohne" aria-labelledby={titel ? `${id}-t` : undefined}>
       {(titel || kopfAktion) && (
         <div className="mb-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
           <div className="min-w-0">

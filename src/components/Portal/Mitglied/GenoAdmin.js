@@ -131,7 +131,7 @@ export function UebertragungAktionen({ u }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
       <Knopf variante="primary" disabled={a.laeuft} onClick={() => a.ausfuehren({ aktion: "mitglied", id: u.id, mitgliedAktion: "uebertragungGenehmigen", uebertragungId: u.id }, "Übertragung durchgeführt.")}>Zustimmen</Knopf>
-      <Knopf variante="gefahr" disabled={a.laeuft} onClick={async () => a.ausfuehren({ aktion: "mitglied", id: u.id, mitgliedAktion: "uebertragungAblehnen", uebertragungId: u.id, grund: (await abfragen({ titel: "Übertragung ablehnen?", label: "Begründung (optional)", mehrzeilig: true, gefahr: true, bestaetigenText: "Übertragung ablehnen" })) || "" }, "Übertragung abgelehnt.")}>Ablehnen</Knopf>
+      <Knopf variante="gefahr" disabled={a.laeuft} onClick={async () => { const grund = await abfragen({ titel: "Übertragung ablehnen?", label: "Begründung (optional)", mehrzeilig: true, gefahr: true, bestaetigenText: "Übertragung ablehnen" }); if (grund === null) return; a.ausfuehren({ aktion: "mitglied", id: u.id, mitgliedAktion: "uebertragungAblehnen", uebertragungId: u.id, grund }, "Übertragung abgelehnt."); }}>Ablehnen</Knopf>
       <Meldung fehler={a.fehler} ok={a.ok} />
     </span>
   );

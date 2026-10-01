@@ -236,7 +236,7 @@ export function TerminKnoepfe({ id, bo = false, t, seite }) {
   return (
     <span className="flex flex-wrap gap-2">
       {t.status === "vorgeschlagen" && !eigen && <AktionKnopf klein variante="primaer" meldung="Bestätigt." fn={() => aktion(id, bo, { aktion: "termin_status", terminId: t.id, status: "bestaetigt" })}>Bestätigen</AktionKnopf>}
-      {t.datum <= heute && <AktionKnopf klein meldung="Als erledigt markiert." fn={async () => aktion(id, bo, { aktion: "termin_status", terminId: t.id, status: "erledigt", protokoll: (await abfragen({ titel: "Termin als erledigt markieren?", label: "Kurzprotokoll (optional)", mehrzeilig: true, bestaetigenText: "Als erledigt markieren" })) || "" })}>Erledigt</AktionKnopf>}
+      {t.datum <= heute && <AktionKnopf klein meldung="Als erledigt markiert." abfrage={() => abfragen({ titel: "Termin als erledigt markieren?", label: "Kurzprotokoll (optional)", mehrzeilig: true, bestaetigenText: "Als erledigt markieren" })} fn={(protokoll) => aktion(id, bo, { aktion: "termin_status", terminId: t.id, status: "erledigt", protokoll: protokoll || "" })}>Erledigt</AktionKnopf>}
       <AktionKnopf klein variante="gefahr" frage="Termin absagen?" meldung="Abgesagt." fn={() => aktion(id, bo, { aktion: "termin_status", terminId: t.id, status: "abgesagt" })}>Absagen</AktionKnopf>
     </span>
   );

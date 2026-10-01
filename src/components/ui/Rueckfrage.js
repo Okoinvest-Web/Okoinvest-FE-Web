@@ -170,7 +170,9 @@ function RueckfrageDialog({ eintrag, offen, beenden }) {
   };
 
   const Icon = o.icon || (gefahr ? AlertTriangle : frage ? PenLine : CircleHelp);
-  const details = Array.isArray(o.details) ? o.details.filter(Boolean) : o.details ? [o.details] : [];
+  // Leere Kontextzeilen (fehlender Wert) nicht anzeigen
+  const leer = (d) => !d || (typeof d === "object" && (d.wert === undefined || d.wert === null || String(d.wert).trim() === ""));
+  const details = (Array.isArray(o.details) ? o.details : o.details ? [o.details] : []).filter((d) => !leer(d));
   const max = o.maxlaenge || 2000;
   const feldKlassen = cn(
     "w-full rounded-2xl bg-white px-4 text-[16px] text-ink-900 ring-1 ring-inset placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-ov-500",

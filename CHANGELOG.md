@@ -1,5 +1,20 @@
 # Änderungen
 
+## 0.4.0 – 01.10.2026 – Design-Offensive (Design-System 2.0)
+
+- Design-System 2.0 (docs/DESIGN.md, Styleguide /design): semantische Farben, Tiefenstufen, Zahlen-Typografie, Motion-System, Kontraste nach WCAG 2.2 AA zentral korrigiert, neue Bausteine (KPI-Kachel, Sparkline, Fortschrittsring, Skeleton, Toast, Tooltip, Dialog/Bottom-Sheet, Tabs, Erfolgshaken)
+- Illustrationsbibliothek mit 41 eigenen SVG-Motiven (Hero-Szenen, Leerzustände, Spots, animiertes Marken-Motiv), Galerie /design/illustrationen
+- UX-Audit der 12 Kernwege (docs/UX-AUDIT.md); alle P0-Punkte behoben (u. a. Flächencheck-Eingabe, Pachtangebot mit Prüfschritt, Rückfragen in der EG-Abrechnung, Exposé-Aktionsleiste mobil)
+- Markendialoge statt Browser-Rückfragen (52 Bestätigungen, 13 Eingaben)
+- Startseite und Landingpages: Tiefen-Hero, Vertrauensleiste, Mega- und Mobilmenü-Choreografie, Seitenübergänge, Sprungnavigation mobil
+- Rechner: Live-Ergebnis mit Hauptzahl, Szenario-Vergleich, Teilen-Link, Druck, mobile Ergebnisleiste; Flächencheck mit Live-Zwischenstand
+- Portal: einklappbare Seitenleiste, Brotkrumen ohne IDs, Skeleton-Ladezustände, Dashboards mit „Als Nächstes“ und KPI-Kacheln, Glocke mit Zu-erledigen/Info
+- Einheitliches Chart-System (Linie, Balken, Heatmap, Donut, Wasserfall, Energiefluss, Gauge) mit Tastatur, Tabelle, CSV/PNG-Export
+- Formulare: gemeinsame Bausteine mit Inline-Validierung, Split-Screen-Login, 2FA-Codefelder, Entwurf-Sicherung
+- Energiegemeinschaften: „Energie heute“-Dashboard, Kassier-Ablauf mit Vorzeitraum-Vergleich, Produktseite /energiegemeinschaften/software
+- Statusfarben vereinheitlicht (237 ad-hoc Rot-Stellen auf danger-Tokens)
+- Qualität: 37 Testreihen grün (frische Demo-DB), Produktions-Build, ESLint ohne Befund, npm audit 0, Frappe-Konsistenzprüfer 0/0
+
 ## 0.3.0 – 01.10.2026 – Vollausbau Portal und Energiegemeinschaften
 
 **Energiegemeinschaften Österreich (EEG lokal/regional, BEG, GEA nach ElWG §§ 65–72)**

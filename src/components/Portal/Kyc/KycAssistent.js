@@ -60,7 +60,7 @@ function DokumentZeile({ d, bearbeitbar, onLoeschen }) {
         <p className="truncate text-[12.5px] text-ink-500">
           {dateigroesse(d.groesse)} · {datum(d.am)} · {d.status === "ok" ? "geprüft" : d.status === "abgelehnt" ? "nicht akzeptiert" : "hochgeladen"} · verschlüsselt gespeichert
         </p>
-        {d.status === "abgelehnt" && d.grund && <p className="mt-0.5 text-[12.5px] font-medium text-red-700">{d.grund}</p>}
+        {d.status === "abgelehnt" && d.grund && <p className="mt-0.5 text-[12.5px] font-medium text-danger-700">{d.grund}</p>}
       </div>
       <a href={`/api/portal/kyc/dokumente/${d.id}?anzeigen=1`} target="_blank" rel="noopener" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-600 hover:bg-ink-100" aria-label={`${d.name} ansehen`}>
         <Eye aria-hidden="true" className="h-4 w-4" />
@@ -138,7 +138,7 @@ function Unterlage({ art, label, hinweis, pflicht = true, dokumente, bearbeitbar
         )}
       </div>
       {eigene.length > 0 && <ul className="mt-2 divide-y divide-ink-100">{eigene.map((d) => <DokumentZeile key={d.id} d={d} bearbeitbar={bearbeitbar} onLoeschen={loeschen} />)}</ul>}
-      {fehler && <p role="alert" className="mt-2 text-[13px] font-medium text-red-700">{fehler}</p>}
+      {fehler && <p role="alert" className="mt-2 text-[13px] font-medium text-danger-700">{fehler}</p>}
     </div>
   );
 }

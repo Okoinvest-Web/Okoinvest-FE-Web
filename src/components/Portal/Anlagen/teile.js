@@ -9,7 +9,7 @@ import { AMPEL, STOERUNG_SCHWERE, STOERUNG_STATUS } from "@/lib/plattform/anlage
 export const AMPEL_KLASSE = {
   laeuft: { badge: "bg-ov-50 text-ov-800 ring-ov-200", punkt: "bg-ov-500", fill: "fill-ov-500", text: "text-ov-700" },
   warnung: { badge: "bg-sun-300/25 text-ink-900 ring-sun-400/50", punkt: "bg-sun-500", fill: "fill-sun-500", text: "text-ink-900" },
-  stoerung: { badge: "bg-red-50 text-red-800 ring-red-200", punkt: "bg-red-600", fill: "fill-red-600", text: "text-red-700" },
+  stoerung: { badge: "bg-danger-50 text-danger-800 ring-danger-200", punkt: "bg-danger-600", fill: "fill-danger-600", text: "text-danger-700" },
   offline: { badge: "bg-ink-100 text-ink-700 ring-ink-200", punkt: "bg-ink-400", fill: "fill-ink-400", text: "text-ink-600" },
 };
 
@@ -31,8 +31,8 @@ const SCHWERE_KLASSE = {
   info: "bg-ink-100 text-ink-700 ring-ink-200",
   niedrig: "bg-navy-50 text-navy-700 ring-navy-100",
   mittel: "bg-sun-300/25 text-ink-900 ring-sun-400/50",
-  hoch: "bg-red-50 text-red-800 ring-red-200",
-  kritisch: "bg-red-700 text-white ring-red-700",
+  hoch: "bg-danger-50 text-danger-800 ring-danger-200",
+  kritisch: "bg-danger-700 text-white ring-danger-700",
 };
 
 export function SchwereBadge({ schwere }) {

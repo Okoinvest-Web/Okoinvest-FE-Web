@@ -197,7 +197,7 @@ export default function ContactForm({
         </span>
       </label>
       {status === "fehler" && (
-        <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-800 ring-1 ring-red-200">{fehler}</p>
+        <p role="alert" className="rounded-xl bg-danger-50 px-4 py-3 text-[14px] text-danger-800 ring-1 ring-danger-200">{fehler}</p>
       )}
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <button

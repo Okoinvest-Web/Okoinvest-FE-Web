@@ -20,6 +20,7 @@ import Werttreppe from "@/components/Home/Werttreppe";
 import Kreislauf from "@/components/Home/Kreislauf";
 import HomeBoerse from "@/components/Home/HomeBoerse";
 import HeroTiefe from "@/components/Home/HeroTiefe";
+import Sprungnavigation from "@/components/Home/Sprungnavigation";
 import Vertrauensleiste from "@/components/Home/Vertrauensleiste";
 import Stagger from "@/components/ui/Stagger";
 import { SpotGrossspeicher, SpotSolarcarport } from "@/components/illustrationen";
@@ -172,6 +173,8 @@ export default function HomePage() {
         </div>
       </section>
 
+      <Sprungnavigation />
+
       <Vertrauensleiste />
 
       {/* ================= KREISLAUF ================= */}
@@ -212,7 +215,7 @@ export default function HomePage() {
       </Section>
 
       {/* ================= LÖSUNGEN BENTO ================= */}
-      <Section tone="sand" space="lg">
+      <Section id="loesungen" tone="sand" space="lg" className="scroll-mt-32 md:scroll-mt-28">
         <div className="mb-12 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
           <SectionHeading
             eyebrow="Was wir entwickeln"
@@ -274,7 +277,7 @@ export default function HomePage() {
       </Section>
 
       {/* ================= PROJEKTBÖRSE ================= */}
-      <Section tone="white" space="lg">
+      <Section id="boerse" tone="white" space="lg" className="scroll-mt-32 md:scroll-mt-28">
         <div className="grid items-center gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:gap-20">
           <div>
             <SectionHeading
@@ -313,7 +316,7 @@ export default function HomePage() {
       </Section>
 
       {/* ================= RESTSTROM-POOL ================= */}
-      <Section tone="navy" space="lg" className="ov-noise overflow-hidden">
+      <Section id="energie" tone="navy" space="lg" className="ov-noise scroll-mt-32 overflow-hidden md:scroll-mt-28">
         <div aria-hidden="true" className="ov-grid-bg absolute inset-0" />
         <div aria-hidden="true" className="absolute -right-32 -top-20 h-[460px] w-[460px] rounded-full bg-ov-500/20 blur-[130px]" />
         <div className="relative grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-20">
@@ -361,7 +364,7 @@ export default function HomePage() {
       </Section>
 
       {/* ================= TOOLS ================= */}
-      <Section tone="white" space="lg">
+      <Section id="tools" tone="white" space="lg" className="scroll-mt-32 md:scroll-mt-28">
         <SectionHeading
           align="center"
           eyebrow="Rechner & Tools"
@@ -451,7 +454,7 @@ export default function HomePage() {
       </Section>
 
       {/* ================= FAQ ================= */}
-      <Section tone="sand" space="lg">
+      <Section id="faq" tone="sand" space="lg" className="scroll-mt-32 md:scroll-mt-28">
         <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
           <div>
             <SectionHeading eyebrow="Häufige Fragen" title="Kurz und ehrlich beantwortet" lead="Mehr Antworten finden Sie in den FAQ und im Ratgeber." />

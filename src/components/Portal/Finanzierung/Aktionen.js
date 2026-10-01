@@ -319,7 +319,7 @@ export function CpSchalter({ fallId, cp, darf }) {
   return (
     <label className="flex cursor-pointer items-start gap-3">
       <input type="checkbox" disabled={!darf || s.laeuft} checked={cp.erledigt} onChange={(e) => los(`/api/admin/finanzierung/${fallId}/aktion`, { aktion: "cp", cpId: cp.id, erledigt: e.target.checked, nachweis: cp.nachweis || "" }, { ok: "" })} className="mt-0.5 h-4 w-4 accent-[var(--color-ov-600)]" />
-      <span className="min-w-0 text-[14px] text-ink-800">{cp.label}{cp.erledigt && <span className="block text-[12px] text-ink-500">erledigt {cp.am ? new Date(cp.am).toLocaleDateString("de-DE") : ""}{cp.von ? ` · ${cp.von}` : ""}</span>}{s.fehler && <span className="block text-[12px] text-red-700">{s.fehler}</span>}</span>
+      <span className="min-w-0 text-[14px] text-ink-800">{cp.label}{cp.erledigt && <span className="block text-[12px] text-ink-500">erledigt {cp.am ? new Date(cp.am).toLocaleDateString("de-DE") : ""}{cp.von ? ` · ${cp.von}` : ""}</span>}{s.fehler && <span className="block text-[12px] text-danger-700">{s.fehler}</span>}</span>
     </label>
   );
 }

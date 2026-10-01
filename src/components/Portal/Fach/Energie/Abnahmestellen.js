@@ -22,7 +22,7 @@ function IdPruefung({ ergebnis }) {
   if (!ergebnis) return null;
   const Icon = ergebnis.ok ? CheckCircle2 : XCircle;
   return (
-    <p className={cn("mt-1.5 flex items-center gap-1.5 text-[12.5px] font-medium", ergebnis.ok ? "text-ov-700" : "text-red-700")}>
+    <p className={cn("mt-1.5 flex items-center gap-1.5 text-[12.5px] font-medium", ergebnis.ok ? "text-ov-700" : "text-danger-700")}>
       <Icon aria-hidden="true" className="h-4 w-4" /> {ergebnis.ok ? "Format und Prüfziffer gültig" : ergebnis.fehler}
     </p>
   );

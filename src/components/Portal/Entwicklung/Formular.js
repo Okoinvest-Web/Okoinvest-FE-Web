@@ -59,7 +59,7 @@ export function Knopf({ laeuft, children, variante = "primaer", className, ...re
       disabled={laeuft}
       className={cn(
         "inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 text-[14px] font-semibold transition-colors disabled:opacity-60",
-        variante === "primaer" ? "bg-ov-600 text-white hover:bg-ov-700" : variante === "navy" ? "bg-navy-700 text-white hover:bg-navy-800" : variante === "gefahr" ? "bg-white text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-50" : "bg-white text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50",
+        variante === "primaer" ? "bg-ov-600 text-white hover:bg-ov-700" : variante === "navy" ? "bg-navy-700 text-white hover:bg-navy-800" : variante === "gefahr" ? "bg-white text-danger-700 ring-1 ring-inset ring-danger-200 hover:bg-danger-50" : "bg-white text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50",
         className
       )}
       {...rest}
@@ -157,13 +157,13 @@ export function AktionKnopf({ fn, abfrage, children, meldung = "", frage = "", v
         className={cn(
           "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition-colors disabled:opacity-60",
           klein ? "h-8 px-3 text-[12.5px]" : "h-10 px-4 text-[14px]",
-          variante === "primaer" ? "bg-ov-600 text-white hover:bg-ov-700" : variante === "navy" ? "bg-navy-700 text-white hover:bg-navy-800" : variante === "gefahr" ? "text-red-700 hover:bg-red-50" : "bg-white text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50"
+          variante === "primaer" ? "bg-ov-600 text-white hover:bg-ov-700" : variante === "navy" ? "bg-navy-700 text-white hover:bg-navy-800" : variante === "gefahr" ? "text-danger-700 hover:bg-danger-50" : "bg-white text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50"
         )}
       >
         {a.laeuft && <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />}
         {children}
       </button>
-      {a.fehler && <span role="alert" className="max-w-xs text-[12.5px] font-medium text-red-700">{a.fehler}</span>}
+      {a.fehler && <span role="alert" className="max-w-xs text-[12.5px] font-medium text-danger-700">{a.fehler}</span>}
       {a.erfolg && <span role="status" className="max-w-xs text-[12.5px] font-medium text-ov-800">{a.erfolg}</span>}
     </span>
   );

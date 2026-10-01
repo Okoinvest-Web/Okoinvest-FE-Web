@@ -3,8 +3,9 @@
 import { useMemo, useState } from "react";
 import { CalendarClock, Coins, HandCoins, Sun, TrendingUp, Wheat } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { Auswahl, Gruppe, Kennzahl, Regler, Schalter, Tooltip, Zahl, useBreite } from "@/components/Rechner/bausteine";
-import MobilKurz from "./MobilKurz";
+import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Schalter, Tooltip, Zahl, useBreite } from "@/components/Rechner/bausteine";
+import { useTeilbarerZustand } from "@/components/Rechner/kontext";
+import { ErgebnisKopf, MobilKurz, RechnerRahmen } from "@/components/Rechner/InvestTeile";
 import { PACHT, REGIONEN } from "@/lib/invest/markt";
 import { PACHTMODELLE, REGION_KURZ, pachtRechnung } from "@/lib/rechner/pacht";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
@@ -44,14 +45,28 @@ export default function PachtRechner({ start = {} } = {}) {
     [ha, regionId, modell, proHa, umsatzPct, mindestProHa, laufzeit, ackerProHa, dbProHa, vorlauf, vorlaufJahre]
   );
 
+  // Teilen-Link: Eingaben in der Adresszeile (nur Abweichungen vom Standard bzw. von der Vorbelegung)
+  const SETZER = {
+    ha: setHa, regionId: setRegionId, modell: setModell, proHa: setProHa, umsatzPct: setUmsatzPct, mindestProHa: setMindestProHa,
+    laufzeit: setLaufzeit, ackerProHa: setAckerProHa, dbProHa: setDbProHa, vorlauf: setVorlauf, vorlaufJahre: setVorlaufJahre,
+  };
+  useTeilbarerZustand(
+    { ha, regionId, modell, proHa, umsatzPct, mindestProHa, laufzeit, ackerProHa, dbProHa, vorlauf, vorlaufJahre },
+    (neu) => Object.entries(neu).forEach(([k, v]) => SETZER[k]?.(v)),
+    {
+      optionen: { regionId: REGIONEN.map((x) => x.id), modell: PACHTMODELLE.map((m) => m.id) },
+      grenzen: { ha: [1, 100], proHa: [1000, 5000], umsatzPct: [3, 10], mindestProHa: [0, 3000], laufzeit: [20, 40], ackerProHa: [100, 1200], dbProHa: [0, 1500], vorlaufJahre: [1, 4] },
+    }
+  );
+
   return (
-    <div className="overflow-clip rounded-[2rem] bg-white shadow-[0_40px_80px_-40px_rgba(3,18,43,0.45)] ring-1 ring-ink-200/70">
-      <div className="grid lg:grid-cols-[minmax(0,410px)_1fr]">
-        {/* Eingaben */}
-        <div className="relative border-b border-ink-100 bg-sand-50 p-5 sm:p-6 md:p-8 lg:border-b-0 lg:border-r">
+    <RechnerRahmen
+      mitlaufend
+      eingaben={
+        <>
           <MobilKurz
             werte={[
-              ["Pacht/Jahr", <Zahl key="p" wert={Math.round(r.ersteJahrespacht)} suffix=" €" />],
+              ["Pacht/Jahr", `${fmt(Math.round(r.ersteJahrespacht))} €`],
               [`${laufzeit} Jahre`, tsd(r.summeSolar)],
               ["ggü. Ackerpacht", r.faktorAcker ? `${fmt(r.faktorAcker, 1)}×` : "–"],
             ]}
@@ -99,26 +114,20 @@ export default function PachtRechner({ start = {} } = {}) {
               <Regler label="Deckungsbeitrag Ackerbau" wert={dbProHa} min={0} max={1500} step={10} format={(v) => `${fmt(v)} €/ha`} onChange={setDbProHa} hinweis={`Getreide typisch ${fmt(PACHT.deckungsbeitragAcker.min)}–${fmt(PACHT.deckungsbeitragAcker.max)} €/ha, stark schwankend`} />
             </Gruppe>
           </div>
-        </div>
-
-        {/* Ergebnis */}
-        <div className="min-w-0 p-5 sm:p-6 md:p-8">
-          <div className="lg:sticky lg:top-28">
+        </>
+      }
+      ergebnis={
+        <>
           <p className="sr-only" aria-live="polite">
             {`Pacht im ersten Betriebsjahr ${Math.round(r.ersteJahrespacht)} Euro, über ${laufzeit} Jahre ${Math.round(r.summeSolar)} Euro.`}
           </p>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-display text-[22px] font-extrabold tracking-tight text-ink-900 md:text-[26px]">Ihre Pacht</h2>
-            <span className="inline-flex items-center gap-2 rounded-full bg-ov-50 px-3 py-1 text-[12.5px] font-semibold text-ov-700 ring-1 ring-ov-200">
-              {fmt(ha, ha % 1 ? 1 : 0)} ha · {PACHTMODELLE.find((m) => m.id === modell).label}
-            </span>
-          </div>
+          <ErgebnisKopf titel="Ihre Pacht" plakette={`${fmt(ha, ha % 1 ? 1 : 0)} ha · ${PACHTMODELLE.find((m) => m.id === modell).label}`} />
 
-          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Kennzahl ton="navy" icon={HandCoins} label="Pacht 1. Betriebsjahr" zusatz={`${fmt(r.proHaErstesJahr)} €/ha`}>
-              <Zahl wert={Math.round(r.ersteJahrespacht)} suffix=" €" />
-            </Kennzahl>
-            <Kennzahl ton="gruen" icon={Coins} label={`Summe ${r.jahre.length} Jahre`} zusatz={`Ø ${fmtEur(r.durchschnitt)} pro Jahr`}>
+          <Hauptzahl className="mt-5" icon={HandCoins} label="Pacht 1. Betriebsjahr" zusatz={`${fmt(r.proHaErstesJahr)} €/ha`}>
+            <Zahl wert={Math.round(r.ersteJahrespacht)} suffix=" €" />
+          </Hauptzahl>
+          <Belege>
+            <Kennzahl ton="akzent" icon={Coins} label={`Summe ${r.jahre.length} Jahre`} zusatz={`Ø ${fmtEur(r.durchschnitt)} pro Jahr`}>
               {tsd(r.summeSolar)}
             </Kennzahl>
             <Kennzahl icon={Wheat} label="ggü. Ackerpacht" zusatz={`+${tsd(r.mehrGgAcker)}`}>
@@ -127,7 +136,7 @@ export default function PachtRechner({ start = {} } = {}) {
             <Kennzahl icon={TrendingUp} label="ggü. Ackerbau" zusatz={r.mehrGgDb >= 0 ? `+${tsd(r.mehrGgDb)}` : `−${tsd(-r.mehrGgDb)}`}>
               {r.faktorDb ? <Zahl wert={r.faktorDb} stellen={1} suffix="×" /> : "∞"}
             </Kennzahl>
-          </div>
+          </Belege>
 
           <div className="mt-7 rounded-3xl ring-1 ring-ink-200/70">
             <div className="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-5 md:px-6">
@@ -152,10 +161,9 @@ export default function PachtRechner({ start = {} } = {}) {
               Fläche prüfen lassen
             </Button>
           </div>
-          </div>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 }
 

@@ -76,7 +76,7 @@ export default async function AdminAutomationen({ searchParams }) {
                   {l.aktionen?.length > 0 && (
                     <ul className="mt-1 space-y-0.5 text-[13px]">
                       {l.aktionen.map((a, i) => (
-                        <li key={i} className={cn(a.ok ? "text-ink-700" : "font-semibold text-red-800")}>
+                        <li key={i} className={cn(a.ok ? "text-ink-700" : "font-semibold text-danger-800")}>
                           {AKTIONEN[a.typ]?.label || a.typ}: {a.text}
                         </li>
                       ))}

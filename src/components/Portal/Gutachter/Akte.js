@@ -33,12 +33,12 @@ export function FristenListe({ fristen, leer = "Keine Fristen in den nächsten 1
     <ul className="divide-y divide-ink-100">
       {fristen.map((f, i) => (
         <li key={i} className="flex flex-wrap items-center gap-2 py-2.5 text-[13.5px]">
-          <span className={cn("ov-num w-24 shrink-0 font-semibold", f.ueberfaellig ? "text-red-700" : "text-ink-900")}>{datum(f.datum)}</span>
+          <span className={cn("ov-num w-24 shrink-0 font-semibold", f.ueberfaellig ? "text-danger-700" : "text-ink-900")}>{datum(f.datum)}</span>
           <span className="min-w-0 flex-1">
             {link ? <Link href={link(f)} className="font-semibold text-ink-900 hover:text-ov-700">{f.text}: {f.auftrag}</Link> : <span className="font-semibold text-ink-900">{f.text}</span>}
             {f.projekt && <span className="block text-[12px] text-ink-500">{f.projekt}{f.gutachter ? ` · ${f.gutachter}` : ""}</span>}
           </span>
-          {f.ueberfaellig ? <Badge className="bg-red-50 text-red-800 ring-red-200"><TriangleAlert aria-hidden="true" className="h-3.5 w-3.5" />überfällig</Badge> : <Badge ton={f.tage <= 3 ? "warn" : "neutral"}>{f.tage === 0 ? "heute" : `in ${f.tage} Tag${f.tage === 1 ? "" : "en"}`}</Badge>}
+          {f.ueberfaellig ? <Badge className="bg-danger-50 text-danger-800 ring-danger-200"><TriangleAlert aria-hidden="true" className="h-3.5 w-3.5" />überfällig</Badge> : <Badge ton={f.tage <= 3 ? "warn" : "neutral"}>{f.tage === 0 ? "heute" : `in ${f.tage} Tag${f.tage === 1 ? "" : "en"}`}</Badge>}
         </li>
       ))}
     </ul>
@@ -135,7 +135,7 @@ export function RechnungenKarte({ a, bo, darfZahlung = false }) {
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-[14px] font-semibold text-ink-900">{RECHNUNG_ARTEN[r.art]} {r.nummer}</p>
               <Badge ton={RECHNUNG_STATUS[r.status]?.ton}>{r.statusLabel}</Badge>
-              {r.ueberfaellig && <Badge className="bg-red-50 text-red-800 ring-red-200">fällig seit {datum(r.faelligAm)}</Badge>}
+              {r.ueberfaellig && <Badge className="bg-danger-50 text-danger-800 ring-danger-200">fällig seit {datum(r.faelligAm)}</Badge>}
             </div>
             <p className="ov-num text-[13px] text-ink-600">{eur(r.netto)} netto + {String(r.ustPct).replace(".", ",")} % = <strong className="text-ink-900">{eur(r.brutto)}</strong> · vom {datum(r.datum)} · Leistung {datum(r.leistungVon)}–{datum(r.leistungBis)} · fällig {datum(r.faelligAm)}</p>
             {r.datei?.link && <a href={r.datei.link} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-ov-700 hover:text-ov-800"><FileText aria-hidden="true" className="h-4 w-4" />{r.datei.name}</a>}

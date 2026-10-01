@@ -220,7 +220,7 @@ export function CsvImport({ url, spalten = [] }) {
             <thead className="sticky top-0 bg-sand-50 text-ink-500"><tr><th className={zelle}>Zeile</th><th className={zelle}>Aktion</th><th className={zelle}>Name</th><th className={zelle}>Zählpunkt</th><th className={zelle}>Hinweis</th></tr></thead>
             <tbody className="divide-y divide-ink-100 bg-white">
               {vorschau.vorschau.map((v) => (
-                <tr key={v.zeile} className={v.aktion === "fehler" ? "bg-red-50" : ""}>
+                <tr key={v.zeile} className={v.aktion === "fehler" ? "bg-danger-50" : ""}>
                   <td className={zelle}>{v.zeile}</td><td className={zelle}><Badge ton={v.aktion === "fehler" ? "warn" : v.aktion === "neu" ? "ok" : "info"}>{v.aktion}</Badge></td>
                   <td className={zelle}>{v.name}</td><td className={`${zelle} break-all font-mono text-[12px]`}>{v.zaehlpunkt}</td><td className={zelle}>{v.fehler || v.hinweise?.join(" ")}</td>
                 </tr>

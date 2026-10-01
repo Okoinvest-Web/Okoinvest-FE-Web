@@ -6,8 +6,8 @@ import { cn } from "@/components/ui/cn";
 import { Badge } from "@/components/Portal/ui";
 import { AMPEL, AMPEL_DIMENSIONEN, VORLAGE_STATUS } from "@/lib/plattform/entwicklung-steuerung";
 
-const PUNKT = { gruen: "bg-ov-500", gelb: "bg-sun-400", rot: "bg-red-600", grau: "bg-ink-300" };
-const TEXT = { gruen: "text-ov-800", gelb: "text-ink-900", rot: "text-red-700", grau: "text-ink-500" };
+const PUNKT = { gruen: "bg-ov-500", gelb: "bg-sun-400", rot: "bg-danger-600", grau: "bg-ink-300" };
+const TEXT = { gruen: "text-ov-800", gelb: "text-ink-900", rot: "text-danger-700", grau: "text-ink-500" };
 
 export function AmpelPunkt({ farbe = "grau", titel, gross = false }) {
   return (
@@ -21,7 +21,7 @@ export function AmpelPunkt({ farbe = "grau", titel, gross = false }) {
 export function AmpelBadge({ farbe = "grau", children }) {
   const ton = farbe === "gruen" ? "ok" : farbe === "rot" ? "warn" : farbe === "gelb" ? "warn" : "neutral";
   return (
-    <Badge ton={ton} className={farbe === "rot" ? "bg-red-50 text-red-800 ring-red-200" : undefined}>
+    <Badge ton={ton} className={farbe === "rot" ? "bg-danger-50 text-danger-800 ring-danger-200" : undefined}>
       <span aria-hidden="true" className={cn("h-2 w-2 rounded-full", PUNKT[farbe] || PUNKT.grau)} />
       {children || AMPEL[farbe]?.label}
     </Badge>
@@ -47,7 +47,7 @@ export function AmpelListe({ ampel }) {
 
 export function AuslastungZelle({ wert = 0, farbe = "gruen", stunden }) {
   return (
-    <span className={cn("ov-num inline-flex min-w-[3.2rem] justify-end rounded-md px-1.5 py-0.5 text-[12.5px] font-semibold", farbe === "rot" ? "bg-red-50 text-red-800" : farbe === "gelb" ? "bg-sun-300/30 text-ink-900" : "bg-ov-50 text-ov-800")} title={stunden !== undefined ? `${stunden} h` : undefined}>
+    <span className={cn("ov-num inline-flex min-w-[3.2rem] justify-end rounded-md px-1.5 py-0.5 text-[12.5px] font-semibold", farbe === "rot" ? "bg-danger-50 text-danger-800" : farbe === "gelb" ? "bg-sun-300/30 text-ink-900" : "bg-ov-50 text-ov-800")} title={stunden !== undefined ? `${stunden} h` : undefined}>
       {Math.round(wert * 100)} %
     </span>
   );

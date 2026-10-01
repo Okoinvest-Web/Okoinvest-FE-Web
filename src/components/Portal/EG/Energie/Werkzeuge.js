@@ -110,7 +110,7 @@ export function CsvImportEnergie({ url, zaehlpunkte = [] }) {
           <ul className="mt-2 list-disc pl-5">{vorschau.reihen.map((r) => <li key={r.groesse}>{r.label}: {zahl(r.werte)} Werte, {zahl(r.summeKwh, 3)} kWh{r.einheit === "kW" ? " (aus kW umgerechnet)" : ""}</li>)}</ul>
           {vorschau.unvollstaendigeTage.length > 0 && <p className="mt-2 text-ink-600">Unvollständige Tage: {vorschau.unvollstaendigeTage.join(", ")}</p>}
           {vorschau.hinweise.map((h) => <p key={h} className="mt-1 text-ink-600">{h}</p>)}
-          {vorschau.fehlerAnzahl > 0 && <p className="mt-2 text-red-700">{vorschau.fehlerAnzahl} Zeilen nicht lesbar, z. B. Zeile {vorschau.fehler[0]?.zeile}: {vorschau.fehler[0]?.text}</p>}
+          {vorschau.fehlerAnzahl > 0 && <p className="mt-2 text-danger-700">{vorschau.fehlerAnzahl} Zeilen nicht lesbar, z. B. Zeile {vorschau.fehler[0]?.zeile}: {vorschau.fehler[0]?.text}</p>}
         </div>
       )}
     </div>

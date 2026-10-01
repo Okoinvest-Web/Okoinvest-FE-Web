@@ -21,10 +21,10 @@ export function capexQuelleText(q) {
 const AMPEL_KLASSE = {
   gruen: "bg-ov-50 text-ov-800 ring-ov-200",
   gelb: "bg-sun-300/25 text-ink-900 ring-sun-400/50",
-  rot: "bg-red-50 text-red-800 ring-red-200",
+  rot: "bg-danger-50 text-danger-800 ring-danger-200",
   grau: "bg-ink-100 text-ink-700 ring-ink-200",
 };
-const PUNKT = { gruen: "bg-ov-500", gelb: "bg-sun-500", rot: "bg-red-600", grau: "bg-ink-400" };
+const PUNKT = { gruen: "bg-ov-500", gelb: "bg-sun-500", rot: "bg-danger-600", grau: "bg-ink-400" };
 
 /** Covenant-Ampel mit Text (nie nur Farbe) */
 export function AmpelBadge({ id = "grau", className, kurz = false }) {

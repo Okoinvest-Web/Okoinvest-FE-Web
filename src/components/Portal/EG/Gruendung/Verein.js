@@ -61,7 +61,7 @@ function Versammlung({ v, url, rechte }) {
       {v.ergebnis && (
         <div className="mt-3 rounded-2xl bg-ink-50 p-3 text-[13.5px]">
           <p className="font-semibold text-ink-900">Ergebnis · Beteiligung {v.ergebnis.beteiligungPct} % ({v.ergebnis.teilgenommen} von {v.ergebnis.stimmberechtigt})</p>
-          <ul className="mt-1 space-y-0.5">{v.ergebnis.tops.map((t) => <li key={t.id}>{t.titel}: {t.ja} Ja, {t.nein} Nein, {t.enthaltung} Enthaltung – <strong className={t.angenommen ? "text-ov-800" : "text-red-700"}>{t.angenommen ? "angenommen" : "abgelehnt"}</strong></li>)}</ul>
+          <ul className="mt-1 space-y-0.5">{v.ergebnis.tops.map((t) => <li key={t.id}>{t.titel}: {t.ja} Ja, {t.nein} Nein, {t.enthaltung} Enthaltung – <strong className={t.angenommen ? "text-ov-800" : "text-danger-700"}>{t.angenommen ? "angenommen" : "abgelehnt"}</strong></li>)}</ul>
           {v.protokoll && <p className="mt-2 break-all text-[12px] text-ink-500">Protokoll: Leitung {v.protokoll.versammlungsleiter}, Protokoll {v.protokoll.protokollfuehrer} · Prüfsumme der Stimmzettel (SHA-256) {v.protokoll.sha256}</p>}
         </div>
       )}

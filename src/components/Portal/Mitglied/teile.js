@@ -37,7 +37,7 @@ export function useAktion(url, { methode = "POST" } = {}) {
 const KNOPF = {
   primary: "bg-ov-600 text-white hover:bg-ov-700",
   secondary: "bg-white text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50",
-  gefahr: "bg-white text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-50",
+  gefahr: "bg-white text-danger-700 ring-1 ring-inset ring-danger-200 hover:bg-danger-50",
   navy: "bg-navy-700 text-white hover:bg-navy-800",
 };
 
@@ -76,7 +76,7 @@ export function Klappe({ titel, children, offen: start = false, className }) {
 
 /** Meldungen unter einem Formular */
 export function Meldung({ fehler, ok }) {
-  if (fehler) return <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-800 ring-1 ring-red-200">{fehler}</p>;
+  if (fehler) return <p role="alert" className="rounded-xl bg-danger-50 px-4 py-3 text-[14px] text-danger-800 ring-1 ring-danger-200">{fehler}</p>;
   if (ok) return <p role="status" className="rounded-xl bg-ov-50 px-4 py-3 text-[14px] text-ov-900 ring-1 ring-ov-200">{ok}</p>;
   return null;
 }

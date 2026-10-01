@@ -404,7 +404,7 @@ export function KasseAnsicht({ p, bh, mahn, mandate, belege = [], tab, basis, ko
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
           <div className="min-w-0 space-y-6">
             <Karte titel={`Kassabuch ${bh.jahr}`} untertitel={`Endbestand ${eur(bh.kassabuch.endbestand)}`} innen="p-0">
-              {bh.kassabuch.fehler.length > 0 && <p className="px-5 pt-3 text-[13px] text-red-700">{bh.kassabuch.fehler[0]}</p>}
+              {bh.kassabuch.fehler.length > 0 && <p className="px-5 pt-3 text-[13px] text-danger-700">{bh.kassabuch.fehler[0]}</p>}
               {bh.kassabuch.zeilen.length ? (
                 <div className="overflow-x-auto"><table className="w-full min-w-[520px] text-left text-[13px]"><thead><tr className="text-ink-500"><th className="px-5 py-2">Nr.</th><th className="py-2">Datum</th><th className="py-2">Beleg</th><th className="py-2">Text</th><th className="py-2 text-right">Ein</th><th className="py-2 text-right">Aus</th><th className="px-5 py-2 text-right">Stand</th></tr></thead>
                   <tbody>{bh.kassabuch.zeilen.map((z) => <tr key={z.nr} className="border-t border-ink-100"><td className="px-5 py-1.5">{z.nr}</td><td className="py-1.5">{tag(z.datum)}</td><td className="py-1.5">{z.belegNr}</td><td className="py-1.5">{z.text}</td><td className="ov-num py-1.5 text-right">{z.einnahme ? eur(z.einnahme) : ""}</td><td className="ov-num py-1.5 text-right">{z.ausgabe ? eur(z.ausgabe) : ""}</td><td className="ov-num px-5 py-1.5 text-right font-semibold">{eur(z.saldo)}</td></tr>)}</tbody></table></div>

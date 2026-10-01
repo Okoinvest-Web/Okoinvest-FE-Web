@@ -13,7 +13,7 @@ import { senden } from "@/lib/plattform/client";
 import { datumZeit, eur } from "@/lib/plattform/format";
 import { BONITAET_AMPEL } from "@/lib/plattform/dienste/bonitaet/basis";
 
-const AMPEL_FARBE = { gruen: "bg-ov-500", gelb: "bg-sun-400", rot: "bg-red-600", unbekannt: "bg-ink-300" };
+const AMPEL_FARBE = { gruen: "bg-ov-500", gelb: "bg-sun-400", rot: "bg-danger-600", unbekannt: "bg-ink-300" };
 const GELTUNG = { "": "Standard (Umgebung)", firmen: "Alle Investoren-Firmen", alle: "Alle Investoren", pilot: "Nur Pilot-Konten", aus: "Aus" };
 const GRUND = { fehlt: "keine Auskunft", offen: "Auskunft offen", veraltet: "Auskunft veraltet", rot: "rote Ampel – Freigabe nötig", keine_daten: "keine Daten – Freigabe nötig" };
 

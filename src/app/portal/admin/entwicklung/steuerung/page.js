@@ -130,7 +130,7 @@ export default async function SteuerungSeite() {
               <li key={j.jahr}>
                 <div className="flex items-baseline justify-between gap-3 text-[13.5px]">
                   <span className="font-semibold text-ink-900">{j.jahr}</span>
-                  <span className="ov-num text-ink-600">{fmt(j.mwp, 1)} MWp · gewichtet {fmt(j.mwpGewichtet, 1)} · <span className={j.farbe === "rot" ? "font-semibold text-red-700" : j.farbe === "gelb" ? "font-semibold text-ink-900" : "font-semibold text-ov-800"}>{Math.round(j.deckung * 100)} %</span></span>
+                  <span className="ov-num text-ink-600">{fmt(j.mwp, 1)} MWp · gewichtet {fmt(j.mwpGewichtet, 1)} · <span className={j.farbe === "rot" ? "font-semibold text-danger-700" : j.farbe === "gelb" ? "font-semibold text-ink-900" : "font-semibold text-ov-800"}>{Math.round(j.deckung * 100)} %</span></span>
                 </div>
                 <div className="relative mt-1 h-2.5 overflow-hidden rounded-full bg-ink-100">
                   <div className="h-full rounded-full bg-navy-200" style={{ width: `${Math.min(100, (j.mwp / maxJahr) * 100)}%` }} />
@@ -199,7 +199,7 @@ export default async function SteuerungSeite() {
               {d.optionsfristen.map((o) => (
                 <li key={o.flaecheId} className="px-5 py-3">
                   <Link href={`/portal/admin/entwicklung/${o.projektId}?reiter=steuerung`} className="font-semibold text-ink-900 hover:text-ov-700">{o.bezeichnung}</Link>
-                  <p className="text-[12.5px] text-ink-500">{o.projektTitel} · bis {datumKurz(o.optionBis)} · <span className={o.inTagen < 14 ? "font-semibold text-red-700" : "font-semibold text-ink-800"}>{o.inTagen < 0 ? "abgelaufen" : `in ${o.inTagen} Tagen`}</span></p>
+                  <p className="text-[12.5px] text-ink-500">{o.projektTitel} · bis {datumKurz(o.optionBis)} · <span className={o.inTagen < 14 ? "font-semibold text-danger-700" : "font-semibold text-ink-800"}>{o.inTagen < 0 ? "abgelaufen" : `in ${o.inTagen} Tagen`}</span></p>
                 </li>
               ))}
               {!d.optionsfristen.length && <li className="px-5 py-4 text-[14px] text-ink-500">Keine Optionsfristen in den nächsten 60 Tagen.</li>}

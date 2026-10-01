@@ -25,7 +25,7 @@ const SPALTEN_PHASE = [null, ...PHASEN.map((p) => p.id)];
 function Verzug({ p }) {
   if (!p.meilensteine?.ueberfaellig) return null;
   return (
-    <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-red-700">
+    <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-danger-700">
       <TriangleAlert aria-hidden="true" className="h-3.5 w-3.5" />
       {p.meilensteine.ueberfaellig} überfällig{p.meilensteine.kritischUeberfaellig ? ` · ${p.meilensteine.kritischUeberfaellig} kritisch` : ""}
     </span>
@@ -105,7 +105,7 @@ function Karte({ projekte }) {
             const an = g.key === region;
             return (
               <g key={g.key} role="button" tabIndex={0} aria-pressed={an} aria-label={`${g.bundesland}: ${g.projekte.length} Projekte, ${mwpText(g.mwp)}`} className="cursor-pointer outline-none" onClick={() => setRegion(an ? "" : g.key)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRegion(an ? "" : g.key); } }}>
-                <circle cx={g.punkt[0]} cy={g.punkt[1]} r={r} className={cn(g.verzug ? "fill-red-500/80" : "fill-ov-500/85", an ? "stroke-navy-900" : "stroke-white")} strokeWidth={an ? 3 : 2} />
+                <circle cx={g.punkt[0]} cy={g.punkt[1]} r={r} className={cn(g.verzug ? "fill-danger-500/80" : "fill-ov-500/85", an ? "stroke-navy-900" : "stroke-white")} strokeWidth={an ? 3 : 2} />
                 <text x={g.punkt[0]} y={g.punkt[1] + 4} textAnchor="middle" className="pointer-events-none fill-white text-[12px] font-bold">{g.projekte.length}</text>
                 <title>{`${g.bundesland}: ${g.projekte.length} Projekte, ${mwpText(g.mwp)}`}</title>
               </g>
@@ -185,10 +185,10 @@ export default function Portfolio({ projekte = [], ansicht: start = "liste" }) {
             { id: "mwp", label: "MWp", wert: (p) => p.mwp ?? 0, zelle: (p) => <span className="ov-num whitespace-nowrap">{mwpText(p.mwp)}</span> },
             { id: "fortschritt", label: "Fortschritt", wert: (p) => p.fortschritt, klasse: "min-w-[140px]", zelle: (p) => <Fortschritt wert={p.fortschritt} klein /> },
             { id: "wert", label: "Pipeline-Wert", wert: (p) => p.pipeline.wert, zelle: (p) => <span className="ov-num whitespace-nowrap" title={`${Math.round(p.pipeline.wahrscheinlichkeit * 100)} % × ${eurKurz(p.pipeline.volumen)}`}>{eurKurz(p.pipeline.wert)}</span> },
-            { id: "cod", label: "COD (Prognose)", wert: (p) => p.prognoseCod || "", zelle: (p) => <span className={cn("whitespace-nowrap", p.codVerzugMonate ? "font-semibold text-red-700" : "text-ink-700")}>{monatText((p.prognoseCod || "").slice(0, 7))}{p.codVerzugMonate ? ` (+${p.codVerzugMonate} M.)` : ""}</span> },
+            { id: "cod", label: "COD (Prognose)", wert: (p) => p.prognoseCod || "", zelle: (p) => <span className={cn("whitespace-nowrap", p.codVerzugMonate ? "font-semibold text-danger-700" : "text-ink-700")}>{monatText((p.prognoseCod || "").slice(0, 7))}{p.codVerzugMonate ? ` (+${p.codVerzugMonate} M.)` : ""}</span> },
             { id: "leitung", label: "Projektleitung", standard: false, wert: (p) => p.projektleiter?.name || "", zelle: (p) => p.projektleiter?.name || "–" },
             { id: "flaeche", label: "Fläche gesichert", standard: false, wert: (p) => p.flaecheGesichertHa, zelle: (p) => <span className="ov-num">{p.flaecheGesichertHa} / {p.flaecheHa} ha</span> },
-            { id: "risiko", label: "Risiko max.", standard: false, wert: (p) => p.risikoMax, zelle: (p) => <span className={cn("ov-num font-semibold", p.risikoMax >= 15 ? "text-red-700" : "text-ink-700")}>{p.risikoMax || "–"}</span> },
+            { id: "risiko", label: "Risiko max.", standard: false, wert: (p) => p.risikoMax, zelle: (p) => <span className={cn("ov-num font-semibold", p.risikoMax >= 15 ? "text-danger-700" : "text-ink-700")}>{p.risikoMax || "–"}</span> },
             { id: "budget", label: "Budget Ist/Plan", standard: false, wert: (p) => p.budgetIst, zelle: (p) => <span className="ov-num whitespace-nowrap">{eurKurz(p.budgetIst)} / {eurKurz(p.budgetPlan)}</span> },
           ]}
           filter={[

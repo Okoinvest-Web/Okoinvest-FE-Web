@@ -398,7 +398,7 @@ export function RegelKarte({ regel, vorlagen, konten, darfSchreiben }) {
               <Power aria-hidden="true" className="h-4 w-4" /> {regel.aktiv ? "An" : "Aus"}
             </button>
             <button type="button" onClick={() => setBearbeiten(true)} aria-label={`Regel ${regel.name} bearbeiten`} className="rounded-full p-2.5 text-ink-500 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 hover:text-ink-900"><Pencil aria-hidden="true" className="h-4 w-4" /></button>
-            <button type="button" onClick={loeschen} aria-label={`Regel ${regel.name} löschen`} className="rounded-full p-2.5 text-ink-500 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 hover:text-red-700"><Trash2 aria-hidden="true" className="h-4 w-4" /></button>
+            <button type="button" onClick={loeschen} aria-label={`Regel ${regel.name} löschen`} className="rounded-full p-2.5 text-ink-500 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 hover:text-danger-700"><Trash2 aria-hidden="true" className="h-4 w-4" /></button>
           </div>
         )}
       </div>

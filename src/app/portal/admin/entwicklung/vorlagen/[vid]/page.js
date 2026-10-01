@@ -55,7 +55,7 @@ export default async function VorlageSeite({ params }) {
                 <div>
                   <h3 className="text-[14px] font-semibold text-ink-900">Nächste Meilensteine</h3>
                   <ul className="mt-1 divide-y divide-ink-100 text-[13.5px]">
-                    {s.meilensteine.map((m, i) => <li key={i} className="flex justify-between gap-3 py-2"><span className={m.kritisch ? "font-semibold text-red-700" : "text-ink-800"}>{m.titel}</span><span className="ov-num shrink-0 text-ink-600">{datumKurz(m.prognoseEnde || m.sollEnde)}</span></li>)}
+                    {s.meilensteine.map((m, i) => <li key={i} className="flex justify-between gap-3 py-2"><span className={m.kritisch ? "font-semibold text-danger-700" : "text-ink-800"}>{m.titel}</span><span className="ov-num shrink-0 text-ink-600">{datumKurz(m.prognoseEnde || m.sollEnde)}</span></li>)}
                     {!s.meilensteine.length && <li className="py-2 text-ink-500">Keine offenen Meilensteine.</li>}
                   </ul>
                 </div>

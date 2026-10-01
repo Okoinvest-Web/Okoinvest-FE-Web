@@ -25,7 +25,7 @@ function Punkt({ p, wert, aktiv, aktion }) {
   return (
     <li className="rounded-2xl p-3 ring-1 ring-inset ring-ink-200">
       <div className="flex items-start gap-2">
-        <Icon aria-hidden="true" className={cn("mt-0.5 h-[18px] w-[18px] shrink-0", wert ? (wert.ok ? "text-ov-600" : "text-red-600") : "text-ink-400")} />
+        <Icon aria-hidden="true" className={cn("mt-0.5 h-[18px] w-[18px] shrink-0", wert ? (wert.ok ? "text-ov-600" : "text-danger-600") : "text-ink-400")} />
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-semibold text-ink-900">{p.label}</p>
           <p className="text-[12.5px] text-ink-500">{p.hinweis}{wert ? ` · ${wert.ok ? "bestätigt" : "nicht bestätigt"} ${datumZeit(wert.am)}${wert.notiz ? ` – ${wert.notiz}` : ""}` : ""}</p>

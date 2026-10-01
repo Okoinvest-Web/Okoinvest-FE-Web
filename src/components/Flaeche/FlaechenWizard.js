@@ -551,10 +551,9 @@ function LiveAmpel({ e }) {
 }
 
 function Tacho({ score, farbe }) {
-  // Halbkreis 180°, Radius 80
-  const r = 80;
-  const umfang = Math.PI * r;
-  const anteil = Math.max(0, Math.min(100, score)) / 100;
+  // Halbkreis 180°, Radius 80. Füllung über stroke-dashoffset (pathLength 100) statt stroke-dasharray –
+  // nur der Versatz wird animiert (DESIGN § 3.3); unter reduced-motion springt der Wert.
+  const anteil = Math.max(0, Math.min(100, score));
   return (
     <svg viewBox="0 0 200 116" className="h-auto w-full max-w-[220px]" role="img" aria-label={`Punktwert ${score} von 100`}>
       <path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="16" strokeLinecap="round" />
@@ -564,11 +563,13 @@ function Tacho({ score, farbe }) {
         stroke={farbe}
         strokeWidth="16"
         strokeLinecap="round"
-        strokeDasharray={`${umfang * anteil} ${umfang}`}
-        className="motion-safe:transition-[stroke-dasharray] motion-safe:duration-700"
+        pathLength={100}
+        strokeDasharray="100 100"
+        strokeDashoffset={100 - anteil}
+        className="motion-safe:transition-[stroke-dashoffset] motion-safe:duration-700 motion-safe:ease-ov-out"
       />
       <text x="100" y="92" textAnchor="middle" className="fill-white font-display text-[40px] font-extrabold">{score}</text>
-      <text x="100" y="112" textAnchor="middle" className="fill-white/60 text-[11px]">von 100 Punkten</text>
+      <text x="100" y="112" textAnchor="middle" className="fill-white/75 text-[11px]">von 100 Punkten</text>
     </svg>
   );
 }

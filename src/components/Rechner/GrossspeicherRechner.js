@@ -28,11 +28,40 @@ export default function GrossspeicherRechner() {
     setNiveau(id);
     setE((a) => ({ ...a, erloese: erloesAufteilung(ERLOESNIVEAUS.find((n) => n.id === id).proMw) }));
   };
-  useTeilbarerZustand(e, (neu) => setE((a) => ({ ...a, ...neu })), {
-    optionen: { standort: STANDORTE.map((s) => s.id), ebene: EBENEN.map((x) => x.id) },
-    grenzen: { mw: [1, 200], dauer: [1, 4], capexKwh: [150, 450], zyklen: [150, 730], lebensdauer: [10, 20], degradation: [0.01, 0.04], erloesTrend: [-0.06, 0.02] },
-    pruefen: rechneSpeicher,
-  });
+  // Teilen-Link inkl. individuellem Erlösmix: das Objekt `erloese` wird für die Adresszeile in drei Zahlen aufgeteilt
+  // (erlArbitrage, erlAfrr, erlFcr); beim Übernehmen wieder zusammengesetzt und das passende Erlösniveau erkannt.
+  const mitMix = (z, alt) => {
+    const { erlArbitrage, erlAfrr, erlFcr, ...rest } = z;
+    const basis = rest.erloese || alt.erloese;
+    const erloese = {
+      ...basis,
+      ...(erlArbitrage != null && { arbitrage: erlArbitrage }),
+      ...(erlAfrr != null && { afrr: erlAfrr }),
+      ...(erlFcr != null && { fcr: erlFcr }),
+    };
+    return { ...alt, ...rest, erloese };
+  };
+  const niveauVon = (erl) =>
+    ERLOESNIVEAUS.find((n) => {
+      const x = erloesAufteilung(n.proMw);
+      return x.arbitrage === erl.arbitrage && x.afrr === erl.afrr && x.fcr === erl.fcr;
+    })?.id ?? null;
+  useTeilbarerZustand(
+    { ...e, erlArbitrage: e.erloese.arbitrage, erlAfrr: e.erloese.afrr, erlFcr: e.erloese.fcr },
+    (neu) => {
+      const z = mitMix(neu, e);
+      setNiveau(niveauVon(z.erloese));
+      setE(z);
+    },
+    {
+      optionen: { standort: STANDORTE.map((s) => s.id), ebene: EBENEN.map((x) => x.id) },
+      grenzen: {
+        mw: [1, 200], dauer: [1, 4], capexKwh: [150, 450], zyklen: [150, 730], lebensdauer: [10, 20], degradation: [0.01, 0.04], erloesTrend: [-0.06, 0.02],
+        erlArbitrage: [0, 150000], erlAfrr: [0, 150000], erlFcr: [0, 80000],
+      },
+      pruefen: (z) => rechneSpeicher(mitMix(z, STANDARD)),
+    }
+  );
   const r = useMemo(() => rechneSpeicher(e), [e]);
   const vergleich = useMemo(() => vergleichStandorte(e), [e]);
   const summeProMw = e.erloese.arbitrage + e.erloese.afrr + e.erloese.fcr;

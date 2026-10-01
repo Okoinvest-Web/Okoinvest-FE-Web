@@ -71,7 +71,7 @@ export function AktionKnopf({ url, body, label, bestaetigen, variant = "secondar
       >
         {a.laeuft ? "Bitte warten …" : label}
       </Button>
-      {a.fehler && <span role="alert" className="max-w-xs text-[12.5px] text-red-700">{a.fehler}</span>}
+      {a.fehler && <span role="alert" className="max-w-xs text-[12.5px] text-danger-700">{a.fehler}</span>}
       {a.erfolg && erfolgText && <span role="status" className="text-[12.5px] text-ov-800">{a.erfolg}</span>}
     </span>
   );

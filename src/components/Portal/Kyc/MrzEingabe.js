@@ -12,7 +12,7 @@ import { Badge } from "@/components/Portal/ui";
 import { senden } from "@/lib/plattform/client";
 import { MRZ_AMPEL, MRZ_FORMATE, mrzBefund, mrzFormatFuerArt } from "@/lib/plattform/kycIdent";
 
-const AMPEL_FARBE = { gruen: "text-ov-600", gelb: "text-sun-500", rot: "text-red-600" };
+const AMPEL_FARBE = { gruen: "text-ov-600", gelb: "text-sun-500", rot: "text-danger-600" };
 const AMPEL_ICON = { gruen: CheckCircle2, gelb: Info, rot: CircleAlert };
 
 /** Hilfe-Grafik: Ausweiskarte (Rückseite, 3 Zeilen) bzw. Passdatenseite (2 Zeilen) mit markierter MRZ */

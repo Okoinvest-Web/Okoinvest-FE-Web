@@ -15,7 +15,7 @@ export default function GutachterAuftrag({ projektId, a }) {
     <Karte
       titel={a.titel}
       untertitel={`${a.kategorieLabel || ""} · Soll ${datumKurz(a.sollStart)} – ${datumKurz(a.sollEnde)}`}
-      aktion={a.ueberfaellig ? <Badge className="bg-red-50 text-red-800 ring-red-200"><TriangleAlert aria-hidden="true" className="h-3.5 w-3.5" />Überfällig</Badge> : <Badge ton={a.status === "erledigt" ? "ok" : a.status === "in_arbeit" ? "info" : "neutral"}>{a.statusLabel}</Badge>}
+      aktion={a.ueberfaellig ? <Badge className="bg-danger-50 text-danger-800 ring-danger-200"><TriangleAlert aria-hidden="true" className="h-3.5 w-3.5" />Überfällig</Badge> : <Badge ton={a.status === "erledigt" ? "ok" : a.status === "in_arbeit" ? "info" : "neutral"}>{a.statusLabel}</Badge>}
     >
       <div className="space-y-5">
         {a.dokumentPflicht?.length > 0 && (

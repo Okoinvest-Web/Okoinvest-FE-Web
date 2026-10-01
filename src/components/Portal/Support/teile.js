@@ -18,7 +18,7 @@ export function SlaBadge({ sla }) {
   const [ton, text] = AMPEL[sla.ampel] || AMPEL.ok;
   const rest = sla.loesung && !sla.loesung.erfuellt ? restText(sla.loesung.restMin) : sla.reaktion && !sla.reaktion.erfuellt ? `Reaktion ${restText(sla.reaktion.restMin)}` : "";
   return (
-    <Badge ton={ton} className={cn(sla.ampel === "verletzt" && "ring-red-300 bg-red-50 text-red-800")}>
+    <Badge ton={ton} className={cn(sla.ampel === "verletzt" && "ring-danger-300 bg-danger-50 text-danger-800")}>
       {text}
       {rest ? ` · ${rest}` : ""}
     </Badge>

@@ -35,7 +35,7 @@ export function Befunde({ liste = [], leer = "" }) {
     <ul className="space-y-1.5 text-[14px] leading-relaxed">
       {liste.map((b, i) => (
         <li key={i} className="flex gap-2">
-          <span aria-hidden="true" className={cn("mt-2 h-1.5 w-1.5 shrink-0 rounded-full", b.stufe === "fehler" ? "bg-red-500" : b.stufe === "warn" ? "bg-sun-500" : "bg-navy-400")} />
+          <span aria-hidden="true" className={cn("mt-2 h-1.5 w-1.5 shrink-0 rounded-full", b.stufe === "fehler" ? "bg-danger-500" : b.stufe === "warn" ? "bg-sun-500" : "bg-navy-400")} />
           <span className="min-w-0">
             {b.text}
             {b.quelle && <span className="ml-1 text-[12.5px] text-ink-500">({b.quelle})</span>}

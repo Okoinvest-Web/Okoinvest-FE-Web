@@ -99,7 +99,7 @@ export default function Gantt({ meilensteine = [], heute, onAuswahl, auswahl = n
           <li className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-5 rounded-sm bg-ink-300" />Geplant</li>
           <li className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-5 rounded-sm border border-dashed border-ink-400" />Soll</li>
           <li className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-5 rounded-sm ring-2 ring-navy-900" />Kritischer Pfad</li>
-          <li className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-5 rounded-sm bg-red-500" />Verzug</li>
+          <li className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-5 rounded-sm bg-danger-500" />Verzug</li>
         </ul>
       </div>
 
@@ -110,7 +110,7 @@ export default function Gantt({ meilensteine = [], heute, onAuswahl, auswahl = n
           <ul>
             {liste.map((m) => (
               <li key={m.id} style={{ height: ZEILE }} className={cn("flex items-center border-b border-ink-50 px-2", auswahl === m.id && "bg-ov-50")}>
-                <button type="button" onClick={() => onAuswahl?.(m.id)} disabled={!onAuswahl} title={m.titel} className={cn("min-w-0 truncate rounded-lg px-1 text-left text-[12.5px] disabled:cursor-default", m.kritisch ? "font-bold text-navy-900" : "text-ink-800", m.ueberfaellig && "text-red-700", onAuswahl && "hover:underline")}>
+                <button type="button" onClick={() => onAuswahl?.(m.id)} disabled={!onAuswahl} title={m.titel} className={cn("min-w-0 truncate rounded-lg px-1 text-left text-[12.5px] disabled:cursor-default", m.kritisch ? "font-bold text-navy-900" : "text-ink-800", m.ueberfaellig && "text-danger-700", onAuswahl && "hover:underline")}>
                   {m.kritisch && <span className="sr-only">Kritischer Pfad: </span>}
                   {m.ueberfaellig && <span className="sr-only">Überfällig: </span>}
                   {m.titel}
@@ -153,7 +153,7 @@ export default function Gantt({ meilensteine = [], heute, onAuswahl, auswahl = n
                         className={cn("absolute top-[10px] h-3.5 rounded-[4px]", onAuswahl && "cursor-pointer", m.status === "erledigt" ? "bg-ov-500" : m.status === "in_arbeit" ? "bg-navy-600" : "bg-ink-300", m.kritisch && "ring-2 ring-navy-900 ring-offset-1")}
                       />
                     )}
-                    {verzugB > 0 && <span aria-hidden="true" style={{ left: verzugL, width: verzugB }} className="absolute top-[12px] h-2.5 rounded-r-[4px] bg-red-500" />}
+                    {verzugB > 0 && <span aria-hidden="true" style={{ left: verzugL, width: verzugB }} className="absolute top-[12px] h-2.5 rounded-r-[4px] bg-danger-500" />}
                   </div>
                 );
               })}

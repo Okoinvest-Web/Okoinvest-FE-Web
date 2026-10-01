@@ -133,7 +133,7 @@ export default function Verlauf({ anlage }) {
         {anker == null ? (
           <div className="m-3 h-[230px] animate-pulse rounded-2xl bg-ink-50 md:h-[280px]" aria-hidden="true" />
         ) : fehler ? (
-          <p role="alert" className="m-3 rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-800 ring-1 ring-red-200">{fehler}</p>
+          <p role="alert" className="m-3 rounded-xl bg-danger-50 px-4 py-3 text-[14px] text-danger-800 ring-1 ring-danger-200">{fehler}</p>
         ) : zukunft ? (
           <p className="m-3 text-[14px] text-ink-500">Für diesen Zeitraum gibt es noch keine Werte.</p>
         ) : !punkte.length && !laedt ? (
@@ -156,7 +156,7 @@ export default function Verlauf({ anlage }) {
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 px-5 py-4 md:px-6">
           <p className="text-[14px] text-ink-700">
             <span className="font-semibold text-ink-900">Soll-Ist:</span> Ist {kwh(summe.erzeugung)} · Soll {kwh(summe.soll)} ·{" "}
-            <span className={cn("font-bold", summe.erzeugung / summe.soll < 0.9 ? "text-red-700" : "text-ov-700")}>{pct(summe.erzeugung / summe.soll)}</span>
+            <span className={cn("font-bold", summe.erzeugung / summe.soll < 0.9 ? "text-danger-700" : "text-ov-700")}>{pct(summe.erzeugung / summe.soll)}</span>
             <span className="text-ink-500"> (Soll aus Region, kWp und Bauart, Monatsverteilung nach PVGIS; wetterbedingte Abweichungen von ± 10 % sind normal)</span>
           </p>
         </div>

@@ -85,7 +85,7 @@ export default function OrgWechsler({ organisationen = [], aktiv = null, kompakt
               {aktiv?.id === o.id && <Check aria-hidden="true" className="h-4 w-4 text-ov-600" />}
             </button>
           ))}
-          {fehler && <p role="alert" className="px-3 py-2 text-[12.5px] text-red-700">{fehler}</p>}
+          {fehler && <p role="alert" className="px-3 py-2 text-[12.5px] text-danger-700">{fehler}</p>}
           <div className="my-1 h-px bg-ink-100" />
           <Link role="menuitem" href="/portal/organisation" onClick={() => setOffen(false)} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] text-ink-700 hover:bg-ink-50 focus-visible:bg-ink-50 focus-visible:outline-none">
             <Plus aria-hidden="true" className="h-4 w-4" /> Organisationen verwalten

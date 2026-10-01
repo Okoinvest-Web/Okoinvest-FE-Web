@@ -35,7 +35,7 @@ function DateiFeld({ anfrageId, bo, dateien, setDateien, mehrere = true }) {
   const a = useAktion();
   return (
     <div className="space-y-2">
-      <ul className="flex flex-wrap gap-2">{dateien.map((d) => <li key={d.id} className="inline-flex items-center gap-1.5 rounded-full bg-sand-50 px-3 py-1 text-[12.5px] ring-1 ring-ink-200">{d.name}<button type="button" onClick={() => setDateien(dateien.filter((x) => x.id !== d.id))} aria-label={`${d.name} entfernen`} className="text-ink-500 hover:text-red-700"><Trash2 aria-hidden="true" className="h-3.5 w-3.5" /></button></li>)}</ul>
+      <ul className="flex flex-wrap gap-2">{dateien.map((d) => <li key={d.id} className="inline-flex items-center gap-1.5 rounded-full bg-sand-50 px-3 py-1 text-[12.5px] ring-1 ring-ink-200">{d.name}<button type="button" onClick={() => setDateien(dateien.filter((x) => x.id !== d.id))} aria-label={`${d.name} entfernen`} className="text-ink-500 hover:text-danger-700"><Trash2 aria-hidden="true" className="h-3.5 w-3.5" /></button></li>)}</ul>
       {(mehrere || !dateien.length) && (
         <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-full bg-white px-3.5 text-[13px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ov-500">
           {a.laeuft ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Upload aria-hidden="true" className="h-4 w-4" />}Datei anhängen (PDF/JPG/PNG)
@@ -75,7 +75,7 @@ export function AnforderungFormular({ anfrageId, bausteine }) {
             <select id={`${basis}-b${i}`} value={p.baustein} onChange={set(i, "baustein")} className={auswahlfeld}><option value="">– frei –</option>{bausteine.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}</select>
           </Feld>
           <Feld id={`${basis}-f${i}`} label="Frist"><input id={`${basis}-f${i}`} type="date" required value={p.frist} onChange={set(i, "frist")} className={eingabe} /></Feld>
-          <div className="flex items-end">{punkte.length > 1 && <button type="button" onClick={() => setPunkte(punkte.filter((_, j) => j !== i))} className="inline-flex h-11 items-center px-2 text-ink-500 hover:text-red-700" aria-label="Punkt entfernen"><Trash2 aria-hidden="true" className="h-4 w-4" /></button>}</div>
+          <div className="flex items-end">{punkte.length > 1 && <button type="button" onClick={() => setPunkte(punkte.filter((_, j) => j !== i))} className="inline-flex h-11 items-center px-2 text-ink-500 hover:text-danger-700" aria-label="Punkt entfernen"><Trash2 aria-hidden="true" className="h-4 w-4" /></button>}</div>
           <Feld id={`${basis}-d${i}`} label="Erläuterung" className="sm:col-span-4"><input id={`${basis}-d${i}`} value={p.beschreibung} onChange={set(i, "beschreibung")} className={eingabe} maxLength={1000} /></Feld>
         </div>
       ))}
@@ -118,7 +118,7 @@ export function ZustaendigAuswahl({ anfrageId, team, aktuell }) {
         <option value="">– zuweisen –</option>
         {team.filter((t) => t.rolle !== "lesen").map((t) => <option key={t.id} value={t.id}>{t.name} ({BANK_TEAMROLLEN[t.rolle]?.label})</option>)}
       </select>
-      {a.fehler && <span role="alert" className="text-[12.5px] text-red-700">{a.fehler}</span>}
+      {a.fehler && <span role="alert" className="text-[12.5px] text-danger-700">{a.fehler}</span>}
       {a.erfolg && <span role="status" className="text-[12.5px] text-ov-800">{a.erfolg}</span>}
     </div>
   );
@@ -229,7 +229,7 @@ export function TeamRolle({ bankId, m }) {
         {optionen(BANK_TEAMROLLEN).map((o) => <option key={o.wert} value={o.wert}>{o.label}</option>)}
       </select>
       <AktionKnopf klein variante="gefahr" frage={`${m.name} aus dem Team entfernen? Der Zugang zu allen Anfragen Ihres Hauses endet sofort.`} meldung="Entfernt." fn={() => senden("/api/portal/bank/team", { body: { aktion: "entfernen", bankId, nutzerId: m.id } })}>Entfernen</AktionKnopf>
-      {a.fehler && <span role="alert" className="text-[12.5px] text-red-700">{a.fehler}</span>}
+      {a.fehler && <span role="alert" className="text-[12.5px] text-danger-700">{a.fehler}</span>}
     </span>
   );
 }

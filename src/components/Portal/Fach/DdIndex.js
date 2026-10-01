@@ -11,7 +11,7 @@ import { DATENBLATT_BEREICHE, datenblattKennzahlen, feldAnzeige, feldRelevant, f
 export const AMPEL = {
   gruen: { label: "vollständig", icon: CircleCheck, klasse: "bg-ov-50 text-ov-800 ring-ov-200", punkt: "bg-ov-500" },
   gelb: { label: "Lücken / prüfen", icon: CircleAlert, klasse: "bg-sun-300/25 text-ink-900 ring-sun-400/50", punkt: "bg-sun-400" },
-  rot: { label: "wesentliche Lücken", icon: CircleX, klasse: "bg-red-50 text-red-800 ring-red-200", punkt: "bg-red-500" },
+  rot: { label: "wesentliche Lücken", icon: CircleX, klasse: "bg-danger-50 text-danger-800 ring-danger-200", punkt: "bg-danger-500" },
   grau: { label: "noch nicht relevant", icon: CircleDashed, klasse: "bg-ink-50 text-ink-500 ring-ink-200", punkt: "bg-ink-300" },
 };
 
@@ -50,7 +50,7 @@ export function DdIndexKarte({ index, titel = "Due-Diligence-Index", untertitel,
                     <p><span className="font-semibold text-ink-900">Fehlt:</span> {k.fehlend.join(" · ")}</p>
                   )}
                   {k.hinweise.map((h, i) => (
-                    <p key={i} className={h.stufe === "fehler" ? "text-red-800" : h.stufe === "warnung" ? "text-ink-900" : "text-ink-600"}>{h.stufe === "fehler" ? "Widerspruch: " : h.stufe === "warnung" ? "Prüfen: " : ""}{h.text}</p>
+                    <p key={i} className={h.stufe === "fehler" ? "text-danger-800" : h.stufe === "warnung" ? "text-ink-900" : "text-ink-600"}>{h.stufe === "fehler" ? "Widerspruch: " : h.stufe === "warnung" ? "Prüfen: " : ""}{h.text}</p>
                   ))}
                   {!k.fehlend.length && !k.hinweise.length && <p className="text-ink-500">{k.ampel === "grau" ? "In dieser Phase werden noch keine Angaben erwartet." : "Keine Auffälligkeiten in den Angaben."}</p>}
                   <p className="text-[12.5px] text-ink-500"><span className="font-semibold">Übliche Prüfpunkte:</span> {(k.pruefpunkte || []).join(" · ")}</p>

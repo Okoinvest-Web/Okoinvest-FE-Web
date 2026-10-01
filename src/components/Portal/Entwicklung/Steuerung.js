@@ -40,7 +40,7 @@ export function KapazitaetForm({ zeile }) {
       <label htmlFor={id} className="sr-only">Kapazität {zeile.name} (Stunden je Monat)</label>
       <input id={id} inputMode="numeric" value={h} onChange={(e) => setH(e.target.value)} placeholder={String(KAPAZITAET.stundenMonat)} className={cn(eingabe, "h-8 w-20 px-2 text-[13px]")} />
       <button type="submit" disabled={a.laeuft} className="h-8 rounded-full bg-white px-3 text-[12.5px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 disabled:opacity-60">h/Monat</button>
-      {a.fehler && <span role="alert" className="text-[12px] text-red-700">{a.fehler}</span>}
+      {a.fehler && <span role="alert" className="text-[12px] text-danger-700">{a.fehler}</span>}
       {a.erfolg && <span role="status" className="text-[12px] text-ov-800">{a.erfolg}</span>}
     </form>
   );

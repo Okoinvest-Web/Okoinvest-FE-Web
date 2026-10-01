@@ -21,7 +21,7 @@ function Auslastung({ a }) {
     <div className="min-w-0">
       <div className="flex items-baseline justify-between text-[12px] text-ink-500">
         <span>Auslastung 7 Tage</span>
-        <span className={cn("ov-num font-semibold", a.ampel === "hoch" ? "text-red-700" : "text-ink-900")}>{a.prozent} %</span>
+        <span className={cn("ov-num font-semibold", a.ampel === "hoch" ? "text-danger-700" : "text-ink-900")}>{a.prozent} %</span>
       </div>
       <div className="mt-1 h-2 rounded-full bg-ink-100" role="progressbar" aria-valuemin={0} aria-valuemax={150} aria-valuenow={a.prozent} aria-label="Auslastung">
         <div className={cn("h-2 rounded-full", a.ampel === "hoch" ? "bg-sun-500" : a.ampel === "mittel" ? "bg-ov-400" : "bg-ov-500")} style={{ width: `${Math.max(3, p)}%` }} />

@@ -176,7 +176,7 @@ export function OrganBeenden({ organ, url }) {
   return (
     <span className="inline-flex flex-col gap-1">
       <Knopf variante="gefahr" disabled={a.laeuft} onClick={() => a.ausfuehren({ aktion: "organ_beenden", id: organ.id, bis: new Date().toISOString().slice(0, 10) }, "Funktion beendet.")}>Beenden</Knopf>
-      {a.fehler && <span role="alert" className="text-[12.5px] text-red-700">{a.fehler}</span>}
+      {a.fehler && <span role="alert" className="text-[12.5px] text-danger-700">{a.fehler}</span>}
     </span>
   );
 }

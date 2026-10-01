@@ -39,7 +39,7 @@ export const zeit = (iso) => (iso ? new Date(iso).toLocaleString("de-AT", { time
 export const eur = (x) => (x || x === 0 ? `${Math.round(x).toLocaleString("de-DE")} €` : "–");
 export const pct = (x, st = 1) => (x === null || x === undefined ? "–" : `${(x * 100).toLocaleString("de-DE", { maximumFractionDigits: st })} %`);
 
-const STUFE = { kritisch: "bg-red-50 text-red-800 ring-red-200", fehler: "bg-red-50 text-red-800 ring-red-200", warnung: "bg-sun-300/20 text-ink-900 ring-sun-400/40", info: "bg-navy-50 text-navy-900 ring-navy-100" };
+const STUFE = { kritisch: "bg-danger-50 text-danger-800 ring-danger-200", fehler: "bg-danger-50 text-danger-800 ring-danger-200", warnung: "bg-sun-300/20 text-ink-900 ring-sun-400/40", info: "bg-navy-50 text-navy-900 ring-navy-100" };
 const STUFE_LABEL = { kritisch: "Kritisch", fehler: "Fehler", warnung: "Hinweis", info: "Info" };
 
 export function HinweisListe({ hinweise = [], leer = "" }) {

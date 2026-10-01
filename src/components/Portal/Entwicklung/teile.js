@@ -30,7 +30,7 @@ export function PhaseBadge({ label, phase }) {
 }
 
 export function MeilensteinBadge({ m }) {
-  if (m.ueberfaellig) return <Badge className="bg-red-50 text-red-800 ring-red-200">Überfällig {m.verzugTage ? `(${m.verzugTage} T.)` : ""}</Badge>;
+  if (m.ueberfaellig) return <Badge className="bg-danger-50 text-danger-800 ring-danger-200">Überfällig {m.verzugTage ? `(${m.verzugTage} T.)` : ""}</Badge>;
   const s = MEILENSTEIN_STATUS[m.status] || { label: m.status, ton: "neutral" };
   return <Badge ton={s.ton}>{s.label}</Badge>;
 }
@@ -41,7 +41,7 @@ export function PachtBadge({ status }) {
 }
 
 export function RisikoBadge({ score, ampel }) {
-  const klasse = ampel?.id === "hoch" ? "bg-red-50 text-red-800 ring-red-200" : ampel?.id === "mittel" ? "bg-sun-300/25 text-ink-900 ring-sun-400/50" : "bg-ov-50 text-ov-800 ring-ov-200";
+  const klasse = ampel?.id === "hoch" ? "bg-danger-50 text-danger-800 ring-danger-200" : ampel?.id === "mittel" ? "bg-sun-300/25 text-ink-900 ring-sun-400/50" : "bg-ov-50 text-ov-800 ring-ov-200";
   return <Badge className={klasse}><span className="ov-num">{score}</span> · {ampel?.label || ""}</Badge>;
 }
 
@@ -69,7 +69,7 @@ export function Reiter({ basis, aktiv, reiter = [] }) {
             <li key={t.id}>
               <Link href={t.id === "uebersicht" ? basis : `${basis}?reiter=${t.id}`} aria-current={an ? "page" : undefined} scroll={false} className={cn("inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full px-4 text-[14px] font-semibold transition-colors", an ? "bg-navy-900 text-white" : "text-ink-700 hover:bg-ink-50")}>
                 {t.label}
-                {t.zaehler ? <span className={cn("ov-num rounded-full px-1.5 text-[11.5px] font-bold", an ? "bg-white/20 text-white" : t.warn ? "bg-red-600 text-white" : "bg-ink-100 text-ink-700")}>{t.zaehler}</span> : null}
+                {t.zaehler ? <span className={cn("ov-num rounded-full px-1.5 text-[11.5px] font-bold", an ? "bg-white/20 text-white" : t.warn ? "bg-danger-600 text-white" : "bg-ink-100 text-ink-700")}>{t.zaehler}</span> : null}
               </Link>
             </li>
           );
@@ -82,9 +82,9 @@ export function Reiter({ basis, aktiv, reiter = [] }) {
 /** Kompakte Kennzahl-Kachel (wie Anlagen) */
 export function Wert({ label, wert, hinweis, ton }) {
   return (
-    <div className={cn("min-w-0 rounded-3xl p-4 md:p-5", ton === "dunkel" ? "bg-navy-950 text-white ring-1 ring-navy-800" : ton === "warn" ? "bg-red-50 ring-1 ring-red-200" : "bg-white ring-1 ring-ink-200/70")}>
+    <div className={cn("min-w-0 rounded-3xl p-4 md:p-5", ton === "dunkel" ? "bg-navy-950 text-white ring-1 ring-navy-800" : ton === "warn" ? "bg-danger-50 ring-1 ring-danger-200" : "bg-white ring-1 ring-ink-200/70")}>
       <p className={cn("text-[12.5px] font-medium", ton === "dunkel" ? "text-white/70" : "text-ink-500")}>{label}</p>
-      <p className={cn("ov-num mt-2 font-display text-[22px] font-extrabold leading-none tracking-tight md:text-[26px]", ton === "dunkel" ? "text-white" : ton === "warn" ? "text-red-800" : "text-ink-900")}>{wert}</p>
+      <p className={cn("ov-num mt-2 font-display text-[22px] font-extrabold leading-none tracking-tight md:text-[26px]", ton === "dunkel" ? "text-white" : ton === "warn" ? "text-danger-800" : "text-ink-900")}>{wert}</p>
       {hinweis && <p className={cn("mt-1.5 text-[12px]", ton === "dunkel" ? "text-white/60" : "text-ink-500")}>{hinweis}</p>}
     </div>
   );

@@ -170,7 +170,7 @@ export function GvFormular({ genoId, gv = null }) {
             <label className="flex items-center gap-1.5 text-[13px]"><input type="checkbox" checked={!!t.beschluss} onChange={(e) => top(i, "beschluss", e.target.checked)} className="h-4 w-4 accent-[#558227]" /> Beschluss</label>
             <select aria-label="Mehrheit" className={`${auswahlfeld} h-10`} disabled={!t.beschluss} value={t.mehrheit || "einfach"} onChange={(e) => top(i, "mehrheit", e.target.value)}>{Object.entries(MEHRHEITEN).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select>
             <label className="flex items-center gap-1.5 text-[13px]"><input type="checkbox" disabled={!t.beschluss} checked={!!t.satzung} onChange={(e) => top(i, "satzung", e.target.checked)} className="h-4 w-4 accent-[#558227]" /> Satzung</label>
-            <button type="button" aria-label="TOP entfernen" className="text-ink-500 hover:text-red-700" onClick={() => setG({ ...g, tagesordnung: g.tagesordnung.filter((_, j) => j !== i) })}><Trash2 className="h-4 w-4" /></button>
+            <button type="button" aria-label="TOP entfernen" className="text-ink-500 hover:text-danger-700" onClick={() => setG({ ...g, tagesordnung: g.tagesordnung.filter((_, j) => j !== i) })}><Trash2 className="h-4 w-4" /></button>
             <textarea aria-label="Erläuterung" rows={1} placeholder="Erläuterung / Beschlussvorschlag" className={`${textbereich} min-h-[44px] sm:col-span-5`} value={t.text || ""} onChange={(e) => top(i, "text", e.target.value)} />
           </div>
         ))}
@@ -180,7 +180,7 @@ export function GvFormular({ genoId, gv = null }) {
         <legend className="text-[13.5px] font-semibold text-ink-700">Unterlagen</legend>
         {g.unterlagen.map((u, i) => (
           <div key={i} className="grid gap-2 rounded-2xl p-3 ring-1 ring-inset ring-ink-200/80">
-            <div className="flex gap-2"><input aria-label="Titel der Unterlage" className={eingabe} value={u.titel} onChange={(e) => unt(i, "titel", e.target.value)} /><button type="button" aria-label="Unterlage entfernen" className="text-ink-500 hover:text-red-700" onClick={() => setG({ ...g, unterlagen: g.unterlagen.filter((_, j) => j !== i) })}><Trash2 className="h-4 w-4" /></button></div>
+            <div className="flex gap-2"><input aria-label="Titel der Unterlage" className={eingabe} value={u.titel} onChange={(e) => unt(i, "titel", e.target.value)} /><button type="button" aria-label="Unterlage entfernen" className="text-ink-500 hover:text-danger-700" onClick={() => setG({ ...g, unterlagen: g.unterlagen.filter((_, j) => j !== i) })}><Trash2 className="h-4 w-4" /></button></div>
             <textarea aria-label="Inhalt" rows={3} className={textbereich} value={u.text} onChange={(e) => unt(i, "text", e.target.value)} />
           </div>
         ))}

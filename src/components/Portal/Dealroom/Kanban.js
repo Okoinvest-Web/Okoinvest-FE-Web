@@ -140,7 +140,7 @@ export default function Kanban({ karten = [], tags = [] }) {
         </div>
         <p className="text-[13px] text-ink-500 md:ml-auto">Karten ziehen oder per Auswahlfeld einordnen – nur für Sie sichtbar.</p>
       </div>
-      {fehler && <p role="alert" className="mb-3 rounded-xl bg-red-50 px-4 py-2.5 text-[13.5px] text-red-800 ring-1 ring-red-200">{fehler}</p>}
+      {fehler && <p role="alert" className="mb-3 rounded-xl bg-danger-50 px-4 py-2.5 text-[13.5px] text-danger-800 ring-1 ring-danger-200">{fehler}</p>}
       <div className="relative -mx-4 overflow-x-auto px-4 pb-3 [contain:inline-size] md:-mx-0 md:px-0">
         <ol className="flex min-w-max gap-3.5">
           {PIPELINE_SPALTEN.map((s) => {

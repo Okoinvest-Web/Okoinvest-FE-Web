@@ -330,12 +330,12 @@ export default async function AnlageSeite({ params, searchParams }) {
                 <div className="flex items-end justify-between gap-3">
                   <div>
                     <p className="text-[12.5px] text-ink-500">Ist / Soll</p>
-                    <p className={`ov-num font-display text-[30px] font-extrabold leading-none ${soll && ist / soll < 0.9 ? "text-red-700" : "text-ov-700"}`}>{pct(soll ? ist / soll : null)}</p>
+                    <p className={`ov-num font-display text-[30px] font-extrabold leading-none ${soll && ist / soll < 0.9 ? "text-danger-700" : "text-ov-700"}`}>{pct(soll ? ist / soll : null)}</p>
                   </div>
                   <p className="text-right text-[13px] text-ink-600">Ist <span className="ov-num font-semibold text-ink-900">{kwh(ist)}</span><br />Soll <span className="ov-num font-semibold text-ink-900">{kwh(soll)}</span></p>
                 </div>
                 <div className="mt-3 h-2 rounded-full bg-ink-100" role="progressbar" aria-valuemin={0} aria-valuemax={120} aria-valuenow={soll ? Math.round((ist / soll) * 100) : 0} aria-label="Ist im Verhältnis zum Soll">
-                  <div className={`h-2 rounded-full ${soll && ist / soll < 0.9 ? "bg-red-500" : "bg-ov-500"}`} style={{ width: `${Math.min(100, soll ? (ist / soll) * 100 : 0)}%` }} />
+                  <div className={`h-2 rounded-full ${soll && ist / soll < 0.9 ? "bg-danger-500" : "bg-ov-500"}`} style={{ width: `${Math.min(100, soll ? (ist / soll) * 100 : 0)}%` }} />
                 </div>
                 <p className="mt-3 text-[12.5px] leading-relaxed text-ink-500">Soll aus Region ({a.bundesland}), {kwpText(a.kwp)}, Bauart und Alterung; Monatsverteilung nach PVGIS. CO₂ vermieden: <span className="font-semibold text-ink-700">{tonnen(a.co2JahrKg)}</span>.</p>
               </Karte>

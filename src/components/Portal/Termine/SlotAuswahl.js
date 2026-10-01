@@ -52,7 +52,7 @@ export default function SlotAuswahl({ art, gewaehlt, onWahl, mitarbeiterId = "",
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
-      {daten.fehler && <p role="alert" className="mb-3 rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-800 ring-1 ring-red-200">{daten.fehler}</p>}
+      {daten.fehler && <p role="alert" className="mb-3 rounded-xl bg-danger-50 px-4 py-3 text-[14px] text-danger-800 ring-1 ring-danger-200">{daten.fehler}</p>}
       <div className={cn("relative grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7", daten.laden && "opacity-50")} aria-busy={daten.laden}>
         {daten.laden && <Loader2 aria-hidden="true" className="absolute left-1/2 top-6 h-6 w-6 -translate-x-1/2 animate-spin text-ov-600" />}
         {jeTag.map(([tag, liste]) => (

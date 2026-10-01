@@ -38,7 +38,7 @@ export default function AnbieterCockpit({ daten, titel = "Was ist zu tun?", unte
                       <Badge ton={a.ueberfaellig ? "warn" : a.ton}>{ART[a.art] || a.art}</Badge>
                       <span className="min-w-0 flex-1">{a.text}</span>
                       {a.frist && (
-                        <span className={cn("hidden shrink-0 items-center gap-1 text-[12.5px] sm:inline-flex", a.ueberfaellig ? "font-semibold text-red-700" : "text-ink-500")}>
+                        <span className={cn("hidden shrink-0 items-center gap-1 text-[12.5px] sm:inline-flex", a.ueberfaellig ? "font-semibold text-danger-700" : "text-ink-500")}>
                           {a.ueberfaellig ? <AlertTriangle aria-hidden="true" className="h-3.5 w-3.5" /> : <Clock aria-hidden="true" className="h-3.5 w-3.5" />} bis {tag(a.frist)}
                         </span>
                       )}

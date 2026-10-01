@@ -42,7 +42,7 @@ export default async function Steckbrief({ params }) {
           <thead className="border-b border-ink-100 text-[11.5px] uppercase text-ink-500"><tr><th className="px-5 py-2">Meilenstein</th><th className="px-3 py-2">Soll-Ende</th><th className="px-3 py-2">Ist</th><th className="px-5 py-2">Status</th></tr></thead>
           <tbody className="divide-y divide-ink-100">
             {p.meilensteine.filter((m) => m.status !== "entfaellt").map((m) => (
-              <tr key={m.id} className={m.ueberfaellig ? "text-red-800" : ""}>
+              <tr key={m.id} className={m.ueberfaellig ? "text-danger-800" : ""}>
                 <td className="px-5 py-1.5">{m.kritisch ? <strong>{m.titel}</strong> : m.titel}</td>
                 <td className="px-3 py-1.5">{datumKurz(m.sollEnde)}</td>
                 <td className="px-3 py-1.5">{m.istEnde ? datumKurz(m.istEnde) : "–"}</td>

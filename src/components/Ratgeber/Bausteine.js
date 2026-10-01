@@ -306,8 +306,8 @@ export function LinkKarten({ links = [] }) {
 export function ArtikelKarte({ artikel, gross = false, delay = 0 }) {
   return (
     <Reveal as="article" delay={delay} className="flex">
-      <div className="group ov-card-hover relative flex w-full flex-col overflow-hidden rounded-3xl bg-white ring-1 ring-ink-200/70 focus-within:ring-2 focus-within:ring-ov-500 hover:ring-ov-200">
-        <div className={cn("relative overflow-hidden bg-ink-100", gross ? "aspect-[16/10] lg:aspect-auto lg:min-h-[320px] lg:flex-1" : "aspect-[16/10]")}>
+      <div className="group ov-card-hover relative flex w-full flex-col rounded-3xl bg-white ring-1 ring-ink-200/70 focus-within:ring-2 focus-within:ring-ov-500 hover:ring-ov-200">
+        <div className={cn("relative overflow-hidden rounded-t-3xl bg-ink-100", gross ? "aspect-[16/10] lg:aspect-auto lg:min-h-[320px] lg:flex-1" : "aspect-[16/10]")}>
           <Image
             src={artikel.bild}
             alt={artikel.bildAlt}

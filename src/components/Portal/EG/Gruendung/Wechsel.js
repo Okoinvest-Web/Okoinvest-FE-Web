@@ -111,9 +111,9 @@ export function ImportAssistent({ gemeinschaftId, auftragId = "", importe = [] }
             ))}
           </div>
           {p.fehler.length > 0 && (
-            <div className="rounded-2xl bg-red-50 p-3 ring-1 ring-inset ring-red-200">
-              <p className="text-[13.5px] font-semibold text-red-900">{p.fehler.length} Fehler in {p.kennzahlen.fehlerZeilen} Zeile(n)</p>
-              <ul className="mt-1 max-h-48 space-y-0.5 overflow-y-auto text-[13px] text-red-900">{p.fehler.slice(0, 200).map((f, i) => <li key={i}>Zeile {f.zeile}: {f.text}</li>)}</ul>
+            <div className="rounded-2xl bg-danger-50 p-3 ring-1 ring-inset ring-danger-200">
+              <p className="text-[13.5px] font-semibold text-danger-800">{p.fehler.length} Fehler in {p.kennzahlen.fehlerZeilen} Zeile(n)</p>
+              <ul className="mt-1 max-h-48 space-y-0.5 overflow-y-auto text-[13px] text-danger-800">{p.fehler.slice(0, 200).map((f, i) => <li key={i}>Zeile {f.zeile}: {f.text}</li>)}</ul>
             </div>
           )}
           {p.warnungen.length > 0 && <Klappe titel={`${p.warnungen.length} Hinweis(e) zur Prüfung`}><ul className="max-h-48 space-y-0.5 overflow-y-auto text-[13px] text-ink-700">{p.warnungen.slice(0, 300).map((w, i) => <li key={i}>{w.zeile ? `Zeile ${w.zeile}: ` : ""}{w.text}</li>)}</ul></Klappe>}

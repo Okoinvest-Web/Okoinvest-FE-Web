@@ -117,7 +117,7 @@ export function useFeldPruefung(schema) {
 export function FeldFehler({ id, text }) {
   if (!text) return null;
   return (
-    <p id={`${id}-fehler`} className="mt-1.5 flex items-start gap-1.5 text-[12.5px] font-medium leading-snug text-red-700">
+    <p id={`${id}-fehler`} className="mt-1.5 flex items-start gap-1.5 text-[12.5px] font-medium leading-snug text-danger-700">
       <svg aria-hidden="true" viewBox="0 0 16 16" className="mt-[1px] h-3.5 w-3.5 shrink-0 fill-current"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 3.2c.5 0 .8.4.8.8v3.6a.8.8 0 0 1-1.6 0V5c0-.4.3-.8.8-.8Zm0 6.2a.95.95 0 1 1 0 1.9.95.95 0 0 1 0-1.9Z" /></svg>
       {text}
     </p>

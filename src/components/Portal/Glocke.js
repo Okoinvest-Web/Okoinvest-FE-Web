@@ -3,6 +3,8 @@
 // Benachrichtigungszentrale im Portal-Kopf: Glocke mit Zähler, Aufklappliste der neuesten
 // Ereignisse, „Alle als gelesen“, Link zur Übersichtsseite. Klick auf einen Eintrag markiert ihn
 // als gelesen und öffnet das Objekt (nur interne Portal-Pfade).
+// UX-Audit P1-5: ruhiger Zähler (Grün; Rot nur bei ungelesenen Sicherheitsereignissen), ab 100 „99+“,
+// im Panel getrennt nach „Zu erledigen“ (Handlung nötig) und „Info“.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,6 +16,9 @@ import { relativ } from "@/lib/plattform/format";
 import { BENACHRICHTIGUNG_ARTEN } from "@/lib/plattform/konstanten";
 import { ART_ICON } from "./benachrichtigungIcons";
 
+/** Ereignisarten, die eine Handlung verlangen (reine Anzeige-Gruppierung, keine Fachlogik). */
+const HANDELN = new Set(["aufgabe", "signatur", "anfrage", "stoerung", "sicherheit"]);
+
 export function HinweisEintrag({ b, onOeffnen, kompakt = false }) {
   const Icon = ART_ICON[b.art] || Bell;
   return (
@@ -22,7 +27,7 @@ export function HinweisEintrag({ b, onOeffnen, kompakt = false }) {
       onClick={() => onOeffnen(b)}
       className={cn("group flex w-full gap-3 rounded-2xl text-left transition-colors", kompakt ? "px-3 py-2.5 hover:bg-ink-50" : "p-4 hover:bg-sand-50", !b.gelesen && (kompakt ? "bg-ov-50/60" : "bg-ov-50/50"))}
     >
-      <span className={cn("mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", b.gelesen ? "bg-ink-100 text-ink-500" : "bg-ov-100 text-ov-700")}>
+      <span className={cn("mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", b.gelesen ? "bg-ink-100 text-ink-500" : b.art === "sicherheit" ? "bg-danger-50 text-danger-700" : "bg-ov-100 text-ov-700")}>
         <Icon aria-hidden="true" className="h-[18px] w-[18px]" />
       </span>
       <span className="min-w-0 flex-1">
@@ -81,6 +86,13 @@ export default function Glocke({ start = { eintraege: [], ungelesen: 0 } }) {
   }
 
   const n = daten.ungelesen || 0;
+  const sicherheitOffen = daten.eintraege.some((b) => b.art === "sicherheit" && !b.gelesen);
+  const handeln = daten.eintraege.filter((b) => HANDELN.has(b.art));
+  const info = daten.eintraege.filter((b) => !HANDELN.has(b.art));
+  const gruppen = [
+    { id: "handeln", titel: "Zu erledigen", liste: handeln },
+    { id: "info", titel: "Info", liste: info },
+  ].filter((g) => g.liste.length);
   return (
     <div className="relative" ref={ref}>
       <button
@@ -88,12 +100,12 @@ export default function Glocke({ start = { eintraege: [], ungelesen: 0 } }) {
         onClick={() => setOffen((o) => !o)}
         aria-expanded={offen}
         aria-haspopup="dialog"
-        aria-label={n ? `Benachrichtigungen, ${n} ungelesen` : "Benachrichtigungen"}
+        aria-label={n ? `Benachrichtigungen, ${n > 99 ? "mehr als 99" : n} ungelesen${sicherheitOffen ? ", darunter Sicherheitshinweise" : ""}` : "Benachrichtigungen"}
         className="relative flex h-10 w-10 items-center justify-center rounded-full text-ink-700 hover:bg-ink-100"
       >
         <Bell aria-hidden="true" className="h-5 w-5" />
         {n > 0 && (
-          <span aria-hidden="true" className="ov-num absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-ov-600 px-1 text-[10.5px] font-bold text-white ring-2 ring-white">
+          <span aria-hidden="true" className={cn("ov-num absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10.5px] font-bold text-white ring-2 ring-white", sicherheitOffen ? "bg-danger-600" : "bg-ov-600")}>
             {n > 99 ? "99+" : n}
           </span>
         )}
@@ -110,9 +122,19 @@ export default function Glocke({ start = { eintraege: [], ungelesen: 0 } }) {
               </button>
             )}
           </div>
-          <div className="max-h-[min(60vh,28rem)] space-y-1 overflow-y-auto p-2">
-            {daten.eintraege.length ? (
-              daten.eintraege.map((b) => <HinweisEintrag key={b.id} b={b} onOeffnen={oeffnen} kompakt />)
+          <div className="max-h-[min(60vh,28rem)] overflow-y-auto p-2">
+            {gruppen.length ? (
+              gruppen.map((g) => (
+                <section key={g.id} aria-labelledby={`glocke-${g.id}`} className="mb-1 last:mb-0">
+                  <h3 id={`glocke-${g.id}`} className="flex items-center gap-2 px-3 pb-1 pt-2 text-[12px] font-bold uppercase tracking-[0.12em] text-ink-500">
+                    {g.titel}
+                    <span className="ov-num rounded-full bg-ink-100 px-1.5 text-[11px] font-semibold text-ink-600">{g.liste.length}</span>
+                  </h3>
+                  <div className="space-y-1">
+                    {g.liste.map((b) => <HinweisEintrag key={b.id} b={b} onOeffnen={oeffnen} kompakt />)}
+                  </div>
+                </section>
+              ))
             ) : (
               <p className="px-3 py-8 text-center text-[14px] text-ink-500">Keine Benachrichtigungen.</p>
             )}

@@ -49,7 +49,7 @@ export default async function GutachterSeite() {
                             <p className="text-[12.5px] text-ink-600">{a.status === "angefragt" ? `Angebotsfrist ${datum(a.angebotsfrist)}` : a.liefertermin ? `Liefertermin ${datum(a.liefertermin)}` : ""}{a.angebot ? ` · ${eur(a.angebot.summeNetto)} netto` : ""}{a.rechnungsstand.offenBrutto > 0 ? ` · offen ${eur(a.rechnungsstand.offenBrutto)}` : ""}</p>
                           </div>
                           <span className="flex flex-wrap items-center gap-2">
-                            {a.ueberfaellig && <Badge className="bg-red-50 text-red-800 ring-red-200"><TriangleAlert aria-hidden="true" className="h-3.5 w-3.5" />überfällig</Badge>}
+                            {a.ueberfaellig && <Badge className="bg-danger-50 text-danger-800 ring-danger-200"><TriangleAlert aria-hidden="true" className="h-3.5 w-3.5" />überfällig</Badge>}
                             <Badge ton={a.statusTon}>{a.statusLabel}</Badge>
                             <ArrowRight aria-hidden="true" className="hidden h-4 w-4 text-ink-400 transition-transform group-hover:translate-x-0.5 md:block" />
                           </span>

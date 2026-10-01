@@ -143,10 +143,10 @@ export function BelegAktionen({ beleg: b }) {
         <span className="inline-flex items-center gap-1">
           <label className="sr-only" htmlFor={`storno-${b.id}`}>Grund der Stornierung</label>
           <input id={`storno-${b.id}`} value={grund} onChange={(e) => setGrund(e.target.value)} placeholder="Grund" className="h-8 w-36 rounded-full px-3 text-[12.5px] ring-1 ring-inset ring-ink-200 focus-visible:ring-2 focus-visible:ring-ov-500" />
-          <button type="button" disabled={laeuft} onClick={() => post({ aktion: "storno", grund })} className={cn(klein, "text-red-800 ring-red-200 hover:bg-red-50")}>bestätigen</button>
+          <button type="button" disabled={laeuft} onClick={() => post({ aktion: "storno", grund })} className={cn(klein, "text-danger-800 ring-danger-200 hover:bg-danger-50")}>bestätigen</button>
         </span>
       )}
-      {fehler && <span role="alert" className="basis-full text-right text-[12px] text-red-700">{fehler}</span>}
+      {fehler && <span role="alert" className="basis-full text-right text-[12px] text-danger-700">{fehler}</span>}
     </span>
   );
 }
@@ -169,7 +169,7 @@ export function KlaerfallAktionen({ klaerfall: k }) {
         <button type="button" disabled={laeuft} onClick={() => post("erledigt")} className={knopfPrimaer}>Erledigt</button>
         <button type="button" disabled={laeuft} onClick={() => post("verworfen")} className={knopfHell}>Verwerfen</button>
       </div>
-      {fehler && <p role="alert" className="text-[12.5px] text-red-700">{fehler}</p>}
+      {fehler && <p role="alert" className="text-[12.5px] text-danger-700">{fehler}</p>}
     </div>
   );
 }
@@ -278,7 +278,7 @@ export function ZahlungslaufAktionen({ lauf }) {
     <span className="inline-flex flex-wrap gap-1.5">
       <button type="button" disabled={laeuft} onClick={() => post("bestaetigen")} className={cn(klein, "text-ov-800 ring-ov-200 hover:bg-ov-50")}>ausgeführt</button>
       <button type="button" disabled={laeuft} onClick={() => post("verwerfen")} className={cn(klein, "text-ink-700 ring-ink-200 hover:bg-ink-50")}>verwerfen</button>
-      {fehler && <span role="alert" className="text-[12px] text-red-700">{fehler}</span>}
+      {fehler && <span role="alert" className="text-[12px] text-danger-700">{fehler}</span>}
     </span>
   );
 }
@@ -351,7 +351,7 @@ export function AnlageAktivieren({ anlage: a }) {
         <option value="CH">CH (monatsgenau)</option>
       </select>
       <button type="submit" disabled={laeuft} className={knopfPrimaer}>Speichern</button>
-      {fehler && <p role="alert" className="text-[12.5px] text-red-700 sm:col-span-5">{fehler}</p>}
+      {fehler && <p role="alert" className="text-[12.5px] text-danger-700 sm:col-span-5">{fehler}</p>}
     </form>
   );
 }

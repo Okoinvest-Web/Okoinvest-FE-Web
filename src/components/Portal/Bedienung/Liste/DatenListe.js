@@ -408,7 +408,7 @@ export default function DatenListe({
           </button>
         </div>
       )}
-      <p role="status" aria-live="polite" className={meldung ? cn("mb-3 rounded-xl px-4 py-2.5 text-[14px] ring-1", meldung.ton === "fehler" ? "bg-red-50 text-red-800 ring-red-200" : "bg-ov-50 text-ov-900 ring-ov-200") : "sr-only"}>
+      <p role="status" aria-live="polite" className={meldung ? cn("mb-3 rounded-xl px-4 py-2.5 text-[14px] ring-1", meldung.ton === "fehler" ? "bg-danger-50 text-danger-800 ring-danger-200" : "bg-ov-50 text-ov-900 ring-ov-200") : "sr-only"}>
         {meldung?.text || ""}
       </p>
 

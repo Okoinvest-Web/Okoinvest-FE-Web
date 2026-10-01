@@ -73,7 +73,7 @@ function Stoerung({ s, betrieb, mitAnlage }) {
 
   const stufe = STOERUNG_SCHWERE[s.schwere]?.stufe ?? 0;
   return (
-    <article className={cn("rounded-3xl bg-white ring-1", s.status !== "behoben" && stufe >= 3 ? "ring-red-200" : "ring-ink-200/70")}>
+    <article className={cn("rounded-3xl bg-white ring-1", s.status !== "behoben" && stufe >= 3 ? "ring-danger-200" : "ring-ink-200/70")}>
       <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4 md:px-6">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -82,7 +82,7 @@ function Stoerung({ s, betrieb, mitAnlage }) {
             {s.quittiert ? (
               <span className="inline-flex items-center gap-1 text-[12px] text-ink-500"><CheckCheck aria-hidden="true" className="h-3.5 w-3.5" /> quittiert{s.quittiertVon ? ` von ${s.quittiertVon}` : ""}</span>
             ) : s.status !== "behoben" ? (
-              <span className="text-[12px] font-semibold text-red-700">unquittiert</span>
+              <span className="text-[12px] font-semibold text-danger-700">unquittiert</span>
             ) : null}
             {s.darfBearbeiten && s.status !== "behoben" && <span className="ov-num rounded-full bg-ink-100 px-2 py-0.5 text-[11.5px] font-semibold text-ink-700" title="Priorität">P {s.prioritaet}</span>}
           </div>
@@ -197,7 +197,7 @@ function Stoerung({ s, betrieb, mitAnlage }) {
           )}
         </div>
       )}
-      {fehler && <p role="alert" className="mx-5 mb-4 rounded-xl bg-red-50 px-4 py-2.5 text-[13.5px] text-red-800 ring-1 ring-red-200 md:mx-6">{fehler}</p>}
+      {fehler && <p role="alert" className="mx-5 mb-4 rounded-xl bg-danger-50 px-4 py-2.5 text-[13.5px] text-danger-800 ring-1 ring-danger-200 md:mx-6">{fehler}</p>}
     </article>
   );
 }

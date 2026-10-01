@@ -108,7 +108,7 @@ export function Protokoll({ eintraege = [] }) {
           <p className="text-[12.5px] text-ink-500">{datumZeit(e.am)} Uhr</p>
           <div className="min-w-0">
             <p className="text-[14px] text-ink-900">
-              <span className={cn("font-semibold", e.art === "hash_abweichung" && "text-red-700")}>{PROTOKOLL_LABEL[e.art] || e.art}</span> · {e.text}
+              <span className={cn("font-semibold", e.art === "hash_abweichung" && "text-danger-700")}>{PROTOKOLL_LABEL[e.art] || e.art}</span> · {e.text}
             </p>
             <p className="break-all text-[12px] text-ink-500">
               {e.name}

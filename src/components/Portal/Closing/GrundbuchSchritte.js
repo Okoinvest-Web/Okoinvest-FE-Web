@@ -106,7 +106,7 @@ function Zeile({ akteId, s, schreiben, onNeu }) {
             <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-ink-700">
               {s.datum && <span>Erledigt am {datumText(s.datum)}</span>}
               {s.frist && !["erledigt", "entfaellt"].includes(s.status) && (
-                <span className={cn("inline-flex items-center gap-1", s.ueberfaellig && "font-semibold text-red-700")}>
+                <span className={cn("inline-flex items-center gap-1", s.ueberfaellig && "font-semibold text-danger-700")}>
                   {s.ueberfaellig && <AlertTriangle aria-hidden="true" className="h-3.5 w-3.5" />}Frist {datumText(s.frist)}{s.ueberfaellig ? " – überfällig" : ""}
                 </span>
               )}

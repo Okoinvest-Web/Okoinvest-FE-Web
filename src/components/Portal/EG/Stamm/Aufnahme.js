@@ -23,7 +23,7 @@ export function AufnahmeKnoepfe({ mitgliedId, url }) {
           <Knopf variante="gefahr" type="submit" disabled={a.laeuft || !grund.trim()}>Ablehnen</Knopf>
         </form>
       )}
-      {a.fehler && <span role="alert" className="w-full text-[12.5px] text-red-700">{a.fehler}</span>}
+      {a.fehler && <span role="alert" className="w-full text-[12.5px] text-danger-700">{a.fehler}</span>}
     </span>
   );
 }

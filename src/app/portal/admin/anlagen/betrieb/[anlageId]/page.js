@@ -62,7 +62,7 @@ export default async function BetriebAnlageSeite({ params }) {
                 <td className={`${zelle} text-[12.5px] text-ink-500`}>{{ zaehler_geprueft: "Zähler (geprüft)", zaehler: "Zähler", monitoring: "Monitoring" }[r.istQuelle] || "–"}</td>
                 <td className={`${zelle} ov-num`}>{r.laufend ? "läuft" : kwh(r.sollKwh)}</td>
                 <td className={`${zelle} ov-num`}>{prozent(r.performanceIndex, 0)}</td>
-                <td className={`${zelle} ov-num`}>{r.pr !== null ? <span className={r.prPlausibel === false ? "text-red-700" : ""}>{prozent(r.pr)}</span> : "–"}</td>
+                <td className={`${zelle} ov-num`}>{r.pr !== null ? <span className={r.prPlausibel === false ? "text-danger-700" : ""}>{prozent(r.pr)}</span> : "–"}</td>
                 <td className={`${zelle} ov-num`}>{prozent(r.verfuegbarkeit)}</td>
               </tr>
             ))}

@@ -29,8 +29,8 @@ export function PhaseBadge({ phase, className, dunkel = false }) {
 export default function ProjektKarte({ projekt: p, href, extra, aktion, className }) {
   const reserviert = p.status === "reserviert";
   return (
-    <article className={cn("group ov-card-hover relative flex h-full flex-col overflow-hidden rounded-3xl bg-white ring-1 ring-ink-200/70 hover:ring-ov-200", className)}>
-      <div className="relative h-36 overflow-hidden">
+    <article className={cn("group ov-card-hover relative flex h-full flex-col rounded-3xl bg-white ring-1 ring-ink-200/70 hover:ring-ov-200", className)}>
+      <div className="relative h-36 overflow-hidden rounded-t-3xl">
         <TypIllustration typ={p.typ} className="h-full w-full transition-transform duration-700 group-hover:scale-[1.04]" />
         <div className="absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2">
           <PhaseBadge phase={p.phase} />

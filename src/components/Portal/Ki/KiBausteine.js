@@ -268,7 +268,7 @@ export function KiDrawer({ offen, onSchliessen, titel, untertitel, children, fus
 export function KiFehler({ children }) {
   if (!children) return null;
   return (
-    <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-800 ring-1 ring-red-200">
+    <p role="alert" className="rounded-xl bg-danger-50 px-4 py-3 text-[14px] text-danger-800 ring-1 ring-danger-200">
       {children}
     </p>
   );

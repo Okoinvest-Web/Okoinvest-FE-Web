@@ -59,8 +59,8 @@ export default function KommuneAnfrage() {
         </div>
         <div>
           <label htmlFor={`${id}-gs`} className={label}>{gs.label}</label>
-          <input id={`${id}-gs`} inputMode="numeric" className={cn(feld, gsFehler && "ring-2 ring-red-300")} value={d.gemeindeSchluessel} onChange={(e) => setze("gemeindeSchluessel")(e.target.value)} placeholder="optional" aria-invalid={gsFehler ? true : undefined} aria-describedby={`${id}-gs-h`} />
-          <p id={`${id}-gs-h`} className={cn("mt-1.5 text-[12.5px]", gsFehler ? "font-medium text-red-700" : "text-ink-500")}>{gsFehler || "Hilft uns, Projekte eindeutig Ihrem Gebiet zuzuordnen."}</p>
+          <input id={`${id}-gs`} inputMode="numeric" className={cn(feld, gsFehler && "ring-2 ring-danger-300")} value={d.gemeindeSchluessel} onChange={(e) => setze("gemeindeSchluessel")(e.target.value)} placeholder="optional" aria-invalid={gsFehler ? true : undefined} aria-describedby={`${id}-gs-h`} />
+          <p id={`${id}-gs-h`} className={cn("mt-1.5 text-[12.5px]", gsFehler ? "font-medium text-danger-700" : "text-ink-500")}>{gsFehler || "Hilft uns, Projekte eindeutig Ihrem Gebiet zuzuordnen."}</p>
         </div>
         <div>
           <label htmlFor={`${id}-r`} className={label}>Ihre Funktion</label>

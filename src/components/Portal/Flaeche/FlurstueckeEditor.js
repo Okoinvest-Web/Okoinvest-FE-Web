@@ -69,13 +69,13 @@ export default function FlurstueckeEditor({ land = "DE", liste, onChange, ha }) 
                         id={fid}
                         inputMode={["gemarkung", "grundbuch", "egrid"].includes(k) ? undefined : k === "nummer" && land === "CH" ? undefined : "numeric"}
                         placeholder={def[k].platzhalter || ""}
-                        className={cn(eingabe, "h-11 text-[14.5px]", f && "ring-2 ring-red-300")}
+                        className={cn(eingabe, "h-11 text-[14.5px]", f && "ring-2 ring-danger-300")}
                         value={s[k] ?? ""}
                         onChange={(e) => setze(i, k, e.target.value)}
                         aria-invalid={f ? true : undefined}
                         aria-describedby={f ? `${fid}-f` : undefined}
                       />
-                      {f && <p id={`${fid}-f`} className="mt-1 text-[12px] font-medium text-red-700">{f}</p>}
+                      {f && <p id={`${fid}-f`} className="mt-1 text-[12px] font-medium text-danger-700">{f}</p>}
                     </div>
                   );
                 })}

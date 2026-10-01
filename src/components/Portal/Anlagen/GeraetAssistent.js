@@ -158,7 +158,7 @@ function Zugangsdaten({ anlage, zugang, passwort, broker, demo, onFertig }) {
           </div>
         )}
       </div>
-      {fehler && <p role="alert" className="rounded-xl bg-red-50 px-4 py-2.5 text-[13.5px] text-red-800 ring-1 ring-red-200">{fehler}</p>}
+      {fehler && <p role="alert" className="rounded-xl bg-danger-50 px-4 py-2.5 text-[13.5px] text-danger-800 ring-1 ring-danger-200">{fehler}</p>}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 pt-4">
         <label className="inline-flex items-center gap-2 text-[14px] text-ink-800">
           <input type="checkbox" checked={bestaetigt} onChange={(e) => setBestaetigt(e.target.checked)} className="h-5 w-5 accent-ov-600" />
@@ -262,7 +262,7 @@ export default function GeraetAssistent({ anlage, geraete = [], demo = false, so
       ) : (
         !neu && <Button size="sm" icon={Plug} onClick={() => setFormular(true)}>Gerät verbinden</Button>
       )}
-      {fehler && <p role="alert" className="rounded-xl bg-red-50 px-4 py-2.5 text-[13.5px] text-red-800 ring-1 ring-red-200">{fehler}</p>}
+      {fehler && <p role="alert" className="rounded-xl bg-danger-50 px-4 py-2.5 text-[13.5px] text-danger-800 ring-1 ring-danger-200">{fehler}</p>}
     </div>
   );
 }

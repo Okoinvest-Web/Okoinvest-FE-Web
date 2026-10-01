@@ -17,6 +17,7 @@ import {
   Check, ClipboardCopy, Crosshair, Download, FileText, Filter, Layers, List, Loader2, Maximize2, Megaphone, Minimize2, Ruler, Search, Target, X, Zap,
 } from "lucide-react";
 import { cn } from "@/components/ui/cn";
+import Skeleton from "@/components/ui/Skeleton";
 import { senden } from "@/lib/plattform/client";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
 import { distanzM } from "@/lib/plattform/geodaten/geo";
@@ -64,10 +65,26 @@ async function holen(url, signal) {
   return j;
 }
 
+/** Ampel-Zeichen mit Form als zweitem Merkmal (WCAG 1.4.1): grün = Kreis, gelb = Dreieck, rot = Quadrat. */
+function AmpelForm({ ampel, className }) {
+  const f = FARBE[ampel] || "#97a0b0";
+  return (
+    <svg viewBox="0 0 12 12" className={cn("shrink-0", className)} aria-hidden="true" focusable="false">
+      {ampel === "rot" ? (
+        <rect x="1.5" y="1.5" width="9" height="9" rx="1" fill={f} />
+      ) : ampel === "gelb" ? (
+        <path d="M6 1 L11.2 10.5 L0.8 10.5 Z" fill={f} stroke="#6b4600" strokeWidth="0.6" strokeLinejoin="round" />
+      ) : (
+        <circle cx="6" cy="6" r="5" fill={f} />
+      )}
+    </svg>
+  );
+}
+
 function Ampel({ ampel, score, gross = false }) {
   return (
     <span className={cn("inline-flex items-center gap-1.5 font-bold text-ink-900", gross ? "text-[20px]" : "text-[13.5px]")}>
-      <span className={cn("shrink-0 rounded-full", gross ? "h-3.5 w-3.5" : "h-2.5 w-2.5")} style={{ background: FARBE[ampel] }} aria-hidden="true" />
+      <AmpelForm ampel={ampel} className={gross ? "h-4 w-4" : "h-3 w-3"} />
       <span className="ov-num">{score}</span>
       <span className="sr-only">Punkte, {AMPEL_TEXT[ampel]}</span>
     </span>
@@ -151,7 +168,7 @@ function Steckbrief({ k, darfSchreiben, onSchliessen, onUmkreis, onAnschreiben, 
         </div>
 
         {k.ko?.length > 0 && (
-          <div className="rounded-2xl bg-red-50 p-3 text-[13px] text-red-800 ring-1 ring-red-200">
+          <div className="rounded-2xl bg-danger-50 p-3 text-[13px] text-danger-800 ring-1 ring-danger-200">
             {k.ko.map((x) => <p key={x.id}>{x.text}</p>)}
           </div>
         )}
@@ -161,7 +178,7 @@ function Steckbrief({ k, darfSchreiben, onSchliessen, onUmkreis, onAnschreiben, 
           <ul className="space-y-1">
             {k.kriterien.map((c) => (
               <li key={c.id} className="flex items-start gap-2 text-[13px]">
-                <span className={cn("ov-num w-[3.75rem] shrink-0 whitespace-nowrap text-right font-bold", c.art === "plus" ? "text-ov-700" : c.art === "neutral" ? "text-ink-700" : "text-red-700")}>
+                <span className={cn("ov-num w-[3.75rem] shrink-0 whitespace-nowrap text-right font-bold", c.art === "plus" ? "text-ov-700" : c.art === "neutral" ? "text-ink-700" : "text-danger-700")}>
                   {c.punkte > 0 && c.max === 0 ? "+" : ""}{fmt(c.punkte, c.punkte % 1 ? 1 : 0)}{c.max ? `/${c.max}` : ""}
                 </span>
                 <span className="min-w-0 text-ink-700"><span className="font-semibold text-ink-900">{c.label}:</span> {c.text}</span>
@@ -179,7 +196,7 @@ function Steckbrief({ k, darfSchreiben, onSchliessen, onUmkreis, onAnschreiben, 
               <Zeile label="Kosten (Spanne)">{fmtEur(n.kosten.min)} – {fmtEur(n.kosten.max)}</Zeile>
               <Zeile label="je kWp / Anteil">{fmt(n.kosten.proKwp)} € · {fmt(n.kosten.anteil * 100)} %</Zeile>
               <Zeile label="Kapazität">
-                <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: FARBE[n.kapazitaetAmpel] }} aria-hidden="true" />{n.knoten.kapazitaet}</span>
+                <span className="inline-flex items-center gap-1.5"><AmpelForm ampel={n.kapazitaetAmpel} className="h-3 w-3" />{n.knoten.kapazitaet}</span>
               </Zeile>
               <Zeile label="Zeitrahmen">{n.kosten.monate?.join("–")} Monate</Zeile>
               {k.umspannwerk && k.umspannwerk.id !== n.knoten.id && <Zeile label="Nächstes UW ≥ 110 kV">{knotenName(k.umspannwerk)} · {km(k.umspannwerk.luftlinieM)} km</Zeile>}
@@ -811,8 +828,24 @@ export default function AkquiseKarte({ darfSchreiben = false }) {
                 )}
               </div>
             )}
-            {laedt && <p className="flex items-center gap-2 text-[13px] text-ink-500"><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> lädt …</p>}
-            <ul className="divide-y divide-ink-100">
+            <p role="status" aria-live="polite" className={cn("flex items-center gap-2 text-[13px] text-ink-500", !laedt && "sr-only")}>
+              {laedt ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Kandidaten werden geladen …</> : `${fmt(anzeige.length)} Flächen in der Liste`}
+            </p>
+            {laedt && anzeige.length === 0 && (
+              <ul aria-hidden="true" className="divide-y divide-ink-100">
+                {Array.from({ length: 6 }, (_, i) => (
+                  <li key={i} className="flex items-center gap-3 px-1 py-3">
+                    <Skeleton rund className="h-3 w-3" />
+                    <span className="min-w-0 flex-1 space-y-1.5">
+                      <Skeleton className="h-3.5" style={{ width: `${70 - (i % 3) * 12}%` }} />
+                      <Skeleton className="h-3" style={{ width: "88%" }} />
+                    </span>
+                    <Skeleton rund className="h-5 w-8" />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <ul className={cn("divide-y divide-ink-100 transition-opacity duration-200", laedt && anzeige.length > 0 && "opacity-60")} aria-busy={laedt}>
               {anzeige.map((k) => (
                 <li key={k.id}>
                   <button type="button" onClick={() => kandidatWaehlen(k.id, { zoomen: true })} className={cn("flex w-full items-center gap-3 px-1 py-2.5 text-left hover:bg-sand-50", auswahl?.id === k.id && "bg-ov-50")}>
@@ -826,7 +859,7 @@ export default function AkquiseKarte({ darfSchreiben = false }) {
                 </li>
               ))}
             </ul>
-            {!laedt && anzeige.length === 0 && <p className="text-[13px] text-ink-500">Keine Flächen für diese Filter.</p>}
+            {!laedt && anzeige.length === 0 && <p className="rounded-2xl bg-sand-50 px-3 py-3 text-[13px] leading-relaxed text-ink-600 ring-1 ring-ink-100">Keine Kandidaten im Ausschnitt – Filter lockern oder Karte verschieben.</p>}
           </div>
         )}
         {tab === "ebenen" && (
@@ -852,7 +885,11 @@ export default function AkquiseKarte({ darfSchreiben = false }) {
             </div>
             <div className="rounded-2xl bg-sand-50 p-3 text-[12px] text-ink-600 ring-1 ring-ink-100">
               <p className="mb-1 font-semibold text-ink-800">Legende</p>
-              <p><span className="font-semibold" style={{ color: FARBE.gruen }}>●</span> Score ≥ 65 · <span className="font-semibold" style={{ color: FARBE.gelb }}>●</span> 45–64 · <span className="font-semibold" style={{ color: FARBE.rot }}>●</span> &lt; 45</p>
+              <ul className="flex flex-wrap gap-x-3 gap-y-1">
+                <li className="inline-flex items-center gap-1.5"><AmpelForm ampel="gruen" className="h-3 w-3" />Kreis: Score ≥ 65</li>
+                <li className="inline-flex items-center gap-1.5"><AmpelForm ampel="gelb" className="h-3 w-3" />Dreieck: 45–64</li>
+                <li className="inline-flex items-center gap-1.5"><AmpelForm ampel="rot" className="h-3 w-3" />Quadrat: &lt; 45</li>
+              </ul>
               <p>Netzknoten: Größe nach Spannungsebene, Ring grün = Kapazität frei, rot = knapp, weiß = unbekannt.</p>
             </div>
             {info?.quellen && (
@@ -919,7 +956,7 @@ export default function AkquiseKarte({ darfSchreiben = false }) {
       </div>
 
       {fehler && (
-        <div className="flex items-center justify-between gap-2 bg-red-50 px-4 py-2 text-[13px] text-red-800">
+        <div className="flex items-center justify-between gap-2 bg-danger-50 px-4 py-2 text-[13px] text-danger-800">
           <span>{fehler}</span>
           <button type="button" onClick={() => setFehler("")} aria-label="Meldung schließen"><X className="h-4 w-4" aria-hidden="true" /></button>
         </div>
@@ -934,7 +971,17 @@ export default function AkquiseKarte({ darfSchreiben = false }) {
         {/* Karte */}
         <div className="relative min-w-0 flex-1">
           <div ref={kartenRef} className="absolute inset-0 z-0 bg-sand-100" role="application" aria-label="Karte der Kandidatenflächen, Umspannwerke und Schutzgebiete" />
-          {!bereit && <div className="absolute inset-0 flex items-center justify-center text-[14px] text-ink-500"><Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden="true" /> Karte wird geladen …</div>}
+          {!bereit && (
+            <div className="absolute inset-0 flex items-center justify-center" aria-busy="true">
+              <Skeleton className="absolute inset-0 rounded-none" />
+              <span className="relative flex items-center rounded-full bg-white/95 px-4 py-2 text-[14px] text-ink-600 shadow-e2 ring-1 ring-ink-200"><Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden="true" /> Karte wird geladen …</span>
+            </div>
+          )}
+          {bereit && laedt && (
+            <div className="pointer-events-none absolute left-1/2 top-3 z-[30] -translate-x-1/2 animate-ov-einblenden rounded-full bg-white/95 px-3.5 py-1.5 text-[12.5px] font-semibold text-ink-700 shadow-e2 ring-1 ring-ink-200" aria-hidden="true">
+              <Loader2 className="mr-1.5 inline h-3.5 w-3.5 animate-spin align-[-2px]" aria-hidden="true" /> Kandidaten werden geladen …
+            </div>
+          )}
           {info && (
             <div className="pointer-events-none absolute right-3 top-3 z-[30] hidden rounded-2xl bg-white/95 px-3 py-2 text-[12px] text-ink-700 shadow ring-1 ring-ink-200 sm:block">
               <strong className="text-ink-900">{fmt(anzahl)}</strong> Flächen · {fmt(liste.reduce((s, k) => s + k.ha, 0), 0)} ha · {fmt(liste.reduce((s, k) => s + k.mwp, 0), 0)} MWp

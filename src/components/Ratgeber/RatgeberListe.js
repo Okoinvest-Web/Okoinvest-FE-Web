@@ -97,8 +97,8 @@ export default function RatgeberListe({ artikel, kategorien }) {
 
 function Karte({ a }) {
   return (
-    <article className="group ov-card-hover relative flex w-full flex-col overflow-hidden rounded-3xl bg-white ring-1 ring-ink-200/70 focus-within:ring-2 focus-within:ring-ov-500 hover:ring-ov-200">
-      <div className="relative aspect-[16/9] overflow-hidden bg-ink-100">
+    <article className="group ov-card-hover relative flex w-full flex-col rounded-3xl bg-white ring-1 ring-ink-200/70 focus-within:ring-2 focus-within:ring-ov-500 hover:ring-ov-200">
+      <div className="relative aspect-[16/9] overflow-hidden rounded-t-3xl bg-ink-100">
         <Image src={a.bild} alt={a.bildAlt} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
         <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-[12px] font-semibold text-ink-800 shadow-sm backdrop-blur">{a.kategorie}</span>
       </div>

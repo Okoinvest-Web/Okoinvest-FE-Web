@@ -195,12 +195,12 @@ export function DatenUndLoeschung() {
           Ihr Konto wird anonymisiert und gesperrt, Entwürfe werden gelöscht. Unterlagen mit gesetzlicher Aufbewahrungspflicht (z. B. Provisionsabrechnungen, NDA- und Einwilligungsnachweise) bleiben bis zum Ablauf der Fristen gesperrt erhalten. Sind Sie Inhaber einer Organisation mit weiteren Mitgliedern, übertragen Sie zuerst die Inhaberschaft.
         </p>
         {!offen ? (
-          <Button type="button" size="sm" variant="ghost" icon={Trash2} className="mt-3 text-red-700 hover:bg-red-50" onClick={() => setOffen(true)}>
+          <Button type="button" size="sm" variant="ghost" icon={Trash2} className="mt-3 text-danger-700 hover:bg-danger-50" onClick={() => setOffen(true)}>
             Konto löschen …
           </Button>
         ) : (
           <form
-            className="mt-4 space-y-3 rounded-2xl bg-red-50/60 p-4 ring-1 ring-inset ring-red-200"
+            className="mt-4 space-y-3 rounded-2xl bg-danger-50/60 p-4 ring-1 ring-inset ring-danger-200"
             onSubmit={async (e) => {
               e.preventDefault();
               const r = await a.los(() => senden("/api/portal/konto/loeschen", { body: { passwort, bestaetigung: wort } }));
@@ -220,7 +220,7 @@ export function DatenUndLoeschung() {
             </div>
             <FehlerBox>{a.fehler}</FehlerBox>
             <div className="flex flex-wrap gap-2">
-              <button type="submit" disabled={a.laeuft || wort.trim().toUpperCase() !== "LÖSCHEN"} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-red-700 px-4 text-[14px] font-semibold text-white transition-colors hover:bg-red-800 disabled:opacity-50">
+              <button type="submit" disabled={a.laeuft || wort.trim().toUpperCase() !== "LÖSCHEN"} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-danger-700 px-4 text-[14px] font-semibold text-white transition-colors hover:bg-danger-800 disabled:opacity-50">
                 <Trash2 aria-hidden="true" className="h-4 w-4" /> Endgültig löschen
               </button>
               <Button type="button" size="sm" variant="ghost" onClick={() => setOffen(false)}>Abbrechen</Button>

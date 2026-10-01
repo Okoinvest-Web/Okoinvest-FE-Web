@@ -130,7 +130,7 @@ export function AnliegenFormular({ auswahl, vorwahl = {} }) {
             </select>
           </Feld>
           {f.auswirkung === "sicherheit" && (
-            <p role="alert" className="flex gap-2 rounded-2xl bg-red-50 px-4 py-3 text-[14px] text-red-800 ring-1 ring-red-200 md:col-span-2"><TriangleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />Bei Rauch, Brandgeruch oder Gefahr für Personen: Bereich meiden und sofort die Feuerwehr bzw. den Notruf verständigen. Die Meldung im Portal ersetzt keinen Notruf.</p>
+            <p role="alert" className="flex gap-2 rounded-2xl bg-danger-50 px-4 py-3 text-[14px] text-danger-800 ring-1 ring-danger-200 md:col-span-2"><TriangleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />Bei Rauch, Brandgeruch oder Gefahr für Personen: Bereich meiden und sofort die Feuerwehr bzw. den Notruf verständigen. Die Meldung im Portal ersetzt keinen Notruf.</p>
           )}
         </div>
       )}

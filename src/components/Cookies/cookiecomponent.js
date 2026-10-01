@@ -340,7 +340,7 @@ export default function CookieBanner({ forceShow = false, onClose }) {
                       id="essential-cookies"
                       checked={consent.essential}
                       disabled
-                      className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      className="h-5 w-5 rounded border-gray-300 text-navy-700 focus:ring-ov-500 cursor-pointer"
                     />
                     <span className="font-medium text-gray-900">Essenziell</span>
                   </label>
@@ -363,7 +363,7 @@ export default function CookieBanner({ forceShow = false, onClose }) {
                     id="statistics-cookies"
                     checked={consent.statistics}
                     onChange={() => toggleConsent("statistics")}
-                    className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    className="h-5 w-5 rounded border-gray-300 text-navy-700 focus:ring-ov-500 cursor-pointer"
                   />
                   <span className="font-medium text-gray-900">Statistik (1)</span>
                 </label>
@@ -379,7 +379,7 @@ export default function CookieBanner({ forceShow = false, onClose }) {
                   type="button"
                   onClick={() => toggleCategoryDetails("statistics")}
                   aria-expanded={expandedSections.statistics}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer bg-transparent border-0 p-0"
+                  className="text-sm font-medium text-navy-700 hover:text-navy-900 hover:underline cursor-pointer bg-transparent border-0 p-0"
                 >
                   {expandedSections.statistics ? "Details ausblenden" : "Details anzeigen"}
                 </button>
@@ -392,7 +392,7 @@ export default function CookieBanner({ forceShow = false, onClose }) {
                       id="google-analytics"
                       checked={consent.googleAnalytics}
                       onChange={() => toggleConsent("googleAnalytics")}
-                      className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      className="h-5 w-5 rounded border-gray-300 text-navy-700 focus:ring-ov-500 cursor-pointer"
                     />
                     <span className="font-medium text-black">{cookieServices.statistics.googleAnalytics.title}</span>
                   </label>
@@ -402,7 +402,7 @@ export default function CookieBanner({ forceShow = false, onClose }) {
                       type="button"
                       onClick={() => toggleServiceDetails("googleAnalytics")}
                       aria-expanded={expandedServices.googleAnalytics}
-                      className="text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer bg-transparent border-0 p-0"
+                      className="text-sm font-medium text-navy-700 hover:text-navy-900 cursor-pointer bg-transparent border-0 p-0"
                     >
                       {expandedServices.googleAnalytics ? "Details ausblenden" : "Details anzeigen"}
                     </button>

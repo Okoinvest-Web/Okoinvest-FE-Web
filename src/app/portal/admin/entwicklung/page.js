@@ -64,7 +64,7 @@ export default async function EntwicklungPortfolioSeite({ searchParams }) {
               <li key={v.meilensteinId} className="px-5 py-3">
                 <Link href={`/portal/admin/entwicklung/${v.projektId}?reiter=plan&ms=${v.meilensteinId}`} className="font-semibold text-ink-900 hover:text-ov-700">{v.titel}</Link>
                 <p className="text-[12.5px] text-ink-500">{v.projektTitel} · {v.verantwortlich?.name || "–"}</p>
-                <p className="mt-0.5 flex items-center gap-1.5 text-[12.5px] font-semibold text-red-700"><TriangleAlert aria-hidden="true" className="h-3.5 w-3.5" />{v.tage} Tage überfällig{v.kritisch ? " · kritischer Pfad" : ""}</p>
+                <p className="mt-0.5 flex items-center gap-1.5 text-[12.5px] font-semibold text-danger-700"><TriangleAlert aria-hidden="true" className="h-3.5 w-3.5" />{v.tage} Tage überfällig{v.kritisch ? " · kritischer Pfad" : ""}</p>
               </li>
             ))}
             {!pf.verzug.length && <li className="px-5 py-5 text-[14px] text-ink-500">Kein Verzug.</li>}
@@ -93,7 +93,7 @@ export default async function EntwicklungPortfolioSeite({ searchParams }) {
                     <span className="ov-num shrink-0 text-[12.5px] text-ink-600">{a.projekte} Proj. · {mwpText(a.mwp)}</span>
                   </div>
                   <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-ink-100"><div className="h-full rounded-full bg-navy-600" style={{ width: `${(a.offeneMeilensteine / max) * 100}%` }} /></div>
-                  <p className="mt-1 text-[12px] text-ink-500">{a.offeneMeilensteine} offene Meilensteine · {a.faellig30} fällig ≤ 30 T.{a.ueberfaellig ? <span className="font-semibold text-red-700"> · {a.ueberfaellig} überfällig</span> : ""}</p>
+                  <p className="mt-1 text-[12px] text-ink-500">{a.offeneMeilensteine} offene Meilensteine · {a.faellig30} fällig ≤ 30 T.{a.ueberfaellig ? <span className="font-semibold text-danger-700"> · {a.ueberfaellig} überfällig</span> : ""}</p>
                 </li>
               );
             })}

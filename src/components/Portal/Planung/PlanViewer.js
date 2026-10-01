@@ -451,7 +451,7 @@ export default function PlanViewer({ url, art = "dxf", titel = "Plan", hoehe = "
               className={cn("block touch-none outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ov-500", werkzeug === "pan" ? "cursor-grab active:cursor-grabbing" : "cursor-crosshair")}
             />
             {status.laeuft && <div className="absolute inset-0 grid place-items-center bg-white/80 text-[14px] text-ink-600"><span className="inline-flex items-center gap-2"><Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />Plan wird gelesen …</span></div>}
-            {status.fehler && <div className="absolute inset-0 grid place-items-center p-6 text-center text-[14px] text-red-800">{status.fehler}</div>}
+            {status.fehler && <div className="absolute inset-0 grid place-items-center p-6 text-center text-[14px] text-danger-800">{status.fehler}</div>}
             {!status.laeuft && !status.fehler && (
               <>
                 <div className="pointer-events-none absolute bottom-3 left-3 rounded-xl bg-white/90 px-2.5 py-1.5 text-[11.5px] text-ink-700 shadow-sm ring-1 ring-ink-200/70">

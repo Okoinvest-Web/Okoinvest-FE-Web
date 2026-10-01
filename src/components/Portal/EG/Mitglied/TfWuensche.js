@@ -61,7 +61,7 @@ export default function TfWuensche({ gemeinschaftId, wuensche = [], darfAusloese
             <div className="min-w-0">
               <p className="font-semibold text-ink-900">{w.mitgliedName || "Mitglied"}{w.mitgliedsnummer ? <span className="font-normal text-ink-500"> · Nr. {w.mitgliedsnummer}</span> : null}</p>
               <p className="text-[13px] text-ink-600">Teilnahmefaktor <span className="ov-num">{w.aktuellTf ?? w.von} %</span> → <strong className="ov-num">{w.nach} %</strong> · Zählpunkt <span className="font-mono text-[12px]">{zpKurz(w.zaehlpunktnummer)}</span> · gewünscht am {datumDe(w.am)}</p>
-              {!w.ok && <p className="mt-0.5 text-[12.5px] text-red-700">{w.fehler.join(" ")}</p>}
+              {!w.ok && <p className="mt-0.5 text-[12.5px] text-danger-700">{w.fehler.join(" ")}</p>}
             </div>
           </li>
         ))}

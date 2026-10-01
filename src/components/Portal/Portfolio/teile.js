@@ -17,7 +17,7 @@ export const dscrText = (x) => (x === null || x === undefined ? "–" : Number(x
 const AMPEL = {
   gruen: { ton: "ok", label: "im Plan", punkt: "bg-ov-500" },
   gelb: { ton: "warn", label: "Beobachten", punkt: "bg-sun-500" },
-  rot: { ton: "warn", label: "Kritisch", punkt: "bg-red-600" },
+  rot: { ton: "warn", label: "Kritisch", punkt: "bg-danger-600" },
   grau: { ton: "neutral", label: "keine Daten", punkt: "bg-ink-400" },
 };
 

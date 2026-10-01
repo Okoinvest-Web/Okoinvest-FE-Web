@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Info, Sprout, Zap } from "lucide-react";
+import { Banknote, Gauge, Info, Sprout, Sun, Trophy, Zap } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
-import { Auswahl, Gruppe, Regler, Zahl } from "@/components/Rechner/bausteine";
-import MobilKurz from "@/components/Flaeche/MobilKurz";
+import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Zahl } from "@/components/Rechner/bausteine";
+import { useTeilbarerZustand } from "@/components/Rechner/kontext";
+import { ErgebnisKopf, MobilKurz, RechnerRahmen } from "@/components/Rechner/InvestTeile";
 import { WEGE } from "./wege";
 import { AGRI, ERLOESE, PACHT, REGIONEN } from "@/lib/invest/markt";
 import { SYSTEME, agriVergleich, kulturById, systemPasst } from "@/lib/rechner/agriPv";
@@ -50,12 +51,25 @@ export default function AgriPvRechner() {
   const [pacht, eigen, gen] = r.wege;
   const bester = [...r.wege].sort((a, b) => b.gesamtSumme - a.gesamtSumme)[0].id;
   const maxSumme = Math.max(...r.wege.map((w) => w.gesamtSumme), 1);
+  const besterWeg = r.wege.find((w) => w.id === bester);
+
+  // Teilen-Link: Eingaben in der Adresszeile (nur Abweichungen vom Standard)
+  const SETZER = { ha: setHa, system: setSystem, kulturId: setKulturId, regionId: setRegionId, vermarktung: setVermarktung, db: setDb, anteil: setAnteil };
+  useTeilbarerZustand(
+    { ha, system, kulturId, regionId, vermarktung, db, anteil },
+    (neu) => Object.entries(neu).forEach(([k, v]) => SETZER[k]?.(v)),
+    {
+      optionen: { system: SYSTEME.map((x) => x.id), kulturId: AGRI.kulturen.map((k) => k.id), regionId: REGIONEN.map((x) => x.id), vermarktung: ["eeg", "ppa"] },
+      grenzen: { ha: [1, 50], db: [0, 10000], anteil: [AGRI.beteiligungAnteil.min * 100, AGRI.beteiligungAnteil.max * 100] },
+    }
+  );
 
   return (
-    <div className="overflow-clip rounded-[2rem] bg-white shadow-[0_40px_80px_-40px_rgba(3,18,43,0.45)] ring-1 ring-ink-200/70">
-      <div className="grid lg:grid-cols-[minmax(0,390px)_1fr]">
-        {/* Eingaben */}
-        <div className="relative border-b border-ink-100 bg-sand-50 p-5 sm:p-6 md:p-8 lg:border-b-0 lg:border-r">
+    <RechnerRahmen
+      breiteLinks={390}
+      mitlaufend
+      eingaben={
+        <>
           <MobilKurz
             werte={[
               ["Leistung", `${fmt(r.anlage.kwp / 1000, 1)} MWp`],
@@ -117,125 +131,116 @@ export default function AgriPvRechner() {
               />
             </Gruppe>
           </div>
-        </div>
+        </>
+      }
+      ergebnis={
+        <>
+          <p className="sr-only" aria-live="polite">
+            {`Anlage ${fmt(r.anlage.kwp / 1000, 1)} Megawatt Peak. Verpachten ${Math.round(pacht.gesamtSumme)} Euro, Eigeninvestition ${Math.round(eigen.gesamtSumme)} Euro, Genossenschaft ${Math.round(gen.gesamtSumme)} Euro über ${r.laufzeit} Jahre.`}
+          </p>
+          <ErgebnisKopf titel="Drei Wege im Vergleich" plakette={`${r.laufzeit} Jahre · vor Steuern`} />
 
-        {/* Ergebnis */}
-        <div className="min-w-0 p-5 sm:p-6 md:p-8">
-          <div className="lg:sticky lg:top-28">
-            <p className="sr-only" aria-live="polite">
-              {`Anlage ${fmt(r.anlage.kwp / 1000, 1)} Megawatt Peak. Verpachten ${Math.round(pacht.gesamtSumme)} Euro, Eigeninvestition ${Math.round(eigen.gesamtSumme)} Euro, Genossenschaft ${Math.round(gen.gesamtSumme)} Euro über ${r.laufzeit} Jahre.`}
-            </p>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="font-display text-[22px] font-extrabold tracking-tight text-ink-900 md:text-[26px]">Drei Wege im Vergleich</h2>
-              <span className="inline-flex items-center gap-2 rounded-full bg-ov-50 px-3 py-1 text-[12.5px] font-semibold text-ov-700 ring-1 ring-ov-200">
-                {r.laufzeit} Jahre · vor Steuern
-              </span>
-            </div>
+          {/* Hauptzahl: der Weg mit der höchsten Summe */}
+          <Hauptzahl className="mt-5" icon={Trophy} label={`Höchste Summe: ${WEG_META[bester].titel}`} zusatz={`${r.laufzeit} Jahre inkl. Landwirtschaft, nominal`}>
+            <Zahl wert={besterWeg.gesamtSumme / 1000} suffix=" Tsd. €" />
+          </Hauptzahl>
 
-            {/* Anlage */}
-            <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 rounded-3xl bg-navy-950 p-5 text-white sm:grid-cols-4 md:p-6">
-              {[
-                ["Leistung", `${fmt(r.anlage.kwp / 1000, 2)} MWp`],
-                ["Strom pro Jahr", `${fmt(r.anlage.kwh / 1000)} MWh`],
-                ["Investition", betrag(r.anlage.capex)],
-                ["Erlös", `${fmt(r.ctFoerder, 1)} ct/kWh`],
-              ].map(([k, v]) => (
-                <div key={k} className="min-w-0">
-                  <dt className="text-[12px] text-white/60">{k}</dt>
-                  <dd className="ov-num truncate font-display text-[18px] font-extrabold tracking-tight md:text-[20px]">{v}</dd>
-                </div>
-              ))}
-            </dl>
-            {kulturId === "sonder" && (
-              <p className="mt-3 text-[13px] leading-relaxed text-ink-500">Bei Obst und Beeren ersetzt das Moduldach oft Hagelnetz oder Folientunnel und sichert Qualität – diese Einsparung ist hier nicht eingerechnet und kann die Rechnung deutlich verbessern.</p>
-            )}
-            {r.systemGewechselt && (
-              <p className="mt-3 text-[13px] text-ink-500">Für {kultur.label} rechnen wir mit hoch aufgeständerter Agri-PV (Kategorie I).</p>
-            )}
+          {/* Anlage */}
+          <Belege spalten={4}>
+            <Kennzahl icon={Zap} label="Leistung">{`${fmt(r.anlage.kwp / 1000, 2)} MWp`}</Kennzahl>
+            <Kennzahl icon={Sun} label="Strom pro Jahr">{`${fmt(r.anlage.kwh / 1000)} MWh`}</Kennzahl>
+            <Kennzahl icon={Banknote} label="Investition">{betrag(r.anlage.capex)}</Kennzahl>
+            <Kennzahl icon={Gauge} label="Erlös">{`${fmt(r.ctFoerder, 1)} ct/kWh`}</Kennzahl>
+          </Belege>
+          {kulturId === "sonder" && (
+            <p className="mt-3 text-[13px] leading-relaxed text-ink-500">Bei Obst und Beeren ersetzt das Moduldach oft Hagelnetz oder Folientunnel und sichert Qualität – diese Einsparung ist hier nicht eingerechnet und kann die Rechnung deutlich verbessern.</p>
+          )}
+          {r.systemGewechselt && (
+            <p className="mt-3 text-[13px] text-ink-500">Für {kultur.label} rechnen wir mit hoch aufgeständerter Agri-PV (Kategorie I).</p>
+          )}
 
-            {/* Drei Wege */}
-            <div className="mt-5 grid gap-3 xl:grid-cols-3">
-              {r.wege.map((w) => {
-                const m = WEG_META[w.id];
-                const Icon = m.weg.icon;
-                const top = w.id === bester;
-                return (
-                  <div key={w.id} className={cn("relative flex flex-col rounded-3xl p-5 ring-1", top ? "bg-ov-50 ring-2 ring-ov-500" : "bg-white ring-ink-200/70")}>
-                    {top && <span className="absolute -top-3 left-5 rounded-full bg-ov-600 px-2.5 py-0.5 text-[11.5px] font-semibold text-white">Höchste Summe</span>}
-                    <div className="flex items-center gap-3">
-                      <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", top ? "bg-ov-500 text-white" : "bg-sand-50 text-ov-600 ring-1 ring-ink-200")}>
-                        <Icon aria-hidden="true" className="h-5 w-5" />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="font-display text-[16.5px] font-bold leading-tight text-ink-900">{m.titel}</p>
-                        <p className="text-[12.5px] leading-snug text-ink-500">{m.sub}</p>
-                      </div>
+          {/* Drei Wege */}
+          <div className="mt-5 grid gap-3 xl:grid-cols-3">
+            {r.wege.map((w) => {
+              const m = WEG_META[w.id];
+              const Icon = m.weg.icon;
+              const top = w.id === bester;
+              return (
+                <div key={w.id} className={cn("relative flex flex-col rounded-3xl p-5 ring-1", top ? "bg-ov-50 ring-2 ring-ov-500" : "bg-white ring-ink-200/70")}>
+                  {top && <span className="absolute -top-3 left-5 rounded-full bg-ov-600 px-2.5 py-0.5 text-[11.5px] font-semibold text-white">Höchste Summe</span>}
+                  <div className="flex items-center gap-3">
+                    <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", top ? "bg-ov-500 text-white" : "bg-sand-50 text-ov-600 ring-1 ring-ink-200")}>
+                      <Icon aria-hidden="true" className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-display text-[16.5px] font-bold leading-tight text-ink-900">{m.titel}</p>
+                      <p className="text-[12.5px] leading-snug text-ink-500">{m.sub}</p>
                     </div>
-                    <p className="mt-5 text-[12.5px] font-medium text-ink-500">Summe {r.laufzeit} Jahre inkl. Landwirtschaft</p>
-                    <p className="ov-num font-display text-[26px] font-extrabold leading-tight tracking-tight text-ink-900">
-                      <Zahl wert={w.gesamtSumme / 1000} suffix=" Tsd. €" />
-                    </p>
-                    <dl className="mt-4 space-y-2 border-t border-ink-200/70 pt-4 text-[13.5px]">
-                      <Zeile k="Eigene Investition" v={w.invest ? betrag(w.invest) : "keine"} />
-                      <Zeile k="Energie im 1. Jahr" v={fmtEur(w.energieJahr)} />
-                      <Zeile k="Projektrendite (IRR)" v={w.irr != null ? fmtPct(w.irr, 1) : "–"} />
-                      <Zeile k="Amortisation" v={w.invest ? (w.amortisation ? `${fmt(w.amortisation, 1)} Jahre` : "> Laufzeit") : "sofort"} />
-                      <Zeile k="Risiko" v={w.risiko} />
-                    </dl>
+                  </div>
+                  <p className="mt-5 text-[12.5px] font-medium text-ink-500">Summe {r.laufzeit} Jahre inkl. Landwirtschaft</p>
+                  <p className="ov-num font-display text-[26px] font-extrabold leading-tight tracking-tight text-ink-900">
+                    <Zahl wert={w.gesamtSumme / 1000} suffix=" Tsd. €" />
+                  </p>
+                  <dl className="mt-4 space-y-2 border-t border-ink-200/70 pt-4 text-[13.5px]">
+                    <Zeile k="Eigene Investition" v={w.invest ? betrag(w.invest) : "keine"} />
+                    <Zeile k="Energie im 1. Jahr" v={fmtEur(w.energieJahr)} />
+                    <Zeile k="Projektrendite (IRR)" v={w.irr != null ? fmtPct(w.irr, 1) : "–"} />
+                    <Zeile k="Amortisation" v={w.invest ? (w.amortisation ? `${fmt(w.amortisation, 1)} Jahre` : "> Laufzeit") : "sofort"} />
+                    <Zeile k="Risiko" v={w.risiko} />
+                  </dl>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Balken */}
+          <div className="mt-5 rounded-3xl ring-1 ring-ink-200/70 p-5 md:p-6">
+            <p className="font-display text-[16px] font-bold text-ink-900">Woraus sich die Summe zusammensetzt</p>
+            <div className="mt-4 space-y-3.5">
+              {r.wege.map((w) => {
+                const lw = r.landwirtschaft.summe;
+                const en = w.gesamtSumme - lw;
+                return (
+                  <div key={w.id}>
+                    <div className="mb-1.5 flex justify-between gap-3 text-[13px]">
+                      <span className="font-semibold text-ink-800">{WEG_META[w.id].titel}</span>
+                      <span className="ov-num text-right text-ink-600">
+                        {betrag(w.gesamtSumme)}
+                        {en < 0 && <span className="block text-[12px] text-ink-500">Energie-Teil {betrag(en)}</span>}
+                      </span>
+                    </div>
+                    <div className="flex h-3 overflow-hidden rounded-full bg-ink-100">
+                      <span className="h-full bg-sun-400" style={{ width: `${(Math.max(0, lw) / maxSumme) * 100}%` }} />
+                      <span className="h-full bg-ov-500" style={{ width: `${(Math.max(0, en) / maxSumme) * 100}%` }} />
+                    </div>
                   </div>
                 );
               })}
             </div>
-
-            {/* Balken */}
-            <div className="mt-5 rounded-3xl ring-1 ring-ink-200/70 p-5 md:p-6">
-              <p className="font-display text-[16px] font-bold text-ink-900">Woraus sich die Summe zusammensetzt</p>
-              <div className="mt-4 space-y-3.5">
-                {r.wege.map((w) => {
-                  const lw = r.landwirtschaft.summe;
-                  const en = w.gesamtSumme - lw;
-                  return (
-                    <div key={w.id}>
-                      <div className="mb-1.5 flex justify-between gap-3 text-[13px]">
-                        <span className="font-semibold text-ink-800">{WEG_META[w.id].titel}</span>
-                        <span className="ov-num text-right text-ink-600">
-                          {betrag(w.gesamtSumme)}
-                          {en < 0 && <span className="block text-[12px] text-ink-500">Energie-Teil {betrag(en)}</span>}
-                        </span>
-                      </div>
-                      <div className="flex h-3 overflow-hidden rounded-full bg-ink-100">
-                        <span className="h-full bg-sun-400" style={{ width: `${(Math.max(0, lw) / maxSumme) * 100}%` }} />
-                        <span className="h-full bg-ov-500" style={{ width: `${(Math.max(0, en) / maxSumme) * 100}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 text-[12.5px] text-ink-600">
-                <li className="flex items-center gap-2"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-sun-400" />Landwirtschaft: Deckungsbeitrag + GAP</li>
-                <li className="flex items-center gap-2"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-ov-500" />Energie: Pacht bzw. Überschuss nach Investition</li>
-              </ul>
-            </div>
-
-            {/* Landwirtschaft */}
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <Mini icon={Sprout} k="Deckungsbeitrag/Jahr" v={fmtEur(r.landwirtschaft.dbJahr)} z={`ohne Anlage ${fmtEur(r.landwirtschaft.dbOhneAnlage)}`} />
-              <Mini icon={Info} k="GAP-Direktzahlung/Jahr" v={r.land === "CH" ? "nicht gerechnet" : fmtEur(r.landwirtschaft.gapJahr)} z={r.land === "CH" ? "CH-Direktzahlungen eigenes System" : `${fmt(AGRI.gapFoerderfaehig * 100)} % der Fläche förderfähig`} />
-              <Mini icon={Zap} k="Agri-Pacht/Jahr" v={fmtEur(r.pachtJahr0)} z={`${fmt(PACHT.agriProHa.mittel)} €/ha, +${fmt(PACHT.indexierung * 100, 1)} % p. a.`} />
-            </div>
-
-            <div className="mt-7 flex flex-col gap-3 border-t border-ink-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
-              <p className="max-w-md text-[13px] leading-relaxed text-ink-500">
-                Projektrendite ohne Fremdkapital und vor Steuern, nominal – eine Orientierung, kein Angebot. Eigenverbrauch am Hof, Speicher und eingesparte Schutznetze sind nicht eingerechnet – sie verbessern Weg B oft deutlich.
-              </p>
-              <Button href="/landwirte#anfrage" size="lg" pfeil className="shrink-0">
-                Mit uns durchrechnen
-              </Button>
-            </div>
+            <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 text-[12.5px] text-ink-600">
+              <li className="flex items-center gap-2"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-sun-400" />Landwirtschaft: Deckungsbeitrag + GAP</li>
+              <li className="flex items-center gap-2"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-ov-500" />Energie: Pacht bzw. Überschuss nach Investition</li>
+            </ul>
           </div>
-        </div>
-      </div>
-    </div>
+
+          {/* Landwirtschaft */}
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <Mini icon={Sprout} k="Deckungsbeitrag/Jahr" v={fmtEur(r.landwirtschaft.dbJahr)} z={`ohne Anlage ${fmtEur(r.landwirtschaft.dbOhneAnlage)}`} />
+            <Mini icon={Info} k="GAP-Direktzahlung/Jahr" v={r.land === "CH" ? "nicht gerechnet" : fmtEur(r.landwirtschaft.gapJahr)} z={r.land === "CH" ? "CH-Direktzahlungen eigenes System" : `${fmt(AGRI.gapFoerderfaehig * 100)} % der Fläche förderfähig`} />
+            <Mini icon={Zap} k="Agri-Pacht/Jahr" v={fmtEur(r.pachtJahr0)} z={`${fmt(PACHT.agriProHa.mittel)} €/ha, +${fmt(PACHT.indexierung * 100, 1)} % p. a.`} />
+          </div>
+
+          <div className="mt-7 flex flex-col gap-3 border-t border-ink-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="max-w-md text-[13px] leading-relaxed text-ink-500">
+              Projektrendite ohne Fremdkapital und vor Steuern, nominal – eine Orientierung, kein Angebot. Eigenverbrauch am Hof, Speicher und eingesparte Schutznetze sind nicht eingerechnet – sie verbessern Weg B oft deutlich.
+            </p>
+            <Button href="/landwirte#anfrage" size="lg" pfeil className="shrink-0">
+              Mit uns durchrechnen
+            </Button>
+          </div>
+        </>
+      }
+    />
   );
 }
 

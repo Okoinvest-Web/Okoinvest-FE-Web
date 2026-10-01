@@ -19,7 +19,7 @@ const MONATE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", 
 const WT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const monatKurz = (m) => `${MONATE[Number(m.slice(5, 7)) - 1]} ${m.slice(2, 4)}`;
 const tagKurz = (t) => `${t.slice(8, 10)}.${t.slice(5, 7)}.`;
-const AMPEL_KLASSE = { ok: "bg-ov-500", erwartet: "bg-ink-200", warn: "bg-sun-400", fehler: "bg-red-500", keine: "bg-white ring-1 ring-inset ring-ink-100" };
+const AMPEL_KLASSE = { ok: "bg-ov-500", erwartet: "bg-ink-200", warn: "bg-sun-400", fehler: "bg-danger-500", keine: "bg-white ring-1 ring-inset ring-ink-100" };
 const AMPEL_TON = { ok: "ok", erwartet: "neutral", warn: "warn", fehler: "warn" };
 export const AMPEL_TEXT = { ok: "Vollständig", erwartet: "Lieferung erwartet", warn: "Prüfen (L3, verspätet)", fehler: "Reklamation nötig", keine: "keine Teilnahme" };
 

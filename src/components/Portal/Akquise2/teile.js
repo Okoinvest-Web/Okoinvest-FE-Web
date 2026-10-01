@@ -9,7 +9,7 @@ export const knopf = {
   navy: "inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-navy-700 px-4 text-[13.5px] font-semibold text-white hover:bg-navy-800 disabled:opacity-60",
   sekundaer: "inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-white px-4 text-[13.5px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 disabled:opacity-60",
   klein: "inline-flex h-8 items-center justify-center gap-1 rounded-full bg-white px-3 text-[12.5px] font-semibold text-ink-800 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 disabled:opacity-60",
-  gefahr: "inline-flex h-8 items-center justify-center gap-1 rounded-full bg-white px-3 text-[12.5px] font-semibold text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-50 disabled:opacity-60",
+  gefahr: "inline-flex h-8 items-center justify-center gap-1 rounded-full bg-white px-3 text-[12.5px] font-semibold text-danger-700 ring-1 ring-inset ring-danger-200 hover:bg-danger-50 disabled:opacity-60",
 };
 
 export const FARBE = { gruen: "#558227", gelb: "#f5a70f", rot: "#b42318" };

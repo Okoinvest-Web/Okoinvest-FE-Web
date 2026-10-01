@@ -85,7 +85,7 @@ export default function VideoTermin({ onGeaendert }) {
           )}
         </div>
       )}
-      {fehler && <p role="alert" className="mt-2 text-[13px] font-medium text-red-700">{fehler}</p>}
+      {fehler && <p role="alert" className="mt-2 text-[13px] font-medium text-danger-700">{fehler}</p>}
       {daten?.datenschutz && (
         <Hinweis ton="neutral" icon={ShieldCheck} className="mt-3 text-[13px]">{daten.datenschutz}</Hinweis>
       )}

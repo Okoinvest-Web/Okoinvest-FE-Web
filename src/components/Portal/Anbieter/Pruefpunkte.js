@@ -23,7 +23,7 @@ function Punkt({ pp, akte, setAkte }) {
         <Badge>{PRUEFPUNKT_BEREICHE[pp.bereich] || pp.bereich}</Badge>
         {pp.pflicht && <Badge ton="dunkel">Pflicht</Badge>}
         {pp.status === "offen" && pp.fristAm && (
-          <span className={`inline-flex items-center gap-1 text-[12.5px] ${pp.ueberfaellig ? "font-semibold text-red-700" : "text-ink-500"}`}>
+          <span className={`inline-flex items-center gap-1 text-[12.5px] ${pp.ueberfaellig ? "font-semibold text-danger-700" : "text-ink-500"}`}>
             <Clock aria-hidden="true" className="h-3.5 w-3.5" /> Antwort bis {tag(pp.fristAm)}{pp.ueberfaellig ? " – überfällig" : ""}
           </span>
         )}

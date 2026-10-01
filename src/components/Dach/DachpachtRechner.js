@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, Banknote, Coins, Hammer, HandCoins, Info, PiggyBank, Sun, Zap } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
-import { Auswahl, Gruppe, Kennzahl, Regler, Schalter, Tooltip, Zahl, useBreite } from "@/components/Rechner/bausteine";
+import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Schalter, Tooltip, Zahl, useBreite } from "@/components/Rechner/bausteine";
+import { useTeilbarerZustand } from "@/components/Rechner/kontext";
 import { ErgebnisKopf, Hinweis, Legende, MobilKurz, RechnerRahmen } from "@/components/Rechner/InvestTeile";
 import { DACH, REGIONEN } from "@/lib/invest/markt";
 import { STANDARD, NETZSTROM_CT, rechneDach } from "@/lib/rechner/dachpacht";
@@ -32,6 +33,20 @@ export default function DachpachtRechner() {
   const r = useMemo(
     () => rechneDach({ m2, dachart, ausrichtung, regionId, pachtProM2, laufzeit, strompreisCt, eigenverbrauch: eigenPct / 100, ppaCt, capexKwp, sanierung }),
     [m2, dachart, ausrichtung, regionId, pachtProM2, laufzeit, strompreisCt, eigenPct, ppaCt, capexKwp, sanierung]
+  );
+
+  // Teilen-Link: Eingaben in der Adresszeile (nur Abweichungen vom Standard)
+  const SETZER = {
+    m2: setM2, dachart: setDachart, ausrichtung: setAusrichtung, regionId: setRegionId, pachtProM2: setPachtProM2, laufzeit: setLaufzeit,
+    strompreisCt: setStrompreis, eigenPct: setEigenPct, ppaCt: setPpaCt, capexKwp: setCapex, sanierung: setSanierung,
+  };
+  useTeilbarerZustand(
+    { m2, dachart, ausrichtung, regionId, pachtProM2, laufzeit, strompreisCt, eigenPct, ppaCt, capexKwp, sanierung },
+    (neu) => Object.entries(neu).forEach(([k, v]) => SETZER[k]?.(v)),
+    {
+      optionen: { dachart: DACH.dacharten.map((d) => d.id), ausrichtung: DACH.ausrichtung.map((a) => a.id), regionId: REGIONEN.map((x) => x.id) },
+      grenzen: { m2: [500, 30000], pachtProM2: [0.5, 4], laufzeit: [15, 30], strompreisCt: [10, 35], eigenPct: [0, 90], ppaCt: [8, 20], capexKwp: [500, 1200] },
+    }
   );
 
   const eingaben = (
@@ -231,11 +246,11 @@ export default function DachpachtRechner() {
           </p>
           <ErgebnisKopf titel="Ihr Dach" plakette={`${fmt(r.kwp)} kWp · ${fmt(r.spezErtrag)} kWh/kWp`} />
 
-          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Kennzahl ton="navy" icon={HandCoins} label="Pacht pro Jahr" zusatz={`${fmt(r.pachtProKwp, 1)} €/kWp`}>
-              <Zahl wert={Math.round(r.pachtJahr)} suffix=" €" />
-            </Kennzahl>
-            <Kennzahl ton="gruen" icon={Coins} label={`Summe ${laufzeit} Jahre`} zusatz="nominal, fest">
+          <Hauptzahl className="mt-5" icon={HandCoins} label="Pacht pro Jahr" zusatz={`${fmt(r.pachtProKwp, 1)} €/kWp`}>
+            <Zahl wert={Math.round(r.pachtJahr)} suffix=" €" />
+          </Hauptzahl>
+          <Belege>
+            <Kennzahl ton="akzent" icon={Coins} label={`Summe ${laufzeit} Jahre`} zusatz="nominal, fest">
               {tsd(r.wege.pacht.summe)}
             </Kennzahl>
             <Kennzahl icon={Banknote} label="alternativ einmalig" zusatz="Barwert der Pacht">
@@ -244,7 +259,7 @@ export default function DachpachtRechner() {
             <Kennzahl icon={Sun} label="Stromertrag" zusatz="im ersten Jahr">
               <Zahl wert={r.kwhJahr1 / 1000} suffix=" MWh" />
             </Kennzahl>
-          </div>
+          </Belege>
 
           <div className="mt-4 rounded-2xl bg-ink-50 p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2 text-[13.5px]">

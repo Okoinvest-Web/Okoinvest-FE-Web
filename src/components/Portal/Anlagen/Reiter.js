@@ -20,7 +20,7 @@ export default function Reiter({ basis, aktiv, tabs = [], label = "Bereiche der 
               >
                 {Icon && <Icon aria-hidden="true" className="h-4 w-4" />}
                 {t.label}
-                {t.zaehler ? <span className={cn("ov-num rounded-full px-1.5 text-[11.5px] font-bold", an ? "bg-white/20 text-white" : "bg-red-600 text-white")}>{t.zaehler}</span> : null}
+                {t.zaehler ? <span className={cn("ov-num rounded-full px-1.5 text-[11.5px] font-bold", an ? "bg-white/20 text-white" : "bg-danger-600 text-white")}>{t.zaehler}</span> : null}
               </Link>
             </li>
           );

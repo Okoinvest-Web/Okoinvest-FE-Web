@@ -17,7 +17,7 @@ import { AKQUISE_BESONDERHEITEN, AKQUISE_NETZ } from "@/lib/plattform/akquise";
 import { auswahlfeld, Chip, eingabe, ErfolgBox, Feld, FehlerBox } from "@/components/Portal/felder";
 
 const name = (k) => [k?.vorname, k?.nachname].filter(Boolean).join(" ") || k?.email || "–";
-const AMPEL = { gruen: "bg-ov-500", gelb: "bg-sun-400", rot: "bg-red-600", grau: "bg-ink-300" };
+const AMPEL = { gruen: "bg-ov-500", gelb: "bg-sun-400", rot: "bg-danger-600", grau: "bg-ink-300" };
 const AMPEL_TEXT = { gruen: "im Plan", gelb: "knapp / verspätet", rot: "überfällig", grau: "–" };
 
 export function SlaAmpel({ sla }) {
@@ -35,7 +35,7 @@ function ScoreBalken({ score, ampel }) {
     <span className="inline-flex items-center gap-2">
       <span className="ov-num w-8 text-right font-bold text-ink-900">{score}</span>
       <span className="h-1.5 w-14 rounded-full bg-ink-100" aria-hidden="true">
-        <span className={cn("block h-1.5 rounded-full", ampel === "gruen" ? "bg-ov-500" : ampel === "gelb" ? "bg-sun-400" : "bg-red-500")} style={{ width: `${Math.max(4, score)}%` }} />
+        <span className={cn("block h-1.5 rounded-full", ampel === "gruen" ? "bg-ov-500" : ampel === "gelb" ? "bg-sun-400" : "bg-danger-500")} style={{ width: `${Math.max(4, score)}%` }} />
       </span>
     </span>
   );
@@ -199,7 +199,7 @@ function ScoreDetails({ f, darfSchreiben }) {
         <ul className="mt-2 space-y-1.5 text-[13px] leading-snug text-ink-700">
           {f.gruende.map((g, i) => (
             <li key={i} className="flex gap-2">
-              <span className={cn("ov-num w-9 shrink-0 text-right font-bold", g.punkte > 0 ? "text-ov-700" : g.punkte < 0 ? "text-red-700" : "text-ink-400")}>{g.punkte > 0 ? `+${g.punkte}` : g.punkte || "·"}</span>
+              <span className={cn("ov-num w-9 shrink-0 text-right font-bold", g.punkte > 0 ? "text-ov-700" : g.punkte < 0 ? "text-danger-700" : "text-ink-400")}>{g.punkte > 0 ? `+${g.punkte}` : g.punkte || "·"}</span>
               <span>{g.text}</span>
             </li>
           ))}
@@ -265,7 +265,7 @@ export function GebieteEditor({ gebiete: start, konten, darfSchreiben }) {
                 </select>
               </Feld>
               {darfSchreiben && (
-                <button type="button" onClick={() => setListe((l) => l.filter((_, j) => j !== i))} aria-label={`Gebiet ${g.name} entfernen`} className="self-end rounded-full p-2.5 text-ink-400 hover:bg-white hover:text-red-700">
+                <button type="button" onClick={() => setListe((l) => l.filter((_, j) => j !== i))} aria-label={`Gebiet ${g.name} entfernen`} className="self-end rounded-full p-2.5 text-ink-400 hover:bg-white hover:text-danger-700">
                   <Trash2 aria-hidden="true" className="h-4 w-4" />
                 </button>
               )}

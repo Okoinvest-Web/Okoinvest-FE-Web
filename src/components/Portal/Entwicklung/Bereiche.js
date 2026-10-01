@@ -161,7 +161,7 @@ function Matrix({ risiken }) {
               const s = e * a;
               const liste = zelle(e, a);
               return (
-                <span key={a} title={liste.map((r) => r.titel).join(", ") || `${e} × ${a}`} className={`flex aspect-square items-center justify-center rounded-lg font-bold ${s >= 15 ? "bg-red-100 text-red-800" : s >= 8 ? "bg-sun-300/40 text-ink-900" : "bg-ov-50 text-ov-800"}`}>
+                <span key={a} title={liste.map((r) => r.titel).join(", ") || `${e} × ${a}`} className={`flex aspect-square items-center justify-center rounded-lg font-bold ${s >= 15 ? "bg-danger-100 text-danger-800" : s >= 8 ? "bg-sun-300/40 text-ink-900" : "bg-ov-50 text-ov-800"}`}>
                   {liste.length || ""}
                 </span>
               );
@@ -332,13 +332,13 @@ export function Kosten({ projekt }) {
             </thead>
             <tbody className="divide-y divide-ink-100">
               {kategorien.map((k) => (
-                <tr key={k} className="bg-sand-50/60"><td className="px-5 py-2 font-semibold text-ink-800 md:px-6">{BUDGET_KATEGORIEN[k]}</td><td className="ov-num px-3 py-2 text-right font-semibold">{eurKurz(summe(k, "planEur"))}</td><td className={`ov-num px-3 py-2 text-right font-semibold ${summe(k, "istEur") > summe(k, "planEur") ? "text-red-700" : ""}`}>{eurKurz(summe(k, "istEur"))}</td><td colSpan={2} /></tr>
+                <tr key={k} className="bg-sand-50/60"><td className="px-5 py-2 font-semibold text-ink-800 md:px-6">{BUDGET_KATEGORIEN[k]}</td><td className="ov-num px-3 py-2 text-right font-semibold">{eurKurz(summe(k, "planEur"))}</td><td className={`ov-num px-3 py-2 text-right font-semibold ${summe(k, "istEur") > summe(k, "planEur") ? "text-danger-700" : ""}`}>{eurKurz(summe(k, "istEur"))}</td><td colSpan={2} /></tr>
               ))}
               {projekt.budget.map((b) => (
                 <tr key={b.id}>
                   <td className="px-5 py-2.5 md:px-6"><span className="text-ink-900">{b.bezeichnung}</span><span className="block text-[12px] text-ink-500">{b.kategorieLabel}{b.notiz ? ` · ${b.notiz}` : ""}</span></td>
                   <td className="ov-num px-3 py-2.5 text-right">{eurKurz(b.planEur)}</td>
-                  <td className={`ov-num px-3 py-2.5 text-right ${b.istEur > b.planEur ? "font-semibold text-red-700" : ""}`}>{eurKurz(b.istEur)}</td>
+                  <td className={`ov-num px-3 py-2.5 text-right ${b.istEur > b.planEur ? "font-semibold text-danger-700" : ""}`}>{eurKurz(b.istEur)}</td>
                   <td className="px-3 py-2.5"><Badge ton={b.istQuelle === "erpnext" ? "info" : "neutral"}>{b.istQuelle === "erpnext" ? "ERPNext" : b.istQuelle === "demo" ? "Demo" : "manuell"}</Badge></td>
                   <td className="px-5 py-2.5 text-right md:px-6">{darf && b.istQuelle !== "erpnext" && <AktionKnopf klein variante="gefahr" fn={() => loeschen(projekt.id, "budget", b.id)}>Löschen</AktionKnopf>}</td>
                 </tr>

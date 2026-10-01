@@ -395,7 +395,7 @@ export function EintragBereich({ anlageId, art, eintraege = [], schema: schemaPr
                   <Pencil aria-hidden="true" className="h-4 w-4" />
                 </button>
                 {!einzeln && (
-                  <button type="button" onClick={() => loeschen(e.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-600 hover:bg-red-50 hover:text-red-700" aria-label="Löschen">
+                  <button type="button" onClick={() => loeschen(e.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-600 hover:bg-danger-50 hover:text-danger-700" aria-label="Löschen">
                     <Trash2 aria-hidden="true" className="h-4 w-4" />
                   </button>
                 )}

@@ -39,7 +39,7 @@ export default async function EntwicklungProjektSeite({ params, searchParams }) 
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <ProjektStatusBadge status={p.status} />
           <PhaseBadge label={p.phaseLabel} phase={p.phase} />
-          {p.meilensteine.some((m) => m.ueberfaellig && m.kritisch) && <Badge className="bg-red-50 text-red-800 ring-red-200">Kritischer Verzug</Badge>}
+          {p.meilensteine.some((m) => m.ueberfaellig && m.kritisch) && <Badge className="bg-danger-50 text-danger-800 ring-danger-200">Kritischer Verzug</Badge>}
         </div>
       </SeitenKopf>
 

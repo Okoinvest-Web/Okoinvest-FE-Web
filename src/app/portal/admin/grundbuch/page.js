@@ -47,7 +47,7 @@ export default async function GrundbuchSeite({ searchParams }) {
                     <td className={zelle}>{r.land}</td>
                     <td className={zelle}>{r.status}</td>
                     <td className={zelle}>{r.naechster || "–"}</td>
-                    <td className={cn(zelle, "whitespace-nowrap", r.ueberfaellig && "font-semibold text-red-700")}>{datumText(r.frist)}{r.ueberfaellig ? " (überfällig)" : ""}</td>
+                    <td className={cn(zelle, "whitespace-nowrap", r.ueberfaellig && "font-semibold text-danger-700")}>{datumText(r.frist)}{r.ueberfaellig ? " (überfällig)" : ""}</td>
                   </tr>
                 ))}
               </Tabelle>
@@ -75,7 +75,7 @@ export default async function GrundbuchSeite({ searchParams }) {
                       <p className="text-[12.5px] text-ink-500">{a.id} · {a.landLabel} · {a.objektArtLabel} · {a.eigentuemerName || "–"} · {a.fortschritt.erledigt}/{a.fortschritt.gesamt} Schritte{a.naechsteFrist ? ` · Frist ${datumText(a.naechsteFrist)}` : ""}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {a.ueberfaellig > 0 && <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-red-700"><AlertTriangle aria-hidden="true" className="h-3.5 w-3.5" />überfällig</span>}
+                      {a.ueberfaellig > 0 && <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-danger-700"><AlertTriangle aria-hidden="true" className="h-3.5 w-3.5" />überfällig</span>}
                       <StatusBadgeGb status={a.status} label={a.statusLabel} />
                     </div>
                   </li>

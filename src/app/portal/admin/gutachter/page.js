@@ -52,7 +52,7 @@ export default async function GutachterAdminSeite({ searchParams }) {
                         <p className="text-[12.5px] text-ink-500">{a.gutachter.name}{a.gutachter.firma ? ` · ${a.gutachter.firma}` : ""} · {a.projekt?.titel}</p>
                         <p className="text-[12.5px] text-ink-600">{a.angebot ? `${eur(a.angebot.summeNetto)} netto` : `Angebotsfrist ${datum(a.angebotsfrist)}`}{a.liefertermin ? ` · Liefertermin ${datum(a.liefertermin)}` : ""}{a.rechnungsstand.offenBrutto > 0 ? ` · offen ${eur(a.rechnungsstand.offenBrutto)}` : ""}{a.bewertung ? ` · Bewertung ${String(a.bewertung.schnitt).replace(".", ",")}` : ""}</p>
                       </div>
-                      <span className="flex flex-wrap gap-2">{a.ueberfaellig && <Badge className="bg-red-50 text-red-800 ring-red-200">überfällig</Badge>}<Badge ton={AUFTRAG_STATUS[a.status]?.ton}>{a.statusLabel}</Badge></span>
+                      <span className="flex flex-wrap gap-2">{a.ueberfaellig && <Badge className="bg-danger-50 text-danger-800 ring-danger-200">überfällig</Badge>}<Badge ton={AUFTRAG_STATUS[a.status]?.ton}>{a.statusLabel}</Badge></span>
                     </Link>
                   </li>
                 ))}

@@ -11,7 +11,7 @@ import {
   CpBestaetigen, FrageBeantworten, FrageFormular, KreditentscheidungFormular,
 } from "./BankAkte";
 
-const ROT = "bg-red-50 text-red-800 ring-red-200";
+const ROT = "bg-danger-50 text-danger-800 ring-danger-200";
 const StatusBadge = ({ ton, children }) => <Badge ton={ton === "rot" ? "neutral" : ton} className={ton === "rot" ? ROT : undefined}>{children}</Badge>;
 const eur = (x) => (Number.isFinite(x) ? `${Math.round(x).toLocaleString("de-DE")} €` : "–");
 const Dateien = ({ liste }) => (liste?.length ? <span className="mt-1 flex flex-wrap gap-2">{liste.map((d) => <a key={d.id} href={d.link} className="inline-flex max-w-full items-center gap-1 truncate text-[12.5px] font-semibold text-ov-700 hover:text-ov-800"><FileText aria-hidden="true" className="h-3.5 w-3.5" />{d.name}</a>)}</span> : null);

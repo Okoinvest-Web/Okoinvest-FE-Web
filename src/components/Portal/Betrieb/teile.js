@@ -8,7 +8,7 @@ import { cn } from "@/components/ui/cn";
 const KLASSE = {
   gruen: "bg-ov-50 text-ov-800 ring-ov-200",
   gelb: "bg-sun-300/25 text-ink-900 ring-sun-400/50",
-  rot: "bg-red-50 text-red-800 ring-red-200",
+  rot: "bg-danger-50 text-danger-800 ring-danger-200",
   grau: "bg-ink-100 text-ink-700 ring-ink-200",
 };
 const basis = "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[12px] font-semibold ring-1 ring-inset";
@@ -17,7 +17,7 @@ export function SlaBadge({ sla }) {
   if (!sla) return null;
   return (
     <span className={cn(basis, KLASSE[sla.ampel] || KLASSE.grau)} title={`Vorgabe: Reaktion ${sla.vorgabe.reaktionH} h${sla.vorgabe.loesungH ? `, Lösung ${sla.vorgabe.loesungH} h` : ""}`}>
-      <span aria-hidden="true" className={cn("h-2 w-2 rounded-full", sla.ampel === "rot" ? "bg-red-600" : sla.ampel === "gelb" ? "bg-sun-500" : "bg-ov-500")} />
+      <span aria-hidden="true" className={cn("h-2 w-2 rounded-full", sla.ampel === "rot" ? "bg-danger-600" : sla.ampel === "gelb" ? "bg-sun-500" : "bg-ov-500")} />
       {sla.text}
     </span>
   );

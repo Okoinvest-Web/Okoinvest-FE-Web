@@ -24,7 +24,7 @@ const zahlEin = (s) => {
   const n = Number(String(s).replace(/\s/g, "").replace(",", "."));
   return Number.isFinite(n) ? n : null;
 };
-const AMPEL_KL = { gruen: "bg-ov-50 text-ov-800 ring-ov-200", gelb: "bg-sun-300/25 text-ink-900 ring-sun-400/50", rot: "bg-red-50 text-red-800 ring-red-200" };
+const AMPEL_KL = { gruen: "bg-ov-50 text-ov-800 ring-ov-200", gelb: "bg-sun-300/25 text-ink-900 ring-sun-400/50", rot: "bg-danger-50 text-danger-800 ring-danger-200" };
 const AMPEL_TXT = { gruen: "im Rahmen", gelb: "prüfen", rot: "auffällig" };
 
 function Ampel({ ampel, children }) {
@@ -283,7 +283,7 @@ export default function Kalkulation({ projektId, daten }) {
                     {Object.entries(VERLEGEARTEN).map(([id, l]) => <option key={id} value={id}>{l}</option>)}
                   </select>
                   <ZahlFeld label="Länge in m" wert={a.laengeM} einheit="m" breit="w-24" onChange={(w) => setzeAbschnitte(abschnitte.map((x, j) => (j === i ? { ...x, laengeM: w || 0 } : x)))} deaktiviert={!schreiben} />
-                  {schreiben && <button type="button" className="text-[12px] font-semibold text-red-700 hover:underline" onClick={() => setzeAbschnitte(abschnitte.filter((_, j) => j !== i))}>entfernen</button>}
+                  {schreiben && <button type="button" className="text-[12px] font-semibold text-danger-700 hover:underline" onClick={() => setzeAbschnitte(abschnitte.filter((_, j) => j !== i))}>entfernen</button>}
                 </li>
               ))}
             </ul>
@@ -370,7 +370,7 @@ export default function Kalkulation({ projektId, daten }) {
               {k.staende.map((x) => (
                 <li key={x.id} className="flex flex-wrap items-start justify-between gap-2 py-2.5 text-[13px]">
                   <span className="min-w-0"><strong>{x.standLabel}</strong> · {new Date(x.am).toLocaleDateString("de-DE")} · {x.von}{x.kommentar && <span className="block text-ink-500">{x.kommentar}</span>}</span>
-                  <span className="text-right"><span className="ov-num font-semibold">{teur(x.summen.gesamt)}</span>{x.summen.eurProKwp ? <span className="ov-num block text-[12px] text-ink-500">{fmt(x.summen.eurProKwp)} €/kWp</span> : null}{x.vergleich && <span className={cn("ov-num block text-[12px] font-semibold", x.vergleich.gesamt > 0 ? "text-red-700" : "text-ov-700")}>{x.vergleich.gesamt > 0 ? "+" : ""}{teur(x.vergleich.gesamt)} zum Vorstand</span>}</span>
+                  <span className="text-right"><span className="ov-num font-semibold">{teur(x.summen.gesamt)}</span>{x.summen.eurProKwp ? <span className="ov-num block text-[12px] text-ink-500">{fmt(x.summen.eurProKwp)} €/kWp</span> : null}{x.vergleich && <span className={cn("ov-num block text-[12px] font-semibold", x.vergleich.gesamt > 0 ? "text-danger-700" : "text-ov-700")}>{x.vergleich.gesamt > 0 ? "+" : ""}{teur(x.vergleich.gesamt)} zum Vorstand</span>}</span>
                 </li>
               ))}
             </ol>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { cn } from "@/components/ui/cn";
 
 const AMPEL = {
-  rot: { punkt: "bg-red-500", text: "text-red-800", label: "Handeln" },
+  rot: { punkt: "bg-danger-500", text: "text-danger-800", label: "Handeln" },
   gelb: { punkt: "bg-sun-500", text: "text-ink-900", label: "Beobachten" },
   gruen: { punkt: "bg-ov-500", text: "text-ov-800", label: "Läuft" },
   grau: { punkt: "bg-ink-300", text: "text-ink-500", label: "Erledigt" },

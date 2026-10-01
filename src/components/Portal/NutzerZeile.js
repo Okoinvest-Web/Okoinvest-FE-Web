@@ -58,7 +58,7 @@ export default function NutzerZeile({ nutzer, eigen }) {
           </button>
         )}
       </div>
-      {fehler && <p role="alert" className="text-[12.5px] text-red-700">{fehler}</p>}
+      {fehler && <p role="alert" className="text-[12.5px] text-danger-700">{fehler}</p>}
     </div>
   );
 }

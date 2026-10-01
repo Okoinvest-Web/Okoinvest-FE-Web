@@ -291,7 +291,7 @@ export function PlanBearbeiten({ anlageId, plan }) {
     return (
       <div className="flex gap-1">
         <button type="button" onClick={() => setOffen(true)} className="h-8 rounded-full px-3 text-[12.5px] font-semibold text-ov-700 hover:bg-ov-50">Bearbeiten</button>
-        <button type="button" aria-label="Plan löschen" onClick={async () => (await rueckfrage({ titel: "Wartungsplan löschen?", text: "Der Plan wird dauerhaft entfernt.", bestaetigenText: "Plan löschen", gefahr: true })) && a.los(`${API}/anlage/${anlageId}`, { aktion: "planLoeschen", id: plan.id }, { erfolg: "Gelöscht." })} className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-500 hover:bg-red-50 hover:text-red-700"><Trash2 aria-hidden="true" className="h-4 w-4" /></button>
+        <button type="button" aria-label="Plan löschen" onClick={async () => (await rueckfrage({ titel: "Wartungsplan löschen?", text: "Der Plan wird dauerhaft entfernt.", bestaetigenText: "Plan löschen", gefahr: true })) && a.los(`${API}/anlage/${anlageId}`, { aktion: "planLoeschen", id: plan.id }, { erfolg: "Gelöscht." })} className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-500 hover:bg-danger-50 hover:text-danger-700"><Trash2 aria-hidden="true" className="h-4 w-4" /></button>
         <FehlerBox>{a.fehler}</FehlerBox>
       </div>
     );
@@ -463,7 +463,7 @@ export function FreigabeKnopf({ anlageId, zeile }) {
   return (
     <div>
       <button type="button" disabled={a.laeuft || zeile.befund.eichFehler} onClick={freigeben} className="h-8 rounded-full bg-ov-600 px-3 text-[12.5px] font-semibold text-white hover:bg-ov-700 disabled:cursor-not-allowed disabled:bg-ink-300">Freigeben</button>
-      {a.fehler && <p className="mt-1 max-w-[220px] text-[12px] text-red-700">{a.fehler}</p>}
+      {a.fehler && <p className="mt-1 max-w-[220px] text-[12px] text-danger-700">{a.fehler}</p>}
     </div>
   );
 }

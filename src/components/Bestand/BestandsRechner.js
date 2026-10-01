@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { Activity, AlertTriangle, BadgePercent, CalendarClock, Gauge, Handshake, Landmark, Percent, ScrollText, Wrench } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
-import { Auswahl, Gruppe, Kennzahl, Regler, Schalter, Tooltip, Zahl, useBreite } from "@/components/Rechner/bausteine";
+import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Schalter, Tooltip, Zahl, useBreite } from "@/components/Rechner/bausteine";
+import { useTeilbarerZustand } from "@/components/Rechner/kontext";
 import { Ansicht, ErgebnisKopf, Hinweis, Legende, MobilKurz, RechnerRahmen } from "@/components/Rechner/InvestTeile";
 import { BESTAND, ERLOESE, PROVISION, REGIONEN } from "@/lib/invest/markt";
 import { PHASE_BESTAND, STANDARD, rechneBestand, sensitivitaet, tornado, verguetungRichtwert } from "@/lib/rechner/bestandsanlage";
@@ -50,6 +51,25 @@ export default function BestandsRechner() {
     kwp, typ, regionId, ibnJahr, ertragKwhKwp, modell, verguetungCt, foerderJahre, opexKwp, pachtJahr, pachtEndeJahr,
     pachtVerlaengerbar, nutzungsdauer, wrTausch, wrJahr, wrProKwp, diskont, merchantCt, kaufpreis: mitKaufpreis ? kaufProKwp * kwp : 0,
   };
+  // Teilen-Link: Eingaben in der Adresszeile (nur Abweichungen vom Standard), geteilter Link stellt sie wieder her
+  const SETZER = {
+    kwp: setKwp, typ: setTyp, regionId: setRegionId, ibnJahr: setIbnRoh, ertragKwhKwp: setErtrag, modell: setModell, verguetungCt: setVerguetung,
+    foerderJahre: setFoerderJahre, opexKwp: setOpex, pachtJahr: setPacht, pachtEndeJahr: setPachtEnde, pachtVerlaengerbar: setVerlaengerbar,
+    nutzungsdauer: setNutzungsdauer, wrTausch: setWrTausch, wrJahr: setWrJahr, wrProKwp: setWrProKwp, diskont: setDiskont, merchantCt: setMerchant,
+    mitKaufpreis: setMitKaufpreis, kaufProKwp: setKaufProKwp,
+  };
+  useTeilbarerZustand(
+    { ...eingabe, kaufpreis: undefined, mitKaufpreis, kaufProKwp },
+    (neu) => Object.entries(neu).forEach(([k, v]) => SETZER[k]?.(v)),
+    {
+      optionen: { typ: ["freiflaeche", "dach"], modell: ["fest", "marktpraemie"], regionId: REGIONEN.map((x) => x.id) },
+      grenzen: {
+        kwp: [100, 20000], ibnJahr: [2005, 2025], ertragKwhKwp: [650, 1350], verguetungCt: [3, 40], foerderJahre: [10, 25], merchantCt: [2, 8],
+        opexKwp: [6, 25], pachtJahr: [0, 150000], pachtEndeJahr: [BESTAND.bewertungsjahr, 2065], nutzungsdauer: [BESTAND.nutzungsdauerSpanne.min, BESTAND.nutzungsdauerSpanne.max],
+        wrJahr: [BESTAND.bewertungsjahr, 2050], wrProKwp: [30, 120], diskont: [0.03, 0.1], kaufProKwp: [100, 2500],
+      },
+    }
+  );
   const schluessel = JSON.stringify(eingabe);
   const r = useMemo(() => rechneBestand(eingabe), [schluessel]); // eslint-disable-line react-hooks/exhaustive-deps
   const matrix = useMemo(() => sensitivitaet(eingabe), [schluessel]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -207,11 +227,11 @@ export default function BestandsRechner() {
           </p>
           <ErgebnisKopf titel="Ertragswert" plakette={`${leistung(kwp)} · IBN ${ibnJahr}`} />
 
-          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Kennzahl ton="navy" icon={Landmark} label="Ertragswert" zusatz={`Spanne ${geld(r.spanne.min)} – ${geld(r.spanne.max)}`}>
-              {geld(r.wert)}
-            </Kennzahl>
-            <Kennzahl ton="gruen" icon={Gauge} label="Wert je kWp" zusatz={`Spanne ${fmt(r.spanneProKwp.min)}–${fmt(r.spanneProKwp.max)} €`}>
+          <Hauptzahl className="mt-5" icon={Landmark} label="Ertragswert" zusatz={`Spanne ${geld(r.spanne.min)} – ${geld(r.spanne.max)}`}>
+            {geld(r.wert)}
+          </Hauptzahl>
+          <Belege>
+            <Kennzahl ton="akzent" icon={Gauge} label="Wert je kWp" zusatz={`Spanne ${fmt(r.spanneProKwp.min)}–${fmt(r.spanneProKwp.max)} €`}>
               <Zahl wert={r.wertProKwp} suffix=" €" />
             </Kennzahl>
             <Kennzahl icon={CalendarClock} label="Förderung bis" zusatz={r.foerderRest ? `noch ${r.foerderRest} Jahre` : "bereits ausgelaufen"}>
@@ -220,7 +240,7 @@ export default function BestandsRechner() {
             <Kennzahl icon={Percent} label="Wert aus Förderphase" zusatz={`Rest bis ${r.ende} Markt`}>
               {pct(r.anteilFoerderung, 0)}
             </Kennzahl>
-          </div>
+          </Belege>
 
           <Einordnung wert={r.wertProKwp} spanne={r.spanneProKwp} band={band} />
 

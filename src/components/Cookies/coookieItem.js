@@ -18,7 +18,7 @@ const CookieDetails = ({ service }) => {
             href={service?.contact.privacy}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:underline"
+            className="text-navy-700 hover:underline"
           >
             Datenschutzerklärung des Anbieters
           </a>

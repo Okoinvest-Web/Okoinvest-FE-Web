@@ -15,7 +15,7 @@ import { PHASEN } from "@/lib/invest/markt";
 
 const PHASE_LABEL = Object.fromEntries(PHASEN.map((p) => [p.id, p.kurz]));
 const STUFE = {
-  fehler: { icon: XCircle, klasse: "bg-red-50 text-red-900 ring-red-200" },
+  fehler: { icon: XCircle, klasse: "bg-danger-50 text-danger-800 ring-danger-200" },
   warnung: { icon: AlertTriangle, klasse: "bg-sun-300/20 text-ink-900 ring-sun-400/40" },
   info: { icon: Info, klasse: "bg-navy-50 text-navy-900 ring-navy-100" },
 };

@@ -36,7 +36,7 @@ export default function SchnellWeiter({ art, id, status }) {
         {u.aktion}
         <ChevronRight aria-hidden="true" className="h-3.5 w-3.5" />
       </button>
-      {fehler && <p role="alert" className="mt-1 text-[12px] text-red-700">{fehler}</p>}
+      {fehler && <p role="alert" className="mt-1 text-[12px] text-danger-700">{fehler}</p>}
     </div>
   );
 }

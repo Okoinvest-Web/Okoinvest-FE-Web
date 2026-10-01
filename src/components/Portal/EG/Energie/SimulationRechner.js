@@ -292,7 +292,7 @@ function Ergebnis({ erg }) {
                   <td className="ov-num py-1.5 pr-3 text-right">{zahl(t.eingebrachtKwh)}</td>
                   <td className="ov-num py-1.5 pr-3 text-right">{eur(t.vorteil.netz)}</td>
                   <td className="ov-num py-1.5 pr-3 text-right">{eur(t.vorteil.energie)}</td>
-                  <td className={cn("ov-num py-1.5 text-right font-semibold", t.vorteil.summe >= 0 ? "text-ov-800" : "text-red-700")}>{eur(t.vorteil.summe)}{t.anzahl > 1 && <span className="block text-[11px] font-normal text-ink-500">{eur(t.vorteil.summe / t.anzahl)} je Teiln.</span>}</td>
+                  <td className={cn("ov-num py-1.5 text-right font-semibold", t.vorteil.summe >= 0 ? "text-ov-800" : "text-danger-700")}>{eur(t.vorteil.summe)}{t.anzahl > 1 && <span className="block text-[11px] font-normal text-ink-500">{eur(t.vorteil.summe / t.anzahl)} je Teiln.</span>}</td>
                 </tr>
               ))}
             </tbody>

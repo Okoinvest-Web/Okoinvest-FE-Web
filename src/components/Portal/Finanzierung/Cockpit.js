@@ -316,7 +316,7 @@ export default function Cockpit({ start, quellen = {}, projekt = null, projekte 
                     </div>
                     <button type="button" onClick={() => setE({ ...s.eingaben })} className="h-9 rounded-full px-3 text-[12.5px] font-semibold text-ink-700 ring-1 ring-inset ring-ink-200 hover:bg-ink-50">Laden</button>
                     <a href={`/api/portal/finanzierung/szenarien/${s.id}/pdf`} className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[12.5px] font-semibold text-ov-700 ring-1 ring-inset ring-ov-200 hover:bg-ov-50"><Download aria-hidden="true" className="h-3.5 w-3.5" />PDF</a>
-                    <button type="button" onClick={() => loeschen(s.id)} aria-label={`${s.name} löschen`} className="flex h-9 w-9 items-center justify-center rounded-full text-ink-500 hover:bg-red-50 hover:text-red-700"><Trash2 aria-hidden="true" className="h-4 w-4" /></button>
+                    <button type="button" onClick={() => loeschen(s.id)} aria-label={`${s.name} löschen`} className="flex h-9 w-9 items-center justify-center rounded-full text-ink-500 hover:bg-danger-50 hover:text-danger-700"><Trash2 aria-hidden="true" className="h-4 w-4" /></button>
                   </li>
                 ))}
               </ul>

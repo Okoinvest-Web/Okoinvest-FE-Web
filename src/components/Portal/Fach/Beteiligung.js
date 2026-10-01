@@ -18,7 +18,7 @@ import { PruefHinweise } from "./DatenblattFormular";
 function Pruefung({ r }) {
   if (!r) return null;
   const Icon = r.ok ? CheckCircle2 : XCircle;
-  return <p className={cn("mt-1.5 flex items-center gap-1.5 text-[12.5px] font-medium", r.ok ? "text-ov-700" : "text-red-700")}><Icon aria-hidden="true" className="h-4 w-4" />{r.ok ? "gültig" : r.fehler}</p>;
+  return <p className={cn("mt-1.5 flex items-center gap-1.5 text-[12.5px] font-medium", r.ok ? "text-ov-700" : "text-danger-700")}><Icon aria-hidden="true" className="h-4 w-4" />{r.ok ? "gültig" : r.fehler}</p>;
 }
 
 export function GenoFormular({ geno }) {

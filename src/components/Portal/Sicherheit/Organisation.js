@@ -309,7 +309,7 @@ function Stammdaten({ org }) {
           </Button>
         )}
         {org.rolle === "inhaber" && (
-          <Button type="button" size="sm" variant="ghost" icon={Trash2} className="text-red-700 hover:bg-red-50" disabled={!!a.laeuft} onClick={async () => (await bestaetigen({ titel: `„${org.name}“ löschen?`, text: "Objekte werden wieder persönlich, Mitgliedschaften enden.", bestaetigenText: "Organisation löschen", gefahr: true })) && a.los("loeschen", () => senden(`/api/portal/organisation/${org.id}`, { method: "DELETE" }), "Organisation gelöscht.")}>
+          <Button type="button" size="sm" variant="ghost" icon={Trash2} className="text-danger-700 hover:bg-danger-50" disabled={!!a.laeuft} onClick={async () => (await bestaetigen({ titel: `„${org.name}“ löschen?`, text: "Objekte werden wieder persönlich, Mitgliedschaften enden.", bestaetigenText: "Organisation löschen", gefahr: true })) && a.los("loeschen", () => senden(`/api/portal/organisation/${org.id}`, { method: "DELETE" }), "Organisation gelöscht.")}>
             Organisation löschen
           </Button>
         )}

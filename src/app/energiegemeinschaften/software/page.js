@@ -229,10 +229,12 @@ export default function SoftwarePage() {
             </div>
           </Reveal>
           {PORTAL.map((f, i) => (
-            <Reveal key={f.title} delay={i * 60} className="ov-lift flex flex-col rounded-[2rem] bg-white p-6 shadow-e1 ring-1 ring-ink-200/70">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-ov-50 text-ov-600"><f.icon aria-hidden="true" className="h-5 w-5" strokeWidth={1.8} /></span>
-              <h3 className="mt-4 font-display text-[17px] font-bold text-ink-900">{f.title}</h3>
-              <p className="mt-1.5 text-[14px] leading-relaxed text-ink-600">{f.text}</p>
+            <Reveal key={f.title} delay={i * 60} className="flex">
+              <div className="ov-lift flex w-full flex-col rounded-[2rem] bg-white p-6 shadow-e1 ring-1 ring-ink-200/70">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-ov-50 text-ov-600"><f.icon aria-hidden="true" className="h-5 w-5" strokeWidth={1.8} /></span>
+                <h3 className="mt-4 font-display text-[17px] font-bold text-ink-900">{f.title}</h3>
+                <p className="mt-1.5 text-[14px] leading-relaxed text-ink-600">{f.text}</p>
+              </div>
             </Reveal>
           ))}
         </div>
@@ -270,7 +272,8 @@ export default function SoftwarePage() {
         <SectionHeading eyebrow="Pakete" title="So viel Unterstützung, wie Ihre Gemeinschaft braucht" lead="Preise auf Anfrage – wir kalkulieren je Gemeinschaft nach Größe und Leistungsumfang und legen das Angebot transparent dar." className="mb-10 md:mb-12" />
         <div className="grid gap-5 lg:grid-cols-3">
           {PAKETE.map((p, i) => (
-            <Reveal key={p.title} delay={i * 80} className={i === 1 ? "ov-verlauf-nacht flex flex-col rounded-[2rem] p-6 text-white shadow-e3 md:p-8" : "ov-lift flex flex-col rounded-[2rem] bg-white p-6 shadow-e1 ring-1 ring-ink-200/70 md:p-8"}>
+            <Reveal key={p.title} delay={i * 80} className="flex">
+            <div className={i === 1 ? "ov-verlauf-nacht flex w-full flex-col rounded-[2rem] p-6 text-white shadow-e3 md:p-8" : "ov-lift flex w-full flex-col rounded-[2rem] bg-white p-6 shadow-e1 ring-1 ring-ink-200/70 md:p-8"}>
               <span className={i === 1 ? "flex h-12 w-12 items-center justify-center rounded-2xl bg-ov-500 text-white" : "flex h-12 w-12 items-center justify-center rounded-2xl bg-ov-50 text-ov-600"}><p.icon aria-hidden="true" className="h-6 w-6" /></span>
               <p className={i === 1 ? "mt-5 text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-300" : "mt-5 text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-700"}>{p.tag}</p>
               <h3 className="ov-h3 mt-1">{p.title}</h3>
@@ -279,6 +282,7 @@ export default function SoftwarePage() {
                 {p.punkte.map((x) => <li key={x} className={i === 1 ? "flex gap-2 text-[14.5px] text-white/85" : "flex gap-2 text-[14.5px] text-ink-700"}><BadgeCheck aria-hidden="true" className={i === 1 ? "mt-0.5 h-4 w-4 shrink-0 text-ov-300" : "mt-0.5 h-4 w-4 shrink-0 text-ov-600"} />{x}</li>)}
               </ul>
               <p className={i === 1 ? "mt-auto pt-6 font-display text-[18px] font-bold text-white" : "mt-auto pt-6 font-display text-[18px] font-bold text-ink-900"}>Preis auf Anfrage</p>
+            </div>
             </Reveal>
           ))}
         </div>

@@ -83,7 +83,7 @@ export default function MethodenWahl({ methoden = [], gewaehlt = "", bearbeitbar
       </div>
       {gewaehlt === "eid" && bearbeitbar && <EidBereich />}
       {!methoden.length && <p className="text-[14px] text-ink-500">Bitte wählen Sie zuerst den Kontotyp.</p>}
-      {fehler && <p role="alert" className="mt-3 text-[13px] font-medium text-red-700">{fehler}</p>}
+      {fehler && <p role="alert" className="mt-3 text-[13px] font-medium text-danger-700">{fehler}</p>}
       <p className="mt-4 text-[12.5px] leading-relaxed text-ink-500">Welche Wege zulässig sind, richtet sich nach den Vorgaben unserer Compliance (z. B. Risiko, Art des Kontos). Ein zugelassener Weg kann bei der Prüfung nachgefordert werden.</p>
     </div>
   );

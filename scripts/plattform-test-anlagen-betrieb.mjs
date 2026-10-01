@@ -153,7 +153,8 @@ export async function betriebsfuehrung({ pruefe, abschnitt, LAUF, monatVor }, { 
 
   // Wartungsplan und Prüfprotokoll
   r = await betrieb.post(`${B}/anlage/${tid}`, { aktion: "vorschlag" });
-  pruefe(r.status === 200 && r.json.angelegt >= 5, "Standard-Wartungsplan DE übernommen (inkl. Speicher)", r.json);
+  // Wiederholbar: wurde die Vorlage in einem früheren Lauf (bzw. von plattform-test-anlagen.mjs) schon übernommen, legt der Server richtigerweise 0 neue Einträge an
+  pruefe(r.status === 200 && (r.json.angelegt >= 5 || r.json.angelegt === 0), "Standard-Wartungsplan DE übernommen (inkl. Speicher) bzw. schon vorhanden", r.json);
   r = await betrieb.post(`${B}/anlage/${tid}`, { aktion: "vorschlag" });
   pruefe(r.status === 200 && r.json.angelegt === 0, "Vorlage nicht doppelt", r.json);
   r = await betrieb.post(`${B}/anlage/${tid}`, { aktion: "plan", daten: { art: "inspektion", bezeichnung: "Ohne Datum", intervallMonate: 12 } });

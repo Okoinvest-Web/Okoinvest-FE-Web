@@ -420,7 +420,8 @@ async function http() {
   r = await admin.get(`/portal/admin/portfolio/${hochfeld?.id}`);
   pruefe(r.status === 200 && r.text.includes("Ausschüttung buchen"), "Seite Backoffice-Position mit Formularen", r.status);
   r = await akquise.get("/portal/admin/portfolio");
-  pruefe(r.status === 404 || !r.text.includes("Investoren-Portfolio"), "Seite für Unterrolle Akquise gesperrt", r.status);
+  // Portal streamt (loading.js): notFound() kommt als 200 mit 404-Fallback; der Seitentitel steht trotzdem im <head>
+  pruefe(r.status === 404 || r.text.includes("NEXT_HTTP_ERROR_FALLBACK;404"), "Seite für Unterrolle Akquise gesperrt", r.status);
 }
 
 async function main() {

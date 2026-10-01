@@ -1,5 +1,33 @@
 # Änderungen
 
+## 0.3.0 – 01.10.2026 – Vollausbau Portal und Energiegemeinschaften
+
+**Energiegemeinschaften Österreich (EEG lokal/regional, BEG, GEA nach ElWG §§ 65–72)**
+- Markt- und Fachrecherche mit Quellen: docs/EG-MARKT.md, docs/EG-FACHKONZEPT.md, Schnittstellen docs/EG-SCHNITTSTELLEN.md
+- Stammdaten mit Teilnahmefaktor-Regeln, Mehrfachteilnahme, Netzentgelt-Regeltabelle, Massenbearbeitung und CSV-Import
+- EDA-Marktkommunikation (Anmeldung, Online-Zustimmung mit Fristen und Erinnerungen, Teilnahmefaktor, Abmeldung, Energiedaten, Reklamation), Gateway-Dienst und Netzbetreiber-Simulator
+- 15-Minuten-Energiedaten, Datenqualität, Verteilung statisch/dynamisch nach Marktregeln, Simulation vor der Gründung, Prognose, Mehrfachteilnahme-Optimierer, Speicher
+- Abrechnung mit Steuer-Engine (Kleinunternehmer, Reverse Charge, Landwirte, Gemeinden) und Prüfpfad, Gutschriften, SEPA, Mahnwesen, Vereinsbuchhaltung, Exporte BMD/RZL/DATEV, Probe-Abrechnung für Wechsler
+- Gründung als Dienstleistung mit Mustervorlagen, Wechsel bestehender Gemeinschaften mit Import, Vereinsorganisation, Förder-Check, Lieferantenpflichten
+- Mitglieder-, Interessenten- und Gemeindeportal; öffentliche Seiten /energiegemeinschaften/software und /energiegemeinschaften/rechner
+
+**Portal – Vollausbau je Rolle**
+- Eigentümer: Pachtakte bis Vertragsende (Fristen, Kündigung, Eigentümerwechsel/Erbfall, Rückbausicherheit, Agri-PV-Nachweis, Jahresbescheinigung)
+- Investor: Portfolio nach dem Kauf (Ertrag Soll/Ist aus Monitoring, DSCR/Covenants, Ausschüttungen, Kapitalabrufe, Berichte, Wiederverkauf)
+- Anbieter: Vermittlungsauftrag mit Exklusivität, Prüfpunkte, Anonymisierungsprüfung, Stellungnahme zu LOI und Geboten, Vorkenntnis, Bestandsanlagen-Akte
+- Kundenseite Energie: Einspruch, Störungsmeldung, Vertragsende, Lieferantenwechsel, Kostenreport, Vertragsdatenblatt für Versorger
+- Mitglied/Genossenschaft und Gemeindecockpit; Gutachter- und Bankakte; Entwicklungssteuerung (Entscheidungsvorlagen, Projektampel, Kapazität, Pipeline)
+- Backoffice: Deal-Pipeline, KYC-SLA, DSGVO-Workflows, Verdachtsfälle, Mahnwesen, Zahlungsabgleich, DATEV/BMD, Monatsabschluss; Betriebsführung (Störungs-SLA, Serviceaufträge, Ertragsausfall, Versicherung, Wartungsplan, Ersatzteile, PR)
+- Querschnitt: Nachrichten mit Anhängen, Dokumentenablage mit Versionen, Tages-Digest, erweiterte Suche, Seitenhilfe, Leitungs-Cockpit mit Management-Bericht
+- Identifizierung: MRZ-Prüfung, Videoident durch eigene Compliance, ID Austria und Online-Ausweis (OIDC)
+- Fehlerbehebung über alle Bereiche (u. a. 2FA-Sperre, Bonität null, KYC-Vier-Augen, Zahlungsläufe, Polygonflächen, Monatsenden); Demo: alle Demo-Konten auf frischer Datenbank sofort verfügbar
+
+**Qualität**
+- 37 Plattform-Testreihen zentral auf frischer Demo-Datenbank grün (rund 4.170 Prüfungen)
+- Frappe: Konsistenzprüfer 0 Fehler / 0 Warnungen, 330 Kern-Unittests grün (1 übersprungen), Dienste-Tests grün
+- Produktions-Build erfolgreich, ESLint ohne Befund, npm audit 0
+- Offen vor Livegang: Bench-Tests auf Staging, anwaltliche/steuerliche Freigaben, EDA-Registrierung und Abgleich mit ebUtilities-Schemas – siehe docs/ROADMAP-STUFE5.md, docs/EG-FACHKONZEPT.md Abschnitt 9, Backend-Import/GO-LIVE.md
+
 ## 0.2.0 – 30.09.2026 – Plattform-Ausbau (Stufen 2–5)
 
 **Website**

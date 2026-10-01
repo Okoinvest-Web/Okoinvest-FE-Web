@@ -87,7 +87,7 @@ export default function BoerseAnsicht({ projekte, start }) {
             { id: "phase", label: "Phase", wert: (p) => PHASEN.findIndex((x) => x.id === p.phase), csvWert: (p) => phaseById(p.phase)?.label, zelle: (p) => <span className="whitespace-nowrap">{phaseById(p.phase)?.kurz || "–"}</span> },
             { id: "mwp", label: "Leistung", wert: (p) => p.mwp ?? null, zelle: (p) => <span className="ov-num whitespace-nowrap">{mwp(p.mwp)}</span> },
             { id: "preis", label: "Preis", wert: (p) => preisGesamt(p), csvWert: (p) => preisText(p), zelle: (p) => <span className="whitespace-nowrap text-ink-700">{preisText(p)}</span> },
-            { id: "passung", label: "Passung", mobil: "badge", wert: (p) => p.matching?.score ?? null, zelle: (p) => (p.matching ? <Badge ton={p.matching.score >= 70 ? "ok" : "neutral"}>{p.matching.score} %</Badge> : <span className="text-ink-400">–</span>) },
+            { id: "passung", label: "Passung", mobil: "badge", wert: (p) => p.matching?.score ?? null, zelle: (p) => (p.matching ? <Badge ton={p.matching.score >= 70 ? "ok" : "neutral"}>{p.matching.score} %</Badge> : <span className="text-ink-500">–</span>) },
             { id: "datenraum", label: "Datenraum", standard: false, wert: (p) => p.datenraumQualitaet ?? null, klasse: "min-w-[150px]", zelle: (p) => <QualitaetsBalken quote={p.datenraumQualitaet} label="Qualität" klein /> },
             {
               id: "interesse", label: "Mein Stand", mobil: "badge", wert: (p) => (p.meinInteresse ? (p.meinInteresse.status === "gemerkt" ? "Gemerkt" : statusInfo("interesse", p.meinInteresse.status).label) : ""),
@@ -98,7 +98,7 @@ export default function BoerseAnsicht({ projekte, start }) {
                     {p.meinInteresse.status !== "gemerkt" && <Badge ton="info">{statusInfo("interesse", p.meinInteresse.status).label}</Badge>}
                   </span>
                 ) : (
-                  <span className="text-ink-400">–</span>
+                  <span className="text-ink-500">–</span>
                 ),
             },
           ]}

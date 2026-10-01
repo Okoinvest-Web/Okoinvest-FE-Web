@@ -22,6 +22,8 @@ import { Eyebrow } from "./SectionHeading";
  *  points       ["Kurzer Vorteil", ...]
  *  stats        [{ value: 5000, suffix: "+", label: "Anlagen" }]
  *  badge        JSX – schwebendes Element auf dem Bild (split)
+ *  szene        JSX – nur variant "dark": Illustration rechts neben dem Text
+ *               (ab xl sichtbar, z. B. <IllustrationRahmen ton="navy">…), Design-System 2.0
  */
 export default function PageHero({
   variant = "split",
@@ -34,11 +36,12 @@ export default function PageHero({
   points = [],
   stats = [],
   badge,
+  szene,
   children,
   className,
 }) {
   if (variant === "immersive") return <Immersive {...{ breadcrumbs, eyebrow, title, lead, image, actions, points, stats, children, className }} />;
-  if (variant === "dark") return <Dark {...{ breadcrumbs, eyebrow, title, lead, actions, points, stats, children, className }} />;
+  if (variant === "dark") return <Dark {...{ breadcrumbs, eyebrow, title, lead, actions, points, stats, szene, children, className }} />;
 
   return (
     <section className={cn("relative overflow-hidden bg-sand-50", className)}>
@@ -202,13 +205,21 @@ function Immersive({ breadcrumbs, eyebrow, title, lead, image, actions, points, 
   );
 }
 
-function Dark({ breadcrumbs, eyebrow, title, lead, actions, points, stats, children, className }) {
+function Dark({ breadcrumbs, eyebrow, title, lead, actions, points, stats, szene, children, className }) {
   return (
     <section className={cn("ov-noise relative isolate overflow-hidden bg-navy-950 text-white", className)}>
       <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10" />
       <div aria-hidden="true" className="absolute -left-32 top-1/3 -z-10 h-[420px] w-[420px] rounded-full bg-ov-500/25 blur-[120px]" />
       <div aria-hidden="true" className="absolute -right-20 -top-24 -z-10 h-[380px] w-[380px] rounded-full bg-navy-400/30 blur-[120px]" />
-      <div className="ov-container pb-16 pt-8 md:pb-24 md:pt-12">
+      <div className="ov-container relative pb-16 pt-8 md:pb-24 md:pt-12">
+        {szene && (
+          <div
+            className="ov-hero-in pointer-events-none absolute right-5 top-1/2 hidden w-[420px] -translate-y-1/2 md:right-8 xl:block 2xl:w-[480px]"
+            style={{ "--ov-delay": "260ms" }}
+          >
+            {szene}
+          </div>
+        )}
         {breadcrumbs && <Breadcrumbs items={breadcrumbs} dark className="ov-hero-in mb-10" />}
         <div className="max-w-3xl">
           {eyebrow && (

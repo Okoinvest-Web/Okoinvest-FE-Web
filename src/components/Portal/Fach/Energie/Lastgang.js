@@ -14,6 +14,11 @@ import { ErfolgBox, Feld, FehlerBox, auswahlfeld, eingabe, textbereich } from "@
 import { senden } from "@/lib/plattform/client";
 import { lastgangParsen } from "@/lib/plattform/fach/lastgang";
 import { PruefHinweise } from "../DatenblattFormular";
+import { ENERGIE } from "@/components/ui/datenfarben";
+import BalkenDiagramm from "@/components/diagramme/BalkenDiagramm";
+import HeatmapDiagramm from "@/components/diagramme/HeatmapDiagramm";
+import LinienDiagramm from "@/components/diagramme/LinienDiagramm";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 const kwh = (x) => (!Number.isFinite(x) ? "–" : x >= 1e6 ? `${(x / 1e6).toLocaleString("de-DE", { maximumFractionDigits: 2 })} GWh` : x >= 1e4 ? `${(x / 1e3).toLocaleString("de-DE", { maximumFractionDigits: 0 })} MWh` : `${Math.round(x).toLocaleString("de-DE")} kWh`);
 const kw = (x) => (!Number.isFinite(x) ? "–" : `${x.toLocaleString("de-DE", { maximumFractionDigits: x < 10 ? 1 : 0 })} kW`);
@@ -21,6 +26,7 @@ const pct = (x) => (!Number.isFinite(x) ? "–" : `${Math.round(x * 100)} %`);
 const eur = (x) => (!Number.isFinite(x) ? "–" : `${Math.round(x).toLocaleString("de-DE")} €`);
 const TAGE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const MONATE = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+const MONATSNAMEN = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 
 /** Datei als Text lesen: UTF-8, bei Ersatzzeichen Windows-1252 (Excel-Export) */
 async function dateiText(datei) {
@@ -39,65 +45,57 @@ function Kachel({ label, wert, hinweis }) {
   );
 }
 
+// Diagramme über das Chart-System (src/components/diagramme): Tooltip, Tastatur, Tabelle, CSV/PNG, Einlauf.
 function Wochenprofil({ matrix }) {
-  const max = Math.max(1, ...matrix.flat());
+  const h2 = (h) => String(h).padStart(2, "0");
   return (
-    <figure>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[560px] border-separate border-spacing-[2px] text-[11px]">
-          <caption className="sr-only">Mittlere Last je Wochentag und Stunde (kW)</caption>
-          <thead>
-            <tr>
-              <th scope="col" className="w-8" />
-              {Array.from({ length: 24 }, (_, h) => <th key={h} scope="col" className="font-normal text-ink-500">{h % 3 === 0 ? h : ""}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {matrix.map((zeile, t) => (
-              <tr key={t}>
-                <th scope="row" className="pr-1 text-left font-semibold text-ink-600">{TAGE[t]}</th>
-                {zeile.map((w, h) => (
-                  <td key={h} title={`${TAGE[t]} ${h}–${h + 1} Uhr: ${kw(w)}`} className="h-5 rounded-[3px] bg-ov-600" style={{ opacity: 0.08 + 0.92 * (w / max) }}>
-                    <span className="sr-only">{kw(w)}</span>
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <figcaption className="mt-1.5 text-[12px] text-ink-500">Mittlere Last je Wochentag und Stunde (Ortszeit) – dunkler = höher, Maximum {kw(max)}.</figcaption>
-    </figure>
+    <HeatmapDiagramm
+      titel="Wochenprofil"
+      untertitel="Mittlere Last je Wochentag und Stunde (Ortszeit)"
+      matrix={matrix}
+      zeilen={TAGE}
+      spalten={Array.from({ length: 24 }, (_, h) => String(h))}
+      spaltenBeschriftung={[0, 3, 6, 9, 12, 15, 18, 21].map((h) => ({ index: h, text: String(h) }))}
+      spaltenTitel={Array.from({ length: 24 }, (_, h) => `${h2(h)}–${h2(h + 1)} Uhr`)}
+      einheit="kW"
+      skala="gruen"
+      beschreibung={`Mittlere Last je Wochentag und Stunde, höchstens ${kw(Math.max(0, ...matrix.flat()))}`}
+    />
   );
 }
 
 function Balken({ werte, labels, einheit = "kWh", titel }) {
-  const max = Math.max(1, ...werte);
   return (
-    <figure>
-      <div className="flex h-32 items-end gap-1" role="img" aria-label={`${titel}: ${werte.map((w, i) => `${labels[i]} ${Math.round(w).toLocaleString("de-DE")} ${einheit}`).join(", ")}`}>
-        {werte.map((w, i) => (
-          <div key={i} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-            <div className="w-full rounded-t-md bg-ov-500" style={{ height: `${Math.max(2, (w / max) * 100)}%` }} />
-            <span className="text-[10.5px] text-ink-500">{labels[i]}</span>
-          </div>
-        ))}
-      </div>
-      <figcaption className="mt-1 text-[12px] text-ink-500">{titel}</figcaption>
-    </figure>
+    <BalkenDiagramm
+      titel={titel}
+      kategorien={labels}
+      kategorienTitel={MONATSNAMEN}
+      reihen={[{ name: "Verbrauch", farbe: ENERGIE.verbrauch, werte, texte: werte.map((w) => (einheit === "kWh" ? kwh(w) : `${Math.round(w).toLocaleString("de-DE")} ${einheit}`)) }]}
+      yEinheit={einheit}
+      werteZeigen={false}
+      legende={false}
+      hoehe={190}
+    />
   );
 }
 
 function Dauerlinie({ werte }) {
-  const max = Math.max(1, ...werte);
-  const pts = werte.map((w, i) => `${(i / (werte.length - 1)) * 100},${40 - (w / max) * 38}`).join(" ");
+  // Für die Darstellung auf höchstens ~500 Stützstellen verdichten (Form bleibt, Werte bleiben unverändert in der Analyse)
+  const schritt = Math.max(1, Math.ceil(werte.length / 500));
+  const idx = werte.map((_, i) => i).filter((i) => i % schritt === 0 || i === werte.length - 1);
+  const anteil = (i) => (werte.length > 1 ? i / (werte.length - 1) : 0);
   return (
-    <figure>
-      <svg viewBox="0 0 100 40" className="h-32 w-full" preserveAspectRatio="none" role="img" aria-label={`Lastdauerlinie von ${kw(werte[0])} bis ${kw(werte[werte.length - 1])}`}>
-        <polyline points={`0,40 ${pts} 100,40`} className="fill-ov-100 stroke-ov-600" strokeWidth="0.6" vectorEffect="non-scaling-stroke" />
-      </svg>
-      <figcaption className="mt-1 text-[12px] text-ink-500">Lastdauerlinie: Last sortiert über das Jahr ({kw(werte[0])} → {kw(werte[werte.length - 1])}).</figcaption>
-    </figure>
+    <LinienDiagramm
+      titel="Lastdauerlinie"
+      untertitel={`Last sortiert über das Jahr (${kw(werte[0])} → ${kw(werte[werte.length - 1])})`}
+      reihen={[{ name: "Last", farbe: ENERGIE.verbrauch, flaeche: true, punkte: idx.map((i) => ({ x: anteil(i) * 100, y: werte[i] })), texte: idx.map((i) => kw(werte[i])) }]}
+      xBeschriftung={[0, 25, 50, 75, 100].map((x) => ({ x, text: `${x} %` }))}
+      xTitel={idx.map((i) => `${Math.round(anteil(i) * 100)} % der Zeit`)}
+      yEinheit="kW"
+      legende={false}
+      hoehe={190}
+      beschreibung={`Lastdauerlinie von ${kw(werte[0])} bis ${kw(werte[werte.length - 1])}`}
+    />
   );
 }
 
@@ -139,7 +137,7 @@ function Analyse({ l, unternehmen }) {
     }
   }
   async function loeschen() {
-    if (!window.confirm(`Lastgang „${l.name}“ löschen?`)) return;
+    if (!(await bestaetigen({ titel: `Lastgang „${l.name}“ löschen?`, text: "Der Lastgang wird dauerhaft entfernt.", bestaetigenText: "Lastgang löschen", gefahr: true }))) return;
     await senden(`/api/portal/fach/energie/lastgang/${l.id}`, { method: "DELETE" });
     router.refresh();
   }
@@ -164,7 +162,7 @@ function Analyse({ l, unternehmen }) {
       </div>
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="rounded-2xl bg-white p-4 ring-1 ring-inset ring-ink-200/70"><Wochenprofil matrix={a.wochenprofil} /></div>
-        <div className="grid gap-4 rounded-2xl bg-white p-4 ring-1 ring-inset ring-ink-200/70 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+        <div className="grid gap-6 rounded-2xl bg-white p-4 ring-1 ring-inset ring-ink-200/70">
           <Balken werte={a.monate.map((m) => m.kwh)} labels={MONATE} titel="Verbrauch je Monat" />
           <Dauerlinie werte={a.lastdauerlinie} />
         </div>

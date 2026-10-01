@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, Coins, HandCoins, Landmark, Receipt, ShieldAlert, Users } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
-import { Auswahl, Gruppe, Kennzahl, Regler, Schalter } from "./bausteine";
+import { Auswahl, Gruppe, Kennzahl, Regler, Schalter, Zahl } from "./bausteine";
+import { useTeilbarerZustand } from "./kontext";
 import { ErgebnisKopf, Hinweis, MobilKurz, RechnerRahmen } from "./InvestTeile";
 import { DiagrammKarte, FARBEN, Linien } from "./ToolTeile";
 import { STANDARD, rechneBeteiligung } from "@/lib/rechner/beteiligung";
@@ -19,6 +20,11 @@ const FARBE = { schlecht: FARBEN.sun, mittel: FARBEN.navy, gut: FARBEN.gruen };
 export default function BeteiligungRechner() {
   const [e, setE] = useState(STANDARD);
   const set = (k) => (v) => setE((a) => ({ ...a, [k]: v }));
+  useTeilbarerZustand(e, (neu) => setE((a) => ({ ...a, ...neu })), {
+    optionen: { regionId: REGIONEN.map((x) => x.id) },
+    grenzen: { anteile: [1, 40], anteilEur: [50, 1000], parkMwp: [2, 50], egQuote: [0.05, 0.49], verwaltungAnteil: [0.0025, 0.03] },
+    pruefen: rechneBeteiligung,
+  });
   const r = useMemo(() => rechneBeteiligung(e), [e]);
   const [s, m, g] = r.szenarien;
 
@@ -91,8 +97,8 @@ export default function BeteiligungRechner() {
           <p className="sr-only" aria-live="polite">
             {`Illustration, keine Zusage. Rendite im mittleren Szenario ${pct(m.rendite)}, schlechtes Szenario ${pct(s.rendite)}, gutes Szenario ${pct(g.rendite)}.`}
           </p>
-          <div className="flex gap-3 rounded-2xl bg-sun-400/15 p-4 ring-1 ring-sun-400/50" role="note">
-            <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-sun-500" />
+          <div className="flex gap-3 rounded-2xl bg-warn-50 p-4 ring-1 ring-warn-200" role="note">
+            <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-warn-600" />
             <p className="text-[13.5px] leading-relaxed text-ink-800">
               <strong className="text-ink-900">Keine Anlageberatung, kein Angebot, kein Renditeversprechen.</strong> Die Genossenschaft ist im Aufbau; Anteile können noch nicht gezeichnet
               werden. Die Zahlen illustrieren, wie Ausschüttungen aus einem Park-Cashflow entstehen – sie können deutlich geringer ausfallen oder ganz ausbleiben.
@@ -105,13 +111,15 @@ export default function BeteiligungRechner() {
 
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {r.szenarien.map((x) => (
-              <div key={x.id} className={cn("rounded-2xl p-4 ring-1", x.id === "mittel" ? "bg-navy-950 text-white ring-navy-950" : "bg-white ring-ink-200/70")}>
+              <div key={x.id} className={cn("rounded-2xl p-4 ring-1", x.id === "mittel" ? "ov-verlauf-nacht text-white ring-white/10 shadow-kante" : "bg-white shadow-e1 ring-ink-200/70")}>
                 <p className={cn("flex items-center gap-2 text-[12.5px] font-semibold", x.id === "mittel" ? "text-white/80" : "text-ink-500")}>
                   <span className="h-2.5 w-2.5 rounded-full" style={{ background: FARBE[x.id] }} aria-hidden="true" />
                   {x.label}
                 </p>
-                <p className="mt-1 font-display text-[26px] font-extrabold leading-tight tracking-tight">{pct(x.rendite)}</p>
-                <p className={cn("text-[12px]", x.id === "mittel" ? "text-white/65" : "text-ink-500")}>Rendite p. a. inkl. Rückzahlung</p>
+                <p className="mt-1 font-display text-[26px] font-extrabold leading-tight tracking-tight">
+                  {x.rendite == null || !Number.isFinite(x.rendite) ? "–" : <Zahl wert={x.rendite} format={(v) => pct(v)} delta={x.id === "mittel" ? "dunkel" : "hell"} deltaFormat={(dd) => `${fmt(dd * 100, 1)} %-Pkt.`} />}
+                </p>
+                <p className={cn("text-[12px]", x.id === "mittel" ? "text-white/75" : "text-ink-500")}>Rendite p. a. inkl. Rückzahlung</p>
                 <dl className={cn("mt-3 space-y-1 border-t pt-3 text-[12.5px]", x.id === "mittel" ? "border-white/15" : "border-ink-100")}>
                   <Zeile k="Ausschüttungen" v={fmtEur(x.summeNetto)} dunkel={x.id === "mittel"} />
                   <Zeile k="Ø Jahre 1–10" v={pct(x.quote10)} dunkel={x.id === "mittel"} />
@@ -123,7 +131,7 @@ export default function BeteiligungRechner() {
           </div>
 
           <div className="mt-3 flex items-start gap-3 rounded-2xl bg-ink-900 p-4 text-white">
-            <ShieldAlert aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-sun-400" />
+            <ShieldAlert aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-sun-300" />
             <p className="text-[13.5px] leading-relaxed text-white/85">
               <strong className="text-white">Schlimmster Fall: Totalverlust.</strong> Fällt der Park dauerhaft aus oder wird die Betreibergesellschaft insolvent, kann die Einlage von{" "}
               {fmtEur(r.einlage)} ganz verloren gehen. Eine Einlagensicherung gibt es nicht.
@@ -163,7 +171,7 @@ export default function BeteiligungRechner() {
                   {r.szenarien.map((x) => (
                     <p key={x.id} className="text-white/70">
                       {x.label} <span className="ov-num font-semibold text-white">{fmtEur(x.mitglied[i].netto)}</span>{" "}
-                      <span className="text-white/60">({pct(x.mitglied[i].quote)})</span>
+                      <span className="text-white/75">({pct(x.mitglied[i].quote)})</span>
                     </p>
                   ))}
                 </>

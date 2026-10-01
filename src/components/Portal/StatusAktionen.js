@@ -14,10 +14,16 @@ import { senden } from "@/lib/plattform/client";
 import { PROVISION } from "@/lib/invest/markt";
 import { eingabe, textbereich, auswahlfeld, Feld, FehlerBox, ErfolgBox } from "./felder";
 import PachtangebotFelder from "./Flaeche/PachtangebotFelder"; // Fachprüfung Flächen: vollständiges Pachtangebot
+import ErfolgsHaken from "@/components/ui/ErfolgsHaken"; // T3: Prüfschritt + Erfolgsmoment je Übergang
+import { ArrowRight } from "lucide-react";
 
 const NEGATIV = ["abgelehnt", "zurueckgezogen", "storniert"];
 
-export default function StatusAktionen({ art, id, status, als = "admin", kontext = {}, className, leerText }) {
+// T3 (nur Darstellung): `bestaetigung` je Zielstatus, z. B.
+//   { vertrag: { titel, zusammenfassung: [[Label, Wert]…], pruefText, knopf, ton: "dunkel",
+//                erfolg: { titel, text, aktion: "Status ansehen" } } }
+// → Eckdaten + Pflicht-Häkchen vor dem Absenden, danach Erfolgsmoment mit genau einer nächsten Aktion.
+export default function StatusAktionen({ art, id, status, als = "admin", kontext = {}, className, leerText, bestaetigung = {} }) {
   const router = useRouter();
   const fid = useId();
   const uebergaenge = erlaubteUebergaenge(art, status, als);
@@ -26,6 +32,24 @@ export default function StatusAktionen({ art, id, status, als = "admin", kontext
   const [laeuft, setLaeuft] = useState(false);
   const [fehler, setFehler] = useState("");
   const [erfolg, setErfolg] = useState("");
+  const [geprueft, setGeprueft] = useState(false);
+  const [moment, setMoment] = useState(null); // Erfolgsmoment (bestaetigung.erfolg)
+
+  if (moment) {
+    const dunkel = moment.ton === "dunkel";
+    return (
+      <div role="status" className={cn("animate-ov-auftauchen flex flex-col items-start gap-3 rounded-2xl p-4 ring-1", dunkel ? "bg-white/[0.06] ring-white/15" : "bg-ov-50 ring-ov-200", className)}>
+        <div className="flex items-center gap-3">
+          <ErfolgsHaken groesse={44} ton={dunkel ? "hell" : "marke"} />
+          <p className={cn("font-display text-[17px] font-bold", dunkel ? "text-white" : "text-ink-900")}>{moment.titel}</p>
+        </div>
+        {moment.text && <p className={cn("max-w-md text-[14px] leading-relaxed", dunkel ? "text-white/75" : "text-ink-700")}>{moment.text}</p>}
+        <Button size="sm" onClick={() => router.refresh()}>
+          {moment.aktion || "Weiter"} <ArrowRight aria-hidden="true" className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
 
   if (!uebergaenge.length) return leerText ? <p className="text-[14px] text-ink-500">{leerText}</p> : null;
 
@@ -35,6 +59,7 @@ export default function StatusAktionen({ art, id, status, als = "admin", kontext
     setFehler("");
     setErfolg("");
     setGewaehlt(u);
+    setGeprueft(false);
     const start = {};
     if (u.pflicht?.includes("pachtangebot")) start.pa = { ...(kontext.pachtVorschlag || {}) };
     if (u.pflicht?.includes("provisionSatz")) start.provisionSatz = String(PROVISION.verkaeufer.min * 100).replace(".", ",");
@@ -57,8 +82,14 @@ export default function StatusAktionen({ art, id, status, als = "admin", kontext
     if (u.pflicht?.includes("loi")) extra.loi = { betrag: werte.loiBetrag, text: werte.loiText, bedingungen: werte.loiBedingungen, gueltigBis: werte.loiGueltig };
     try {
       await senden(als === "admin" ? "/api/admin/status" : "/api/portal/status", { body: { art, id, nach: u.nach, extra } });
-      setErfolg(`Erledigt: ${u.aktion}.`);
+      const b = bestaetigung[u.nach];
       setGewaehlt(null);
+      if (b?.erfolg) {
+        // Erfolgsmoment bleibt stehen, bis die nächste Aktion gewählt wird (die lädt die Seite neu)
+        setMoment({ ...b.erfolg, ton: b.ton });
+        return;
+      }
+      setErfolg(`Erledigt: ${u.aktion}.`);
       router.refresh();
     } catch (err) {
       setFehler(err.message);
@@ -68,6 +99,7 @@ export default function StatusAktionen({ art, id, status, als = "admin", kontext
   }
 
   const p = gewaehlt?.pflicht || [];
+  const best = gewaehlt ? bestaetigung[gewaehlt.nach] : null;
 
   return (
     <div className={cn("space-y-3", className)}>
@@ -91,7 +123,24 @@ export default function StatusAktionen({ art, id, status, als = "admin", kontext
 
       {gewaehlt && (
         <form id={`${fid}-form`} onSubmit={ausfuehren} className="space-y-4 rounded-2xl bg-sand-50 p-4 ring-1 ring-ink-200/70">
-          <p className="text-[14px] font-semibold text-ink-900">{gewaehlt.aktion}</p>
+          <p className="text-[14px] font-semibold text-ink-900">{best?.titel || gewaehlt.aktion}</p>
+
+          {best?.zusammenfassung?.length > 0 && (
+            <dl className="grid gap-x-5 gap-y-3 rounded-xl bg-white p-4 ring-1 ring-ink-200/70 sm:grid-cols-2">
+              {best.zusammenfassung.map(([label, wert]) => (
+                <div key={label} className="min-w-0">
+                  <dt className="text-[12.5px] font-medium text-ink-500">{label}</dt>
+                  <dd className="mt-0.5 text-[14.5px] font-semibold text-ink-900">{wert}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {best?.pruefText && (
+            <label className="flex cursor-pointer items-start gap-3 text-[14px] leading-snug text-ink-800">
+              <input type="checkbox" required checked={geprueft} onChange={(e) => setGeprueft(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 rounded accent-ov-600" />
+              <span>{best.pruefText}</span>
+            </label>
+          )}
 
           {p.includes("pachtangebot") && <PachtangebotFelder werte={werte.pa || {}} setze={(k, v) => setWerte((w) => ({ ...w, pa: { ...(w.pa || {}), [k]: v } }))} />}
 
@@ -149,7 +198,7 @@ export default function StatusAktionen({ art, id, status, als = "admin", kontext
           <FehlerBox>{fehler}</FehlerBox>
           <div className="flex flex-wrap gap-2">
             <Button type="submit" size="sm" disabled={laeuft} icon={laeuft ? Loader2 : undefined}>
-              {laeuft ? "Wird gespeichert …" : "Bestätigen"}
+              {laeuft ? "Wird gespeichert …" : best?.knopf || "Bestätigen"}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setGewaehlt(null)}>
               Abbrechen

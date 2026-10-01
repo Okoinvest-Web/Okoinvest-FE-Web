@@ -10,6 +10,7 @@ import { Feld, auswahlfeld, eingabe, textbereich } from "@/components/Portal/fel
 import { SCHRITT_STATUS, TERMIN_ARTEN, TERMIN_STATUS, ZAHLUNG_ARTEN, ZAHLUNG_STATUS } from "@/lib/plattform/gemeinde/cockpit";
 import { KOMMUNE } from "@/lib/invest/markt";
 import { Klappe, Knopf, Meldung, PdfLink, useAktion } from "@/components/Portal/Mitglied/teile";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 const URL = "/api/portal/gemeinde";
 
@@ -52,7 +53,7 @@ export function TerminEntfernen({ vorgangId, t }) {
   const a = useAktion(URL);
   return (
     <span className="inline-flex flex-col gap-1">
-      <Knopf variante="gefahr" disabled={a.laeuft} onClick={() => window.confirm(`Termin „${t.titel}“ entfernen?`) && a.ausfuehren({ vorgangId, aktion: "terminLoeschen", id: t.id }, "Entfernt.")}>Entfernen</Knopf>
+      <Knopf variante="gefahr" disabled={a.laeuft} onClick={async () => (await bestaetigen({ titel: `Termin „${t.titel}“ entfernen?`, text: "Der Termin wird aus dem Vorgang entfernt.", bestaetigenText: "Termin entfernen", gefahr: true })) && a.ausfuehren({ vorgangId, aktion: "terminLoeschen", id: t.id }, "Entfernt.")}>Entfernen</Knopf>
       <Meldung fehler={a.fehler} />
     </span>
   );
@@ -92,7 +93,7 @@ export function ZahlungFormular({ vorgangId, land, projekte = [], jahr }) {
 export function ZahlungEntfernen({ vorgangId, z }) {
   const a = useAktion(URL);
   if (z.status === "gezahlt") return null;
-  return <Knopf variante="gefahr" disabled={a.laeuft} onClick={() => window.confirm("Eintrag entfernen?") && a.ausfuehren({ vorgangId, aktion: "zahlungLoeschen", id: z.id }, "Entfernt.")}>Entfernen</Knopf>;
+  return <Knopf variante="gefahr" disabled={a.laeuft} onClick={async () => (await bestaetigen({ titel: "Zahlung entfernen?", text: "Der Eintrag wird aus dem Vorgang entfernt.", bestaetigenText: "Zahlung entfernen", gefahr: true })) && a.ausfuehren({ vorgangId, aktion: "zahlungLoeschen", id: z.id }, "Entfernt.")}>Entfernen</Knopf>;
 }
 
 export function StellungnahmeFormular({ vorgangId, projekte = [], vorbelegung = null }) {

@@ -4,25 +4,13 @@
 // feine Rasterlinien, Markenfarben, Tooltip per Zeiger/Tipp, Schrift unskaliert (useBreite).
 
 import { useState } from "react";
-import { useBreite } from "@/components/Rechner/bausteine";
+import BalkenDiagramm from "@/components/diagramme/BalkenDiagramm";
 import { fmt } from "@/lib/rechner/annahmen";
 
 export const FARBEN = ["#aed083", "#7fb24a", "#558227", "#1f5aa1", "#041d42"];
 export const LAND_FARBEN = { DE: "#669933", AT: "#1f5aa1", CH: "#f5a70f" };
-const RASTER = "#eef0f4";
 const MONATE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 const monatKurz = (m) => `${MONATE[Number(m.slice(5)) - 1]}${m.slice(5) === "01" ? ` ${m.slice(2, 4)}` : ""}`;
-
-function ticksFuer(max) {
-  if (max <= 0) return [0, 1];
-  const roh = max / 4;
-  const p = 10 ** Math.floor(Math.log10(roh));
-  const schritt = [1, 2, 2.5, 5, 10].map((x) => x * p).find((x) => x >= roh) || roh;
-  const t = [];
-  for (let v = 0; v <= max * 1.001 + schritt * 0.01; v += schritt) t.push(Math.round(v * 1000) / 1000);
-  if (t[t.length - 1] < max) t.push(t[t.length - 1] + schritt);
-  return t;
-}
 
 export function Legende({ items }) {
   return (
@@ -42,65 +30,19 @@ export function Legende({ items }) {
  * reihen: [{ label, farbe, werte: [..] }], linie?: { label, farbe, werte }
  */
 export function MonatsSaeulen({ monate, reihen, linie, format = (v) => fmt(v), titel }) {
-  const [ref, W] = useBreite(720);
-  const [hover, setHover] = useState(null);
-  const schmal = W < 520;
-  const H = schmal ? 230 : 280;
-  const P = { l: 46, r: 12, t: 14, b: 28 };
-  const max = Math.max(1, ...reihen.flatMap((r) => r.werte), ...(linie?.werte || [0]));
-  const ticks = ticksFuer(max);
-  const top = ticks[ticks.length - 1];
-  const n = monate.length;
-  const band = (W - P.l - P.r) / Math.max(1, n);
-  const gruppe = band * 0.78;
-  const bw = Math.max(1.5, gruppe / reihen.length - (reihen.length > 1 ? 1 : 0));
-  const y = (v) => P.t + (1 - v / top) * (H - P.t - P.b);
-  const xGruppe = (i) => P.l + i * band + (band - gruppe) / 2;
-  const jedes = n > 12 ? Math.ceil(n / (schmal ? 4 : 8)) : schmal && n > 6 ? 2 : 1;
-  const ausZeiger = (e) => {
-    const box = e.currentTarget.getBoundingClientRect();
-    const px = ((e.clientX - box.left) / box.width) * W;
-    return Math.max(0, Math.min(n - 1, Math.floor((px - P.l) / band)));
-  };
+  // Über das Chart-System (BalkenDiagramm): Fadenkreuz, Tastatur, Tabelle, CSV/PNG, Einlauf
   return (
-    <div ref={ref} className="relative">
-      <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} className="block touch-pan-y select-none" role="img" aria-label={`${titel || "Säulendiagramm"} über ${n} Monate: ${reihen.map((r) => `${r.label} gesamt ${format(r.werte.reduce((a, b) => a + b, 0))}`).join(", ")}.`}>
-        {ticks.map((v) => (
-          <g key={v}>
-            <line x1={P.l} x2={W - P.r} y1={y(v)} y2={y(v)} stroke={v === 0 ? "#97a0b0" : RASTER} />
-            <text x={P.l - 6} y={y(v) + 4} textAnchor="end" className="fill-ink-500 text-[10.5px]">{format(v)}</text>
-          </g>
-        ))}
-        {monate.map((m, i) => (
-          <g key={m} opacity={hover == null || hover === i ? 1 : 0.5}>
-            {reihen.map((r, j) => {
-              const v = r.werte[i] || 0;
-              return <rect key={r.label} x={xGruppe(i) + j * (bw + (reihen.length > 1 ? 1 : 0))} y={y(v)} width={bw} height={Math.max(0, y(0) - y(v))} rx={Math.min(3, bw / 3)} fill={r.farbe} />;
-            })}
-            {i % jedes === 0 && (
-              <text x={P.l + i * band + band / 2} y={H - P.b + 17} textAnchor="middle" className="fill-ink-500 text-[10.5px]">{monatKurz(m)}</text>
-            )}
-          </g>
-        ))}
-        {linie && (
-          <path d={linie.werte.map((v, i) => `${i ? "L" : "M"}${(P.l + i * band + band / 2).toFixed(1)},${y(v).toFixed(1)}`).join(" ")} fill="none" stroke={linie.farbe} strokeWidth="2.25" strokeLinejoin="round" />
-        )}
-        {hover != null && <line x1={P.l + hover * band + band / 2} x2={P.l + hover * band + band / 2} y1={P.t} y2={H - P.b} stroke="#97a0b0" strokeDasharray="2 3" pointerEvents="none" />}
-        <rect x={0} y={0} width={W} height={H} fill="transparent" onPointerMove={(e) => setHover(ausZeiger(e))} onPointerLeave={() => setHover(null)} onClick={(e) => setHover(ausZeiger(e))} />
-      </svg>
-      {hover != null && (
-        <div className="pointer-events-none absolute top-1 z-10 min-w-[160px] rounded-xl bg-navy-950 px-3 py-2 text-[12px] text-white shadow-lg" style={{ left: Math.min(Math.max(8, P.l + hover * band + band / 2 - 80), W - 176) }}>
-          <p className="font-semibold">{monatKurz(monate[hover])} {monate[hover].slice(0, 4)}</p>
-          {reihen.map((r) => (
-            <p key={r.label} className="mt-0.5 flex items-center justify-between gap-3">
-              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm" style={{ background: r.farbe }} />{r.label}</span>
-              <span className="ov-num font-semibold">{format(r.werte[hover] || 0)}</span>
-            </p>
-          ))}
-          {linie && <p className="mt-0.5 flex justify-between gap-3"><span>{linie.label}</span><span className="ov-num font-semibold">{format(linie.werte[hover] || 0)}</span></p>}
-        </div>
-      )}
-    </div>
+    <BalkenDiagramm
+      kategorien={monate.map(monatKurz)}
+      kategorienTitel={monate.map((m) => `${MONATE[Number(m.slice(5)) - 1]} ${m.slice(0, 4)}`)}
+      reihen={reihen.map((r) => ({ name: r.label, farbe: r.farbe, werte: r.werte.map((v) => v || 0) }))}
+      linie={linie ? { name: linie.label, farbe: linie.farbe, werte: linie.werte.map((v) => v || 0), gestrichelt: false } : null}
+      format={(v) => format(v)}
+      werteZeigen={false}
+      legende={false}
+      hoehe={280}
+      beschreibung={`${titel || "Säulendiagramm"} über ${monate.length} Monate: ${reihen.map((r) => `${r.label} gesamt ${format(r.werte.reduce((a, b) => a + b, 0))}`).join(", ")}`}
+    />
   );
 }
 

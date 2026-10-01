@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 import { Building2, CalendarRange, HandCoins, Info, Landmark, MapPinned, Receipt, TrendingUp } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { Auswahl, Gruppe, Kennzahl, Regler, Schalter, Tooltip, useBreite } from "./bausteine";
+import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Schalter, Tooltip, Zahl, useBreite } from "./bausteine";
 import { ErgebnisKopf, Hinweis, Legende, MobilKurz, RechnerRahmen } from "./InvestTeile";
+import { useDiagrammTastatur } from "./ToolTeile";
+import { useTeilbarerZustand } from "./kontext";
 import { STANDARD, rechneKommune } from "@/lib/rechner/kommune";
 import { KOMMUNE, PACHT, REGIONEN, ERLOESE, ALLGEMEIN } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
@@ -12,7 +14,7 @@ import { fmt } from "@/lib/rechner/annahmen";
 const QUELLEN = [
   { id: "p6", label: "§ 6 EEG-Beteiligung", farbe: "#669933" },
   { id: "gewSt", label: "Gewerbesteuer", farbe: "#1f5aa1" },
-  { id: "pacht", label: "Pacht Gemeindeflächen", farbe: "#ffc53d" },
+  { id: "pacht", label: "Pacht Gemeindeflächen", farbe: "#c98500" },
 ];
 const tsd = (v) => (Math.abs(v) >= 1e6 ? `${fmt(v / 1e6, 2)} Mio. €` : `${fmt(Math.round(v / 1000))} T€`);
 
@@ -26,6 +28,13 @@ export default function KommuneRechner() {
   const [pachtHa, setPachtHa] = useState(STANDARD.pachtHa);
   const [sitzInGemeinde, setSitz] = useState(STANDARD.sitzInGemeinde);
   const [preisCt, setPreisCt] = useState(STANDARD.preisCt);
+
+  const setzer = { mwp: setMwp, regionId: setRegionId, hebesatz: setHebesatz, paragraph6: setP6, gemeindeflaeche: setGemeindeflaeche, anteilGemeinde: setAnteil, pachtHa: setPachtHa, sitzInGemeinde: setSitz, preisCt: setPreisCt };
+  useTeilbarerZustand(
+    { mwp, regionId, hebesatz, paragraph6, gemeindeflaeche, anteilGemeinde, pachtHa, sitzInGemeinde, preisCt },
+    (neu) => Object.entries(neu).forEach(([k, v]) => setzer[k]?.(v)),
+    { optionen: { regionId: REGIONEN.map((x) => x.id) }, grenzen: { anteilGemeinde: [0, 1] }, pruefen: rechneKommune }
+  );
 
   const r = useMemo(
     () => rechneKommune({ mwp, regionId, hebesatz, paragraph6, gemeindeflaeche, anteilGemeinde, pachtHa, sitzInGemeinde, preisCt }),
@@ -97,20 +106,34 @@ export default function KommuneRechner() {
           <p className="sr-only" aria-live="polite">{`Einnahmen der Gemeinde: durchschnittlich ${tsd(r.proJahr)} pro Jahr, ${tsd(r.gesamt.summe)} in ${r.N} Jahren`}</p>
           <ErgebnisKopf titel="Einnahmen der Gemeinde" plakette={`${mwp} MWp · Hebesatz ${fmt(hebesatz * 100)} %`} />
 
-          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Kennzahl ton="gruen" icon={TrendingUp} label={`Ø pro Jahr`} zusatz={`in den ersten ${r.N} Jahren`}>
-              {tsd(r.proJahr)}
-            </Kennzahl>
-            <Kennzahl ton="navy" icon={Landmark} label={`Summe ${r.N} Jahre`} zusatz="alle Quellen">
-              {tsd(r.gesamt.summe)}
-            </Kennzahl>
-            <Kennzahl icon={CalendarRange} label={`Summe ${r.L} Jahre`} zusatz="gesamte Laufzeit">
-              {tsd(r.gesamtLaufzeit.summe)}
+          <Hauptzahl
+            className="mt-5"
+            icon={TrendingUp}
+            label="Ø pro Jahr"
+            zusatz={`in den ersten ${r.N} Jahren`}
+            rechts={
+              <div className="sm:text-right">
+                <p className="flex items-center gap-1.5 text-[12.5px] text-white/75 sm:justify-end">
+                  <Landmark aria-hidden="true" className="h-3.5 w-3.5" />
+                  Summe {r.N} Jahre
+                </p>
+                <p className="ov-kpi mt-0.5 text-white">
+                  <Zahl wert={r.gesamt.summe} format={tsd} />
+                </p>
+                <p className="text-[12.5px] text-white/75">alle Quellen</p>
+              </div>
+            }
+          >
+            <Zahl wert={r.proJahr} format={tsd} delta="dunkel" einlauf />
+          </Hauptzahl>
+          <Belege spalten={2}>
+            <Kennzahl ton="akzent" icon={CalendarRange} label={`Summe ${r.L} Jahre`} zusatz="gesamte Laufzeit">
+              <Zahl wert={r.gesamtLaufzeit.summe} format={tsd} delta="hell" />
             </Kennzahl>
             <Kennzahl icon={Receipt} label="Gewerbesteuer" zusatz={r.ersteGewSt ? `Ø Jahr ${KOMMUNE.afaJahre + 1}–${r.L} · erstmals Jahr ${r.ersteGewSt}` : `nicht in ${r.L} Jahren`}>
               {r.gewStNachAfa > 0 ? `${tsd(r.gewStNachAfa)}/J.` : "–"}
             </Kennzahl>
-          </div>
+          </Belege>
 
           <div className="mt-6 rounded-3xl bg-ink-50 p-5 md:p-6">
             <h3 className="font-display text-[17px] font-bold text-ink-900">Einnahmen je Quelle</h3>
@@ -124,8 +147,8 @@ export default function KommuneRechner() {
                     </span>
                   </div>
                   <div className="relative h-3 overflow-hidden rounded-full bg-white" role="img" aria-label={`${q.label}: ${tsd(r.gesamt[q.id])} in ${r.N} Jahren, ${tsd(r.gesamtLaufzeit[q.id])} in ${r.L} Jahren`}>
-                    <div className="absolute inset-y-0 left-0 rounded-full opacity-35 motion-safe:transition-[width] motion-safe:duration-500" style={{ width: `${(r.gesamtLaufzeit[q.id] / maxQuelle) * 100}%`, background: q.farbe }} />
-                    <div className="absolute inset-y-0 left-0 rounded-full motion-safe:transition-[width] motion-safe:duration-500" style={{ width: `${(r.gesamt[q.id] / maxQuelle) * 100}%`, background: q.farbe }} />
+                    <div className="ov-fortschritt absolute inset-0 rounded-full opacity-35" style={{ transform: `scaleX(${r.gesamtLaufzeit[q.id] / maxQuelle})`, background: q.farbe }} />
+                    <div className="ov-fortschritt absolute inset-0 rounded-full" style={{ transform: `scaleX(${r.gesamt[q.id] / maxQuelle})`, background: q.farbe }} />
                   </div>
                 </li>
               ))}
@@ -133,7 +156,7 @@ export default function KommuneRechner() {
             <p className="mt-4 text-[12.5px] text-ink-500">Kräftig: erste {r.N} Jahre · hell: bis Jahr {r.L}</p>
           </div>
 
-          <div className="mt-6 rounded-3xl ring-1 ring-ink-200/70">
+          <div className="mt-6 rounded-3xl bg-white shadow-e1 ring-1 ring-ink-200/70">
             <div className="px-5 pt-5 md:px-6">
               <h3 className="font-display text-[17px] font-bold text-ink-900">Einnahmen Jahr für Jahr</h3>
               <p className="text-[12.5px] text-ink-500">Gewerbesteuer setzt meist erst ein, wenn Abschreibung und Zinsen abgebaut sind</p>
@@ -185,9 +208,11 @@ function Jahre({ r }) {
     const px = ((e.clientX - box.left) / box.width) * W;
     return Math.max(0, Math.min(n - 1, Math.floor((px - P.l) / band)));
   };
+  const tastatur = useDiagrammTastatur(n, setHover);
 
   return (
-    <div ref={ref} className="relative px-2 pb-4 pt-2 md:px-3">
+    <div ref={ref} className="ov-reveal relative px-2 pb-4 pt-2 md:px-3" data-dir="ohne" suppressHydrationWarning>
+      <div {...tastatur} role="group" aria-label="Einnahmen Jahr für Jahr – mit den Pfeiltasten durch die Jahre" className="rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2">
       <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} className="block touch-pan-y select-none" role="img" aria-label={`Gestapelte Säulen der Gemeindeeinnahmen über ${n} Jahre, zusammen ${tsd(r.gesamtLaufzeit.summe)}.`}>
         {ticks.map((v) => (
           <g key={v}>
@@ -197,16 +222,19 @@ function Jahre({ r }) {
             </text>
           </g>
         ))}
-        <line x1={P.l + r.N * band} x2={P.l + r.N * band} y1={P.t} y2={basis} stroke="#f5a70f" strokeDasharray="3 4" />
+        <line x1={P.l + r.N * band} x2={P.l + r.N * band} y1={P.t} y2={basis} stroke="#c98500" strokeDasharray="3 4" />
         {r.jahre.map((j, i) => {
           let y = basis;
           return (
-            <g key={j.jahr} opacity={hover == null || hover === i ? 1 : 0.55}>
-              {QUELLEN.map((q) => {
-                const hh = h(j[q.id]);
-                y -= hh;
-                return hh > 0 ? <rect key={q.id} x={x(i)} y={y} width={bw} height={hh} fill={q.farbe} /> : null;
-              })}
+            <g key={j.jahr} opacity={hover == null || hover === i ? 1 : 0.55} className="transition-opacity duration-150">
+              <g className="ov-balken-y" style={{ "--i": Math.min(i, 30) * 0.5 }}>
+                {QUELLEN.map((q) => {
+                  const hh = h(j[q.id]);
+                  y -= hh;
+                  // Einheitsrechteck, Lage/Höhe per transform – gleitet bei neuen Werten
+                  return hh > 0 ? <rect key={q.id} x={0} y={0} width={1} height={1} fill={q.farbe} className="ov-rechner-balken" style={{ transform: `translate(${x(i)}px, ${y}px) scale(${bw}, ${hh})` }} /> : null;
+                })}
+              </g>
             </g>
           );
         })}
@@ -219,6 +247,7 @@ function Jahre({ r }) {
         )}
         <rect x={0} y={0} width={W} height={H} fill="transparent" onPointerMove={(e) => setHover(ausZeiger(e))} onPointerLeave={() => setHover(null)} onClick={(e) => setHover(ausZeiger(e))} />
       </svg>
+      </div>
       {aktiv && (
         <Tooltip x={x(hover) + bw / 2} y={Math.max(basis - h(aktiv.summe) - 40, 0)} breite={W}>
           <p className="font-semibold">Jahr {aktiv.jahr}</p>
@@ -233,7 +262,7 @@ function Jahre({ r }) {
         </Tooltip>
       )}
       <div className="mt-1 px-3">
-        <Legende items={[...QUELLEN.map((q) => ({ label: q.label, farbe: q.farbe })), { label: `Ende Jahr ${r.N}`, farbe: "#f5a70f", linie: true }]} />
+        <Legende items={[...QUELLEN.map((q) => ({ label: q.label, farbe: q.farbe })), { label: `Ende Jahr ${r.N}`, farbe: "#c98500", linie: true }]} />
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import { Angaben, Badge, Hinweis } from "@/components/Portal/ui";
 import { Chip, ErfolgBox, FehlerBox, Feld, auswahlfeld, eingabe, textbereich } from "@/components/Portal/felder";
 import { MANDAT_ARTEN, MANDAT_DAUER, MANDAT_STATUS } from "@/lib/plattform/anbieter/regeln.js";
 import { knopfNavy, knopfPrimaer, knopfSekundaer, tag, useAnbieterAktion, zeit } from "./gemeinsam";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 export default function Mandat({ akte, setAkte }) {
   const { projekt: p, mandat: m, rolle, rechte } = akte;
@@ -94,12 +95,12 @@ export default function Mandat({ akte, setAkte }) {
       {rolle === "anbieter" && rechte.auftrag && erteilt && (
         <div className="flex flex-wrap gap-2">
           {m.stand?.exklusivAktiv && m.bestaetigtAm && !m.exklusivEndetAm && (
-            <button type="button" className={knopfSekundaer} disabled={a.laeuft} onClick={() => window.confirm("Exklusivität beenden? Sie endet zum Monatsende, frühestens zum Ende der Mindestlaufzeit.") && a.los({ aktion: "exklusivitaet_beenden" }, (x) => `Exklusivität endet am ${tag(x.mandat?.exklusivEndetAm)}.`)}>
+            <button type="button" className={knopfSekundaer} disabled={a.laeuft} onClick={async () => (await bestaetigen({ titel: "Exklusivität beenden?", text: "Sie endet zum Monatsende, frühestens zum Ende der Mindestlaufzeit.", bestaetigenText: "Exklusivität beenden", gefahr: true })) && a.los({ aktion: "exklusivitaet_beenden" }, (x) => `Exklusivität endet am ${tag(x.mandat?.exklusivEndetAm)}.`)}>
               Exklusivität beenden
             </button>
           )}
           {!["veroeffentlicht", "reserviert", "verkauft"].includes(p.status) && (
-            <button type="button" className={knopfSekundaer} disabled={a.laeuft} onClick={() => window.confirm("Vermittlungsauftrag kündigen? Das Projekt kann danach erst mit einem neuen Auftrag eingereicht werden.") && a.los({ aktion: "mandat_kuendigen" }, "Auftrag gekündigt.")}>
+            <button type="button" className={knopfSekundaer} disabled={a.laeuft} onClick={async () => (await bestaetigen({ titel: "Vermittlungsauftrag kündigen?", text: "Das Projekt kann danach erst mit einem neuen Auftrag eingereicht werden.", bestaetigenText: "Auftrag kündigen", gefahr: true })) && a.los({ aktion: "mandat_kuendigen" }, "Auftrag gekündigt.")}>
               Auftrag kündigen
             </button>
           )}

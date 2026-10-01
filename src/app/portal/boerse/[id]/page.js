@@ -27,6 +27,7 @@ import { DatenblattAnzeige, DdIndexKarte } from "@/components/Portal/Fach/DdInde
 import LoiFormular from "@/components/Portal/Fach/LoiFormular";
 import { loiZeilen } from "@/lib/plattform/fach/loi";
 import { passungHinweise } from "@/lib/plattform/fach/suchprofil";
+import { ArrowRight, ChevronDown, Clock3, Landmark, MoreHorizontal } from "lucide-react"; // T3: Kopf-Aktionen, mobile Aktionsleiste
 import AnbieterAkte from "@/components/Portal/Anbieter/AnbieterAkte"; // Anbieter: Bestandsanlage (Ist-Daten) nach NDA
 import { anbieterBackend } from "@/lib/plattform/backend/anbieter";
 
@@ -56,15 +57,30 @@ export default async function PortalExpose({ params }) {
             <MerkenKnopf projektId={p.id} gemerkt={!!i?.gemerkt} mitText />
             {frei ? (
               <>
-                <Button href={`/portal/dealroom/${p.id}`} size="sm" variant="navy" icon={Gavel}>Deal-Room</Button>
-                <Button href={`/portal/boerse/${p.id}/bewertung`} size="sm" variant="secondary" icon={Calculator}>Bewerten</Button>
-                <Button href={`/portal/finanzierung?projekt=${p.id}`} size="sm" variant="secondary" icon={Calculator}>Finanzierung</Button>{/* Finanzierungscockpit */}
-                <DateiLink href={`/api/portal/projekte/${p.id}/expose`} icon={FileDown} variant="primary">Exposé (PDF)</DateiLink>
+                <Button href={`/portal/dealroom/${p.id}`} size="sm" variant="primary" icon={Gavel}>Deal-Room öffnen</Button>
+                <DateiLink href={`/api/portal/projekte/${p.id}/expose`} icon={FileDown}>Exposé (PDF)</DateiLink>
               </>
             ) : (
               p.slug && <DateiLink href={`/api/boerse/${p.slug}/teaser`} icon={FileDown} neuesFenster>Teaser (PDF)</DateiLink>
             )}
-            {p.slug && <Button href={`/projektboerse/${p.slug}`} size="sm" variant="ghost" icon={ExternalLink}>Öffentlich</Button>}
+            {(frei || p.slug) && (
+              // T3: weitere Aktionen gebündelt (natives Aufklappen, per Tastatur bedienbar)
+              <details className="group/mehr relative">
+                <summary className="flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-semibold text-ink-700 ring-1 ring-inset ring-ink-200 transition-colors hover:bg-ink-50 [&::-webkit-details-marker]:hidden">
+                  <MoreHorizontal aria-hidden="true" className="h-4 w-4" /> Weitere
+                  <ChevronDown aria-hidden="true" className="h-3.5 w-3.5 text-ink-500 transition-transform duration-200 group-open/mehr:rotate-180" />
+                </summary>
+                <div className="absolute right-0 top-11 z-20 w-60 rounded-2xl bg-white p-1.5 shadow-e4 ring-1 ring-ink-200 animate-ov-skalieren">
+                  {frei && (
+                    <>
+                      <a href={`/portal/boerse/${p.id}/bewertung`} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] text-ink-700 hover:bg-ink-50"><Calculator aria-hidden="true" className="h-4 w-4 text-ink-500" /> Bewerten</a>
+                      <a href={`/portal/finanzierung?projekt=${p.id}`} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] text-ink-700 hover:bg-ink-50"><Landmark aria-hidden="true" className="h-4 w-4 text-ink-500" /> Finanzierung</a>{/* Finanzierungscockpit */}
+                    </>
+                  )}
+                  {p.slug && <a href={`/projektboerse/${p.slug}`} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] text-ink-700 hover:bg-ink-50"><ExternalLink aria-hidden="true" className="h-4 w-4 text-ink-500" /> Öffentliche Ansicht</a>}
+                </div>
+              </details>
+            )}
           </>
         }
       />
@@ -113,7 +129,7 @@ export default async function PortalExpose({ params }) {
             </div>
           </div>
 
-          <Karte titel="Vertrauliche Angaben" aktion={frei ? <Badge ton="ok">Freigeschaltet</Badge> : <Lock aria-hidden="true" className="h-5 w-5 text-ink-400" />}>
+          <Karte titel="Vertrauliche Angaben" aktion={frei ? <Badge ton="ok">Freigeschaltet</Badge> : <Lock aria-hidden="true" className="h-5 w-5 text-ink-500" />}>
             {frei ? (
               Object.keys(d.vertraulich || {}).length ? (
                 <Angaben items={Object.entries(d.vertraulich).map(([k, w]) => ({ label: VERTRAULICH_FELDER[k] || k, wert: String(w), breit: k === "details" }))} />
@@ -152,7 +168,7 @@ export default async function PortalExpose({ params }) {
           })()}
           {frei && d.ddIndex && <DdIndexKarte index={d.ddIndex} kompakt aktion={<Button href={`/portal/boerse/${p.id}/bewertung`} size="sm" variant="ghost" icon={Calculator}>Bewerten</Button>} />}
           {(!i || i.status === "gemerkt") && (
-            <Karte titel={<>Datenraum anfragen <Begriff id="nda" nurIcon /></>}>
+            <Karte id="datenraum-anfragen" className="scroll-mt-24" titel={<>Datenraum anfragen <Begriff id="nda" nurIcon /></>}>
               {p.status === "reserviert" && <p className="mb-4 text-[13.5px] text-ink-600">Das Projekt ist reserviert. Sie können trotzdem Interesse anmelden – falls die Gespräche scheitern, melden wir uns.</p>}
               <NdaAnfrage projektId={p.id} />
             </Karte>
@@ -163,13 +179,13 @@ export default async function PortalExpose({ params }) {
             </Hinweis>
           )}
           {frei && (
-            <Karte titel={<>Datenraum <Begriff id="datenraum" nurIcon /></>} aktion={<FolderLock aria-hidden="true" className="h-5 w-5 text-ov-600" />}>
+            <Karte id="datenraum" className="scroll-mt-24" titel={<>Datenraum <Begriff id="datenraum" nurIcon /></>} aktion={<FolderLock aria-hidden="true" className="h-5 w-5 text-ov-600" />}>
               <DokumentListe dokumente={d.dokumente} nutzerId={n.id} leerText="Noch keine Unterlagen im Datenraum." />
               <p className="mt-3 text-[12.5px] text-ink-500">Zugriffe werden protokolliert. Weitergabe nur gemäß NDA. Das Exposé-PDF enthält Ihren Namen als Empfänger.</p>
             </Karte>
           )}
           {i && ["nda_freigegeben", "loi_abgegeben", "loi_angenommen", "abgeschlossen", "abgelehnt"].includes(i.status) && (
-            <Karte titel={<>Absichtserklärung (LOI) <Begriff id="loi" nurIcon /></>}>
+            <Karte id="loi" className="scroll-mt-24" titel={<>Absichtserklärung (LOI) <Begriff id="loi" nurIcon /></>}>
               {i.loi ? (
                 <Angaben spalten={1} items={[{ label: "Abgegeben", wert: datumZeit(i.loi.am) }, ...loiZeilen(i.loi)]} />
               ) : i.status === "nda_freigegeben" ? (
@@ -192,6 +208,34 @@ export default async function PortalExpose({ params }) {
           )}
         </div>
       </div>
+
+      {/* T3: Mobil klebt die Hauptaktion über der Bottom-Navigation (sonst liegt sie unter dem gesamten Inhalt) */}
+      {(() => {
+        const aktion = !i || i.status === "gemerkt"
+          ? { text: "Unterlagen nach NDA einsehen", href: "#datenraum-anfragen", cta: "Datenraum anfragen" }
+          : i.status === "nda_angefragt"
+            ? { text: "NDA wird geprüft – in der Regel innerhalb von zwei Werktagen.", warten: true }
+            : i.status === "nda_freigegeben"
+              ? { text: "Datenraum ist frei – nächster Schritt: LOI", href: "#loi", cta: "LOI abgeben" }
+              : null;
+        if (!aktion) return null;
+        return (
+          <>
+            <div aria-hidden="true" className="h-16 lg:hidden" />
+            <div className="fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] z-30 border-t border-ink-200/80 bg-white/95 px-4 py-2.5 shadow-[0_-8px_24px_-16px_rgba(3,18,43,0.25)] backdrop-blur animate-ov-auftauchen lg:hidden">
+              <div className="mx-auto flex max-w-[560px] items-center gap-3">
+                {aktion.warten && <Clock3 aria-hidden="true" className="h-5 w-5 shrink-0 text-sun-700" />}
+                <p className="min-w-0 flex-1 text-[13px] leading-snug text-ink-600">{aktion.text}</p>
+                {aktion.href && (
+                  <a href={aktion.href} className="ov-press inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-ov-600 px-4 text-[14px] font-semibold text-white shadow-gruen hover:bg-ov-700">
+                    {aktion.cta} <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                  </a>
+                )}
+              </div>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }

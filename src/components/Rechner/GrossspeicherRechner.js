@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, BatteryCharging, CalendarClock, Cable, Percent, Scale, Zap } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
-import { Auswahl, Gruppe, Kennzahl, Regler, Schalter, Zahl } from "./bausteine";
+import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Schalter, Zahl } from "./bausteine";
+import { useTeilbarerZustand } from "./kontext";
 import { Ansicht, ErgebnisKopf, Hinweis, MobilKurz, RechnerRahmen } from "./InvestTeile";
 import { BalkenJahre, DiagrammKarte, FARBEN, Linien } from "./ToolTeile";
 import { DAUERN, EBENEN, ERLOESNIVEAUS, STANDARD, STANDORTE, erloesAufteilung, rechneSpeicher, vergleichStandorte } from "@/lib/rechner/grossspeicher";
@@ -27,6 +28,11 @@ export default function GrossspeicherRechner() {
     setNiveau(id);
     setE((a) => ({ ...a, erloese: erloesAufteilung(ERLOESNIVEAUS.find((n) => n.id === id).proMw) }));
   };
+  useTeilbarerZustand(e, (neu) => setE((a) => ({ ...a, ...neu })), {
+    optionen: { standort: STANDORTE.map((s) => s.id), ebene: EBENEN.map((x) => x.id) },
+    grenzen: { mw: [1, 200], dauer: [1, 4], capexKwh: [150, 450], zyklen: [150, 730], lebensdauer: [10, 20], degradation: [0.01, 0.04], erloesTrend: [-0.06, 0.02] },
+    pruefen: rechneSpeicher,
+  });
   const r = useMemo(() => rechneSpeicher(e), [e]);
   const vergleich = useMemo(() => vergleichStandorte(e), [e]);
   const summeProMw = e.erloese.arbitrage + e.erloese.afrr + e.erloese.fcr;
@@ -117,28 +123,42 @@ export default function GrossspeicherRechner() {
         <>
           <p className="sr-only" aria-live="polite">{`Projektrendite ${pct(r.projektIrr)}, Investition ${fmtMio(inv.summe)}, Amortisation ${r.amortisation ? fmt(r.amortisation, 1) + " Jahre" : "nicht innerhalb der Laufzeit"}.`}</p>
           <ErgebnisKopf plakette={`${fmt(e.mw)} MW / ${fmt(r.mwh)} MWh · vor Steuern`} />
-          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-3">
-            <Kennzahl ton="navy" icon={Percent} label="Projekt-IRR" zusatz={`ohne Finanzierung, ${e.lebensdauer} Jahre`}>
-              {r.projektIrr == null ? "–" : <Zahl wert={r.projektIrr * 100} stellen={1} suffix=" %" />}
-            </Kennzahl>
-            <Kennzahl ton="gruen" icon={CalendarClock} label="Amortisation" zusatz="statisch, kumuliert">
-              {r.amortisation ? <Zahl wert={r.amortisation} stellen={1} suffix=" J." /> : "> Laufzeit"}
+          <Hauptzahl
+            className="mt-5"
+            icon={Percent}
+            label="Projekt-IRR"
+            zusatz={`ohne Finanzierung, ${e.lebensdauer} Jahre`}
+            rechts={
+              <div className="sm:text-right">
+                <p className="flex items-center gap-1.5 text-[12.5px] text-white/75 sm:justify-end">
+                  <BatteryCharging aria-hidden="true" className="h-3.5 w-3.5" />
+                  Investition
+                </p>
+                <p className="ov-kpi mt-0.5 text-white">
+                  <Zahl wert={inv.summe / 1e6} stellen={2} suffix=" Mio. €" />
+                </p>
+                <p className="text-[12.5px] text-white/75">{fmt(r.investProKwh)} €/kWh gesamt</p>
+              </div>
+            }
+          >
+            {r.projektIrr == null ? "–" : <Zahl wert={r.projektIrr * 100} stellen={1} suffix=" %" delta="dunkel" deltaFormat={(d) => `${fmt(d, 1)} %-Pkt.`} einlauf />}
+          </Hauptzahl>
+          <Belege spalten={2}>
+            <Kennzahl ton="akzent" icon={CalendarClock} label="Amortisation" zusatz="statisch, kumuliert">
+              {r.amortisation ? <Zahl wert={r.amortisation} stellen={1} suffix=" J." delta="hell" /> : "> Laufzeit"}
             </Kennzahl>
             <Kennzahl icon={Scale} label="Kapitalwert" zusatz={`abgezinst mit ${pct(e.diskont, 0)}`}>
-              <span className={r.kapitalwert < 0 ? "text-sun-500" : undefined}>
-                <Zahl wert={r.kapitalwert / 1e6} stellen={2} suffix=" Mio. €" />
+              <span className={r.kapitalwert < 0 ? "text-sun-700" : undefined}>
+                <Zahl wert={r.kapitalwert / 1e6} stellen={2} suffix=" Mio. €" delta="hell" />
               </span>
             </Kennzahl>
-            <Kennzahl icon={BatteryCharging} label="Investition" zusatz={`${fmt(r.investProKwh)} €/kWh gesamt`}>
-              <Zahl wert={inv.summe / 1e6} stellen={2} suffix=" Mio. €" />
-            </Kennzahl>
             <Kennzahl icon={Zap} label="Erlös Jahr 1" zusatz={`${fmt(r.erloesProMwJahr1 / 1000)} T€ je MW`}>
-              {tsd(r.erloesJahr1)}
+              <Zahl wert={r.erloesJahr1} format={tsd} />
             </Kennzahl>
             <Kennzahl icon={Cable} label="Cashflow Jahr 1" zusatz="nach Betrieb & Vermarktung">
-              {tsd(r.cfJahr1)}
+              <Zahl wert={r.cfJahr1} format={tsd} />
             </Kennzahl>
-          </div>
+          </Belege>
 
           <InvestZeile inv={inv} />
 

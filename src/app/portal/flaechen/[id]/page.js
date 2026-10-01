@@ -19,11 +19,42 @@ import { AGRI } from "@/lib/invest/markt";
 // Fachprüfung Flächen: Pipeline-Erklärung, Prüfhinweise, Fachangaben, Angebotsbogen
 import { Angebotsbogen, FachAngaben, FachPruefungListe, PipelineHinweis, begriffeFuer } from "@/components/Portal/Flaeche/Fachanzeige";
 import { pachtVorschlag } from "@/lib/plattform/flaecheFach";
+import { INDEX_ARTEN, PACHT_OPTIONEN } from "@/lib/plattform/flaecheFach"; // T3: Eckdaten im Prüfschritt „Pachtangebot annehmen“
+import { eur } from "@/lib/plattform/format"; // T3
 import { fachBackend } from "@/lib/plattform/backend/kommune";
 import GrundbuchAmObjekt from "@/components/Portal/Closing/GrundbuchAmObjekt"; // Grundbuch & Closing
 import PachtakteAmObjekt from "@/components/Portal/Pachtakte/AmObjekt"; // Pachtakte (Team 1)
 
 export const metadata = { title: "Fläche" };
+
+/** T3: Prüfschritt und Erfolgsmoment für „Pachtangebot annehmen“ (nur Darstellung, Fachlogik unverändert) */
+function annahmeBestaetigung(f) {
+  const pa = f.pachtangebot || {};
+  const flaecheHa = Number(f.ha) || 0;
+  const proHa = Number(pa.euroProHaJahr) || 0;
+  const zeilen = [
+    proHa ? ["Pacht je ha und Jahr", `${eur(proHa)}${pa.modell && pa.modell !== "fest" ? " (Mindestpacht)" : ""}`] : null,
+    proHa && flaecheHa ? ["Pacht pro Jahr (Ihre Fläche)", `rund ${eur(Math.round(proHa * flaecheHa))}`] : null,
+    pa.umsatzProzent ? ["Umsatzbeteiligung", `${String(pa.umsatzProzent).replace(".", ",")} % der Stromerlöse`] : null,
+    pa.laufzeitJahre ? ["Laufzeit", `${pa.laufzeitJahre} Jahre${pa.verlaengerungJahre ? ` + ${pa.verlaengerungJahre} Jahre Option` : ""}`] : null,
+    ["Wertsicherung", pa.indexierung ? INDEX_ARTEN[pa.indexierung] || pa.indexierung : "im Angebot nicht angegeben"],
+    ["Rückbausicherheit", pa.rueckbau ? `${PACHT_OPTIONEN.rueckbau?.[pa.rueckbau] || pa.rueckbau}${pa.rueckbauEuro ? ` über ${eur(pa.rueckbauEuro)}` : ""}` : "im Angebot nicht angegeben"],
+    pa.dienstbarkeit ? ["Dienstbarkeit", PACHT_OPTIONEN.dienstbarkeit?.[pa.dienstbarkeit] || pa.dienstbarkeit] : null,
+  ].filter(Boolean);
+  return {
+    vertrag: {
+      titel: "Pachtangebot verbindlich annehmen – Ihre Eckdaten",
+      zusammenfassung: zeilen,
+      pruefText: "Ich habe das Angebot geprüft.",
+      knopf: "Pachtangebot verbindlich annehmen",
+      erfolg: {
+        titel: "Angebot angenommen",
+        text: "Als Nächstes erhalten Sie den Vertragsentwurf zur Unterschrift hier im Portal. Wir benachrichtigen Sie per E-Mail, sobald er bereitliegt.",
+        aktion: "Weiter zum Vertragsstand",
+      },
+    },
+  };
+}
 
 export default async function Flaeche({ params }) {
   const { id } = await params;
@@ -61,7 +92,7 @@ export default async function Flaeche({ params }) {
         aktionen={
           eigen && f.status === "pachtangebot" ? (
             <>
-              <StatusAktionen art="flaeche" id={f.id} status={f.status} als="eigentuemer" />
+              <StatusAktionen art="flaeche" id={f.id} status={f.status} als="eigentuemer" bestaetigung={annahmeBestaetigung(f)} />
               <Link href="#nachrichten" className="inline-flex items-center gap-2 text-[14px] font-semibold text-white/80 hover:text-white">
                 <MessageSquareText aria-hidden="true" className="h-4 w-4" /> Rückfrage stellen
               </Link>

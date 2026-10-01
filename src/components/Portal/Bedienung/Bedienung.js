@@ -13,6 +13,7 @@ import BottomNav from "./BottomNav";
 import InstallHinweis from "./InstallHinweis";
 import { navigationsZiele, neuZiel } from "./befehle";
 import { EREIGNIS_KUERZEL, EREIGNIS_KUERZEL_EINSTELLUNG, EREIGNIS_PALETTE, KUERZEL_AUS, speicherLesen, speicherSchreiben } from "./speicher";
+import { seitenleisteUmschalten } from "./speicher"; // T3: Seitenleiste ein-/ausklappen
 
 function tipptGerade(el) {
   if (!el || !(el instanceof HTMLElement)) return false;
@@ -69,6 +70,7 @@ export default function Bedienung({ nutzer, ungelesen = 0 }) {
     (a) => {
       if (a === "abmelden") abmelden();
       else if (a === "kuerzel") setHilfe(true);
+      else if (a === "seitenleiste") seitenleisteUmschalten(); // T3
     },
     [abmelden]
   );
@@ -105,6 +107,10 @@ export default function Bedienung({ nutzer, ungelesen = 0 }) {
       if (e.key === "?" ) {
         e.preventDefault();
         setHilfe(true);
+      } else if (e.key === "[") {
+        // T3: Seitenleiste ein-/ausklappen (Desktop)
+        e.preventDefault();
+        seitenleisteUmschalten();
       } else if (e.key === "/") {
         e.preventDefault();
         paletteAuf();

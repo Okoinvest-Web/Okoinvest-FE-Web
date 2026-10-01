@@ -4,51 +4,85 @@
 // Benachrichtigungen. Gespeichert wird ausschließlich über die bestehenden Portal-APIs (Rechte/Validierung dort);
 // danach lädt der Assistent den Stand aus echten Daten neu.
 
-import { useId, useState } from "react";
-import Button from "@/components/ui/Button";
+import { useEffect, useId, useState } from "react";
+import { ClipboardCheck } from "lucide-react";
 import { cn } from "@/components/ui/cn";
+import Textfeldbaustein from "@/components/formular/Textfeld";
+import { AbsendeKnopf, useAbsenden } from "@/components/formular/Absenden";
+import { FormFehler } from "@/components/formular/Meldungen";
+import { checkboxKlasse } from "@/components/formular/stil";
 import { senden } from "@/lib/plattform/client";
 import { BENACHRICHTIGUNG_ARTEN, LAENDER, PROJEKT_TYPEN, benachrichtigungArtenFuer, mailEinstellungenStandard } from "@/lib/plattform/konstanten";
 import { DEAL_STRUKTUREN, ESG_ANFORDERUNGEN, FINANZIERUNGSWEISEN } from "@/lib/plattform/fach/suchprofil";
 import { PHASEN } from "@/lib/invest/markt";
 import { UNTERTYP_ZU_INVESTOR_TYP } from "@/lib/plattform/onboarding/pfade";
-import { eingabe, auswahlfeld, labelKlasse, Chip, FehlerBox } from "@/components/Portal/felder";
-import { FeldFehler, fehlerText, regeln, useFeldPruefung, zahlWert } from "../pruefung";
+import { labelKlasse, Chip } from "@/components/Portal/felder";
+import { fehlerText, regeln, useFeldPruefung, zahlWert } from "../pruefung";
 
-/** Gemeinsamer Rahmen: Absenden → API → onGespeichert() */
+/**
+ * Gemeinsamer Rahmen: Absenden → API → Erfolgshäkchen im Knopf → Toast → onGespeichert() (Assistent lädt neu
+ * und springt zum nächsten Schritt). Fehler in Klartext über fehlerText.
+ */
 function useSenden(onGespeichert) {
-  const [laeuft, setLaeuft] = useState(false);
-  const [fehler, setFehler] = useState("");
+  const a = useAbsenden();
   async function los(fn) {
-    setLaeuft(true);
-    setFehler("");
-    try {
-      await fn();
-      await onGespeichert();
-    } catch (e) {
-      setFehler(fehlerText(e));
-    } finally {
-      setLaeuft(false);
-    }
+    await a.los(fn, {
+      haltezeit: 700,
+      toast: { titel: "Gespeichert", text: "Ihre Angaben sind übernommen." },
+      danach: async () => {
+        try {
+          await onGespeichert();
+        } catch (e) {
+          a.setFehler(fehlerText(e));
+        }
+      },
+    });
   }
-  return { laeuft, fehler, los };
+  return { laeuft: a.status !== "bereit", status: a.status, fehler: a.fehler, los };
 }
 
-function Absenden({ laeuft, text = "Speichern und weiter" }) {
+function Absenden({ status, text = "Speichern und weiter" }) {
   return (
     <div className="mt-6 flex justify-end">
-      <Button type="submit" disabled={laeuft} pfeil>{laeuft ? "Wird gespeichert …" : text}</Button>
+      <AbsendeKnopf status={status} pfeil laedtText="Wird gespeichert …" erfolgText="Gespeichert" className="max-sm:w-full">
+        {text}
+      </AbsendeKnopf>
     </div>
   );
 }
 
-function Textfeld({ id, k, label, w, setze, p, props = {}, klasse = "" }) {
+/** Feld mit Inline-Prüfung (pruefung.js) auf Basis des gemeinsamen Textfeld-Bausteins */
+function Textfeld({ id, k, label, w, setze, p, props = {}, klasse = "", pflicht = false, optional = false, hinweis }) {
+  const fid = `${id}-${k}`;
+  const fp = p ? p.feldProps(k, fid, w) : {};
+  const fehler = p?.fehler[k] || "";
+  const gueltig = !!p?.beruehrt?.[k] && !fehler && String(w[k] ?? "").trim() !== "";
   return (
-    <div className={cn("min-w-0", klasse)}>
-      <label htmlFor={`${id}-${k}`} className={labelKlasse}>{label}</label>
-      <input id={`${id}-${k}`} value={w[k]} onChange={(e) => setze(k, e.target.value)} className={cn(eingabe, p?.fehler[k] && "ring-2 ring-red-400")} {...(p ? p.feldProps(k, `${id}-${k}`, w) : {})} {...props} />
-      {p && <FeldFehler id={`${id}-${k}`} text={p.fehler[k]} />}
-    </div>
+    <Textfeldbaustein
+      id={fid}
+      label={label}
+      pflicht={pflicht}
+      optional={optional}
+      hinweis={hinweis}
+      fehler={fehler}
+      gueltig={gueltig}
+      className={klasse}
+      value={w[k]}
+      onChange={(e) => setze(k, e.target.value)}
+      onBlur={fp.onBlur}
+      data-feld={fp["data-feld"]}
+      {...props}
+      required={undefined}
+    />
+  );
+}
+
+/** Auswahlliste im gemeinsamen Stil */
+function Auswahl({ id, label, value, onChange, children }) {
+  return (
+    <Textfeldbaustein als="select" id={id} label={label} value={value} onChange={onChange}>
+      {children}
+    </Textfeldbaustein>
   );
 }
 
@@ -89,7 +123,7 @@ export function UntertypWahl({ schritt, pfad, onWahl }) {
         })}
       </ul>
       {schritt.erledigt && !pfad.untertypGewaehlt && <p className="mt-3 text-[13px] text-ink-500">Vorgeschlagen aus Ihren Daten – bitte bestätigen oder ändern.</p>}
-      <div className="mt-4"><FehlerBox>{fehler}</FehlerBox></div>
+      <div className="mt-4"><FormFehler>{fehler}</FormFehler></div>
     </div>
   );
 }
@@ -117,14 +151,14 @@ export function ProfilFormular({ nutzer, schritt, untertyp, onGespeichert }) {
   return (
     <form noValidate onSubmit={(e) => { e.preventDefault(); if (p.alles(w)) s.los(() => senden("/api/portal/profil", { method: "PATCH", body: w })); }}>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <Textfeld id={id} k="vorname" label="Vorname *" w={w} setze={setze} p={p} props={{ autoComplete: "given-name", required: true }} />
-        <Textfeld id={id} k="nachname" label="Nachname *" w={w} setze={setze} p={p} props={{ autoComplete: "family-name", required: true }} />
-        <Textfeld id={id} k="telefon" label="Telefon" w={w} setze={setze} p={p} props={{ autoComplete: "tel", inputMode: "tel", placeholder: "+49 …" }} />
-        <Textfeld id={id} k="firma" label={`${schritt.firmaLabel || "Firma / Betrieb"}${firmaPflicht ? " *" : " (optional)"}`} w={w} setze={setze} p={p} props={{ autoComplete: "organization" }} />
+        <Textfeld id={id} k="vorname" label="Vorname" pflicht w={w} setze={setze} p={p} props={{ autoComplete: "given-name" }} />
+        <Textfeld id={id} k="nachname" label="Nachname" pflicht w={w} setze={setze} p={p} props={{ autoComplete: "family-name" }} />
+        <Textfeld id={id} k="telefon" label="Telefon" optional w={w} setze={setze} p={p} hinweis="Mit Vorwahl, z. B. +49 8245 123456." props={{ type: "tel", autoComplete: "tel", inputMode: "tel" }} />
+        <Textfeld id={id} k="firma" label={schritt.firmaLabel || "Firma / Betrieb"} pflicht={firmaPflicht} optional={!firmaPflicht} w={w} setze={setze} p={p} props={{ autoComplete: "organization" }} />
       </div>
-      <p className="mt-3 text-[12.5px] text-ink-500">* Pflichtangabe. E-Mail-Adresse: {nutzer.email}</p>
-      <div className="mt-4"><FehlerBox>{s.fehler}</FehlerBox></div>
-      <Absenden laeuft={s.laeuft} />
+      <p className="mt-3 text-[13px] text-ink-500"><span aria-hidden="true" className="text-ov-700">*</span> Pflichtangabe · E-Mail-Adresse: {nutzer.email}</p>
+      <div className="mt-4"><FormFehler>{s.fehler}</FormFehler></div>
+      <Absenden status={s.status} />
     </form>
   );
 }
@@ -176,11 +210,11 @@ export function SuchprofilFormular({ nutzer, untertyp, onGespeichert }) {
         <Textfeld id={id} k="mwpMax" label="Leistung bis (MWp)" w={w} setze={setze} p={p} props={{ inputMode: "decimal", placeholder: "z. B. 50" }} />
       </div>
       <label className="mt-4 flex items-start gap-3 text-[14px] text-ink-700">
-        <input type="checkbox" checked={w.benachrichtigen} onChange={(e) => setW((x) => ({ ...x, benachrichtigen: e.target.checked }))} className="mt-0.5 h-5 w-5 rounded accent-ov-600" />
+        <input type="checkbox" checked={w.benachrichtigen} onChange={(e) => setW((x) => ({ ...x, benachrichtigen: e.target.checked }))} className={checkboxKlasse} />
         <span>Bei neuen passenden Projekten benachrichtigen (ab 70 % Passung, im Profil einstellbar).</span>
       </label>
-      <div className="mt-4"><FehlerBox>{s.fehler}</FehlerBox></div>
-      <Absenden laeuft={s.laeuft} text="Suchprofil speichern" />
+      <div className="mt-4"><FormFehler>{s.fehler}</FormFehler></div>
+      <Absenden status={s.status} text="Suchprofil speichern" />
     </form>
   );
 }
@@ -219,24 +253,20 @@ export function TicketFormular({ nutzer, untertyp, onGespeichert }) {
         <Textfeld id={id} k="ticketMin" label="Eigenkapital je Transaktion ab (€)" w={w} setze={setze} p={p} props={{ inputMode: "decimal", placeholder: "z. B. 2000000" }} />
         <Textfeld id={id} k="ticketMax" label="bis (€)" w={w} setze={setze} p={p} props={{ inputMode: "decimal", placeholder: "z. B. 25000000" }} />
         <Textfeld id={id} k="renditeZielPct" label="Rendite-Ziel (% p. a.)" w={w} setze={setze} p={p} props={{ inputMode: "decimal", placeholder: "z. B. 7,5" }} />
-        <div className="min-w-0">
-          <label htmlFor={`${id}-basis`} className={labelKlasse}>Basis des Rendite-Ziels</label>
-          <select id={`${id}-basis`} value={w.renditeBasis} onChange={(e) => setze("renditeBasis", e.target.value)} className={auswahlfeld}>
-            <option value="ek">Eigenkapital-IRR</option>
-            <option value="projekt">Projekt-IRR</option>
-          </select>
-        </div>
+        <Auswahl id={`${id}-basis`} label="Basis des Rendite-Ziels" value={w.renditeBasis} onChange={(e) => setze("renditeBasis", e.target.value)}>
+          <option value="ek">Eigenkapital-IRR</option>
+          <option value="projekt">Projekt-IRR</option>
+        </Auswahl>
       </div>
       <fieldset className="mt-4">
         <legend className={labelKlasse}>Deal-Struktur</legend>
         <div className="flex flex-wrap gap-2">{Object.entries(DEAL_STRUKTUREN).map(([k, t]) => <Chip key={k} name="dealStrukturen" value={k} checked={w.dealStrukturen.includes(k)} onChange={() => umschalten(setW, "dealStrukturen", k)}>{t}</Chip>)}</div>
       </fieldset>
-      <div className="mt-4 min-w-0">
-        <label htmlFor={`${id}-fin`} className={labelKlasse}>Finanzierungsweise</label>
-        <select id={`${id}-fin`} value={w.finanzierung} onChange={(e) => setze("finanzierung", e.target.value)} className={auswahlfeld}>
+      <div className="mt-4">
+        <Auswahl id={`${id}-fin`} label="Finanzierungsweise" value={w.finanzierung} onChange={(e) => setze("finanzierung", e.target.value)}>
           <option value="">Bitte wählen</option>
           {Object.entries(FINANZIERUNGSWEISEN).map(([k, t]) => <option key={k} value={k}>{t}</option>)}
-        </select>
+        </Auswahl>
       </div>
       {(untertyp === "fonds" || untertyp === "stadtwerk" || w.esg.length > 0) && (
         <fieldset className="mt-4">
@@ -244,8 +274,8 @@ export function TicketFormular({ nutzer, untertyp, onGespeichert }) {
           <div className="flex flex-wrap gap-2">{Object.entries(ESG_ANFORDERUNGEN).map(([k, t]) => <Chip key={k} name="esg" value={k} checked={w.esg.includes(k)} onChange={() => umschalten(setW, "esg", k)}>{t}</Chip>)}</div>
         </fieldset>
       )}
-      <div className="mt-4"><FehlerBox>{s.fehler}</FehlerBox></div>
-      <Absenden laeuft={s.laeuft} />
+      <div className="mt-4"><FormFehler>{s.fehler}</FormFehler></div>
+      <Absenden status={s.status} />
     </form>
   );
 }
@@ -259,12 +289,45 @@ const FLAECHE_SCHEMA = (dach) => ({
   groesse: [dach ? regeln.zahl({ min: 50, max: 500000, einheit: "m²", was: "Die Dachfläche" }) : regeln.zahl({ min: 0.01, max: 100000, einheit: "ha", was: "Die Größe" })],
 });
 
+/** Jüngste eigene Anfrage aus dem öffentlichen Flächencheck (für „Aus Flächencheck übernehmen“) */
+function useFlaechencheck(aktiv) {
+  const [anfrage, setAnfrage] = useState(null);
+  useEffect(() => {
+    if (!aktiv) return;
+    let ab = false;
+    senden("/api/portal/vorgaenge", { method: "GET" })
+      .then((r) => {
+        const liste = (r?.vorgaenge || []).filter((v) => ["flaeche", "agri"].includes(v.typ) && v.daten?.quelle === "flaechencheck" && v.daten?.eingaben);
+        liste.sort((a, b) => String(b.erstellt || b.datum || "").localeCompare(String(a.erstellt || a.datum || "")));
+        if (!ab) setAnfrage(liste[0] || null);
+      })
+      .catch(() => {});
+    return () => {
+      ab = true;
+    };
+  }, [aktiv]);
+  return anfrage;
+}
+
+const haZahl = (x) => (Number.isFinite(Number(x)) && Number(x) > 0 ? Math.round(Number(x) * 100) / 100 : null);
+const haAnzeige = (x) => String(x).replace(".", ",");
+
 export function FlaecheFormular({ untertyp, anzahl = 0, onGespeichert }) {
   const id = useId();
   const dach = untertyp === "dach";
   const [w, setW] = useState({ bezeichnung: "", land: "DE", plz: "", ort: "", groesse: "", agri: untertyp === "landwirt" });
   const p = useFeldPruefung(FLAECHE_SCHEMA(dach));
   const s = useSenden(onGespeichert);
+  const check = useFlaechencheck(!dach);
+  const ce = check?.daten?.eingaben || null;
+  const ceHa = ce ? haZahl(ce.flaecheHa) : null;
+  /** Flächen-Entwurf direkt aus dem Flächencheck anlegen – keine Doppelerfassung (UX-Audit P1-8) */
+  const uebernehmen = () => {
+    if (!ce) return;
+    const land = LAENDER[ce.land] ? ce.land : "DE";
+    const agri = untertyp === "landwirt" || /agri/i.test(String(check.typ || ""));
+    s.los(() => senden("/api/portal/flaechen", { body: { bezeichnung: `Fläche aus dem Flächencheck${ce.region ? ` – ${ce.region}` : ""}`.slice(0, 120), land, plz: "", ort: "", ha: ceHa ?? "", agri, nutzung: "acker", einreichen: false } }));
+  };
   const setze = (k, x) => {
     const neu = { ...w, [k]: x };
     setW(neu);
@@ -281,13 +344,29 @@ export function FlaecheFormular({ untertyp, anzahl = 0, onGespeichert }) {
   return (
     <form noValidate onSubmit={absenden}>
       {anzahl > 0 && <p className="mt-4 rounded-2xl bg-ov-50 px-4 py-3 text-[14px] text-ov-900 ring-1 ring-ov-200">Sie haben bereits {anzahl} {anzahl === 1 ? "Objekt" : "Objekte"} im Portal – dieser Schritt ist erledigt. Sie können ein weiteres anlegen.</p>}
+      {ce && anzahl === 0 && (
+        <div className="mt-5 flex flex-col gap-3 rounded-2xl bg-sand-50 p-4 ring-1 ring-inset ring-sand-200 animate-ov-einblenden sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-ov-50 text-ov-700 ring-1 ring-ov-200">
+              <ClipboardCheck aria-hidden="true" className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[14.5px] font-semibold text-ink-900">Ihr Flächencheck liegt vor</p>
+              <p className="text-[13.5px] leading-snug text-ink-600">{[ceHa ? `${haAnzeige(ceHa)} ha` : null, ce.nutzung, ce.region].filter(Boolean).join(" · ")} – als Entwurf übernehmen, Details später ergänzen.</p>
+            </div>
+          </div>
+          <button type="button" onClick={uebernehmen} disabled={s.laeuft} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-white px-5 text-[14.5px] font-semibold text-ov-800 ring-1 ring-inset ring-ov-300 transition-colors hover:bg-ov-50 disabled:opacity-60">
+            Aus Flächencheck übernehmen
+          </button>
+        </div>
+      )}
+      {ce && anzahl === 0 && <p className="mt-4 text-[13px] text-ink-500">Oder eine andere Fläche von Hand anlegen:</p>}
       <div className="mt-5 grid gap-4 sm:grid-cols-6">
-        <Textfeld id={id} k="bezeichnung" label="Bezeichnung *" w={w} setze={setze} p={p} props={{ placeholder: dach ? "z. B. Halle Nord" : "z. B. Acker am Mühlweg", required: true }} klasse="sm:col-span-6" />
+        <Textfeld id={id} k="bezeichnung" label="Bezeichnung" pflicht w={w} setze={setze} p={p} hinweis={dach ? "Ein Name, unter dem Sie das Dach wiederfinden, z. B. „Halle Nord“." : "Ein Name, unter dem Sie die Fläche wiederfinden, z. B. „Acker am Mühlweg“."} klasse="sm:col-span-6" />
         <div className="min-w-0 sm:col-span-2">
-          <label htmlFor={`${id}-land`} className={labelKlasse}>Land</label>
-          <select id={`${id}-land`} value={w.land} onChange={(e) => setze("land", e.target.value)} className={auswahlfeld}>
+          <Auswahl id={`${id}-land`} label="Land" value={w.land} onChange={(e) => setze("land", e.target.value)}>
             {Object.entries(LAENDER).map(([k, t]) => <option key={k} value={k}>{t}</option>)}
-          </select>
+          </Auswahl>
         </div>
         <Textfeld id={id} k="plz" label="PLZ" w={w} setze={setze} p={p} props={{ inputMode: "numeric", autoComplete: "postal-code" }} klasse="sm:col-span-2" />
         <Textfeld id={id} k="groesse" label={dach ? "Dachfläche in m²" : "Größe in Hektar"} w={w} setze={setze} p={p} props={{ inputMode: "decimal", placeholder: dach ? "z. B. 4.500" : "z. B. 12,5" }} klasse="sm:col-span-2" />
@@ -295,13 +374,13 @@ export function FlaecheFormular({ untertyp, anzahl = 0, onGespeichert }) {
       </div>
       {!dach && (
         <label className="mt-4 flex items-start gap-3 text-[14px] text-ink-700">
-          <input type="checkbox" checked={w.agri} onChange={(e) => setze("agri", e.target.checked)} className="mt-0.5 h-5 w-5 rounded accent-ov-600" />
+          <input type="checkbox" checked={w.agri} onChange={(e) => setze("agri", e.target.checked)} className={checkboxKlasse} />
           <span>Die Fläche soll landwirtschaftlich weiter genutzt werden (Agri-PV).</span>
         </label>
       )}
-      <p className="mt-3 text-[12.5px] text-ink-500">Gespeichert als Entwurf. Flurstücke, Fachangaben und Unterlagen folgen auf der Flächenseite.</p>
-      <div className="mt-4"><FehlerBox>{s.fehler}</FehlerBox></div>
-      <Absenden laeuft={s.laeuft} text={dach ? "Dach speichern" : "Fläche speichern"} />
+      <p className="mt-3 text-[13px] text-ink-500">Gespeichert als Entwurf. Flurstücke, Fachangaben und Unterlagen folgen auf der Flächenseite.</p>
+      <div className="mt-4"><FormFehler>{s.fehler}</FormFehler></div>
+      <Absenden status={s.status} text={dach ? "Dach speichern" : "Fläche speichern"} />
     </form>
   );
 }
@@ -320,7 +399,7 @@ export function BenachrichtigungenFormular({ nutzer, onGespeichert }) {
           {arten.map((k) => (
             <li key={k}>
               <label className="flex cursor-pointer items-start gap-3 px-4 py-3.5 hover:bg-sand-50">
-                <input type="checkbox" checked={!!w[k]} onChange={(e) => setW((x) => ({ ...x, [k]: e.target.checked }))} className="mt-0.5 h-5 w-5 shrink-0 rounded accent-ov-600" />
+                <input type="checkbox" checked={!!w[k]} onChange={(e) => setW((x) => ({ ...x, [k]: e.target.checked }))} className={checkboxKlasse} />
                 <span className="min-w-0">
                   <span className="block text-[14.5px] font-semibold text-ink-900">{BENACHRICHTIGUNG_ARTEN[k].label}</span>
                   <span className="block text-[13px] leading-snug text-ink-500">{BENACHRICHTIGUNG_ARTEN[k].text}</span>
@@ -330,8 +409,8 @@ export function BenachrichtigungenFormular({ nutzer, onGespeichert }) {
           ))}
         </ul>
       </fieldset>
-      <div className="mt-4"><FehlerBox>{s.fehler}</FehlerBox></div>
-      <Absenden laeuft={s.laeuft} text="Einstellungen speichern" />
+      <div className="mt-4"><FormFehler>{s.fehler}</FormFehler></div>
+      <Absenden status={s.status} text="Einstellungen speichern" />
     </form>
   );
 }

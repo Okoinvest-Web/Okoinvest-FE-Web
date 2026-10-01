@@ -15,6 +15,7 @@ import { SUCHPROFILE_MAX } from "@/lib/plattform/dealroom";
 import { PHASEN } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import { Chip, eingabe, Feld, FehlerBox, ErfolgBox } from "@/components/Portal/felder";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 const LEER = { name: "", mwpMin: "", mwpMax: "", phasen: [], laender: [], typen: [], ticketMin: "", ticketMax: "", schwelle: SUCHPROFIL_SCHWELLE.standard };
 const num = (s) => (s === "" || s === null || s === undefined ? null : Number(String(s).replace(/\s/g, "").replace(",", ".")));
@@ -114,7 +115,7 @@ export default function Suchprofile({ profile = [] }) {
               <div className="mt-3 flex flex-wrap gap-1.5 border-t border-ink-100 pt-3">
                 <Button size="sm" variant="ghost" icon={Pencil} onClick={() => oeffnen(i)}>Bearbeiten</Button>
                 <Button size="sm" variant="ghost" icon={BellRing} disabled={laeuft} onClick={() => alsAlarm(p)}>Als Alarm-Profil</Button>
-                <Button size="sm" variant="ghost" icon={Trash2} disabled={laeuft} onClick={() => confirm(`Suchprofil „${p.name}“ löschen?`) && speichernListe(profile.filter((_, j) => j !== i).map(roh), "Suchprofil gelöscht.")}>Löschen</Button>
+                <Button size="sm" variant="ghost" icon={Trash2} disabled={laeuft} onClick={async () => (await bestaetigen({ titel: `Suchprofil „${p.name}“ löschen?`, text: "Sie erhalten dafür keine Benachrichtigungen mehr.", bestaetigenText: "Suchprofil löschen", gefahr: true })) && speichernListe(profile.filter((_, j) => j !== i).map(roh), "Suchprofil gelöscht.")}>Löschen</Button>
               </div>
             </li>
           ))}

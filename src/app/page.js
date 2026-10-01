@@ -19,6 +19,10 @@ import ZielgruppenWahl from "@/components/Home/ZielgruppenWahl";
 import Werttreppe from "@/components/Home/Werttreppe";
 import Kreislauf from "@/components/Home/Kreislauf";
 import HomeBoerse from "@/components/Home/HomeBoerse";
+import HeroTiefe from "@/components/Home/HeroTiefe";
+import Vertrauensleiste from "@/components/Home/Vertrauensleiste";
+import Stagger from "@/components/ui/Stagger";
+import { SpotGrossspeicher, SpotSolarcarport } from "@/components/illustrationen";
 import { TOOLS } from "@/components/Rechner/tools";
 import { KENNZAHLEN, SITE, abs, sprachAlternates } from "@/data/site";
 import { FREIFLAECHE, PACHT, PROVISION, STROM } from "@/lib/invest/markt";
@@ -48,8 +52,8 @@ export const metadata = {
 const LOESUNGEN = [
   { titel: "Freiflächen-PV", text: "Solarparks ab rund 3 Hektar – von der Flächensicherung über Bauleitplanung und Netzanschluss bis zum Betrieb.", href: "/freiflaeche", bild: "/img/solarpark-himmel.jpg", icon: Sun, gross: true },
   { titel: "Agri-PV", text: "Landwirtschaft und Stromerzeugung auf derselben Fläche.", href: "/agri-pv", bild: "/img/freiflaeche-begehung.jpg", icon: Sprout },
-  { titel: "Solarcarports", text: "Parkplätze als Kraftwerk – mit Ladepunkten.", href: "/solarcarport", icon: Car, ton: "gruen" },
-  { titel: "Großspeicher", text: "Batteriespeicher am Park und am Netzknoten.", href: "/grossspeicher", icon: BatteryCharging, ton: "navy" },
+  { titel: "Solarcarports", text: "Parkplätze als Kraftwerk – mit Ladepunkten.", href: "/solarcarport", icon: Car, ton: "gruen", spot: SpotSolarcarport },
+  { titel: "Großspeicher", text: "Batteriespeicher am Park und am Netzknoten.", href: "/grossspeicher", icon: BatteryCharging, ton: "navy", spot: SpotGrossspeicher },
   { titel: "Virtuelles Kraftwerk", text: "Erzeugung, Speicher und Verbrauch im Pool.", href: "/virtuelles-kraftwerk", bild: "/img/pv-wind-abend.jpg", icon: Network },
 ];
 
@@ -85,10 +89,10 @@ export default function HomePage() {
   const poolMax = STROM.poolHebel.reduce((s, h) => s + h.ct.max, 0);
 
   const kennzahlen = [
-    { value: KENNZAHLEN.entwicklungMwProJahr, prefix: "~", suffix: " MWp", label: "gehen pro Jahr neu in die Entwicklung" },
-    { value: new Date().getFullYear() - KENNZAHLEN.erfahrungSeit, suffix: "+ Jahre", label: "Erfahrung der ÖKOVOLT Gruppe" },
-    { value: 3, suffix: " Länder", label: "Deutschland, Österreich, Schweiz" },
-    { value: PACHT.laufzeit, suffix: " Jahre", label: "typische Pachtlaufzeit – plus Optionen" },
+    { value: KENNZAHLEN.entwicklungMwProJahr, prefix: "~", einheit: "MWp", label: "gehen pro Jahr neu in die Entwicklung" },
+    { value: new Date().getFullYear() - KENNZAHLEN.erfahrungSeit, suffix: "+", einheit: "Jahre", label: "Erfahrung der ÖKOVOLT Gruppe" },
+    { value: 3, einheit: "Länder", label: "Deutschland, Österreich, Schweiz" },
+    { value: PACHT.laufzeit, einheit: "Jahre", label: "typische Pachtlaufzeit – plus Optionen" },
   ];
 
   const schema = {
@@ -110,9 +114,9 @@ export default function HomePage() {
       {/* ================= HERO ================= */}
       <section className="relative isolate overflow-hidden bg-navy-950 text-white">
         <Image src="/img/solarpark-reihen.jpg" alt="Reihen eines großen Solarparks" fill priority sizes="100vw" className="-z-30 object-cover" />
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-navy-950 via-navy-950/88 to-navy-950/40" />
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-t from-navy-950 via-transparent to-navy-950/40" />
-        <div aria-hidden="true" className="absolute -left-40 bottom-0 -z-10 h-[520px] w-[520px] rounded-full bg-ov-500/20 blur-[140px]" />
+        <div aria-hidden="true" className="absolute inset-0 -z-20 bg-gradient-to-r from-navy-950 via-navy-950/88 to-navy-950/40" />
+        <div aria-hidden="true" className="absolute inset-0 -z-20 bg-gradient-to-t from-navy-950 via-transparent to-navy-950/40" />
+        <HeroTiefe />
 
         <div className="ov-container grid items-center gap-12 pb-16 pt-14 md:pb-24 md:pt-20 lg:grid-cols-[1.15fr_1fr] lg:gap-14 lg:pb-28 lg:pt-24">
           <div>
@@ -144,26 +148,31 @@ export default function HomePage() {
             </ul>
           </div>
 
-          <div className="ov-hero-in" style={{ "--ov-delay": "220ms" }}>
+          <div className="ov-hero-in relative" style={{ "--ov-delay": "220ms" }}>
+            {/* Lichtschein hinter der Weiche: hebt die Karte als vorderste Ebene ab */}
+            <div aria-hidden="true" className="absolute -inset-6 -z-10 rounded-[2.5rem] bg-ov-500/10 blur-2xl" />
             <ZielgruppenWahl />
           </div>
         </div>
 
         {/* Kennzahlen */}
         <div className="relative border-t border-white/10 bg-navy-950/60 backdrop-blur-md">
-          <dl className="ov-container grid grid-cols-2 gap-y-6 py-8 md:grid-cols-4 md:py-10">
+          <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ov-300/40 to-transparent" />
+          <Stagger as="dl" delay={420} schritt={90} className="ov-container grid grid-cols-2 gap-y-7 py-8 md:grid-cols-4 md:py-10">
             {kennzahlen.map((k, i) => (
-              <div key={k.label} className={`px-2 md:px-6 ${i > 0 ? "md:border-l md:border-white/10" : ""}`}>
-                <dt className="sr-only">{k.label}</dt>
-                <dd className="font-display text-[clamp(1.6rem,1.2rem+1.5vw,2.5rem)] font-extrabold leading-none tracking-tight">
+              <div key={k.label} className={`flex flex-col-reverse px-2 md:px-6 ${i > 0 ? "md:border-l md:border-white/10" : ""}`}>
+                <dt className="mt-2 text-[13.5px] leading-snug text-white/75">{k.label}</dt>
+                <dd className="ov-kpi-l leading-none text-white">
                   <CountUp value={k.value} prefix={k.prefix} suffix={k.suffix} />
+                  <span className="ov-einheit">{k.einheit}</span>
                 </dd>
-                <dd className="mt-2 text-[13.5px] text-white/55">{k.label}</dd>
               </div>
             ))}
-          </dl>
+          </Stagger>
         </div>
       </section>
+
+      <Vertrauensleiste />
 
       {/* ================= KREISLAUF ================= */}
       <Section tone="white" space="lg">
@@ -174,15 +183,15 @@ export default function HomePage() {
               title={<>Jeder bringt etwas mit. <span className="ov-text-gradient">Wir machen daraus ein Kraftwerk.</span></>}
               lead="Ein Solarpark braucht vier Dinge: eine Fläche, ein genehmigtes Projekt, Kapital und jemanden, der den Strom abnimmt. Wir entwickeln selbst – und verbinden auf der Plattform alle, die eines davon haben oder suchen."
             />
-            <ul className="mt-10 grid gap-3 sm:grid-cols-2">
+            <Stagger as="ul" className="mt-10 grid gap-3 sm:grid-cols-2">
               {[
                 { icon: MapPinned, t: "Flächeneigentümer & Landwirte", x: "Pacht, Agri-PV oder Beteiligung", href: "/flaeche-verpachten" },
                 { icon: Search, t: "Projektentwickler", x: "Projekte vermarkten über die Börse", href: "/projektboerse/anbieten" },
                 { icon: LineChart, t: "Investoren", x: "Geprüfte Projekte in jeder Phase", href: "/investoren" },
                 { icon: Users, t: "Unternehmen & Bürger", x: "Strom aus dem Pool, Genossenschaft", href: "/reststrom" },
-              ].map((z, i) => (
-                <Reveal as="li" key={z.t} delay={i * 70}>
-                  <Link href={z.href} className="group ov-card-hover flex h-full items-start gap-4 rounded-3xl bg-sand-50 p-5 ring-1 ring-ink-200/60 hover:bg-white hover:ring-ov-200">
+              ].map((z) => (
+                <li key={z.t}>
+                  <Link href={z.href} className="group ov-lift ov-press flex h-full items-start gap-4 rounded-3xl bg-sand-50 p-5 ring-1 ring-ink-200/60 transition-colors hover:bg-white hover:ring-ov-200">
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-ov-600 ring-1 ring-ink-100 transition-colors group-hover:bg-ov-500 group-hover:text-white">
                       <z.icon aria-hidden="true" className="h-5 w-5" />
                     </span>
@@ -190,10 +199,11 @@ export default function HomePage() {
                       <span className="block font-display text-[16.5px] font-bold text-ink-900">{z.t}</span>
                       <span className="mt-0.5 block text-[14px] text-ink-500">{z.x}</span>
                     </span>
+                    <ArrowUpRight aria-hidden="true" className="ml-auto h-4 w-4 shrink-0 text-ink-400 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ov-600" />
                   </Link>
-                </Reveal>
+                </li>
               ))}
-            </ul>
+            </Stagger>
           </div>
           <Reveal dir="scale" className="mx-auto w-full max-w-[520px]">
             <Kreislauf />
@@ -214,9 +224,9 @@ export default function HomePage() {
           </Reveal>
         </div>
 
-        <div className="grid auto-rows-[220px] grid-cols-2 gap-3 sm:auto-rows-[260px] md:grid-cols-4 md:gap-4 md:auto-rows-[280px]">
-          {LOESUNGEN.map((p, i) => (
-            <Reveal key={p.href} delay={i * 80} className={p.gross ? "col-span-2 row-span-2" : ""}>
+        <Stagger schritt={80} className="grid auto-rows-[220px] grid-cols-2 gap-3 sm:auto-rows-[260px] md:grid-cols-4 md:gap-4 md:auto-rows-[280px]">
+          {LOESUNGEN.map((p) => (
+            <div key={p.href} className={p.gross ? "col-span-2 row-span-2" : ""}>
               <Link
                 href={p.href}
                 className={`group relative flex h-full flex-col justify-end overflow-hidden rounded-3xl p-4 text-white sm:p-6 md:rounded-[2rem] md:p-8 ${
@@ -232,12 +242,17 @@ export default function HomePage() {
                   <>
                     <div aria-hidden="true" className="ov-grid-bg absolute inset-0 opacity-70" />
                     <div aria-hidden="true" className={`absolute -right-10 -top-10 h-40 w-40 rounded-full blur-3xl transition-transform duration-700 group-hover:scale-125 ${p.ton === "gruen" ? "bg-sun-300/30" : "bg-ov-500/40"}`} />
+                    {p.spot && (
+                      <div aria-hidden="true" className="absolute right-3 top-14 w-20 transition-transform duration-500 ease-ov-out group-hover:-translate-y-1 sm:w-24 md:right-6 md:top-16 md:w-28">
+                        <p.spot ton="dunkel" />
+                      </div>
+                    )}
                   </>
                 )}
                 <span className="ov-glass absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-2xl sm:h-11 sm:w-11 md:left-6 md:top-6">
                   <p.icon aria-hidden="true" className="h-5 w-5 text-ov-300" />
                 </span>
-                <span className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-white text-ink-900 opacity-0 transition-all duration-300 group-hover:opacity-100 md:right-6 md:top-6">
+                <span className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-white text-ink-900 translate-y-1 opacity-0 transition-[opacity,transform] duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 md:right-6 md:top-6">
                   <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
                 </span>
                 <div className="relative">
@@ -249,10 +264,13 @@ export default function HomePage() {
                     </span>
                   )}
                 </div>
+                {/* Lichtkante: feine Innenlinie, oben heller – gibt der Kachel Tiefe */}
+                <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-[inherit] ring-1 ring-inset ring-white/10" />
+                <span aria-hidden="true" className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
               </Link>
-            </Reveal>
+            </div>
           ))}
-        </div>
+        </Stagger>
       </Section>
 
       {/* ================= PROJEKTBÖRSE ================= */}
@@ -264,14 +282,14 @@ export default function HomePage() {
               title={<>Der Marktplatz für PV-Projekte <span className="ov-text-gradient">im DACH-Raum.</span></>}
               lead="Projektrechte, baureife Projekte und Bestandsanlagen – geprüft, vertraulich und mit klarem Ablauf von der ersten Anfrage bis zum Closing."
             />
-            <ol className="mt-9 space-y-3">
+            <Stagger as="ol" className="mt-9 space-y-3">
               {[
                 { icon: ClipboardCheck, t: "Geprüft veröffentlicht", x: "Jedes Projekt durchläuft vor der Freigabe eine Plausibilitätsprüfung." },
                 { icon: ShieldCheck, t: "Vertraulich bis zur NDA", x: "Genaue Lage und Unterlagen sehen nur freigegebene Investoren." },
                 { icon: FileSignature, t: "Vom Datenraum zum LOI", x: "Anfragen, Dokumente und Absichtserklärungen digital im Portal." },
                 { icon: Handshake, t: "Faire Provision", x: `Für Käufer kostenfrei. Verkäufer zahlen ${PROVISION.verkaeufer.text}.` },
-              ].map((s, i) => (
-                <Reveal as="li" key={s.t} delay={i * 70} className="flex gap-4 rounded-3xl bg-sand-50 p-5 ring-1 ring-ink-200/60">
+              ].map((s) => (
+                <li key={s.t} className="flex gap-4 rounded-3xl bg-sand-50 p-5 ring-1 ring-ink-200/60">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-ov-500 text-white">
                     <s.icon aria-hidden="true" className="h-5 w-5" />
                   </span>
@@ -279,9 +297,9 @@ export default function HomePage() {
                     <p className="font-display text-[16.5px] font-bold text-ink-900">{s.t}</p>
                     <p className="mt-0.5 text-[14.5px] leading-relaxed text-ink-600">{s.x}</p>
                   </div>
-                </Reveal>
+                </li>
               ))}
-            </ol>
+            </Stagger>
             <Reveal delay={200} className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Button href="/projektboerse" pfeil>Projekte entdecken</Button>
               <Button href="/projektboerse/anbieten" variant="secondary">Projekt anbieten</Button>
@@ -314,7 +332,7 @@ export default function HomePage() {
           <Reveal dir="scale" className="ov-glass rounded-[2rem] p-6 md:p-8">
             <p className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ov-300">Hebel auf die Beschaffung</p>
             <ul className="mt-6 space-y-5">
-              {STROM.poolHebel.map((h) => (
+              {STROM.poolHebel.map((h, i) => (
                 <li key={h.id}>
                   <div className="flex items-baseline justify-between gap-4 text-[14.5px]">
                     <span className="text-white/85">{h.label}</span>
@@ -322,8 +340,9 @@ export default function HomePage() {
                       {fmt(h.ct.min, 1)}–{fmt(h.ct.max, 1)} ct
                     </span>
                   </div>
-                  <div className="mt-2 h-2.5 rounded-full bg-white/10">
-                    <div className="h-full rounded-full bg-gradient-to-r from-ov-400 to-ov-300" style={{ width: `${(h.ct.max / 2) * 100}%` }} />
+                  <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/10">
+                    {/* Balken läuft beim Einscrollen ein (scaleX über ov-balken-x, Auslöser: umgebendes Reveal) */}
+                    <div className="ov-balken-x h-full rounded-full bg-gradient-to-r from-ov-400 to-ov-300" style={{ width: `${(h.ct.max / 2) * 100}%`, "--i": i * 2 }} />
                   </div>
                 </li>
               ))}
@@ -350,23 +369,23 @@ export default function HomePage() {
           lead="Kostenlose Werkzeuge für Eigentümer, Landwirte, Investoren, Unternehmen und Gemeinden – mit offengelegten Annahmen."
           className="mb-14"
         />
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {TOOLS.map((t, i) => (
-            <Reveal as="li" key={t.href} delay={i * 50} className="flex">
-              <Link href={t.href} className="group ov-card-hover relative flex w-full flex-col overflow-hidden rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60 hover:bg-white hover:ring-ov-200">
+        <Stagger as="ul" schritt={45} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {TOOLS.map((t) => (
+            <li key={t.href} className="flex">
+              <Link href={t.href} className="group ov-lift ov-press flex w-full flex-col rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60 transition-colors hover:bg-white hover:ring-ov-200">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-ov-600 shadow-sm ring-1 ring-ink-100 transition-all duration-300 group-hover:bg-ov-500 group-hover:text-white group-hover:ring-ov-500">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-ov-600 shadow-sm ring-1 ring-ink-100 transition-colors duration-300 group-hover:bg-ov-500 group-hover:text-white group-hover:ring-ov-500">
                     <t.icon aria-hidden="true" className="h-6 w-6" strokeWidth={1.8} />
                   </span>
                   <span className="truncate rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-ink-500 ring-1 ring-ink-200/70">{t.zielgruppe}</span>
                 </div>
                 <h3 className="mt-6 font-display text-[18px] font-bold text-ink-900">{t.titel}</h3>
-                <p className="mt-1 text-[14.5px] text-ink-500">{t.kurz}</p>
-                <ArrowRight aria-hidden="true" className="mt-5 h-5 w-5 text-ink-300 transition-all duration-300 group-hover:translate-x-1 group-hover:text-ov-600" />
+                <p className="mb-5 mt-1 text-[14.5px] text-ink-500">{t.kurz}</p>
+                <ArrowRight aria-hidden="true" className="mt-auto h-5 w-5 text-ink-400 transition-[transform,color] duration-300 group-hover:translate-x-1 group-hover:text-ov-600" />
               </Link>
-            </Reveal>
+            </li>
           ))}
-        </ul>
+        </Stagger>
       </Section>
 
       {/* ================= PROZESS ================= */}
@@ -407,13 +426,13 @@ export default function HomePage() {
               title="Wir entwickeln, was wir selbst bauen und betreiben würden."
               lead="ÖkoInvest ist die Projektgesellschaft der ÖKOVOLT Gruppe. Seit 2010 plant und baut die Gruppe Photovoltaik in Deutschland und Österreich, seit 2012 auch eigene Solarparks – mit eigener Montage und eigener Rammtechnik für die Fundamente."
             />
-            <ul className="mt-10 space-y-4">
+            <Stagger as="ul" schritt={90} className="mt-10 space-y-4">
               {[
                 { icon: Sun, t: "Entwicklung aus Betreibersicht", x: "Wir planen Parks so, wie wir sie selbst 30 Jahre betreiben wollen – Ertrag, Wartung, Rückbau inklusive." },
                 { icon: HardHat, t: "Bau in der Gruppe", x: "Planung, Montage und Rammtechnik kommen aus einem Verbund – weniger Schnittstellen, mehr Verlässlichkeit." },
                 { icon: ShieldCheck, t: "Digital und transparent", x: "Vorgänge, Dokumente und Status laufen über die Plattform – für alle Beteiligten nachvollziehbar." },
-              ].map((k, i) => (
-                <Reveal as="li" key={k.t} delay={i * 90} className="flex gap-5 rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60">
+              ].map((k) => (
+                <li key={k.t} className="flex gap-5 rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60">
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-ov-500 text-white">
                     <k.icon aria-hidden="true" className="h-6 w-6" />
                   </span>
@@ -421,9 +440,9 @@ export default function HomePage() {
                     <h3 className="font-display text-[18px] font-bold text-ink-900">{k.t}</h3>
                     <p className="mt-1.5 text-[15px] leading-relaxed text-ink-600">{k.x}</p>
                   </div>
-                </Reveal>
+                </li>
               ))}
-            </ul>
+            </Stagger>
             <Reveal delay={200} className="mt-8">
               <Button href="/unternehmen" variant="secondary" pfeil>Über ÖkoInvest</Button>
             </Reveal>

@@ -18,6 +18,8 @@ import {
   KYC_DOKUMENTE, KYC_KONTOTYPEN, KYC_KONTROLLE_ARTEN, KYC_LAENDER, KYC_MITTEL_QUELLEN, KYC_REGISTER, KYC_SCHWAERZEN_HINWEIS, KYC_TICKETS, KYC_UPLOAD, ibanPruefen,
 } from "@/lib/plattform/kyc";
 import { Fortschritt, KycStatusBadge } from "./teile";
+import { SchrittFortschritt } from "@/components/formular/Schritte";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 import MrzEingabe from "./MrzEingabe"; // Eigene Identifizierung: MRZ abtippen (Schritt „Ausweis“)
 import VideoTermin from "./VideoTermin"; // Eigene Identifizierung: Videotermin mit der Compliance
 import MethodenWahl from "./MethodenWahl"; // Eigene Identifizierung: Wege mit Empfehlung
@@ -100,7 +102,7 @@ function Unterlage({ art, label, hinweis, pflicht = true, dokumente, bearbeitbar
   }
 
   async function loeschen(d) {
-    if (!window.confirm(`„${d.name}“ wirklich löschen?`)) return;
+    if (!(await bestaetigen({ titel: `„${d.name}“ löschen?`, text: "Das Dokument wird aus Ihrer Identitätsprüfung entfernt.", bestaetigenText: "Dokument löschen", gefahr: true }))) return;
     try {
       await senden(`/api/portal/kyc/dokumente/${d.id}`, { method: "DELETE" });
       await onGeaendert();
@@ -272,7 +274,7 @@ export default function KycAssistent({ start, rollen = [] }) {
   }
 
   async function erneut() {
-    if (!window.confirm("Erneute Prüfung starten? Bis zur erneuten Bestätigung sind Freigaben (z. B. Datenraum, Auszahlungen) gesperrt.")) return;
+    if (!(await bestaetigen({ titel: "Erneute Prüfung starten?", text: "Bis zur erneuten Bestätigung sind Freigaben (z. B. Datenraum, Auszahlungen) gesperrt.", bestaetigenText: "Prüfung starten", gefahr: true }))) return;
     setFehler("");
     try {
       await senden("/api/portal/kyc/erneut", {});
@@ -292,7 +294,15 @@ export default function KycAssistent({ start, rollen = [] }) {
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
       <div className="min-w-0 space-y-5">
-        {/* Schrittleiste */}
+        {/* Schrittleiste – mobil zusätzlich „Schritt x von y · Name“ mit Fortschritt (die Pillen scrollen dort seitlich) */}
+        <SchrittFortschritt
+          kompakt
+          className="md:hidden"
+          label="Fortschritt der Verifizierung"
+          schritte={schritte.map((s) => ({ id: s.id, titel: s.label }))}
+          aktiv={Math.max(0, idx)}
+          erledigt={schritte.map((s, i) => (schrittOk(s.id) ? i : -1)).filter((i) => i >= 0)}
+        />
         <nav aria-label="Schritte der Verifizierung" className="-mx-1 overflow-x-auto pb-1 ov-no-scrollbar">
           <ol className="flex gap-1.5 px-1 max-md:min-w-max md:flex-wrap">
             {schritte.map((s, i) => {
@@ -307,10 +317,10 @@ export default function KycAssistent({ start, rollen = [] }) {
                     aria-current={aktiv ? "step" : undefined}
                     className={cn(
                       "flex items-center gap-2 rounded-full px-3.5 py-2 text-[13.5px] font-semibold ring-1 ring-inset transition-colors disabled:opacity-40",
-                      aktiv ? "bg-navy-900 text-white ring-navy-900" : "bg-white text-ink-700 ring-ink-200 hover:ring-ink-300"
+                      aktiv ? "bg-navy-900 text-white ring-navy-900" : "bg-white text-ink-700 ring-ink-300 hover:ring-ov-300"
                     )}
                   >
-                    <span className={cn("flex h-5 w-5 items-center justify-center rounded-full text-[11px]", schrittOk(s.id) ? "bg-ov-500 text-white" : aktiv ? "bg-white/15" : "bg-ink-100 text-ink-600")}>
+                    <span className={cn("flex h-5 w-5 items-center justify-center rounded-full text-[11px]", schrittOk(s.id) ? "bg-ov-600 text-white" : aktiv ? "bg-white/15" : "bg-ink-100 text-ink-600")}>
                       {schrittOk(s.id) ? <Check aria-hidden="true" className="h-3 w-3" strokeWidth={3} /> : i + 1}
                     </span>
                     {s.label}

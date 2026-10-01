@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { senden } from "@/lib/plattform/client";
 import { ErfolgBox, FehlerBox, Feld, auswahlfeld, eingabe, textbereich } from "@/components/Portal/felder";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 export function useAktion() {
   const router = useRouter();
@@ -144,7 +145,7 @@ export function AktionKnopf({ fn, children, meldung = "", frage = "", variante =
         type="button"
         disabled={a.laeuft}
         onClick={async () => {
-          if (frage && !window.confirm(frage)) return;
+          if (frage && !(await bestaetigen({ titel: frage, bestaetigenText: typeof children === "string" ? children : undefined, gefahr: variante === "gefahr" }))) return;
           await a.ausfuehren(fn, { meldung });
         }}
         className={cn(

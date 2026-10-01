@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowUpRight, BatteryCharging, Building2, Calculator, Car, CircleDollarSign, Handshake, Landmark, PlugZap, ShoppingBag, Sun, TreePine, Warehouse, Wrench, Zap } from "lucide-react";
 
 import PageHero from "@/components/ui/PageHero";
+import HeroSzene from "@/components/Landing/HeroSzene";
+import { Solarcarport } from "@/components/illustrationen";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import FeatureGrid from "@/components/ui/FeatureGrid";
@@ -106,7 +108,11 @@ export default function SolarcarportSeite() {
           { label: "Carport-Rechner", href: "/rechner/solarcarport", icon: Calculator },
         ]}
         className="[&>div.ov-container]:pb-28 md:[&>div.ov-container]:pb-36"
-      />
+      >
+        <HeroSzene>
+          <Solarcarport ton="dunkel" animiert />
+        </HeroSzene>
+      </PageHero>
 
       <section aria-label="Solarcarport in Zahlen" className="relative z-10 -mt-20 md:-mt-28">
         <div className="ov-container">

@@ -1,5 +1,7 @@
 import { FileSignature, FolderLock, KeyRound, Search, ShieldCheck, UserPlus, Coins, BadgePercent } from "lucide-react";
 import PageHero from "@/components/ui/PageHero";
+import HeroSzene from "@/components/Landing/HeroSzene";
+import { InvestorenDashboard } from "@/components/illustrationen";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Steps from "@/components/ui/Steps";
@@ -106,7 +108,11 @@ export default async function Projektboerse({ searchParams }) {
               ]
             : []
         }
-      />
+      >
+        <HeroSzene>
+          <InvestorenDashboard ton="dunkel" animiert />
+        </HeroSzene>
+      </PageHero>
 
       <Section tone="sand" space="md" id="projekte">
         {demo && (

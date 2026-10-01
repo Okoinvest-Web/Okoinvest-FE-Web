@@ -126,7 +126,12 @@ export default function Navbar() {
   const aktivBereich = (item) =>
     item.groups?.some((g) => g.items.some((s) => pfad === s.href || pfad.startsWith(s.href + "/")));
 
-  const offenesItem = NAVIGATION.find((n) => n.title === offen);
+  // Zuletzt geöffnetes Menü bleibt beim Schließen stehen, damit das Panel sichtbar ausblendet
+  const [zuletzt, setZuletzt] = useState(null);
+  useEffect(() => {
+    if (offen) setZuletzt(offen);
+  }, [offen]);
+  const offenesItem = NAVIGATION.find((n) => n.title === (offen || zuletzt));
 
   return (
     <header className="sticky top-0 z-[100] w-full">
@@ -163,13 +168,15 @@ export default function Navbar() {
 
       {/* ---------- Hauptleiste ---------- */}
       <div className="relative" onMouseLeave={hoverRaus} onBlur={fokusRaus}>
+        {/* Hintergrund in Ebenen: Glas (immer), deckendes Weiß und Schatten werden nur per opacity überblendet */}
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-white/90 backdrop-blur-xl backdrop-saturate-150" />
         <div
           aria-hidden="true"
-          className={`absolute inset-0 -z-10 transition-all duration-500 ${
-            gescrollt || offen
-              ? "bg-white/90 shadow-[0_1px_0_rgba(21,26,36,0.06),0_10px_30px_-18px_rgba(21,26,36,0.25)] backdrop-blur-xl backdrop-saturate-150"
-              : "bg-white"
-          }`}
+          className={`absolute inset-0 -z-10 bg-white transition-opacity duration-500 ease-ov-out ${gescrollt || offen ? "opacity-0" : "opacity-100"}`}
+        />
+        <div
+          aria-hidden="true"
+          className={`absolute inset-0 -z-10 shadow-e2 transition-opacity duration-500 ease-ov-out ${gescrollt || offen ? "opacity-100" : "opacity-0"}`}
         />
         <div className={`ov-container flex items-center justify-between gap-6 transition-[height] duration-500 ${gescrollt ? "h-[68px]" : "h-[84px]"}`}>
           <Link href="/" aria-label="ÖkoInvest – zur Startseite" className="relative shrink-0">
@@ -219,7 +226,7 @@ export default function Navbar() {
             </Link>
             <Link
               href="/flaechencheck"
-              className="group hidden h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-ov-600 pl-5 pr-4 text-[14.5px] font-semibold text-white shadow-[0_8px_24px_-10px_rgba(102,153,51,0.8)] transition-all hover:bg-ov-700 sm:flex"
+              className="group hidden h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-ov-600 pl-5 pr-4 text-[14.5px] font-semibold text-white shadow-gruen transition-colors hover:bg-ov-700 sm:flex"
             >
               Fläche prüfen
               <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -241,15 +248,16 @@ export default function Navbar() {
         <div
           id="ov-mega"
           ref={megaPanel}
+          inert={!offen}
           onMouseEnter={() => clearTimeout(schliessTimer.current)}
           className={`absolute inset-x-0 top-full hidden xl:block ${offen ? "pointer-events-auto" : "pointer-events-none"}`}
         >
           <div
-            className={`ov-container transition-all duration-300 ${
-              offen ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"
+            className={`ov-container origin-top transition-[opacity,transform] ${
+              offen ? "translate-y-0 scale-100 opacity-100 duration-300 ease-ov-out" : "-translate-y-2 scale-[0.985] opacity-0 duration-200 ease-ov-in"
             }`}
           >
-            {offenesItem && <MegaPanel item={offenesItem} pfad={pfad} onNavigate={() => setOffen(null)} />}
+            {offenesItem && <MegaPanel key={offenesItem.title} item={offenesItem} pfad={pfad} onNavigate={() => setOffen(null)} />}
           </div>
         </div>
       </div>
@@ -278,12 +286,14 @@ export default function Navbar() {
 
 function MegaPanel({ item, pfad, onNavigate }) {
   const vieleGruppen = item.groups.length > 1;
+  let lfd = 0; // laufende Nummer über alle Gruppen – für den gestaffelten Einstieg
   return (
-    <div className="mt-2 overflow-hidden rounded-3xl bg-white shadow-[0_30px_80px_-30px_rgba(3,18,43,0.45)] ring-1 ring-ink-200/70">
+    <div className="mt-2 overflow-hidden rounded-3xl bg-white shadow-e5 ring-1 ring-ink-200/70">
       <div className="grid grid-cols-[260px_1fr_300px]">
-        <div className="border-r border-ink-100 bg-sand-50 p-8">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-700">{item.title}</p>
-          <p className="mt-3 font-display text-[21px] font-bold leading-snug tracking-tight text-ink-900">{item.intro}</p>
+        <div className="relative overflow-hidden border-r border-ink-100 bg-sand-50 p-8">
+          <div aria-hidden="true" className="ov-grid-bg-light absolute inset-0 opacity-60" />
+          <p className="ov-ein relative text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-700">{item.title}</p>
+          <p className="ov-ein relative mt-3 font-display text-[21px] font-bold leading-snug tracking-tight text-ink-900" style={{ "--ov-delay": "40ms" }}>{item.intro}</p>
         </div>
 
         <div className={`grid gap-x-4 gap-y-6 p-6 ${vieleGruppen ? "grid-cols-2" : "grid-cols-2"}`}>
@@ -294,15 +304,16 @@ function MegaPanel({ item, pfad, onNavigate }) {
                 {g.items.map((s) => {
                   const Icon = iconFor(s.icon);
                   const aktiv = pfad === s.href;
+                  const nr = lfd++;
                   return (
-                    <li key={s.href + s.name}>
+                    <li key={s.href + s.name} className="ov-ein" style={{ "--ov-delay": `${60 + Math.min(nr, 10) * 28}ms` }}>
                       <Link
                         href={s.href}
                         onClick={onNavigate}
                         aria-current={aktiv ? "page" : undefined}
                         className={`group flex items-start gap-3.5 rounded-2xl p-3 transition-colors ${aktiv ? "bg-ov-50" : "hover:bg-ink-50"}`}
                       >
-                        <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all duration-300 ${aktiv ? "bg-ov-500 text-white" : "bg-ov-50 text-ov-600 group-hover:bg-ov-500 group-hover:text-white"}`}>
+                        <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-[background-color,color,transform] duration-300 group-hover:scale-105 ${aktiv ? "bg-ov-500 text-white" : "bg-ov-50 text-ov-600 group-hover:bg-ov-500 group-hover:text-white"}`}>
                           <Icon aria-hidden="true" className="h-5 w-5" strokeWidth={1.8} />
                         </span>
                         <span>
@@ -318,7 +329,7 @@ function MegaPanel({ item, pfad, onNavigate }) {
           ))}
         </div>
 
-        <div className="p-4">
+        <div className="ov-ein p-4" style={{ "--ov-delay": "140ms" }}>
           {item.feature ? <FeatureKachel feature={item.feature} onNavigate={onNavigate} /> : <FeatureKachel feature={STANDARD_FEATURE} onNavigate={onNavigate} />}
         </div>
       </div>
@@ -377,16 +388,18 @@ function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, 
       role="dialog"
       aria-modal="true"
       aria-label="Menü"
-      className={`fixed inset-0 z-[120] flex flex-col bg-white transition-[opacity,transform] duration-400 xl:hidden ${
-        offen ? "visible translate-y-0 opacity-100" : "invisible -translate-y-3 opacity-0"
+      className={`fixed inset-0 z-[120] flex flex-col bg-white transition-[opacity,transform,visibility] xl:hidden ${
+        offen
+          ? "visible translate-y-0 opacity-100 duration-[420ms] ease-ov-out"
+          : "invisible translate-y-6 opacity-0 duration-200 ease-ov-in"
       }`}
     >
-      <div className="flex h-[72px] items-center justify-between border-b border-ink-100 px-5">
+      <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-ink-100 px-5">
         <Link href="/" onClick={schliessen} className="relative h-[40px]" aria-label="Startseite">
           <Logo />
         </Link>
-        <button ref={schliessKnopf} type="button" onClick={schliessen} aria-label="Menü schließen" className="flex h-11 w-11 items-center justify-center rounded-full bg-ink-100 text-ink-900">
-          <X aria-hidden="true" className="h-5 w-5" />
+        <button ref={schliessKnopf} type="button" onClick={schliessen} aria-label="Menü schließen" className="ov-press group flex h-11 w-11 items-center justify-center rounded-full bg-ink-100 text-ink-900 transition-colors hover:bg-ink-200">
+          <X aria-hidden="true" className={`h-5 w-5 transition-transform duration-500 ease-ov-out ${offen ? "rotate-0" : "-rotate-90"}`} />
         </button>
       </div>
 
@@ -398,10 +411,10 @@ function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, 
           <Sprachwahl />
         </div>
         <ul>
-          {NAVIGATION.map((item) => {
+          {NAVIGATION.map((item, i) => {
             const auf = gruppe === item.title;
             return (
-              <li key={item.title} className="border-b border-ink-100">
+              <li key={item.title} className={`border-b border-ink-100 ${offen ? "ov-ein" : ""}`} style={{ "--ov-delay": `${80 + i * 45}ms` }}>
                 <button
                   type="button"
                   onClick={() => setGruppe(auf ? null : item.title)}
@@ -409,17 +422,17 @@ function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, 
                   className="flex w-full items-center justify-between py-4 text-left font-display text-[19px] font-bold text-ink-900"
                 >
                   {item.title}
-                  <span className={`flex h-8 w-8 items-center justify-center rounded-full transition-all ${auf ? "rotate-180 bg-ov-500 text-white" : "bg-ink-100 text-ink-600"}`}>
+                  <span className={`flex h-8 w-8 items-center justify-center rounded-full transition-[background-color,color,transform] duration-300 ease-ov-out ${auf ? "rotate-180 bg-ov-500 text-white" : "bg-ink-100 text-ink-600"}`}>
                     <ChevronDown aria-hidden="true" className="h-4 w-4" />
                   </span>
                 </button>
-                <div className={`grid transition-[grid-template-rows] duration-300 ${auf ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
-                  <div className="overflow-hidden">
+                <div className={auf ? "block" : "hidden"}>
+                  <div>
                     <ul className="grid gap-1 pb-4 sm:grid-cols-2">
-                      {item.groups.flatMap((g) => g.items).map((s) => {
+                      {item.groups.flatMap((g) => g.items).map((s, j) => {
                         const Icon = iconFor(s.icon);
                         return (
-                          <li key={s.href + s.name}>
+                          <li key={s.href + s.name} className="ov-ein" style={{ "--ov-delay": `${Math.min(j, 10) * 30}ms` }}>
                             <Link
                               href={s.href}
                               onClick={schliessen}
@@ -446,12 +459,12 @@ function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, 
         </ul>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 border-t border-ink-100 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className={`grid shrink-0 grid-cols-2 gap-2 border-t border-ink-100 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] ${offen ? "ov-ein" : ""}`} style={{ "--ov-delay": "260ms" }}>
         <Link href={konto.href} onClick={schliessen} className="flex h-12 items-center justify-center gap-2 rounded-full text-[15px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200">
           <UserRound aria-hidden="true" className="h-4 w-4" />
           {konto.label}
         </Link>
-        <Link href="/flaechencheck" onClick={schliessen} className="flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 text-[15px] font-semibold text-white">
+        <Link href="/flaechencheck" onClick={schliessen} className="ov-press flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 text-[15px] font-semibold text-white shadow-gruen">
           Fläche prüfen
           <ArrowRight aria-hidden="true" className="h-4 w-4" />
         </Link>

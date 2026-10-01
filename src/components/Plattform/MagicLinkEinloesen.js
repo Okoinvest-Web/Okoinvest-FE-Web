@@ -5,9 +5,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { senden } from "@/lib/plattform/client";
-import { FehlerBox } from "@/components/Portal/felder";
+import Button from "@/components/ui/Button";
+import { FormFehler } from "@/components/formular/Meldungen";
 import ZweiFaktorSchritt from "./ZweiFaktorSchritt";
 import { weiterNachLogin } from "./LoginFormular";
 
@@ -23,11 +24,13 @@ export default function MagicLinkEinloesen({ token }) {
 
   return (
     <div className="space-y-5">
-      <FehlerBox>{fehler}</FehlerBox>
-      <button
-        type="button"
+      <FormFehler>{fehler}</FormFehler>
+      <Button
+        block
         autoFocus
-        disabled={laeuft || !token}
+        icon={LogIn}
+        laedt={laeuft}
+        disabled={!token}
         onClick={async () => {
           setLaeuft(true);
           setFehler("");
@@ -44,11 +47,9 @@ export default function MagicLinkEinloesen({ token }) {
             setLaeuft(false);
           }
         }}
-        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold text-white shadow-[0_8px_24px_-8px_rgba(102,153,51,0.65)] transition-colors hover:bg-ov-700 disabled:opacity-60"
       >
-        {laeuft ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <LogIn aria-hidden="true" className="h-4 w-4" />}
-        Jetzt anmelden
-      </button>
+        {laeuft ? "Anmeldung läuft …" : "Jetzt anmelden"}
+      </Button>
       <p className="text-center text-[14px] text-ink-600">
         Link abgelaufen? <Link href="/login" className="font-semibold text-ov-700 hover:text-ov-800">Neuen Link anfordern</Link>
       </p>

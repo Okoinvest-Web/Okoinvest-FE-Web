@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, CalendarClock, Coins, Info, ShieldAlert, Store } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
-import { Auswahl, Gruppe, Kennzahl, Regler, Zahl } from "./bausteine";
+import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Zahl } from "./bausteine";
+import { useTeilbarerZustand } from "./kontext";
 import { ErgebnisKopf, MobilKurz, RechnerRahmen } from "./InvestTeile";
 import { LAENDER, NETZSTATUS, STANDARD, VERMARKTUNG, bewerteProjekt } from "@/lib/rechner/projektbewertung";
 import { PHASEN, PROVISION } from "@/lib/invest/markt";
@@ -19,6 +20,12 @@ export default function ProjektbewertungRechner() {
   const [netzKm, setNetzKm] = useState(STANDARD.netzKm);
   const [vermarktung, setVermarktung] = useState(STANDARD.vermarktung);
   const [land, setLand] = useState(STANDARD.land);
+
+  const setzer = { mwp: setMwp, phase: setPhase, netz: setNetz, netzKm: setNetzKm, vermarktung: setVermarktung, land: setLand };
+  useTeilbarerZustand({ mwp, phase, netz, netzKm, vermarktung, land }, (neu) => Object.entries(neu).forEach(([k, v]) => setzer[k]?.(v)), {
+    optionen: { phase: PHASEN.map((p) => p.id), netz: NETZSTATUS.map((x) => x.id), vermarktung: VERMARKTUNG.map((x) => x.id), land: LAENDER.map((x) => x.id) },
+    pruefen: bewerteProjekt,
+  });
 
   const r = useMemo(() => bewerteProjekt({ mwp, phase, netz, netzKm, vermarktung, land }), [mwp, phase, netz, netzKm, vermarktung, land]);
   const bestand = phase === "cod";
@@ -86,17 +93,18 @@ export default function ProjektbewertungRechner() {
           </p>
           <ErgebnisKopf titel="Orientierungswert" plakette={`${r.phase.kurz} · ${mwp} MWp`} />
 
-          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Kennzahl ton="navy" icon={Coins} label={bestand ? "Anlagenwert je kWp" : "Kaufpreis je kWp"} zusatz="Spanne" className="col-span-2">
-              <Zahl wert={r.preisKwp.min} />–<Zahl wert={r.preisKwp.max} suffix=" €/kWp" />
+          <Hauptzahl className="mt-5" icon={Coins} label={bestand ? "Anlagenwert je kWp" : "Kaufpreis je kWp"} zusatz="Spanne">
+            <Zahl wert={r.preisKwp.min} einlauf />–<Zahl wert={r.preisKwp.max} einlauf />
+            <span className="ov-einheit">€/kWp</span>
+          </Hauptzahl>
+          <Belege spalten={2}>
+            <Kennzahl ton="akzent" icon={Coins} label="Gesamt (Mitte)" zusatz={`${eurGesamt(r.gesamt.min)} – ${eurGesamt(r.gesamt.max)}`}>
+              <Zahl wert={r.gesamt.mittel} format={eurGesamt} delta="hell" />
             </Kennzahl>
-            <Kennzahl ton="gruen" icon={Coins} label="Gesamt (Mitte)" zusatz={`${eurGesamt(r.gesamt.min)} – ${eurGesamt(r.gesamt.max)}`} className="col-span-2 xl:col-span-1">
-              {eurGesamt(r.gesamt.mittel)}
-            </Kennzahl>
-            <Kennzahl icon={ShieldAlert} label="Risiko" zusatz={bestand ? "Betriebsrisiko" : `bis RTB ≈ ${r.monateBisRtb} Monate`} className="col-span-2 xl:col-span-1">
+            <Kennzahl icon={ShieldAlert} label="Risiko" zusatz={bestand ? "Betriebsrisiko" : `bis RTB ≈ ${r.monateBisRtb} Monate`}>
               <span className="text-[0.8em]">{r.risiko}</span>
             </Kennzahl>
-          </div>
+          </Belege>
 
           <Phasenleiter r={r} />
 
@@ -115,15 +123,15 @@ export default function ProjektbewertungRechner() {
             </ul>
           )}
 
-          <div className="mt-7 rounded-3xl bg-navy-950 p-5 text-white md:p-6">
+          <div className="mt-7 rounded-3xl bg-ov-50 p-5 ring-1 ring-ov-200 md:p-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-ov-300">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-ov-600 ring-1 ring-ov-200">
                   <Store aria-hidden="true" className="h-5 w-5" />
                 </span>
                 <div>
-                  <p className="font-display text-[18px] font-bold">Projekt in der Börse anbieten</p>
-                  <p className="mt-1 text-[13.5px] leading-relaxed text-white/70">
+                  <p className="font-display text-[18px] font-bold text-ink-900">Projekt in der Börse anbieten</p>
+                  <p className="mt-1 text-[13.5px] leading-relaxed text-ink-700">
                     Anonymer Exposé-Teaser, Käufer mit Suchprofil, NDA und Datenraum über die Plattform. Provision {PROVISION.verkaeufer.text}.
                   </p>
                 </div>

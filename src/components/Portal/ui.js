@@ -2,12 +2,18 @@
 //
 // Bausteine des Portals (Server- und Client-tauglich, ohne Hooks).
 // Nur Tokens des Design-Systems: ov-*, navy-*, ink-*, sand-*, sun-* (sparsam).
+// Design-System 2.0 (docs/DESIGN.md): Props abwärtskompatibel, neue Props optional.
+// Neue Primitives (Dialog, Tabs, Toast, Tooltip, KpiKachel, Skeleton …) liegen
+// unter src/components/ui und werden hier nur ergänzend genutzt.
 
 import Link from "next/link";
 import { ArrowRight, Check, Circle } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { PROZESSE, statusInfo } from "@/lib/plattform/prozesse";
 import { datumZeit } from "@/lib/plattform/format";
+import Sparkline from "@/components/ui/Sparkline";
+import Skeleton from "@/components/ui/Skeleton";
+import { Trend } from "@/components/ui/KpiKachel";
 
 const TOENE = {
   neutral: "bg-ink-100 text-ink-700 ring-ink-200",
@@ -15,7 +21,12 @@ const TOENE = {
   ok: "bg-ov-50 text-ov-800 ring-ov-200",
   warn: "bg-sun-300/25 text-ink-900 ring-sun-400/50",
   dunkel: "bg-navy-900 text-white ring-navy-800",
+  // 2.0
+  success: "bg-ov-50 text-ov-800 ring-ov-200",
+  danger: "bg-danger-50 text-danger-700 ring-danger-200",
+  marke: "bg-ov-600 text-white ring-ov-700/40",
 };
+const PUNKT = { ok: "bg-ov-500", success: "bg-ov-500", warn: "bg-sun-500", info: "bg-navy-500", danger: "bg-danger-500", marke: "bg-white", dunkel: "bg-ov-300" };
 
 export function Badge({ ton = "neutral", children, className }) {
   return (
@@ -29,7 +40,7 @@ export function StatusBadge({ art, status, className }) {
   const s = statusInfo(art, status);
   return (
     <Badge ton={s.ton} className={className}>
-      <span aria-hidden="true" className={cn("h-1.5 w-1.5 rounded-full", s.ton === "ok" ? "bg-ov-500" : s.ton === "warn" ? "bg-sun-500" : s.ton === "info" ? "bg-navy-500" : "bg-ink-400")} />
+      <span aria-hidden="true" className={cn("h-1.5 w-1.5 rounded-full", PUNKT[s.ton] || "bg-ink-400")} />
       {s.label}
     </Badge>
   );
@@ -39,20 +50,46 @@ export function DemoBadge({ className }) {
   return <Badge ton="warn" className={className}>Demo</Badge>;
 }
 
-/** Weiße Karte mit optionalem Kopf */
-export function Karte({ titel, untertitel, aktion, children, className, innen = "p-5 md:p-6", as: Tag = "section", id }) {
+/**
+ * Weiße Karte mit optionalem Kopf.
+ * 2.0: ton hell (Standard) | ruhig (Sand) | erhaben (mehr Tiefe, für die eine
+ * wichtigste Karte je Ansicht); icon im Kopf; laedt = Skeleton-Inhalt.
+ */
+export function Karte({ titel, untertitel, aktion, children, className, innen = "p-5 md:p-6", as: Tag = "section", id, ton = "hell", icon: Icon, laedt = false }) {
+  const flaeche = {
+    hell: "bg-white ring-1 ring-ink-200/70 shadow-e1",
+    ruhig: "bg-sand-50 ring-1 ring-sand-200",
+    erhaben: "bg-white ring-1 ring-ink-200/60 shadow-e3",
+  }[ton] || "bg-white ring-1 ring-ink-200/70 shadow-e1";
   return (
-    <Tag id={id} className={cn("min-w-0 rounded-3xl bg-white ring-1 ring-ink-200/70", className)}>
+    <Tag id={id} className={cn("min-w-0 rounded-3xl", flaeche, className)} aria-busy={laedt || undefined}>
       {(titel || aktion) && (
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-ink-100 px-5 py-4 md:px-6">
-          <div className="min-w-0">
-            {titel && <h2 className="font-display text-[17px] font-bold text-ink-900">{titel}</h2>}
-            {untertitel && <p className="mt-0.5 text-[13.5px] text-ink-500">{untertitel}</p>}
+          <div className="flex min-w-0 items-start gap-3">
+            {Icon && (
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-ov-50 text-ov-600">
+                <Icon aria-hidden="true" className="h-4 w-4" />
+              </span>
+            )}
+            <div className="min-w-0">
+              {titel && <h2 className="font-display text-[17px] font-bold tracking-[-0.01em] text-ink-900">{titel}</h2>}
+              {untertitel && <p className="mt-0.5 text-[13.5px] text-ink-500">{untertitel}</p>}
+            </div>
           </div>
           {aktion}
         </div>
       )}
-      <div className={innen}>{children}</div>
+      <div className={innen}>
+        {laedt ? (
+          <div aria-hidden="true" className="space-y-3">
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+          </div>
+        ) : (
+          children
+        )}
+      </div>
     </Tag>
   );
 }
@@ -60,10 +97,15 @@ export function Karte({ titel, untertitel, aktion, children, className, innen = 
 /** Kopf einer Portalseite */
 export function SeitenKopf({ eyebrow, titel, text, aktionen, children }) {
   return (
-    <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-end md:justify-between">
+    <div className="ov-ein mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-end md:justify-between">
       <div className="min-w-0">
-        {eyebrow && <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-700">{eyebrow}</p>}
-        <h1 className="mt-1 font-display text-[26px] font-extrabold leading-tight tracking-tight text-ink-900 md:text-[32px]">{titel}</h1>
+        {eyebrow && (
+          <p className="inline-flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-700">
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-ov-500" />
+            {eyebrow}
+          </p>
+        )}
+        <h1 className="mt-1.5 font-display text-[clamp(1.65rem,1.35rem+1.1vw,2.25rem)] font-extrabold leading-[1.1] tracking-[-0.025em] text-ink-900">{titel}</h1>
         {text && <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-ink-600">{text}</p>}
         {children}
       </div>
@@ -72,28 +114,51 @@ export function SeitenKopf({ eyebrow, titel, text, aktionen, children }) {
   );
 }
 
-/** Kennzahl-Kachel */
-export function Kennzahl({ label, wert, hinweis, icon: Icon, href, ton = "hell" }) {
+/**
+ * Kennzahl-Kachel.
+ * 2.0 (optional): trend { wert, text, richtung }, verlauf (Zahlenliste → Sparkline),
+ * einheit, laedt. Für neue Dashboards: KpiKachel aus @/components/ui/KpiKachel.
+ */
+export function Kennzahl({ label, wert, hinweis, icon: Icon, href, ton = "hell", trend, verlauf, einheit, laedt = false }) {
   const dunkel = ton === "dunkel";
-  const inhalt = (
+  const inhalt = laedt ? (
+    <div aria-hidden="true">
+      <Skeleton dunkel={dunkel} className="h-3.5 w-24" />
+      <Skeleton dunkel={dunkel} className="mt-4 h-7 w-20" />
+      <Skeleton dunkel={dunkel} className="mt-3 h-3 w-32" />
+    </div>
+  ) : (
     <>
       <div className="flex items-start justify-between gap-3">
         <p className={cn("text-[13px] font-medium", dunkel ? "text-white/70" : "text-ink-500")}>{label}</p>
         {Icon && (
-          <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", dunkel ? "bg-white/10 text-ov-300" : "bg-ov-50 text-ov-600")}>
+          <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors", dunkel ? "bg-white/10 text-ov-300" : "bg-ov-50 text-ov-600", href && !dunkel && "group-hover:bg-ov-600 group-hover:text-white")}>
             <Icon aria-hidden="true" className="h-[18px] w-[18px]" />
           </span>
         )}
       </div>
-      <p className={cn("ov-num mt-3 font-display text-[28px] font-extrabold leading-none tracking-tight", dunkel ? "text-white" : "text-ink-900")}>{wert}</p>
-      {hinweis && <p className={cn("mt-2 text-[12.5px]", dunkel ? "text-white/60" : "text-ink-500")}>{hinweis}</p>}
+      <div className="mt-3 flex items-end justify-between gap-3">
+        <p className={cn("ov-kpi", dunkel ? "text-white" : "text-ink-900")}>
+          {wert}
+          {einheit && <span className="ov-einheit">{einheit}</span>}
+        </p>
+        {verlauf?.length > 1 && <Sparkline werte={verlauf} ton={dunkel ? "hell" : "marke"} breite={84} hoehe={28} label={`Verlauf ${label}`} />}
+      </div>
+      {(hinweis || trend) && (
+        <p className={cn("mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px]", dunkel ? "text-white/70" : "text-ink-500")}>
+          {trend && <Trend {...trend} aufDunkel={dunkel} />}
+          {hinweis && <span>{hinweis}</span>}
+        </p>
+      )}
     </>
   );
   const klassen = cn(
-    "block min-w-0 rounded-3xl p-5 transition-shadow",
-    dunkel ? "bg-navy-950 text-white ring-1 ring-navy-800" : "bg-white ring-1 ring-ink-200/70",
-    href && (dunkel ? "hover:ring-ov-400" : "hover:shadow-[0_12px_32px_-18px_rgba(3,18,43,0.35)] hover:ring-ov-200")
+    "group block min-w-0 rounded-3xl p-5",
+    dunkel ? "ov-verlauf-nacht text-white ring-1 ring-white/10 shadow-kante" : "bg-white ring-1 ring-ink-200/70 shadow-e1",
+    href && "ov-lift ov-press",
+    href && (dunkel ? "hover:ring-ov-400" : "hover:ring-ov-200")
   );
+  if (laedt) return <div className={klassen} aria-busy="true">{inhalt}</div>;
   return href ? (
     <Link href={href} className={klassen}>
       {inhalt}
@@ -103,18 +168,31 @@ export function Kennzahl({ label, wert, hinweis, icon: Icon, href, ton = "hell" 
   );
 }
 
-/** Leerer Zustand */
-export function Leer({ icon: Icon, titel, text, aktion, className }) {
+/**
+ * Leerer Zustand. 2.0: illustration (JSX, z. B. von T7) statt Icon;
+ * sekundaer (zweite, leise Aktion).
+ */
+export function Leer({ icon: Icon, titel, text, aktion, sekundaer, illustration, className }) {
   return (
-    <div className={cn("flex flex-col items-center rounded-3xl border border-dashed border-ink-200 bg-white/60 px-6 py-12 text-center", className)}>
-      {Icon && (
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-ov-50 text-ov-600">
-          <Icon aria-hidden="true" className="h-6 w-6" />
-        </span>
+    <div className={cn("ov-ein flex flex-col items-center rounded-3xl border border-dashed border-ink-200 bg-white/60 px-6 py-12 text-center", className)}>
+      {illustration ? (
+        <div aria-hidden="true" className="mb-1 w-full max-w-[220px]">{illustration}</div>
+      ) : (
+        Icon && (
+          <span className="relative isolate flex h-14 w-14 items-center justify-center rounded-2xl bg-ov-50 text-ov-600 ring-1 ring-ov-100">
+            <span aria-hidden="true" className="absolute -inset-2 -z-10 rounded-3xl bg-ov-50/60" />
+            <Icon aria-hidden="true" className="h-6 w-6" strokeWidth={1.8} />
+          </span>
+        )
       )}
       <p className="mt-4 font-display text-[18px] font-bold text-ink-900">{titel}</p>
       {text && <p className="mt-1.5 max-w-md text-[14.5px] leading-relaxed text-ink-600">{text}</p>}
-      {aktion && <div className="mt-5">{aktion}</div>}
+      {(aktion || sekundaer) && (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          {aktion}
+          {sekundaer}
+        </div>
+      )}
     </div>
   );
 }
@@ -199,7 +277,7 @@ function StepperInnen({ art, status, kompakt = false }) {
             <li key={s} className={cn("min-w-0 flex-1", !kompakt && "min-w-[92px]")} aria-current={aktiv ? "step" : undefined}>
               <span className={cn("block h-1.5 rounded-full", fertig ? "bg-ov-500" : aktiv ? "bg-ov-500" : aussen ? "bg-ink-200" : "bg-ink-200")} />
               {!kompakt && (
-                <span className={cn("mt-2 block text-[12px] leading-tight", aktiv ? "font-semibold text-ink-900" : fertig ? "text-ink-600" : "text-ink-400")}>
+                <span className={cn("mt-2 block text-[12px] leading-tight", aktiv ? "font-semibold text-ink-900" : fertig ? "text-ink-600" : "text-ink-500")}>
                   {statusInfo(art, s).label}
                 </span>
               )}
@@ -228,7 +306,7 @@ export function Tabelle({ kopf = [], children, className }) {
     <div className={cn("-mx-5 overflow-x-auto md:-mx-6", className)}>
       <table className="w-full min-w-[640px] text-left text-[14px]">
         <thead>
-          <tr className="border-b border-ink-100 text-[12px] font-semibold uppercase tracking-wider text-ink-500">
+          <tr className="border-b border-ink-100 bg-ink-50/60 text-[12px] font-semibold uppercase tracking-wider text-ink-500">
             {kopf.map((k, i) => (
               <th key={i} scope="col" className="px-5 py-3 font-semibold first:pl-5 md:px-6">
                 {k}
@@ -236,7 +314,7 @@ export function Tabelle({ kopf = [], children, className }) {
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-ink-100">{children}</tbody>
+        <tbody className="divide-y divide-ink-100 [&>tr]:transition-colors [&>tr:hover]:bg-ink-50/70">{children}</tbody>
       </table>
     </div>
   );
@@ -251,7 +329,9 @@ export function Hinweis({ ton = "info", titel, children, className, icon: Icon }
     ok: "bg-ov-50 text-ov-900 ring-ov-200",
     warn: "bg-sun-300/20 text-ink-900 ring-sun-400/40",
     neutral: "bg-ink-50 text-ink-800 ring-ink-200",
-  }[ton];
+    danger: "bg-danger-50 text-danger-800 ring-danger-200",
+    success: "bg-ov-50 text-ov-900 ring-ov-200",
+  }[ton] || "bg-navy-50 text-navy-900 ring-navy-100";
   return (
     <div className={cn("flex gap-3 rounded-2xl px-4 py-3.5 text-[14px] leading-relaxed ring-1 ring-inset", t, className)}>
       {Icon && <Icon aria-hidden="true" className="mt-0.5 h-[18px] w-[18px] shrink-0" />}

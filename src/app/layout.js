@@ -118,7 +118,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="de" dir="ltr" className={`${inter.variable} ${manrope.variable}`}>
       <body className="bg-white text-ink-900">
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-[#669933] focus:text-white focus:rounded">Zum Hauptinhalt springen</a>
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-ov-600 focus:text-white focus:rounded">Zum Hauptinhalt springen</a>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteSchema) }} />
         <LayoutWrapper>{children}</LayoutWrapper>
         <GoogleAnalytics />

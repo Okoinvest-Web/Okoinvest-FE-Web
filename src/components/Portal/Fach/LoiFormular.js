@@ -3,10 +3,13 @@
 // Strukturierte Absichtserklärung (LOI) des Investors – Preisbasis (Gesamt, €/kWp, Enterprise Value mit Überleitung
 // zum Eigenkapitalwert), Transaktions- und Zahlungsstruktur, Bedingungen, Finanzierung, Exklusivität, Gültigkeit.
 // Übergang interesse → loi_abgegeben über /api/portal/status; Prüfung serverseitig (fach/loi.js).
+// T5: vor der Abgabe ein Prüfschritt mit allen Eckdaten („Ändern“ / „Verbindlich abgeben“), danach Erfolgsmoment.
 
 import { useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileSignature } from "lucide-react";
+import { FileSignature, PencilLine } from "lucide-react";
+import { Zusammenfassung, ErfolgsAnsicht } from "@/components/formular/Meldungen";
+import { SchrittBuehne } from "@/components/formular/Schritte";
 import Button from "@/components/ui/Button";
 import { Chip, ErfolgBox, Feld, FehlerBox, auswahlfeld, eingabe, textbereich } from "@/components/Portal/felder";
 import { senden } from "@/lib/plattform/client";
@@ -40,6 +43,7 @@ export default function LoiFormular({ interesseId, mwp = 0, vorschlag = null }) 
   const [laeuft, setLaeuft] = useState(false);
   const [fehler, setFehler] = useState("");
   const [ok, setOk] = useState("");
+  const [pruefen, setPruefen] = useState(false);
   const setze = (k, v) => setL((x) => ({ ...x, [k]: v }));
   const kwp = (Number(mwp) || 0) * 1000;
   const eigenkapital = useMemo(() => {
@@ -50,6 +54,12 @@ export default function LoiFormular({ interesseId, mwp = 0, vorschlag = null }) 
 
   async function absenden(e) {
     e.preventDefault();
+    if (!pruefen) {
+      // Erst die Zusammenfassung zeigen (Baymard: Prüfschritt vor bindungsnaher Abgabe)
+      setFehler("");
+      setPruefen(true);
+      return;
+    }
     setLaeuft(true);
     setFehler("");
     try {
@@ -70,6 +80,60 @@ export default function LoiFormular({ interesseId, mwp = 0, vorschlag = null }) 
       else liste = liste.filter((y) => y !== "keine" || b === "keine");
       return { ...x, bedingungenListe: liste };
     });
+
+  const datum = (d) => (d ? new Date(d).toLocaleDateString("de-DE") : "–");
+  const abschnitte = [
+    {
+      titel: "Preis",
+      eintraege: [
+        ["Preisbasis", (LOI_PREISBASIS[l.preisbasis] || "").replace(/ \(.*\)$/, "")],
+        l.preisbasis === "gesamt" ? ["Kaufpreis gesamt", eur(zahl(l.betrag))] : null,
+        l.preisbasis === "proKwp" ? ["Preis je kWp", `${l.preisProKwp} €/kWp`] : null,
+        l.preisbasis === "ev" ? ["Enterprise Value", eur(zahl(l.enterpriseValue))] : null,
+        ["Indikativer Eigenkapitalwert", `${eur(eigenkapital)}${kwp && eigenkapital > 0 ? ` (${Math.round(eigenkapital / kwp).toLocaleString("de-DE")} €/kWp)` : ""}`],
+      ].filter(Boolean),
+    },
+    {
+      titel: "Struktur und Fristen",
+      eintraege: [
+        ["Transaktion", LOI_STRUKTUR[l.transaktion] || "–"],
+        ["Zahlung", `${LOI_ZAHLUNG[l.zahlung] || "–"}${l.zahlung !== "einmal" && l.zahlungDetails ? ` – ${l.zahlungDetails}` : ""}`],
+        ["Finanzierung", LOI_FINANZIERUNG[l.finanzierung] || "–"],
+        ["Exklusivität", l.exklusivitaetWochen ? `${l.exklusivitaetWochen} Wochen` : "keine"],
+        ["Gültig bis", datum(l.gueltigBis)],
+        ["Bedingungen", l.bedingungenListe.map((b) => LOI_BEDINGUNGEN[b]).filter(Boolean).join(", ") || "–"],
+      ],
+    },
+  ];
+
+  if (ok) {
+    return <ErfolgsAnsicht titel="Absichtserklärung abgegeben" text={ok} className="rounded-2xl bg-ov-50 p-5 ring-1 ring-ov-200" />;
+  }
+
+  if (pruefen) {
+    return (
+      <form onSubmit={absenden} className="space-y-4">
+        <SchrittBuehne schluessel="pruefen" fokusZiel={null}>
+          <Zusammenfassung
+            titel="Bitte prüfen Sie Ihre Absichtserklärung"
+            text="Nach der Abgabe sieht der Anbieter diese Eckdaten. Die LOI ist unverbindlich bis zum Kaufvertrag (SPA), die Exklusivität gilt ab Annahme."
+            abschnitte={abschnitte}
+          />
+          {l.text && (
+            <div className="mt-3 rounded-2xl bg-white p-4 ring-1 ring-inset ring-ink-200/70">
+              <p className="text-[13px] text-ink-500">Inhalt</p>
+              <p className="mt-1 whitespace-pre-line text-[14.5px] leading-relaxed text-ink-900">{l.text}</p>
+            </div>
+          )}
+        </SchrittBuehne>
+        <FehlerBox>{fehler}</FehlerBox>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <Button variant="ghost" icon={PencilLine} onClick={() => setPruefen(false)} disabled={laeuft}>Ändern</Button>
+          <Button type="submit" laedt={laeuft} icon={FileSignature}>{laeuft ? "Wird abgegeben …" : "Verbindlich abgeben"}</Button>
+        </div>
+      </form>
+    );
+  }
 
   return (
     <form onSubmit={absenden} className="space-y-4">
@@ -149,7 +213,7 @@ export default function LoiFormular({ interesseId, mwp = 0, vorschlag = null }) 
       <ErfolgBox>{ok}</ErfolgBox>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[12.5px] text-ink-500">Indikativer Eigenkapitalwert: <span className="ov-num font-semibold text-ink-900">{eur(eigenkapital)}</span>{kwp && eigenkapital > 0 ? ` · ${Math.round(eigenkapital / kwp).toLocaleString("de-DE")} €/kWp` : ""}</p>
-        <Button type="submit" disabled={laeuft || !!ok} icon={FileSignature}>{laeuft ? "Wird abgegeben …" : "LOI abgeben"}</Button>
+        <Button type="submit" disabled={laeuft || !!ok} icon={FileSignature} pfeil>Weiter zur Prüfung</Button>
       </div>
     </form>
   );

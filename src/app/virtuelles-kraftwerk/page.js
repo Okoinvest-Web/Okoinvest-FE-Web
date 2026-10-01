@@ -1,5 +1,7 @@
 import { Activity, BatteryCharging, Building2, Car, Factory, Gauge, LineChart, Radio, ShieldCheck, ShoppingCart, Sprout, Sun, Tractor, Users } from "lucide-react";
 import PageHero from "@/components/ui/PageHero";
+import HeroSzene from "@/components/Landing/HeroSzene";
+import { Grossspeicher } from "@/components/illustrationen";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import SplitMedia from "@/components/ui/SplitMedia";
@@ -134,6 +136,9 @@ export default async function VirtuellesKraftwerkPage() {
         <div className="ov-hero-in mt-12 max-w-2xl" style={{ "--ov-delay": "380ms" }}>
           <VppLiveSignal initial={live} />
         </div>
+        <HeroSzene>
+          <Grossspeicher ton="dunkel" animiert />
+        </HeroSzene>
       </PageHero>
 
       <Section tone="white" space="lg">

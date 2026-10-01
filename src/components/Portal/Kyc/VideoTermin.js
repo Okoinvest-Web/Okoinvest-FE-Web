@@ -10,6 +10,7 @@ import { Hinweis } from "@/components/Portal/ui";
 import SlotAuswahl from "@/components/Portal/Termine/SlotAuswahl";
 import { senden } from "@/lib/plattform/client";
 import { zeitraumText } from "@/lib/plattform/termine";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 const STATUS_TEXT = {
   offen: "Noch kein Termin gebucht.",
@@ -70,7 +71,7 @@ export default function VideoTermin({ onGeaendert }) {
             <p className="mt-1 text-[13px] text-ink-700">Den Link zum Gespräch erhalten Sie rechtzeitig vor dem Termin im Portal.</p>
           )}
           <div className="mt-3">
-            <Button size="sm" variant="secondary" disabled={laeuft} onClick={() => window.confirm("Termin absagen?") && aktion({ aktion: "stornieren" })}>Termin absagen</Button>
+            <Button size="sm" variant="secondary" disabled={laeuft} onClick={async () => (await bestaetigen({ titel: "Videotermin absagen?", text: "Der Termin wird freigegeben, Sie können danach einen neuen buchen.", bestaetigenText: "Termin absagen", gefahr: true })) && aktion({ aktion: "stornieren" })}>Termin absagen</Button>
           </div>
         </div>
       )}

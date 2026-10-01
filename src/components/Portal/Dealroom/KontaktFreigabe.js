@@ -11,13 +11,14 @@ import { senden } from "@/lib/plattform/client";
 import { statusLabel } from "@/lib/plattform/prozesse";
 import { DATENRAUM_STATUS } from "@/lib/plattform/prozesse";
 import { FehlerBox } from "@/components/Portal/felder";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 export default function KontaktFreigabe({ projektId, interessenten = [] }) {
   const router = useRouter();
   const [laeuft, setLaeuft] = useState("");
   const [fehler, setFehler] = useState("");
   async function umschalten(i) {
-    if (!i.kontaktFrei && !confirm(`Kontakt zwischen Anbieter und ${i.pseudonym} (${i.investor?.vorname} ${i.investor?.nachname}) freigeben? Beide sehen sich danach namentlich.`)) return;
+    if (!i.kontaktFrei && !(await bestaetigen({ titel: `Kontakt zu ${i.pseudonym} freigeben?`, text: "Anbieter und Interessent sehen sich danach namentlich.", details: [{ label: "Pseudonym", wert: i.pseudonym }, { label: "Investor", wert: `${i.investor?.vorname} ${i.investor?.nachname}` }], bestaetigenText: "Kontakt freigeben" }))) return;
     setLaeuft(i.id);
     setFehler("");
     try {

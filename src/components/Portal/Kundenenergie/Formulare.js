@@ -12,6 +12,7 @@ import { cn } from "@/components/ui/cn";
 import { Chip, ErfolgBox, Feld, FehlerBox, auswahlfeld, eingabe, textbereich } from "@/components/Portal/felder";
 import { senden } from "@/lib/plattform/client";
 import { ANLIEGEN_ARTEN, EINSPRUCH_GRUENDE } from "@/lib/plattform/kundenenergie";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 function useAktion() {
   const router = useRouter();
@@ -190,8 +191,8 @@ export function AnliegenKundenAktionen({ anliegen: x }) {
       )}
       <div className="flex flex-wrap gap-2">
         {ids.includes("annehmen") && <Button size="sm" icon={Check} disabled={a.laeuft || !ok} onClick={() => a.los(url, { aktion: "annehmen", bestaetigt: true }, { erfolgText: "Angebot angenommen." })}>Angebot annehmen</Button>}
-        {ids.includes("ausschlagen") && <Button size="sm" variant="secondary" icon={X} disabled={a.laeuft} onClick={() => window.confirm("Angebot wirklich ablehnen?") && a.los(url, { aktion: "ausschlagen" }, { erfolgText: "Angebot abgelehnt." })}>Nicht annehmen</Button>}
-        {ids.includes("zurueckziehen") && <Button size="sm" variant="ghost" icon={Undo2} disabled={a.laeuft} onClick={() => window.confirm("Anliegen zurückziehen?") && a.los(url, { aktion: "zurueckziehen" }, { erfolgText: "Zurückgezogen." })}>Zurückziehen</Button>}
+        {ids.includes("ausschlagen") && <Button size="sm" variant="secondary" icon={X} disabled={a.laeuft} onClick={async () => (await bestaetigen({ titel: "Angebot ablehnen?", text: "Das Angebot verfällt und kann danach nicht mehr angenommen werden.", bestaetigenText: "Angebot ablehnen", gefahr: true })) && a.los(url, { aktion: "ausschlagen" }, { erfolgText: "Angebot abgelehnt." })}>Nicht annehmen</Button>}
+        {ids.includes("zurueckziehen") && <Button size="sm" variant="ghost" icon={Undo2} disabled={a.laeuft} onClick={async () => (await bestaetigen({ titel: "Anliegen zurückziehen?", text: "Die Bearbeitung wird beendet.", bestaetigenText: "Anliegen zurückziehen", gefahr: true })) && a.los(url, { aktion: "zurueckziehen" }, { erfolgText: "Zurückgezogen." })}>Zurückziehen</Button>}
       </div>
       <FehlerBox>{a.fehler}</FehlerBox>
       <ErfolgBox>{a.erfolg}</ErfolgBox>

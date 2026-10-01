@@ -11,6 +11,7 @@ import { GENO_REGISTER, NACHSCHUSS, RECHTSFORM } from "@/lib/plattform/mitglied/
 import { GV_ARTEN, GV_FORMEN, MEHRHEITEN, TAGESORDNUNG_VORLAGE } from "@/lib/plattform/mitglied/versammlung";
 import { LAENDER } from "@/lib/plattform/konstanten";
 import { Klappe, Knopf, Meldung, useAktion } from "./teile";
+import { abfragen, bestaetigen } from "@/components/ui/Rueckfrage";
 
 const URL = "/api/admin/genossenschaft";
 const eurDe = (x) => `${Number(x || 0).toLocaleString("de-DE", { maximumFractionDigits: 2 })} €`;
@@ -84,7 +85,7 @@ export function MitgliedAktionen({ m, heute }) {
   const [unterschrift, setUnterschrift] = useState(false);
   const [e, setE] = useState({ betragEur: String(m.kennzahlen.offenEur || ""), am: heute, referenz: "" });
   const los = (mitgliedAktion, rest = {}, text = "Erledigt.") => a.ausfuehren({ aktion: "mitglied", id: m.id, mitgliedAktion, ...rest }, text);
-  const grund = (frage) => window.prompt(frage) || "";
+  const grund = async (optionen) => (await abfragen(optionen)) || "";
   const kOffen = m.kuendigungen.filter((k) => ["eingereicht", "bestaetigt", "wirksam"].includes(k.status));
   const zOffen = m.zeichnungen.filter((z) => z.status === "beantragt");
   return (
@@ -93,7 +94,7 @@ export function MitgliedAktionen({ m, heute }) {
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-2 text-[13px] text-ink-700"><input type="checkbox" checked={unterschrift} onChange={(x) => setUnterschrift(x.target.checked)} className="h-4 w-4 accent-[#558227]" /> Unterschrift liegt vor</label>
           <Knopf variante="primary" disabled={a.laeuft || !unterschrift} onClick={() => los("zulassen", { unterschrift }, "Beitritt zugelassen – Mitglied benachrichtigt.")}>Zulassen</Knopf>
-          <Knopf variante="gefahr" disabled={a.laeuft} onClick={() => { const g = grund("Begründung für das Mitglied:"); if (g) los("ablehnen", { grund: g }, "Beitritt abgelehnt."); }}>Ablehnen</Knopf>
+          <Knopf variante="gefahr" disabled={a.laeuft} onClick={async () => { const g = await grund({ titel: "Beitritt ablehnen?", text: "Das Mitglied wird benachrichtigt und sieht die Begründung.", label: "Begründung für das Mitglied", pflicht: true, mindestlaenge: 5, maxlaenge: 300, mehrzeilig: true, gefahr: true, bestaetigenText: "Beitritt ablehnen" }); if (g) los("ablehnen", { grund: g }, "Beitritt abgelehnt."); }}>Ablehnen</Knopf>
         </div>
       )}
       {["zugelassen", "aktiv"].includes(m.status) && m.kennzahlen.offenEur > 0 && (
@@ -130,7 +131,7 @@ export function UebertragungAktionen({ u }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
       <Knopf variante="primary" disabled={a.laeuft} onClick={() => a.ausfuehren({ aktion: "mitglied", id: u.id, mitgliedAktion: "uebertragungGenehmigen", uebertragungId: u.id }, "Übertragung durchgeführt.")}>Zustimmen</Knopf>
-      <Knopf variante="gefahr" disabled={a.laeuft} onClick={() => a.ausfuehren({ aktion: "mitglied", id: u.id, mitgliedAktion: "uebertragungAblehnen", uebertragungId: u.id, grund: window.prompt("Begründung (optional):") || "" }, "Übertragung abgelehnt.")}>Ablehnen</Knopf>
+      <Knopf variante="gefahr" disabled={a.laeuft} onClick={async () => a.ausfuehren({ aktion: "mitglied", id: u.id, mitgliedAktion: "uebertragungAblehnen", uebertragungId: u.id, grund: (await abfragen({ titel: "Übertragung ablehnen?", label: "Begründung (optional)", mehrzeilig: true, gefahr: true, bestaetigenText: "Übertragung ablehnen" })) || "" }, "Übertragung abgelehnt.")}>Ablehnen</Knopf>
       <Meldung fehler={a.fehler} ok={a.ok} />
     </span>
   );
@@ -203,11 +204,11 @@ export function GvAktionen({ gv }) {
       <div className="flex flex-wrap gap-2">
         {gv.status === "entwurf" && <Knopf variante="primary" disabled={a.laeuft} onClick={() => los("einladen", {}, "Eingeladen – alle Mitglieder wurden benachrichtigt.")}>Einladen</Knopf>}
         {gv.status === "eingeladen" && gv.form !== "praesenz" && <Knopf variante="primary" disabled={a.laeuft} onClick={() => los("oeffnen", {}, "Online-Abstimmung geöffnet.")}>Online-Abstimmung öffnen</Knopf>}
-        {!["abgeschlossen", "abgesagt"].includes(gv.status) && <Knopf variante="gefahr" disabled={a.laeuft} onClick={() => { const g = window.prompt("Grund der Absage:"); if (g) los("absagen", { grund: g }, "Abgesagt."); }}>Absagen</Knopf>}
+        {!["abgeschlossen", "abgesagt"].includes(gv.status) && <Knopf variante="gefahr" disabled={a.laeuft} onClick={async () => { const g = await abfragen({ titel: "Versammlung absagen?", text: "Eingeladene Mitglieder werden über die Absage informiert.", details: [{ label: "Versammlung", wert: gv.titel }], label: "Grund der Absage", pflicht: true, mindestlaenge: 5, maxlaenge: 300, mehrzeilig: true, gefahr: true, bestaetigenText: "Versammlung absagen" }); if (g) los("absagen", { grund: g }, "Abgesagt."); }}>Absagen</Knopf>}
       </div>
       {["eingeladen", "abstimmung"].includes(gv.status) && (
         <Klappe titel="Versammlung abschließen und Protokoll erstellen">
-          <form className="grid gap-3 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); if (window.confirm("Versammlung abschließen? Danach sind keine Stimmen mehr möglich.")) los("abschliessen", x, "Abgeschlossen – Protokoll erstellt, Mitglieder benachrichtigt."); }}>
+          <form className="grid gap-3 sm:grid-cols-2" onSubmit={async (e) => { e.preventDefault(); if (await bestaetigen({ titel: "Versammlung abschließen?", text: "Danach sind keine Stimmen mehr möglich; Protokoll und Ergebnis gehen an die Mitglieder.", details: [{ label: "Versammlung", wert: gv.titel }], bestaetigenText: "Versammlung abschließen", gefahr: true })) los("abschliessen", x, "Abgeschlossen – Protokoll erstellt, Mitglieder benachrichtigt."); }}>
             <Feld id={`${id}-vl`} label="Versammlungsleitung"><input id={`${id}-vl`} className={eingabe} value={x.versammlungsleiter} onChange={(e) => setX({ ...x, versammlungsleiter: e.target.value })} /></Feld>
             <Feld id={`${id}-pf`} label="Protokollführung"><input id={`${id}-pf`} className={eingabe} value={x.protokollfuehrer} onChange={(e) => setX({ ...x, protokollfuehrer: e.target.value })} /></Feld>
             {saal && (
@@ -274,7 +275,7 @@ export function AusschuettungAktionen({ au, versammlungen = [], heute }) {
           <Knopf variante="gefahr" disabled={a.laeuft} onClick={() => los("verwerfen", {}, "Entwurf verworfen.")}>Verwerfen</Knopf>
         </div>
       )}
-      {au.status === "beschlossen" && <Knopf variante="primary" disabled={a.laeuft} onClick={() => window.confirm(`Auszahlung von ${eurDe(au.summe.nettoEur)} netto buchen und Mitglieder benachrichtigen?`) && los("auszahlen", { am: heute }, "Auszahlung gebucht – Mitglieder benachrichtigt.")}>Auszahlung buchen</Knopf>}
+      {au.status === "beschlossen" && <Knopf variante="primary" disabled={a.laeuft} onClick={async () => (await bestaetigen({ titel: "Auszahlung buchen?", text: "Die Auszahlung wird gebucht und die Mitglieder werden benachrichtigt.", details: [{ label: "Betrag netto", wert: eurDe(au.summe.nettoEur) }], bestaetigenText: "Auszahlung buchen", gefahr: true })) && los("auszahlen", { am: heute }, "Auszahlung gebucht – Mitglieder benachrichtigt.")}>Auszahlung buchen</Knopf>}
       <Meldung fehler={a.fehler} ok={a.ok} />
     </div>
   );

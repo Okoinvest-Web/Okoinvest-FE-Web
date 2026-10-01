@@ -12,6 +12,7 @@ import { Chip, ErfolgBox, Feld, FehlerBox, auswahlfeld, eingabe, textbereich } f
 import { senden } from "@/lib/plattform/client";
 import { PRODUKT_ARTEN, SICHERHEITEN, BESTPREIS_REGELN, produktLabel } from "@/lib/plattform/energie/ausschreibung";
 import { STRUKTUREN, VERGUETUNG_MODELLE } from "@/lib/plattform/energie/beschaffung";
+import { bestaetigen as rueckfrage } from "@/components/ui/Rueckfrage";
 
 function useAktion() {
   const router = useRouter();
@@ -64,7 +65,7 @@ export function AktionKnopf({ url, body, label, bestaetigen, variant = "secondar
         icon={Icon}
         disabled={a.laeuft}
         onClick={async () => {
-          if (bestaetigen && !window.confirm(bestaetigen)) return;
+          if (bestaetigen && !(await rueckfrage({ titel: bestaetigen, bestaetigenText: label, gefahr: variant === "danger" }))) return;
           await a.los(url, body, { erfolgText });
         }}
       >
@@ -392,7 +393,7 @@ export function AusschreibungSteuerung({ a: x, lieferanten = [] }) {
             <Feld id="st-f2" label="Neue Frist"><input id="st-f2" type="datetime-local" className={eingabe} value={frist} onChange={(e) => setFrist(e.target.value)} /></Feld>
             <Button size="sm" variant="secondary" disabled={a.laeuft} onClick={() => a.los(url, { aktion: "frist", frist: isoAusLokal(frist) }, { erfolgText: "Frist geändert." })}>Frist ändern</Button>
             <Button size="sm" variant="secondary" disabled={a.laeuft} onClick={() => a.los(url, { aktion: "erinnern" }, { erfolgText: (r) => r.ausschreibung?.hinweis || "Erinnert." })}>Erinnern</Button>
-            <Button size="sm" variant="secondary" disabled={a.laeuft} onClick={() => window.confirm("Runde jetzt beenden? Danach sind keine Angebote mehr möglich.") && a.los(url, { aktion: "beenden" }, { erfolgText: "Runde beendet." })}>Runde beenden</Button>
+            <Button size="sm" variant="secondary" disabled={a.laeuft} onClick={async () => (await rueckfrage({ titel: "Runde jetzt beenden?", text: "Danach sind keine Angebote mehr möglich.", bestaetigenText: "Runde beenden", gefahr: true })) && a.los(url, { aktion: "beenden" }, { erfolgText: "Runde beendet." })}>Runde beenden</Button>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[13px] text-ink-600">Nachladen:</span>
@@ -555,7 +556,7 @@ export function VollmachtKarte({ vollmacht, text, version }) {
         <div className="flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-ov-800"><Check aria-hidden="true" className="h-4 w-4" />Erteilt am {new Date(vollmacht.am).toLocaleDateString("de-DE")}</span>
           <a href="/api/portal/energie/dokument?art=vollmacht" className="inline-flex h-10 items-center rounded-full bg-white px-4 text-[14px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50">PDF</a>
-          <Button size="sm" variant="ghost" disabled={a.laeuft} onClick={() => window.confirm("Vollmacht widerrufen? Laufende Ausschreibungen können dann nicht bezuschlagt werden.") && a.los("/api/portal/energie/vollmacht", { aktion: "widerrufen" }, { erfolgText: "Vollmacht widerrufen." })}>Widerrufen</Button>
+          <Button size="sm" variant="ghost" disabled={a.laeuft} onClick={async () => (await rueckfrage({ titel: "Vollmacht widerrufen?", text: "Laufende Ausschreibungen können dann nicht bezuschlagt werden.", bestaetigenText: "Vollmacht widerrufen", gefahr: true })) && a.los("/api/portal/energie/vollmacht", { aktion: "widerrufen" }, { erfolgText: "Vollmacht widerrufen." })}>Widerrufen</Button>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -579,7 +580,7 @@ export function FreigabeKnoepfe({ ausschreibungId }) {
     <div className="grid gap-3">
       <textarea aria-label="Kommentar (optional)" className={cn(textbereich, "min-h-[72px]")} value={kommentar} onChange={(e) => setK(e.target.value)} placeholder="Kommentar (optional)" />
       <div className="flex flex-wrap gap-3">
-        <Button icon={Check} disabled={a.laeuft} onClick={() => window.confirm("Zuschlag verbindlich freigeben? ÖkoInvest leitet dann Vertrag und Lieferantenwechsel ein.") && a.los("/api/portal/energie/freigabe", { ausschreibungId, entscheidung: "freigegeben", kommentar }, { erfolgText: (r) => (r.zuschlag ? "Freigegeben – der Zuschlag ist erteilt." : "Freigegeben – weitere Pool-Kunden stimmen noch zu.") })}>Zuschlag freigeben</Button>
+        <Button icon={Check} disabled={a.laeuft} onClick={async () => (await rueckfrage({ titel: "Zuschlag verbindlich freigeben?", text: "ÖkoInvest leitet dann Vertrag und Lieferantenwechsel ein.", details: kommentar ? [{ label: "Kommentar", wert: kommentar }] : [], bestaetigenText: "Zuschlag freigeben", gefahr: true })) && a.los("/api/portal/energie/freigabe", { ausschreibungId, entscheidung: "freigegeben", kommentar }, { erfolgText: (r) => (r.zuschlag ? "Freigegeben – der Zuschlag ist erteilt." : "Freigegeben – weitere Pool-Kunden stimmen noch zu.") })}>Zuschlag freigeben</Button>
         <Button variant="secondary" disabled={a.laeuft} onClick={() => a.los("/api/portal/energie/freigabe", { ausschreibungId, entscheidung: "abgelehnt", kommentar }, { erfolgText: "Abgelehnt – das Backoffice meldet sich." })}>Ablehnen</Button>
       </div>
       <FehlerBox>{a.fehler}</FehlerBox>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, LoaderCircle } from "lucide-react";
 import { cn } from "./cn";
 
 const VARIANTEN = {
@@ -13,9 +13,14 @@ const VARIANTEN = {
   outlineLight:
     "text-white ring-1 ring-inset ring-white/35 hover:bg-white/10 hover:ring-white/60 backdrop-blur-sm",
   sun: "bg-sun-400 text-navy-950 hover:bg-sun-300 shadow-[0_10px_30px_-10px_rgba(245,167,15,0.7)]",
+  // Design-System 2.0
+  danger: "bg-danger-600 text-white hover:bg-danger-700 shadow-[0_8px_24px_-10px_rgba(184,53,42,0.6)]",
+  dangerLeise: "bg-white text-danger-700 ring-1 ring-inset ring-danger-200 hover:bg-danger-50",
+  link: "h-auto px-0 text-ov-700 underline-offset-4 hover:text-ov-800 hover:underline",
 };
 
 const GROESSEN = {
+  xs: "h-8 px-3 text-[13px] gap-1.5 rounded-full",
   sm: "h-10 px-4 text-[14px] gap-1.5 rounded-full",
   md: "h-12 px-6 text-[15px] gap-2 rounded-full",
   lg: "h-14 px-8 text-[16px] gap-2.5 rounded-full",
@@ -24,6 +29,11 @@ const GROESSEN = {
 /**
  * Einheitlicher Button. Mit `href` wird ein Link gerendert (intern via
  * next/link, extern/tel/mailto als <a>), sonst ein <button>.
+ *
+ * variant: primary | navy | secondary | ghost | white | outlineLight | sun | danger | dangerLeise | link
+ * size:    xs | sm | md | lg
+ * laedt:   zeigt einen Spinner, sperrt den Button (aria-busy), Breite bleibt stabil
+ * block:   volle Breite
  */
 export default function Button({
   href,
@@ -31,20 +41,28 @@ export default function Button({
   size = "md",
   pfeil = false,
   icon: Icon,
+  laedt = false,
+  block = false,
   className,
   children,
   ...rest
 }) {
   const klassen = cn(
-    "group relative inline-flex select-none items-center justify-center whitespace-nowrap font-semibold tracking-[-0.005em] transition-all duration-300 active:scale-[0.98] disabled:opacity-50",
-    VARIANTEN[variant],
-    GROESSEN[size],
+    "group relative inline-flex select-none items-center justify-center whitespace-nowrap font-semibold tracking-[-0.005em] transition-all duration-200 ease-ov-out active:scale-[0.975] active:duration-75 disabled:opacity-50",
+    VARIANTEN[variant] || VARIANTEN.primary,
+    variant === "link" ? "gap-1.5 text-[15px]" : GROESSEN[size] || GROESSEN.md,
+    block && "w-full",
+    laedt && "pointer-events-none",
     className
   );
 
   const inhalt = (
     <>
-      {Icon && <Icon aria-hidden="true" className="h-[1.1em] w-[1.1em] shrink-0" />}
+      {laedt ? (
+        <LoaderCircle aria-hidden="true" className="h-[1.1em] w-[1.1em] shrink-0 animate-ov-drehen" />
+      ) : (
+        Icon && <Icon aria-hidden="true" className="h-[1.1em] w-[1.1em] shrink-0" />
+      )}
       <span>{children}</span>
       {pfeil && (
         <ArrowRight
@@ -77,7 +95,7 @@ export default function Button({
   }
 
   return (
-    <button type="button" className={klassen} {...rest}>
+    <button type="button" className={klassen} aria-busy={laedt || undefined} {...rest} disabled={rest.disabled || laedt}>
       {inhalt}
     </button>
   );

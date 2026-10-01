@@ -9,6 +9,7 @@ import { NAVIGATION } from "@/data/navigation";
 import { GESELLSCHAFT, KONTAKT, SITE } from "@/data/site";
 import LiveTicker from "@/components/ui/LiveTicker";
 import Logo from "@/components/ui/Logo";
+import Stagger from "@/components/ui/Stagger";
 
 // Spalten aus der zentralen Navigation ableiten
 const spalte = (titel, neu) => {
@@ -50,6 +51,7 @@ export default function Footer() {
     <footer role="contentinfo" aria-label="Fußbereich ÖkoInvest" className="ov-noise relative isolate overflow-hidden bg-navy-950 text-white">
       <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10 opacity-60" />
       <div aria-hidden="true" className="absolute -left-40 top-0 -z-10 h-[500px] w-[500px] rounded-full bg-ov-500/15 blur-[140px]" />
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-ov-300/40 to-transparent" />
 
       <div className="ov-container pt-16 md:pt-20">
         {/* Kopfzeile */}
@@ -63,7 +65,7 @@ export default function Footer() {
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link href="/flaechencheck" className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold transition-colors hover:bg-ov-700">
+            <Link href="/flaechencheck" className="ov-press group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold shadow-gruen transition-colors hover:bg-ov-700">
               Fläche prüfen
               <ArrowUpRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
             </Link>
@@ -74,7 +76,7 @@ export default function Footer() {
         </div>
 
         {/* Linkspalten */}
-        <div className="grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr_1fr]">
+        <Stagger schritt={70} className="grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr_1fr]">
           <div className="space-y-6 text-[15px] text-white/70">
             <div className="flex gap-3">
               <MapPin aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-300" />
@@ -125,7 +127,10 @@ export default function Footer() {
               <ul className="mt-5 space-y-3">
                 {s.links.map((l) => (
                   <li key={l.href + l.name}>
-                    <Link href={l.href} className="text-[14.5px] text-white/75 transition-colors hover:text-ov-300">
+                    <Link
+                      href={l.href}
+                      className="relative text-[14.5px] text-white/75 transition-colors after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-ov-300/70 after:transition-transform after:duration-300 after:ease-ov-out hover:text-ov-300 hover:after:scale-x-100 focus-visible:after:scale-x-100"
+                    >
                       {l.name}
                     </Link>
                   </li>
@@ -133,7 +138,7 @@ export default function Footer() {
               </ul>
             </nav>
           ))}
-        </div>
+        </Stagger>
 
         {/* Live-Leiste */}
         <div className="flex flex-col gap-4 rounded-2xl bg-white/[0.04] px-5 py-4 ring-1 ring-white/10 md:flex-row md:items-center md:justify-between">

@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import { BatteryCharging, CalendarClock, Handshake, Leaf, PiggyBank, PlugZap, Sun, Wallet } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
-import { Auswahl, Gruppe, Kennzahl, Regler, Tooltip, Zahl, useBreite } from "./bausteine";
+import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Tooltip, Zahl, useBreite } from "./bausteine";
 import { ErgebnisKopf, Hinweis, Legende, MobilKurz, RechnerRahmen } from "./InvestTeile";
+import { useDiagrammTastatur } from "./ToolTeile";
+import { useTeilbarerZustand } from "./kontext";
 import { STANDARD, rechneCarport } from "@/lib/rechner/carport";
 import { CARPORT, REGIONEN } from "@/lib/invest/markt";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
@@ -21,6 +23,13 @@ export default function CarportRechner() {
   const [ac, setAc] = useState(STANDARD.ac);
   const [dc, setDc] = useState(STANDARD.dc);
   const [capexKwp, setCapex] = useState(STANDARD.capexKwp);
+
+  const setzer = { stellplaetze: setStellplaetze, regionId: setRegionId, strompreisCt: setStrompreis, eigenverbrauch: setEigenverbrauch, ac: setAc, dc: setDc, capexKwp: setCapex };
+  useTeilbarerZustand({ stellplaetze, regionId, strompreisCt, eigenverbrauch, ac, dc, capexKwp }, (neu) => Object.entries(neu).forEach(([k, v]) => setzer[k]?.(v)), {
+    optionen: { regionId: REGIONEN.map((x) => x.id) },
+    grenzen: { stellplaetze: [10, 1000], strompreisCt: [10, 35], eigenverbrauch: [0.2, 1], ac: [0, 100], dc: [0, 20], capexKwp: [1000, 1900] },
+    pruefen: rechneCarport,
+  });
 
   const r = useMemo(() => rechneCarport({ stellplaetze, regionId, strompreisCt, eigenverbrauch, ac, dc, capexKwp }), [stellplaetze, regionId, strompreisCt, eigenverbrauch, ac, dc, capexKwp]);
   const con = r.contracting;
@@ -78,20 +87,34 @@ export default function CarportRechner() {
           </p>
           <ErgebnisKopf plakette={`${fmt(r.ertrag / 1000)} MWh im Jahr`} />
 
-          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Kennzahl ton="navy" icon={Sun} label="Leistung" zusatz={`${fmt(r.spez)} kWh/kWp`}>
-              <Zahl wert={r.kwp} suffix=" kWp" />
+          <Hauptzahl
+            className="mt-5"
+            icon={PiggyBank}
+            label="Vorteil/Jahr (Kauf)"
+            zusatz="Ersparnis + Einspeisung − Betrieb"
+            rechts={
+              <div className="sm:text-right">
+                <p className="flex items-center gap-1.5 text-[12.5px] text-white/75 sm:justify-end">
+                  <CalendarClock aria-hidden="true" className="h-3.5 w-3.5" />
+                  Amortisation
+                </p>
+                <p className="ov-kpi mt-0.5 text-white">
+                  {r.kauf.amortisation ? <Zahl wert={r.kauf.amortisation} stellen={1} suffix=" Jahre" delta="dunkel" /> : `> ${CARPORT.laufzeit} J.`}
+                </p>
+                <p className="text-[12.5px] text-white/75">Kauf, inkl. Ladepunkte</p>
+              </div>
+            }
+          >
+            <Zahl wert={r.kauf.nettoJahr1} format={tsd} delta="dunkel" einlauf />
+          </Hauptzahl>
+          <Belege spalten={2}>
+            <Kennzahl ton="akzent" icon={Sun} label="Leistung" zusatz={`${fmt(r.spez)} kWh/kWp`}>
+              <Zahl wert={r.kwp} suffix=" kWp" delta="hell" />
             </Kennzahl>
             <Kennzahl icon={Wallet} label="Investition" zusatz={r.invest.laden ? `davon Laden ${tsd(r.invest.laden)}` : "ohne Ladepunkte"}>
-              {tsd(r.invest.summe)}
+              <Zahl wert={r.invest.summe} format={tsd} delta="hell" />
             </Kennzahl>
-            <Kennzahl ton="gruen" icon={PiggyBank} label="Vorteil/Jahr (Kauf)" zusatz="Ersparnis + Einspeisung − Betrieb">
-              {tsd(r.kauf.nettoJahr1)}
-            </Kennzahl>
-            <Kennzahl icon={CalendarClock} label="Amortisation" zusatz="Kauf, inkl. Ladepunkte">
-              {r.kauf.amortisation ? <Zahl wert={r.kauf.amortisation} stellen={1} suffix=" Jahre" /> : `> ${CARPORT.laufzeit} J.`}
-            </Kennzahl>
-          </div>
+          </Belege>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <Variante
@@ -129,7 +152,7 @@ export default function CarportRechner() {
             </Hinweis>
           )}
 
-          <div className="mt-6 rounded-3xl ring-1 ring-ink-200/70">
+          <div className="mt-6 rounded-3xl bg-white shadow-e1 ring-1 ring-ink-200/70">
             <div className="px-5 pt-5 md:px-6">
               <h3 className="font-display text-[17px] font-bold text-ink-900">Kumulierter Vorteil über {CARPORT.laufzeit} Jahre</h3>
               <p className="text-[12.5px] text-ink-500">Strompreis steigt mit der Inflation, Contracting-Preis bleibt fest</p>
@@ -167,7 +190,7 @@ export default function CarportRechner() {
 
 function Variante({ titel, icon: Icon, zeilen, text, farbe }) {
   return (
-    <div className="rounded-3xl p-5 ring-1 ring-ink-200/70">
+    <div className="rounded-3xl bg-white p-5 shadow-e1 ring-1 ring-ink-200/70">
       <div className="flex items-center gap-2.5">
         <span className="flex h-9 w-9 items-center justify-center rounded-xl text-white" style={{ background: farbe }}>
           <Icon aria-hidden="true" className="h-[18px] w-[18px]" />
@@ -213,9 +236,11 @@ function Verlauf({ r }) {
     const px = ((e.clientX - box.left) / box.width) * W;
     return Math.max(0, Math.min(n, Math.round(((px - P.l) / (W - P.l - P.r)) * n)));
   };
+  const tastatur = useDiagrammTastatur(n + 1, setHover);
 
   return (
-    <div ref={ref} className="relative px-2 pb-4 pt-2 md:px-3">
+    <div ref={ref} className="ov-reveal relative px-2 pb-4 pt-2 md:px-3" data-dir="ohne" suppressHydrationWarning>
+      <div {...tastatur} role="group" aria-label="Kumulierter Vorteil – mit den Pfeiltasten durch die Jahre" className="rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2">
       <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} className="block touch-pan-y select-none" role="img" aria-label={`Kumulierter Vorteil nach ${n} Jahren: Kauf ${tsd(kauf[n])}, Contracting ${tsd(con[n])}.`}>
         {ticks.map((v) => (
           <g key={v}>
@@ -231,8 +256,8 @@ function Verlauf({ r }) {
           </text>
         ))}
         <line x1={x(CARPORT.contractingJahre)} x2={x(CARPORT.contractingJahre)} y1={P.t} y2={H - P.b} stroke="#7fa7d6" strokeDasharray="3 4" />
-        <path d={pfad(con)} fill="none" stroke={FARBE.contracting} strokeWidth="2.25" strokeLinejoin="round" />
-        <path d={pfad(kauf)} fill="none" stroke={FARBE.kauf} strokeWidth="2.75" strokeLinejoin="round" />
+        <path d={pfad(con)} fill="none" stroke={FARBE.contracting} strokeWidth="2.25" strokeLinejoin="round" pathLength="1" className="ov-linie" style={{ "--ov-delay": "120ms" }} />
+        <path d={pfad(kauf)} fill="none" stroke={FARBE.kauf} strokeWidth="2.75" strokeLinejoin="round" pathLength="1" className="ov-linie" />
         {hover != null && (
           <g pointerEvents="none">
             <line x1={x(hover)} x2={x(hover)} y1={P.t} y2={H - P.b} stroke="#97a0b0" strokeDasharray="2 3" />
@@ -242,6 +267,7 @@ function Verlauf({ r }) {
         )}
         <rect x={0} y={0} width={W} height={H} fill="transparent" onPointerMove={(e) => setHover(ausZeiger(e))} onPointerLeave={() => setHover(null)} onClick={(e) => setHover(ausZeiger(e))} />
       </svg>
+      </div>
       {hover != null && (
         <Tooltip x={x(hover)} y={Math.max(Math.min(y(kauf[hover]), y(con[hover])) - 60, 0)} breite={W}>
           <p className="font-semibold">{hover === 0 ? "Start" : `Nach Jahr ${hover}`}</p>

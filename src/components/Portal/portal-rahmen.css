@@ -1,0 +1,120 @@
+/* Portal-Rahmen (T3): Seitenleiste, gleitender Aktiv-Indikator, einklappbare
+   Gruppen, Benutzer-Menü als Sheet (mobil). Nur transform/opacity werden
+   animiert; Breitenwechsel beim Einklappen geschieht ohne Animation.
+
+   Vorab-Zustand: Ein kleines Skript im PortalRahmen liest die Vorlieben vor dem
+   ersten Zeichnen aus localStorage und hängt Marker in <head> (#oi-nav-vorab
+   bzw. eine Style-Regel je zugeklappter Gruppe). So stimmt das Server-HTML schon
+   beim ersten Bild – kein Layout-Sprung nach der Hydrierung. */
+
+.pr-leiste { width: 272px; }
+@media (min-width: 64rem) {
+  .pr-haupt { padding-left: 272px; }
+  .pr-schmal .pr-haupt,
+  :root:has(#oi-nav-vorab) .pr-haupt { padding-left: 76px; }
+}
+.pr-schmal .pr-leiste,
+:root:has(#oi-nav-vorab) .pr-leiste { width: 76px; }
+
+/* Nur in der breiten bzw. schmalen Leiste sichtbar (Drawer ist immer breit) */
+.pr-nur-schmal { display: none; }
+.pr-schmal .pr-leiste .pr-nur-breit,
+:root:has(#oi-nav-vorab) .pr-leiste .pr-nur-breit { display: none; }
+.pr-schmal .pr-leiste .pr-nur-schmal,
+:root:has(#oi-nav-vorab) .pr-leiste .pr-nur-schmal { display: flex; }
+
+/* Beschriftung bleibt für Screenreader erhalten (zugänglicher Name) */
+.pr-schmal .pr-leiste .pr-label,
+:root:has(#oi-nav-vorab) .pr-leiste .pr-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.pr-schmal .pr-leiste .pr-link,
+:root:has(#oi-nav-vorab) .pr-leiste .pr-link { justify-content: center; padding-left: 0; padding-right: 0; }
+.pr-schmal .pr-leiste .pr-nav,
+:root:has(#oi-nav-vorab) .pr-leiste .pr-nav { padding-left: 0.875rem; padding-right: 0.875rem; }
+
+/* Gruppen: zugeklappt bleibt nur der aktive Eintrag sichtbar */
+.pr-zu .pr-gruppe-liste > li:not(.pr-aktiv-li) { display: none; }
+.pr-chevron { transition: transform var(--ov-dauer-m, 240ms) var(--ov-ease-out, ease-out); }
+.pr-zu .pr-chevron { transform: rotate(-90deg); }
+/* Schmale Leiste: alle Gruppen offen (nur Icons), stärker als die Vorab-Regeln */
+.pr-wurzel.pr-schmal .pr-leiste .pr-gruppe .pr-gruppe-liste > li,
+:root:has(#oi-nav-vorab) .pr-wurzel .pr-leiste .pr-gruppe .pr-gruppe-liste > li { display: list-item; }
+
+/* Aktiv-Indikator: eine Fläche, die per transform zum aktiven Eintrag gleitet */
+.pr-indikator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--ov-dauer-m, 240ms) var(--ov-ease-out, ease-out),
+    opacity var(--ov-dauer-s, 180ms) var(--ov-ease-out, ease-out);
+}
+.pr-indikator::before,
+.pr-link-aktiv::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 18px;
+  margin-top: -9px;
+  border-radius: 0 3px 3px 0;
+  background: var(--color-ov-400);
+}
+.pr-indikator[data-bereit="1"] { opacity: 1; }
+.pr-indikator[data-sofort="1"] { transition: none; }
+/* Solange der Indikator nicht gemessen ist, zeichnet der aktive Eintrag selbst */
+.pr-link-aktiv { background: rgba(255, 255, 255, 0.09); }
+.pr-nav[data-indikator="1"] .pr-link-aktiv { background: transparent; }
+.pr-nav[data-indikator="1"] .pr-link-aktiv::before { display: none; }
+
+/* Kopfzeile: Haarlinie wird beim Scrollen zum Schatten */
+.pr-kopf { transition: box-shadow var(--ov-dauer-m, 240ms) var(--ov-ease-out, ease-out); }
+.pr-kopf[data-gescrollt="1"] { box-shadow: var(--ov-e2); }
+
+/* Benutzer-Menü: Popover ab sm, Bottom-Sheet darunter */
+@keyframes pr-sheet-ein { from { transform: translate3d(0, 100%, 0); } to { transform: none; } }
+@keyframes pr-pop-ein { from { opacity: 0.001; transform: translate3d(0, -4px, 0) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes pr-schleier-ein { from { opacity: 0; } to { opacity: 1; } }
+.pr-menue { animation: pr-sheet-ein var(--ov-dauer-m, 240ms) var(--ov-ease-out, ease-out) both; }
+.pr-schleier { animation: pr-schleier-ein var(--ov-dauer-m, 240ms) var(--ov-ease-out, ease-out) both; }
+@media (min-width: 40rem) {
+  .pr-menue { transform-origin: 100% 0; animation-name: pr-pop-ein; animation-duration: var(--ov-dauer-s, 180ms); }
+}
+
+/* Bottom-Navigation: Indikator gleitet zwischen den Spalten */
+.pr-bn-indikator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  transition:
+    transform var(--ov-dauer-m, 240ms) var(--ov-ease-out, ease-out),
+    opacity var(--ov-dauer-s, 180ms) var(--ov-ease-out, ease-out);
+}
+
+/* Befehlspalette: Einstieg */
+@keyframes pr-palette-ein { from { opacity: 0.001; transform: translate3d(0, -8px, 0) scale(0.98); } to { opacity: 1; transform: none; } }
+.pr-palette { animation: pr-palette-ein var(--ov-dauer-m, 240ms) var(--ov-ease-out, ease-out) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-indikator, .pr-chevron, .pr-bn-indikator, .pr-kopf { transition: none; }
+  .pr-menue, .pr-schleier, .pr-palette { animation: none; }
+}
+
+/* Logo-Zeile in der schmalen Leiste zentriert */
+.pr-schmal .pr-leiste .pr-logo-zeile,
+:root:has(#oi-nav-vorab) .pr-leiste .pr-logo-zeile { padding-left: 0; padding-right: 0; justify-content: center; }

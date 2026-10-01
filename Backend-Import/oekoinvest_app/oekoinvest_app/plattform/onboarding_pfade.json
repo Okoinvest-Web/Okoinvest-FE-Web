@@ -918,6 +918,40 @@
      "bestaetigenText": "Ohne Telefon weiter"
     },
     {
+     "id": "flaechencheck",
+     "titel": "Flächencheck-Ergebnis übernehmen",
+     "kurz": "Flächencheck",
+     "art": "aktion",
+     "text": "Sie haben den kostenlosen Flächencheck schon genutzt? Dann liegt das Ergebnis als Anfrage in Ihrem Konto (zugeordnet über Ihre bestätigte E-Mail-Adresse) – im nächsten Schritt übernehmen Sie Größe, Region und Nutzung per Klick, statt sie neu einzugeben. Noch nicht? Der Check dauert zwei Minuten.",
+     "links": [
+      {
+       "href": "/flaechencheck",
+       "label": "Flächencheck starten"
+      },
+      {
+       "href": "/portal/anfragen",
+       "label": "Meine Anfragen"
+      }
+     ],
+     "pflicht": false,
+     "kriterium": {
+      "eines": [
+       {
+        "fakt": "flaechencheck"
+       },
+       {
+        "merker": true
+       }
+      ]
+     },
+     "bestaetigbar": true,
+     "bestaetigenText": "Nicht nötig",
+     "nurFuer": [
+      "eigentuemer",
+      "landwirt"
+     ]
+    },
+    {
      "id": "flaeche",
      "titel": "Fläche bzw. Dach anlegen",
      "kurz": "Fläche",
@@ -964,40 +998,6 @@
      "kriterium": {
       "fakt": "flaechenEingereicht"
      }
-    },
-    {
-     "id": "flaechencheck",
-     "titel": "Flächencheck-Ergebnis übernehmen",
-     "kurz": "Flächencheck",
-     "art": "aktion",
-     "text": "Sie haben den kostenlosen Flächencheck schon genutzt? Dann liegt das Ergebnis als Anfrage in Ihrem Konto und wird mit Ihrer bestätigten E-Mail-Adresse automatisch zugeordnet. Noch nicht? Der Check dauert zwei Minuten.",
-     "links": [
-      {
-       "href": "/flaechencheck",
-       "label": "Flächencheck starten"
-      },
-      {
-       "href": "/portal/anfragen",
-       "label": "Meine Anfragen"
-      }
-     ],
-     "pflicht": false,
-     "kriterium": {
-      "eines": [
-       {
-        "fakt": "flaechencheck"
-       },
-       {
-        "merker": true
-       }
-      ]
-     },
-     "bestaetigbar": true,
-     "bestaetigenText": "Nicht nötig",
-     "nurFuer": [
-      "eigentuemer",
-      "landwirt"
-     ]
     },
     {
      "id": "kyc",

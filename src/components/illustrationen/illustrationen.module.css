@@ -1,0 +1,92 @@
+/* Bewegungen der Marken-Illustrationen (Team T7, docs/DESIGN.md § 5).
+   Nur transform, opacity und stroke-dashoffset. Aktiv nur, wenn die
+   Illustration mit animiert gerendert wird (Klasse .an am svg) und das
+   System keine reduzierte Bewegung verlangt. */
+
+.illu {
+  display: block;
+  overflow: visible;
+}
+
+.rotor,
+.strahlen,
+.wolke,
+.schweben,
+.puls,
+.kreis {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .an .fluss {
+    animation: illu-fluss 1.2s linear infinite;
+  }
+  .an .fluss2 {
+    animation: illu-fluss 2s linear infinite;
+  }
+  .an .rotor {
+    animation: illu-drehen 9s linear infinite;
+  }
+  .an .strahlen {
+    animation: illu-drehen 40s linear infinite;
+  }
+  .an .wolke {
+    animation: illu-wolke 14s ease-in-out infinite alternate;
+  }
+  .an .schweben {
+    animation: illu-schweben 6s ease-in-out infinite;
+  }
+  .an .puls {
+    animation: illu-puls 2.4s ease-in-out infinite;
+  }
+  .an .kreis {
+    animation: illu-drehen 24s linear infinite;
+  }
+  .an .verz {
+    animation-delay: -3s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .illu * {
+    animation: none !important;
+  }
+}
+
+@keyframes illu-fluss {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+@keyframes illu-drehen {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes illu-wolke {
+  from {
+    transform: translateX(-10px);
+  }
+  to {
+    transform: translateX(14px);
+  }
+}
+@keyframes illu-schweben {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes illu-puls {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}

@@ -8,6 +8,7 @@ import { Feld, auswahlfeld, eingabe, textbereich } from "@/components/Portal/fel
 import { EG_FORMEN, GEMEINSCHAFT_STATUS, VERTEILSCHLUESSEL } from "@/lib/plattform/mitglied/gemeinschaft";
 import { LAENDER } from "@/lib/plattform/konstanten";
 import { Knopf, Meldung, useAktion } from "./teile";
+import { abfragen, bestaetigen } from "@/components/ui/Rueckfrage";
 
 const URL = "/api/admin/energiegemeinschaften";
 
@@ -63,8 +64,8 @@ export function TeilnahmeAktionen({ t, heute }) {
             <Knopf variante="primary" disabled={a.laeuft} onClick={() => los("aktivieren", { ab }, "Teilnahme aktiv.")}>Aktivieren</Knopf>
           </>
         )}
-        {["beantragt", "angemeldet"].includes(t.status) && <Knopf variante="gefahr" disabled={a.laeuft} onClick={() => { const g = window.prompt("Begründung für den Teilnehmer:"); if (g) los("ablehnen", { grund: g }, "Abgelehnt."); }}>Ablehnen</Knopf>}
-        {["aktiv", "angemeldet"].includes(t.status) && <Knopf disabled={a.laeuft} onClick={() => window.confirm(`Teilnahme beenden${t.bis ? ` zum ${t.bis.split("-").reverse().join(".")}` : ""}?`) && los("beenden", { bis: t.bis || heute }, "Teilnahme beendet.")}>Beenden</Knopf>}
+        {["beantragt", "angemeldet"].includes(t.status) && <Knopf variante="gefahr" disabled={a.laeuft} onClick={async () => { const g = await abfragen({ titel: "Beitritt ablehnen?", text: "Der Teilnehmer wird benachrichtigt und sieht die Begründung.", label: "Begründung für den Teilnehmer", hilfe: "z. B. Zählpunkt außerhalb des Netzgebiets", pflicht: true, mindestlaenge: 5, maxlaenge: 300, mehrzeilig: true, gefahr: true, bestaetigenText: "Beitritt ablehnen" }); if (g) los("ablehnen", { grund: g }, "Abgelehnt."); }}>Ablehnen</Knopf>}
+        {["aktiv", "angemeldet"].includes(t.status) && <Knopf disabled={a.laeuft} onClick={async () => (await bestaetigen({ titel: `Teilnahme beenden${t.bis ? ` zum ${t.bis.split("-").reverse().join(".")}` : ""}?`, text: "Der Teilnehmer teilt danach keinen Strom mehr in der Gemeinschaft.", bestaetigenText: "Teilnahme beenden", gefahr: true })) && los("beenden", { bis: t.bis || heute }, "Teilnahme beendet.")}>Beenden</Knopf>}
       </div>
       <Meldung fehler={a.fehler} ok={a.ok} />
     </div>
@@ -80,7 +81,7 @@ export function Monatslauf({ eg, vormonat }) {
   const [mw, setMw] = useState({});
   const wert = (tid, k, v) => setMw({ ...mw, [tid]: { ...(mw[tid] || {}), [k]: v } });
   return (
-    <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (window.confirm(`Monat ${mon} abrechnen und Teilnehmer benachrichtigen?`)) a.ausfuehren({ aktion: "abrechnen", id: eg.id, monat: mon, messwerte: mw }, "Monatslauf erstellt – Abrechnungen versandt."); }}>
+    <form className="space-y-3" onSubmit={async (e) => { e.preventDefault(); if (await bestaetigen({ titel: `Monat ${mon} abrechnen?`, text: "Die Abrechnungen werden erstellt und an die Teilnehmer versandt.", details: [{ label: "Monat", wert: mon }, { label: "Teilnehmer", wert: String(aktiv.length) }], bestaetigenText: "Abrechnen und versenden", gefahr: true })) a.ausfuehren({ aktion: "abrechnen", id: eg.id, monat: mon, messwerte: mw }, "Monatslauf erstellt – Abrechnungen versandt."); }}>
       <Feld id={`${id}-m`} label="Abrechnungsmonat"><input id={`${id}-m`} type="month" className={`${eingabe} w-48`} value={mon} onChange={(e) => setMon(e.target.value)} /></Feld>
       <p className="text-[13px] leading-relaxed text-ink-600">Messwerte (Monatssummen aus den Viertelstundenwerten des Netzbetreibers) eintragen – leere Felder werden aus den Stammdaten geschätzt und in der Abrechnung als Schätzung gekennzeichnet.</p>
       <div className="space-y-2">

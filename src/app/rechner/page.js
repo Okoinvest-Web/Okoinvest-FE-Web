@@ -30,11 +30,37 @@ export const metadata = rechnerMetadata({
 
 const toolById = (id) => TOOLS.find((t) => t.id === id);
 
-const GRUPPEN = [
-  { titel: "Flächeneigentümer & Landwirte", text: "Eignet sich Ihre Fläche – und was bringt sie über 30 Jahre?", ids: ["flaechencheck", "pacht", "agri-pv"] },
-  { titel: "Investoren & Entwickler", text: "Rendite, Finanzierung und Wert von Projekten in jeder Phase.", ids: ["solarpark", "projektbewertung"] },
-  { titel: "Unternehmen & Kommunen", text: "Günstiger Strom, Parkplatz-PV und Einnahmen für die Gemeinde.", ids: ["reststrom", "solarcarport", "kommune"] },
+const GRUPPEN_ROH = [
+  {
+    id: "eigentuemer",
+    kurz: "Eigentümer & Landwirte",
+    titel: "Flächeneigentümer & Landwirte",
+    text: "Eignet sich Ihre Fläche – und was bringt sie über 30 Jahre?",
+    ids: ["flaechencheck", "pacht", "agri-pv"],
+    weitere: ["pachtangebot-check", "dachpacht", "netzanschluss"],
+  },
+  {
+    id: "investoren",
+    kurz: "Investoren",
+    titel: "Investoren & Entwickler",
+    text: "Rendite, Finanzierung und Wert von Projekten in jeder Phase.",
+    ids: ["solarpark", "projektbewertung"],
+    weitere: ["grossspeicher", "bestandsanlage"],
+  },
+  {
+    id: "unternehmen",
+    kurz: "Unternehmen, Kommunen & Bürger",
+    titel: "Unternehmen, Kommunen & Bürger",
+    text: "Günstiger Strom, Parkplatz-PV, Einnahmen für die Gemeinde und Beteiligung.",
+    ids: ["reststrom", "solarcarport", "kommune"],
+    weitere: ["ppa", "energy-sharing", "eg-ersparnis", "beteiligung"],
+  },
 ];
+// Jedes Tool aus TOOLS erscheint genau einmal – neue Tools ohne Zuordnung landen in der letzten Gruppe
+const ZUGEORDNET = new Set(GRUPPEN_ROH.flatMap((g) => [...g.ids, ...g.weitere]));
+const GRUPPEN = GRUPPEN_ROH.map((g, i) =>
+  i === GRUPPEN_ROH.length - 1 ? { ...g, weitere: [...g.weitere, ...TOOLS.filter((t) => !ZUGEORDNET.has(t.id)).map((t) => t.id)] } : g
+);
 
 const FAQ = [
   {
@@ -115,7 +141,7 @@ export default function RechnerHub() {
             Erst rechnen, <span className="ov-text-gradient-light">dann entscheiden.</span>
           </>
         }
-        lead="Acht kostenlose Werkzeuge für Flächen, Projekte, Kapital und Strom – mit offengelegten Marktannahmen für Deutschland, Österreich und die Schweiz."
+        lead={`${TOOLS.length} kostenlose Werkzeuge für Flächen, Projekte, Kapital und Strom – mit offengelegten Marktannahmen für Deutschland, Österreich und die Schweiz.`}
         stats={[
           { value: TOOLS.length, label: "kostenlose Tools" },
           { value: 3, label: "Länder im DACH-Raum" },
@@ -127,10 +153,26 @@ export default function RechnerHub() {
       <section aria-label="Alle Rechner und Tools" className="relative z-10 -mt-20 md:-mt-28">
         <div className="ov-container">
           <div className="divide-y divide-ink-100 rounded-[2rem] bg-white px-5 shadow-[0_40px_80px_-40px_rgba(3,18,43,0.45)] ring-1 ring-ink-200/70 sm:px-6 md:px-8">
+            {/* Sprungnavigation: in einem Tipp zur eigenen Zielgruppe */}
+            <nav aria-label="Rechner nach Zielgruppe" className="flex flex-wrap items-center gap-2 py-5">
+              <span className="mr-1 text-[12px] font-bold uppercase tracking-[0.16em] text-ink-500">Für</span>
+              {GRUPPEN.map((g) => (
+                <a
+                  key={g.id}
+                  href={`#${g.id}`}
+                  className="inline-flex min-h-10 items-center gap-2 rounded-full bg-sand-50 px-4 text-[14px] font-semibold text-ink-800 ring-1 ring-ink-200/70 transition-colors hover:bg-ov-50 hover:text-ov-800 hover:ring-ov-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500"
+                >
+                  {g.kurz}
+                  <span className="ov-num rounded-full bg-white px-1.5 text-[12px] font-bold text-ink-500 ring-1 ring-ink-200/70">{g.ids.length + g.weitere.length}</span>
+                </a>
+              ))}
+            </nav>
             {GRUPPEN.map((g) => (
-              <div key={g.titel} className="py-8 md:py-10">
+              <section key={g.id} id={g.id} aria-labelledby={`${g.id}-titel`} className="scroll-mt-28 py-8 md:py-10">
                 <div className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
-                  <h2 className="ov-h3 text-ink-900 md:text-[26px]">{g.titel}</h2>
+                  <h2 id={`${g.id}-titel`} className="ov-h3 text-ink-900 md:text-[26px]">
+                    {g.titel}
+                  </h2>
                   <p className="text-[14.5px] text-ink-500">{g.text}</p>
                 </div>
                 <ul className={cn("grid gap-4 lg:gap-5", g.ids.length === 2 ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-3")}>
@@ -146,7 +188,20 @@ export default function RechnerHub() {
                     );
                   })}
                 </ul>
-              </div>
+                {g.weitere.length > 0 && (
+                  <ul suppressHydrationWarning className="ov-reveal ov-stagger mt-4 grid gap-3 md:grid-cols-2 lg:mt-5 lg:grid-cols-3" aria-label={`Weitere Werkzeuge: ${g.kurz}`}>
+                    {g.weitere.map((id) => {
+                      const t = toolById(id);
+                      if (!t) return null;
+                      return (
+                        <li key={id} className="flex">
+                          <ToolZeile tool={t} />
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
             ))}
           </div>
         </div>
@@ -176,8 +231,17 @@ export default function RechnerHub() {
                     ["Stromkosten im Betrieb senken", "reststrom", "Ersparnis im Pool"],
                     ["Parkplatz mit PV überdachen", "solarcarport", "Amortisation, Contracting"],
                     ["Solarpark in der Gemeinde", "kommune", "Einnahmen je Quelle"],
+                    ["Angebot eines Projektierers prüfen", "pachtangebot-check", "Ampel je Klausel, Barwert"],
+                    ["Gewerbedach verpachten", "dachpacht", "Pachtspanne, Ertrag"],
+                    ["Netzanschluss abschätzen", "netzanschluss", "Kosten, Zeitrahmen"],
+                    ["Solarstrom per PPA beziehen", "ppa", "Ersparnis in drei Szenarien"],
+                    ["In einen Großspeicher investieren", "grossspeicher", "IRR, Amortisation"],
+                    ["Laufende PV-Anlage bewerten", "bestandsanlage", "Ertragswert, Wert je kWp"],
+                    ["Strom in der Gemeinschaft teilen", "energy-sharing", "Vorteil je Teilnehmer"],
+                    ["Als Bürger beteiligen", "beteiligung", "Ausschüttung in drei Szenarien"],
                   ].map(([frage, id, ergebnis]) => {
                     const t = toolById(id);
+                    if (!t) return null;
                     return (
                       <tr key={id} className="bg-white">
                         <td className="px-5 py-3.5 text-ink-700">{frage}</td>
@@ -222,25 +286,46 @@ function ToolKarte({ tool, ton, gross, children }) {
     <Link
       href={tool.href}
       className={cn(
-        "group ov-card-hover relative flex w-full flex-col overflow-hidden rounded-3xl p-6 md:p-7",
-        dunkel
-          ? "ov-noise bg-navy-900 text-white ring-1 ring-white/10 shadow-[0_24px_48px_-24px_rgba(3,18,43,0.6)]"
-          : "bg-sand-50 ring-1 ring-ink-200/70 hover:bg-white hover:ring-ov-300"
+        "group ov-lift flex w-full flex-col rounded-3xl p-6 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2 md:p-7",
+        dunkel ? "ov-verlauf-nacht text-white ring-1 ring-white/10 shadow-kante" : "bg-sand-50 ring-1 ring-ink-200/70 hover:bg-white hover:ring-ov-300"
       )}
     >
       <div className="flex items-start justify-between gap-4">
         <span className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", dunkel ? "bg-white/10 text-ov-300 ring-1 ring-white/15" : "bg-ov-50 text-ov-600 ring-1 ring-ov-100")}>
           <Icon aria-hidden="true" className="h-6 w-6" />
         </span>
-        {tool.tag && <span className={cn("rounded-full px-2.5 py-1 text-[11.5px] font-semibold", dunkel ? "bg-sun-400 text-navy-950" : "bg-ink-900 text-white")}>{tool.tag}</span>}
+        {tool.tag && <span className={cn("rounded-full px-2.5 py-1 text-[11.5px] font-semibold", dunkel ? "bg-sun-300 text-navy-950" : "bg-ink-900 text-white")}>{tool.tag}</span>}
       </div>
       <h3 className={cn("mt-5 font-display font-extrabold leading-tight tracking-tight", gross ? "text-[24px]" : "text-[20px]", dunkel ? "text-white" : "text-ink-900")}>{tool.titel}</h3>
-      <p className={cn("mt-2 text-[14.5px] leading-relaxed", dunkel ? "text-white/70" : "text-ink-600")}>{gross ? tool.text : tool.kurz}</p>
+      <p className={cn("mt-2 text-[14.5px] leading-relaxed", dunkel ? "text-white/75" : "text-ink-600")}>{gross ? tool.text : tool.kurz}</p>
       <div className={cn("mt-6 flex flex-1 flex-col justify-end rounded-2xl bg-white p-4", !dunkel && "ring-1 ring-ink-200/60")}>{children}</div>
       <span className={cn("mt-5 inline-flex items-center gap-1.5 text-[14.5px] font-semibold", dunkel ? "text-ov-300" : "text-ov-700")}>
         Öffnen
         <ArrowUpRight aria-hidden="true" className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
       </span>
+    </Link>
+  );
+}
+
+/** Kompakte Tool-Zeile für weitere Werkzeuge einer Zielgruppe */
+function ToolZeile({ tool }) {
+  const Icon = tool.icon;
+  return (
+    <Link
+      href={tool.href}
+      className="group ov-lift flex w-full items-start gap-4 rounded-3xl bg-white p-5 ring-1 ring-ink-200/70 transition-colors hover:ring-ov-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500"
+    >
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-ov-50 text-ov-600 ring-1 ring-ov-100 transition-colors group-hover:bg-ov-600 group-hover:text-white group-hover:ring-ov-600">
+        <Icon aria-hidden="true" className="h-5 w-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="font-display text-[17px] font-bold leading-snug text-ink-900">{tool.titel}</span>
+          {tool.tag && <span className="rounded-full bg-ink-900 px-2 py-0.5 text-[11px] font-semibold text-white">{tool.tag}</span>}
+        </span>
+        <span className="mt-1 block text-[14px] leading-relaxed text-ink-600">{tool.kurz}</span>
+      </span>
+      <ArrowUpRight aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-ink-500 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ov-700" />
     </Link>
   );
 }

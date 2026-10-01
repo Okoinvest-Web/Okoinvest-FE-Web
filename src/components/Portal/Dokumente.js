@@ -13,13 +13,14 @@ import { hochladen, senden } from "@/lib/plattform/client";
 import { DOKUMENT_KATEGORIEN, UPLOAD } from "@/lib/plattform/konstanten";
 import { datum, dateigroesse } from "@/lib/plattform/format";
 import { auswahlfeld, FehlerBox, ErfolgBox } from "./felder";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 export function DokumentListe({ dokumente = [], nutzerId, admin = false, zeigeBezug = false, leerText = "Noch keine Dokumente." }) {
   const router = useRouter();
   const [fehler, setFehler] = useState("");
 
   async function loeschen(d) {
-    if (!window.confirm(`„${d.name}“ wirklich löschen?`)) return;
+    if (!(await bestaetigen({ titel: `„${d.name}“ löschen?`, text: "Das Dokument wird dauerhaft entfernt.", bestaetigenText: "Dokument löschen", gefahr: true }))) return;
     try {
       await senden(`/api/portal/dokumente/${d.id}`, { method: "DELETE" });
       router.refresh();

@@ -4,7 +4,7 @@
 // Keine Fachlogik: alle Zahlen kommen aus dem Backend (eg/*.js).
 
 import Link from "next/link";
-import { AlertTriangle, BadgeCheck, BookOpenCheck, CircleCheck, Coins, Download, FileText, Landmark, ReceiptText, Scale, ShieldCheck, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, BadgeCheck, BookOpenCheck, Check, Coins, Download, FileText, GitCompareArrows, Landmark, ReceiptText, Scale, ShieldCheck, Wallet } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { Badge, Hinweis, Karte, Kennzahl, Leer } from "@/components/Portal/ui";
 import { Klappe } from "@/components/Portal/Mitglied/teile";
@@ -24,18 +24,96 @@ const SCHRITTE = [
   { id: "abgeschlossen", label: "Abgeschlossen" },
 ];
 
+/** Status-Pipeline der Periode – reine Anzeige (keine Knöpfe), Stepper-Optik mit Verbindungslinien. */
 function Ablauf({ status }) {
   if (status === "probe" || status === "storniert") return <Badge ton={status === "probe" ? "info" : "neutral"}>{status === "probe" ? "Probe-Abrechnung – erzeugt keine Belege" : "Storniert"}</Badge>;
   const i = SCHRITTE.findIndex((s) => s.id === status);
   return (
-    <ol className="flex flex-wrap gap-1.5" aria-label="Ablauf der Periode">
-      {SCHRITTE.map((s, j) => (
-        <li key={s.id} aria-current={j === i ? "step" : undefined} className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold ring-1 ring-inset", j < i ? "bg-ov-50 text-ov-800 ring-ov-200" : j === i ? "bg-navy-900 text-white ring-navy-900" : "bg-white text-ink-500 ring-ink-200")}>
-          {j < i && <CircleCheck aria-hidden="true" className="h-3.5 w-3.5" />}
-          {s.label}
-        </li>
-      ))}
+    <ol className="flex items-start" aria-label={`Ablauf der Periode: Schritt ${i + 1} von ${SCHRITTE.length}, ${SCHRITTE[i]?.label || status}`}>
+      {SCHRITTE.map((s, j) => {
+        const erledigt = j < i || (j === i && status === "abgeschlossen");
+        const jetzt = j === i && !erledigt;
+        return (
+          <li key={s.id} aria-current={j === i ? "step" : undefined} className="relative flex min-w-0 flex-1 flex-col items-center text-center">
+            {j > 0 && <span aria-hidden="true" className={cn("absolute right-1/2 top-[13px] h-0.5 w-full", j <= i ? "bg-ov-500" : "bg-ink-200")} />}
+            <span className={cn("relative z-10 flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-bold", erledigt && "bg-ov-600 text-white", jetzt && "bg-white text-navy-700 ring-2 ring-navy-700", !erledigt && !jetzt && "bg-white text-ink-500 ring-1 ring-inset ring-ink-200")}>
+              {erledigt ? <Check aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={3} /> : j + 1}
+            </span>
+            <span className={cn("mt-1.5 hidden px-0.5 text-[12px] leading-tight sm:block", jetzt ? "font-semibold text-ink-900" : erledigt ? "text-ink-700" : "text-ink-500")}>{s.label}</span>
+          </li>
+        );
+      })}
     </ol>
+  );
+}
+
+/**
+ * Vorschau-Diff zum Vorzeitraum (Wow-Moment 10): Summen und auffällige Mitglieder (±10 % oder neu/weggefallen).
+ * Nur Darstellung – vergleicht die Bruttobeträge der Belege beider Perioden je Mitgliedsnummer und Belegart.
+ */
+function VorschauDiff({ jetzt = [], vorher = [], vorherLabel = "" }) {
+  const summe = (liste) => {
+    const m = new Map();
+    for (const b of liste) {
+      if (!b || b.typ === "storno" || b.status === "storniert") continue;
+      const k = `${b.mitgliedsnummer}|${b.typ === "gutschrift" ? "gutschrift" : "rechnung"}`;
+      const alt = m.get(k) || { nr: b.mitgliedsnummer, name: b.empfaenger?.name || "", typ: b.typ === "gutschrift" ? "Gutschrift" : "Rechnung", betrag: 0 };
+      alt.betrag += Number(b.summen?.brutto) || 0;
+      m.set(k, alt);
+    }
+    return m;
+  };
+  const a = summe(jetzt);
+  const b = summe(vorher);
+  const zeilen = [...new Set([...a.keys(), ...b.keys()])].map((k) => {
+    const n = a.get(k);
+    const v = b.get(k);
+    const neu = n?.betrag ?? 0;
+    const alt = v?.betrag ?? 0;
+    const pct = alt ? ((neu - alt) / Math.abs(alt)) * 100 : null;
+    const grund = !v ? "neu dabei" : !n ? "diesmal kein Beleg" : "";
+    return { k, nr: (n || v).nr, name: (n || v).name, typ: (n || v).typ, neu, alt, diff: neu - alt, pct, grund };
+  });
+  const auffaellig = zeilen.filter((z) => z.grund || (z.pct !== null && Math.abs(z.pct) >= 10)).sort((x, y) => Math.abs(y.diff) - Math.abs(x.diff));
+  const gesamt = (m, typ) => [...m.values()].filter((x) => x.typ === typ).reduce((s, x) => s + x.betrag, 0);
+  const vergleich = [
+    { label: "Rechnungen", neu: gesamt(a, "Rechnung"), alt: gesamt(b, "Rechnung") },
+    { label: "Gutschriften", neu: gesamt(a, "Gutschrift"), alt: gesamt(b, "Gutschrift") },
+  ];
+  return (
+    <Karte titel="Veränderung zum Vorzeitraum" untertitel={`Vergleich mit ${vorherLabel} · ${auffaellig.length ? `${auffaellig.length} auffällige Position${auffaellig.length === 1 ? "" : "en"} (±10 % oder neu)` : "keine Auffälligkeiten"}`} icon={GitCompareArrows}>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {vergleich.map((x) => {
+          const d = x.neu - x.alt;
+          const p = x.alt ? (d / Math.abs(x.alt)) * 100 : null;
+          return (
+            <div key={x.label} className="rounded-2xl bg-sand-50 p-4 ring-1 ring-sand-200">
+              <p className="text-[12.5px] text-ink-500">{x.label}</p>
+              <p className="ov-num mt-0.5 font-display text-[22px] font-extrabold tracking-tight text-ink-900">{eur(x.neu)}</p>
+              <p className="ov-num mt-0.5 flex items-center gap-1 text-[12.5px] text-ink-600">
+                {d > 0 ? <ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5 text-navy-600" /> : d < 0 ? <ArrowDownRight aria-hidden="true" className="h-3.5 w-3.5 text-navy-600" /> : null}
+                {d === 0 ? "unverändert" : `${d > 0 ? "+" : "−"}${eur(Math.abs(d))}${p !== null ? ` (${d > 0 ? "+" : "−"}${Math.abs(p).toLocaleString("de-DE", { maximumFractionDigits: 1 })} %)` : ""}`} · vorher {eur(x.alt)}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+      {auffaellig.length > 0 && (
+        <ul className="mt-4 divide-y divide-ink-100 rounded-2xl ring-1 ring-ink-200/70">
+          {auffaellig.slice(0, 8).map((z) => (
+            <li key={z.k} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-[13px]">
+              <span className="min-w-0 text-ink-800"><strong className="font-semibold">{z.name || `Nr. ${z.nr}`}</strong> <span className="text-ink-500">· Nr. {z.nr} · {z.typ}</span></span>
+              <span className="ov-num flex items-center gap-2 text-ink-700">
+                {eur(z.alt)} → <strong className="text-ink-900">{eur(z.neu)}</strong>
+                <Badge ton={z.grund ? "info" : "warn"}>{z.grund || `${z.diff > 0 ? "+" : "−"}${Math.abs(z.pct).toLocaleString("de-DE", { maximumFractionDigits: 0 })} %`}</Badge>
+              </span>
+            </li>
+          ))}
+          {auffaellig.length > 8 && <li className="px-4 py-2.5 text-[12.5px] text-ink-500">… und {auffaellig.length - 8} weitere – siehe Belege unten.</li>}
+        </ul>
+      )}
+      <p className="mt-3 text-[12.5px] text-ink-500">Typische Gründe: neuer oder abgemeldeter Zählpunkt, geänderter Teilnahmefaktor, Saison (Sonnenstunden), nachgelieferte Werte des Netzbetreibers.</p>
+    </Karte>
   );
 }
 
@@ -66,7 +144,7 @@ function BelegZeile({ b, apiPeriode, darfStorno, entwurf }) {
       </div>
       {((b.fehler || []).length > 0 || (b.warnungen || []).length > 0) && (
         <ul className="mt-2 space-y-1 text-[12.5px]">
-          {(b.fehler || []).map((f) => <li key={f} className="flex gap-1.5 text-red-700"><AlertTriangle aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />{f}</li>)}
+          {(b.fehler || []).map((f) => <li key={f} className="flex gap-1.5 text-danger-700"><AlertTriangle aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />{f}</li>)}
           {(b.warnungen || []).map((f) => <li key={f} className="text-ink-600">Hinweis: {f}</li>)}
         </ul>
       )}
@@ -100,7 +178,7 @@ function BelegZeile({ b, apiPeriode, darfStorno, entwurf }) {
       {!entwurf && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {b.pdfUrl && <a href={`${b.pdfUrl}?anzeigen=1`} target="_blank" rel="noopener" className="inline-flex h-8 items-center gap-1 rounded-full bg-white px-3 text-[12.5px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50"><FileText aria-hidden="true" className="h-3.5 w-3.5 text-ov-700" />PDF</a>}
-          {b.hash && <span className="text-[11px] text-ink-400" title={b.hash}>Prüfsumme {b.hash.slice(0, 12)}…</span>}
+          {b.hash && <span className="text-[12px] text-ink-500" title={b.hash}>Prüfsumme {b.hash.slice(0, 12)}…</span>}
           {darfStorno && b.typ !== "storno" && b.status !== "storniert" && <BelegStorno api={apiPeriode} belegId={b.id} nummer={b.nummer} />}
         </div>
       )}
@@ -112,7 +190,7 @@ function BelegZeile({ b, apiPeriode, darfStorno, entwurf }) {
  * Abrechnungs-Arbeitsplatz. `d` = abPerioden, `pd` = abPeriodeAktion(lesen) der gewählten Periode (oder null),
  * `basis` = Seitenpfad (für ?periode=), `kontoId` des Nutzers (eigene Freigabe erkennen).
  */
-export function AbrechnungAnsicht({ d, pd, basis, kontoId }) {
+export function AbrechnungAnsicht({ d, pd, basis, kontoId, vorher = null }) {
   const api = `/api/portal/eg/${d.gemeinschaft.id}/abrechnung`;
   const s = d.stufen;
   const p = pd?.periode;
@@ -163,7 +241,7 @@ export function AbrechnungAnsicht({ d, pd, basis, kontoId }) {
                   )}
                   <PeriodeKnoepfe api={`${api}/perioden/${p.id}`} periode={p} kann={kann} meineFreigabe={meineFreigabe && p.status === "freigabe_teilweise"} />
                   {v && (
-                    <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-[13px] sm:grid-cols-4">
+                    <dl className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-2xl bg-sand-50 p-4 text-[13px] ring-1 ring-sand-200 sm:grid-cols-4">
                       <div><dt className="text-ink-500">Eigendeckung</dt><dd className="ov-num font-semibold">{kwh(v.kennzahlen.eigendeckung)}</dd></div>
                       <div><dt className="text-ink-500">Eingebracht</dt><dd className="ov-num font-semibold">{kwh(v.kennzahlen.eingebracht)}</dd></div>
                       <div><dt className="text-ink-500">Rechnungen</dt><dd className="ov-num font-semibold">{v.kennzahlen.rechnungen} · {eur(v.kennzahlen.bruttoRechnungen)}</dd></div>
@@ -177,11 +255,15 @@ export function AbrechnungAnsicht({ d, pd, basis, kontoId }) {
                 </div>
               </Karte>
 
+              {vorher?.periode && (v?.belege?.length > 0 || pd.belege.length > 0) && (
+                <VorschauDiff jetzt={pd.belege.length ? pd.belege : v.belege} vorher={vorher.belege || []} vorherLabel={`${vorher.periode.artLabel || "Periode"} ${tag(vorher.periode.von)} – ${tag(vorher.periode.bis)}`} />
+              )}
+
               {v && (
                 <Karte titel="Prüfungen" untertitel={`${v.pruefung.fehler.length} blockierend · ${v.pruefung.warnungen.length} Hinweise · Kontrolle Eigendeckung = eingebrachte Erzeugung ${v.kontrolle.ok ? "erfüllt" : "abweichend"}`}>
                   {v.pruefung.fehler.length === 0 && v.pruefung.warnungen.length === 0 && <p className="flex items-center gap-2 text-[14px] text-ov-800"><ShieldCheck aria-hidden="true" className="h-4 w-4" />Alle Pflichtangaben, Steuerfälle und Daten in Ordnung – bereit zur Freigabe.</p>}
                   <ul className="space-y-1.5 text-[13px]">
-                    {v.pruefung.fehler.map((f, i) => <li key={`f${i}`} className="flex gap-1.5 text-red-700"><AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />{f.text}</li>)}
+                    {v.pruefung.fehler.map((f, i) => <li key={`f${i}`} className="flex gap-1.5 text-danger-700"><AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />{f.text}</li>)}
                     {v.pruefung.warnungen.map((f, i) => <li key={`w${i}`} className="text-ink-700">Hinweis: {f.text}</li>)}
                     {[...(v.hinweiseDaten || []), ...v.pruefung.hinweise].map((h, i) => <li key={`h${i}`} className="text-ink-600">{h}</li>)}
                     {(v.ausgeschlossen || []).length > 0 && <li className="text-ink-600">{v.ausgeschlossen.length} Mitglied(er) mit anderem Abrechnungsrhythmus (§ 69 Abs. 3 ElWG) – in der passenden Periode.</li>}
@@ -197,7 +279,7 @@ export function AbrechnungAnsicht({ d, pd, basis, kontoId }) {
                       <p className="mb-2 text-[13px] text-ink-700">Neu {eur(p.vergleich.summeNeu)} · Vorsystem {eur(p.vergleich.summeAlt)} · {p.vergleich.auffaellig} Abweichung(en)</p>
                       <table className="w-full min-w-[520px] text-left text-[12.5px]">
                         <thead><tr className="text-ink-500"><th className="py-1">Nr.</th><th className="py-1">Mitglied</th><th className="py-1">Beleg</th><th className="py-1 text-right">Neu</th><th className="py-1 text-right">Vorsystem</th><th className="py-1 text-right">Differenz</th></tr></thead>
-                        <tbody>{p.vergleich.zeilen.map((z) => <tr key={`${z.mitgliedsnummer}-${z.typ}`} className={cn("border-t border-ink-100", z.auffaellig && "bg-sun-300/15")}><td className="py-1">{z.mitgliedsnummer}</td><td className="py-1">{z.name || (z.nurAlt ? "nur im Vorsystem" : "")}</td><td className="py-1">{z.typ}</td><td className="ov-num py-1 text-right">{eur(z.neu)}</td><td className="ov-num py-1 text-right">{eur(z.alt)}</td><td className="ov-num py-1 text-right font-semibold">{eur(z.differenz)}</td></tr>)}</tbody>
+                        <tbody>{p.vergleich.zeilen.map((z) => <tr key={`${z.mitgliedsnummer}-${z.typ}`} className={cn("border-t border-ink-100", z.auffaellig && "bg-warn-50")}><td className="py-1">{z.mitgliedsnummer}</td><td className="py-1">{z.name || (z.nurAlt ? "nur im Vorsystem" : "")}</td><td className="py-1">{z.typ}</td><td className="ov-num py-1 text-right">{eur(z.neu)}</td><td className="ov-num py-1 text-right">{eur(z.alt)}</td><td className="ov-num py-1 text-right font-semibold">{eur(z.differenz)}</td></tr>)}</tbody>
                       </table>
                     </div>
                   )}

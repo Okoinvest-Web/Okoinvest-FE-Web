@@ -14,6 +14,9 @@ import { unterrollen } from "@/lib/plattform/rechte";
 import { datumZeit, eur, prozent } from "@/lib/plattform/format";
 import { fmt } from "@/lib/rechner/annahmen";
 import { cn } from "@/components/ui/cn";
+import KpiKachel from "@/components/ui/KpiKachel"; // T3: Kennzahlen-Reihe 2.0
+import Stagger from "@/components/ui/Stagger"; // T3
+import Reveal from "@/components/ui/Reveal"; // T3: Balken-Einlauf
 
 export const metadata = { title: "Leitungs-Cockpit" };
 
@@ -24,17 +27,17 @@ function Balken({ zeilen, format = (x) => n1(x), leer = "Keine Daten." }) {
   const max = Math.max(1, ...zeilen.map((z) => z.wert || 0));
   if (!zeilen.length) return <p className="text-[14px] text-ink-500">{leer}</p>;
   return (
-    <ol className="space-y-2.5">
-      {zeilen.map((z) => (
+    <Reveal as="ol" dir="ohne" className="space-y-2.5">
+      {zeilen.map((z, i) => (
         <li key={z.label} className="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)_minmax(0,7rem)] items-center gap-3 text-[13.5px] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)_minmax(0,9.5rem)]">
           <span className="truncate text-ink-600" title={z.label}>{z.label}</span>
-          <span className="h-3 rounded-full bg-ink-100">
-            <span className={cn("block h-3 rounded-full", z.ton === "navy" ? "bg-navy-500" : "bg-ov-500")} style={{ width: `${Math.max(z.wert ? 2 : 0, ((z.wert || 0) / max) * 100)}%` }} />
+          <span className="h-3 overflow-hidden rounded-full bg-ink-100">
+            <span className={cn("ov-balken-x block h-3 rounded-full", z.ton === "navy" ? "bg-navy-500" : "bg-ov-500")} style={{ width: `${Math.max(z.wert ? 2 : 0, ((z.wert || 0) / max) * 100)}%`, "--i": i }} />
           </span>
           <span className="ov-num truncate text-right font-bold text-ink-900">{format(z.wert)}{z.zusatz ? <span className="ml-1 text-[11.5px] font-normal text-ink-500">{z.zusatz}</span> : null}</span>
         </li>
       ))}
-    </ol>
+    </Reveal>
   );
 }
 
@@ -67,12 +70,12 @@ export default async function LeitungsCockpit() {
         </Hinweis>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kennzahl label="Entwicklungs-Pipeline" wert={p.ok ? `${n1(p.mwp)} MWp` : "–"} hinweis={p.ok ? `${fmt(p.anzahl)} Projekte · gewichtet ${n1(p.mwpGewichtet)} MWp` : fehlt(p)} icon={TrendingUp} href="/portal/admin/entwicklung" />
-        <Kennzahl label="Gesicherte Fläche" wert={f.ok ? `${n1(f.gesichertHa)} ha` : "–"} hinweis={f.ok ? `${fmt(f.gesichertAnzahl)} Flächen · in Prüfung ${n1(f.pipelineHa)} ha` : fehlt(f)} icon={LandPlot} href="/portal/admin/flaechen" />
-        <Kennzahl label="Provisionen offen" wert={d.ok ? eur(d.offen + d.inRechnung) : "–"} hinweis={d.ok ? `bezahlt ${new Date().getFullYear()}: ${eur(d.bezahltJahr)} · gesamt ${eur(d.bezahlt)}` : fehlt(d)} icon={BadgeEuro} href="/portal/admin/deals" />
-        <Kennzahl label="Offene Posten" wert={fi.ok ? eur(fi.forderungenOffen) : "–"} hinweis={fi.ok ? `${fmt(fi.forderungenAnzahl || 0)} Forderungen · überfällig ${eur(fi.ueberfaellig)}` : fehlt(fi)} icon={Banknote} href="/portal/admin/finanzen" ton="dunkel" />
-      </div>
+      <Stagger className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
+        <KpiKachel label="Entwicklungs-Pipeline" wert={p.ok ? `${n1(p.mwp)} MWp` : "–"} hinweis={p.ok ? `${fmt(p.anzahl)} Projekte · gewichtet ${n1(p.mwpGewichtet)} MWp` : fehlt(p)} icon={TrendingUp} href="/portal/admin/entwicklung" />
+        <KpiKachel label="Gesicherte Fläche" wert={f.ok ? `${n1(f.gesichertHa)} ha` : "–"} hinweis={f.ok ? `${fmt(f.gesichertAnzahl)} Flächen · in Prüfung ${n1(f.pipelineHa)} ha` : fehlt(f)} icon={LandPlot} href="/portal/admin/flaechen" />
+        <KpiKachel label="Provisionen offen" wert={d.ok ? eur(d.offen + d.inRechnung) : "–"} hinweis={d.ok ? `bezahlt ${new Date().getFullYear()}: ${eur(d.bezahltJahr)} · gesamt ${eur(d.bezahlt)}` : fehlt(d)} icon={BadgeEuro} href="/portal/admin/deals" />
+        <KpiKachel label="Offene Posten" wert={fi.ok ? eur(fi.forderungenOffen) : "–"} hinweis={fi.ok ? `${fmt(fi.forderungenAnzahl || 0)} Forderungen · überfällig ${eur(fi.ueberfaellig)}` : fehlt(fi)} icon={Banknote} href="/portal/admin/finanzen" ton="dunkel" />
+      </Stagger>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Karte titel="Pipeline je Phase" untertitel="Offene Entwicklungsprojekte, MWp" aktion={<PfeilLink href="/portal/admin/entwicklung">Portfolio</PfeilLink>}>
@@ -93,18 +96,25 @@ export default async function LeitungsCockpit() {
               format={(x) => `${n1(x)} MWp`}
               leer="Noch keine Projekte mit COD-Prognose."
             />
-          ) : <Nicht text={fehlt(p)} />}
+          ) : null}
+          {p.ok && p.zielJahr && p.jeJahr.length > 0 ? (
+            <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-ink-500">
+              <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-ov-500" />Ziel erreicht (≥ {fmt(p.zielJahr)} MWp)</span>
+              <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-navy-500" />unter Ziel</span>
+            </p>
+          ) : null}
+          {p.ok ? null : <Nicht text={fehlt(p)} />}
         </Karte>
 
         <Karte titel="Flächen & Deals" aktion={<PfeilLink href="/portal/admin/berichte">Berichte</PfeilLink>}>
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="min-w-0">
-              <p className="text-[12.5px] font-semibold uppercase tracking-wider text-ink-400">Gesichert je Land</p>
+              <p className="text-[12.5px] font-semibold uppercase tracking-wider text-ink-500">Gesichert je Land</p>
               {f.ok ? <div className="mt-3"><Balken zeilen={f.jeLand.map((x) => ({ label: x.land, wert: x.ha }))} format={(x) => `${n1(x)} ha`} /></div> : <Nicht text={fehlt(f)} />}
               {f.ok && <p className="mt-3 text-[13px] text-ink-500">davon Agri-PV {n1(f.agriHa)} ha · {fmt(f.pachtangebotOffen)} Pachtangebote offen</p>}
             </div>
             <div className="min-w-0 space-y-2 text-[14px]">
-              <p className="text-[12.5px] font-semibold uppercase tracking-wider text-ink-400">Transaktion</p>
+              <p className="text-[12.5px] font-semibold uppercase tracking-wider text-ink-500">Transaktion</p>
               {boerse.ok ? (
                 <ul className="space-y-1.5 text-ink-700">
                   <li>NDA-Anfragen offen: <strong className="ov-num">{fmt(boerse.ndaOffen)}</strong></li>

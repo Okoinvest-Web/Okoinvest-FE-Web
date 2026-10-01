@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, BatteryCharging, Handshake, Home, Info, Sun, Users } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { Auswahl, Gruppe, Kennzahl, Regler, Schalter, Zahl } from "./bausteine";
+import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Schalter, Zahl } from "./bausteine";
+import { useTeilbarerZustand } from "./kontext";
 import { ErgebnisKopf, Hinweis, MobilKurz, RechnerRahmen } from "./InvestTeile";
 import { DiagrammKarte, FARBEN, Linien } from "./ToolTeile";
 import { LAENDER, MIXE, land as landDaten, rechneEnergySharing, regionenFuer, standardFuer } from "@/lib/rechner/energySharing";
@@ -14,6 +15,22 @@ export default function EnergySharingRechner() {
   const [e, setE] = useState(() => standardFuer("at"));
   const set = (k) => (v) => setE((a) => ({ ...a, [k]: v }));
   const setLand = (id) => setE((a) => ({ ...standardFuer(id), kwp: a.kwp, teilnehmer: a.teilnehmer, verbrauchJe: a.verbrauchJe, mix: a.mix, speicher: a.speicher }));
+  // Teilbarer Link: zuerst den Landesstandard setzen, dann die geteilten Werte
+  useTeilbarerZustand(e, (neu) => setE((a) => ({ ...(neu.land && neu.land !== a.land ? standardFuer(neu.land) : a), ...neu })), {
+    optionen: {
+      land: LAENDER.map((x) => x.id),
+      mix: MIXE.map((x) => x.id),
+      regionId: LAENDER.flatMap((x) => regionenFuer(x.id).map((y) => y.id)),
+      rabattId: LAENDER.flatMap((x) => landDaten(x.id).rabatte.map((y) => y.id)),
+    },
+    grenzen: { kwp: [10, 5000], teilnehmer: [2, 1000], verbrauchJe: [1000, 50000], energiepreis: [5, 30], gemeinschaftCt: [3, 25], netzAp: [2, 15], ueberschussCt: [0, 15], verwaltung: [0, 120] },
+    pruefen: (_, neu) => {
+      const z = { ...standardFuer(neu.land || "at"), ...neu };
+      if (!regionenFuer(z.land).some((x) => x.id === z.regionId)) throw new Error("Region passt nicht zum Land");
+      if (!landDaten(z.land).rabatte.some((x) => x.id === z.rabattId)) throw new Error("Modell passt nicht zum Land");
+      rechneEnergySharing(z);
+    },
+  });
   const r = useMemo(() => rechneEnergySharing(e), [e]);
   const l = landDaten(e.land);
   const w = l.waehrung;
@@ -80,20 +97,34 @@ export default function EnergySharingRechner() {
           </p>
           <ErgebnisKopf titel="Ihre Gemeinschaft" plakette={`${GEMEINSCHAFTEN[e.land].titel.split(" (")[0]}`} />
 
-          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Kennzahl ton="navy" icon={Sun} label="Geteilter Strom" zusatz={`${fmt(r.nutzung * 100)} % der Erzeugung`}>
-              <Zahl wert={r.geteilt / 1000} suffix=" MWh" />
-            </Kennzahl>
-            <Kennzahl ton="gruen" icon={Users} label="Vorteil je Teilnehmer" zusatz={`${fmt(r.geteiltJeTeilnehmer)} kWh geteilt, nach Abrechnung`}>
-              <span className={r.jeTeilnehmer < 0 ? "text-sun-300" : undefined}>{geld(r.jeTeilnehmer)}</span>
-            </Kennzahl>
-            <Kennzahl icon={Handshake} label="Mehrerlös Erzeuger" zusatz="ggü. voller Einspeisung">
-              {geld(r.mehrerloesErzeuger)}
+          <Hauptzahl
+            className="mt-5"
+            icon={Users}
+            label="Vorteil je Teilnehmer und Jahr"
+            zusatz={`${fmt(r.geteiltJeTeilnehmer)} kWh geteilt, nach Abrechnung`}
+            rechts={
+              <div className="sm:text-right">
+                <p className="flex items-center gap-1.5 text-[12.5px] text-white/75 sm:justify-end">
+                  <Sun aria-hidden="true" className="h-3.5 w-3.5" />
+                  Geteilter Strom
+                </p>
+                <p className="ov-kpi mt-0.5 text-white">
+                  <Zahl wert={r.geteilt / 1000} suffix=" MWh" />
+                </p>
+                <p className="text-[12.5px] text-white/75">{fmt(r.nutzung * 100)} % der Erzeugung</p>
+              </div>
+            }
+          >
+            <Zahl wert={r.jeTeilnehmer} format={geld} delta="dunkel" einlauf className={r.jeTeilnehmer < 0 ? "text-sun-300" : undefined} />
+          </Hauptzahl>
+          <Belege spalten={2}>
+            <Kennzahl ton="akzent" icon={Handshake} label="Mehrerlös Erzeuger" zusatz="ggü. voller Einspeisung">
+              <Zahl wert={r.mehrerloesErzeuger} format={geld} delta="hell" />
             </Kennzahl>
             <Kennzahl icon={Home} label="Deckung Verbrauch" zusatz="durch geteilten Strom">
-              <Zahl wert={r.deckung * 100} suffix=" %" />
+              <Zahl wert={r.deckung * 100} suffix=" %" delta="hell" deltaFormat={(dd) => `${fmt(dd)} %-Pkt.`} />
             </Kennzahl>
-          </div>
+          </Belege>
 
           <Fluss r={r} />
 

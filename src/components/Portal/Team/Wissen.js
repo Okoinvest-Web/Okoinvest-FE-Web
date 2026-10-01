@@ -13,6 +13,7 @@ import { FehlerBox, Feld, auswahlfeld, eingabe, textbereich } from "@/components
 import { senden } from "@/lib/plattform/client";
 import { WISSEN_KATEGORIEN, wissenTreffer } from "@/lib/plattform/hr";
 import { datum } from "@/lib/plattform/format";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 function inline(text) {
   return String(text).split(/(\*\*[^*]+\*\*)/g).map((t, i) => (t.startsWith("**") && t.endsWith("**") ? <strong key={i}>{t.slice(2, -2)}</strong> : t));
@@ -127,7 +128,7 @@ export default function Wissen({ artikel: start = [], aktiv: aktivStart = null, 
   }
 
   async function loeschen() {
-    if (!aktiv || !window.confirm(`„${aktiv.titel}“ löschen?`)) return;
+    if (!aktiv || !(await bestaetigen({ titel: `„${aktiv.titel}“ löschen?`, text: "Der Artikel wird aus der Wissensdatenbank entfernt.", bestaetigenText: "Artikel löschen", gefahr: true }))) return;
     try {
       await senden(`/api/admin/wissen/${aktiv.id}`, { method: "DELETE" });
       setAktiv(null);

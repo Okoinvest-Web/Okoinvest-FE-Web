@@ -10,6 +10,7 @@ import { Feld, auswahlfeld, eingabe } from "@/components/Portal/felder";
 import { ANREDEN, MITGLIED_ARTEN, kuendigungsStichtag } from "@/lib/plattform/mitglied/genossenschaft";
 import { STIMMEN } from "@/lib/plattform/mitglied/versammlung";
 import { Klappe, Knopf, Meldung, useAktion } from "./teile";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 const URL = "/api/portal/mitglied";
 const eurDe = (x) => `${Number(x || 0).toLocaleString("de-DE", { maximumFractionDigits: 2 })} €`;
@@ -121,7 +122,7 @@ export function MitgliedschaftAktionen({ m, geno, heute }) {
     return (
       <div className="space-y-3">
         <Meldung fehler={a.fehler} ok={a.ok} />
-        <Knopf variante="gefahr" disabled={a.laeuft} onClick={() => window.confirm("Beitrittserklärung wirklich zurückziehen?") && a.ausfuehren({ aktion: "zurueckziehen", id: m.id }, "Die Beitrittserklärung ist zurückgezogen.")}>Beitrittserklärung zurückziehen</Knopf>
+        <Knopf variante="gefahr" disabled={a.laeuft} onClick={async () => (await bestaetigen({ titel: "Beitrittserklärung zurückziehen?", text: "Ihre Erklärung wird nicht weiter bearbeitet.", bestaetigenText: "Erklärung zurückziehen", gefahr: true })) && a.ausfuehren({ aktion: "zurueckziehen", id: m.id }, "Die Beitrittserklärung ist zurückgezogen.")}>Beitrittserklärung zurückziehen</Knopf>
       </div>
     );
   }
@@ -150,7 +151,7 @@ export function MitgliedschaftAktionen({ m, geno, heute }) {
             {offeneKuendigung.status === "eingereicht" && <Knopf disabled={a.laeuft} onClick={() => a.ausfuehren({ aktion: "kuendigungZuruecknehmen", id: m.id, kuendigungId: offeneKuendigung.id }, "Die Kündigung ist zurückgenommen.")}>Kündigung zurücknehmen</Knopf>}
           </div>
         ) : (
-          <form className="grid gap-3 sm:grid-cols-3" onSubmit={(e) => { e.preventDefault(); if (window.confirm("Kündigung verbindlich einreichen?")) a.ausfuehren({ aktion: "kuendigen", id: m.id, art: k.art, anteile: Number(k.anteile), grund: k.grund, bestaetigt: k.bestaetigt }, "Die Kündigung ist eingereicht."); }}>
+          <form className="grid gap-3 sm:grid-cols-3" onSubmit={async (e) => { e.preventDefault(); if (await bestaetigen({ titel: "Kündigung verbindlich einreichen?", text: "Die Kündigung wird an die Genossenschaft übermittelt.", details: [{ label: "Umfang", wert: k.art === "voll" ? "alle Anteile" : `${k.anteile} Anteile` }], bestaetigenText: "Kündigung einreichen", gefahr: true })) a.ausfuehren({ aktion: "kuendigen", id: m.id, art: k.art, anteile: Number(k.anteile), grund: k.grund, bestaetigt: k.bestaetigt }, "Die Kündigung ist eingereicht."); }}>
             <Feld id={`${id}-ka`} label="Umfang">
               <select id={`${id}-ka`} className={auswahlfeld} value={k.art} onChange={(e) => setK({ ...k, art: e.target.value })}>
                 <option value="teil">Einzelne Anteile kündigen</option>
@@ -225,7 +226,7 @@ export function Abstimmung({ gv }) {
   const [s, setS] = useState({});
   async function absenden(e) {
     e.preventDefault();
-    if (!window.confirm("Stimme verbindlich abgeben? Sie kann danach nicht mehr geändert werden.")) return;
+    if (!(await bestaetigen({ titel: "Stimme verbindlich abgeben?", text: "Sie kann danach nicht mehr geändert werden.", details: [{ label: "Versammlung", wert: gv.titel }], bestaetigenText: "Stimme abgeben" }))) return;
     await a.ausfuehren({ aktion: "abstimmen", gvId: gv.id, stimmen: s }, "Ihre Stimme ist gespeichert. Vielen Dank.");
   }
   return (
@@ -282,7 +283,7 @@ export function EgKuendigen({ t }) {
   if (!["beantragt", "angemeldet", "aktiv"].includes(t.status) || t.bis) return null;
   return (
     <span className="inline-flex flex-col gap-2">
-      <Knopf variante="gefahr" disabled={a.laeuft} onClick={() => window.confirm(t.status === "aktiv" ? "Teilnahme zum Monatsende kündigen?" : "Beitrittsantrag zurückziehen?") && a.ausfuehren({ aktion: "egKuendigen", id: t.id }, t.status === "aktiv" ? "Gekündigt zum Monatsende." : "Antrag zurückgezogen.")}>{t.status === "aktiv" ? "Zum Monatsende kündigen" : "Antrag zurückziehen"}</Knopf>
+      <Knopf variante="gefahr" disabled={a.laeuft} onClick={async () => (await bestaetigen({ titel: t.status === "aktiv" ? "Teilnahme zum Monatsende kündigen?" : "Beitrittsantrag zurückziehen?", text: t.status === "aktiv" ? "Sie teilen danach keinen Strom mehr in der Gemeinschaft." : "Ihr Antrag wird nicht weiter bearbeitet.", bestaetigenText: t.status === "aktiv" ? "Teilnahme kündigen" : "Antrag zurückziehen", gefahr: true })) && a.ausfuehren({ aktion: "egKuendigen", id: t.id }, t.status === "aktiv" ? "Gekündigt zum Monatsende." : "Antrag zurückgezogen.")}>{t.status === "aktiv" ? "Zum Monatsende kündigen" : "Antrag zurückziehen"}</Knopf>
       <Meldung fehler={a.fehler} ok={a.ok} />
     </span>
   );

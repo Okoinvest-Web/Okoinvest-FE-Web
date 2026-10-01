@@ -1,5 +1,7 @@
 import { Bell, FileText, LayoutDashboard, MessageSquare } from "lucide-react";
 import PageHero from "@/components/ui/PageHero";
+import HeroSzene from "@/components/Landing/HeroSzene";
+import { Netzanschluss } from "@/components/illustrationen";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import FeatureGrid from "@/components/ui/FeatureGrid";
@@ -66,7 +68,11 @@ export default function ProzessPage() {
         }
         lead="Wie lange dauert was? Wer macht welchen Schritt? Welche Unterlagen brauchen Sie – und was sehen Sie im Portal? Wählen Sie Ihre Rolle und sehen Sie Ihren Weg."
         points={ZIELGRUPPEN.map((z) => z.label)}
-      />
+      >
+        <HeroSzene>
+          <Netzanschluss ton="dunkel" animiert />
+        </HeroSzene>
+      </PageHero>
 
       <Section tone="sand" space="lg" id="ablauf" className="scroll-mt-24">
         <ProzessTabs />

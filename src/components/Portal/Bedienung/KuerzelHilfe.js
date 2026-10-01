@@ -37,7 +37,7 @@ export default function KuerzelHilfe({ offen, setOffen, rollen, kuerzelAn, setKu
         <div className="mt-6 grid gap-6 md:grid-cols-2">
           {gruppen.map((g) => (
             <section key={g.gruppe} aria-labelledby={`kz-${g.gruppe}`} className={g.eintraege.length > 6 ? "md:row-span-2" : ""}>
-              <h3 id={`kz-${g.gruppe}`} className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-400">{g.gruppe}</h3>
+              <h3 id={`kz-${g.gruppe}`} className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-500">{g.gruppe}</h3>
               <dl className="mt-2 divide-y divide-ink-100">
                 {g.eintraege.map((e) => (
                   <div key={e.text + e.tasten.join()} className="flex items-center justify-between gap-3 py-2">

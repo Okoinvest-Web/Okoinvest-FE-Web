@@ -13,6 +13,7 @@ import { cn } from "@/components/ui/cn";
 import { senden } from "@/lib/plattform/client";
 import { EMPFAENGER_STATUS, KAMPAGNE_STATUS, NACHFASS_ARTEN, SPERR_GRUENDE, SPERR_QUELLEN, ZIEL_STATUS, codeLesbar } from "@/lib/plattform/akquise-kampagne";
 import { Ampel, Mini, datum, eur, knopf, zahl } from "./teile";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 const ZIEL_TON = { offen: "neutral", grundbuch: "info", ermittelt: "info", angeschrieben: "info", reaktion: "ok", termin: "ok", gesichert: "ok", abgelehnt: "neutral", gesperrt: "warn" };
 const LEER_PERSON = { anrede: "", titel: "", vorname: "", nachname: "", firma: "", strasse: "", plz: "", ort: "", flurstuecke: [] };
@@ -302,7 +303,7 @@ export default function KampagneDetail({ daten, darfSchreiben = false, leitung =
                 <Download className="h-4 w-4" aria-hidden="true" /> Versandliste CSV
               </a>
               {darfSchreiben && k.status === "aktiv" && (
-                <button type="button" className={knopf.sekundaer} disabled={status.laeuft || !bereit[`s${st}`]} onClick={() => window.confirm(`Versand von ${bereit[`s${st}`]} ${st === 1 ? "Erstbriefen" : "Zweitbriefen"} bestätigen? Danach laufen die Nachfassfristen.`) && los(() => senden(`/api/admin/geodaten/kampagnen/${k.id}/versand`, { body: { stufe: st } }), (r) => `${r.anzahl} Briefe als versandt vermerkt.`)}>
+                <button type="button" className={knopf.sekundaer} disabled={status.laeuft || !bereit[`s${st}`]} onClick={async () => (await bestaetigen({ titel: `Versand der ${st === 1 ? "Erstbriefe" : "Zweitbriefe"} bestätigen?`, text: "Die Briefe werden als versandt vermerkt, danach laufen die Nachfassfristen.", details: [{ label: "Briefe", wert: String(bereit[`s${st}`]) }, { label: "Stufe", wert: String(st) }], bestaetigenText: "Versand bestätigen", gefahr: true })) && los(() => senden(`/api/admin/geodaten/kampagnen/${k.id}/versand`, { body: { stufe: st } }), (r) => `${r.anzahl} Briefe als versandt vermerkt.`)}>
                   <Send className="h-4 w-4" aria-hidden="true" /> Versand bestätigen
                 </button>
               )}
@@ -310,12 +311,12 @@ export default function KampagneDetail({ daten, darfSchreiben = false, leitung =
           ))}
           <button type="button" className={knopf.sekundaer} onClick={() => setZeigeEinst((x) => !x)} aria-expanded={zeigeEinst}>Einstellungen</button>
           {darfSchreiben && k.status === "aktiv" && (
-            <button type="button" className={knopf.sekundaer} disabled={status.laeuft} onClick={() => window.confirm("Kampagne abschließen? Danach keine Änderungen mehr.") && los(() => senden(`/api/admin/geodaten/kampagnen/${k.id}`, { method: "PATCH", body: { status: "abgeschlossen" } }), "Abgeschlossen.")}>
+            <button type="button" className={knopf.sekundaer} disabled={status.laeuft} onClick={async () => (await bestaetigen({ titel: "Kampagne abschließen?", text: "Danach sind keine Änderungen mehr möglich.", bestaetigenText: "Kampagne abschließen", gefahr: true })) && los(() => senden(`/api/admin/geodaten/kampagnen/${k.id}`, { method: "PATCH", body: { status: "abgeschlossen" } }), "Abgeschlossen.")}>
               <CalendarCheck className="h-4 w-4" aria-hidden="true" /> Abschließen
             </button>
           )}
           {darfSchreiben && (k.test ? leitung : k.status === "entwurf") && (
-            <button type="button" className={knopf.gefahr} disabled={status.laeuft} onClick={async () => { if (!window.confirm(k.test ? "Testkampagne mit allen Testdaten löschen?" : "Entwurf löschen?")) return; const r = await los(() => senden(`/api/admin/geodaten/kampagnen/${k.id}`, { method: "DELETE" }), "Gelöscht."); if (r) router.push("/portal/admin/akquise/kampagnen"); }}>
+            <button type="button" className={knopf.gefahr} disabled={status.laeuft} onClick={async () => { if (!(await bestaetigen({ titel: k.test ? "Testkampagne mit allen Testdaten löschen?" : "Entwurf löschen?", text: "Das lässt sich nicht rückgängig machen.", bestaetigenText: k.test ? "Testkampagne löschen" : "Entwurf löschen", gefahr: true }))) return; const r = await los(() => senden(`/api/admin/geodaten/kampagnen/${k.id}`, { method: "DELETE" }), "Gelöscht."); if (r) router.push("/portal/admin/akquise/kampagnen"); }}>
               <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Löschen
             </button>
           )}

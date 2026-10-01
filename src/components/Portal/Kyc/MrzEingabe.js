@@ -174,7 +174,7 @@ export default function MrzEingabe({ person = {}, gespeichert = null, bearbeitba
             <label key={`${format}-${i}`} className="block">
               <span className="mb-1 flex justify-between text-[12px] font-semibold text-ink-600">
                 <span>Zeile {i + 1}</span>
-                <span className={ok ? "text-ov-700" : "text-ink-500"} aria-live="polite">{z.length}/{def.laenge}</span>
+                <span className={ok ? "text-ov-700" : "text-ink-500"}>{z.length}/{def.laenge}</span>
               </span>
               <input
                 value={z}
@@ -186,12 +186,14 @@ export default function MrzEingabe({ person = {}, gespeichert = null, bearbeitba
                 inputMode="text"
                 maxLength={def.laenge + 10}
                 aria-label={`MRZ Zeile ${i + 1} von ${def.zeilen}, ${def.laenge} Zeichen`}
-                className={cn("block h-11 w-full min-w-0 rounded-xl bg-white px-3 font-mono text-[13px] tracking-[0.08em] text-ink-900 ring-1 ring-inset outline-none transition focus:ring-2 focus:ring-ov-500 sm:text-[14.5px] sm:tracking-[0.14em]", ok ? "ring-ov-300" : "ring-ink-200")}
+                className={cn("block h-11 w-full min-w-0 rounded-xl bg-white px-3 font-mono text-[13px] tracking-[0.08em] text-ink-900 ring-1 ring-inset outline-none transition focus:ring-2 focus:ring-ov-500 sm:text-[14.5px] sm:tracking-[0.14em]", ok ? "ring-ov-400" : "ring-ink-400")}
               />
             </label>
           );
         })}
       </fieldset>
+      {/* Ansage nur beim Vervollständigen einer Zeile, nicht je Tastendruck */}
+      <p className="sr-only" aria-live="polite">{zeilen.some(Boolean) ? `${zeilen.filter((z) => z.length === def.laenge).length} von ${def.zeilen} Zeilen vollständig` : ""}</p>
 
       {!vollstaendig && zeilen.some(Boolean) && (
         <p className="mt-2 flex items-center gap-2 text-[12.5px] text-ink-500"><CircleDashed aria-hidden="true" className="h-4 w-4" />Prüfung startet, sobald alle Zeilen vollständig sind.</p>
@@ -205,7 +207,7 @@ export default function MrzEingabe({ person = {}, gespeichert = null, bearbeitba
           <p className="mt-2 text-[12px] text-ink-500">Prüfziffern (7-3-1): {befund.pruefziffern.map((p) => `${p.label} ${p.ok ? "korrekt" : "falsch"}`).join(" · ")}</p>
         </div>
       )}
-      {fehler && <p role="alert" className="mt-2 text-[13px] font-medium text-red-700">{fehler}</p>}
+      {fehler && <p role="alert" className="mt-2 text-[13px] font-medium text-danger-700">{fehler}</p>}
       {erfolg && <p role="status" className="mt-2 text-[13px] font-medium text-ov-800">{erfolg}</p>}
       {bearbeitbar && (
         <div className="mt-3 flex flex-wrap items-center gap-3">

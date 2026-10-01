@@ -11,7 +11,7 @@ export function Tasten({ tasten = [], folge = false }) {
     <span className="inline-flex items-center gap-1" aria-label={tasten.join(folge ? " dann " : " + ")}>
       {tasten.map((t, i) => (
         <span key={`${t}-${i}`} className="inline-flex items-center gap-1" aria-hidden="true">
-          {i > 0 && <span className="text-[11px] text-ink-400">{folge ? "dann" : "+"}</span>}
+          {i > 0 && <span className="text-[12px] text-ink-500">{folge ? "dann" : "+"}</span>}
           <kbd className="min-w-[26px] rounded-lg bg-white px-2 py-1 text-center font-sans text-[12px] font-semibold text-ink-700 shadow-[0_1px_0_rgba(3,18,43,0.12)] ring-1 ring-inset ring-ink-200">{t}</kbd>
         </span>
       ))}

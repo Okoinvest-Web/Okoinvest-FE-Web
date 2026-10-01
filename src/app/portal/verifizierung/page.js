@@ -20,7 +20,7 @@ export default async function VerifizierungSeite() {
         text="Für Datenraum, Absichtserklärungen, Gebote, Projektveröffentlichungen, Pachtauszahlungen und Contracting-Verträge prüfen wir einmalig Ihre Identität bzw. Ihr Unternehmen – einfach, geführt und verschlüsselt."
         aktionen={<KycStatusBadge status={daten.fall?.status || null} />}
       />
-      {daten.ablage?.entwicklung && (
+      {daten.ablage?.entwicklung && (n.rollen || []).includes("admin") && ( // Konfigurationshinweis nur fürs Backoffice, nie für Kunden
         <Hinweis ton="neutral" className="mb-5">Entwicklungsbetrieb: Die Ablage nutzt einen lokalen Entwicklungsschlüssel. Für den Betrieb PLATTFORM_KYC_SCHLUESSEL setzen.</Hinweis>
       )}
       {ident && <IdentitaetsPruefung start={JSON.parse(JSON.stringify(ident))} />}

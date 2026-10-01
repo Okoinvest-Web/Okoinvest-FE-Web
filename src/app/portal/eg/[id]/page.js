@@ -8,6 +8,7 @@ import { Angaben, Badge, Karte, Leer, PfeilLink, SeitenKopf } from "@/components
 import { Klappe } from "@/components/Portal/Mitglied/teile";
 import { Empfehlungen, GrueneStunden, Meilensteine, TeilnahmeStatus, TfBalken } from "@/components/Portal/EG/Mitglied/Teile";
 import EnergieKarte from "@/components/Portal/EG/Mitglied/EnergieKarte";
+import { KeineBelege, KeineMesswerte } from "@/components/illustrationen";
 import { Kuendigung, OptimiererVorschlag, TfWunsch } from "@/components/Portal/EG/Mitglied/Aktionen";
 import { ct, datumDe, eur, zpKurz } from "@/components/Portal/EG/Mitglied/format";
 import { portalNutzer, laden } from "@/lib/plattform/server/seite";
@@ -41,6 +42,18 @@ export default async function Dashboard({ params }) {
   const tf = d.teilnahmen.filter((t) => ["entwurf", "aktiv"].includes(t.status));
   const hatErzeugung = d.teilnahmen.some((t) => t.richtung === "erzeugung");
   const tarif = d.tarif;
+  // Offene Zustimmung beim Netzbetreiber ist die eine dringende Aufgabe – dann steht sie vor „Energie heute“.
+  const zuerstStatus = d.teilnahmen.some((t) => t.schritte?.aktuell === "zustimmung" || t.schritte?.schritte?.some((x) => x.zustand === "fehler")) || !d.energie;
+  const statusKarte = (
+    <Karte titel="Ihre Zählpunkte" untertitel="Was passiert ist, was als Nächstes kommt – Schritt für Schritt">
+      {d.teilnahmen.length ? (
+        <ul className="divide-y divide-ink-100">
+          {d.teilnahmen.map((t) => <li key={t.id} className="py-5 first:pt-0 last:pb-0"><TeilnahmeStatus t={t} gemeinschaftName={g.name} /></li>)}
+        </ul>
+      ) : <Leer illustration={<KeineMesswerte />} titel="Noch kein Zählpunkt" text="Sobald Ihr Zählpunkt erfasst ist, sehen Sie hier jeden Schritt bis zum ersten Gemeinschaftsstrom." />}
+    </Karte>
+  );
+  const energieKarte = <EnergieKarte energie={d.energie} hatErzeugung={hatErzeugung} stunden={d.stunden} heute={d.heute} gemeinschaftName={g.name} />;
   return (
     <div className="space-y-6">
       <SeitenKopf eyebrow={`${g.modellLabel} · ${g.ort}`} titel={g.name} text={`Mitglied Nr. ${m.mitgliedsnummer} · ${m.artLabel}${m.beitrittAm ? ` · seit ${datumDe(m.beitrittAm)}` : ""}`} aktionen={verwaltung}>
@@ -51,18 +64,10 @@ export default async function Dashboard({ params }) {
         </div>
       </SeitenKopf>
 
-      <Karte titel="Ihre Zählpunkte" untertitel="Was passiert ist, was als Nächstes kommt – Schritt für Schritt">
-        {d.teilnahmen.length ? (
-          <ul className="divide-y divide-ink-100">
-            {d.teilnahmen.map((t) => <li key={t.id} className="py-5 first:pt-0 last:pb-0"><TeilnahmeStatus t={t} gemeinschaftName={g.name} /></li>)}
-          </ul>
-        ) : <Leer titel="Noch kein Zählpunkt" text="Sobald Ihr Zählpunkt erfasst ist, sehen Sie hier jeden Schritt bis zum ersten Gemeinschaftsstrom." />}
-      </Karte>
-
-      <EnergieKarte energie={d.energie} hatErzeugung={hatErzeugung} />
+      {zuerstStatus ? <>{statusKarte}{energieKarte}</> : <>{energieKarte}{statusKarte}</>}
 
       <div className="grid gap-6 lg:grid-cols-[1.25fr_1fr]">
-        <Karte titel="Wann gibt es viel Gemeinschaftsstrom?" untertitel="Verbrauch in diese Zeiten legen – das erhöht Ihren Anteil" aktion={<Sun aria-hidden="true" className="h-5 w-5 text-sun-500" />}>
+        <Karte titel="Wann gibt es viel Gemeinschaftsstrom?" untertitel="Verbrauch in diese Zeiten legen – das erhöht Ihren Anteil" aktion={<Sun aria-hidden="true" className="h-5 w-5 text-sun-600" />}>
           <GrueneStunden stunden={d.stunden} heute={d.heute} />
         </Karte>
         <Karte titel="Preisblatt" untertitel={tarif ? tarif.bezeichnung : "noch kein gültiges Preisblatt"} aktion={<ReceiptText aria-hidden="true" className="h-5 w-5 text-ov-600" />}>
@@ -124,7 +129,7 @@ export default async function Dashboard({ params }) {
               </li>
             ))}
           </ul>
-        ) : <Leer icon={FileText} titel="Noch keine Belege" text={d.belege.verfuegbar ? "Die erste Abrechnung erstellt die Gemeinschaft nach dem ersten vollständigen Monat mit Werten des Netzbetreibers (frühestens ab dem 20. des Folgemonats)." : d.belege.hinweis || "Die Abrechnung wird gerade angebunden."} />}
+        ) : <Leer illustration={<KeineBelege />} titel="Noch keine Belege" text={d.belege.verfuegbar ? "Die erste Abrechnung erstellt die Gemeinschaft nach dem ersten vollständigen Monat mit Werten des Netzbetreibers (frühestens ab dem 20. des Folgemonats)." : d.belege.hinweis || "Die Abrechnung wird gerade angebunden."} />}
       </Karte>
 
       <Karte titel="Meine Angaben" untertitel="Änderungen bitte über die Gemeinschaft" aktion={<UserRound aria-hidden="true" className="h-5 w-5 text-ov-600" />}>

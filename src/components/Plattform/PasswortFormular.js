@@ -1,64 +1,72 @@
 "use client";
 
+// Passwort vergessen (Link anfordern) und neues Passwort mit Token setzen – gemeinsame Formularbausteine,
+// Inline-Prüfung beim Verlassen, Stärkeanzeige, Übereinstimmung mit Häkchen. Verbindlich prüft der Server.
+
 import { useId, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, MailCheck } from "lucide-react";
+import { KeyRound, MailCheck, Send } from "lucide-react";
 import { senden } from "@/lib/plattform/client";
-import { passwortFehler } from "@/lib/plattform/validierung";
-import { eingabe, Feld, FehlerBox } from "@/components/Portal/felder";
+import { mitUebergang } from "@/components/ui/motion";
+import Textfeld from "@/components/formular/Textfeld";
+import PasswortFeld from "@/components/formular/PasswortFeld";
+import useFormular, { regel } from "@/components/formular/useFormular";
+import { AbsendeKnopf, useAbsenden } from "@/components/formular/Absenden";
+import { ErfolgsAnsicht, FormErfolg, FormFehler } from "@/components/formular/Meldungen";
 import ZweiFaktorSchritt from "./ZweiFaktorSchritt";
-import PasswortStaerke from "@/components/Portal/Sicherheit/PasswortStaerke";
 
-const knopf =
-  "inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold text-white shadow-[0_8px_24px_-8px_rgba(102,153,51,0.65)] transition-colors hover:bg-ov-700 disabled:opacity-60";
+const nachricht = (e) => e?.message || "Das hat nicht geklappt. Bitte versuchen Sie es erneut.";
+
+const SCHEMA_ANFORDERN = { email: [regel.pflicht("Bitte geben Sie die E-Mail-Adresse Ihres Kontos an, z. B. name@firma.de."), regel.email()] };
+const SCHEMA_SETZEN = {
+  pw: [regel.pflicht("Bitte legen Sie ein neues Passwort fest."), regel.passwort()],
+  pw2: [regel.pflicht("Bitte wiederholen Sie das Passwort."), regel.gleich("pw", "Die Passwörter stimmen nicht überein.")],
+};
 
 /** Link anfordern */
 export function PasswortAnfordern({ demo = false }) {
   const id = useId();
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState("offen");
-  const [fehler, setFehler] = useState("");
+  const form = useFormular({ email: "" }, SCHEMA_ANFORDERN);
+  const a = useAbsenden({ uebersetzen: nachricht });
+  const [fertig, setFertig] = useState(false);
 
   async function absenden(e) {
     e.preventDefault();
-    setStatus("sendet");
-    setFehler("");
-    try {
-      await senden("/api/auth/passwort-vergessen", { body: { email } });
-      setStatus("fertig");
-    } catch (err) {
-      setFehler(err.message);
-      setStatus("offen");
-    }
+    if (a.status !== "bereit" || !form.pruefeAlles()) return;
+    await a.los(() => senden("/api/auth/passwort-vergessen", { body: { email: form.werte.email } }), {
+      haltezeit: 500,
+      zuruecksetzen: false,
+      danach: () => mitUebergang(() => setFertig(true)),
+    });
   }
 
-  if (status === "fertig") {
+  if (fertig) {
     return (
-      <div role="status" className="rounded-2xl bg-ov-50 p-6 ring-1 ring-ov-200">
-        <MailCheck aria-hidden="true" className="h-8 w-8 text-ov-600" />
-        <p className="mt-3 font-display text-[19px] font-bold text-ink-900">Bitte prüfen Sie Ihr Postfach</p>
-        <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-700">
-          Wenn ein Konto mit dieser Adresse besteht, haben wir Ihnen einen Link zum Zurücksetzen gesendet. Er ist eine Stunde gültig.
-        </p>
+      <ErfolgsAnsicht
+        titel="Bitte prüfen Sie Ihr Postfach"
+        text="Wenn ein Konto mit dieser Adresse besteht, haben wir Ihnen einen Link zum Zurücksetzen gesendet. Er ist eine Stunde gültig."
+        icon={
+          <span aria-hidden="true" className="ov-erfolg flex h-14 w-14 items-center justify-center rounded-2xl bg-ov-50 text-ov-600 ring-1 ring-ov-200">
+            <MailCheck className="h-7 w-7" />
+          </span>
+        }
+      >
         {demo && <p className="mt-3 text-[13px] text-ink-600">Demo-Modus: Es wird keine E-Mail versendet. Der Link steht im Server-Log und im Backoffice unter „Nutzer & Protokoll“.</p>}
-        <Link href="/login" className="mt-4 inline-block text-[14px] font-semibold text-ov-700 hover:text-ov-800">Zurück zur Anmeldung</Link>
-      </div>
+        <Link href="/login" className="mt-5 inline-flex h-10 items-center text-[14px] font-semibold text-ov-700 underline-offset-4 hover:text-ov-800 hover:underline">Zurück zur Anmeldung</Link>
+      </ErfolgsAnsicht>
     );
   }
 
   return (
-    <form onSubmit={absenden} className="space-y-4">
-      <Feld id={`${id}-e`} label="E-Mail-Adresse Ihres Kontos">
-        <input id={`${id}-e`} type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={eingabe} />
-      </Feld>
-      <FehlerBox>{fehler}</FehlerBox>
-      <button type="submit" disabled={status === "sendet"} className={knopf}>
-        {status === "sendet" && <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />}
+    <form ref={form.formRef} onSubmit={absenden} noValidate className="space-y-5">
+      <Textfeld id={`${id}-e`} label="E-Mail-Adresse Ihres Kontos" pflicht type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} {...form.feld("email")} />
+      <FormFehler>{a.fehler}</FormFehler>
+      <AbsendeKnopf status={a.status} icon={Send} block laedtText="Wird gesendet …" erfolgText="Link gesendet">
         Link zum Zurücksetzen senden
-      </button>
+      </AbsendeKnopf>
       <p className="text-center text-[14.5px] text-ink-600">
-        Doch wieder eingefallen? <Link href="/login" className="font-semibold text-ov-700 hover:text-ov-800">Anmelden</Link>
+        Doch wieder eingefallen? <Link href="/login" className="font-semibold text-ov-700 underline-offset-4 hover:text-ov-800 hover:underline">Anmelden</Link>
       </p>
     </form>
   );
@@ -68,55 +76,49 @@ export function PasswortAnfordern({ demo = false }) {
 export function PasswortSetzen({ token }) {
   const router = useRouter();
   const id = useId();
-  const [pw, setPw] = useState("");
-  const [pw2, setPw2] = useState("");
-  const [laeuft, setLaeuft] = useState(false);
-  const [fehler, setFehler] = useState("");
+  const form = useFormular({ pw: "", pw2: "" }, SCHEMA_SETZEN);
+  const a = useAbsenden({ uebersetzen: nachricht });
   const [zweiFaktor, setZweiFaktor] = useState(false);
 
   async function absenden(e) {
     e.preventDefault();
-    const f = passwortFehler(pw) || (pw !== pw2 ? "Die Passwörter stimmen nicht überein." : "");
-    if (f) return setFehler(f);
-    setLaeuft(true);
-    setFehler("");
-    try {
-      const r = await senden("/api/auth/passwort-setzen", { body: { token, passwort: pw } });
-      if (r.zweiFaktor) {
-        setZweiFaktor(true); // Passwort ist gespeichert – Anmeldung erst nach dem zweiten Faktor
-        return;
+    if (a.status !== "bereit" || !form.pruefeAlles()) return;
+    let mitFaktor = false;
+    await a.los(
+      async () => {
+        const r = await senden("/api/auth/passwort-setzen", { body: { token, passwort: form.werte.pw } });
+        mitFaktor = !!r.zweiFaktor;
+        return r;
+      },
+      {
+        haltezeit: 700,
+        zuruecksetzen: false,
+        danach: () => {
+          if (mitFaktor) return mitUebergang(() => setZweiFaktor(true)); // Passwort ist gespeichert – Anmeldung erst nach dem zweiten Faktor
+          router.replace("/portal");
+          router.refresh();
+        },
       }
-      router.replace("/portal");
-      router.refresh();
-    } catch (err) {
-      setFehler(err.message);
-      setLaeuft(false);
-    }
+    );
   }
 
   if (zweiFaktor) {
     return (
       <div className="space-y-4">
-        <p role="status" className="rounded-xl bg-ov-50 px-4 py-3 text-[14px] text-ov-900 ring-1 ring-ov-200">Ihr neues Passwort ist gespeichert. Bitte bestätigen Sie die Anmeldung mit Ihrem zweiten Faktor.</p>
+        <FormErfolg>Ihr neues Passwort ist gespeichert. Bitte bestätigen Sie die Anmeldung mit Ihrem zweiten Faktor.</FormErfolg>
         <ZweiFaktorSchritt onErfolg={() => { router.replace("/portal"); router.refresh(); }} onAbbrechen={() => router.replace("/login?hinweis=passwort-gesetzt")} />
       </div>
     );
   }
 
   return (
-    <form onSubmit={absenden} className="space-y-4">
-      <Feld id={`${id}-1`} label="Neues Passwort" hinweis="Mindestens 10 Zeichen, Buchstaben und eine Ziffer oder ein Sonderzeichen.">
-        <input id={`${id}-1`} type="password" required minLength={10} autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} className={eingabe} />
-        <PasswortStaerke passwort={pw} />
-      </Feld>
-      <Feld id={`${id}-2`} label="Passwort wiederholen">
-        <input id={`${id}-2`} type="password" required minLength={10} autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} className={eingabe} />
-      </Feld>
-      <FehlerBox>{fehler}</FehlerBox>
-      <button type="submit" disabled={laeuft} className={knopf}>
-        {laeuft && <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />}
+    <form ref={form.formRef} onSubmit={absenden} noValidate className="space-y-5">
+      <PasswortFeld id={`${id}-1`} label="Neues Passwort" pflicht staerke autoComplete="new-password" maxLength={200} hinweis="Mindestens 10 Zeichen, Buchstaben und eine Ziffer oder ein Sonderzeichen." {...form.feld("pw")} />
+      <PasswortFeld id={`${id}-2`} label="Passwort wiederholen" pflicht autoComplete="new-password" maxLength={200} {...form.feld("pw2")} />
+      <FormFehler>{a.fehler}</FormFehler>
+      <AbsendeKnopf status={a.status} icon={KeyRound} block laedtText="Wird gespeichert …" erfolgText="Passwort gespeichert">
         Passwort speichern & anmelden
-      </button>
+      </AbsendeKnopf>
     </form>
   );
 }

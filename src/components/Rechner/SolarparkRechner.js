@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, Banknote, CalendarClock, Gauge, Landmark, Percent, Scale, TableProperties } from "lucide-react";
+import { AlertTriangle, Banknote, CalendarClock, ChevronDown, Gauge, Landmark, Percent, Scale, SlidersHorizontal, TableProperties } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
-import { Auswahl, Gruppe, Kennzahl, Regler, Schalter, Tooltip, Zahl, useBreite } from "./bausteine";
+import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Schalter, Tooltip, Zahl, useBreite } from "./bausteine";
 import { Ansicht, ErgebnisKopf, Hinweis, Legende, MobilKurz, RechnerRahmen } from "./InvestTeile";
+import { useDiagrammTastatur } from "./ToolTeile";
+import { useTeilbarerZustand } from "./kontext";
 import { ERLOESMODELLE, STANDARD, rechneSolarpark, sensitivitaet } from "@/lib/rechner/solarpark";
 import { REGIONEN, BAUART, FREIFLAECHE, ERLOESE, PACHT, FINANZIERUNG, AGRI } from "@/lib/invest/markt";
 import { fmt, fmtEur, fmtMio } from "@/lib/rechner/annahmen";
@@ -49,6 +51,52 @@ export default function SolarparkRechner() {
     else if (bauart.startsWith("agri")) setCapex(FREIFLAECHE.capexProKwp.mittel);
   };
 
+  // Teilbarer Link und Szenario-Vergleich: alle Eingaben (ohne Nebenwirkungen der Komfort-Setzer)
+  const setzer = {
+    mwp: setMwp,
+    regionId: setRegionId,
+    bauart: setBauart,
+    capexKwp: setCapex,
+    entwicklungKwp: setEntwicklung,
+    netzKm: setNetzKm,
+    modell: setModellRoh,
+    preisCt: setPreisCt,
+    vertragJahre: setVertragJahre,
+    merchantCt: setMerchantCt,
+    pachtHa: setPachtHa,
+    opexKwp: setOpex,
+    degradation: setDegradation,
+    fkQuote: setFkQuote,
+    zins: setZins,
+    tilgungJahre: setTilgung,
+    laufzeit: setLaufzeit,
+    dscrBegrenzen: setDscrBegrenzen,
+  };
+  useTeilbarerZustand(
+    { mwp, regionId, bauart, capexKwp, entwicklungKwp, netzKm, modell, preisCt, vertragJahre, merchantCt, pachtHa, opexKwp, degradation, fkQuote, zins, tilgungJahre, laufzeit, dscrBegrenzen },
+    (neu) => Object.entries(neu).forEach(([k, v]) => setzer[k]?.(v)),
+    {
+      optionen: { regionId: REGIONEN.map((x) => x.id), bauart: Object.keys(BAUART), modell: ["eeg", "ppa", "merchant"] },
+      grenzen: {
+        mwp: [1, 100],
+        capexKwp: [400, 1400],
+        entwicklungKwp: [0, 150],
+        netzKm: [0, 15],
+        preisCt: [3, 9],
+        vertragJahre: [3, 20],
+        merchantCt: [2, 8],
+        pachtHa: [800, 6000],
+        opexKwp: [6, 22],
+        degradation: [0.002, 0.008],
+        fkQuote: [0, 0.9],
+        zins: [0.02, 0.08],
+        tilgungJahre: [8, 25],
+        laufzeit: [20, 40],
+      },
+      pruefen: rechneSolarpark,
+    }
+  );
+
   const eingabe = {
     mwp,
     regionId,
@@ -79,7 +127,7 @@ export default function SolarparkRechner() {
       mitlaufend
       unten={
         <div className="space-y-6">
-          <div className="rounded-3xl ring-1 ring-ink-200/70">
+          <div className="rounded-3xl bg-white shadow-e1 ring-1 ring-ink-200/70">
             <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 md:px-6">
               <h3 className="font-display text-[17px] font-bold text-ink-900">Cashflow über {laufzeit} Jahre</h3>
               <Ansicht
@@ -97,7 +145,7 @@ export default function SolarparkRechner() {
           </div>
 
           <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <div className="rounded-3xl ring-1 ring-ink-200/70">
+            <div className="rounded-3xl bg-white shadow-e1 ring-1 ring-ink-200/70">
               <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 md:px-6">
                 <div>
                   <h3 className="font-display text-[17px] font-bold text-ink-900">Sensitivität</h3>
@@ -234,6 +282,20 @@ export default function SolarparkRechner() {
               />
             </Gruppe>
 
+            <details className="group rounded-2xl bg-white/70 ring-1 ring-ink-200/70 open:bg-transparent open:ring-0">
+              <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 rounded-2xl px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500 group-open:px-0 [&::-webkit-details-marker]:hidden">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ov-50 text-ov-600 ring-1 ring-ov-100">
+                  <SlidersHorizontal aria-hidden="true" className="h-[18px] w-[18px]" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14.5px] font-semibold text-ink-800">Betrieb & Finanzierung (Experten)</span>
+                  <span className="ov-num block truncate text-[12.5px] text-ink-500">
+                    Pacht {fmt(pachtHa)} €/ha · FK {fmt(fkQuote * 100)} % · Zins {fmt(zins * 100, 2)} % · {laufzeit} J.
+                  </span>
+                </span>
+                <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0 text-ink-500 transition-transform duration-200 group-open:rotate-180" />
+              </summary>
+              <div className="animate-ov-einblenden space-y-8 pt-6">
             <Gruppe titel="Betrieb">
               <Regler
                 label="Pacht"
@@ -272,6 +334,8 @@ export default function SolarparkRechner() {
                 onChange={setDscrBegrenzen}
               />
             </Gruppe>
+              </div>
+            </details>
           </div>
         </>
       }
@@ -282,34 +346,50 @@ export default function SolarparkRechner() {
           </p>
           <ErgebnisKopf plakette={`${laufzeit} Jahre · vor Steuern`} />
 
-          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-3">
-            <Kennzahl ton="navy" icon={Percent} label="Projekt-IRR" zusatz={`ohne Finanzierung · WACC ${pct(r.wacc)}`}>
-              {r.projektIrr == null ? "–" : <Zahl wert={r.projektIrr * 100} stellen={1} suffix=" %" />}
-            </Kennzahl>
-            <Kennzahl ton="gruen" icon={Banknote} label="Eigenkapital-IRR" zusatz={`EK ${fmtMio(r.ek)} · FK ${pct(r.fkQuoteEff, 0)}`}>
-              {r.ekIrr == null ? "–" : <Zahl wert={r.ekIrr * 100} stellen={1} suffix=" %" />}
-            </Kennzahl>
-            <Kennzahl icon={Gauge} label="LCOE" zusatz={`Fraunhofer ISE 2024: ${fmt(ERLOESE.lcoeIseCt.min, 1)}–${fmt(ERLOESE.lcoeIseCt.max, 1)} ct`}>
-              <Zahl wert={r.lcoeCt} stellen={2} suffix=" ct" />
+          <Hauptzahl
+            className="mt-5"
+            icon={Percent}
+            label="Projekt-IRR"
+            zusatz={`ohne Finanzierung · WACC ${pct(r.wacc)}`}
+            rechts={
+              <div className="sm:text-right">
+                <p className="flex items-center gap-1.5 text-[12.5px] text-white/75 sm:justify-end">
+                  <Banknote aria-hidden="true" className="h-3.5 w-3.5" />
+                  Eigenkapital-IRR
+                </p>
+                <p className="ov-kpi mt-0.5 text-white">
+                  {r.ekIrr == null ? "–" : <Zahl wert={r.ekIrr * 100} stellen={1} suffix=" %" delta="dunkel" deltaFormat={(dd) => `${fmt(dd, 1)} %-Pkt.`} />}
+                </p>
+                <p className="text-[12.5px] text-white/75">
+                  EK {fmtMio(r.ek)} · FK {pct(r.fkQuoteEff, 0)}
+                </p>
+              </div>
+            }
+          >
+            {r.projektIrr == null ? "–" : <Zahl wert={r.projektIrr * 100} stellen={1} suffix=" %" delta="dunkel" deltaFormat={(dd) => `${fmt(dd, 1)} %-Pkt.`} einlauf />}
+          </Hauptzahl>
+          <Belege spalten={2}>
+            <Kennzahl ton="akzent" icon={Gauge} label="LCOE" zusatz={`Fraunhofer ISE 2024: ${fmt(ERLOESE.lcoeIseCt.min, 1)}–${fmt(ERLOESE.lcoeIseCt.max, 1)} ct`}>
+              <Zahl wert={r.lcoeCt} stellen={2} suffix=" ct" delta="hell" />
             </Kennzahl>
             <Kennzahl icon={Scale} label="Kapitalwert (NPV)" zusatz={`Projekt, abgezinst mit ${pct(r.wacc)}`}>
-              <span className={r.kapitalwert < 0 ? "text-sun-500" : undefined}>
-                <Zahl wert={r.kapitalwert / 1e6} stellen={2} suffix=" Mio. €" />
+              <span className={r.kapitalwert < 0 ? "text-sun-700" : undefined}>
+                <Zahl wert={r.kapitalwert / 1e6} stellen={2} suffix=" Mio. €" delta="hell" />
               </span>
             </Kennzahl>
             <Kennzahl icon={CalendarClock} label="Amortisation" zusatz="Projekt, kumuliert">
-              {r.amortisation ? <Zahl wert={r.amortisation} stellen={1} suffix=" Jahre" /> : "> Laufzeit"}
+              {r.amortisation ? <Zahl wert={r.amortisation} stellen={1} suffix=" Jahre" delta="hell" /> : "> Laufzeit"}
             </Kennzahl>
             <Kennzahl icon={Landmark} label="DSCR min." zusatz={r.dscrMittel ? `Ø ${fmt(r.dscrMittel, 2)} über ${tilgungJahre} Jahre` : "ohne Fremdkapital"}>
               {r.dscrMin == null ? (
                 "–"
               ) : (
-                <span className={r.dscrMin < 1.1 ? "text-sun-500" : undefined}>
+                <span className={r.dscrMin < 1.1 ? "text-sun-700" : undefined}>
                   <Zahl wert={r.dscrMin} stellen={2} />
                 </span>
               )}
             </Kennzahl>
-          </div>
+          </Belege>
 
           <div className="mt-4 space-y-2.5">
             {r.fkBegrenzt && (
@@ -346,7 +426,7 @@ function InvestZeile({ r }) {
   const teile = [
     ["Anlage", r.investition.anlage, "#669933"],
     ["Netzanschluss", r.investition.netz, "#1f5aa1"],
-    ["Projektrechte", r.investition.entwicklung, "#ffc53d"],
+    ["Projektrechte", r.investition.entwicklung, "#c98500"],
   ].filter(([, v]) => v > 0);
   return (
     <div className="rounded-2xl bg-ink-50 p-4">
@@ -356,7 +436,7 @@ function InvestZeile({ r }) {
       </div>
       <div className="mt-2.5 flex h-2.5 overflow-hidden rounded-full bg-ink-100" role="img" aria-label={teile.map(([k, v]) => `${k} ${fmtEur(v)}`).join(", ")}>
         {teile.map(([k, v, f]) => (
-          <div key={k} style={{ width: `${(v / r.investition.summe) * 100}%`, background: f }} className="motion-safe:transition-[width] motion-safe:duration-500" />
+          <div key={k} style={{ width: `${(v / r.investition.summe) * 100}%`, background: f }} />
         ))}
       </div>
       <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-ink-600">
@@ -403,9 +483,11 @@ function CashflowJahre({ r }) {
     const px = ((e.clientX - box.left) / box.width) * W;
     return Math.max(0, Math.min(n - 1, Math.floor((px - P.l) / band)));
   };
+  const tastatur = useDiagrammTastatur(n, setHover);
 
   return (
-    <div ref={ref} className="relative px-2 pb-4 pt-2 md:px-3">
+    <div ref={ref} className="ov-reveal relative px-2 pb-4 pt-2 md:px-3" data-dir="ohne" suppressHydrationWarning>
+      <div {...tastatur} role="group" aria-label="Cashflow je Jahr – mit den Pfeiltasten durch die Jahre" className="rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2">
       <svg
         width="100%"
         height={H}
@@ -424,20 +506,34 @@ function CashflowJahre({ r }) {
         ))}
         {vertragEnde > 0 && vertragEnde < n && (
           <g>
-            <line x1={P.l + vertragEnde * band} x2={P.l + vertragEnde * band} y1={P.t - 4} y2={H - P.b} stroke="#f5a70f" strokeDasharray="3 4" />
-            <text x={P.l + vertragEnde * band + 4} y={P.t + 6} className="fill-sun-500 text-[10.5px] font-semibold">
+            <line x1={P.l + vertragEnde * band} x2={P.l + vertragEnde * band} y1={P.t - 4} y2={H - P.b} stroke="#c98500" strokeDasharray="3 4" />
+            <text x={P.l + vertragEnde * band + 4} y={P.t + 6} className="fill-sun-700 text-[10.5px] font-semibold">
               {schmal ? "Markt" : "ab hier Marktpreis"}
             </text>
           </g>
         )}
         {jahre.map((j, i) => (
-          <g key={j.jahr} opacity={hover == null || hover === i ? 1 : 0.55}>
-            <rect x={x(i)} y={yv(j.erloes)} width={bw} height={Math.max(0, nullY - yv(j.erloes))} rx={Math.min(3, bw / 3)} fill={FARBE.erloes} />
-            <rect x={x(i)} y={nullY} width={bw} height={j.kosten * skala} fill={FARBE.kosten} />
-            <rect x={x(i)} y={nullY + j.kosten * skala} width={bw} height={j.schuldendienst * skala} fill={FARBE.dienst} />
+          <g key={j.jahr} opacity={hover == null || hover === i ? 1 : 0.55} className="transition-opacity duration-150">
+            {/* Erlös wächst von der Nulllinie nach oben, Kosten nach unten */}
+            <g className="ov-balken-y" style={{ "--i": Math.min(i, 40) * 0.4 }}>
+              <rect x={x(i)} y={yv(j.erloes)} width={bw} height={Math.max(0, nullY - yv(j.erloes))} rx={Math.min(3, bw / 3)} fill={FARBE.erloes} />
+            </g>
+            <g className="ov-balken-y" style={{ "--i": Math.min(i, 40) * 0.4, transformOrigin: "50% 0%" }}>
+              <rect x={x(i)} y={nullY} width={bw} height={j.kosten * skala} fill={FARBE.kosten} />
+              <rect x={x(i)} y={nullY + j.kosten * skala} width={bw} height={j.schuldendienst * skala} fill={FARBE.dienst} />
+            </g>
           </g>
         ))}
-        <path d={jahre.map((j, i) => `${i ? "L" : "M"}${(x(i) + bw / 2).toFixed(1)},${yv(j.cfEk).toFixed(1)}`).join(" ")} fill="none" stroke={FARBE.cf} strokeWidth="2" strokeLinejoin="round" />
+        <path
+          d={jahre.map((j, i) => `${i ? "L" : "M"}${(x(i) + bw / 2).toFixed(1)},${yv(j.cfEk).toFixed(1)}`).join(" ")}
+          fill="none"
+          stroke={FARBE.cf}
+          strokeWidth="2"
+          strokeLinejoin="round"
+          pathLength="1"
+          className="ov-linie"
+          style={{ "--ov-delay": "400ms" }}
+        />
         {jahre.map((j, i) =>
           j.jahr === 1 || j.jahr % 5 === 0 ? (
             <text key={j.jahr} x={x(i) + bw / 2} y={H - P.b + 18} textAnchor="middle" className="fill-ink-500 text-[10.5px]">
@@ -447,6 +543,7 @@ function CashflowJahre({ r }) {
         )}
         <rect x={0} y={0} width={W} height={H} fill="transparent" onPointerMove={(e) => setHover(ausZeiger(e))} onPointerLeave={() => setHover(null)} onClick={(e) => setHover(ausZeiger(e))} />
       </svg>
+      </div>
       {aktiv && (
         <Tooltip x={x(hover) + bw / 2} y={Math.max(yv(aktiv.erloes) - 20, 0)} breite={W}>
           <p className="font-semibold">
@@ -516,9 +613,11 @@ function CashflowKumuliert({ r }) {
     const px = ((e.clientX - box.left) / box.width) * W;
     return Math.max(0, Math.min(n, Math.round(((px - P.l) / (W - P.l - P.r)) * n)));
   };
+  const tastatur = useDiagrammTastatur(n + 1, setHover);
 
   return (
-    <div ref={ref} className="relative px-2 pb-4 pt-2 md:px-3">
+    <div ref={ref} className="ov-reveal relative px-2 pb-4 pt-2 md:px-3" data-dir="ohne" suppressHydrationWarning>
+      <div {...tastatur} role="group" aria-label="Kumulierter Cashflow – mit den Pfeiltasten durch die Jahre" className="rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2">
       <svg
         width="100%"
         height={H}
@@ -542,8 +641,8 @@ function CashflowKumuliert({ r }) {
               {t}
             </text>
           ))}
-        <path d={pfad(projekt)} fill="none" stroke={FARBE.projekt} strokeWidth="2.25" strokeLinejoin="round" />
-        <path d={pfad(ek)} fill="none" stroke={FARBE.ek} strokeWidth="2.75" strokeLinejoin="round" />
+        <path d={pfad(projekt)} fill="none" stroke={FARBE.projekt} strokeWidth="2.25" strokeLinejoin="round" pathLength="1" className="ov-linie" />
+        <path d={pfad(ek)} fill="none" stroke={FARBE.ek} strokeWidth="2.75" strokeLinejoin="round" pathLength="1" className="ov-linie" style={{ "--ov-delay": "150ms" }} />
         {r.amortisation && r.amortisation <= n && (
           <g>
             <circle cx={x(r.amortisation)} cy={y(0)} r="5.5" fill="#fff" stroke={FARBE.projekt} strokeWidth="2.5" />
@@ -561,6 +660,7 @@ function CashflowKumuliert({ r }) {
         )}
         <rect x={0} y={0} width={W} height={H} fill="transparent" onPointerMove={(e) => setHover(ausZeiger(e))} onPointerLeave={() => setHover(null)} onClick={(e) => setHover(ausZeiger(e))} />
       </svg>
+      </div>
       {hover != null && (
         <Tooltip x={x(hover)} y={Math.max(Math.min(y(projekt[hover]), y(ek[hover])) - 60, 0)} breite={W}>
           <p className="font-semibold">{hover === 0 ? "Investition (Jahr 0)" : `Nach Jahr ${hover}`}</p>
@@ -612,7 +712,7 @@ function Matrix({ matrix, wert, ziel, capexKwp }) {
             {matrix.map((z) => (
               <tr key={z.capex}>
                 <th scope="row" className={cn("whitespace-nowrap px-2 py-1.5 text-left text-[12px] font-semibold", z.capex === 0 ? "text-ink-900" : "text-ink-500")}>
-                  {vz(z.capex)} <span className="font-normal text-ink-400">· {fmt(z.capexKwp)} €</span>
+                  {vz(z.capex)} <span className="font-normal text-ink-500">· {fmt(z.capexKwp)} €</span>
                 </th>
                 {z.zellen.map((c) => {
                   const v = wert === "ek" ? c.ekIrr : c.projektIrr;

@@ -1,9 +1,12 @@
-// Split-Ansicht für Login, Registrierung und Passwort: links Formular, rechts Navy-Fläche
-// mit Nutzenversprechen. Wird innerhalb des normalen Seitenkopfs/-fußes gerendert.
+// Split-Screen für Login, Registrierung, Passwort und Einladungen: links das Formular auf ruhigem Weiß,
+// rechts die Markenfläche (Navy-Verlauf) mit dem animierten Marken-Motiv von T7, Nutzenversprechen je Rolle
+// und Vertrauenspunkten. Auf dem Handy steht das Formular zuerst, die Markenfläche folgt kompakt darunter.
+// Server-Komponente; wird innerhalb des normalen Seitenkopfs/-fußes gerendert.
 
 import { BadgeCheck, Check, Clock, FileLock2, MessagesSquare } from "lucide-react";
 import { PROVISION } from "@/lib/invest/markt";
 import { ROLLEN } from "@/lib/plattform/konstanten";
+import { MarkenMotiv } from "@/components/illustrationen/marke";
 
 const NUTZEN = {
   flaeche: ["Kostenlose Vorprüfung Ihrer Fläche", "Pachtangebot direkt im Portal", "Status von der Prüfung bis zum Betrieb"],
@@ -15,6 +18,12 @@ const NUTZEN = {
   kommune: ["Projekte im Gemeindegebiet ab Planung", "Beteiligungsmodelle und § 6 EEG im Überblick", "Fester Ansprechpartner für Verwaltung und Gemeinderat"],
 };
 
+const VERTRAUEN = [
+  { icon: BadgeCheck, t: "ÖKOVOLT Gruppe", s: "seit 2010" },
+  { icon: FileLock2, t: "Vertraulich", s: "Datenraum nach NDA" },
+  { icon: MessagesSquare, t: "Direkter Draht", s: "Nachrichten im Portal" },
+];
+
 export default function AuthRahmen({ eyebrow, titel, text, rolle, children }) {
   const r = ROLLEN.find((x) => x.id === rolle);
   const punkte = NUTZEN[rolle] || [
@@ -25,54 +34,57 @@ export default function AuthRahmen({ eyebrow, titel, text, rolle, children }) {
   return (
     <section className="relative overflow-hidden bg-sand-50">
       <div aria-hidden="true" className="ov-grid-bg-light pointer-events-none absolute inset-0" />
-      <div className="ov-container relative grid gap-8 py-10 md:py-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12">
-        <div className="min-w-0 rounded-[2rem] bg-white p-6 shadow-[0_30px_80px_-50px_rgba(3,18,43,0.45)] ring-1 ring-ink-200/70 sm:p-8 md:p-10">
-          {eyebrow && <p className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ov-700">{eyebrow}</p>}
-          <h1 className="mt-2 font-display text-[28px] font-extrabold leading-tight tracking-tight text-ink-900 md:text-[34px]">{titel}</h1>
-          {text && <p className="mt-3 text-[15.5px] leading-relaxed text-ink-600">{text}</p>}
-          <div className="mt-8">{children}</div>
-        </div>
-
-        <aside className="ov-noise relative min-w-0 overflow-hidden rounded-[2rem] bg-navy-950 p-7 text-white sm:p-10 lg:sticky lg:top-28 lg:self-start lg:p-12">
-          <div aria-hidden="true" className="ov-grid-bg absolute inset-0" />
-          <div aria-hidden="true" className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-ov-500/35 blur-[110px]" />
-          <div aria-hidden="true" className="absolute -bottom-32 -left-10 h-72 w-72 rounded-full bg-navy-400/25 blur-[110px]" />
-          <div className="relative flex h-full flex-col">
-            <p className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ov-300">{r ? `Portal für ${r.label}` : "Ein Login für alles"}</p>
-            <p className="mt-4 font-display text-[26px] font-extrabold leading-tight tracking-tight md:text-[32px]">
-              Flächen. Projekte. Kapital. Strom. <span className="text-ov-300">An einem Ort.</span>
-            </p>
-            <ul className="mt-8 space-y-4">
-              {punkte.map((p) => (
-                <li key={p} className="flex items-start gap-3 text-[15.5px] leading-relaxed text-white/85">
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ov-500/20 text-ov-300">
-                    <Check aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={3} />
-                  </span>
-                  <span className="min-w-0">{p}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-10 grid gap-3 sm:grid-cols-3 lg:mt-auto lg:pt-10">
-              {[
-                { icon: BadgeCheck, t: "ÖKOVOLT Gruppe", s: "seit 2010" },
-                { icon: FileLock2, t: "Vertraulich", s: "Datenraum nach NDA" },
-                { icon: MessagesSquare, t: "Direkter Draht", s: "Nachrichten im Portal" },
-              ].map((k) => {
-                const Icon = k.icon;
-                return (
-                  <div key={k.t} className="ov-glass rounded-2xl p-4">
-                    <Icon aria-hidden="true" className="h-5 w-5 text-ov-300" />
-                    <p className="mt-2 text-[14px] font-semibold">{k.t}</p>
-                    <p className="text-[12.5px] text-white/60">{k.s}</p>
-                  </div>
-                );
-              })}
+      <div className="ov-container relative py-6 sm:py-10 md:py-14">
+        <div className="grid overflow-hidden rounded-[2rem] bg-white shadow-e3 ring-1 ring-ink-200/70 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
+          {/* Formularseite */}
+          <div className="min-w-0 px-5 py-8 sm:px-10 sm:py-12 lg:px-14 lg:py-16 xl:px-20">
+            <div className="ov-ein mx-auto w-full max-w-[32rem]">
+              {eyebrow && <p className="ov-overline text-ov-700">{eyebrow}</p>}
+              <h1 className="mt-2 font-display text-[28px] font-extrabold leading-[1.1] tracking-tight text-ink-900 md:text-[36px]">{titel}</h1>
+              {text && <p className="mt-3 text-[15.5px] leading-relaxed text-ink-600">{text}</p>}
+              <div className="mt-8">{children}</div>
             </div>
-            <p className="mt-6 flex items-center gap-2 text-[12.5px] text-white/50">
-              <Clock aria-hidden="true" className="h-3.5 w-3.5" /> Antwort in der Regel innerhalb von zwei Werktagen
-            </p>
           </div>
-        </aside>
+
+          {/* Markenseite */}
+          <aside aria-label="Ihre Vorteile im Portal" className="ov-verlauf-nacht relative isolate min-w-0 overflow-hidden px-6 py-8 text-white sm:px-10 sm:py-10 lg:px-12 lg:py-14">
+            <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10 opacity-60" />
+            <div className="flex h-full flex-col">
+              <div aria-hidden="true" className="relative mx-auto hidden w-full max-w-[22rem] sm:block" style={{ aspectRatio: "1 / 1" }}>
+                <MarkenMotiv ton="dunkel" className="absolute inset-0 h-full w-full" />
+              </div>
+              <p className="ov-overline mt-2 text-ov-300 sm:mt-6">{r ? `Portal für ${r.label}` : "Ein Login für alles"}</p>
+              <p className="mt-3 font-display text-[24px] font-extrabold leading-tight tracking-tight md:text-[30px]">
+                Flächen. Projekte. Kapital. Strom. <span className="text-ov-300">An einem Ort.</span>
+              </p>
+              <ul className="mt-6 space-y-3.5">
+                {punkte.map((p, i) => (
+                  <li key={p} className="ov-ein flex items-start gap-3 text-[15px] leading-relaxed text-white/85" style={{ "--ov-delay": `${160 + i * 70}ms` }}>
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ov-300/15 text-ov-300 ring-1 ring-ov-300/30">
+                      <Check aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={3} />
+                    </span>
+                    <span className="min-w-0">{p}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-8 grid gap-2.5 sm:grid-cols-3 lg:mt-auto lg:pt-10">
+                {VERTRAUEN.map((k) => {
+                  const Icon = k.icon;
+                  return (
+                    <div key={k.t} className="ov-glass rounded-2xl p-3.5">
+                      <Icon aria-hidden="true" className="h-[18px] w-[18px] text-ov-300" />
+                      <p className="mt-2 text-[14px] font-semibold">{k.t}</p>
+                      <p className="text-[12.5px] text-white/75">{k.s}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-5 flex items-center gap-2 text-[13px] text-white/75">
+                <Clock aria-hidden="true" className="h-3.5 w-3.5" /> Antwort in der Regel innerhalb von zwei Werktagen
+              </p>
+            </div>
+          </aside>
+        </div>
       </div>
     </section>
   );

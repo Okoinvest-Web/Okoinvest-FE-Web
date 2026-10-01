@@ -3,11 +3,11 @@
 // für Interessenten die Gemeinschaftssuche mit Eignungscheck. Nur eigene Daten (ptUebersicht).
 
 import Link from "next/link";
-import { ArrowRight, Building2, Calculator, FileJson, Landmark, Search, SlidersHorizontal, SunMedium, Users } from "lucide-react";
+import { ArrowRight, Building2, Calculator, FileJson, Landmark, PiggyBank, ReceiptText, Search, SlidersHorizontal, SunMedium, Users } from "lucide-react";
 import { Badge, Karte, PfeilLink, SeitenKopf } from "@/components/Portal/ui";
 import { TfBalken, ZustimmungJetzt } from "@/components/Portal/EG/Mitglied/Teile";
 import GemeinschaftFinden from "@/components/Portal/EG/Mitglied/GemeinschaftFinden";
-import { ct, datumDe, zpKurz } from "@/components/Portal/EG/Mitglied/format";
+import { ct, datumDe, eur, zpKurz } from "@/components/Portal/EG/Mitglied/format";
 import { portalNutzer } from "@/lib/plattform/server/seite";
 import { egBackend } from "@/lib/plattform/backend/eg";
 import { GEMEINSCHAFT_STATUS, MITGLIED_STATUS } from "@/lib/plattform/eg/modell";
@@ -22,6 +22,20 @@ export default async function Seite() {
   const d = await egBackend().ptUebersicht(n);
   const aktiv = d.mitgliedschaften.filter((m) => m.mitglied.status !== "ausgeschieden");
   const mehrfach = d.mehrfach.filter((z) => z.mehrfach || z.richtung === "erzeugung");
+  // Ersparnis je Mitgliedschaft (nur lesen, Kennzahlen aus dem Dashboard der Gemeinschaft; fehlt etwas, bleibt die Kachel leer)
+  const ersparnis = Object.fromEntries(
+    await Promise.all(
+      aktiv.map(async (ms) => {
+        try {
+          const e = (await egBackend().ptGemeinschaft(n, ms.gemeinschaft.id))?.energie;
+          if (!e?.verfuegbar) return [ms.gemeinschaft.id, null];
+          return [ms.gemeinschaft.id, { jahr: e.werte?.jahr?.hatDaten ? e.werte.jahr : null, monat: e.werte?.monat?.hatDaten ? e.werte.monat : null, jahrLabel: e.zeitraeume?.jahr?.label, monatLabel: e.zeitraeume?.monat?.label }];
+        } catch {
+          return [ms.gemeinschaft.id, null];
+        }
+      })
+    )
+  );
   return (
     <div className="space-y-6">
       <SeitenKopf
@@ -45,7 +59,7 @@ export default async function Seite() {
         const t = ms?.teilnahmen.find((x) => x.id === a.teilnahmeId);
         if (t?.schritte.aktuell === "zustimmung" && !t.schritte.schritte.some((s) => s.zustand === "fehler")) return <ZustimmungJetzt key={a.teilnahmeId} frist={a.frist} anleitung={t.anleitung} gemeinschaftName={a.gemeinschaft} />;
         return (
-          <div key={a.teilnahmeId} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-sun-300/15 px-5 py-4 ring-1 ring-sun-400/50">
+          <div key={a.teilnahmeId} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-warn-50 px-5 py-4 ring-1 ring-warn-200">
             <p className="text-[14.5px] text-ink-800"><strong>{a.gemeinschaft}</strong> · Zählpunkt {zpKurz(a.zaehlpunktnummer)}: {a.text}</p>
             <PfeilLink href={`/portal/eg/${a.gemeinschaftId}`}>Details</PfeilLink>
           </div>
@@ -55,7 +69,7 @@ export default async function Seite() {
       {aktiv.length > 0 && (
         <div className="grid gap-4 lg:grid-cols-2">
           {aktiv.map((ms) => (
-            <Link key={ms.mitglied.id} href={`/portal/eg/${ms.gemeinschaft.id}`} className="group flex flex-col rounded-[2rem] bg-white p-5 ring-1 ring-ink-200/70 transition-shadow hover:shadow-[0_20px_48px_-24px_rgba(3,18,43,0.35)] hover:ring-ov-200 md:p-6">
+            <Link key={ms.mitglied.id} href={`/portal/eg/${ms.gemeinschaft.id}`} className="ov-lift group flex flex-col rounded-[2rem] bg-white p-5 shadow-e1 ring-1 ring-ink-200/70 hover:ring-ov-200 md:p-6">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-700">{ms.gemeinschaft.modellKurz} · {ms.gemeinschaft.ort}</p>
@@ -69,6 +83,18 @@ export default async function Seite() {
                 {ms.organ && <Badge ton="dunkel">Organ</Badge>}
                 {ms.mitglied.austrittZum && <Badge ton="warn">Austritt {datumDe(ms.mitglied.austrittZum)}</Badge>}
               </div>
+              {ersparnis[ms.gemeinschaft.id]?.jahr && (
+                <div className="mt-4 flex flex-wrap items-end justify-between gap-3 rounded-2xl bg-ov-50 px-4 py-3 ring-1 ring-ov-200">
+                  <div>
+                    <p className="flex items-center gap-1.5 text-[12.5px] font-semibold text-ov-800"><PiggyBank aria-hidden="true" className="h-3.5 w-3.5" />Ihre Ersparnis · {ersparnis[ms.gemeinschaft.id].jahrLabel || "dieses Jahr"}</p>
+                    <p className="ov-kpi mt-0.5 text-ink-900">{eur(ersparnis[ms.gemeinschaft.id].jahr.ersparnis?.gesamtEur)}</p>
+                  </div>
+                  <p className="text-right text-[12.5px] leading-snug text-ink-600">
+                    {ersparnis[ms.gemeinschaft.id].monat ? <>{ersparnis[ms.gemeinschaft.id].monatLabel || "Monat"}: <strong className="ov-num text-ink-900">{eur(ersparnis[ms.gemeinschaft.id].monat.ersparnis?.gesamtEur)}</strong><br /></> : null}
+                    {ersparnis[ms.gemeinschaft.id].jahr.anteilPct !== null && ersparnis[ms.gemeinschaft.id].jahr.anteilPct !== undefined ? `${Math.round(ersparnis[ms.gemeinschaft.id].jahr.anteilPct)} % aus der Gemeinschaft` : "Schätzung"}
+                  </p>
+                </div>
+              )}
               <ul className="mt-5 space-y-4">
                 {ms.teilnahmen.map((t) => (
                   <li key={t.id}>
@@ -76,9 +102,10 @@ export default async function Seite() {
                       <span className="font-semibold text-ink-800">{t.richtungLabel} {zpKurz(t.zaehlpunktnummer)}{t.bezeichnung ? ` · ${t.bezeichnung}` : ""}</span>
                       <span className="text-ink-500">{t.statusLabel} · TF {t.teilnahmefaktor} %</span>
                     </div>
-                    <div className="flex gap-1" aria-label={`Schritt ${t.schritte.schritte.findIndex((s) => s.id === t.schritte.aktuell) + 1} von 6`}>
-                      {t.schritte.schritte.map((s) => <span key={s.id} className={`h-1.5 flex-1 rounded-full ${s.zustand === "erledigt" ? "bg-ov-500" : s.zustand === "aktuell" ? "bg-ov-300" : s.zustand === "fehler" ? "bg-sun-400" : "bg-ink-100"}`} />)}
+                    <div className="flex gap-1" role="img" aria-label={`Schritt ${t.schritte.schritte.findIndex((s) => s.id === t.schritte.aktuell) + 1} von ${t.schritte.schritte.length}: ${t.schritte.schritte.find((s) => s.id === t.schritte.aktuell)?.label || ""}`}>
+                      {t.schritte.schritte.map((s) => <span key={s.id} className={`h-1.5 flex-1 rounded-full ${s.zustand === "erledigt" ? "bg-ov-500" : s.zustand === "aktuell" ? "bg-ov-300 ring-1 ring-inset ring-ov-500" : s.zustand === "fehler" ? "bg-sun-500" : "bg-ink-200"}`} />)}
                     </div>
+                    <p className="mt-1.5 text-[12.5px] text-ink-500">{t.status === "aktiv" && t.gueltigAb ? `Aktiv seit ${datumDe(t.gueltigAb)}` : `Schritt ${t.schritte.schritte.findIndex((s) => s.id === t.schritte.aktuell) + 1} von ${t.schritte.schritte.length}: ${t.schritte.schritte.find((s) => s.id === t.schritte.aktuell)?.label || ""}`}</p>
                   </li>
                 ))}
                 {!ms.teilnahmen.length && <li className="text-[13.5px] text-ink-500">Noch kein Zählpunkt angemeldet.</li>}
@@ -96,6 +123,9 @@ export default async function Seite() {
         <div className="grid gap-4 md:grid-cols-3">
           {d.organe.map((o) => (
             <Einstieg key={o.id} href={o.href} icon={Users} titel={`Verwaltung: ${o.name}`} text="Aufnahmen, Zustimmungen, Mitglieder, Tarife – für Vorstand, Kassa und Rechnungsprüfung." />
+          ))}
+          {d.organe.map((o) => (
+            <Einstieg key={`ab-${o.id}`} href={`/portal/eg/${o.id}/abrechnung`} icon={ReceiptText} titel={`Abrechnung: ${o.name}`} text="Direkt zum Lauf: Vorschau mit Vergleich zum Vormonat, Vier-Augen-Freigabe, Versand." />
           ))}
           {d.gemeinde && <Einstieg href="/portal/eg/gemeinde" icon={Landmark} titel="Gemeinde-Sicht" text="Gemeindegebäude, Sozialquote nach § 68 Abs. 6 ElWG und Bürgerbeteiligung auf einen Blick." />}
           {mehrfach.length > 0 && <Einstieg href="/portal/eg/mehrfach" icon={SlidersHorizontal} titel="Mehrfachteilnahme" text={`${mehrfach.length} Zählpunkt${mehrfach.length === 1 ? "" : "e"} – Teilnahmefaktoren über bis zu fünf Gemeinschaften verteilen.`} />}
@@ -144,7 +174,7 @@ export default async function Seite() {
 
 function Einstieg({ href, icon: Icon, titel, text }) {
   return (
-    <Link href={href} className="group flex gap-4 rounded-3xl bg-white p-5 ring-1 ring-ink-200/70 transition-shadow hover:shadow-[0_12px_32px_-18px_rgba(3,18,43,0.35)] hover:ring-ov-200">
+    <Link href={href} className="ov-lift group flex gap-4 rounded-3xl bg-white p-5 shadow-e1 ring-1 ring-ink-200/70 hover:ring-ov-200">
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-navy-950 text-ov-300"><Icon aria-hidden="true" className="h-5 w-5" /></span>
       <span className="min-w-0">
         <span className="flex items-center gap-1 font-display text-[16px] font-bold text-ink-900">{titel}<ArrowRight aria-hidden="true" className="h-4 w-4 text-ov-700 transition-transform group-hover:translate-x-0.5" /></span>

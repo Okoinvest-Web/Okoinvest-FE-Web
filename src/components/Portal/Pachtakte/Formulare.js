@@ -15,6 +15,7 @@ import {
   AGRI_BEWIRTSCHAFTER, AGRI_NACHWEIS_ARTEN, AGRI_NACHWEIS_EINHEITEN, AGRI_NACHWEIS_KULTUREN, ANLIEGEN_ARTEN, AUFTEILUNG_GRUNDLAGEN, ERBNACHWEISE,
   JA_NEIN_ENTFAELLT, KUENDIGUNG_GRUENDE, SICHERHEIT_ARTEN as SICHERHEIT_ARTEN_CLIENT, VERLAENGERUNG_WUENSCHE, WECHSEL_ANLAESSE, agriNachweisBereinigen, agriNachweisPruefen, anliegenInfo, datumDe,
 } from "@/lib/plattform/pachtakte";
+import { bestaetigen as rueckfrage } from "@/components/ui/Rueckfrage";
 
 const Optionen = ({ werte, leer = "Bitte wählen" }) => (
   <>
@@ -203,7 +204,7 @@ export function Schritte({ url, aktionen = [], basis = {}, zusatz = () => [], le
       setFehler("");
       return;
     }
-    if (bestaetigen[nach] && !window.confirm(bestaetigen[nach])) return;
+    if (bestaetigen[nach] && !(await rueckfrage({ titel: bestaetigen[nach], bestaetigenText: x.aktion, gefahr: true }))) return;
     setLaeuft(true);
     setFehler("");
     try {

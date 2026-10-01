@@ -2,6 +2,10 @@
 // und klarer nächster Aktion. Ohne Hooks – in Server- und Client-Komponenten nutzbar.
 
 import { cn } from "@/components/ui/cn";
+import { Erfolg, KeineDokumente, KeineFlaechen, KeineGebote, KeineNachrichten, KeineProjekte, SucheOhneTreffer } from "@/components/illustrationen"; // T7-Motive (Isometrie, 5:4)
+
+// Isometrische T7-Motive je Art; die alten Mini-Bilder bleiben als Rückfall für unbekannte Arten
+const MOTIV = { flaeche: KeineFlaechen, projekt: KeineProjekte, anfrage: KeineNachrichten, nachricht: KeineNachrichten, dokument: KeineDokumente, suche: SucheOhneTreffer, boerse: KeineGebote, fertig: Erfolg };
 
 const G = { gruen: "#669933", gruenHell: "#aed083", gruen50: "#f4f9ee", navy: "#041d42", navyHell: "#7fa7d6", sand: "#f5f3ea", sandDunkel: "#dfe3ea", weiss: "#ffffff", ink: "#dfe3ea" };
 
@@ -91,6 +95,8 @@ const BILDER = {
 };
 
 export function LeerIllustration({ art = "suche", className }) {
+  const Motiv = MOTIV[art];
+  if (Motiv) return <Motiv className={cn("h-[112px] w-[140px]", className)} />;
   return (
     <svg viewBox="0 0 160 104" aria-hidden="true" focusable="false" className={cn("h-[88px] w-[136px]", className)}>
       {BILDER[art] || BILDER.suche}

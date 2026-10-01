@@ -14,6 +14,7 @@ import { BUNDESLAENDER, LAENDER } from "@/lib/plattform/konstanten";
 import {
   ANLAGE_STATUS, ANLAGE_TYPEN, KOMPONENTEN_ARTEN, LASTPROFILE, MESSPUNKT_ARTEN, MESSSTELLEN, STOERUNG_SCHWERE, WARTUNG_ARTEN, WARTUNG_STATUS, kwpText, prognoseJahrKwh, kwh, regionFuer,
 } from "@/lib/plattform/anlagen";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 import { BETRIEBSFUEHRER_STANDARD, DIENSTBARKEIT_STATUS, EIGENTUEMER_STANDARD, ENDSCHAFT, INDEX_BASIS } from "@/lib/plattform/anlagen"; // Eigentum & Vertragsdetails
 
 const opt = (obj) => Object.entries(obj).map(([id, v]) => [id, typeof v === "string" ? v : v.label]);
@@ -373,7 +374,7 @@ export function EintragBereich({ anlageId, art, eintraege = [], schema: schemaPr
     }
   }
   async function loeschen(id) {
-    if (!window.confirm("Eintrag wirklich löschen?")) return;
+    if (!(await bestaetigen({ titel: "Eintrag löschen?", text: "Der Eintrag wird dauerhaft entfernt.", bestaetigenText: "Eintrag löschen", gefahr: true }))) return;
     try {
       await senden(`/api/admin/anlagen/${anlageId}/eintraege?art=${art}&id=${encodeURIComponent(id)}`, { method: "DELETE" });
       router.refresh();

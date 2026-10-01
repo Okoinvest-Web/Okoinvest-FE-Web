@@ -15,6 +15,7 @@ import { ErfolgBox, FehlerBox, Feld, auswahlfeld, eingabe } from "@/components/P
 import { senden } from "@/lib/plattform/client";
 import { GEWERKE, GRUPPEN, KOSTENSTAENDE, VERLEGEARTEN, berechnen, trassenLaenge, uebernahmeAusDxf, vorschlag, zusammenfuehren } from "@/lib/plattform/planung/kosten";
 import { fmt } from "@/lib/rechner/annahmen";
+import { abfragen, bestaetigen } from "@/components/ui/Rueckfrage";
 
 const eur = (x) => (Number.isFinite(x) ? `${fmt(Math.round(x))} €` : "–");
 const teur = (x) => (Number.isFinite(x) ? `${fmt(x / 1000, Math.abs(x) >= 1e7 ? 0 : 1)} T€` : "–");
@@ -166,7 +167,7 @@ export default function Kalkulation({ projektId, daten }) {
 
       <div className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-full bg-white/95 p-1.5 shadow-sm ring-1 ring-ink-200/70 backdrop-blur">
         {schreiben && <button type="button" onClick={speichern} disabled={laeuft || !geaendert} className="inline-flex h-10 items-center gap-2 rounded-full bg-ov-600 px-4 text-[14px] font-semibold text-white hover:bg-ov-700 disabled:opacity-50">{laeuft ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Save aria-hidden="true" className="h-4 w-4" />}Speichern<span className="hidden text-[11px] font-normal opacity-80 sm:inline">Strg+S</span></button>}
-        {schreiben && pos.some((x) => x.manuell && !String(x.schluessel).startsWith("frei:")) && <button type="button" onClick={() => window.confirm("Alle Überschreibungen auf die Vorschlagswerte zurücksetzen?") && aktion({ aktion: "vorschlag" }, "Vorschlagswerte wiederhergestellt.")} className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-[13.5px] font-semibold text-ink-700 hover:bg-ink-50"><RotateCcw aria-hidden="true" className="h-4 w-4" />Vorschläge</button>}
+        {schreiben && pos.some((x) => x.manuell && !String(x.schluessel).startsWith("frei:")) && <button type="button" onClick={async () => (await bestaetigen({ titel: "Alle Überschreibungen zurücksetzen?", text: "Manuell geänderte Werte werden durch die Vorschlagswerte ersetzt.", bestaetigenText: "Zurücksetzen", gefahr: true })) && aktion({ aktion: "vorschlag" }, "Vorschlagswerte wiederhergestellt.")} className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-[13.5px] font-semibold text-ink-700 hover:bg-ink-50"><RotateCcw aria-hidden="true" className="h-4 w-4" />Vorschläge</button>}
         <span className="ml-auto flex flex-wrap gap-1.5">
           <a href={`/api/admin/entwicklung/${projektId}/kalkulation/export?format=pdf&anzeigen=1`} target="_blank" rel="noopener" className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-[13.5px] font-semibold text-ink-800 ring-1 ring-inset ring-ink-200 hover:bg-ink-50"><Download aria-hidden="true" className="h-4 w-4" />PDF</a>
           <a href={`/api/admin/entwicklung/${projektId}/kalkulation/export?format=csv`} className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-[13.5px] font-semibold text-ink-800 ring-1 ring-inset ring-ink-200 hover:bg-ink-50"><Download aria-hidden="true" className="h-4 w-4" />CSV</a>
@@ -254,7 +255,7 @@ export default function Kalkulation({ projektId, daten }) {
                   {Object.entries(GEWERKE).filter(([, gw]) => !["reserve", "finanzierung", "sicherheit"].includes(gw.gruppe) && gw.label).map(([id, gw]) => <option key={id} value={id}>{GRUPPEN[gw.gruppe].label}: {gw.label}</option>)}
                 </select>
               </Feld>
-              <button type="button" onClick={() => { const b = window.prompt("Bezeichnung der Position:"); if (b) { setPos((l) => [...l, { schluessel: `frei:${Date.now().toString(36)}`, gewerk: neuGewerk, bezeichnung: b.slice(0, 160), art: "menge", menge: 1, einheit: "psch", ep: 0, manuell: true, istEur: null }]); setGeaendert(true); } }} className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-[14px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50"><Plus aria-hidden="true" className="h-4 w-4" />Position</button>
+              <button type="button" onClick={async () => { const b = await abfragen({ titel: "Position hinzufügen", label: "Bezeichnung der Position", pflicht: true, maxlaenge: 160, bestaetigenText: "Position hinzufügen" }); if (b) { setPos((l) => [...l, { schluessel: `frei:${Date.now().toString(36)}`, gewerk: neuGewerk, bezeichnung: b.slice(0, 160), art: "menge", menge: 1, einheit: "psch", ep: 0, manuell: true, istEur: null }]); setGeaendert(true); } }} className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-[14px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50"><Plus aria-hidden="true" className="h-4 w-4" />Position</button>
             </div>
           )}
         </Karte>
@@ -293,7 +294,7 @@ export default function Kalkulation({ projektId, daten }) {
             {k.quellen.akquise ? (
               <div className="mt-4 rounded-2xl bg-sand-50 p-3 text-[13px] ring-1 ring-ink-200/70">
                 <p>Akquise-Geodaten: <strong className="ov-num">{fmt(k.quellen.akquise.trasseM)} m</strong> bis {k.quellen.akquise.umspannwerk || "Umspannwerk"}{k.quellen.akquise.demo ? " (Demo-Daten)" : ""}.</p>
-                {schreiben && <button type="button" disabled={laeuft} onClick={() => window.confirm(`Trassenlänge ${fmt(k.quellen.akquise.trasseM)} m aus der Akquise übernehmen? Nicht gespeicherte Änderungen gehen verloren.`) && aktion({ aktion: "trasse_akquise" }, "Trassenlänge aus der Akquise übernommen.")} className="mt-2 inline-flex h-9 items-center rounded-full bg-navy-700 px-3 text-[13px] font-semibold text-white hover:bg-navy-800">Übernehmen</button>}
+                {schreiben && <button type="button" disabled={laeuft} onClick={async () => (await bestaetigen({ titel: "Trassenlänge aus der Akquise übernehmen?", text: "Nicht gespeicherte Änderungen gehen verloren.", details: [{ label: "Trassenlänge", wert: `${fmt(k.quellen.akquise.trasseM)} m` }], bestaetigenText: "Übernehmen", gefahr: true })) && aktion({ aktion: "trasse_akquise" }, "Trassenlänge aus der Akquise übernommen.")} className="mt-2 inline-flex h-9 items-center rounded-full bg-navy-700 px-3 text-[13px] font-semibold text-white hover:bg-navy-800">Übernehmen</button>}
               </div>
             ) : <p className="mt-3 text-[12px] text-ink-500">Keine Akquise-Geodaten zu den Flächen dieses Projekts – Länge manuell oder aus einem Trassenplan (DXF, Layer „Kabel_MS“).</p>}
           </Karte>
@@ -380,7 +381,7 @@ export default function Kalkulation({ projektId, daten }) {
             <p className="text-[13.5px] text-ink-700">Zuletzt übergeben am {new Date(k.uebergabe.am).toLocaleDateString("de-DE")} ({k.uebergabe.standLabel}): Finanzierungsbedarf <strong className="ov-num">{teur(k.uebergabe.finanzierungsbedarf)}</strong>, Capex <strong className="ov-num">{teur(k.uebergabe.capex)}</strong>.</p>
           ) : <p className="text-[13.5px] text-ink-600">Noch nicht übergeben.</p>}
           {k.uebergabe && Math.abs(k.uebergabe.gesamt - s.gesamt) > 1 && <p className="mt-2 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-900"><AlertTriangle aria-hidden="true" className="h-4 w-4 text-sun-500" />Aktuelle Kalkulation weicht vom übergebenen Stand ab.</p>}
-          {schreiben && <button type="button" disabled={laeuft || geaendert} onClick={() => window.confirm(`Finanzierungsbedarf ${teur(s.finanzierungsbedarf)} und Capex ${teur(s.capex)} übergeben?`) && aktion({ aktion: "uebergeben" }, "An Finanzierung und Bewertung übergeben.")} className="mt-3 inline-flex h-10 items-center gap-2 rounded-full bg-ov-600 px-4 text-[14px] font-semibold text-white hover:bg-ov-700 disabled:opacity-50"><Send aria-hidden="true" className="h-4 w-4" />Projektkosten übergeben</button>}
+          {schreiben && <button type="button" disabled={laeuft || geaendert} onClick={async () => (await bestaetigen({ titel: "Projektkosten übergeben?", text: "Die Werte gehen an Finanzierung und Bewertung.", details: [{ label: "Finanzierungsbedarf", wert: teur(s.finanzierungsbedarf) }, { label: "Capex", wert: teur(s.capex) }], bestaetigenText: "Projektkosten übergeben", gefahr: true })) && aktion({ aktion: "uebergeben" }, "An Finanzierung und Bewertung übergeben.")} className="mt-3 inline-flex h-10 items-center gap-2 rounded-full bg-ov-600 px-4 text-[14px] font-semibold text-white hover:bg-ov-700 disabled:opacity-50"><Send aria-hidden="true" className="h-4 w-4" />Projektkosten übergeben</button>}
         </Karte>
       </div>
     </div>

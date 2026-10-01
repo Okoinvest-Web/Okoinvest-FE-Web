@@ -14,6 +14,7 @@ import { eingabe } from "@/components/Portal/felder";
 import { senden } from "@/lib/plattform/client";
 import { GERAET_STATUS, MQTT, beispielPayload } from "@/lib/plattform/anlagen";
 import { alterText } from "./teile";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 function Kopieren({ text, label }) {
   const [ok, setOk] = useState(false);
@@ -193,8 +194,8 @@ export default function GeraetAssistent({ anlage, geraete = [], demo = false, so
   }
 
   async function aktion(z, a) {
-    if (a === "neu" && !window.confirm(`Neues Passwort für ${z.benutzer} erzeugen? Das bisherige wird sofort ungültig – der Datenlogger verbindet sich erst mit dem neuen Passwort wieder.`)) return;
-    if (a === "sperren" && !window.confirm(`Zugang ${z.benutzer} sperren? Der Broker weist das Gerät ab sofort ab.`)) return;
+    if (a === "neu" && !(await bestaetigen({ titel: "Neues Passwort erzeugen?", text: "Das bisherige wird sofort ungültig – der Datenlogger verbindet sich erst mit dem neuen Passwort wieder.", details: [{ label: "Zugang", wert: z.benutzer }], bestaetigenText: "Passwort erneuern", gefahr: true }))) return;
+    if (a === "sperren" && !(await bestaetigen({ titel: "Zugang sperren?", text: "Der Broker weist das Gerät ab sofort ab.", details: [{ label: "Zugang", wert: z.benutzer }], bestaetigenText: "Zugang sperren", gefahr: true }))) return;
     setLaeuft(z.id + a);
     setFehler("");
     try {

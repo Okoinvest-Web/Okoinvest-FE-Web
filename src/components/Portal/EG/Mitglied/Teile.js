@@ -5,6 +5,9 @@
 import Link from "next/link";
 import { AlarmClock, ArrowRight, Award, BatteryCharging, Check, Clock, PlugZap, SlidersHorizontal, Sun, Tag, TriangleAlert } from "lucide-react";
 import { cn } from "@/components/ui/cn";
+import FortschrittsRing from "@/components/ui/FortschrittsRing";
+import { JetztMarke } from "./EnergieFluss";
+import { WartenNetzbetreiber } from "@/components/illustrationen";
 import { datumDe, tageText, zpKurz } from "./format";
 
 /** Fortschritt einer Teilnahme: Antrag → Aufnahme → Anmeldung → Zustimmung → Aktivierung → Gemeinschaftsstrom */
@@ -77,14 +80,18 @@ export function TeilnahmeStatus({ t, gemeinschaftName }) {
   );
 }
 
-/** Countdown + Anleitung (offene Zustimmung) */
+/** Zustimmungsfrist: 10 Werktage im Netzbetreiberportal ≈ 14 Kalendertage (nur Darstellung des Rings) */
+const FRIST_KALENDERTAGE = 14;
+
+/** Countdown-Ring + geführte Anleitung (offene Zustimmung) */
 export function ZustimmungJetzt({ frist, anleitung, gemeinschaftName }) {
   const dringend = frist?.dringend;
   return (
-    <div className={cn("overflow-hidden rounded-3xl ring-1", dringend ? "bg-sun-300/15 ring-sun-400/60" : "bg-ov-50 ring-ov-200")}>
+    <div className={cn("overflow-hidden rounded-3xl ring-1", dringend ? "bg-sun-50 ring-sun-200" : "bg-ov-50 ring-ov-200")}>
       <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between md:p-6">
         <div className="flex items-start gap-3">
-          <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl", dringend ? "bg-sun-400 text-ink-900" : "bg-ov-600 text-white")}>
+          <WartenNetzbetreiber className="hidden w-28 shrink-0 lg:block" />
+          <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl lg:hidden", dringend ? "bg-sun-400 text-ink-900" : "bg-ov-600 text-white")}>
             <AlarmClock aria-hidden="true" className="h-5 w-5" />
           </span>
           <div>
@@ -93,9 +100,21 @@ export function ZustimmungJetzt({ frist, anleitung, gemeinschaftName }) {
           </div>
         </div>
         {frist && (
-          <div className="shrink-0 text-left md:text-right" aria-live="polite">
-            <p className="ov-num font-display text-[34px] font-extrabold leading-none tracking-tight text-ink-900">{frist.tageRest >= 0 ? frist.tageRest : 0}</p>
-            <p className="text-[12.5px] font-medium text-ink-600">{frist.tageRest === 1 ? "Tag" : "Tage"} – {tageText(frist.tageRest)}</p>
+          <div className="flex shrink-0 items-center gap-3 md:flex-row-reverse md:text-right" aria-live="polite">
+            <FortschrittsRing
+              wert={Math.max(0, Math.min(FRIST_KALENDERTAGE, frist.tageRest))}
+              max={FRIST_KALENDERTAGE}
+              groesse={84}
+              staerke={8}
+              ton={dringend ? "warn" : "marke"}
+              label={`Zustimmungsfrist: ${tageText(frist.tageRest)}, bis ${datumDe(frist.bis)}`}
+            >
+              <span className="flex flex-col items-center leading-none">
+                <span className="ov-num font-display text-[26px] font-extrabold tracking-tight text-ink-900">{frist.tageRest >= 0 ? frist.tageRest : 0}</span>
+                <span className="mt-0.5 text-[11px] font-semibold text-ink-600">{frist.tageRest === 1 ? "Tag" : "Tage"}</span>
+              </span>
+            </FortschrittsRing>
+            <p className="max-w-[9rem] text-[12.5px] font-medium leading-snug text-ink-600">{tageText(frist.tageRest)}<span className="block text-ink-500">bis {datumDe(frist.bis)}</span></p>
           </div>
         )}
       </div>
@@ -143,20 +162,25 @@ const min = (hhmm) => {
 export function GrueneStunden({ stunden, heute }) {
   if (!stunden?.tage?.length) return null;
   return (
-    <div className="space-y-4">
+    <div className="ov-reveal space-y-4" data-dir="ohne">
       {stunden.tage.map((t) => (
         <div key={t.datum}>
-          <div className="mb-1.5 flex items-baseline justify-between gap-2 text-[13px]">
+          <div className={cn("flex flex-wrap items-baseline justify-between gap-x-2 text-[13px]", t.datum === heute ? "mb-6" : "mb-1.5")}>
             <span className="font-semibold text-ink-800">{tagLabel(t.datum, heute)}</span>
             <span className="text-ink-500">{t.fenster.map((f) => `${f.von}–${f.bis}`).join(" · ")}{t.quotePct !== undefined ? ` · ca. ${String(t.quotePct).replace(".", ",")} % Deckung` : ""}</span>
           </div>
-          <div className="relative h-6 overflow-hidden rounded-full bg-navy-950" role="img" aria-label={`${tagLabel(t.datum, heute)}: viel Gemeinschaftsstrom ${t.fenster.map((f) => `von ${f.von} bis ${f.bis} Uhr`).join(" und ")}`}>
-            {t.fenster.map((f) => (
-              <span key={f.von} className={cn("absolute inset-y-1 rounded-full", f.staerke === "hoch" ? "bg-ov-400" : f.staerke === "mittel" ? "bg-ov-500/70" : "bg-ov-600/50")} style={{ left: `${(min(f.von) / 1440) * 100}%`, width: `${Math.max(2, ((min(f.bis) - min(f.von)) / 1440) * 100)}%` }} />
+          <div className="relative h-7 rounded-full bg-sand-100 ring-1 ring-inset ring-sand-200" role="img" aria-label={`${tagLabel(t.datum, heute)}: viel Gemeinschaftsstrom ${t.fenster.map((f) => `von ${f.von} bis ${f.bis} Uhr`).join(" und ")}`}>
+            {[6, 12, 18].map((h) => <span key={h} aria-hidden="true" className="absolute inset-y-1.5 w-px bg-ink-200" style={{ left: `${(h / 24) * 100}%` }} />)}
+            {t.fenster.map((f, i) => (
+              <span
+                key={f.von}
+                className={cn("ov-balken-x absolute inset-y-1 origin-left rounded-full", f.staerke === "hoch" ? "bg-ov-600" : f.staerke === "mittel" ? "bg-ov-500" : "bg-ov-400")}
+                style={{ "--i": i, left: `${(min(f.von) / 1440) * 100}%`, width: `${Math.max(2, ((min(f.bis) - min(f.von)) / 1440) * 100)}%` }}
+              />
             ))}
-            {[6, 12, 18].map((h) => <span key={h} aria-hidden="true" className="absolute inset-y-0 w-px bg-white/15" style={{ left: `${(h / 24) * 100}%` }} />)}
+            {t.datum === heute && <JetztMarke datum={t.datum} />}
           </div>
-          <div aria-hidden="true" className="mt-1 flex justify-between text-[11px] text-ink-400"><span>0</span><span>6</span><span>12</span><span>18</span><span>24 Uhr</span></div>
+          <div aria-hidden="true" className="mt-1 flex justify-between text-[12px] text-ink-500"><span>0</span><span>6</span><span>12</span><span>18</span><span>24 Uhr</span></div>
         </div>
       ))}
       <p className="flex items-center gap-1.5 text-[12.5px] text-ink-500">

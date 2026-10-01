@@ -35,7 +35,7 @@ export default async function Beitritt({ params }) {
         <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-[13.5px] text-ink-600">
           <li className="flex items-center gap-1.5"><Clock3 aria-hidden="true" className="h-4 w-4 text-ov-600" /> rund 5 Minuten</li>
           <li className="flex items-center gap-1.5"><ShieldCheck aria-hidden="true" className="h-4 w-4 text-ov-600" /> keine Kaution, Ihr Lieferant bleibt</li>
-          <li className="flex items-center gap-1.5"><Users aria-hidden="true" className="h-4 w-4 text-ov-600" /> {g.mitglieder} Mitglieder</li>
+          <li className="flex items-center gap-1.5"><Users aria-hidden="true" className="h-4 w-4 text-ov-600" /> {Number(g.mitglieder) > 0 ? `${g.mitglieder} Mitglieder` : "Neu in Gründung – Sie gehören zu den Ersten"}</li>
         </ul>
       </SeitenKopf>
       <BeitrittAssistent gemeinschaft={g} netzbetreiber={d.netzbetreiber} vorbelegung={{ art, vorname: n.vorname, nachname: n.nachname, firma: n.firma, telefon: n.telefon, plz: d.plz }} />

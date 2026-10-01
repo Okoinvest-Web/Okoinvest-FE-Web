@@ -22,6 +22,49 @@ const AMPEL = {
   gelb: { label: "Bedingt geeignet", text: "Möglich – aber einzelne Punkte müssen wir genau prüfen, bevor es konkret wird.", farbe: "#ffc53d", ton: "bg-sun-400" },
   rot: { label: "Eher schwierig", text: "Als klassischer Solarpark schwierig. Oft gibt es trotzdem Wege – etwa Agri-PV, Nachbarflächen oder ein Carport.", farbe: "#c4cad5", ton: "bg-ink-300" },
 };
+const SPEICHER_SCHLUESSEL = "ov-flaechencheck";
+const HA_MIN = 0.1;
+const HA_MAX = 2000;
+const FEHLER_HA = "Bitte geben Sie die Fläche in Hektar an, z. B. 12,5.";
+const WEITER_HINWEIS = ["Bitte wählen Sie Land und Region.", "Bitte wählen Sie die Nutzung.", "", "Bitte wählen Sie die Entfernung zum Netz und wem die Fläche gehört."];
+
+/** Eingabe „25,5“ oder „25.5“ → Zahl; leer/ungültig → null (kein Klemmen beim Tippen). */
+const haLesen = (text) => {
+  const t = String(text).trim().split(" ").join("").replace(",", ".");
+  if (!t) return null;
+  const n = Number(t);
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+/** Zahl → Feldtext ohne Tausenderpunkt („1250,5“), bis zwei Nachkommastellen. */
+const haText = (v) => {
+  const r = Math.round(v * 100) / 100;
+  return String(r).replace(".", ",");
+};
+
+/** Gespeicherten Zwischenstand prüfen – nur bekannte Werte übernehmen. */
+function zustandLesen() {
+  try {
+    const roh = JSON.parse(window.sessionStorage.getItem(SPEICHER_SCHLUESSEL) || "null");
+    if (!roh || typeof roh !== "object") return null;
+    const land = LAENDER.some((l) => l.id === roh.land) ? roh.land : null;
+    const regionId = land && regionenFuer(land).some((r) => r.id === roh.regionId) ? roh.regionId : null;
+    const ha = Number.isFinite(roh.ha) ? Math.max(HA_MIN, Math.min(HA_MAX, roh.ha)) : 10;
+    const nutzung = NUTZUNGEN.some((n) => n.id === roh.nutzung) ? roh.nutzung : null;
+    const besonderheiten = Array.isArray(roh.besonderheiten) ? roh.besonderheiten.filter((id) => BESONDERHEITEN.some((b) => b.id === id)) : [];
+    const netz = NETZ.some((n) => n.id === roh.netz) ? roh.netz : null;
+    const eigentum = EIGENTUM.some((x) => x.id === roh.eigentum) ? roh.eigentum : null;
+    // Nur bis zum ersten unvollständigen Schritt springen
+    const ok = [Boolean(land && regionId), Boolean(nutzung), true, Boolean(netz && eigentum)];
+    let max = 0;
+    while (max < 4 && ok[max]) max += 1;
+    const schritt = Math.max(0, Math.min(Number.isInteger(roh.schritt) ? roh.schritt : 0, max));
+    if (!land && schritt === 0) return null;
+    return { schritt, land, regionId, ha, nutzung, besonderheiten, netz, eigentum };
+  } catch {
+    return null;
+  }
+}
+
 const spanne = (a, b) => (b >= 1e6 ? `${fmt(a / 1e6, 2)}–${fmt(b / 1e6, 2)} Mio. €` : `${fmt(a / 1000)}–${fmt(b / 1000)} Tsd. €`);
 
 export default function FlaechenWizard() {
@@ -34,12 +77,57 @@ export default function FlaechenWizard() {
   const [besonderheiten, setBesonderheiten] = useState([]);
   const [netz, setNetz] = useState(null);
   const [eigentum, setEigentum] = useState(null);
+  const [haEingabe, setHaEingabe] = useState("10");
+  const [haFehler, setHaFehler] = useState(false);
+  const [geladen, setGeladen] = useState(false);
+  const [wiederhergestellt, setWiederhergestellt] = useState(false);
   const kopfRef = useRef(null);
+  const haFeldRef = useRef(null);
   const ersterRender = useRef(true);
+  const ohneSprung = useRef(false);
+
+  // Zwischenstand aus dieser Browsersitzung wiederherstellen (FAQ: „bleiben in Ihrem Browser“)
+  useEffect(() => {
+    const z = zustandLesen();
+    if (z) {
+      ohneSprung.current = z.schritt !== 0;
+      setLand(z.land);
+      setRegionId(z.regionId);
+      setHa(z.ha);
+      setHaEingabe(haText(z.ha));
+      setNutzung(z.nutzung);
+      setBesonderheiten(z.besonderheiten);
+      setNetz(z.netz);
+      setEigentum(z.eigentum);
+      setSchritt(z.schritt);
+      setWiederhergestellt(true);
+    }
+    setGeladen(true);
+  }, []);
+
+  useEffect(() => {
+    if (!geladen) return;
+    try {
+      window.sessionStorage.setItem(SPEICHER_SCHLUESSEL, JSON.stringify({ schritt, land, regionId, ha, nutzung, besonderheiten, netz, eigentum }));
+    } catch {
+      /* privater Modus o. Ä. – dann eben ohne Zwischenspeicher */
+    }
+  }, [geladen, schritt, land, regionId, ha, nutzung, besonderheiten, netz, eigentum]);
+
+  // Regler bewegt → Feld nachziehen (nicht, während jemand im Feld tippt)
+  useEffect(() => {
+    if (typeof document !== "undefined" && document.activeElement === haFeldRef.current) return;
+    setHaEingabe(haText(ha));
+    setHaFehler(false);
+  }, [ha]);
 
   useEffect(() => {
     if (ersterRender.current) {
       ersterRender.current = false;
+      return;
+    }
+    if (ohneSprung.current) {
+      ohneSprung.current = false;
       return;
     }
     const el = kopfRef.current;
@@ -50,7 +138,37 @@ export default function FlaechenWizard() {
   }, [schritt]);
 
   const regionen = land ? regionenFuer(land) : [];
-  const weiterOk = [Boolean(land && regionId), Boolean(nutzung && ha > 0), true, Boolean(netz && eigentum)][schritt];
+  const weiterOk = [Boolean(land && regionId), Boolean(nutzung && ha > 0 && !haFehler), true, Boolean(netz && eigentum)][schritt];
+  const weiterHinweis = schritt === 1 && haFehler ? FEHLER_HA : WEITER_HINWEIS[schritt];
+
+  // Live-Zwischenstand ab Schritt 2: dieselbe Bewertung wie am Ende, nur mit den bisherigen Angaben
+  const zwischenstand = useMemo(
+    () =>
+      schritt >= 1 && schritt < 4 && land && regionId
+        ? flaechencheck({ land, regionId, ha, nutzung, besonderheiten, netz: schritt >= 3 ? netz : null, eigentum: schritt >= 3 ? eigentum : null })
+        : null,
+    [schritt, land, regionId, ha, nutzung, besonderheiten, netz, eigentum]
+  );
+
+  function haTippen(text) {
+    setHaEingabe(text);
+    const v = haLesen(text);
+    if (v == null) return; // leerer oder halber Zwischenstand: nichts klemmen
+    setHaFehler(false);
+    if (v >= HA_MIN && v <= HA_MAX) setHa(v);
+  }
+
+  function haVerlassen() {
+    const v = haLesen(haEingabe);
+    if (v == null) {
+      setHaFehler(true);
+      return;
+    }
+    const geklemmt = Math.max(HA_MIN, Math.min(HA_MAX, v));
+    setHa(geklemmt);
+    setHaEingabe(haText(geklemmt));
+    setHaFehler(false);
+  }
 
   const ergebnis = useMemo(
     () => (schritt === 4 ? flaechencheck({ land, regionId, ha, nutzung, besonderheiten, netz, eigentum }) : null),
@@ -80,6 +198,14 @@ export default function FlaechenWizard() {
     setBesonderheiten([]);
     setNetz(null);
     setEigentum(null);
+    setHaEingabe("10");
+    setHaFehler(false);
+    setWiederhergestellt(false);
+    try {
+      window.sessionStorage.removeItem(SPEICHER_SCHLUESSEL);
+    } catch {
+      /* egal */
+    }
     gehe(0);
   }
 
@@ -113,6 +239,10 @@ export default function FlaechenWizard() {
             );
           })}
         </ol>
+        <p className="mt-3 text-[13px] font-semibold text-ink-700 xl:hidden" aria-hidden="true">
+          {schritt < 4 ? `Schritt ${schritt + 1} von 4 · ${SCHRITTE[schritt]}` : "Ihr Ergebnis"}
+        </p>
+        {zwischenstand && <LiveAmpel e={zwischenstand} />}
       </div>
 
       <div className="p-5 sm:p-8 md:p-10">
@@ -166,23 +296,58 @@ export default function FlaechenWizard() {
                 <p className={legende}>Wie groß ist die Fläche?</p>
                 <p className="mt-2 text-[15.5px] text-ink-600">Eine grobe Angabe genügt. Mehrere zusammenhängende Flurstücke zählen zusammen.</p>
                 <div className="mt-6 grid items-end gap-5 sm:grid-cols-[1fr_auto]">
-                  <Regler label="Flächengröße" wert={Math.min(ha, 150)} min={0.5} max={150} step={0.5} stellen={ha % 1 ? 1 : 0} einheit="ha" onChange={setHa} minLabel="0,5 ha" maxLabel="150 ha" />
-                  <label className="block">
-                    <span className="mb-1.5 block text-[13px] font-semibold text-ink-600">Genau eingeben</span>
+                  <Regler
+                    label="Flächengröße"
+                    wert={Math.min(ha, 150)}
+                    min={0.5}
+                    max={150}
+                    step={0.5}
+                    format={(v) => (v >= 150 && ha > 150 ? `${fmt(ha, ha % 1 ? 1 : 0)} ha` : `${fmt(v, v % 1 ? 1 : 0)} ha`)}
+                    onChange={setHa}
+                    minLabel="0,5 ha"
+                    maxLabel="150+ ha"
+                  />
+                  <div>
+                    <label htmlFor="fc-ha-genau" className="mb-1.5 block text-[13px] font-semibold text-ink-700">
+                      Genau eingeben
+                    </label>
                     <span className="relative block">
                       <input
-                        type="number"
+                        ref={haFeldRef}
+                        id="fc-ha-genau"
+                        type="text"
                         inputMode="decimal"
-                        min={0.1}
-                        max={2000}
-                        step={0.1}
-                        value={ha}
-                        onChange={(e) => setHa(Math.max(0.1, Math.min(2000, Number(e.target.value) || 0.1)))}
-                        className="ov-num h-12 w-full rounded-xl bg-sand-50 pl-4 pr-10 text-[16px] font-semibold text-ink-900 ring-1 ring-ink-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-ov-500 sm:w-36"
+                        autoComplete="off"
+                        value={haEingabe}
+                        aria-invalid={haFehler || undefined}
+                        aria-describedby="fc-ha-hilfe"
+                        onChange={(e) => haTippen(e.target.value)}
+                        onBlur={haVerlassen}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") haVerlassen();
+                        }}
+                        className={cn(
+                          "ov-num h-12 w-full rounded-xl bg-sand-50 pl-4 pr-10 text-[16px] font-semibold text-ink-900 ring-1 focus:bg-white focus:outline-none focus:ring-2 sm:w-36",
+                          haFehler ? "ring-danger-300 focus:ring-danger-500" : "ring-ink-300 focus:ring-ov-500"
+                        )}
                       />
                       <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[14px] text-ink-500">ha</span>
                     </span>
-                  </label>
+                    <p
+                      id="fc-ha-hilfe"
+                      role={haFehler ? "alert" : undefined}
+                      className={cn("mt-1.5 text-[12.5px] leading-snug sm:w-36", haFehler ? "flex gap-1 font-medium text-danger-700" : "text-ink-500")}
+                    >
+                      {haFehler ? (
+                        <>
+                          <CircleAlert aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                          {FEHLER_HA}
+                        </>
+                      ) : (
+                        "0,1 bis 2.000 ha, Komma erlaubt"
+                      )}
+                    </p>
+                  </div>
                 </div>
               </div>
               <fieldset>
@@ -292,20 +457,95 @@ export default function FlaechenWizard() {
                 <ArrowLeft aria-hidden="true" className="h-4 w-4" /> Zurück
               </button>
             ) : (
-              <p className="text-[13px] text-ink-500">Schritt 1 von 4 · dauert ca. 2 Minuten · ohne Anmeldung</p>
+              <p className="text-[13px] text-ink-500">
+                {wiederhergestellt ? "Ihre Angaben bleiben auf diesem Gerät, bis Sie neu starten." : "Schritt 1 von 4 · dauert ca. 2 Minuten · ohne Anmeldung"}
+              </p>
             )}
+            <div className="flex flex-col items-stretch gap-2 sm:items-end">
             <button
               type="button"
               disabled={!weiterOk}
+              aria-describedby={!weiterOk && weiterHinweis ? "fc-weiter-hinweis" : undefined}
               onClick={() => gehe(schritt + 1)}
               className="group inline-flex h-14 items-center justify-center gap-2.5 rounded-full bg-ov-600 px-8 text-[16px] font-semibold text-white shadow-[0_8px_24px_-8px_rgba(102,153,51,0.65)] transition-all hover:bg-ov-700 disabled:cursor-not-allowed disabled:bg-ink-200 disabled:text-ink-500 disabled:shadow-none"
             >
               {schritt === 3 ? "Ergebnis anzeigen" : schritt === 2 && besonderheiten.length === 0 ? "Nichts davon – weiter" : "Weiter"}
               <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-enabled:group-hover:translate-x-1" />
             </button>
+            {!weiterOk && weiterHinweis && (
+              <p id="fc-weiter-hinweis" className="animate-ov-einblenden text-center text-[13px] text-ink-600 sm:text-right">
+                {weiterHinweis}
+              </p>
+            )}
+            </div>
+          </div>
+        )}
+        {schritt < 4 && schritt > 0 && wiederhergestellt && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[12.5px] text-ink-500">
+            <p>Ihre Angaben bleiben auf diesem Gerät, bis Sie neu starten.</p>
+            <button type="button" onClick={neu} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 font-semibold text-ink-700 hover:bg-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
+              <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" /> Neu starten
+            </button>
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Live-Zwischenstand im Kopf des Assistenten: Punktwert als Balken (scaleX),
+ * Ampel mit Text und die zuletzt wirksame Begründung („+15 Punkte: …“).
+ */
+function LiveAmpel({ e }) {
+  const a = AMPEL[e.ampel];
+  const vorher = useRef(null);
+  const [letzte, setLetzte] = useState(null);
+
+  useEffect(() => {
+    const alt = vorher.current;
+    vorher.current = e;
+    if (!alt) return;
+    // Neue oder geänderte Begründung finden (die, die den Wert bewegt hat)
+    const altPunkte = new Map(alt.gruende.map((g) => [g.text, g.punkte]));
+    const neu = e.gruende.find((g) => g.punkte !== 0 && altPunkte.get(g.text) !== g.punkte);
+    const delta = e.score - alt.score;
+    if (neu) {
+      setLetzte({ punkte: neu.punkte, text: neu.text, delta });
+    } else if (delta !== 0) {
+      const weg = alt.gruende.find((g) => g.punkte !== 0 && !e.gruende.some((x) => x.text === g.text));
+      if (weg) setLetzte({ punkte: -weg.punkte, text: `Entfällt: ${weg.text}`, delta });
+    }
+  }, [e]);
+
+  const vz = (n) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`);
+
+  return (
+    <div className="mt-4 rounded-2xl bg-white px-4 py-3 ring-1 ring-ink-200/70">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <p className="flex items-center gap-2 text-[13px] font-semibold text-ink-900">
+          <span aria-hidden="true" className={cn("h-2.5 w-2.5 rounded-full", a.ton)} />
+          Zwischenstand: {a.label}
+        </p>
+        <div className="flex min-w-[8rem] flex-1 items-center gap-3">
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink-100" aria-hidden="true">
+            <div className={cn("ov-fortschritt h-full w-full rounded-full", a.ton)} style={{ transform: `scaleX(${Math.max(0.02, e.score / 100)})` }} />
+          </div>
+          <p className="ov-num shrink-0 text-[13px] font-bold text-ink-900">
+            {e.score}
+            <span className="font-medium text-ink-500"> / 100</span>
+          </p>
+        </div>
+      </div>
+      <p className="mt-1.5 min-h-5 text-[12.5px] leading-snug text-ink-600" aria-live="polite">
+        {letzte ? (
+          <span key={`${letzte.text}${letzte.delta}`} className="animate-ov-einblenden block truncate">
+            <span className={cn("ov-num font-bold", letzte.punkte > 0 ? "text-ov-700" : "text-ink-700")}>{vz(letzte.punkte)} Punkte</span> · {letzte.text}
+          </span>
+        ) : (
+          "Noch nicht alle Angaben – der Wert bewegt sich mit jeder Auswahl."
+        )}
+      </p>
     </div>
   );
 }

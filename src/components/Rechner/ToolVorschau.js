@@ -38,14 +38,14 @@ export function VorschauBalken({ reihen }) {
   const max = Math.max(...reihen.map((r) => r.wert));
   return (
     <div className="space-y-2.5" aria-hidden="true">
-      {reihen.map((r) => (
+      {reihen.map((r, i) => (
         <div key={r.label}>
           <div className="mb-1 flex justify-between gap-2 text-[11.5px] text-ink-500">
             <span>{r.label}</span>
             <span className="ov-num font-semibold text-ink-700">{r.anzeige}</span>
           </div>
           <div className="h-2.5 overflow-hidden rounded-full bg-ink-100">
-            <div className="h-full rounded-full" style={{ width: `${(r.wert / max) * 100}%`, background: r.farbe }} />
+            <div className="ov-balken-x h-full rounded-full" style={{ width: `${(r.wert / max) * 100}%`, background: r.farbe, "--i": i * 3 }} />
           </div>
         </div>
       ))}
@@ -114,9 +114,9 @@ export function VorschauCashflow({ werte = [] }) {
         </linearGradient>
       </defs>
       <line x1="8" x2={W - 8} y1={nullY} y2={nullY} stroke="#97a0b0" strokeDasharray="3 4" />
-      <path d={`${d} L${x(werte.length - 1)},${nullY} L${x(0)},${nullY} Z`} fill="url(#ov-hub-cf)" />
-      <path d={d} fill="none" stroke={GRUEN} strokeWidth="3" strokeLinejoin="round" />
-      {iNull > 0 && <circle cx={x(iNull)} cy={nullY} r="5.5" fill="#fff" stroke="#f5a70f" strokeWidth="3" />}
+      <path d={`${d} L${x(werte.length - 1)},${nullY} L${x(0)},${nullY} Z`} fill="url(#ov-hub-cf)" className="ov-flaeche-ein" />
+      <path d={d} fill="none" stroke={GRUEN} strokeWidth="3" strokeLinejoin="round" pathLength="1" className="ov-linie" />
+      {iNull > 0 && <circle cx={x(iNull)} cy={nullY} r="5.5" fill="#fff" stroke="#c98500" strokeWidth="3" className="ov-flaeche-ein" />}
     </svg>
   );
 }
@@ -129,8 +129,8 @@ export function VorschauTreppe() {
     <div className="flex h-[110px] items-end gap-2" aria-hidden="true">
       {phasen.map((p, i) => (
         <div key={p.id} className="relative flex h-full flex-1 items-end">
-          <div className="absolute bottom-0 w-full rounded-t-lg bg-ov-100" style={{ height: `${(p.preisProKwp.max / max) * 100}%` }} />
-          <div className="absolute bottom-0 w-full rounded-t-lg" style={{ height: `${(p.preisProKwp.min / max) * 100}%`, background: i === phasen.length - 1 ? GRUEN : "#8cba58" }} />
+          <div className="ov-balken-y absolute bottom-0 w-full rounded-t-lg bg-ov-100" style={{ height: `${(p.preisProKwp.max / max) * 100}%`, "--i": i * 1.5 }} />
+          <div className="ov-balken-y absolute bottom-0 w-full rounded-t-lg" style={{ height: `${(p.preisProKwp.min / max) * 100}%`, background: i === phasen.length - 1 ? GRUEN : "#8cba58", "--i": i * 1.5 + 1 }} />
         </div>
       ))}
     </div>

@@ -5,7 +5,9 @@
 // Alle Regeln und Rechte prüft der Server (backend/*/eg-abrechnung.js); hier werden Knöpfe nur angeboten.
 
 import { useState } from "react";
-import { BadgeCheck, Calculator, FileCheck2, FileUp, Loader2, Play, Send, ShieldCheck, Trash2, Undo2 } from "lucide-react";
+import { BadgeCheck, Calculator, FileCheck2, FileUp, Loader2, Lock, Play, Send, ShieldCheck, Trash2, Undo2, UsersRound } from "lucide-react";
+import ErfolgsHaken from "@/components/ui/ErfolgsHaken";
+import Rueckfrage from "./Rueckfrage";
 import { Knopf, Meldung, useAktion } from "@/components/Portal/Mitglied/teile";
 import { auswahlfeld, eingabe, labelKlasse, textbereich } from "@/components/Portal/felder";
 
@@ -41,39 +43,150 @@ export function PeriodeAnlegen({ api, vorschlaege = [] }) {
   );
 }
 
+const tagDe = (d) => (d ? String(d).slice(0, 10).split("-").reverse().join(".") : "–");
+
 /**
  * Aktionen einer Periode. `kann`: { rechnen, freigabe1, freigabe2, versand, storno } aus den Stufen;
- * Freigaben binden an den Fingerabdruck der Vorschau.
+ * Freigaben binden an den Fingerabdruck der Vorschau. Folgenreiche Schritte (Freigabe, Versand, Abschluss, Verwerfen)
+ * laufen über einen Bestätigungsdialog mit Periode, Anzahl, Summe und Folgen (UX-Audit P0-3).
  */
 export function PeriodeKnoepfe({ api, periode, kann = {}, meineFreigabe = false }) {
   const a = useAktion(api);
   const [grund, setGrund] = useState("");
   const [frage, setFrage] = useState("");
+  const [dialog, setDialog] = useState("");
+  const [fertig, setFertig] = useState(null);
   const akt = periode.aktionen || [];
   const fehlerAnzahl = periode.vorschau?.pruefung?.fehler?.length || 0;
+  const k = periode.vorschau?.kennzahlen || {};
+  const belege = periode.vorschau?.belege || [];
+  const mitglieder = new Set(belege.map((x) => x.mitgliedsnummer).filter(Boolean)).size;
+  const anzahl = (Number(k.rechnungen) || 0) + (Number(k.gutschriften) || 0) || periode.anzahlBelege || belege.length;
+  const zeitraum = `${periode.artLabel || "Periode"} ${tagDe(periode.von)} – ${tagDe(periode.bis)}`;
+  const fakten = [
+    { label: "Periode", wert: zeitraum, breit: true },
+    { label: "Rechnungen", wert: k.rechnungen !== undefined ? `${k.rechnungen} · ${eur(k.bruttoRechnungen)}` : "–" },
+    { label: "Gutschriften", wert: k.gutschriften !== undefined ? `${k.gutschriften} · ${eur(k.bruttoGutschriften)}` : "–" },
+  ];
+  const auge = kann.freigabe1 ? 1 : 2;
+
+  async function los(body, text, abschluss) {
+    const r = await a.ausfuehren(body, text);
+    setDialog("");
+    if (r && abschluss) setFertig(abschluss);
+    return r;
+  }
+
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
-        {akt.includes("vorschau") && kann.rechnen && <Knopf variante={periode.vorschau ? "secondary" : "primary"} disabled={a.laeuft} onClick={() => a.ausfuehren({ aktion: "vorschau" }, "Vorschau berechnet.")}><Lade an={a.laeuft} icon={Calculator} />{periode.vorschau ? "Neu berechnen" : "Vorschau berechnen"}</Knopf>}
-        {akt.includes("freigeben") && (kann.freigabe1 || kann.freigabe2) && !meineFreigabe && (
-          <Knopf variante="primary" disabled={a.laeuft || fehlerAnzahl > 0} title={fehlerAnzahl ? "Zuerst die blockierenden Prüfungen klären" : undefined} onClick={() => a.ausfuehren({ aktion: "freigeben", fingerabdruck: periode.fingerabdruck }, "Freigabe erteilt.")}>
-            <Lade an={a.laeuft} icon={BadgeCheck} />Freigeben ({kann.freigabe1 ? "Kassier, 1. Auge" : "Vorstand, 2. Auge"})
-          </Knopf>
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div className="flex flex-wrap items-start gap-2">
+          {akt.includes("vorschau") && kann.rechnen && <Knopf variante={periode.vorschau ? "secondary" : "primary"} disabled={a.laeuft} onClick={() => a.ausfuehren({ aktion: "vorschau" }, "Vorschau berechnet.")}><Lade an={a.laeuft && !dialog} icon={Calculator} />{periode.vorschau ? "Neu berechnen" : "Vorschau berechnen"}</Knopf>}
+          {akt.includes("freigeben") && (kann.freigabe1 || kann.freigabe2) && !meineFreigabe && (
+            <div>
+              <Knopf variante="primary" disabled={a.laeuft || fehlerAnzahl > 0} aria-describedby={fehlerAnzahl ? "eg-freigabe-gesperrt" : undefined} onClick={() => setDialog("freigeben")}>
+                <BadgeCheck aria-hidden="true" className="h-4 w-4" />Freigeben ({kann.freigabe1 ? "Kassier, 1. Auge" : "Vorstand, 2. Auge"})
+              </Knopf>
+              {fehlerAnzahl > 0 && <p id="eg-freigabe-gesperrt" className="mt-1.5 flex items-center gap-1 text-[12.5px] text-danger-700"><Lock aria-hidden="true" className="h-3.5 w-3.5" />Freigabe gesperrt: {fehlerAnzahl} {fehlerAnzahl === 1 ? "Prüfung" : "Prüfungen"} offen – siehe „Prüfungen“</p>}
+            </div>
+          )}
+          {akt.includes("versenden") && kann.versand && <Knopf variante="primary" disabled={a.laeuft} onClick={() => setDialog("versenden")}><Send aria-hidden="true" className="h-4 w-4" />Belege versenden</Knopf>}
+          {akt.includes("abschliessen") && (kann.freigabe1 || kann.versand) && <Knopf disabled={a.laeuft} onClick={() => setDialog("abschliessen")}><FileCheck2 aria-hidden="true" className="h-4 w-4" />Abschließen</Knopf>}
+        </div>
+        {((akt.includes("stornieren") && kann.storno) || (akt.includes("verwerfen") && kann.rechnen)) && (
+          <div className="flex flex-wrap gap-2 sm:border-l sm:border-ink-100 sm:pl-4">
+            {akt.includes("stornieren") && kann.storno && <Knopf variante="gefahr" disabled={a.laeuft} aria-expanded={frage === "storno"} onClick={() => setFrage(frage === "storno" ? "" : "storno")}><Undo2 aria-hidden="true" className="h-4 w-4" />Periode stornieren</Knopf>}
+            {akt.includes("verwerfen") && kann.rechnen && <Knopf variante="gefahr" disabled={a.laeuft} onClick={() => setDialog("verwerfen")}><Trash2 aria-hidden="true" className="h-4 w-4" />Verwerfen</Knopf>}
+          </div>
         )}
-        {akt.includes("versenden") && kann.versand && <Knopf variante="primary" disabled={a.laeuft} onClick={() => a.ausfuehren({ aktion: "versenden" }, "Belege versendet.")}><Lade an={a.laeuft} icon={Send} />Belege versenden</Knopf>}
-        {akt.includes("abschliessen") && (kann.freigabe1 || kann.versand) && <Knopf disabled={a.laeuft} onClick={() => a.ausfuehren({ aktion: "abschliessen" }, "Periode abgeschlossen.")}><Lade an={a.laeuft} icon={FileCheck2} />Abschließen</Knopf>}
-        {akt.includes("stornieren") && kann.storno && <Knopf variante="gefahr" disabled={a.laeuft} onClick={() => setFrage(frage === "storno" ? "" : "storno")}><Undo2 aria-hidden="true" className="h-4 w-4" />Periode stornieren</Knopf>}
-        {akt.includes("verwerfen") && kann.rechnen && <Knopf variante="gefahr" disabled={a.laeuft} onClick={() => setFrage(frage === "verwerfen" ? "" : "verwerfen")}><Trash2 aria-hidden="true" className="h-4 w-4" />Verwerfen</Knopf>}
       </div>
-      {meineFreigabe && <p className="text-[13px] text-ink-600">Ihre Freigabe liegt vor – es fehlt die Freigabe der anderen Funktion (Vier-Augen-Prinzip).</p>}
+      {meineFreigabe && <p className="flex items-center gap-1.5 rounded-2xl bg-navy-50 px-3.5 py-2.5 text-[13px] text-navy-700 ring-1 ring-navy-100"><UsersRound aria-hidden="true" className="h-4 w-4 shrink-0" />Ihre Freigabe liegt vor – es fehlt die Freigabe der anderen Funktion (Vier-Augen-Prinzip).</p>}
       {frage === "storno" && (
         <div className="space-y-2 rounded-2xl bg-sand-100/60 p-4 ring-1 ring-ink-200">
           <label className="block"><span className={labelKlasse}>Grund des Stornos (erscheint auf jedem Stornobeleg)</span><input className={eingabe} value={grund} onChange={(e) => setGrund(e.target.value)} placeholder="z. B. Netzbetreiber hat Werte korrigiert" /></label>
-          <Knopf variante="gefahr" disabled={a.laeuft || grund.trim().length < 5} onClick={() => a.ausfuehren({ aktion: "stornieren", grund }, "Stornobelege erstellt.")}>Alle Belege stornieren</Knopf>
+          <Knopf variante="gefahr" disabled={a.laeuft || grund.trim().length < 5} onClick={() => setDialog("storno")}>Alle Belege stornieren …</Knopf>
         </div>
       )}
-      {frage === "verwerfen" && <Knopf variante="gefahr" disabled={a.laeuft} onClick={() => a.ausfuehren({ aktion: "verwerfen" }, "Periode verworfen.")}>Ja, Periode verwerfen</Knopf>}
-      <Meldung fehler={a.fehler} ok={a.ok} />
+      {fertig && (
+        <div role="status" className="animate-ov-einblenden flex items-center gap-3 rounded-2xl bg-ov-50 p-4 ring-1 ring-ov-200">
+          <ErfolgsHaken groesse={44} />
+          <p className="text-[14px] leading-relaxed text-ink-800"><strong className="text-ink-900">{fertig.titel}</strong><span className="block text-[13px] text-ink-600">{fertig.text}</span></p>
+        </div>
+      )}
+      <Meldung fehler={a.fehler} ok={fertig ? "" : a.ok} />
+
+      <Rueckfrage
+        offen={dialog === "freigeben"}
+        onSchliessen={() => setDialog("")}
+        laeuft={a.laeuft}
+        icon={BadgeCheck}
+        titel={`Abrechnung als ${auge}. Auge freigeben?`}
+        text={auge === 1 ? "Sie bestätigen als Kassier, dass Sie die Vorschau geprüft haben. Danach gibt der Vorstand als zweite Person frei." : "Sie bestätigen als zweite Person (Vorstand). Danach werden die Belege nummeriert und können versendet werden."}
+        fakten={[...fakten, { label: "Mitglieder", wert: String(mitglieder || "–") }, { label: "Hinweise", wert: String(periode.vorschau?.pruefung?.warnungen?.length || 0) }]}
+        folgen={["Die Freigabe ist an genau diese Vorschau gebunden (Fingerabdruck) – jede Neuberechnung setzt sie zurück.", "Vier-Augen-Prinzip: Dieselbe Person kann nicht beide Freigaben erteilen."]}
+        knopf={`Ja, als ${auge}. Auge freigeben`}
+        onBestaetigen={() => los({ aktion: "freigeben", fingerabdruck: periode.fingerabdruck }, "Freigabe erteilt.", auge === 1 ? { titel: "1. Freigabe erteilt", text: "Jetzt fehlt nur noch die Freigabe des Vorstands." } : { titel: "Abrechnung freigegeben", text: "Belege sind nummeriert – als Nächstes versenden." })}
+      >
+        <div className="mt-3 flex items-center gap-2 text-[13px] text-ink-700">
+          {[1, 2].map((n) => (
+            <span key={n} className={n < auge ? "inline-flex items-center gap-1 rounded-full bg-ov-50 px-2.5 py-1 font-semibold text-ov-800 ring-1 ring-ov-200" : n === auge ? "inline-flex items-center gap-1 rounded-full bg-navy-700 px-2.5 py-1 font-semibold text-white" : "inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-ink-500 ring-1 ring-ink-200"}>
+              {n < auge && <BadgeCheck aria-hidden="true" className="h-3.5 w-3.5" />}{n}. Auge{n === 1 ? " · Kassier" : " · Vorstand"}{n === auge ? " (Sie)" : ""}
+            </span>
+          ))}
+        </div>
+      </Rueckfrage>
+
+      <Rueckfrage
+        offen={dialog === "versenden"}
+        onSchliessen={() => setDialog("")}
+        laeuft={a.laeuft}
+        icon={Send}
+        titel={`${anzahl || "Alle"} ${anzahl === 1 ? "Beleg" : "Belege"}${mitglieder ? ` an ${mitglieder} ${mitglieder === 1 ? "Mitglied" : "Mitglieder"}` : ""} versenden?`}
+        text="Die Mitglieder erhalten ihre Rechnungen und Gutschriften auf dem gewählten Weg (Portal, E-Mail oder Post). Das lässt sich nicht rückgängig machen – Korrekturen gehen danach nur per Storno."
+        fakten={fakten}
+        folgen={["Rechnungen per Lastschrift: Die Vorabankündigung steht auf dem Beleg.", "Gutschriften werden im nächsten Zahlungslauf überwiesen."]}
+        knopf="Ja, versenden"
+        onBestaetigen={() => los({ aktion: "versenden" }, "Belege versendet.", { titel: `${anzahl || "Alle"} ${anzahl === 1 ? "Beleg" : "Belege"} versendet`, text: `Alles erledigt für ${zeitraum}. Als Nächstes: Zahlungslauf in der Kassa erstellen und die Periode abschließen.` })}
+      />
+
+      <Rueckfrage
+        offen={dialog === "abschliessen"}
+        onSchliessen={() => setDialog("")}
+        laeuft={a.laeuft}
+        icon={FileCheck2}
+        titel={`${zeitraum} abschließen?`}
+        text="Die Periode wird festgeschrieben. Danach sind nur noch Stornos einzelner Belege möglich."
+        fakten={fakten}
+        folgen={["Abgeschlossene Perioden erscheinen im Prüfpfad für die Rechnungsprüfung."]}
+        knopf="Ja, abschließen"
+        onBestaetigen={() => los({ aktion: "abschliessen" }, "Periode abgeschlossen.", { titel: "Periode abgeschlossen", text: `${zeitraum} ist festgeschrieben.` })}
+      />
+
+      <Rueckfrage
+        offen={dialog === "verwerfen"}
+        onSchliessen={() => setDialog("")}
+        laeuft={a.laeuft}
+        ton="danger"
+        icon={Trash2}
+        titel={`${zeitraum} verwerfen?`}
+        text="Die Vorschau und alle Entwürfe dieser Periode werden verworfen. Es wurden noch keine Belege versendet."
+        fakten={fakten}
+        knopf="Ja, Periode verwerfen"
+        onBestaetigen={() => los({ aktion: "verwerfen" }, "Periode verworfen.")}
+      />
+
+      <Rueckfrage
+        offen={dialog === "storno"}
+        onSchliessen={() => setDialog("")}
+        laeuft={a.laeuft}
+        ton="danger"
+        icon={Undo2}
+        titel={`Alle Belege von ${zeitraum} stornieren?`}
+        text="Zu jedem Beleg entsteht ein Stornobeleg mit Ihrem Grund. Die Mitglieder werden informiert."
+        fakten={[...fakten, { label: "Grund", wert: grund || "–", breit: true }]}
+        knopf="Ja, alle stornieren"
+        onBestaetigen={() => los({ aktion: "stornieren", grund }, "Stornobelege erstellt.")}
+      />
     </div>
   );
 }
@@ -136,14 +249,45 @@ export function ZahlungslaufStart({ api, heute }) {
 /** Knöpfe eines Zahlungslaufs: Freigabe (zweite Person), Download, eingereicht, verwerfen */
 export function ZahlungslaufKnoepfe({ api, lauf, eigeneFreigabe }) {
   const a = useAktion(api);
+  const [dialog, setDialog] = useState("");
+  const art = lauf.artLabel || (lauf.art === "pain008" ? "SEPA-Lastschrift" : lauf.art === "pain001" ? "SEPA-Überweisung" : lauf.art);
+  const fakten = [
+    { label: "Art", wert: art, breit: true },
+    { label: "Posten", wert: String(lauf.anzahl ?? "–") },
+    { label: "Summe", wert: eur(lauf.summe) },
+  ];
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {lauf.status === "erzeugt" && !eigeneFreigabe && <Knopf variante="primary" className="h-8 px-3 text-[12.5px]" disabled={a.laeuft} onClick={() => a.ausfuehren({ aktion: "freigeben" }, "Lauf freigegeben.")}><ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />Freigeben (2. Person)</Knopf>}
+      {lauf.status === "erzeugt" && !eigeneFreigabe && <Knopf variante="primary" className="h-9 px-3.5 text-[12.5px]" disabled={a.laeuft} onClick={() => setDialog("freigeben")}><ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />Freigeben (2. Person)</Knopf>}
       {lauf.status === "erzeugt" && eigeneFreigabe && <span className="text-[12.5px] text-ink-500">wartet auf Freigabe durch eine zweite Person</span>}
-      {["freigegeben", "eingereicht", "gebucht"].includes(lauf.status) && lauf.hatDatei && <a href={api} className="inline-flex h-8 items-center rounded-full bg-white px-3 text-[12.5px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50">XML herunterladen</a>}
-      {lauf.status === "freigegeben" && <Knopf className="h-8 px-3 text-[12.5px]" disabled={a.laeuft} onClick={() => a.ausfuehren({ aktion: "eingereicht" }, "Als eingereicht markiert.")}>Bei der Bank eingereicht</Knopf>}
-      {["erzeugt", "freigegeben", "eingereicht"].includes(lauf.status) && <Knopf variante="gefahr" className="h-8 px-3 text-[12.5px]" disabled={a.laeuft} onClick={() => a.ausfuehren({ aktion: "verwerfen" }, "Lauf verworfen.")}>Verwerfen</Knopf>}
-      {a.fehler && <span role="alert" className="text-[12.5px] text-red-700">{a.fehler}</span>}
+      {["freigegeben", "eingereicht", "gebucht"].includes(lauf.status) && lauf.hatDatei && <a href={api} className="inline-flex h-9 items-center rounded-full bg-white px-3.5 text-[12.5px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50">XML herunterladen</a>}
+      {lauf.status === "freigegeben" && <Knopf className="h-9 px-3.5 text-[12.5px]" disabled={a.laeuft} onClick={() => a.ausfuehren({ aktion: "eingereicht" }, "Als eingereicht markiert.")}>Bei der Bank eingereicht</Knopf>}
+      {["erzeugt", "freigegeben", "eingereicht"].includes(lauf.status) && <Knopf variante="gefahr" className="ml-auto h-9 px-3.5 text-[12.5px]" disabled={a.laeuft} onClick={() => setDialog("verwerfen")}><Trash2 aria-hidden="true" className="h-3.5 w-3.5" />Verwerfen</Knopf>}
+      {a.fehler && <span role="alert" className="text-[12.5px] text-danger-700">{a.fehler}</span>}
+      <Rueckfrage
+        offen={dialog === "freigeben"}
+        onSchliessen={() => setDialog("")}
+        laeuft={a.laeuft}
+        icon={ShieldCheck}
+        titel="Zahlungslauf als zweite Person freigeben?"
+        text="Nach Ihrer Freigabe steht die SEPA-Datei zum Download bereit und kann bei der Bank eingereicht werden."
+        fakten={fakten}
+        folgen={["Vier-Augen-Prinzip: Erstellt hat den Lauf eine andere Person."]}
+        knopf="Ja, freigeben"
+        onBestaetigen={async () => { await a.ausfuehren({ aktion: "freigeben" }, "Lauf freigegeben."); setDialog(""); }}
+      />
+      <Rueckfrage
+        offen={dialog === "verwerfen"}
+        onSchliessen={() => setDialog("")}
+        laeuft={a.laeuft}
+        ton="danger"
+        icon={Trash2}
+        titel={`Zahlungslauf mit ${lauf.anzahl ?? ""} Posten verwerfen?`}
+        text={lauf.status === "eingereicht" ? "Achtung: Der Lauf ist bereits als eingereicht markiert. Verwerfen Sie ihn nur, wenn die Bank ihn nicht ausgeführt hat." : "Die Posten werden wieder frei und können in einen neuen Lauf aufgenommen werden."}
+        fakten={fakten}
+        knopf="Ja, Lauf verwerfen"
+        onBestaetigen={async () => { await a.ausfuehren({ aktion: "verwerfen" }, "Lauf verworfen."); setDialog(""); }}
+      />
     </div>
   );
 }

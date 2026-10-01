@@ -10,11 +10,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { cn } from "@/components/ui/cn";
-import { Tooltip, useBreite } from "@/components/Rechner/bausteine";
+import { ENERGIE } from "@/components/ui/datenfarben";
+import BalkenDiagramm from "@/components/diagramme/BalkenDiagramm";
+import LinienDiagramm from "@/components/diagramme/LinienDiagramm";
 import { kw, kwh } from "@/lib/plattform/anlagen";
 import { pct } from "./teile";
 
-const FARBE = { pv: "#669933", pvHell: "#cde3b1", eigen: "#436621", last: "#003473", soc: "#f5a70f", soll: "#151a24", netz: "#7fa7d6", raster: "#eef0f4" };
 const BEREICHE = [
   { id: "tag", label: "Tag", aufloesung: "15min" },
   { id: "woche", label: "Woche", aufloesung: "1h" },
@@ -187,194 +188,79 @@ const zeitLabel = (iso, bereich) => {
   return d.toLocaleDateString("de-DE", { month: "long", year: "numeric", timeZone: "UTC" });
 };
 
-function useZeiger(n, W, P) {
-  const [hover, setHover] = useState(null);
-  const band = (W - P.l - P.r) / Math.max(1, n);
-  const ausZeiger = (e) => {
-    const box = e.currentTarget.getBoundingClientRect();
-    const px = ((e.clientX - box.left) / box.width) * W;
-    return Math.max(0, Math.min(n - 1, Math.floor((px - P.l) / band)));
-  };
-  const tasten = (e) => {
-    if (e.key === "ArrowRight") setHover((h) => Math.min(n - 1, (h ?? -1) + 1));
-    else if (e.key === "ArrowLeft") setHover((h) => Math.max(0, (h ?? n) - 1));
-    else if (e.key === "Escape") setHover(null);
-    else return;
-    e.preventDefault();
-  };
-  return { hover, setHover, band, ausZeiger, tasten };
-}
+// Diagramme über das Chart-System (src/components/diagramme): Fadenkreuz, Tastatur, Tabelle, CSV/PNG, Einlauf.
+// Farben nach festen Energie-Bedeutungen (ui/datenfarben ENERGIE): Erzeugung Sonne, Verbrauch Navy,
+// vor Ort genutzt Grün, Einspeisung Hellgrün, Speicher Blau (gestrichelt, rechte Achse).
 
 function Linien({ punkte, bereich, laedt, mitPv, mitSpeicher }) {
-  const [ref, W] = useBreite(720);
-  const schmal = W < 520;
-  const H = schmal ? 230 : 280;
-  const P = { l: 48, r: mitSpeicher ? 36 : 12, t: 14, b: 28 };
-  const n = punkte.length;
-  const { hover, setHover, band, ausZeiger, tasten } = useZeiger(n, W, P);
-  const maxRoh = Math.max(1, ...punkte.map((p) => Math.max(p.pvKw || 0, p.verbrauchKw || 0)));
-  const schritt = [1, 2, 5, 10, 20, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000].find((s) => maxRoh / s <= 5) || 10000;
-  const max = Math.ceil(maxRoh / schritt) * schritt;
-  const x = (i) => P.l + (i + 0.5) * band;
-  const y = (v) => P.t + (1 - v / max) * (H - P.t - P.b);
-  const ySoc = (v) => P.t + (1 - v / 100) * (H - P.t - P.b);
-  const pfad = (f) => punkte.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(f(p) || 0).toFixed(1)}`).join("");
-  const flaeche = mitPv && n ? `${pfad((p) => p.pvKw)}L${x(n - 1).toFixed(1)},${y(0)}L${x(0).toFixed(1)},${y(0)}Z` : "";
-  const ticks = [];
-  for (let v = 0; v <= max + 1e-9; v += schritt) ticks.push(v);
-  const labelJede = Math.max(1, Math.ceil(n / (schmal ? 4 : 8)));
-  const a = hover != null ? punkte[hover] : null;
   const maxP = punkte.reduce((m, p, i) => ((p.pvKw || 0) > (punkte[m]?.pvKw || 0) ? i : m), 0);
-
+  const tag = bereich === "tag";
+  const beschriftung = punkte.map((p, i) => {
+    const text = tag ? zeitLabel(p.ts, "tag") : new Date(p.ts).toLocaleDateString("de-DE", { weekday: "short", timeZone: TZ });
+    const vorher = i && !tag ? new Date(punkte[i - 1].ts).toLocaleDateString("de-DE", { weekday: "short", timeZone: TZ }) : null;
+    return { x: i, text: tag || text !== vorher ? text : "" };
+  });
+  const einheitMw = Math.max(0, ...punkte.map((p) => Math.max(p.pvKw || 0, p.verbrauchKw || 0))) >= 5000;
   return (
-    <div ref={ref} className={cn("relative", laedt && "opacity-60")}>
-      <svg
-        width="100%"
-        height={H}
-        viewBox={`0 0 ${W} ${H}`}
-        className="block touch-pan-y select-none outline-none focus-visible:ring-2 focus-visible:ring-ov-500"
-        role="img"
-        tabIndex={0}
-        onKeyDown={tasten}
-        aria-label={`Leistungsverlauf (${bereich === "tag" ? "15 Minuten" : "Stunden"}): ${mitPv ? `Höchste PV-Leistung ${kw(punkte[maxP]?.pvKw)} um ${punkte[maxP] ? zeitLabel(punkte[maxP].ts, bereich) : "–"}. ` : ""}Pfeiltasten zeigen einzelne Werte.`}
-      >
-        {ticks.map((v) => (
-          <g key={v}>
-            <line x1={P.l} x2={W - P.r} y1={y(v)} y2={y(v)} stroke={FARBE.raster} />
-            <text x={P.l - 6} y={y(v) + 4} textAnchor="end" className="fill-ink-500 text-[10.5px]">{v >= 1000 ? `${(v / 1000).toLocaleString("de-DE")} MW` : `${v} kW`}</text>
-          </g>
-        ))}
-        {mitSpeicher && [0, 50, 100].map((v) => (
-          <text key={v} x={W - P.r + 4} y={ySoc(v) + 4} className="fill-sun-500 text-[10px]">{v} %</text>
-        ))}
-        {flaeche && <path d={flaeche} fill={FARBE.pv} opacity="0.28" />}
-        {mitPv && <path d={pfad((p) => p.pvKw)} fill="none" stroke={FARBE.pv} strokeWidth="2" strokeLinejoin="round" />}
-        <path d={pfad((p) => p.verbrauchKw)} fill="none" stroke={FARBE.last} strokeWidth="1.8" strokeLinejoin="round" />
-        {mitSpeicher && <path d={punkte.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${ySoc(p.speicherSocPct || 0).toFixed(1)}`).join("")} fill="none" stroke={FARBE.soc} strokeWidth="1.6" strokeDasharray="4 3" />}
-        {punkte.map((p, i) =>
-          i % labelJede === 0 ? (
-            <text key={p.ts} x={x(i)} y={H - 8} textAnchor="middle" className="fill-ink-500 text-[10.5px]">
-              {bereich === "tag" ? zeitLabel(p.ts, "tag") : new Date(p.ts).toLocaleDateString("de-DE", { weekday: "short", timeZone: TZ })}
-            </text>
-          ) : null
-        )}
-        {a && <line x1={x(hover)} x2={x(hover)} y1={P.t} y2={H - P.b} stroke="#97a0b0" strokeDasharray="3 3" />}
-        <rect x={0} y={0} width={W} height={H} fill="transparent" onPointerMove={(e) => setHover(ausZeiger(e))} onPointerLeave={() => setHover(null)} onClick={(e) => setHover(ausZeiger(e))} />
-      </svg>
-      {a && (
-        <Tooltip x={x(hover)} y={Math.max(0, y(Math.max(a.pvKw || 0, a.verbrauchKw || 0)) - 40)} breite={W}>
-          <p className="font-semibold">{zeitLabel(a.ts, bereich)}</p>
-          {mitPv && <p className="text-white/70">PV <span className="ov-num font-semibold text-white">{kw(a.pvKw)}</span></p>}
-          <p className="text-white/70">Verbrauch <span className="ov-num font-semibold text-white">{kw(a.verbrauchKw)}</span></p>
-          {(a.netzbezugKw || 0) > 0.05 ? (
-            <p className="text-white/70">Netzbezug <span className="ov-num font-semibold text-white">{kw(a.netzbezugKw)}</span></p>
-          ) : (
-            <p className="text-white/70">Einspeisung <span className="ov-num font-semibold text-white">{kw(a.einspeisungKw)}</span></p>
-          )}
-          {mitSpeicher && <p className="text-white/70">Speicher <span className="ov-num font-semibold text-sun-300">{Math.round(a.speicherSocPct || 0)} %</span></p>}
-          {a.fehlercode && <p className="text-sun-300">{a.fehlercode}</p>}
-        </Tooltip>
-      )}
-      <Legende items={[mitPv && { farbe: FARBE.pv, label: "PV-Leistung" }, { farbe: FARBE.last, label: "Verbrauch" }, mitSpeicher && { farbe: FARBE.soc, label: "Speicher-Ladestand", strich: true }].filter(Boolean)} />
-    </div>
-  );
-}
-
-function Saeulen({ punkte, bereich, laedt, mitPv }) {
-  const [ref, W] = useBreite(720);
-  const schmal = W < 520;
-  const H = schmal ? 230 : 280;
-  const P = { l: 56, r: 12, t: 14, b: 28 };
-  const n = punkte.length;
-  const { hover, setHover, band, ausZeiger, tasten } = useZeiger(n, W, P);
-  const wert = (p) => (mitPv ? p.erzeugungKwh || 0 : p.verbrauchKwh || 0);
-  const maxRoh = Math.max(1, ...punkte.map((p) => Math.max(wert(p), p.erwartetKwh || 0)));
-  const basis = 10 ** Math.floor(Math.log10(maxRoh));
-  const schritt = [1, 2, 2.5, 5, 10].map((f) => f * basis).find((s) => maxRoh / s <= 5) || basis * 10;
-  const max = Math.ceil(maxRoh / schritt) * schritt;
-  const bw = Math.max(2, band * (bereich === "jahr" ? 0.62 : 0.7));
-  const x = (i) => P.l + i * band + (band - bw) / 2;
-  const y = (v) => P.t + (1 - v / max) * (H - P.t - P.b);
-  const ticks = [];
-  for (let v = 0; v <= max + 1e-9; v += schritt) ticks.push(v);
-  const labelJede = bereich === "jahr" ? (schmal ? 2 : 1) : schmal ? 7 : 3;
-  const a = hover != null ? punkte[hover] : null;
-  const eigen = (p) => p.eigenverbrauchKwh ?? Math.max(0, (p.verbrauchKwh || 0) - (p.netzbezugKwh || 0));
-
-  return (
-    <div ref={ref} className={cn("relative", laedt && "opacity-60")}>
-      <svg
-        width="100%"
-        height={H}
-        viewBox={`0 0 ${W} ${H}`}
-        className="block touch-pan-y select-none outline-none focus-visible:ring-2 focus-visible:ring-ov-500"
-        role="img"
-        tabIndex={0}
-        onKeyDown={tasten}
-        aria-label={`${mitPv ? "Erzeugung" : "Verbrauch"} je ${bereich === "jahr" ? "Monat" : "Tag"} mit Erwartung. Pfeiltasten zeigen einzelne Werte.`}
-      >
-        {ticks.map((v) => (
-          <g key={v}>
-            <line x1={P.l} x2={W - P.r} y1={y(v)} y2={y(v)} stroke={FARBE.raster} />
-            <text x={P.l - 6} y={y(v) + 4} textAnchor="end" className="fill-ink-500 text-[10.5px]">{kwh(v).replace(" kWh", "")}</text>
-          </g>
-        ))}
-        {punkte.map((p, i) => {
-          const g = wert(p);
-          const e = mitPv ? Math.min(g, eigen(p)) : 0;
-          return (
-            <g key={p.ts} opacity={hover == null || hover === i ? 1 : 0.55}>
-              <rect x={x(i)} y={y(g)} width={bw} height={Math.max(0, y(0) - y(g))} rx={Math.min(3, bw / 3)} fill={mitPv ? FARBE.pvHell : FARBE.last} />
-              {mitPv && <rect x={x(i)} y={y(e)} width={bw} height={Math.max(0, y(0) - y(e))} fill={FARBE.eigen} />}
-              {p.erwartetKwh > 0 && <line x1={x(i) - 2} x2={x(i) + bw + 2} y1={y(p.erwartetKwh)} y2={y(p.erwartetKwh)} stroke={FARBE.soll} strokeWidth="2" />}
-            </g>
-          );
-        })}
-        {punkte.map((p, i) =>
-          i % labelJede === 0 ? (
-            <text key={`l${p.ts}`} x={x(i) + bw / 2} y={H - 8} textAnchor="middle" className="fill-ink-500 text-[10.5px]">
-              {bereich === "jahr" ? new Date(p.ts).toLocaleDateString("de-DE", { month: "short", timeZone: "UTC" }) : new Date(p.ts).toLocaleDateString("de-DE", { day: "numeric", timeZone: "UTC" })}
-            </text>
-          ) : null
-        )}
-        <rect x={0} y={0} width={W} height={H} fill="transparent" onPointerMove={(e) => setHover(ausZeiger(e))} onPointerLeave={() => setHover(null)} onClick={(e) => setHover(ausZeiger(e))} />
-      </svg>
-      {a && (
-        <Tooltip x={x(hover) + bw / 2} y={Math.max(0, y(Math.max(wert(a), a.erwartetKwh || 0)) - 40)} breite={W}>
-          <p className="font-semibold">{zeitLabel(a.ts, bereich)}</p>
-          {mitPv && <p className="text-white/70">Erzeugung <span className="ov-num font-semibold text-white">{kwh(a.erzeugungKwh)}</span></p>}
-          {mitPv && <p className="text-white/70">davon vor Ort <span className="ov-num font-semibold text-ov-300">{kwh(Math.min(a.erzeugungKwh || 0, eigen(a)))}</span></p>}
-          <p className="text-white/70">Verbrauch <span className="ov-num font-semibold text-white">{kwh(a.verbrauchKwh)}</span></p>
-          <p className="text-white/70">Netzbezug <span className="ov-num font-semibold text-white">{kwh(a.netzbezugKwh)}</span></p>
-          <p className="text-white/70">Einspeisung <span className="ov-num font-semibold text-white">{kwh(a.einspeisungKwh)}</span></p>
-          {a.erwartetKwh > 0 && (
-            <p className="text-white/70">
-              Soll <span className="ov-num font-semibold text-white">{kwh(a.erwartetKwh)}</span> · Ist/Soll <span className="ov-num font-semibold text-white">{pct((a.erzeugungKwh || 0) / a.erwartetKwh)}</span>
-            </p>
-          )}
-        </Tooltip>
-      )}
-      <Legende
-        items={[
-          mitPv && { farbe: FARBE.eigen, label: "Erzeugung vor Ort genutzt" },
-          mitPv && { farbe: FARBE.pvHell, label: "eingespeist" },
-          !mitPv && { farbe: FARBE.last, label: "Verbrauch" },
-          mitPv && { farbe: FARBE.soll, label: "Erwartung (Soll)", strich: true },
+    <div className={cn("transition-opacity", laedt && "opacity-60")}>
+      <LinienDiagramm
+        reihen={[
+          mitPv && { name: "PV-Leistung", farbe: ENERGIE.erzeugung, flaeche: true, deckkraft: 0.28, werte: punkte.map((p) => (einheitMw ? (p.pvKw || 0) / 1000 : p.pvKw || 0)), texte: punkte.map((p) => kw(p.pvKw)) },
+          { name: "Verbrauch", farbe: ENERGIE.verbrauch, werte: punkte.map((p) => (einheitMw ? (p.verbrauchKw || 0) / 1000 : p.verbrauchKw || 0)), texte: punkte.map((p) => kw(p.verbrauchKw)) },
+          mitSpeicher && { name: "Speicher-Ladestand", farbe: ENERGIE.speicherLaden, gestrichelt: true, achse: "rechts", werte: punkte.map((p) => p.speicherSocPct || 0), texte: punkte.map((p) => `${Math.round(p.speicherSocPct || 0)} %`) },
         ].filter(Boolean)}
+        rechts={mitSpeicher ? { einheit: "%", von: 0, bis: 100, farbe: ENERGIE.speicherLaden } : undefined}
+        xBeschriftung={beschriftung}
+        xTitel={punkte.map((p) => zeitLabel(p.ts, bereich))}
+        zusatz={punkte.map((p) => ({
+          zeilen: [(p.netzbezugKw || 0) > 0.05 ? { name: "Netzbezug", wert: kw(p.netzbezugKw), farbe: ENERGIE.netzbezug } : { name: "Einspeisung", wert: kw(p.einspeisungKw), farbe: ENERGIE.einspeisung }],
+          fuss: p.fehlercode || undefined,
+        }))}
+        yEinheit={einheitMw ? "MW" : "kW"}
+        hoehe={280}
+        beschreibung={`Leistungsverlauf (${tag ? "15 Minuten" : "Stunden"})${mitPv && punkte[maxP] ? `: höchste PV-Leistung ${kw(punkte[maxP].pvKw)} um ${zeitLabel(punkte[maxP].ts, bereich)}` : ""}`}
+        className="px-3"
       />
     </div>
   );
 }
 
-function Legende({ items }) {
+function Saeulen({ punkte, bereich, laedt, mitPv }) {
+  const eigen = (p) => p.eigenverbrauchKwh ?? Math.max(0, (p.verbrauchKwh || 0) - (p.netzbezugKwh || 0));
+  const jahr = bereich === "jahr";
+  const vorOrt = (p) => Math.min(p.erzeugungKwh || 0, eigen(p));
+  const mitSoll = mitPv && punkte.some((p) => p.erwartetKwh > 0);
+  const summeIst = punkte.reduce((s, p) => s + (mitPv ? p.erzeugungKwh || 0 : p.verbrauchKwh || 0), 0);
   return (
-    <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 px-3 text-[12px] text-ink-600">
-      {items.map((i) => (
-        <li key={i.label} className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true" className={cn("inline-block", i.strich ? "h-0.5 w-4" : "h-2.5 w-2.5 rounded-sm")} style={{ background: i.farbe }} />
-          {i.label}
-        </li>
-      ))}
-    </ul>
+    <div className={cn("transition-opacity", laedt && "opacity-60")}>
+      <BalkenDiagramm
+        kategorien={punkte.map((p) => (jahr ? new Date(p.ts).toLocaleDateString("de-DE", { month: "short", timeZone: "UTC" }) : new Date(p.ts).toLocaleDateString("de-DE", { day: "numeric", timeZone: "UTC" })))}
+        kategorienTitel={punkte.map((p) => zeitLabel(p.ts, bereich))}
+        gestapelt
+        reihen={
+          mitPv
+            ? [
+                { name: "Erzeugung vor Ort genutzt", farbe: ENERGIE.eigenverbrauch, werte: punkte.map(vorOrt), texte: punkte.map((p) => kwh(vorOrt(p))) },
+                { name: "eingespeist", farbe: ENERGIE.einspeisung, werte: punkte.map((p) => Math.max(0, (p.erzeugungKwh || 0) - vorOrt(p))), texte: punkte.map((p) => kwh(Math.max(0, (p.erzeugungKwh || 0) - vorOrt(p)))) },
+              ]
+            : [{ name: "Verbrauch", farbe: ENERGIE.verbrauch, werte: punkte.map((p) => p.verbrauchKwh || 0), texte: punkte.map((p) => kwh(p.verbrauchKwh)) }]
+        }
+        soll={mitSoll ? { name: "Erwartung (Soll)", werte: punkte.map((p) => (p.erwartetKwh > 0 ? p.erwartetKwh : null)), texte: punkte.map((p) => (p.erwartetKwh > 0 ? kwh(p.erwartetKwh) : "–")) } : null}
+        zusatz={punkte.map((p) => ({
+          zeilen: [
+            ...(mitPv ? [{ name: "Verbrauch", wert: kwh(p.verbrauchKwh), farbe: ENERGIE.verbrauch }] : []),
+            { name: "Netzbezug", wert: kwh(p.netzbezugKwh), farbe: ENERGIE.netzbezug },
+            ...(mitPv ? [] : [{ name: "Einspeisung", wert: kwh(p.einspeisungKwh), farbe: ENERGIE.einspeisung }]),
+          ],
+          fuss: mitPv ? `Erzeugung ${kwh(p.erzeugungKwh)}${p.erwartetKwh > 0 ? ` · Ist/Soll ${pct((p.erzeugungKwh || 0) / p.erwartetKwh)}` : ""}` : undefined,
+        }))}
+        yEinheit="kWh"
+        werteZeigen={jahr ? "auto" : false}
+        summeZeigen={false}
+        hoehe={280}
+        beschreibung={`${mitPv ? "Erzeugung" : "Verbrauch"} je ${jahr ? "Monat" : "Tag"}${mitSoll ? " mit Erwartung (Soll)" : ""}, Summe ${kwh(summeIst)}`}
+        className="px-3"
+      />
+    </div>
   );
 }

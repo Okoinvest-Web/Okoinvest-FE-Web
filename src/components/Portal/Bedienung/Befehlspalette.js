@@ -16,6 +16,7 @@ import useFokusFalle from "@/components/ui/useFokusFalle";
 import { rangieren, SUCH_GRUPPEN, SUCHE_MIN, istPortalPfad } from "@/lib/plattform/suche";
 import { aktionen, navigationsZiele } from "./befehle";
 import { speicherLesen, speicherSchreiben } from "./speicher";
+import { SucheOhneTreffer } from "@/components/illustrationen"; // T7: Leerzustand
 import { CalendarDays, Contact, HardHat, LifeBuoy, ListTodo, SunMedium } from "lucide-react"; // Querschnitt: Icons der erweiterten Suche
 
 const ART_ICON = { flaeche: LandPlot, projekt: FolderKanban, vorgang: Inbox, nachricht: MessagesSquare, boerse: TrendingUp, nutzer: UserRound };
@@ -195,13 +196,13 @@ export default function Befehlspalette({ nutzer, offen, setOffen, beiAktion }) {
 
   return (
     <div className="fixed inset-0 z-[80] flex items-start justify-center px-3 pt-[8vh] sm:px-6 sm:pt-[12vh]">
-      <div className="absolute inset-0 bg-navy-950/55 backdrop-blur-sm" onClick={() => setOffen(false)} aria-hidden="true" />
+      <div className="pr-schleier absolute inset-0 bg-navy-950/55 backdrop-blur-sm" onClick={() => setOffen(false)} aria-hidden="true" />
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label="Befehlspalette – suchen und ausführen"
-        className="relative flex max-h-[80vh] w-full max-w-[640px] flex-col overflow-hidden rounded-3xl bg-white shadow-[0_30px_80px_-24px_rgba(3,18,43,0.55)] ring-1 ring-ink-200"
+        className="pr-palette relative flex max-h-[80vh] w-full max-w-[640px] flex-col overflow-hidden rounded-3xl bg-white shadow-e5 ring-1 ring-ink-200/80"
       >
         <div className="flex items-center gap-3 border-b border-ink-100 px-4 sm:px-5">
           {laedt ? <Loader2 aria-hidden="true" className="h-5 w-5 shrink-0 animate-spin text-ov-600" /> : <Search aria-hidden="true" className="h-5 w-5 shrink-0 text-ink-400" />}
@@ -222,7 +223,7 @@ export default function Befehlspalette({ nutzer, offen, setOffen, beiAktion }) {
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={taste}
             placeholder="Fläche, Projekt, Vorgang oder Befehl suchen …"
-            className="h-14 min-w-0 flex-1 bg-transparent text-[16px] text-ink-900 outline-none placeholder:text-ink-400 focus-visible:outline-none"
+            className="h-14 min-w-0 flex-1 bg-transparent text-[16px] text-ink-900 outline-none placeholder:text-ink-500 focus-visible:outline-none"
             style={{ outline: "none", boxShadow: "none" }}
           />
           <button type="button" onClick={() => setOffen(false)} className="flex h-9 shrink-0 items-center gap-1 rounded-lg px-2 text-[12px] font-semibold text-ink-500 ring-1 ring-inset ring-ink-200 hover:bg-ink-50" aria-label="Befehlspalette schließen">
@@ -237,10 +238,10 @@ export default function Befehlspalette({ nutzer, offen, setOffen, beiAktion }) {
         </p>
 
         <div ref={listeRef} id={`${basisId}-liste`} role="listbox" aria-label="Ergebnisse" className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
-          {fehler && <p className="mx-2 my-2 rounded-xl bg-red-50 px-3 py-2 text-[13.5px] text-red-800 ring-1 ring-red-200">{fehler}</p>}
+          {fehler && <p className="mx-2 my-2 rounded-xl bg-danger-50 px-3 py-2 text-[13.5px] text-danger-700 ring-1 ring-danger-200">{fehler}</p>}
           {gruppen.map((g) => (
             <div key={g.id} role="group" aria-labelledby={`${basisId}-g-${g.id}`} className="mb-1">
-              <p id={`${basisId}-g-${g.id}`} role="presentation" className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-400">
+              <p id={`${basisId}-g-${g.id}`} role="presentation" className="px-3 pb-1.5 pt-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-500">
                 {g.titel}
               </p>
               {g.eintraege.map((e) => {
@@ -256,9 +257,9 @@ export default function Befehlspalette({ nutzer, offen, setOffen, beiAktion }) {
                     aria-selected={aktiv}
                     onMouseMove={() => !aktiv && setAktivIdx(i)}
                     onClick={(ev) => ausfuehren(e, { neuerTab: ev.ctrlKey || ev.metaKey })}
-                    className={cn("flex cursor-pointer items-center gap-3 rounded-2xl px-3 py-2.5", aktiv ? "bg-ov-50 ring-1 ring-inset ring-ov-200" : "hover:bg-sand-50")}
+                    className={cn("flex cursor-pointer items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors duration-100", aktiv ? "bg-ov-50 ring-1 ring-inset ring-ov-200" : "hover:bg-sand-50")}
                   >
-                    <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", aktiv ? "bg-ov-600 text-white" : "bg-sand-100 text-ink-600")}>
+                    <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors duration-100", aktiv ? "bg-ov-600 text-white shadow-e2" : "bg-sand-100 text-ink-600")}>
                       <Icon aria-hidden="true" className="h-[18px] w-[18px]" />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -279,7 +280,8 @@ export default function Befehlspalette({ nutzer, offen, setOffen, beiAktion }) {
             </div>
           ))}
           {!flach.length && !laedt && (
-            <div className="px-4 py-10 text-center">
+            <div className="px-4 py-8 text-center">
+              <SucheOhneTreffer className="mx-auto mb-2 h-[88px] w-[110px]" />
               <p className="font-display text-[16px] font-bold text-ink-900">Nichts gefunden</p>
               <p className="mt-1 text-[13.5px] text-ink-500">
                 {text.length < SUCHE_MIN ? "Bitte mindestens zwei Zeichen eingeben." : "Versuchen Sie einen anderen Begriff, eine Kennung (z. B. F-26-…) oder einen Ort."}

@@ -4,9 +4,10 @@ import { useId, useMemo, useState } from "react";
 import { Banknote, CalendarClock, ClipboardCheck, Coins, FileSignature, Gauge, Scale, ShieldCheck, Sprout } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
-import { Auswahl, Gruppe, Kennzahl, Regler, Schalter, Zahl } from "./bausteine";
+import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Schalter, Zahl } from "./bausteine";
+import { useTeilbarerZustand } from "./kontext";
 import { ErgebnisKopf, Hinweis, MobilKurz, RechnerRahmen } from "./InvestTeile";
-import { AMPEL, AmpelMarke, BalkenJahre, DiagrammKarte, Druckknopf, FARBEN, ZahlFeld } from "./ToolTeile";
+import { AMPEL, AmpelMarke, BalkenJahre, DiagrammKarte, FARBEN, ZahlFeld } from "./ToolTeile";
 import { FLAECHENARTEN, INDEXARTEN, MODELLE, OPTIONEN, STANDARD, pruefePachtangebot } from "@/lib/rechner/pachtangebot";
 import { REGION_KURZ } from "@/lib/rechner/pacht";
 import { PACHT, REGIONEN } from "@/lib/invest/markt";
@@ -17,6 +18,17 @@ const tsd = (v) => (Math.abs(v) >= 1e6 ? `${fmt(v / 1e6, 2)} Mio. €` : `${fmt(
 export default function PachtangebotCheck() {
   const [e, setE] = useState(STANDARD);
   const set = (k) => (v) => setE((alt) => ({ ...alt, [k]: v }));
+  useTeilbarerZustand(e, (neu) => setE((alt) => ({ ...alt, ...neu })), {
+    optionen: {
+      regionId: REGIONEN.map((x) => x.id),
+      flaechenart: FLAECHENARTEN.map((x) => x.id),
+      modell: MODELLE.map((x) => x.id),
+      indexArt: INDEXARTEN.map((x) => x.id),
+      ...Object.fromEntries(Object.entries(OPTIONEN).map(([k, liste]) => [k, liste.map((o) => o.id)])),
+    },
+    grenzen: { ha: [1, 150] },
+    pruefen: pruefePachtangebot,
+  });
   const r = useMemo(() => pruefePachtangebot(e), [e]);
   const idBasis = useId();
   const spanne = r.spanne;
@@ -196,20 +208,34 @@ export default function PachtangebotCheck() {
 
             <Urteil r={r} />
 
-            <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-              <Kennzahl ton="navy" icon={Coins} label={`Summe ${r.jahre.length} Jahre`} zusatz={`Ø ${fmt(r.durchschnittProHa)} €/ha·a, nominal`}>
-                {tsd(r.summe)}
-              </Kennzahl>
-              <Kennzahl ton="gruen" icon={Banknote} label="Barwert heute" zusatz={`abgezinst mit ${fmt(e.diskont * 100, 1)} %`}>
-                {tsd(r.barwert)}
-              </Kennzahl>
-              <Kennzahl icon={Sprout} label="1. Betriebsjahr" zusatz={`${fmtEur(r.proHaErstesJahr * e.ha)} gesamt`}>
-                <Zahl wert={r.proHaErstesJahr} suffix=" €/ha" />
+            <Hauptzahl
+              className="mt-5"
+              icon={Coins}
+              label={`Summe ${r.jahre.length} Jahre`}
+              zusatz={`Ø ${fmt(r.durchschnittProHa)} €/ha·a, nominal`}
+              rechts={
+                <div className="sm:text-right">
+                  <p className="flex items-center gap-1.5 text-[12.5px] text-white/75 sm:justify-end">
+                    <Banknote aria-hidden="true" className="h-3.5 w-3.5" />
+                    Barwert heute
+                  </p>
+                  <p className="ov-kpi mt-0.5 text-white">
+                    <Zahl wert={r.barwert} format={tsd} />
+                  </p>
+                  <p className="text-[12.5px] text-white/75">abgezinst mit {fmt(e.diskont * 100, 1)} %</p>
+                </div>
+              }
+            >
+              <Zahl wert={r.summe} format={tsd} delta="dunkel" einlauf />
+            </Hauptzahl>
+            <Belege spalten={2}>
+              <Kennzahl ton="akzent" icon={Sprout} label="1. Betriebsjahr" zusatz={`${fmtEur(r.proHaErstesJahr * e.ha)} gesamt`}>
+                <Zahl wert={r.proHaErstesJahr} suffix=" €/ha" delta="hell" />
               </Kennzahl>
               <Kennzahl icon={Gauge} label="ggü. Marktmitte" zusatz="Barwert, gleicher Vorlauf">
-                {r.anteilMarktMittel != null ? <Zahl wert={r.anteilMarktMittel * 100} suffix=" %" /> : "–"}
+                {r.anteilMarktMittel != null ? <Zahl wert={r.anteilMarktMittel * 100} suffix=" %" delta="hell" deltaFormat={(dd) => `${fmt(dd)} %-Pkt.`} /> : "–"}
               </Kennzahl>
-            </div>
+            </Belege>
 
             <Marktbalken r={r} />
 
@@ -223,9 +249,6 @@ export default function PachtangebotCheck() {
               <p className="max-w-md text-[13px] leading-relaxed text-ink-500">
                 Fachliche Orientierung, keine Rechtsberatung. Lassen Sie den Vertragstext vor der Unterschrift anwaltlich prüfen – idealerweise auf Kosten des Projektierers.
               </p>
-              <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-                <Druckknopf />
-              </div>
             </div>
           </>
         }

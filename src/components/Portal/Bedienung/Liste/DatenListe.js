@@ -20,6 +20,7 @@ import { rangieren } from "@/lib/plattform/suche";
 import { csv } from "@/lib/plattform/csv";
 import { speicherLesen, speicherSchreiben } from "../speicher";
 import LeerZustand from "../LeerZustand";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 const LEER_ZUSTAND = { q: "", filter: {}, sortierung: null };
 
@@ -224,7 +225,7 @@ export default function DatenListe({
     async (a) => {
       const liste = zeilen.filter((x) => ausgewaehlt.has(x.id));
       if (!liste.length) return;
-      if (a.bestaetigen && !window.confirm(typeof a.bestaetigen === "function" ? a.bestaetigen(liste) : a.bestaetigen)) return;
+      if (a.bestaetigen && !(await bestaetigen({ titel: typeof a.bestaetigen === "function" ? a.bestaetigen(liste) : a.bestaetigen, details: [{ label: "Auswahl", wert: `${liste.length} ${liste.length === 1 ? "Eintrag" : "Einträge"}` }], bestaetigenText: a.label, gefahr: !!a.gefahr }))) return;
       setLaeuft(a.id);
       setMeldung(null);
       try {
@@ -275,7 +276,7 @@ export default function DatenListe({
                 value={z.q}
                 onChange={(e) => setZ((x) => ({ ...x, q: e.target.value.slice(0, 80) }))}
                 placeholder={suche.platzhalter || "Suchen …"}
-                className="h-10 w-full rounded-full bg-sand-50 pl-10 pr-4 text-[14.5px] text-ink-900 outline-none ring-1 ring-inset ring-ink-200 placeholder:text-ink-400 focus-visible:ring-2 focus-visible:ring-ov-500"
+                className="h-10 w-full rounded-full bg-sand-50 pl-10 pr-4 text-[14.5px] text-ink-900 outline-none ring-1 ring-inset ring-ink-200 placeholder:text-ink-500 focus-visible:ring-2 focus-visible:ring-ov-500"
               />
             </label>
           )}
@@ -283,7 +284,7 @@ export default function DatenListe({
             {filter.map((f) => (
               <Menue key={f.id} label={f.label} icon={SlidersHorizontal} zaehler={z.filter[f.id]?.length || 0}>
                 <fieldset>
-                  <legend className="px-2 pb-1 pt-1 text-[11.5px] font-semibold uppercase tracking-wider text-ink-400">{f.label}</legend>
+                  <legend className="px-2 pb-1 pt-1 text-[11.5px] font-semibold uppercase tracking-wider text-ink-500">{f.label}</legend>
                   {f.optionen.map((o) => {
                     const an = (z.filter[f.id] || []).includes(String(o.wert));
                     const zahl = zeilen.filter((zeile) => {
@@ -295,7 +296,7 @@ export default function DatenListe({
                         <input type="checkbox" className="sr-only" checked={an} onChange={() => setzeFilter(f.id, String(o.wert))} />
                         <Haken an={an} />
                         <span className="min-w-0 flex-1 truncate">{o.label}</span>
-                        <span className="ov-num text-[12px] text-ink-400">{zahl}</span>
+                        <span className="ov-num text-[12px] text-ink-500">{zahl}</span>
                       </label>
                     );
                   })}
@@ -306,7 +307,7 @@ export default function DatenListe({
               <Menue label={aktiveAnsicht ? aktiveAnsicht.label : "Ansichten"} icon={Bookmark} breit rechts>
                 {(schliessen) => (
                   <div>
-                    <p className="px-2 pb-1 pt-1 text-[11.5px] font-semibold uppercase tracking-wider text-ink-400">Ansicht wählen</p>
+                    <p className="px-2 pb-1 pt-1 text-[11.5px] font-semibold uppercase tracking-wider text-ink-500">Ansicht wählen</p>
                     <button type="button" onClick={() => { setZ({ ...LEER_ZUSTAND }); schliessen(); }} className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-[14px] text-ink-800 hover:bg-sand-50">
                       <span className="flex-1">Alle anzeigen</span>
                     </button>
@@ -317,7 +318,7 @@ export default function DatenListe({
                           <span className="truncate">{a.label}</span>
                         </button>
                         {a.id.startsWith("eigen-") && (
-                          <button type="button" onClick={() => ansichtLoeschen(a.id)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-400 hover:bg-red-50 hover:text-red-700" aria-label={`Ansicht „${a.label}“ löschen`}>
+                          <button type="button" onClick={() => ansichtLoeschen(a.id)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-400 hover:bg-danger-50 hover:text-danger-700" aria-label={`Ansicht „${a.label}“ löschen`}>
                             <Trash2 aria-hidden="true" className="h-4 w-4" />
                           </button>
                         )}
@@ -345,7 +346,7 @@ export default function DatenListe({
             )}
             <Menue label="Spalten" icon={Columns3} rechts knopfKlasse="max-md:hidden">
               <fieldset>
-                <legend className="px-2 pb-1 pt-1 text-[11.5px] font-semibold uppercase tracking-wider text-ink-400">Sichtbare Spalten</legend>
+                <legend className="px-2 pb-1 pt-1 text-[11.5px] font-semibold uppercase tracking-wider text-ink-500">Sichtbare Spalten</legend>
                 {spalten.map((s) => {
                   const an = s.pflicht || sichtbar.includes(s.id);
                   return (

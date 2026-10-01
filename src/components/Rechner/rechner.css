@@ -1,0 +1,59 @@
+/* Rechner & Tools (T2) – lokale Regeln, ergänzen globals.css.
+   Nur transform/opacity werden animiert; Druckansicht für alle Rechner. */
+
+/* Mobile Ergebnisleiste aktiv: die globale Handlungsleiste weicht,
+   schwebende Knöpfe (nach oben, Rückruf) rücken über die Leiste. */
+@media (max-width: 1023px) {
+  body.ov-rechner-leiste .ov-mobile-cta {
+    opacity: 0 !important;
+    transform: translateY(130%) !important;
+    pointer-events: none !important;
+  }
+  body.ov-rechner-leiste button[aria-label="Nach oben"] {
+    bottom: 96px !important;
+  }
+  body.ov-rechner-leiste .ov-rueckruf-launcher {
+    bottom: 96px;
+  }
+}
+
+/* Diagrammbalken: Wertänderungen gleiten per transform (kein Neueinlauf) */
+.ov-rechner-balken {
+  transition: transform var(--ov-dauer-l, 420ms) var(--ov-ease-out, ease-out);
+}
+
+/* Druckansicht / PDF: Kopf, Fuß, Hero und Zusatzabschnitte ausblenden,
+   Rechner und Annahmen bleiben – mit Farben. */
+@media print {
+  body:has(.ov-rechnerseite) header,
+  body:has(.ov-rechnerseite) footer,
+  body:has(.ov-rechnerseite) .ov-mobile-cta,
+  body:has(.ov-rechnerseite) .ov-rueckruf-launcher,
+  body:has(.ov-rechnerseite) button[aria-label="Nach oben"] {
+    display: none !important;
+  }
+  .ov-rechnerseite .ov-druck-aus {
+    display: none !important;
+  }
+  .ov-rechnerseite .ov-druck-ein {
+    display: block !important;
+  }
+  .ov-rechnerseite section {
+    margin-top: 0 !important;
+  }
+  .ov-rechnerseite,
+  .ov-rechnerseite * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .ov-rechnerseite .ov-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .ov-rechnerseite details > *:not(summary) {
+    display: block !important;
+  }
+  @page {
+    margin: 14mm;
+  }
+}

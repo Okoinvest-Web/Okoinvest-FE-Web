@@ -15,6 +15,7 @@ import { senden } from "@/lib/plattform/client";
 import { ANNAHME_ENDUNGEN, FORMATE } from "@/lib/plattform/planung/regeln";
 import { fmt } from "@/lib/rechner/annahmen";
 import { useAktion } from "@/components/Portal/Entwicklung/Formular";
+import { abfragen } from "@/components/ui/Rueckfrage";
 
 const TON = { entwurf: "neutral", pruefung: "warn", freigegeben: "ok", ersetzt: "neutral" };
 const groesse = (b) => (b >= 1048576 ? `${fmt(b / 1048576, 1)} MB` : `${fmt(Math.max(1, b / 1024), 0)} KB`);
@@ -104,7 +105,7 @@ function VersionZeile({ v, darfSchreiben, istPlaner, aktionen, kalkulationLink }
   const aktion = async (name) => {
     let kommentar = "";
     if (["zurueckweisen", "zurueckziehen"].includes(name)) {
-      kommentar = window.prompt("Begründung (Pflicht):") || "";
+      kommentar = (await abfragen({ titel: name === "zurueckweisen" ? "Planstand zurückweisen?" : "Freigabe zurücknehmen?", text: "Die Begründung wird am Planstand protokolliert.", details: [{ label: "Index", wert: v.index }, { label: "Format", wert: v.formatLabel }], label: "Begründung", pflicht: true, mindestlaenge: 5, mehrzeilig: true, gefahr: true, bestaetigenText: name === "zurueckweisen" ? "Zurückweisen" : "Freigabe zurücknehmen" })) || "";
       if (!kommentar) return;
     }
     await a.ausfuehren(() => senden(`/api/portal/planung/versionen/${v.id}`, { body: { aktion: name, kommentar } }), { meldung: "Gespeichert." });

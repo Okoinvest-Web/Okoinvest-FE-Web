@@ -13,6 +13,7 @@ import { auswahlfeld, eingabe, Feld, FehlerBox, ErfolgBox, Chip } from "@/compon
 import { Badge } from "@/components/Portal/ui";
 import { datum, name as nameVon } from "@/lib/plattform/format";
 import { cn } from "@/components/ui/cn";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 const OBJEKT_ART = { flaeche: "Fläche", projekt: "Projekt", interesse: "Projektinteresse" };
 
@@ -164,7 +165,7 @@ function Mitglieder({ org }) {
                   icon={Crown}
                   disabled={!!a.laeuft}
                   aria-label={`Inhaberschaft an ${nameVon(m.nutzer)} übertragen`}
-                  onClick={() => window.confirm(`Inhaberschaft an ${nameVon(m.nutzer)} übertragen? Sie werden Admin.`) && a.los(m.id, () => senden(`/api/portal/organisation/${org.id}/mitglieder/${m.id}`, { method: "PATCH", body: { rolle: "inhaber" } }), "Inhaberschaft übertragen.")}
+                  onClick={async () => (await bestaetigen({ titel: `Inhaberschaft an ${nameVon(m.nutzer)} übertragen?`, text: "Sie werden danach Admin und verlieren die Inhaberrechte.", bestaetigenText: "Inhaberschaft übertragen", gefahr: true })) && a.los(m.id, () => senden(`/api/portal/organisation/${org.id}/mitglieder/${m.id}`, { method: "PATCH", body: { rolle: "inhaber" } }), "Inhaberschaft übertragen.")}
                 >
                   <span className="hidden sm:inline">Übertragen</span>
                 </Button>
@@ -177,7 +178,7 @@ function Mitglieder({ org }) {
                   icon={UserMinus}
                   disabled={!!a.laeuft}
                   aria-label={`${nameVon(m.nutzer)} entfernen`}
-                  onClick={() => window.confirm(`${nameVon(m.nutzer)} aus dem Team entfernen?`) && a.los(m.id, () => senden(`/api/portal/organisation/${org.id}/mitglieder/${m.id}`, { method: "DELETE" }), "Mitglied entfernt.")}
+                  onClick={async () => (await bestaetigen({ titel: `${nameVon(m.nutzer)} aus dem Team entfernen?`, text: "Die Person verliert den Zugriff auf die Objekte der Organisation.", bestaetigenText: "Mitglied entfernen", gefahr: true })) && a.los(m.id, () => senden(`/api/portal/organisation/${org.id}/mitglieder/${m.id}`, { method: "DELETE" }), "Mitglied entfernt.")}
                 >
                   <span className="hidden sm:inline">Entfernen</span>
                 </Button>
@@ -303,12 +304,12 @@ function Stammdaten({ org }) {
       )}
       <div className="flex flex-wrap gap-2 border-t border-ink-100 pt-4">
         {org.rolle !== "inhaber" && eigenesMitglied && (
-          <Button type="button" size="sm" variant="ghost" icon={LogOut} disabled={!!a.laeuft} onClick={() => window.confirm("Organisation verlassen?") && a.los("austreten", () => senden(`/api/portal/organisation/${org.id}/mitglieder/${eigenesMitglied.id}`, { method: "DELETE" }), "Sie haben die Organisation verlassen.")}>
+          <Button type="button" size="sm" variant="ghost" icon={LogOut} disabled={!!a.laeuft} onClick={async () => (await bestaetigen({ titel: "Organisation verlassen?", text: "Sie verlieren den Zugriff auf die Objekte der Organisation.", details: [{ label: "Organisation", wert: org.name }], bestaetigenText: "Organisation verlassen", gefahr: true })) && a.los("austreten", () => senden(`/api/portal/organisation/${org.id}/mitglieder/${eigenesMitglied.id}`, { method: "DELETE" }), "Sie haben die Organisation verlassen.")}>
             Organisation verlassen
           </Button>
         )}
         {org.rolle === "inhaber" && (
-          <Button type="button" size="sm" variant="ghost" icon={Trash2} className="text-red-700 hover:bg-red-50" disabled={!!a.laeuft} onClick={() => window.confirm(`„${org.name}“ löschen? Objekte werden wieder persönlich, Mitgliedschaften enden.`) && a.los("loeschen", () => senden(`/api/portal/organisation/${org.id}`, { method: "DELETE" }), "Organisation gelöscht.")}>
+          <Button type="button" size="sm" variant="ghost" icon={Trash2} className="text-red-700 hover:bg-red-50" disabled={!!a.laeuft} onClick={async () => (await bestaetigen({ titel: `„${org.name}“ löschen?`, text: "Objekte werden wieder persönlich, Mitgliedschaften enden.", bestaetigenText: "Organisation löschen", gefahr: true })) && a.los("loeschen", () => senden(`/api/portal/organisation/${org.id}`, { method: "DELETE" }), "Organisation gelöscht.")}>
             Organisation löschen
           </Button>
         )}

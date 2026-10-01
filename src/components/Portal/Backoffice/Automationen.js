@@ -13,6 +13,7 @@ import { relativ } from "@/lib/plattform/format";
 import { PROZESSE } from "@/lib/plattform/prozesse";
 import { AKTIONEN, AUSLOESER, BEDINGUNG_FELDER, FRISTEN, OBJEKT_ARTEN, OPERATOREN, PRIORITAETEN } from "@/lib/plattform/automation";
 import { auswahlfeld, eingabe, ErfolgBox, Feld, FehlerBox, textbereich } from "@/components/Portal/felder";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 const name = (k) => [k?.vorname, k?.nachname].filter(Boolean).join(" ") || k?.email;
 const klein = cn(auswahlfeld, "h-10 text-[14px]");
@@ -357,7 +358,7 @@ export function RegelKarte({ regel, vorlagen, konten, darfSchreiben }) {
     }
   }
   async function loeschen() {
-    if (!window.confirm(`Regel „${regel.name}“ löschen? Das Ausführungsprotokoll bleibt erhalten.`)) return;
+    if (!(await bestaetigen({ titel: `Regel „${regel.name}“ löschen?`, text: "Die Regel wird entfernt, das Ausführungsprotokoll bleibt erhalten.", bestaetigenText: "Regel löschen", gefahr: true }))) return;
     try {
       await senden(`/api/admin/automationen/${regel.id}`, { method: "DELETE" });
       router.refresh();

@@ -16,6 +16,13 @@ export const flaeche = {
     untertypSchritt("Was möchten Sie einbringen?", "Die Auswahl bestimmt, welche Fachangaben wir abfragen – Agri-PV nach DIN SPEC 91434, Dächer mit Statik und Brandschutz."),
     profilSchritt({ text: "Name und Telefon – für die Besichtigung und Rückfragen zu Grundbuch und Bewirtschaftung. Bei Erbengemeinschaften oder Gesellschaften bitte die Person, die für alle spricht." }),
     {
+      id: "flaechencheck", titel: "Flächencheck-Ergebnis übernehmen", kurz: "Flächencheck", art: "aktion",
+      text: "Sie haben den kostenlosen Flächencheck schon genutzt? Dann liegt das Ergebnis als Anfrage in Ihrem Konto (zugeordnet über Ihre bestätigte E-Mail-Adresse) – im nächsten Schritt übernehmen Sie Größe, Region und Nutzung per Klick, statt sie neu einzugeben. Noch nicht? Der Check dauert zwei Minuten.",
+      links: [{ href: "/flaechencheck", label: "Flächencheck starten" }, { href: "/portal/anfragen", label: "Meine Anfragen" }],
+      pflicht: false, kriterium: { eines: [{ fakt: "flaechencheck" }, { merker: true }] }, bestaetigbar: true, bestaetigenText: "Nicht nötig",
+      nurFuer: ["eigentuemer", "landwirt"],
+    },
+    {
       id: "flaeche", titel: "Fläche bzw. Dach anlegen", kurz: "Fläche", art: "formular", formular: "flaeche",
       text: "Bezeichnung, Ort und ungefähre Größe genügen für den Anfang. Die Fläche wird als Entwurf gespeichert.",
       texte: {
@@ -34,13 +41,6 @@ export const flaeche = {
       },
       links: [{ href: "/portal/flaechen", label: "Meine Flächen", primaer: true }],
       pflicht: true, kriterium: { fakt: "flaechenEingereicht" },
-    },
-    {
-      id: "flaechencheck", titel: "Flächencheck-Ergebnis übernehmen", kurz: "Flächencheck", art: "aktion",
-      text: "Sie haben den kostenlosen Flächencheck schon genutzt? Dann liegt das Ergebnis als Anfrage in Ihrem Konto und wird mit Ihrer bestätigten E-Mail-Adresse automatisch zugeordnet. Noch nicht? Der Check dauert zwei Minuten.",
-      links: [{ href: "/flaechencheck", label: "Flächencheck starten" }, { href: "/portal/anfragen", label: "Meine Anfragen" }],
-      pflicht: false, kriterium: { eines: [{ fakt: "flaechencheck" }, { merker: true }] }, bestaetigbar: true, bestaetigenText: "Nicht nötig",
-      nurFuer: ["eigentuemer", "landwirt"],
     },
     kycSchritt({
       titel: "Eigentumsnachweis und Bankverbindung", text: "Bevor wir Pacht auszahlen oder einen Vertrag schließen, prüfen wir Identität, Eigentum und IBAN. Sie laden die Nachweise einmal im Portal hoch.",

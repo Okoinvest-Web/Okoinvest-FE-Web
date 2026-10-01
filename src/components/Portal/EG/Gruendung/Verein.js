@@ -16,6 +16,7 @@ import { BESCHLUSS_GREMIEN, BESCHLUSS_KATEGORIEN, BEITRAG_STATUS } from "@/lib/p
 import { GV_ARTEN, GV_FORMEN, MEHRHEITEN, STIMMEN } from "@/lib/plattform/mitglied/versammlung";
 import { DokumentGenerator } from "./Dokumente";
 import { Befunde, datumDe, eurDe } from "./teile";
+import { abfragen } from "@/components/ui/Rueckfrage";
 
 const dz = (s) => (s ? `${datumDe(s)}, ${String(s).slice(11, 16)} Uhr` : "–");
 
@@ -69,7 +70,7 @@ function Versammlung({ v, url, rechte }) {
           {v.status === "entwurf" && <Knopf variante="primary" onClick={() => los("gv_einladen", {}, "Einladung versendet.")} disabled={a.laeuft}>Einladen</Knopf>}
           {v.status === "eingeladen" && ["online", "hybrid", "schriftlich"].includes(v.form) && <Knopf onClick={() => los("gv_oeffnen", {}, "Online-Abstimmung geöffnet.")} disabled={a.laeuft}>Online-Abstimmung öffnen</Knopf>}
           {["eingeladen", "abstimmung"].includes(v.status) && <Knopf onClick={() => setZu(!zu)}>Abschließen …</Knopf>}
-          {!["abgeschlossen", "abgesagt"].includes(v.status) && <Knopf variante="gefahr" onClick={() => { const g = window.prompt("Grund der Absage?"); if (g) los("gv_absagen", { grund: g }, "Abgesagt."); }} disabled={a.laeuft}>Absagen</Knopf>}
+          {!["abgeschlossen", "abgesagt"].includes(v.status) && <Knopf variante="gefahr" onClick={async () => { const g = await abfragen({ titel: "Versammlung absagen?", text: "Die Versammlung kann danach nicht mehr stattfinden.", details: [{ label: "Versammlung", wert: v.titel }, { label: "Datum", wert: dz(v.datum) }], label: "Grund der Absage", pflicht: true, mehrzeilig: true, gefahr: true, bestaetigenText: "Versammlung absagen" }); if (g) los("gv_absagen", { grund: g }, "Abgesagt."); }} disabled={a.laeuft}>Absagen</Knopf>}
         </div>
       )}
       {zu && (
@@ -172,7 +173,7 @@ function Organe({ v, url }) {
             <td className={zelle}>{o.funktionLabel}{o.zeichnungsberechtigt && <span className="block text-[12px] text-ov-700">zeichnungsberechtigt</span>}</td>
             <td className={zelle}>{o.personName}{o.kontoId === null && v.rechte.organ && <span className="block text-[12px] text-ink-500">ohne Portalkonto</span>}</td>
             <td className={zelle}>{datumDe(o.von)} – {o.bis ? datumDe(o.bis) : "offen"}</td>
-            <td className={zelle}>{darf && o.wirksam && <Knopf onClick={() => { const b = window.prompt("Funktion beenden zum (JJJJ-MM-TT)?", v.heute); if (b) a.ausfuehren({ aktion: "organ_beenden", id: o.id, daten: { bis: b } }, "Funktion beendet."); }} disabled={a.laeuft} className="h-8 text-[12.5px]">Beenden</Knopf>}</td>
+            <td className={zelle}>{darf && o.wirksam && <Knopf onClick={async () => { const b = await abfragen({ titel: "Funktion beenden?", details: [{ label: "Funktion", wert: o.funktionLabel }, { label: "Person", wert: o.personName }], label: "Beenden zum", typ: "date", standard: v.heute, pflicht: true, bestaetigenText: "Funktion beenden" }); if (b) a.ausfuehren({ aktion: "organ_beenden", id: o.id, daten: { bis: b } }, "Funktion beendet."); }} disabled={a.laeuft} className="h-8 text-[12.5px]">Beenden</Knopf>}</td>
           </tr>
         ))}
       </Tabelle>
@@ -281,7 +282,7 @@ function Aufloesung({ v }) {
       {!au?.gestartetAm ? (
         <>
           <p className="text-[13.5px] leading-relaxed text-ink-600">Die Auflösung beginnt mit dem Beschluss der Mitglieder- bzw. Generalversammlung (Zwei-Drittel-Mehrheit). Die Checkliste führt durch Abmeldung aller Zählpunkte (nicht rückwirkend), Kündigung beim Netzbetreiber, Schlussabrechnung, Vermögensverwendung, Behördenanzeige, Finanzamt, ebUtilities und Aufbewahrung (Fachkonzept 2.7).</p>
-          {v.rechte.organe >= 2 && <Knopf variante="gefahr" disabled={laeuft} onClick={() => { const g = window.prompt("Auflösungsbeschluss (Datum, Gremium, Ergebnis)?"); if (g) los({ aktion: "starten", grund: g }); }}>Auflösung einleiten</Knopf>}
+          {v.rechte.organe >= 2 && <Knopf variante="gefahr" disabled={laeuft} onClick={async () => { const g = await abfragen({ titel: "Auflösung einleiten?", text: "Die Gemeinschaft geht in Auflösung, die Checkliste startet.", label: "Auflösungsbeschluss", hilfe: "Datum, Gremium und Ergebnis der Abstimmung", pflicht: true, mehrzeilig: true, gefahr: true, bestaetigenText: "Auflösung einleiten" }); if (g) los({ aktion: "starten", grund: g }); }}>Auflösung einleiten</Knopf>}
         </>
       ) : (
         <>

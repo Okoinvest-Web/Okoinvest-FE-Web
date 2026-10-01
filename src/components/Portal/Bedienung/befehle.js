@@ -13,6 +13,7 @@ import { Banknote, FileSpreadsheet, HandHeart, HardHat, Landmark, Milestone, Plu
 import { darfLesen, seitenBereich, unterrollen } from "@/lib/plattform/rechte"; // UI-Politur: Bottom-Navigation Backoffice-Unterrollen
 import { BookOpen, CalendarDays, Fingerprint, Link2, UsersRound } from "lucide-react"; // Querschnitt: weitere Navigationsziele
 import { Wrench } from "lucide-react"; // Betriebsführung Anlagen
+import { PanelLeft } from "lucide-react"; // T3: Seitenleiste ein-/ausklappen
 
 const hatRolle = (rollen, ...r) => r.some((x) => rollen.includes(x));
 
@@ -70,6 +71,7 @@ export function aktionen(rollen = []) {
     { id: "akt-nachricht", titel: "Nachricht an das Backoffice", href: "/portal/nachrichten", icon: MessagesSquare, stichworte: "schreiben frage kontakt" },
     { id: "akt-einstieg", titel: "Geführten Einstieg öffnen", href: "/portal/willkommen", icon: Compass, stichworte: "onboarding einrichtung tour" },
     { id: "akt-kuerzel", titel: "Tastenkürzel anzeigen", aktion: "kuerzel", icon: Keyboard, stichworte: "shortcuts tastatur hilfe", kuerzel: "?" },
+    { id: "akt-seitenleiste", titel: "Seitenleiste ein-/ausklappen", aktion: "seitenleiste", icon: PanelLeft, stichworte: "navigation menü leiste schmal breit sidebar", kuerzel: "[" }, // T3
     { id: "akt-abmelden", titel: "Abmelden", aktion: "abmelden", icon: LogOut, stichworte: "logout ausloggen" },
   ].filter(Boolean);
 }
@@ -87,6 +89,7 @@ export function kuerzelListe(rollen = []) {
       { tasten: ["Strg", "K"], text: "Befehlspalette öffnen (Mac: ⌘ K)" },
       { tasten: ["/"], text: "Suche öffnen" },
       { tasten: ["?"], text: "Diese Übersicht" },
+      { tasten: ["["], text: "Seitenleiste ein-/ausklappen (Desktop)" }, // T3
       neuZiel(rollen) && { tasten: ["n"], text: aktionen(rollen).find((a) => a.neu)?.titel || "Neu anlegen" },
       { tasten: ["Esc"], text: "Dialog oder Palette schließen" },
     ].filter(Boolean) },

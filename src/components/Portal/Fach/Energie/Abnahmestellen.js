@@ -14,6 +14,7 @@ import { senden } from "@/lib/plattform/client";
 import { LAENDER } from "@/lib/plattform/konstanten";
 import { MESSARTEN, NETZEBENEN_AT, PAR19, PREISSTRUKTUREN, SPANNUNGSEBENEN, maloPruefen, zaehlpunktFormatiert, zaehlpunktPruefen } from "@/lib/plattform/fach/energie";
 import { PruefHinweise } from "../DatenblattFormular";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 const LEER = { bezeichnung: "", land: "DE", plz: "", ort: "", maloId: "", meloId: "", zaehlpunkt: "", messart: "rlm", netzbetreiber: "", spannungsebene: "ms", netzebeneAt: "", jahresverbrauchKwh: "", spitzeKw: "", lieferant: "", vertragEnde: "", kuendigungsfristMonate: "3", preisstruktur: "", arbeitspreisCt: "", leistungspreisEurKwJahr: "", grundpreisEurMonat: "", netzentgeltCt: "", stromsteuerEntlastung: "", par19: "keine", eigenerzeugungKwp: "", bemerkung: "" };
 
@@ -165,7 +166,7 @@ export default function Abnahmestellen({ liste = [] }) {
   const [bearbeiten, setBearbeiten] = useState(liste.length ? null : "neu");
   const [ok, setOk] = useState("");
   async function loeschen(s) {
-    if (!window.confirm(`Abnahmestelle „${s.bezeichnung}“ löschen?`)) return;
+    if (!(await bestaetigen({ titel: `Abnahmestelle „${s.bezeichnung}“ löschen?`, text: "Die Abnahmestelle wird dauerhaft entfernt.", bestaetigenText: "Abnahmestelle löschen", gefahr: true }))) return;
     await senden("/api/portal/fach/energie/abnahmestellen", { method: "DELETE", body: { id: s.id } });
     router.refresh();
   }

@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, Factory, Leaf, PiggyBank, ShieldCheck, Sun, TrendingDown } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
-import { Auswahl, Gruppe, Kennzahl, Regler, Zahl } from "./bausteine";
+import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Zahl } from "./bausteine";
+import { useTeilbarerZustand } from "./kontext";
 import { Ansicht, ErgebnisKopf, Hinweis, MobilKurz, RechnerRahmen } from "./InvestTeile";
 import { BalkenJahre, DiagrammKarte, FARBEN, Linien } from "./ToolTeile";
 import { LASTPROFILE, STANDARD, STRUKTUREN, SZENARIEN, rechnePpa } from "@/lib/rechner/ppa";
@@ -20,6 +21,11 @@ export default function PpaRechner() {
   const [szenario, setSzenario] = useState("seit");
   const [ansicht, setAnsicht] = useState("kumuliert");
   const set = (k) => (v) => setE((a) => ({ ...a, [k]: v }));
+  useTeilbarerZustand(e, (neu) => setE((a) => ({ ...a, ...neu })), {
+    optionen: { profil: LASTPROFILE.map((p) => p.id), struktur: STRUKTUREN.map((s) => s.id) },
+    grenzen: { verbrauchMwh: [100, 50000], preisCt: [5, 25], ppaCt: [3, 12], strukturCt: [0.5, 4], anteil: [0.05, 1], laufzeit: [3, 20] },
+    pruefen: rechnePpa,
+  });
   const r = useMemo(() => rechnePpa(e), [e]);
   const aktiv = r.szenarien.find((s) => s.id === szenario);
   const h = r.heute;
@@ -103,20 +109,33 @@ export default function PpaRechner() {
           </p>
           <ErgebnisKopf titel="Ihr PPA im Vergleich" plakette={`${STRUKTUREN.find((s) => s.id === e.struktur).label} · ${e.laufzeit} Jahre`} />
 
-          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Kennzahl ton="navy" icon={PiggyBank} label="Ersparnis Jahr 1" zusatz="bei heutigem Preisniveau">
-              <span className={r.ersparnisJahr1 < 0 ? "text-sun-400" : undefined}>{tsd(r.ersparnisJahr1)}</span>
-            </Kennzahl>
-            <Kennzahl ton="gruen" icon={ShieldCheck} label="Preis abgesichert" zusatz="Anteil der Kostenschwankung">
-              <Zahl wert={r.absicherung * 100} suffix=" %" />
+          <Hauptzahl
+            className="mt-5"
+            icon={PiggyBank}
+            label="Ersparnis Jahr 1"
+            zusatz="bei heutigem Preisniveau"
+            rechts={
+              <div className="sm:text-right">
+                <p className="text-[12.5px] text-white/75">{e.laufzeit} Jahre, Markt seitwärts</p>
+                <p className="ov-kpi mt-0.5 text-white">
+                  <Zahl wert={r.szenarien[1].summe} format={tsd} />
+                </p>
+              </div>
+            }
+          >
+            <Zahl wert={r.ersparnisJahr1} format={tsd} delta="dunkel" einlauf className={r.ersparnisJahr1 < 0 ? "text-sun-300" : undefined} />
+          </Hauptzahl>
+          <Belege>
+            <Kennzahl ton="akzent" icon={ShieldCheck} label="Preis abgesichert" zusatz="Anteil der Kostenschwankung">
+              <Zahl wert={r.absicherung * 100} suffix=" %" delta="hell" deltaFormat={(d) => `${fmt(d)} %-Pkt.`} />
             </Kennzahl>
             <Kennzahl icon={TrendingDown} label="Lohnt bis Marktpreis" zusatz="Energiepreis, ab dem das PPA teurer ist">
-              {r.breakEvenCt != null ? <Zahl wert={r.breakEvenCt} stellen={1} suffix=" ct" /> : "–"}
+              {r.breakEvenCt != null ? <Zahl wert={r.breakEvenCt} stellen={1} suffix=" ct" delta="hell" /> : "–"}
             </Kennzahl>
             <Kennzahl icon={Leaf} label="CO₂ vermieden" zusatz="je Jahr, bei neuer Anlage">
-              <Zahl wert={r.co2T} suffix=" t" />
+              <Zahl wert={r.co2T} suffix=" t" delta="hell" />
             </Kennzahl>
-          </div>
+          </Belege>
 
           <div className="mt-5 overflow-hidden rounded-2xl ring-1 ring-ink-200/70">
             <table className="w-full text-[13.5px]">
@@ -137,7 +156,9 @@ export default function PpaRechner() {
                         {s.label} <span className="hidden font-normal text-ink-500 sm:inline">· {s.sub}</span>
                       </span>
                     </th>
-                    <td className={cn("ov-num px-4 py-3 text-right font-bold", s.summe < 0 ? "text-sun-500" : "text-ink-900")}>{tsd(s.summe)}</td>
+                    <td className={cn("ov-num px-4 py-3 text-right font-bold", s.summe < 0 ? "text-sun-700" : "text-ink-900")}>
+                      <Zahl wert={s.summe} format={tsd} />
+                    </td>
                     <td className="ov-num hidden px-4 py-3 text-right text-ink-600 sm:table-cell">{fmt(s.anteil * 100, 1)} %</td>
                   </tr>
                 ))}

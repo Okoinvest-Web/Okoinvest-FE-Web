@@ -21,6 +21,7 @@ import { statusLabel } from "@/lib/plattform/prozesse";
 import { Badge, Hinweis } from "@/components/Portal/ui";
 import { auswahlfeld, eingabe, textbereich, Feld, FehlerBox, ErfolgBox, Chip } from "@/components/Portal/felder";
 import Countdown from "./Countdown";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 const lokal = (iso) => {
   if (!iso) return "";
@@ -182,7 +183,7 @@ function EigeneGebote({ vf }) {
             </div>
             <Badge ton={GEBOT_STATUS[g.status]?.ton}>{GEBOT_STATUS[g.status]?.label || g.status}</Badge>
             {g.status === "abgegeben" && g.runde === vf.runde.nr && vf.runde.offen && (
-              <Button size="sm" variant="ghost" icon={Undo2} disabled={a.laeuft} onClick={() => confirm("Gebot wirklich zurückziehen?") && a.los(`/api/portal/bieter/gebote/${g.id}`, undefined, "Gebot zurückgezogen.", "DELETE")}>Zurückziehen</Button>
+              <Button size="sm" variant="ghost" icon={Undo2} disabled={a.laeuft} onClick={async () => (await bestaetigen({ titel: "Gebot zurückziehen?", text: "Das Gebot zählt danach nicht mehr in dieser Runde.", details: [{ label: "Gebot", wert: g.preisGesamt ? eur(g.preisGesamt) : "–" }, { label: "Runde", wert: `${g.runde} · Version ${g.version}` }], bestaetigenText: "Gebot zurückziehen", gefahr: true })) && a.los(`/api/portal/bieter/gebote/${g.id}`, undefined, "Gebot zurückgezogen.", "DELETE")}>Zurückziehen</Button>
             )}
           </li>
         ))}
@@ -235,7 +236,7 @@ function Matrix({ vf, rolle, mwp }) {
                   <td className="max-w-[180px] px-3 py-3 align-top"><span className="line-clamp-3">{g.zeitplan || "–"}</span></td>
                   <td className="px-3 py-3 align-top">
                     {zuschlagMoeglich && g.status === "abgegeben" && (
-                      <Button size="sm" variant="primary" icon={Trophy} disabled={a.laeuft} onClick={() => confirm(`Zuschlag an ${g.von?.pseudonym} (${g.preisGesamt ? eur(g.preisGesamt) : "–"})? Das Projekt wird reserviert, alle übrigen Bieter werden informiert.`) && a.los(`/api/admin/bieter/${vf.id}`, { aktion: "zuschlag", gebotId: g.id }, "Zuschlag erteilt – Projekt reserviert.")}>
+                      <Button size="sm" variant="primary" icon={Trophy} disabled={a.laeuft} onClick={async () => (await bestaetigen({ titel: `Zuschlag an ${g.von?.pseudonym} erteilen?`, text: "Das Projekt wird reserviert, alle übrigen Bieter werden informiert.", details: [{ label: "Bieter", wert: g.von?.pseudonym }, { label: "Gebot", wert: g.preisGesamt ? eur(g.preisGesamt) : "–" }], bestaetigenText: "Zuschlag erteilen", gefahr: true })) && a.los(`/api/admin/bieter/${vf.id}`, { aktion: "zuschlag", gebotId: g.id }, "Zuschlag erteilt – Projekt reserviert.")}>
                         Zuschlag
                       </Button>
                     )}
@@ -324,7 +325,7 @@ function Steuerung({ vf, projekt }) {
           </Feld>
           <Button size="sm" variant="secondary" disabled={a.laeuft} onClick={() => a.los(url, { aktion: "frist", frist: iso(frist) }, "Frist geändert – Teilnehmer benachrichtigt.")}>Frist setzen</Button>
           {laufend && <Button size="sm" variant="secondary" icon={Bell} disabled={a.laeuft} onClick={() => a.los(url, { aktion: "erinnern" })}>Erinnern</Button>}
-          {laufend && <Button size="sm" variant="secondary" icon={Square} disabled={a.laeuft} onClick={() => confirm("Runde jetzt beenden? Danach sind keine Gebote mehr möglich.") && a.los(url, { aktion: "beenden" }, "Runde beendet.")}>Runde beenden</Button>}
+          {laufend && <Button size="sm" variant="secondary" icon={Square} disabled={a.laeuft} onClick={async () => (await bestaetigen({ titel: "Runde jetzt beenden?", text: "Danach sind keine Gebote mehr möglich.", bestaetigenText: "Runde beenden", gefahr: true })) && a.los(url, { aktion: "beenden" }, "Runde beendet.")}>Runde beenden</Button>}
         </div>
       )}
       <div className="flex flex-wrap items-center gap-2">

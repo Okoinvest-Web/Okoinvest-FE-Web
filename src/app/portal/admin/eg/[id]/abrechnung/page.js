@@ -18,11 +18,21 @@ export default async function Seite({ params, searchParams }) {
   const d = await laden(() => b.abPerioden(n, id));
   const wahl = d.perioden.find((p) => p.id === sp.periode) || d.perioden.find((p) => !["abgeschlossen", "storniert"].includes(p.status)) || d.perioden[0] || null;
   const pd = wahl ? await laden(() => b.abPeriodeAktion(n, wahl.id, { aktion: "lesen" })) : null;
+  // Vorzeitraum gleicher Art für den Vorschau-Diff (nur lesen; fehlt er oder schlägt das Lesen fehl, entfällt der Vergleich)
+  const vorWahl = wahl && wahl.status !== "probe" && !wahl.probe ? d.perioden.filter((p) => p.id !== wahl.id && p.art === wahl.art && !p.probe && !["probe", "storniert", "offen"].includes(p.status) && String(p.bis) < String(wahl.von)).sort((x, y) => String(y.bis).localeCompare(String(x.bis)))[0] : null;
+  let vorher = null;
+  if (vorWahl) {
+    try {
+      vorher = await b.abPeriodeAktion(n, vorWahl.id, { aktion: "lesen" });
+    } catch {
+      vorher = null;
+    }
+  }
   return (
     <div className="space-y-6">
       <SeitenKopf eyebrow="Backoffice · Energiegemeinschaften" titel={`Abrechnung · ${d.gemeinschaft.name}`} text="Abgerechnet werden die Viertelstundenwerte des Netzbetreibers (Eigendeckung, eingebrachte Erzeugung). Jede Zahl ist bis zur Quelle nachvollziehbar; freigegeben wird nach dem Vier-Augen-Prinzip." />
       <EgReiter gemeinschaftId={id} aktiv="abrechnung" art="admin" />
-      <AbrechnungAnsicht d={d} pd={pd} basis={`/portal/admin/eg/${id}/abrechnung`} kontoId={n.id} />
+      <AbrechnungAnsicht d={d} pd={pd} basis={`/portal/admin/eg/${id}/abrechnung`} kontoId={n.id} vorher={vorher} />
     </div>
   );
 }

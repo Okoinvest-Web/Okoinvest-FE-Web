@@ -9,6 +9,7 @@ import { Feld, auswahlfeld, eingabe, textbereich } from "@/components/Portal/fel
 import { Badge } from "@/components/Portal/ui";
 import { Klappe, Knopf, Meldung, useAktion } from "@/components/Portal/Mitglied/teile";
 import { FristBadge, SchrittSymbol, datumDe } from "./teile";
+import { abfragen } from "@/components/ui/Rueckfrage";
 
 const FELD_LABEL = { zvrZahl: "ZVR-Zahl", firmenbuchnummer: "Firmenbuchnummer", iban: "IBAN", creditorId: "SEPA-Gläubiger-ID", steuernummer: "Steuernummer", uid: "UID-Nummer", marktpartnerId: "Marktpartner-ID", gemeinschaftsId: "Gemeinschafts-ID", edaAnbindung: "EDA-Anbindung (anwenderportal, email, kep)", statutenVersion: "Statuten-Version" };
 
@@ -185,7 +186,7 @@ export function AuftragAktionen({ auftrag: a, netzbetreiber = [], gemeinschaften
         {hat("schritte_aktualisieren") && <Knopf onClick={() => los("schritte_aktualisieren", {}, "Schritte an Modell, Rechtsform und Schwellen angepasst.")} disabled={akt.laeuft}>Schritte aktualisieren</Knopf>}
         {hat("mitglieder_informieren") && <Knopf onClick={() => los("mitglieder_informieren", {}, "Mitglieder informiert.")} disabled={akt.laeuft}>Mitglieder informieren</Knopf>}
         {hat("uebergeben") && <Knopf variante="primary" onClick={() => los("uebergeben", {}, "Übergeben.")} disabled={akt.laeuft}>Übergabe abschließen</Knopf>}
-        {hat("abbrechen") && <Knopf variante="gefahr" onClick={() => { const g = window.prompt("Grund für den Abbruch?"); if (g) los("abbrechen", { grund: g }, "Auftrag abgebrochen."); }} disabled={akt.laeuft}>Abbrechen</Knopf>}
+        {hat("abbrechen") && <Knopf variante="gefahr" onClick={async () => { const g = await abfragen({ titel: "Gründungsauftrag abbrechen?", text: "Der Auftrag wird beendet, der Grund wird im Verlauf protokolliert.", label: "Grund für den Abbruch", pflicht: true, mehrzeilig: true, gefahr: true, bestaetigenText: "Auftrag abbrechen" }); if (g) los("abbrechen", { grund: g }, "Auftrag abgebrochen."); }} disabled={akt.laeuft}>Abbrechen</Knopf>}
       </div>
       <Meldung fehler={akt.fehler} ok={akt.ok} />
     </div>

@@ -4,7 +4,8 @@ import { AlertTriangle, BatteryCharging, CalendarClock, Cable, Coins, Lightbulb,
 import { useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
-import { Auswahl, Gruppe, Kennzahl, Regler, Schalter } from "./bausteine";
+import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Schalter, Zahl } from "./bausteine";
+import { useTeilbarerZustand } from "./kontext";
 import { ErgebnisKopf, MobilKurz, RechnerRahmen } from "./InvestTeile";
 import { AmpelMarke, FARBEN } from "./ToolTeile";
 import { EBENEN, KAPAZITAETEN, LAENDER, STANDARD, rechneNetzanschluss } from "@/lib/rechner/netzanschluss";
@@ -21,6 +22,11 @@ const AMPEL_TEXT = {
 export default function NetzanschlussRechner() {
   const [e, setE] = useState(STANDARD);
   const set = (k) => (v) => setE((a) => ({ ...a, [k]: v }));
+  useTeilbarerZustand(e, (neu) => setE((a) => ({ ...a, ...neu })), {
+    optionen: { land: LAENDER.map((x) => x.id), ebene: EBENEN.map((x) => x.id), kapazitaet: KAPAZITAETEN.map((x) => x.id) },
+    grenzen: { mwp: [1, 150], anschlussQuote: [0.5, 1], km: [0.2, 20], speicherMw: [0, 150] },
+    pruefen: rechneNetzanschluss,
+  });
   const r = useMemo(() => rechneNetzanschluss(e), [e]);
   const u = r.ueberbauung;
 
@@ -73,25 +79,36 @@ export default function NetzanschlussRechner() {
           <p className="sr-only" aria-live="polite">{`Netzanschluss grob ${geld(r.spanne.min)} bis ${geld(r.spanne.max)}, Zeitrahmen ${r.monate[0]} bis ${r.monate[1]} Monate.`}</p>
           <ErgebnisKopf titel="Ihr Netzanschluss" plakette={EBENE_LABEL[r.ebene]} />
 
-          <div className={cn("mt-5 flex flex-col gap-2 rounded-3xl p-5 ring-1 sm:flex-row sm:items-center sm:justify-between", r.ampel === "gut" ? "bg-ov-50 ring-ov-200" : r.ampel === "kritisch" ? "bg-ink-900 ring-ink-900" : "bg-sun-300/25 ring-sun-400/50")}>
-            <p className={cn("text-[14.5px] leading-relaxed", r.ampel === "kritisch" ? "text-white/85" : "text-ink-800")}>{AMPEL_TEXT[r.ampel]}</p>
-            <AmpelMarke ampel={r.ampel} className={r.ampel === "kritisch" ? "self-start bg-white/10 ring-white/20" : "self-start"} />
-          </div>
+          <Hauptzahl
+            className="mt-5"
+            icon={Coins}
+            label="Kosten des Netzanschlusses (Mitte)"
+            zusatz={`Spanne ${geld(r.spanne.min)} – ${geld(r.spanne.max)}`}
+            rechts={<AmpelMarke ampel={r.ampel} className={r.ampel === "kritisch" ? "bg-white/10 ring-white/25" : undefined} />}
+          >
+            <Zahl wert={r.summe} format={geld} delta="dunkel" einlauf />
+          </Hauptzahl>
+          <p
+            className={cn(
+              "animate-ov-einblenden mt-3 rounded-2xl px-4 py-3 text-[14px] leading-relaxed text-ink-800 ring-1",
+              r.ampel === "gut" ? "bg-success-50 ring-success-200" : r.ampel === "kritisch" ? "bg-ink-50 ring-ink-300" : "bg-warn-50 ring-warn-200"
+            )}
+            key={r.ampel}
+          >
+            {AMPEL_TEXT[r.ampel]}
+          </p>
 
-          <div className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Kennzahl ton="navy" icon={Coins} label="Kosten (Mitte)" zusatz={`Spanne ${geld(r.spanne.min)} – ${geld(r.spanne.max)}`}>
-              {geld(r.summe)}
-            </Kennzahl>
-            <Kennzahl ton="gruen" icon={Percent} label="je kWp" zusatz={`${fmt(r.anteil * 100)} % der Anlagenkosten`}>
-              {fmt(r.proKwp)} €
+          <Belege>
+            <Kennzahl ton="akzent" icon={Percent} label="je kWp" zusatz={`${fmt(r.anteil * 100)} % der Anlagenkosten`}>
+              <Zahl wert={r.proKwp} suffix=" €" delta="hell" />
             </Kennzahl>
             <Kennzahl icon={CalendarClock} label="Zeitrahmen" zusatz="ab vollständigem Begehren">
               {r.monate[0]}–{r.monate[1]} Mon.
             </Kennzahl>
             <Kennzahl icon={Network} label="Anschluss" zusatz={`${r.kabelSysteme} × 20-kV-System`}>
-              {fmt(r.anschlussMw, 1)} MW
+              <Zahl wert={r.anschlussMw} stellen={1} suffix=" MW" />
             </Kennzahl>
-          </div>
+          </Belege>
 
           {e.ebene !== "auto" && e.ebene !== r.vorschlag && (
             <p className="mt-3 text-[13px] text-ink-500">Für {fmt(r.anschlussMw, 1)} MW wäre typischerweise „{EBENE_LABEL[r.vorschlag]}“ zu erwarten.</p>
@@ -110,7 +127,7 @@ export default function NetzanschlussRechner() {
                   <span className="ov-num shrink-0 font-semibold text-ink-900">{geld(p.eur)}</span>
                 </div>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-100">
-                  <div className="h-full rounded-full bg-navy-500 motion-safe:transition-[width] motion-safe:duration-500" style={{ width: `${(p.eur / r.summe) * 100}%` }} />
+                  <div className="ov-fortschritt h-full w-full rounded-full bg-navy-500" style={{ transform: `scaleX(${r.summe > 0 ? Math.min(1, p.eur / r.summe) : 0})` }} />
                 </div>
               </li>
             ))}
@@ -140,7 +157,7 @@ export default function NetzanschlussRechner() {
                 <Kennzahl icon={AlertTriangle} label="Ertragsverlust" zusatz={`${fmt(u.verlustKwh / 1000)} MWh · ${fmtEur(u.verlustEurJahr)} je Jahr`}>
                   {fmt(u.verlust * 100, 1)} %
                 </Kennzahl>
-                <Kennzahl ton={u.lohnt ? "gruen" : "hell"} icon={Percent} label="Barwert Verlust 20 J." zusatz={u.lohnt ? "kleiner als die Ersparnis" : "größer als die Ersparnis"}>
+                <Kennzahl ton={u.lohnt ? "akzent" : "hell"} icon={Percent} label="Barwert Verlust 20 J." zusatz={u.lohnt ? "kleiner als die Ersparnis" : "größer als die Ersparnis"}>
                   {geld(u.verlustBarwert)}
                 </Kennzahl>
               </div>
@@ -156,7 +173,7 @@ export default function NetzanschlussRechner() {
           <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-2">
             <section aria-labelledby="na-risiken" className="rounded-3xl ring-1 ring-ink-200/70 p-5 md:p-6">
               <h3 id="na-risiken" className="flex items-center gap-2.5 font-display text-[19px] font-extrabold tracking-tight text-ink-900">
-                <AlertTriangle aria-hidden="true" className="h-5 w-5 text-sun-500" /> Risiken
+                <AlertTriangle aria-hidden="true" className="h-5 w-5 text-warn-600" /> Risiken
               </h3>
               <ul className="mt-4 space-y-3">
                 {r.risiken.map((t) => (

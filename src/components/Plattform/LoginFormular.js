@@ -2,13 +2,18 @@
 
 // Anmeldung: Passwort oder passwortlos per E-Mail-Link; bei aktiver Zwei-Faktor-Anmeldung folgt der Code-Schritt.
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, KeyRound, Loader2, LogIn, MailCheck, Wand2 } from "lucide-react";
+import { KeyRound, LogIn, MailCheck, Wand2 } from "lucide-react";
 import { senden, sicheresZiel } from "@/lib/plattform/client";
-import { eingabe, Feld, FehlerBox, ErfolgBox } from "@/components/Portal/felder";
 import { cn } from "@/components/ui/cn";
+import { mitUebergang } from "@/components/ui/motion";
+import Textfeld from "@/components/formular/Textfeld";
+import PasswortFeld from "@/components/formular/PasswortFeld";
+import useFormular, { regel } from "@/components/formular/useFormular";
+import { AbsendeKnopf, useAbsenden } from "@/components/formular/Absenden";
+import { ErfolgsAnsicht, FormErfolg, FormFehler } from "@/components/formular/Meldungen";
 import ZweiFaktorSchritt from "./ZweiFaktorSchritt";
 
 const HINWEISE = {
@@ -19,8 +24,18 @@ const HINWEISE = {
   "zwei-faktor-abgelaufen": { ton: "fehler", text: "Die Anmeldung ist abgelaufen. Bitte melden Sie sich erneut an." },
 };
 
-const knopf =
-  "inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold text-white shadow-[0_8px_24px_-8px_rgba(102,153,51,0.65)] transition-colors hover:bg-ov-700 disabled:opacity-60";
+const nachricht = (e) => e?.message || "Die Anmeldung hat nicht geklappt. Bitte versuchen Sie es erneut.";
+
+const SCHEMA_PASSWORT = {
+  email: [regel.pflicht("Bitte geben Sie Ihre E-Mail-Adresse an, z. B. name@firma.de."), regel.email()],
+  passwort: [regel.pflicht("Bitte geben Sie Ihr Passwort ein.")],
+};
+const SCHEMA_LINK = { email: SCHEMA_PASSWORT.email };
+
+const MODI = [
+  { id: "passwort", label: "Passwort", icon: KeyRound },
+  { id: "link", label: "E-Mail-Link", icon: Wand2 },
+];
 
 /** Nach erfolgreicher Anmeldung weiterleiten */
 export function weiterNachLogin(router, weiter, nutzer) {
@@ -33,43 +48,42 @@ export default function LoginFormular({ weiter, hinweis, demoKonten = [], demo =
   const router = useRouter();
   const id = useId();
   const [modus, setModus] = useState("passwort"); // passwort | link | link-gesendet | zwei-faktor
-  const [email, setEmail] = useState("");
-  const [passwort, setPasswort] = useState("");
-  const [zeigen, setZeigen] = useState(false);
-  const [laeuft, setLaeuft] = useState(false);
-  const [fehler, setFehler] = useState("");
   const [meldung, setMeldung] = useState(HINWEISE[hinweis] || null);
+  const pw = useFormular({ email: "", passwort: "" }, SCHEMA_PASSWORT);
+  const ln = useFormular({ email: "" }, SCHEMA_LINK);
+  const anmeldung = useAbsenden({ uebersetzen: nachricht });
+  const linkSenden = useAbsenden({ uebersetzen: nachricht });
+  const tabs = useRef([]);
 
   async function anmelden(e) {
     e.preventDefault();
-    setLaeuft(true);
-    setFehler("");
-    try {
-      const r = await senden("/api/auth/login", { body: { email, passwort } });
-      if (r.zweiFaktor) {
-        setModus("zwei-faktor");
-        setLaeuft(false);
-        return;
+    if (anmeldung.status !== "bereit" || !pw.pruefeAlles()) return;
+    setMeldung(null);
+    let zweiterFaktor = false;
+    await anmeldung.los(
+      async () => {
+        const r = await senden("/api/auth/login", { body: { email: pw.werte.email, passwort: pw.werte.passwort } });
+        if (r.zweiFaktor) zweiterFaktor = true;
+        return r;
+      },
+      {
+        haltezeit: 650,
+        zuruecksetzen: false,
+        danach: (r) => {
+          if (zweiterFaktor) return mitUebergang(() => setModus("zwei-faktor"));
+          weiterNachLogin(router, weiter, r.nutzer);
+        },
       }
-      weiterNachLogin(router, weiter, r.nutzer);
-    } catch (err) {
-      setFehler(err.message);
-      setLaeuft(false);
-    }
+    );
   }
 
   async function linkAnfordern(e) {
     e.preventDefault();
-    setLaeuft(true);
-    setFehler("");
-    try {
-      await senden("/api/auth/magic-link", { body: { email } });
-      setModus("link-gesendet");
-    } catch (err) {
-      setFehler(err.message);
-    } finally {
-      setLaeuft(false);
-    }
+    if (linkSenden.status !== "bereit" || !ln.pruefeAlles()) return;
+    await linkSenden.los(() => senden("/api/auth/magic-link", { body: { email: ln.werte.email } }), {
+      haltezeit: 500,
+      danach: () => mitUebergang(() => setModus("link-gesendet")),
+    });
   }
 
   const registrieren = `/registrieren${weiter ? `?weiter=${encodeURIComponent(weiter)}` : ""}`;
@@ -79,9 +93,11 @@ export default function LoginFormular({ weiter, hinweis, demoKonten = [], demo =
       <ZweiFaktorSchritt
         onErfolg={(r) => weiterNachLogin(router, weiter, r.nutzer)}
         onAbbrechen={(text) => {
-          setModus("passwort");
-          setPasswort("");
-          setMeldung(text ? { ton: "fehler", text } : null);
+          mitUebergang(() => {
+            setModus("passwort");
+            pw.setzeAlle({ passwort: "" });
+            setMeldung(text ? { ton: "fehler", text } : null);
+          });
         }}
       />
     );
@@ -89,81 +105,107 @@ export default function LoginFormular({ weiter, hinweis, demoKonten = [], demo =
 
   if (modus === "link-gesendet") {
     return (
-      <div role="status" className="rounded-2xl bg-ov-50 p-6 ring-1 ring-ov-200">
-        <MailCheck aria-hidden="true" className="h-8 w-8 text-ov-600" />
-        <p className="mt-3 font-display text-[19px] font-bold text-ink-900">Bitte prüfen Sie Ihr Postfach</p>
-        <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-700">
-          Wenn ein Konto mit {email || "dieser Adresse"} besteht, haben wir Ihnen einen Anmelde-Link gesendet. Er ist 15 Minuten gültig und funktioniert nur einmal.
-        </p>
+      <ErfolgsAnsicht
+        titel="Bitte prüfen Sie Ihr Postfach"
+        text={`Wenn ein Konto mit ${ln.werte.email || "dieser Adresse"} besteht, haben wir Ihnen einen Anmelde-Link gesendet. Er ist 15 Minuten gültig und funktioniert nur einmal.`}
+        icon={
+          <span aria-hidden="true" className="ov-erfolg flex h-14 w-14 items-center justify-center rounded-2xl bg-ov-50 text-ov-600 ring-1 ring-ov-200">
+            <MailCheck className="h-7 w-7" />
+          </span>
+        }
+      >
         {demo && <p className="mt-3 text-[13px] text-ink-600">Demo-Modus: Es wird keine E-Mail versendet. Der Link steht im Server-Log und im Backoffice unter „E-Mail-Postausgang“.</p>}
-        <button type="button" onClick={() => setModus("passwort")} className="mt-4 text-[14px] font-semibold text-ov-700 hover:text-ov-800">Zurück zur Anmeldung mit Passwort</button>
-      </div>
+        <button type="button" onClick={() => mitUebergang(() => setModus("passwort"))} className="mt-5 inline-flex h-10 items-center text-[14px] font-semibold text-ov-700 underline-offset-4 hover:text-ov-800 hover:underline">
+          Zurück zur Anmeldung mit Passwort
+        </button>
+      </ErfolgsAnsicht>
     );
   }
 
-  const tab = (m, label, Icon) => (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={modus === m}
-      aria-controls={`${id}-panel`}
-      onClick={() => {
-        setModus(m);
-        setFehler("");
-      }}
-      className={cn("flex h-10 flex-1 items-center justify-center gap-2 rounded-full text-[14px] font-semibold transition-colors", modus === m ? "bg-white text-ink-900 shadow-sm ring-1 ring-ink-200" : "text-ink-600 hover:text-ink-900")}
-    >
-      <Icon aria-hidden="true" className="h-4 w-4" /> {label}
-    </button>
-  );
+  /** WAI-ARIA-Tabs: Pfeiltasten, Pos1/Ende, automatische Aktivierung */
+  const wechsel = (m) => {
+    if (m === modus) return;
+    setModus(m);
+    // E-Mail mitnehmen, damit nichts doppelt getippt wird
+    if (m === "link" && pw.werte.email && !ln.werte.email) ln.setzeAlle({ email: pw.werte.email });
+    if (m === "passwort" && ln.werte.email && !pw.werte.email) pw.setzeAlle({ email: ln.werte.email });
+    anmeldung.setFehler("");
+    linkSenden.setFehler("");
+  };
+  const tabTaste = (e, i) => {
+    const n = MODI.length;
+    const ziel = e.key === "ArrowRight" ? (i + 1) % n : e.key === "ArrowLeft" ? (i - 1 + n) % n : e.key === "Home" ? 0 : e.key === "End" ? n - 1 : -1;
+    if (ziel < 0) return;
+    e.preventDefault();
+    wechsel(MODI[ziel].id);
+    tabs.current[ziel]?.focus();
+  };
 
   return (
     <div className="space-y-6">
-      {meldung && (meldung.ton === "ok" ? <ErfolgBox>{meldung.text}</ErfolgBox> : <FehlerBox>{meldung.text}</FehlerBox>)}
-      <div role="tablist" aria-label="Anmeldeweg" className="flex gap-1 rounded-full bg-sand-100 p-1">
-        {tab("passwort", "Passwort", KeyRound)}
-        {tab("link", "E-Mail-Link", Wand2)}
-      </div>
-      <div id={`${id}-panel`} role="tabpanel">
-        {modus === "passwort" ? (
-          <form onSubmit={anmelden} className="space-y-4">
-            <Feld id={`${id}-e`} label="E-Mail-Adresse">
-              <input id={`${id}-e`} type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} className={eingabe} />
-            </Feld>
-            <Feld id={`${id}-p`} label="Passwort">
-              <div className="relative">
-                <input id={`${id}-p`} type={zeigen ? "text" : "password"} autoComplete="current-password" required value={passwort} onChange={(e) => setPasswort(e.target.value)} className={cn(eingabe, "pr-12")} />
-                <button type="button" onClick={() => setZeigen((z) => !z)} className="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-lg text-ink-500 hover:bg-ink-100 hover:text-ink-800" aria-label={zeigen ? "Passwort verbergen" : "Passwort anzeigen"} aria-pressed={zeigen}>
-                  {zeigen ? <EyeOff aria-hidden="true" className="h-4 w-4" /> : <Eye aria-hidden="true" className="h-4 w-4" />}
-                </button>
-              </div>
-            </Feld>
-            <div className="flex justify-end">
-              <Link href="/passwort-vergessen" className="text-[13.5px] font-semibold text-ov-700 hover:text-ov-800">Passwort vergessen?</Link>
-            </div>
-            <FehlerBox>{fehler}</FehlerBox>
-            <button type="submit" disabled={laeuft} className={knopf}>
-              {laeuft ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <LogIn aria-hidden="true" className="h-4 w-4" />}
-              {laeuft ? "Anmeldung läuft …" : "Anmelden"}
+      {meldung && (meldung.ton === "ok" ? <FormErfolg>{meldung.text}</FormErfolg> : <FormFehler>{meldung.text}</FormFehler>)}
+      <div role="tablist" aria-label="Anmeldeweg" className="relative grid grid-cols-2 rounded-full bg-sand-100 p-1 ring-1 ring-inset ring-sand-200">
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-e2 ring-1 ring-ink-200/70 transition-transform duration-300 ease-ov-out"
+          style={{ transform: `translateX(${modus === "link" ? "100%" : "0"})` }}
+        />
+        {MODI.map((m, i) => {
+          const Icon = m.icon;
+          const aktiv = modus === m.id;
+          return (
+            <button
+              key={m.id}
+              ref={(el) => {
+                tabs.current[i] = el;
+              }}
+              type="button"
+              role="tab"
+              id={`${id}-tab-${m.id}`}
+              aria-selected={aktiv}
+              aria-controls={`${id}-panel`}
+              tabIndex={aktiv ? 0 : -1}
+              onClick={() => wechsel(m.id)}
+              onKeyDown={(e) => tabTaste(e, i)}
+              className={cn("relative z-10 flex h-10 items-center justify-center gap-2 rounded-full text-[14px] font-semibold transition-colors duration-200", aktiv ? "text-ink-900" : "text-ink-600 hover:text-ink-900")}
+            >
+              <Icon aria-hidden="true" className={cn("h-4 w-4", aktiv && "text-ov-600")} /> {m.label}
             </button>
+          );
+        })}
+      </div>
+      <div id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-tab-${modus}`}>
+        {modus === "passwort" ? (
+          <form key="passwort" ref={pw.formRef} onSubmit={anmelden} noValidate className="ov-step-zurueck space-y-5">
+            <Textfeld id={`${id}-e`} label="E-Mail-Adresse" type="email" inputMode="email" autoComplete="username" autoCapitalize="none" spellCheck={false} pflicht {...pw.feld("email")} />
+            <PasswortFeld
+              id={`${id}-p`}
+              label="Passwort"
+              pflicht
+              autoComplete="current-password"
+              zusatz={<Link href="/passwort-vergessen" className="font-semibold text-ov-700 underline-offset-4 hover:text-ov-800 hover:underline">Passwort vergessen?</Link>}
+              {...pw.feld("passwort")}
+              gueltig={false}
+            />
+            <FormFehler>{anmeldung.fehler}</FormFehler>
+            <AbsendeKnopf status={anmeldung.status} icon={LogIn} block laedtText="Anmeldung läuft …" erfolgText="Angemeldet">
+              Anmelden
+            </AbsendeKnopf>
           </form>
         ) : (
-          <form onSubmit={linkAnfordern} className="space-y-4">
-            <p className="text-[14px] leading-relaxed text-ink-600">Ohne Passwort: Wir senden Ihnen einen einmaligen Anmelde-Link (15 Minuten gültig). Mit aktiver Zwei-Faktor-Anmeldung fragen wir danach zusätzlich Ihren Code ab.</p>
-            <Feld id={`${id}-m`} label="E-Mail-Adresse">
-              <input id={`${id}-m`} type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} className={eingabe} />
-            </Feld>
-            <FehlerBox>{fehler}</FehlerBox>
-            <button type="submit" disabled={laeuft} className={knopf}>
-              {laeuft ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Wand2 aria-hidden="true" className="h-4 w-4" />}
+          <form key="link" ref={ln.formRef} onSubmit={linkAnfordern} noValidate className="ov-step-vor space-y-5">
+            <p className="text-[14.5px] leading-relaxed text-ink-600">Ohne Passwort: Wir senden Ihnen einen einmaligen Anmelde-Link (15 Minuten gültig). Mit aktiver Zwei-Faktor-Anmeldung fragen wir danach zusätzlich Ihren Code ab.</p>
+            <Textfeld id={`${id}-m`} label="E-Mail-Adresse" type="email" inputMode="email" autoComplete="username" autoCapitalize="none" spellCheck={false} pflicht {...ln.feld("email")} />
+            <FormFehler>{linkSenden.fehler}</FormFehler>
+            <AbsendeKnopf status={linkSenden.status} icon={Wand2} block laedtText="Link wird gesendet …" erfolgText="Link gesendet">
               Anmelde-Link senden
-            </button>
+            </AbsendeKnopf>
           </form>
         )}
       </div>
       <p className="text-center text-[14.5px] text-ink-600">
         Noch kein Konto?{" "}
-        <Link href={registrieren} className="font-semibold text-ov-700 hover:text-ov-800">Kostenlos registrieren</Link>
+        <Link href={registrieren} className="font-semibold text-ov-700 underline-offset-4 hover:text-ov-800 hover:underline">Kostenlos registrieren</Link>
       </p>
 
       {demoKonten.length > 0 && (
@@ -180,8 +222,7 @@ export default function LoginFormular({ weiter, hinweis, demoKonten = [], demo =
                 type="button"
                 onClick={() => {
                   setModus("passwort");
-                  setEmail(k.email);
-                  setPasswort(k.passwort);
+                  pw.setzeAlle({ email: k.email, passwort: k.passwort });
                 }}
                 className="rounded-full bg-white px-3 py-1.5 text-[12.5px] font-semibold text-ink-700 ring-1 ring-inset ring-ink-200 hover:ring-ov-400"
               >

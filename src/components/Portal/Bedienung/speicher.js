@@ -26,6 +26,12 @@ export const KUERZEL_AUS = "oi-kuerzel-aus";
 export const EREIGNIS_PALETTE = "oi:palette";
 export const EREIGNIS_KUERZEL = "oi:kuerzel";
 export const EREIGNIS_KUERZEL_EINSTELLUNG = "oi:kuerzel-einstellung";
+export const EREIGNIS_SEITENLEISTE = "oi:seitenleiste"; // Seitenleiste ein-/ausklappen (Kürzel „[“, Befehlspalette)
+
+/** Seitenleiste des Portals ein-/ausklappen (Desktop) */
+export function seitenleisteUmschalten() {
+  window.dispatchEvent(new CustomEvent(EREIGNIS_SEITENLEISTE));
+}
 
 /** Befehlspalette von überall öffnen (z. B. Suchknopf in der Kopfzeile) */
 export function paletteOeffnen() {

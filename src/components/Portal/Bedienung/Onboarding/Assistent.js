@@ -12,7 +12,8 @@ import { ArrowLeft, ArrowRight, Check, Clock, Compass, ExternalLink, RefreshCw }
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { senden } from "@/lib/plattform/client";
-import { FehlerBox } from "@/components/Portal/felder";
+import { FormFehler } from "@/components/formular/Meldungen";
+import { useSchrittRichtung } from "@/components/formular/Schritte";
 import BegriffPopover from "../BegriffPopover";
 import { fehlerText } from "../pruefung";
 import { BenachrichtigungenFormular, FlaecheFormular, ProfilFormular, SuchprofilFormular, TicketFormular, UntertypWahl } from "./Formulare";
@@ -39,6 +40,8 @@ export default function Assistent({ nutzer: nutzerStart, start, pfade, startSchr
   const index = Math.max(0, pfad.schritte.findIndex((s) => s.id === aktivId));
   const schritt = pfad.schritte[index] || pfad.schritte[0];
   const pflichtOffen = pfad.schritte.filter((s) => s.pflicht && !s.erledigt);
+  // Richtung des Schrittwechsels für die Einblendung (vor = von rechts, zurück = von links)
+  const richtung = useSchrittRichtung(abschlussOffen ? pfad.schritte.length : index);
 
   useEffect(() => {
     if (ersterRender.current) {
@@ -128,8 +131,8 @@ export default function Assistent({ nutzer: nutzerStart, start, pfade, startSchr
           <span>{pfad.erledigt} von {pfad.gesamt} erledigt</span>
           <span>{pflichtOffen.length ? `${pflichtOffen.length} Pflicht${pflichtOffen.length === 1 ? "schritt" : "schritte"} offen` : "Alle Pflichtschritte erledigt"}</span>
         </div>
-        <div className="mt-1.5 h-2 rounded-full bg-ink-100" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pfad.quote} aria-label="Fortschritt des Einstiegs">
-          <div className="h-2 rounded-full bg-ov-500 transition-[width] duration-500" style={{ width: `${Math.max(4, pfad.quote)}%` }} />
+        <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-ink-100" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pfad.quote} aria-valuetext={`${pfad.erledigt} von ${pfad.gesamt} Schritten erledigt`} aria-label="Fortschritt des Einstiegs">
+          <div className="ov-fortschritt h-2 rounded-full bg-ov-500" style={{ transform: `scaleX(${Math.max(4, pfad.quote) / 100})` }} />
         </div>
       </div>
 
@@ -143,7 +146,7 @@ export default function Assistent({ nutzer: nutzerStart, start, pfade, startSchr
                   <button type="button" onClick={() => gehe(s.id)} aria-current={aktiv ? "step" : undefined}
                     className={cn("flex w-full items-center gap-2 rounded-2xl px-2.5 py-1.5 text-left text-[13px] ring-1 ring-inset transition-colors lg:gap-2.5 lg:px-3 lg:py-2 lg:text-[13.5px]", aktiv ? "bg-white font-semibold text-ink-900 ring-ov-400" : "bg-white/60 text-ink-700 ring-ink-200/70 hover:ring-ov-300")}>
                     <span className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold", s.erledigt ? "bg-ov-500 text-white" : s.spaeter ? "bg-sand-100 text-ink-700 ring-1 ring-ink-300" : aktiv ? "bg-navy-900 text-white" : "bg-ink-100 text-ink-500")}>
-                      {s.erledigt ? <Check aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={3} /> : s.spaeter ? <Clock aria-hidden="true" className="h-3.5 w-3.5" /> : i + 1}
+                      {s.erledigt ? <Check aria-hidden="true" className="ov-erfolg h-3.5 w-3.5" strokeWidth={3} /> : s.spaeter ? <Clock aria-hidden="true" className="h-3.5 w-3.5" /> : i + 1}
                     </span>
                     <span className="min-w-0 whitespace-nowrap lg:whitespace-normal">
                       {s.kurz}
@@ -165,7 +168,8 @@ export default function Assistent({ nutzer: nutzerStart, start, pfade, startSchr
           <p className="mt-2 hidden text-[12px] text-ink-500 lg:block"><span className="text-ov-700">*</span> Pflicht für ein arbeitsfähiges Konto</p>
         </nav>
 
-        <section aria-labelledby="einstieg-titel" className="min-w-0 rounded-3xl bg-white p-5 ring-1 ring-ink-200/70 sm:p-8">
+        <section aria-labelledby="einstieg-titel" className="min-w-0 overflow-hidden rounded-3xl bg-white p-5 shadow-e1 ring-1 ring-ink-200/70 sm:p-8">
+          <div key={abschlussOffen ? "abschluss" : schritt.id} className={richtung === "zurueck" ? "ov-step-zurueck" : "ov-step-vor"}>
           {abschlussOffen ? (
             <Abschluss pfad={pfad} kopfRef={kopfRef} pflichtOffen={pflichtOffen} gehe={gehe} laeuft={laeuft} fehler={fehler}
               abschliessen={async () => {
@@ -229,7 +233,7 @@ export default function Assistent({ nutzer: nutzerStart, start, pfade, startSchr
                 </p>
               )}
 
-              <div className="mt-4"><FehlerBox>{fehler}</FehlerBox></div>
+              <div className="mt-4"><FormFehler>{fehler}</FormFehler></div>
 
               <div className="mt-8 flex flex-col-reverse gap-3 border-t border-ink-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap gap-2">
@@ -259,6 +263,7 @@ export default function Assistent({ nutzer: nutzerStart, start, pfade, startSchr
               </div>
             </div>
           )}
+          </div>
         </section>
       </div>
     </div>
@@ -309,7 +314,7 @@ function Abschluss({ pfad, kopfRef, pflichtOffen, gehe, laeuft, fehler, abschlie
         </ul>
       )}
       {!pflichtOffen.length && offenOptional.length > 0 && <p className="mt-4 text-[13.5px] text-ink-500">Noch freiwillig offen: {offenOptional.map((s) => s.kurz).join(", ")}.</p>}
-      <div className="mt-4"><FehlerBox>{fehler}</FehlerBox></div>
+      <div className="mt-4"><FormFehler>{fehler}</FormFehler></div>
       <div className="mt-8 flex flex-col gap-3 border-t border-ink-100 pt-5 sm:flex-row sm:justify-end">
         <Button variant="secondary" href="/portal/hilfe">Hilfe ansehen</Button>
         {pfad.abgeschlossen ? (

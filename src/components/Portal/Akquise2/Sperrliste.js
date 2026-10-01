@@ -12,6 +12,7 @@ import { senden } from "@/lib/plattform/client";
 import { SPERR_GRUENDE, SPERR_QUELLEN } from "@/lib/plattform/akquise-kampagne";
 import { datum, knopf } from "./teile";
 import { ShieldBan } from "lucide-react";
+import { abfragen } from "@/components/ui/Rueckfrage";
 
 export default function Sperrliste({ eintraege = [], darfSchreiben = false, leitung = false }) {
   const router = useRouter();
@@ -59,7 +60,7 @@ export default function Sperrliste({ eintraege = [], darfSchreiben = false, leit
                 <td className={zelle}>{datum(s.am)}</td>
                 <td className={zelle}>
                   {!s.aktiv ? <Badge>aufgehoben</Badge> : leitung && darfSchreiben ? (
-                    <button type="button" className={knopf.klein} onClick={() => { const b = window.prompt("Nur bei irrtümlicher Erfassung aufheben. Begründung (mind. 10 Zeichen):"); if (b) los(() => senden(`/api/admin/geodaten/sperrliste/${s.id}`, { method: "DELETE", body: { begruendung: b } }), "Sperre aufgehoben."); }}>Aufheben</button>
+                    <button type="button" className={knopf.klein} onClick={async () => { const b = await abfragen({ titel: "Sperrvermerk aufheben?", text: "Nur bei irrtümlicher Erfassung aufheben. Die Aufhebung wird protokolliert.", details: [{ label: "Person", wert: s.anzeige }, { label: "Grund", wert: s.grundLabel }], label: "Begründung", pflicht: true, mindestlaenge: 10, mehrzeilig: true, gefahr: true, bestaetigenText: "Sperre aufheben" }); if (b) los(() => senden(`/api/admin/geodaten/sperrliste/${s.id}`, { method: "DELETE", body: { begruendung: b } }), "Sperre aufgehoben."); }}>Aufheben</button>
                   ) : <Badge ton="warn">aktiv</Badge>}
                 </td>
               </tr>

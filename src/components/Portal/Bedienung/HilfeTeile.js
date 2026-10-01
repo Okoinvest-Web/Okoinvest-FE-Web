@@ -16,7 +16,7 @@ export function KuerzelUebersicht({ rollen }) {
       <div className="grid gap-6 md:grid-cols-3">
         {gruppen.map((g) => (
           <section key={g.gruppe} aria-labelledby={`hk-${g.gruppe}`}>
-            <h3 id={`hk-${g.gruppe}`} className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-400">{g.gruppe}</h3>
+            <h3 id={`hk-${g.gruppe}`} className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-500">{g.gruppe}</h3>
             <dl className="mt-2 divide-y divide-ink-100">
               {g.eintraege.map((e) => (
                 <div key={e.text + e.tasten.join()} className="flex items-center justify-between gap-3 py-2">

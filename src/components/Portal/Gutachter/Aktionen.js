@@ -11,6 +11,7 @@ import { ErfolgBox, FehlerBox, Feld, auswahlfeld, eingabe, textbereich } from "@
 import { AktionKnopf, Knopf, SchnellFormular, useAktion } from "@/components/Portal/Entwicklung/Formular";
 import { cn } from "@/components/ui/cn";
 import { BEWERTUNG_KRITERIEN, HONORAR_ARTEN, LIEFER_ARTEN, TERMIN_ARTEN, UST_SAETZE, angebotSummen } from "@/lib/plattform/gutachter/kern";
+import { abfragen } from "@/components/ui/Rueckfrage";
 
 const eur = (x) => (Number.isFinite(x) ? `${x.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` : "–");
 const optionen = (o) => Object.entries(o).map(([wert, label]) => ({ wert, label }));
@@ -235,7 +236,7 @@ export function TerminKnoepfe({ id, bo = false, t, seite }) {
   return (
     <span className="flex flex-wrap gap-2">
       {t.status === "vorgeschlagen" && !eigen && <AktionKnopf klein variante="primaer" meldung="Bestätigt." fn={() => aktion(id, bo, { aktion: "termin_status", terminId: t.id, status: "bestaetigt" })}>Bestätigen</AktionKnopf>}
-      {t.datum <= heute && <AktionKnopf klein meldung="Als erledigt markiert." fn={() => aktion(id, bo, { aktion: "termin_status", terminId: t.id, status: "erledigt", protokoll: window.prompt("Kurzprotokoll (optional)") || "" })}>Erledigt</AktionKnopf>}
+      {t.datum <= heute && <AktionKnopf klein meldung="Als erledigt markiert." fn={async () => aktion(id, bo, { aktion: "termin_status", terminId: t.id, status: "erledigt", protokoll: (await abfragen({ titel: "Termin als erledigt markieren?", label: "Kurzprotokoll (optional)", mehrzeilig: true, bestaetigenText: "Als erledigt markieren" })) || "" })}>Erledigt</AktionKnopf>}
       <AktionKnopf klein variante="gefahr" frage="Termin absagen?" meldung="Abgesagt." fn={() => aktion(id, bo, { aktion: "termin_status", terminId: t.id, status: "abgesagt" })}>Absagen</AktionKnopf>
     </span>
   );

@@ -15,6 +15,7 @@ import { BEZUG_LABEL, DOKUMENT_KATEGORIEN, UPLOAD } from "@/lib/plattform/konsta
 import { DOKUMENT_FREIGABE, DOKUMENT_FREIGABE_IDS, aktuelleVersionen, dokumenteFiltern, freigabeVon } from "@/lib/plattform/querschnitt";
 import { datum, dateigroesse } from "@/lib/plattform/format";
 import { auswahlfeld, eingabe, textbereich, FehlerBox, ErfolgBox } from "../felder";
+import { bestaetigen } from "@/components/ui/Rueckfrage";
 
 async function versionHochladen(id, datei) {
   const fd = new FormData();
@@ -128,7 +129,7 @@ function Zeile({ d, admin, nutzerId, zeigeBezug }) {
     }
   }
   async function loeschen() {
-    if (!window.confirm(`„${d.name}“ wirklich löschen?`)) return;
+    if (!(await bestaetigen({ titel: `„${d.name}“ löschen?`, text: "Das Dokument wird dauerhaft entfernt.", bestaetigenText: "Dokument löschen", gefahr: true }))) return;
     try {
       await senden(`/api/portal/dokumente/${d.id}`, { method: "DELETE" });
       router.refresh();

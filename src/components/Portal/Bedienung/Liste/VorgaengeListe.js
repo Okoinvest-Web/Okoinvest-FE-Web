@@ -67,7 +67,7 @@ export default function VorgaengeListe({ vorgaenge, ichId, start, jetzt }) {
           ),
         },
         { id: "status", label: "Status", mobil: "badge", wert: (v) => PROZESSE.vorgang.pipeline.indexOf(v.status), csvWert: (v) => PROZESSE.vorgang.status[v.status]?.label || v.status, zelle: (v) => <StatusBadge art="vorgang" status={v.status} /> },
-        { id: "zustaendig", label: "Zuständig", wert: (v) => name(v.zustaendig), zelle: (v) => (v.zustaendig ? <span className="text-ink-700">{name(v.zustaendig)}</span> : <span className="text-ink-400">–</span>) },
+        { id: "zustaendig", label: "Zuständig", wert: (v) => name(v.zustaendig), zelle: (v) => (v.zustaendig ? <span className="text-ink-700">{name(v.zustaendig)}</span> : <span className="text-ink-500">–</span>) },
         { id: "email", label: "E-Mail", standard: false, wert: (v) => v.kontakt?.email || "" },
         { id: "erstellt", label: "Eingegangen", standard: false, wert: (v) => v.erstelltAm, zelle: (v) => <span className="whitespace-nowrap text-ink-600">{datum(v.erstelltAm)}</span> },
         { id: "aktualisiert", label: "Aktualisiert", wert: (v) => v.geaendertAm, zelle: (v) => <span className="whitespace-nowrap text-ink-500">{relativ(v.geaendertAm, jetzt)}</span> },

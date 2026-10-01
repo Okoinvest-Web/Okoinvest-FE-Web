@@ -688,6 +688,7 @@ export default function PortalRahmen({ nutzer, ungelesen = 0, hinweise = { eintr
                   onClick={() => setMenue((m) => !m)}
                   aria-expanded={menue}
                   aria-haspopup="menu"
+                  aria-label={`Benutzermenü${name ? ` – ${name}` : ""}`}
                   className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-ink-100"
                 >
                   <span className={cn("flex h-8 w-8 items-center justify-center rounded-full text-[12.5px] font-bold", avatarKlasse(nutzer.komfort?.farbe))}>{initialen(nutzer)}</span>

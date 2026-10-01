@@ -10,7 +10,7 @@ import { useRahmen } from "./kontext";
 /* ------------------------------------------------------------------
    Werkzeugleiste unter jedem Ergebnis: Szenario merken und nebeneinander
    vergleichen, Ergebnis als Link teilen (mit Eingaben), Druckansicht/PDF,
-   Sprung zu den Annahmen. Erscheint nur, wenn der Rechner Kurzwerte meldet.
+   Sprung zu den Annahmen. Der Vergleich braucht Kurzwerte aus <MobilKurz>.
    ------------------------------------------------------------------ */
 
 const knopf =
@@ -30,8 +30,9 @@ export default function ErgebnisWerkzeuge() {
     setNativ(typeof navigator.share === "function" && !!window.matchMedia?.("(pointer: coarse)").matches);
   }, []);
 
-  const kurz = rahmen?.kurz;
-  if (!kurz || !kurz.length) return null;
+  // Leiste steht schon im Server-HTML (kein Layout-Sprung); „Szenario merken“ erscheint, sobald Kurzwerte da sind
+  if (!rahmen) return null;
+  const kurz = rahmen.kurz || [];
 
   const merken = () => {
     const zustand = rahmen.zustand.current?.lesen?.() || null;
@@ -119,10 +120,12 @@ export default function ErgebnisWerkzeuge() {
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={merken} className={knopf} aria-describedby={a ? "szenario-vergleich" : undefined}>
-          <GitCompareArrows aria-hidden="true" className="h-4 w-4 text-ov-600" />
-          {a ? "Aktuelles als A merken" : "Szenario merken & vergleichen"}
-        </button>
+        {kurz.length > 0 && (
+          <button type="button" onClick={merken} className={knopf} aria-describedby={a ? "szenario-vergleich" : undefined}>
+            <GitCompareArrows aria-hidden="true" className="h-4 w-4 text-ov-600" />
+            {a ? "Aktuelles als A merken" : "Szenario merken & vergleichen"}
+          </button>
+        )}
         {teilbar && (
           <button type="button" onClick={teilen} className={knopf}>
             {nativ ? (

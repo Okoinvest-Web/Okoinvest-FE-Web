@@ -19,7 +19,8 @@ import { matching } from "../matching";
 import { CHECKLISTE_IDS, checklisteFlaeche, checklisteProjekt } from "../checkliste";
 import { PHASEN } from "@/lib/invest/markt";
 import { passwortHash, passwortPruefen } from "../server/passwort";
-import { aendern, lesen, seedSetzen, uploadLesen, uploadLoeschen, uploadSchreiben } from "./demo/speicher";
+import { aendern, lesen, nachSeedSetzen, seedSetzen, uploadLesen, uploadLoeschen, uploadSchreiben } from "./demo/speicher";
+import { demoVorbereitenEinmal } from "./demo/vorbereiten"; // Alle Fachmodul-Seeds (Demo-Konten) nach dem ersten Seed bzw. bei unbekannter Demo-Adresse
 import { seedErstellen } from "./demo/seed";
 import { jetzt, neueId, sha256, slugify, zufallsToken } from "./demo/hilfen";
 import { aufrufVerlaufZaehlen, datenraumStufeOk } from "./demo/dealroomRegeln"; // Deal-Room: Aufrufe je Tag, Freigabestufen
@@ -39,6 +40,7 @@ import { suchprofilErweiterung } from "../fach/suchprofil"; // Fachprüfung Kapi
 import { fachBereit } from "./demo/fach"; // Fachprüfung Kapitalseite: Demo-Datenblätter einmalig ergänzen
 
 seedSetzen(seedErstellen);
+nachSeedSetzen(demoVorbereitenEinmal); // frische Demo-DB: alle Demo-Konten und -Daten sofort anlegen
 
 export const name = "demo";
 
@@ -292,9 +294,15 @@ const nachDatum = (feld = "geaendertAm") => (a, b) => String(b[feld] || "").loca
 
 export async function anmelden({ email, passwort, ip = "", userAgent = "", land = "" }) {
   const e = v.email(email);
-  const db = await lesen();
+  let db = await lesen();
   sperrePruefen(db, e); // Kontosperre mit exponentiellem Backoff (backend/demo/sicherheit.js) → 429
-  const u = db.nutzer.find((x) => x.email === e);
+  let u = db.nutzer.find((x) => x.email === e);
+  if (!u && e.endsWith("@example.com")) {
+    // Demo-Konto eines Fachmoduls, dessen Seed noch nicht lief → alle Seeds einmal pro Prozess anstoßen
+    await demoVorbereitenEinmal();
+    db = await lesen();
+    u = db.nutzer.find((x) => x.email === e);
+  }
   const ok = await passwortPruefen(String(passwort || ""), u?.passwortHash);
   if (!u || !ok || !u.aktiv) {
     await aendern((db2) => fehlversuchBuchen(db2, { email: e, nutzer: u ? nutzerById(db2, u.id) : null, ip, userAgent, land, grund: ok ? "gesperrt" : "passwort" }));

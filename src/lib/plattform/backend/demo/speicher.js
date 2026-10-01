@@ -135,20 +135,37 @@ export function seedSetzen(fn) {
   seedFn = fn;
 }
 
+let nachSeedFn = null;
+/** Hook nach dem allerersten Seed (z. B. Demo-Vorbereitung aller Fachmodule, demo/vorbereiten.js) */
+export function nachSeedSetzen(fn) {
+  nachSeedFn = fn;
+}
+
 async function sicherstellen() {
   const db = await dateiLesen();
   if (db && db.schema === SCHEMA) return db;
+  let neu;
   await sperren();
   try {
     const erneut = await dateiLesen();
     if (erneut && erneut.schema === SCHEMA) return erneut;
-    const neu = await seedFn();
+    neu = await seedFn();
     neu.schema = SCHEMA;
     await dateiSchreiben(neu);
-    return structuredClone(neu);
   } finally {
     await entsperren();
   }
+  // Nach dem Seed (außerhalb der Sperre): Fachmodul-Seeds anstoßen. Läuft der allererste Zugriff
+  // ausnahmsweise innerhalb einer Schreibtransaktion, nicht warten (sonst verschachteltes aendern).
+  if (nachSeedFn) {
+    const lauf = () => Promise.resolve(nachSeedFn()).catch((e) => console.warn("[plattform-demo] Nach-Seed:", e?.message || e));
+    if (IM_SCHREIBEN.getStore()?.aktiv) IM_SCHREIBEN.exit(lauf);
+    else {
+      await lauf();
+      return (await dateiLesen()) || structuredClone(neu);
+    }
+  }
+  return structuredClone(neu);
 }
 
 /** Nur lesen (Kopie – Änderungen daran werden NICHT gespeichert) */

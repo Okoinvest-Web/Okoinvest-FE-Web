@@ -2,7 +2,9 @@ import GoogleAnalytics from "@/components/Statistik/GoogleAnalytics";
 import "./globals.css";
 import { Inter, Manrope } from "next/font/google";
 import LayoutWrapper from "@/components/Reusable/LayoutWrapper";
-import { GESELLSCHAFT, SITE } from "@/data/site";
+import { GESELLSCHAFT, INDEXIERBAR, SITE } from "@/data/site";
+import HtmlSprache from "@/components/Seo/HtmlSprache";
+import JsonLd from "@/components/JsonLd";
 
 // Zwei Schriften wie auf oekovolt.de: Inter für Fließtext, Manrope für
 // Überschriften. next/font hostet beide selbst (keine Verbindung zu Google).
@@ -33,6 +35,8 @@ const siteSchema = {
       legalName: GESELLSCHAFT.name,
       alternateName: ["Oekoinvest", "ÖkoInvest GmbH", "ÖKOINVEST"],
       url: BASE_URL,
+      logo: { "@type": "ImageObject", "@id": `${BASE_URL}/#logo`, url: `${BASE_URL}/icon-512.png`, width: 512, height: 512, caption: "ÖkoInvest" },
+      image: { "@id": `${BASE_URL}/#logo` },
       description: SITE.kurz,
       slogan: SITE.claim,
       foundingDate: "2020-09-10",
@@ -94,7 +98,24 @@ export const metadata = {
   creator: GESELLSCHAFT.name,
   publisher: GESELLSCHAFT.name,
   category: "Erneuerbare Energien",
-  icons: { icon: "/icon.svg", shortcut: "/icon.svg", apple: "/icon.svg" },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    shortcut: "/icon.svg",
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  // Bestätigungscodes für Google Search Console / Bing Webmaster Tools – erst
+  // nach Festlegung der Produktivdomain über Umgebungsvariablen setzen.
+  ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION || process.env.NEXT_PUBLIC_BING_VERIFICATION
+    ? {
+        verification: {
+          ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION ? { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } : {}),
+          ...(process.env.NEXT_PUBLIC_BING_VERIFICATION ? { other: { "msvalidate.01": process.env.NEXT_PUBLIC_BING_VERIFICATION } } : {}),
+        },
+      }
+    : {}),
   openGraph: {
     type: "website",
     locale: "de_DE",
@@ -105,11 +126,14 @@ export const metadata = {
     images: [{ url: `${BASE_URL}/img/solarpark-himmel.jpg`, width: 1280, height: 852, alt: "Solarpark unter blauem Himmel" }],
   },
   twitter: { card: "summary_large_image", title: TITEL, description: BESCHREIBUNG, images: [`${BASE_URL}/img/solarpark-himmel.jpg`] },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: { index: true, follow: true, "max-video-preview": -1, "max-image-preview": "large", "max-snippet": -1 },
-  },
+  // Paket I: Indexierung nur in der echten Produktion (INDEXIERBAR, src/data/site.js).
+  robots: INDEXIERBAR
+    ? {
+        index: true,
+        follow: true,
+        googleBot: { index: true, follow: true, "max-video-preview": -1, "max-image-preview": "large", "max-snippet": -1 },
+      }
+    : { index: false, follow: false, nocache: true },
   referrer: "origin-when-cross-origin",
   formatDetection: { email: false, address: false, telephone: false },
 };
@@ -118,8 +142,14 @@ export default function RootLayout({ children }) {
   return (
     <html lang="de" dir="ltr" className={`${inter.variable} ${manrope.variable}`}>
       <body className="bg-white text-ink-900">
+        {/* Paket I: Außerhalb der Produktion zusätzlich ein festes noindex (React
+            hebt <meta> in den <head>). Seiten mit eigenem robots-Eintrag
+            (index: true) überschreiben das metadata-Feld oben; bei zwei
+            robots-Angaben gilt für Suchmaschinen die strengere. */}
+        {!INDEXIERBAR && <meta name="robots" content="noindex, nofollow" />}
+        <HtmlSprache />
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-ov-600 focus:text-white focus:rounded">Zum Hauptinhalt springen</a>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteSchema) }} />
+        <JsonLd daten={siteSchema} />
         <LayoutWrapper>{children}</LayoutWrapper>
         <GoogleAnalytics />
       </body>

@@ -12,11 +12,18 @@
 // Entwürfe unter /bedingungen (noindex) gehören nicht in die Sitemap bzw. sind
 // über robots.txt gesperrt. /projektboerse/anbieten ist eine indexierbare
 // Landingpage (mit EN-Gegenstück) und bleibt drin.
+//
+// Entwurfsseiten (ENTWURFSSEITEN in src/lib/indexsteuerung.js, z. B.
+// /nutzungsbedingungen und /datenschutz bis zur Freigabe durch Strang R)
+// werden herausgefiltert – sie stehen weiter in SEITEN, damit sie nach der
+// Freigabe nur aus der Entwurfsliste ausgetragen werden müssen.
 
 import { alleArtikel, artikelPfad } from "@/lib/ratgeber";
 import { LEXIKON_STAND } from "@/data/lexikon";
 import { abs } from "@/data/site";
 import { META as REGIONEN_META } from "@/data/regionen/meta";
+import { sichtbareProjekte } from "@/lib/boerse/sichtbarkeit";
+import { ohneEntwuerfe } from "@/lib/indexsteuerung";
 
 const START = new Date("2026-09-29"); // Relaunch ÖkoInvest
 const RECHT = new Date("2026-09-29"); // letzte Überarbeitung der Rechtstexte
@@ -107,7 +114,8 @@ async function projektEintraege() {
     ]);
     if (antwort?.demo) return [];
     const liste = Array.isArray(antwort) ? antwort : antwort?.projekte || [];
-    return liste
+    // QM Welle 1: Test- und Demo-Datensätze nie in die Sitemap (src/lib/boerse/sichtbarkeit.js)
+    return sichtbareProjekte(liste, { demo: false })
       .filter((p) => p && typeof p.slug === "string" && /^[a-z0-9-]+$/.test(p.slug))
       .map((p) => {
         const d = new Date(p.geaendertAm || p.aktualisiert || p.veroeffentlichtAm || p.modified || START);
@@ -124,7 +132,7 @@ async function projektEintraege() {
 }
 
 export default async function sitemap() {
-  const seiten = SEITEN.map(({ pfad, prio, freq, datum }) => ({
+  const seiten = ohneEntwuerfe(SEITEN).map(({ pfad, prio, freq, datum }) => ({
     url: abs(pfad),
     lastModified: datum || START,
     changeFrequency: freq,

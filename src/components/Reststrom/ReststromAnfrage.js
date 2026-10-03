@@ -6,6 +6,7 @@ import AnfrageFormular from "@/components/Plattform/AnfrageFormular";
 /**
  * Anfrage zum Reststrom-Pool: fachliche Eckdaten (Verbrauch, Preis,
  * Vertragsende, Messart) + einheitliches Anfrageformular (typ="reststrom").
+ * Paket C: Land wählbar (PLZ-Regel je Land), keine Zeitzusage im Erfolgstext (erst nach gemessenem Nachweis, Masterplan Abschnitt 5).
  */
 export default function ReststromAnfrage() {
   const id = useId();
@@ -50,7 +51,7 @@ export default function ReststromAnfrage() {
         typ="reststrom"
         felder={["firma", "telefon", "plz", "land", "nachricht"]}
         button="Pool-Angebot anfragen"
-        erfolgText="Danke! Wir prüfen Ihre Angaben und melden uns in der Regel innerhalb von zwei Werktagen – bei Bedarf mit einer Vollmacht für den Lastgangabruf beim Netzbetreiber."
+        erfolgText="Danke! Wir prüfen Ihre Angaben und melden uns bei Ihnen – bei Bedarf mit einer Vollmacht für den Lastgangabruf beim Netzbetreiber."
         daten={{
           verbrauchMwh: verbrauch || null,
           arbeitspreisCt: preis || null,

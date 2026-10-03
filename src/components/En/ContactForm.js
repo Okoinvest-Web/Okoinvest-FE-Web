@@ -5,6 +5,9 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, Loader2, LockKeyhole } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { herkunft } from "@/lib/herkunft";
+import { useEreignis } from "@/lib/ereignis";
+import { landNormal } from "@/lib/anfrage/laender";
+import { HINWEIS, RUECKRUF, einwilligungText, einwilligungenFuer } from "@/lib/anfrage/hinweise";
 
 /**
  * Englisches Anfrageformular – gleiche Optik und derselbe Endpunkt wie
@@ -16,12 +19,15 @@ import { herkunft } from "@/lib/herkunft";
  *  - optional Themenauswahl (`themen`), die den `typ` der Anfrage bestimmt
  *  - Land: DE/AT/CH als Code, sonst Freitext in daten.landSonstiges
  *  - daten.sprache = "en", damit das Backoffice auf Englisch antwortet
+ *  - Paket C: kein Pflicht-Häkchen mehr (Hinweis + optionale, getrennte Häkchen; Wortlaut ENTWURF in
+ *    src/lib/anfrage/hinweise.js), Telefon nur Pflicht bei gewünschtem Rückruf, Messung über den Hook aus Paket B
  *
  * Props:
  *  typ        Standard-Anfragetyp (kontakt | investor | projekt | …)
  *  themen     [{ typ, label }] – blendet eine Auswahl ein, überschreibt `typ`
  *  daten      Zusatzdaten, werden mitgeschickt
  *  felder     zusätzliche Felder: firma, telefon, land, nachricht
+ *  land       Land aus dem Kontext (DE | AT | CH) – Vorauswahl der Länderwahl
  *  titel/text/button/erfolgText, dunkel, className
  */
 export default function ContactForm({
@@ -29,10 +35,11 @@ export default function ContactForm({
   themen,
   daten = {},
   felder = ["firma", "telefon", "land", "nachricht"],
+  land: landProp,
   titel,
   text,
   button = "Send enquiry",
-  erfolgText = "Thank you – your enquiry has been received. We usually reply within two working days.",
+  erfolgText = "Thank you – your enquiry has been received. We will get back to you.",
   dunkel = false,
   className,
 }) {
@@ -40,8 +47,12 @@ export default function ContactForm({
   const [status, setStatus] = useState("offen"); // offen | sendet | fertig | fehler
   const [fehler, setFehler] = useState("");
   const [ergebnis, setErgebnis] = useState(null);
-  const [land, setLand] = useState("DE");
+  const [land, setLand] = useState(landNormal(landProp) || "DE");
   const [thema, setThema] = useState(themen?.[0]?.typ || typ);
+  const [rueckruf, setRueckruf] = useState(false);
+  const melden = useEreignis();
+  const mitTelefon = felder.includes("telefon");
+  const optionen = einwilligungenFuer({ mitTelefon });
 
   async function absenden(e) {
     e.preventDefault();
@@ -59,6 +70,11 @@ export default function ContactForm({
     }
     const nachricht = fd.get("nachricht");
     if (nachricht) zusatz.nachricht = String(nachricht);
+    if (mitTelefon && rueckruf && !kontakt.telefon) {
+      setFehler("Please enter your phone number so that we can call you back.");
+      setStatus("fehler");
+      return;
+    }
 
     setStatus("sendet");
     setFehler("");
@@ -70,7 +86,8 @@ export default function ContactForm({
           typ: themen ? thema : typ,
           kontakt,
           daten: { ...daten, ...zusatz },
-          einwilligung: fd.get("einwilligung") === "on",
+          rueckruf: mitTelefon && rueckruf,
+          einwilligungen: Object.fromEntries(optionen.map((o) => [o.id, fd.get(o.id) === "on"])),
           herkunft: sichereHerkunft(),
         }),
       });
@@ -78,11 +95,13 @@ export default function ContactForm({
       if (!res.ok || !json.ok) throw new Error(res.status === 429 ? "zu-viele" : "fehler");
       setErgebnis(json);
       setStatus("fertig");
+      // Messung (Paket B): nur mit Statistik-Einwilligung, ohne Personendaten
+      melden("generate_lead", { lead_typ: themen ? thema : typ, markt: kontakt.land, quelle_formular: "en", art: rueckruf ? "rueckruf" : "email" });
     } catch (err) {
       setFehler(
         err.message === "zu-viele"
           ? "Too many requests in a short time. Please try again in a few minutes."
-          : "Your enquiry could not be sent. Please check your entries (name, valid e-mail, consent) and try again."
+          : "Your enquiry could not be sent. Please check your entries (name, valid e-mail) and try again."
       );
       setStatus("fehler");
     }
@@ -157,8 +176,8 @@ export default function ContactForm({
         </div>
         {felder.includes("telefon") && (
           <div>
-            <label htmlFor={`${id}-te`} className={label}>Phone (with country code)</label>
-            <input id={`${id}-te`} name="telefon" type="tel" autoComplete="tel" placeholder="+44 …" className={feld} />
+            <label htmlFor={`${id}-te`} className={label}>Phone (with country code){rueckruf ? " *" : ""}</label>
+            <input id={`${id}-te`} name="telefon" type="tel" autoComplete="tel" placeholder="+44 …" required={rueckruf || undefined} className={feld} />
           </div>
         )}
         {felder.includes("land") && (
@@ -189,13 +208,31 @@ export default function ContactForm({
       </div>
       {/* Honeypot */}
       <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
-      <label className={cn("flex items-start gap-3 text-[13.5px] leading-relaxed", dunkel ? "text-white/70" : "text-ink-600")}>
-        <input type="checkbox" name="einwilligung" required className="mt-1 h-4 w-4 shrink-0 accent-[#558227]" />
-        <span>
-          I agree that ÖkoInvest processes my details to handle this enquiry. See the{" "}
-          <Link href="/datenschutz" className="underline underline-offset-2">privacy policy</Link> (in German). *
-        </span>
-      </label>
+      {mitTelefon && (
+        <div>
+          <label className={cn("flex items-start gap-3 text-[13.5px] leading-relaxed", dunkel ? "text-white/80" : "text-ink-700")}>
+            <input type="checkbox" name="rueckruf" checked={rueckruf} onChange={(e) => setRueckruf(e.target.checked)} aria-describedby={`${id}-rr`} className="mt-1 h-4 w-4 shrink-0 accent-[#558227]" />
+            <span>{RUECKRUF.en.text}</span>
+          </label>
+          <p id={`${id}-rr`} className={cn("ml-7 mt-1 text-[12.5px]", dunkel ? "text-white/60" : "text-ink-500")}>{RUECKRUF.en.zusatz}</p>
+        </div>
+      )}
+      {/* Paket C: Hinweis statt Pflicht-Einwilligung (Art. 6 Abs. 1 lit. b DSGVO) – ENTWURF, Wortlaut aus Strang R */}
+      <p className={cn("text-[13.5px] leading-relaxed", dunkel ? "text-white/70" : "text-ink-600")} data-hinweis-version={HINWEIS.version}>
+        {HINWEIS.en.kern} {HINWEIS.en.verweisVor}{" "}
+        <Link href="/datenschutz" className="underline underline-offset-2">{HINWEIS.en.verweisLink}</Link>.
+      </p>
+      {optionen.length > 0 && (
+        <fieldset className="space-y-2">
+          <legend className={cn("mb-1 text-[13px] font-semibold", dunkel ? "text-white/85" : "text-ink-700")}>Optional – only if you wish</legend>
+          {optionen.map((o) => (
+            <label key={o.id} className={cn("flex items-start gap-3 text-[13.5px] leading-relaxed", dunkel ? "text-white/70" : "text-ink-600")}>
+              <input type="checkbox" name={o.id} data-einwilligung={o.id} className="mt-1 h-4 w-4 shrink-0 accent-[#558227]" />
+              <span>{einwilligungText(o, "en")}</span>
+            </label>
+          ))}
+        </fieldset>
+      )}
       {status === "fehler" && (
         <p role="alert" className="rounded-xl bg-danger-50 px-4 py-3 text-[14px] text-danger-800 ring-1 ring-danger-200">{fehler}</p>
       )}

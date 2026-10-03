@@ -84,6 +84,7 @@ export default function InvestorAnfrage({ phasen, dunkel = false }) {
           typ="investor"
           dunkel={dunkel}
           rolle="investor"
+          land={laender.length === 1 ? laender[0] : undefined} // Paket C: eindeutiges Zielland → kontakt.land (Routing je Land)
           felder={["firma", "telefon", "nachricht"]}
           daten={{ ticket, phasen: gewaehltePhasen, laender, technologie: technik }}
           button="Suchprofil senden"

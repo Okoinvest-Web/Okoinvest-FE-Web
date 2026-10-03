@@ -139,7 +139,8 @@ async function main() {
   pruefe(!!flaecheAusAnfrage, "typ flaeche erzeugt zusätzlich einen Flächen-Entwurf", r.json);
 
   r = await gast.post("/api/anfrage", { typ: "flaeche", kontakt, daten: {}, einwilligung: false });
-  pruefe(r.status === 422, "ohne Einwilligung → 422", r);
+  // Welle 1 (Paket C): Hinweis nach Art. 6 Abs. 1 lit. b statt Pflicht-Einwilligung – Anfrage ohne Häkchen wird angenommen
+  pruefe(r.status === 200 && r.json.ok, "ohne Einwilligungs-Häkchen → 200 (Hinweis statt Pflicht-Einwilligung)", r);
   r = await gast.post("/api/anfrage", { typ: "flaeche", kontakt, einwilligung: true }, { origin: null });
   pruefe(r.status === 403, "ohne Origin-Kopfzeile → 403 (CSRF)", r.status);
   r = await gast.post("/api/anfrage", { typ: "flaeche", kontakt, einwilligung: true }, { origin: "https://boese.example" });

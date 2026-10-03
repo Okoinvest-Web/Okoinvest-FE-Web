@@ -3,6 +3,8 @@
 // Strukturierte Anfrage für Kommunen (Gemeinde, Stadtwerk, Landkreis) auf /kommunen.
 // Die Angaben gehen als `daten` mit typ „kommune“ an /api/anfrage; der Server übernimmt sie über eine
 // Positivliste (src/lib/plattform/kommune.js) und prüft den Gemeindeschlüssel je Land.
+// Paket C: Das Land aus dem Länder-Chip geht als land-Prop an das Formular (PLZ-Regel je Land, kontakt.land),
+// die Registrierung danach nutzt die Rolle „kommune“ (vorher fälschlich „unternehmen“).
 
 import { useId, useState } from "react";
 import { cn } from "@/components/ui/cn";
@@ -39,6 +41,16 @@ function Chips({ legende, optionen, wert, mehrfach = false, onChange, name }) {
   );
 }
 
+/** nummerierter Zwischentitel – gliedert das lange Formular in drei Etappen */
+function Etappe({ nr, titel, id }) {
+  return (
+    <p id={id} className="flex items-center gap-2.5 font-display text-[16px] font-bold text-ink-900">
+      <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ov-600 text-[12px] font-bold text-white">{nr}</span>
+      {titel}
+    </p>
+  );
+}
+
 export default function KommuneAnfrage() {
   const id = useId();
   const [d, setD] = useState({ land: "DE", absender: "gemeinde", gemeinde: "", gemeindeSchluessel: "", rolle: "", gemeindeFlaechenHa: "", interesse6: "", buergerbeteiligung: [], bauleitplanung: "", kriterienkatalog: "", themen: ["solarpark"] });
@@ -48,7 +60,9 @@ export default function KommuneAnfrage() {
   const daten = { ...d, gemeindeSchluessel: gsFehler ? "" : d.gemeindeSchluessel.replace(/\s/g, "") };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
+      <div role="group" aria-labelledby={`${id}-e1`} className="space-y-6">
+      <Etappe nr={1} titel="Ihre Gemeinde" id={`${id}-e1`} />
       <Chips legende="Sie schreiben für" name={`${id}-abs`} optionen={KOMMUNE_ABSENDER} wert={d.absender} onChange={setze("absender")} />
       <Chips legende="Land" name={`${id}-land`} optionen={LAENDER} wert={d.land} onChange={(l) => setD((x) => ({ ...x, land: l, interesse6: l === "DE" ? x.interesse6 : "" }))} />
 
@@ -75,6 +89,12 @@ export default function KommuneAnfrage() {
           <label htmlFor={`${id}-ha`} className={label}>Flächen im Gemeindeeigentum (ha)</label>
           <input id={`${id}-ha`} inputMode="decimal" className={feld} value={d.gemeindeFlaechenHa} onChange={(e) => setze("gemeindeFlaechenHa")(e.target.value)} placeholder="optional, grob" />
         </div>
+      </div>
+      </div>
+
+      <div role="group" aria-labelledby={`${id}-e2`} className="space-y-6 border-t border-ink-100 pt-8">
+      <Etappe nr={2} titel="Ihr Vorhaben" id={`${id}-e2`} />
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor={`${id}-bp`} className={label}>Stand der Planung</label>
           <select id={`${id}-bp`} className={feld} value={d.bauleitplanung} onChange={(e) => setze("bauleitplanung")(e.target.value)}>
@@ -106,11 +126,13 @@ export default function KommuneAnfrage() {
       )}
       <Chips legende="Bürgerbeteiligung – was schwebt Ihnen vor?" name={`${id}-bb`} optionen={BUERGERBETEILIGUNG} wert={d.buergerbeteiligung} mehrfach onChange={setze("buergerbeteiligung")} />
       <Chips legende="Themen" name={`${id}-th`} optionen={KOMMUNE_THEMEN} wert={d.themen} mehrfach onChange={setze("themen")} />
+      </div>
 
-      <div className="border-t border-ink-200 pt-6">
+      <div className="space-y-6 border-t border-ink-100 pt-8">
+        <Etappe nr={3} titel="Ihre Kontaktdaten" />
         {!d.gemeinde.trim() && <p className="mb-4 rounded-xl bg-sand-50 px-4 py-3 text-[13.5px] text-ink-700 ring-1 ring-inset ring-ink-200">Bitte oben den Namen der Gemeinde angeben – dann können Sie absenden.</p>}
         <fieldset disabled={!d.gemeinde.trim()} className="disabled:opacity-60">
-          <AnfrageFormular typ="kommune" felder={["firma", "telefon", "plz", "ort", "nachricht"]} daten={daten} button="Gespräch anfragen" erfolgText="Danke! Wir bestätigen Ihre Gemeinde über die Verwaltung und melden uns mit einem Terminvorschlag. Nach der Registrierung sehen Sie im Portal die Projekte in Ihrem Gebiet." rolle="unternehmen" />
+          <AnfrageFormular typ="kommune" land={d.land} felder={["firma", "telefon", "plz", "ort", "nachricht"]} daten={daten} button="Gespräch anfragen" erfolgText="Danke! Wir bestätigen Ihre Gemeinde über die Verwaltung und melden uns mit einem Terminvorschlag. Nach der Registrierung sehen Sie im Portal die Projekte in Ihrem Gebiet." rolle="kommune" />
         </fieldset>
       </div>
     </div>

@@ -34,6 +34,9 @@ import { anbieterUebergangPruefen, anbieterVorkenntnisAnerkannt } from "./demo/a
 export * from "./demo/crm-ops"; // Backoffice-Operationen (CRM, Akquise, Automationen, Vorlagen, Berichte, Rechte)
 import { EIGENTUM_IDS, fachAusAnfrage, flaecheFachDaten, pachtangebotBereinigen } from "../flaecheFach"; // Fachprüfung Flächen: Flurstücke je Land, Fachangaben, Pachtangebot
 import { kommuneDaten } from "../kommune"; // Fachprüfung Kommunen: strukturierte Anfrage
+import { gebietFuer } from "../akquise"; // Paket C: Routing je Land/Gebiet bei neuer Anfrage
+import { NUTZUNG_ALIAS, anfrageLand } from "@/lib/anfrage/laender"; // Paket C: Land aus Kontext, Nutzung aus dem Flächencheck
+import { zaehlerSchluessel } from "@/lib/anfrage/zaehler"; // Paket C: Server-Zähler ohne Kennung
 import { datenblattBereinigen, ddIndex } from "../fach/datenblatt"; // Fachprüfung Kapitalseite: Projektdatenblatt, DD-Index
 import { loiBereinigen } from "../fach/loi"; // Fachprüfung Kapitalseite: strukturierte LOI
 import { suchprofilErweiterung } from "../fach/suchprofil"; // Fachprüfung Kapitalseite: Suchprofil (Investorentyp, ESG …)
@@ -502,7 +505,27 @@ export async function suchprofilSpeichern(n, p) {
 
 // ================================================================ Anfrage (öffentlich)
 
-export async function anfrageAnlegen({ typ, kontakt, daten, herkunft, ip, einwilligungText, nutzer }) {
+/**
+ * Team-Postfach je Land (Paket C): Adresse aus ANFRAGE_POSTFACH_DE / _AT / _CH (Umgebung, Hosting).
+ * Nicht gesetzt → kein Team-Postfach (dann wie bisher nur Benachrichtigungen im Portal).
+ * TODO Inhaber (W0-3): Funktionspostfächer je Land freigeben und in der Umgebung setzen.
+ */
+function teamPostfach(land) {
+  const roh = land ? String(process.env[`ANFRAGE_POSTFACH_${land}`] || "").trim() : "";
+  return v.email(roh) || "";
+}
+
+/** Server-Zähler ohne Kennung, dauerhaft in der Demo-Datei (Tag × Typ × Land × Kanal; Paket C) */
+function anfrageZaehlerBuchen(db, { typ, land, kanal }) {
+  const s = zaehlerSchluessel({ ereignis: "angelegt", typ, land, kanal });
+  db.anfrageZaehler = db.anfrageZaehler || {};
+  const k = `${s.tag}|${s.typ}|${s.land}|${s.kanal}`;
+  db.anfrageZaehler[k] = (db.anfrageZaehler[k] || 0) + 1;
+  const tage = [...new Set(Object.keys(db.anfrageZaehler).map((x) => x.slice(0, 10)))].sort();
+  if (tage.length > 400) for (const x of Object.keys(db.anfrageZaehler)) if (x.slice(0, 10) < tage[tage.length - 400]) delete db.anfrageZaehler[x];
+}
+
+export async function anfrageAnlegen({ typ, kontakt, daten, herkunft, ip, einwilligungText, hinweis, einwilligungen, nutzer }) {
   const t = v.auswahl(typ, VORGANG_TYPEN);
   v.pflicht(t, "Unbekannter Anfragetyp.");
   const k = {
@@ -514,7 +537,8 @@ export async function anfrageAnlegen({ typ, kontakt, daten, herkunft, ip, einwil
     telefon: v.text(kontakt?.telefon, 40),
     plz: v.plz(kontakt?.plz),
     ort: v.text(kontakt?.ort, 80),
-    land: v.auswahl(kontakt?.land, LAENDER, ""),
+    // Paket C: Land aus dem Formular, sonst aus dem Seitenkontext (daten.land / daten.eingaben.land), sonst eindeutige PLZ
+    land: v.auswahl(anfrageLand({ land: kontakt?.land, plz: v.plz(kontakt?.plz) }, daten), LAENDER, ""),
   };
   v.pflicht(k.vorname && k.nachname, "Bitte geben Sie Vor- und Nachnamen an.");
   v.pflicht(k.email, "Bitte geben Sie eine gültige E-Mail-Adresse an.");
@@ -522,9 +546,22 @@ export async function anfrageAnlegen({ typ, kontakt, daten, herkunft, ip, einwil
   if (t === "kommune") d = { ...d, ...kommuneDaten(daten, k.land, k) }; // Fachprüfung Kommunen: Positivliste + Gemeindeschlüssel
   v.pflicht(JSON.stringify(d).length <= 20000, "Zu viele Zusatzdaten.");
   const h = datenBereinigen(herkunft);
+  // Hinweis (lit. b) und optionale Einwilligungen – nur bekannte Felder übernehmen (Texte: src/lib/anfrage/hinweise.js)
+  const hw = hinweis && typeof hinweis === "object" ? hinweis : {};
+  const optional = (Array.isArray(einwilligungen) ? einwilligungen : [])
+    .slice(0, 10)
+    .map((e) => ({ id: v.text(e?.id, 40), erteilt: e?.erteilt === true, am: v.text(e?.am, 40), version: v.text(e?.version, 40), sprache: v.auswahl(e?.sprache, ["de", "en"], "de"), textHash: v.text(e?.textHash, 64), ...(e?.doi ? { doi: v.text(e.doi, 20) } : {}) }))
+    .filter((e) => e.id && e.erteilt);
 
   return aendern((db) => {
     const u = nutzer && nutzer.email === k.email && nutzer.emailBestaetigt ? nutzerById(db, nutzer.id) : null;
+    // Routing „Team je Land“ (Paket C): zuständig nach Gebiet (Land, Bundesland/Kanton, PLZ); ohne Treffer bleibt der Vorgang offen
+    const ein = d.eingaben && typeof d.eingaben === "object" ? d.eingaben : {};
+    const laenderListe = BUNDESLAENDER[k.land] || [];
+    const bundesland = v.auswahl(d.bundesland, laenderListe, "") || v.auswahl(d.regionName, laenderListe, ""); // Regionsseiten senden regionName
+    const gebiet = k.land ? gebietFuer(db.bo?.gebiete || [], { land: k.land, bundesland, plz: k.plz }) : null;
+    const zustaendig = gebiet ? nutzerById(db, gebiet.gebiet.mitarbeiterId) : null;
+    const zustaendigId = zustaendig?.aktiv && zustaendig.rollen.includes("admin") ? zustaendig.id : null;
     const vg = {
       id: neueId("V"),
       typ: t,
@@ -536,27 +573,38 @@ export async function anfrageAnlegen({ typ, kontakt, daten, herkunft, ip, einwil
       daten: d,
       herkunft: h,
       ip: ip || "",
-      einwilligung: { am: jetzt(), ip: ip || "", text: v.text(einwilligungText, 400) },
-      zustaendigId: null,
+      einwilligung: {
+        am: jetzt(),
+        ip: ip || "",
+        text: v.text(einwilligungText, 400),
+        art: "hinweis", // Paket C: Hinweis nach Art. 6 Abs. 1 lit. b statt Pflicht-Einwilligung
+        rechtsgrundlage: v.text(hw.rechtsgrundlage, 60),
+        version: v.text(hw.version, 40),
+        textHash: v.text(hw.textHash, 64),
+        optional,
+      },
+      zustaendigId,
       flaecheId: null,
       erstelltAm: jetzt(),
       geaendertAm: jetzt(),
     };
     if (t === "flaeche" || t === "agri") {
-      const haWert = v.zahl(d.ha ?? d.hektar ?? d.flaeche ?? d.flaecheHa, { min: 0, max: 100000, stellen: 2 });
+      // Paket C: Flächencheck sendet ha/nutzung flach UND unter daten.eingaben – beides lesen
+      const haWert = v.zahl(d.ha ?? d.hektar ?? d.flaeche ?? d.flaecheHa ?? ein.flaecheHa, { min: 0, max: 100000, stellen: 2 });
+      const nutzungRoh = d.nutzung ?? ein.nutzungId;
       const f = {
         id: neueId("F"),
         nutzerId: u?.id || null,
         vorgangId: vg.id,
         bezeichnung: v.text(d.bezeichnung, 120) || `Fläche ${[k.plz, k.ort].filter(Boolean).join(" ") || "aus Anfrage"}`,
-        land: k.land || "DE",
-        bundesland: v.auswahl(d.bundesland, BUNDESLAENDER[k.land || "DE"] || [], ""),
+        land: k.land || "DE", // unbekannt (keine PLZ, kein Kontext) → wie bisher DE; der Vorgang behält kontakt.land = ""
+        bundesland,
         plz: k.plz,
         ort: k.ort,
         gemarkung: "",
         flurstuecke: [],
         ha: haWert,
-        nutzung: d.art === "dach" ? "dach" : v.auswahl(d.nutzung, FLAECHE_NUTZUNG, "acker"), // /dachflaeche-verpachten sendet daten.art = "dach"
+        nutzung: d.art === "dach" ? "dach" : v.auswahl(NUTZUNG_ALIAS[nutzungRoh] || nutzungRoh, FLAECHE_NUTZUNG, "acker"), // /dachflaeche-verpachten sendet daten.art = "dach"
         agri: t === "agri",
         eigentum: "eigentum",
         fach: fachAusAnfrage(t, d), // z. B. Dachart/Dachfläche aus /dachflaeche-verpachten
@@ -565,7 +613,7 @@ export async function anfrageAnlegen({ typ, kontakt, daten, herkunft, ip, einwil
         statusVerlauf: [verlaufEintrag("entwurf", u, "system", "Aus Anfrage angelegt")],
         pachtangebot: null,
         ablehnGrund: "",
-        zustaendigId: null,
+        zustaendigId,
         erstelltAm: jetzt(),
         geaendertAm: jetzt(),
       };
@@ -574,11 +622,18 @@ export async function anfrageAnlegen({ typ, kontakt, daten, herkunft, ip, einwil
     }
     db.vorgaenge.push(vg);
     protokoll(db, u, "anfrage", "vorgang", vg.id, `Anfrage ${VORGANG_TYPEN[t]} von ${k.email}`, ip);
+    if (zustaendigId) protokoll(db, null, "zuweisen", "vorgang", vg.id, `Zuständig: ${nameVon(db, zustaendigId)} (Gebiet „${gebiet.gebiet.name}“, ${gebiet.grund})`);
+    anfrageZaehlerBuchen(db, { typ: t, land: k.land, kanal: h.kanal });
     backofficeEreignis(db, { typ: "vorgang_neu", art: "vorgang", objekt: vg }); // CRM-Lead + Automationen
-    for (const a of aktiveAdmins(db)) {
-      benachrichtigen(db, a, { art: "anfrage", titel: `Neue Anfrage: ${VORGANG_TYPEN[t]}`, text: `${k.vorname} ${k.nachname}${k.firma ? ` · ${k.firma}` : ""} · ${vg.id}`, link: `/portal/admin/vorgaenge/${vg.id}`, objektArt: "vorgang", objektId: vg.id });
+    const meldung = { art: "anfrage", titel: `Neue Anfrage: ${VORGANG_TYPEN[t]}${k.land ? ` (${k.land})` : ""}`, text: `${k.vorname} ${k.nachname}${k.firma ? ` · ${k.firma}` : ""} · ${vg.id}`, link: `/portal/admin/vorgaenge/${vg.id}`, objektArt: "vorgang", objektId: vg.id };
+    // Alle aktiven Admins wie bisher (keine Anfrage darf unbemerkt bleiben); die Zuständigkeit steht am Vorgang
+    for (const a of aktiveAdmins(db)) benachrichtigen(db, a, meldung);
+    const postfach = teamPostfach(k.land);
+    if (postfach) {
+      // Nur Hinweis + Link, keine Personendaten in der Mail (wie benachrichtigen)
+      postausgangAnlegen(db, { an: postfach, anName: `Team ${LAENDER[k.land]}`, art: "anfrage", betreff: `Neue Anfrage ${vg.id}: ${VORGANG_TYPEN[t]} (${k.land})`, text: "Über die Website ist eine neue Anfrage eingegangen.", link: `/portal/admin/vorgaenge/${vg.id}`, linkText: "Im Backoffice öffnen" });
     }
-    return { id: vg.id, vorgang: { id: vg.id, typ: vg.typ, status: vg.status, flaecheId: vg.flaecheId } };
+    return { id: vg.id, vorgang: { id: vg.id, typ: vg.typ, status: vg.status, flaecheId: vg.flaecheId, land: k.land } };
   });
 }
 

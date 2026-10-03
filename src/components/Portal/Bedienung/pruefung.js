@@ -25,11 +25,16 @@ export const regeln = {
     if (l > max) return `${was} ist zu lang (höchstens ${max} Zeichen).`;
     return "";
   },
-  plz: (land = "DE") => (v) => {
+  /**
+   * PLZ je Land (DE 5, AT 4, CH 4 Ziffern).
+   * landWaehlbar: Im Formular gibt es ein Land-Feld → bei falscher Länge auf das Land hinweisen (Paket C:
+   * eine 4-stellige PLZ bei „Deutschland“ ist meist eine österreichische oder Schweizer PLZ).
+   */
+  plz: (land = "DE", { landWaehlbar = false } = {}) => (v) => {
     const s = String(v ?? "").trim();
     if (!s) return "";
-    if (land === "DE") return /^\d{5}$/.test(s) ? "" : "Deutsche Postleitzahlen haben 5 Ziffern, z. B. 86825.";
-    if (land === "AT" || land === "CH") return /^\d{4}$/.test(s) ? "" : `Postleitzahlen in ${land === "AT" ? "Österreich" : "der Schweiz"} haben 4 Ziffern, z. B. ${land === "AT" ? "5121" : "8001"}.`;
+    if (land === "DE") return /^\d{5}$/.test(s) ? "" : `Deutsche Postleitzahlen haben 5 Ziffern, z. B. 86825.${landWaehlbar && /^\d{4}$/.test(s) ? " Liegt der Ort in Österreich oder der Schweiz? Dann bitte oben das Land ändern." : ""}`;
+    if (land === "AT" || land === "CH") return /^\d{4}$/.test(s) ? "" : `Postleitzahlen in ${land === "AT" ? "Österreich" : "der Schweiz"} haben 4 Ziffern, z. B. ${land === "AT" ? "5020" : "8001"}.${landWaehlbar && /^\d{5}$/.test(s) ? " Liegt der Ort in Deutschland? Dann bitte oben das Land ändern." : ""}`;
     return /^[0-9A-Za-z -]{3,10}$/.test(s) ? "" : "Bitte eine gültige Postleitzahl angeben.";
   },
   zahl: ({ min = -Infinity, max = Infinity, einheit = "", was = "Wert" } = {}) => (v) => {

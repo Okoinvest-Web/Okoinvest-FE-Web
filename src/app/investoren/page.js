@@ -1,28 +1,31 @@
-import Link from "next/link";
-import { ArrowUpRight, BadgePercent, Building2, FileSignature, FolderLock, Handshake, Layers, LineChart, Search, ShieldCheck, Sprout, Users, Zap, BatteryCharging, Scale, UserPlus } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
-import PageHero from "@/components/ui/PageHero";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
-import FeatureGrid from "@/components/ui/FeatureGrid";
-import Steps from "@/components/ui/Steps";
 import Faq from "@/components/ui/Faq";
 import CtaBand from "@/components/ui/CtaBand";
 import Button from "@/components/ui/Button";
 import Reveal from "@/components/ui/Reveal";
 import Querverweise from "@/components/Reusable/Querverweise";
+import JsonLd from "@/components/JsonLd";
+import TextEnthuellung from "@/components/motion/TextEnthuellung";
 import Phasenmodell from "@/components/Investoren/Phasenmodell";
 import PipelineGrafik from "@/components/Investoren/PipelineGrafik";
 import DdCheckliste from "@/components/Investoren/DdCheckliste";
 import InvestorAnfrage from "@/components/Investoren/InvestorAnfrage";
+import Hero from "@/components/Investoren/Seite/Hero";
+import Fakten from "@/components/Investoren/Seite/Fakten";
+import Angebot from "@/components/Investoren/Seite/Angebot";
+import Ablauf from "@/components/Investoren/Seite/Ablauf";
+import Provision from "@/components/Investoren/Seite/Provision";
 import { abs, KENNZAHLEN, SITE, sprachAlternates } from "@/data/site";
 import { PHASEN, PROVISION, ERLOESE, STAND } from "@/lib/invest/markt";
-import { fmt, fmtEur } from "@/lib/rechner/annahmen";
+import { fmt } from "@/lib/rechner/annahmen";
 
 const PFAD = "/investoren";
-const TITEL = "Solarprojekte kaufen: Projektrechte & RTB | ÖkoInvest";
+const TITEL = "Solarpark kaufen: Projektrechte, RTB & Bestand | ÖkoInvest";
 const BESCHREIBUNG =
-  "Projektrechte, baureife Solarparks und Bestandsanlagen im DACH-Raum: Phasenmodell mit Preisen, Due-Diligence-Checkliste, Datenraum – für Investoren kostenfrei.";
+  "Solarpark kaufen im DACH-Raum: Projektrechte, baureife Parks und Bestand, Phasenmodell mit Preisen, Datenraum – für Investoren kostenfrei.";
 
 export const metadata = {
   title: TITEL,
@@ -35,13 +38,9 @@ export const metadata = {
     siteName: "ÖkoInvest",
     title: TITEL,
     description: BESCHREIBUNG,
-    images: [{ url: abs("/img/investoren-vor-ort.jpg"), width: 1280, height: 852, alt: "Investoren bei der Besichtigung eines Solarparks" }],
+    images: [{ url: abs("/img/investoren-vor-ort.jpg"), width: 1280, height: 852, alt: "Symbolbild: Besichtigung eines Solarparks" }], // Stockmotiv, keine eigene Veranstaltung (Paket D)
   },
 };
-
-const rtb = PHASEN.find((p) => p.id === "rtb");
-const BEISPIEL = { mwp: 20, preis: Math.round((rtb.preisProKwp.min + rtb.preisProKwp.max) / 2) };
-const beispielKaufpreis = BEISPIEL.mwp * 1000 * BEISPIEL.preis;
 
 const FAQ = [
   {
@@ -50,7 +49,7 @@ const FAQ = [
   },
   {
     q: "Welche Projekte bieten Sie an?",
-    a: "Projekte aus der eigenen Entwicklung der ÖKOVOLT Gruppe und Projekte anderer Entwickler, die über die Projektbörse angeboten werden: Freiflächen- und Agri-PV, Parkplatz-PV und Großspeicher, in Deutschland, Österreich und der Schweiz – von der Flächensicherung bis zur Bestandsanlage. Jedes Projekt wird vor der Veröffentlichung auf Vollständigkeit der Kernunterlagen geprüft.",
+    a: "Projekte aus der eigenen Entwicklung der ÖKOVOLT Gruppe und Projekte anderer Entwickler, die über die Projektbörse angeboten werden: Freiflächen- und Agri-PV, Parkplatz-PV und Großspeicher, in Deutschland, Österreich und der Schweiz – von der Flächensicherung bis zur Bestandsanlage. Jedes Projekt wird vor der Veröffentlichung auf Vollständigkeit der Kernunterlagen und Plausibilität geprüft – das ersetzt keine Due Diligence.",
   },
   {
     q: "Wie viele baureife Projekte sind verfügbar?",
@@ -62,15 +61,17 @@ const FAQ = [
   },
   {
     q: "Bieten Sie Co-Development an?",
-    a: "Ja. Sie beteiligen sich früh an einem Projekt oder einer Pipeline und finanzieren die Entwicklungskosten mit; wir entwickeln bis zur Baureife. Üblich sind Meilensteinzahlungen und ein Vorkaufs- oder Übernahmerecht bei RTB. Die Konditionen vereinbaren wir je Projekt.",
+    // Zielgruppe offengelegt (Paket D): Entwicklungsbeteiligung nicht öffentlich an Privatanleger bewerben.
+    // Mindestbetrag (Empfehlung E15: 200.000 €) ist Inhaber-Entscheidung und steht deshalb noch nicht hier.
+    a: "Ja – ausschließlich für professionelle und institutionelle Investoren, nicht für Privatanleger. Sie beteiligen sich früh an einem Projekt oder einer Pipeline und finanzieren die Entwicklungskosten mit; wir entwickeln bis zur Baureife. Üblich sind Meilensteinzahlungen und ein Vorkaufs- oder Übernahmerecht bei RTB. Mindestbetrag und Konditionen vereinbaren wir je Projekt. Frühe Phasen tragen ein hohes Risiko bis zum Totalverlust, wenn ein Projekt nicht genehmigt oder nicht angeschlossen wird.",
   },
   {
     q: "Kann ich auch mit kleineren Beträgen investieren?",
-    a: "Direkt in Projektrechte investieren in der Regel professionelle Investoren ab einigen Hunderttausend Euro. Bürger, Landwirte und Kleinanleger können sich über die Genossenschaft an Solarparks beteiligen – mit kleinen Anteilen und Mitbestimmung.",
+    a: "Direkt in Projektrechte investieren in der Regel professionelle Investoren ab einigen Hunderttausend Euro. Für Bürger und Landwirte ist eine Energiegenossenschaft mit kleinen Anteilen und Mitbestimmung in Vorbereitung; Anteile können dort noch nicht gezeichnet werden.",
   },
   {
     q: "Mit welchen Erlösen rechnen Käufer heute?",
-    a: `In Deutschland mit dem Zuschlag aus der EEG-Ausschreibung (zuletzt ${ERLOESE.zuschlagsHistorie.map((z) => fmt(z.ct, 2)).join(", ")} ct/kWh im Durchschnitt der Gebotstermine 2025), mit PPA-Preisen grob zwischen ${fmt(ERLOESE.ppaCt.min, 1)} und ${fmt(ERLOESE.ppaCt.max, 1)} ct/kWh oder mit Kombinationen. In Österreich über die EAG-Marktprämie oder Investitionszuschüsse, in der Schweiz über die Einmalvergütung. Der Solarpark-Renditerechner zeigt die Wirkung auf IRR und DSCR.`,
+    a: `In Deutschland mit dem Zuschlag aus der EEG-Ausschreibung (zuletzt ${ERLOESE.zuschlagsHistorie.map((z) => fmt(z.ct, 2)).join(", ")} ct/kWh im Durchschnitt der Gebotstermine 2025), mit PPA-Preisen grob zwischen ${fmt(ERLOESE.ppaCt.min, 1)} und ${fmt(ERLOESE.ppaCt.max, 1)} ct/kWh oder mit Kombinationen. In Österreich über die EAG-Marktprämie oder Investitionszuschüsse, in der Schweiz u. a. über die Einmalvergütung. Der Solarpark-Renditerechner zeigt die Wirkung auf IRR und DSCR.`,
   },
 ];
 
@@ -85,55 +86,15 @@ export default function InvestorenSeite() {
     audience: { "@type": "BusinessAudience", audienceType: "Investoren, Fonds, Stadtwerke, Family Offices" },
     url: abs(PFAD),
     description: BESCHREIBUNG,
-    offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", description: PROVISION.kaeufer.text },
   };
 
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <JsonLd daten={schema} />
 
-      <PageHero
-        variant="immersive"
-        breadcrumbs={[{ name: "Für Investoren" }]}
-        eyebrow="Für Investoren"
-        title={
-          <>
-            Solarprojekte kaufen – <span className="ov-text-gradient-light">in der Phase, die zu Ihnen passt.</span>
-          </>
-        }
-        lead="Projektrechte ab der Flächensicherung, baureife Solarparks, Bestandsanlagen und Co-Development im DACH-Raum. Geprüfte Unterlagen, digitaler Datenraum – und für Käufer kostenfrei."
-        image={{ src: "/img/investoren-vor-ort.jpg", alt: "Investoren bei der Besichtigung eines Solarparks" }}
-        actions={[
-          { label: "Als Investor registrieren", href: "/registrieren?rolle=investor" },
-          { label: "Zur Projektbörse", href: "/projektboerse", icon: Search },
-        ]}
-        stats={[
-          { value: KENNZAHLEN.entwicklungMwProJahr, suffix: " MWp", label: "rund so viel geht pro Jahr neu in Entwicklung" },
-          { value: 15, suffix: "+", label: `Jahre Solarerfahrung der Gruppe (seit ${KENNZAHLEN.erfahrungSeit})` },
-          { value: 0, suffix: " €", label: "Kosten für Käufer" },
-        ]}
-      />
-
-      {/* ---------------- Angebot ---------------- */}
-      <Section tone="white" space="lg">
-        <SectionHeading
-          eyebrow="Was wir anbieten"
-          title="Vom ersten Pachtvertrag bis zur laufenden Anlage."
-          lead="Sie entscheiden, wie viel Entwicklungsrisiko Sie tragen wollen. Je früher der Einstieg, desto günstiger der Preis je kWp – und desto wichtiger ein Partner, der das Projekt bis zum Netz bringt."
-          className="mb-12"
-        />
-        <FeatureGrid
-          cols={3}
-          items={[
-            { icon: Layers, title: "Projektrechte in jeder Phase", text: "Von gesicherter Fläche über Netzzusage und Aufstellungsbeschluss bis zum Satzungsbeschluss – mit transparentem Stand und offenen Punkten." },
-            { icon: FileSignature, title: "Baureife Projekte (RTB)", text: "Baurecht, Netzanschluss, Flächen und Gutachten liegen vor. Auf Wunsch mit EPC aus der Gruppe – eigene Rammtechnik inklusive." },
-            { icon: Building2, title: "Bestandsanlagen & Secondary", text: "Laufende Solarparks mit Ertragshistorie, Förderung oder PPA – für Investoren, die Cashflow statt Entwicklungsrisiko suchen." },
-            { icon: Handshake, title: "Co-Development", text: "Früh einsteigen, Entwicklung mitfinanzieren, Vorkaufsrecht bei Baureife sichern – mit Meilensteinzahlungen und klarer Governance." },
-            { icon: BatteryCharging, title: "Speicher & Co-Location", text: "Batteriespeicher am selben Netzanschluss wie der Solarpark oder als eigenständiges Projekt an Netzknoten.", href: "/grossspeicher" },
-            { icon: Users, title: "Beteiligung für Bürger", text: "Kleinere Beträge? Über die Genossenschaft beteiligen sich Bürger und Landwirte an Parks vor Ort.", href: "/genossenschaft" },
-          ]}
-        />
-      </Section>
+      <Hero />
+      <Fakten />
+      <Angebot />
 
       {/* ---------------- Pipeline ---------------- */}
       <Section tone="sand" space="lg">
@@ -147,7 +108,7 @@ export default function InvestorenSeite() {
               {[
                 "Frühe Phasen: große Auswahl, niedriger Preis je kWp, höheres Risiko.",
                 "Ab Satzungsbeschluss: planbar, weniger Auswahl, höherer Preis.",
-                "Über die Börse kommen Projekte weiterer Entwickler dazu – mit derselben Prüfung.",
+                "Über die Börse kommen Projekte weiterer Entwickler dazu – mit derselben Vollständigkeits- und Plausibilitätsprüfung.",
               ].map((t) => (
                 <li key={t} className="flex gap-3">
                   <span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ov-500" />
@@ -187,74 +148,8 @@ export default function InvestorenSeite() {
         </p>
       </Section>
 
-      {/* ---------------- Ablauf ---------------- */}
-      <Section tone="navy" space="lg">
-        <SectionHeading dark eyebrow="Ablauf über die Plattform" title="Vom Suchprofil zum Closing – digital und nachvollziehbar." align="center" className="mb-14" />
-        <Steps
-          tone="dark"
-          cols={3}
-          items={[
-            { icon: UserPlus, title: "Suchprofil", text: "Ticketgröße, Phasen, Länder und Technologien festlegen – einmal registrieren, jederzeit anpassen." },
-            { icon: Zap, title: "Matching", text: "Passende Projekte kommen per Benachrichtigung, oft bevor sie öffentlich in der Börse stehen." },
-            { icon: ShieldCheck, title: "NDA", text: "Digitale Vertraulichkeitsvereinbarung mit einem Klick – Voraussetzung für Details und Datenraum." },
-            { icon: FolderLock, title: "Datenraum", text: "Pachtverträge, Planung, Netz, Gutachten und Fragen & Antworten an einem Ort, jeder Zugriff protokolliert. Das Exposé-PDF enthält das Projektdatenblatt." },
-            { icon: FileSignature, title: "LOI", text: "Absichtserklärung mit Preis, Zahlungsstaffel und Exklusivität – Start der vertieften Prüfung." },
-            { icon: Handshake, title: "SPA & Closing", text: "Kaufvertrag über Anteile oder Rechte, Übergabe der Projektgesellschaft, Begleitung bis zum Bau." },
-          ]}
-        />
-      </Section>
-
-      {/* ---------------- Provision ---------------- */}
-      <Section tone="white" space="lg">
-        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
-          <SectionHeading
-            eyebrow="Provision – transparent"
-            title="Für Investoren kostenfrei. Punkt."
-            lead="Wir verdienen erst, wenn ein Projekt den Besitzer wechselt – und dann zahlt der Verkäufer. So bleibt unser Interesse klar: passende Projekte, die auch wirklich gebaut werden."
-          />
-          <div className="grid gap-4 sm:grid-cols-3">
-            {[
-              { icon: LineChart, titel: "Investoren", wert: "0 €", text: PROVISION.kaeufer.text },
-              { icon: BadgePercent, titel: "Verkäufer", wert: `${fmt(PROVISION.verkaeufer.min * 100, 1)}–${fmt(PROVISION.verkaeufer.max * 100)} %`, text: PROVISION.verkaeufer.text },
-              { icon: Sprout, titel: "Flächeneigentümer", wert: "0 €", text: PROVISION.flaeche.text },
-            ].map((k, i) => (
-              <Reveal key={k.titel} delay={i * 70} className={i === 0 ? "rounded-3xl bg-ov-600 p-6 text-white" : "rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/70"}>
-                <k.icon aria-hidden="true" className={i === 0 ? "h-6 w-6 text-white" : "h-6 w-6 text-ov-600"} />
-                <p className={i === 0 ? "mt-4 text-[13px] font-semibold text-white/85" : "mt-4 text-[13px] font-semibold text-ink-500"}>{k.titel}</p>
-                <p className="ov-num mt-1 font-display text-[30px] font-extrabold tracking-tight">{k.wert}</p>
-                <p className={i === 0 ? "mt-2 text-[14px] leading-relaxed text-white/85" : "mt-2 text-[14px] leading-relaxed text-ink-600"}>{k.text}</p>
-              </Reveal>
-            ))}
-            <p className="text-[13.5px] leading-relaxed text-ink-600 sm:col-span-3">
-              Beispiel: {BEISPIEL.mwp} MWp baureif zu {fmt(BEISPIEL.preis)} €/kWp = {fmtEur(beispielKaufpreis)} Kaufpreis. Die Provision von {fmtEur(beispielKaufpreis * PROVISION.verkaeufer.min)} bis{" "}
-              {fmtEur(beispielKaufpreis * PROVISION.verkaeufer.max)} trägt der Verkäufer, nur bei Abschluss.
-            </p>
-          </div>
-        </div>
-      </Section>
-
-      {/* ---------------- Werkzeuge ---------------- */}
-      <Section tone="green" space="md">
-        <div className="grid gap-4 md:grid-cols-2">
-          {[
-            { href: "/rechner/solarpark", icon: LineChart, titel: "Solarpark-Renditerechner", text: "Projekt- und EK-IRR, LCOE, DSCR und Cashflow über 30 Jahre – mit Sensitivitätsmatrix." },
-            { href: "/rechner/projektbewertung", icon: Scale, titel: "Projektbewertung", text: "Kaufpreisspanne je kWp nach Phase, Netzanschluss, Größe und Vermarktung." },
-          ].map((t) => (
-            <Link key={t.href} href={t.href} className="group ov-card-hover flex items-start gap-5 rounded-3xl bg-white p-6 ring-1 ring-ov-100 md:p-8">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-ov-50 text-ov-600 transition-colors group-hover:bg-ov-500 group-hover:text-white">
-                <t.icon aria-hidden="true" className="h-6 w-6" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center justify-between gap-3 font-display text-[20px] font-bold text-ink-900">
-                  {t.titel}
-                  <ArrowUpRight aria-hidden="true" className="h-5 w-5 shrink-0 text-ink-300 transition-colors group-hover:text-ov-600" />
-                </span>
-                <span className="mt-2 block text-[15px] leading-relaxed text-ink-600">{t.text}</span>
-              </span>
-            </Link>
-          ))}
-        </div>
-      </Section>
+      <Ablauf />
+      <Provision />
 
       {/* ---------------- Registrierung & Formular ---------------- */}
       <Section tone="navy" space="lg" id="suchprofil">
@@ -263,11 +158,11 @@ export default function InvestorenSeite() {
             <SectionHeading
               dark
               eyebrow="Suchprofil"
-              title="Sagen Sie uns, was Sie suchen."
+              title={<TextEnthuellung ausloeser="scrollen">Sagen Sie uns, was Sie suchen.</TextEnthuellung>}
               lead="Kurzprofil senden – wir melden uns mit passenden Projekten. Oder direkt ein Konto anlegen: Dann sehen Sie Matches, NDAs und Datenräume im Portal."
             />
             <div className="mt-8 flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
-              <Button href="/registrieren?rolle=investor" variant="white" pfeil>
+              <Button href="/registrieren?rolle=investor" variant="white" pfeil magnetisch>
                 Als Investor registrieren
               </Button>
               <Button href="/login" variant="outlineLight">
@@ -309,7 +204,7 @@ export default function InvestorenSeite() {
       <CtaBand
         eyebrow="Für Investoren kostenfrei"
         title="Die richtigen Projekte, bevor sie jeder sieht."
-        text="Legen Sie Ihr Suchprofil an. Wir gleichen es mit neuen Projekten aus eigener Entwicklung und aus der Börse ab – mit geprüften Unterlagen und festem Ansprechpartner."
+        text="Legen Sie Ihr Suchprofil an. Wir gleichen es mit neuen Projekten aus eigener Entwicklung und aus der Börse ab – mit vorgeprüften Unterlagen; ein Ansprechpartner aus unserem Team meldet sich bei Ihnen."
         primary={{ label: "Als Investor registrieren", href: "/registrieren?rolle=investor" }}
         secondary={{ label: "Zur Projektbörse", href: "/projektboerse" }}
       />

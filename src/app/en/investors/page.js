@@ -1,19 +1,18 @@
-import Link from "next/link";
-import { BadgePercent, BatteryCharging, Building2, FileSignature, FolderLock, Handshake, Layers, LineChart, Scale, Search, ShieldCheck, Sprout, UserPlus, Users, Zap } from "lucide-react";
+import { BadgePercent, BatteryCharging, Building2, FileSignature, FolderLock, Handshake, Layers, LineChart, Scale, ShieldCheck, Sprout, TrendingUp, UserPlus, Users, Zap } from "lucide-react";
 
-import PageHero from "@/components/ui/PageHero";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
-import FeatureGrid from "@/components/ui/FeatureGrid";
-import Steps from "@/components/ui/Steps";
 import Faq from "@/components/ui/Faq";
 import Button from "@/components/ui/Button";
 import Reveal from "@/components/ui/Reveal";
-import Querverweise from "@/components/Reusable/Querverweise";
+import JsonLd from "@/components/JsonLd";
 import EnCta from "@/components/En/EnCta";
+import EnHero, { Haken } from "@/components/En/EnHero";
 import PhaseModel, { PHASE_EN } from "@/components/En/PhaseModel";
-import DdList from "@/components/En/DdList";
+import DdList, { DD_EN } from "@/components/En/DdList";
 import ContactForm from "@/components/En/ContactForm";
+import { PhasenLeiter, SuchprofilBuehne } from "@/components/En/Buehnen";
+import { Ablauf, FaktenLeiste, LeistungsKarten, LinkKarte, SprungLeiste } from "@/components/En/Teile";
 import { datumEn, enMetadata, fmtEn, fmtEurEn } from "@/components/En/sprachpaare";
 import { KENNZAHLEN, SITE, abs } from "@/data/site";
 import { ERLOESE, PHASEN, PROVISION, STAND } from "@/lib/invest/markt";
@@ -27,7 +26,7 @@ export const metadata = enMetadata({
   title: "Buy solar projects in DACH: rights & RTB | ÖkoInvest",
   description: BESCHREIBUNG,
   keywords: ["buy solar park Germany", "solar project rights", "RTB solar project", "PV projects Austria investor", "co-development solar", "operating solar assets DACH"],
-  bild: { src: "/img/investoren-vor-ort.jpg", alt: "Investors visiting a solar park" },
+  bild: { src: "/img/investoren-vor-ort.jpg", alt: "Illustrative photo: visit to a solar park" }, // stock photo, not our own event (package D)
 });
 
 const rtb = PHASEN.find((p) => p.id === "rtb");
@@ -42,7 +41,7 @@ const FAQ = [
   },
   {
     q: "Which projects do you offer?",
-    a: "Projects from the ÖKOVOLT Group's own development and projects from third-party developers listed on the project exchange: ground-mounted PV, agri-PV, car park PV and battery storage in Germany, Austria and Switzerland – from secured land to operating assets. Every listing is checked for completeness of the core documents before publication.",
+    a: "Projects from the ÖKOVOLT Group's own development and projects from third-party developers listed on the project exchange: ground-mounted PV, agri-PV, car park PV and battery storage in Germany, Austria and Switzerland – from secured land to operating assets. Every listing is checked for completeness of the core documents and plausibility before publication – this does not replace a due diligence.",
   },
   {
     q: "How much ready-to-build capacity is available?",
@@ -54,11 +53,13 @@ const FAQ = [
   },
   {
     q: "Do you offer co-development?",
-    a: "Yes. You participate early in a project or a pipeline and co-fund the development costs; we develop to RTB. Milestone payments and a right of first refusal or acquisition right at RTB are common. Terms are agreed per project.",
+    // Target group disclosed (package D): co-development is not promoted to retail investors.
+    // Minimum ticket (recommendation E15: EUR 200,000) is an owner decision and therefore not stated yet.
+    a: "Yes – for professional and institutional investors only, not for retail investors. You participate early in a project or a pipeline and co-fund the development costs; we develop to RTB. Milestone payments and a right of first refusal or acquisition right at RTB are common. Minimum ticket and terms are agreed per project. Early stages carry a high risk up to total loss if a project is not permitted or not connected.",
   },
   {
     q: "What revenues do buyers currently expect?",
-    a: `In Germany, the award from the EEG tender (recent volume-weighted averages ${ERLOESE.zuschlagsHistorie.map((z) => fmtEn(z.ct, 2)).join(", ")} ct/kWh for the 2025 bid dates), PPA prices roughly between ${fmtEn(ERLOESE.ppaCt.min, 1)} and ${fmtEn(ERLOESE.ppaCt.max, 1)} ct/kWh, or combinations. In Austria via the EAG market premium or investment grants, in Switzerland via the one-off remuneration.`,
+    a: `In Germany, the award from the EEG tender (recent volume-weighted averages ${ERLOESE.zuschlagsHistorie.map((z) => fmtEn(z.ct, 2)).join(", ")} ct/kWh for the 2025 bid dates), PPA prices roughly between ${fmtEn(ERLOESE.ppaCt.min, 1)} and ${fmtEn(ERLOESE.ppaCt.max, 1)} ct/kWh, or combinations. In Austria via the EAG market premium or investment grants, in Switzerland among others via the one-off remuneration.`,
   },
   {
     q: "Are the portal and documents available in English?",
@@ -78,96 +79,116 @@ export default function EnInvestors() {
     url: abs(PFAD),
     description: BESCHREIBUNG,
     inLanguage: "en",
-    offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", description: "Free of charge for investors (search profile, NDA, data room)" },
   };
 
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <JsonLd daten={schema} />
 
-      <PageHero
-        variant="immersive"
-        eyebrow="For investors"
+      <EnHero
+        pill={{ tag: "Free", label: "Search profile, NDA and data room – free of charge for buyers", kurz: "Free of charge for buyers", href: "#fees" }}
         title={
           <>
-            Buy solar projects – <span className="ov-text-gradient-light">at the stage that suits you.</span>
+            Buy solar projects&nbsp;– <span className="ov-text-gradient-light">at the stage that suits you.</span>
           </>
         }
-        lead="Project rights from secured land onwards, ready-to-build solar parks, operating assets and co-development in the DACH region. Vetted documents, a digital data room – and free of charge for buyers."
-        image={{ src: "/img/investoren-vor-ort.jpg", alt: "Investors visiting a solar park" }}
+        lead={
+          <>
+            <span className="font-medium text-white">Project rights from secured land onwards,</span> ready-to-build solar parks, operating assets and co-development in the DACH region. Documents pre-checked for completeness, a digital data room – and free of charge for buyers.
+          </>
+        }
         actions={[
-          { label: "Register as investor", href: "/registrieren?rolle=investor" },
-          { label: "Project exchange", href: "/en/project-exchange", icon: Search },
+          { label: "Send search profile", href: "#search-profile" },
+          { label: "Phase model & prices", href: "#phases" },
         ]}
-        stats={[
-          { value: KENNZAHLEN.entwicklungMwProJahr, prefix: "~", suffix: " MWp", label: "enter development every year" },
-          { value: 15, suffix: "+", label: `years of solar experience (group, since ${KENNZAHLEN.erfahrungSeit})` },
-          { value: 0, prefix: "€", label: "cost for buyers" },
+        note="Non-binding · details only after NDA · enquiries in English welcome"
+        chips={["Projects from our own development and the exchange", "Matching projects notified first", "Data room with access log", "A contact person from our team"]}
+        visual={<SuchprofilBuehne />}
+        caption="Example view with fictional values · portal interface currently in German"
+      />
+
+      <FaktenLeiste
+        titel="Key figures for investors"
+        items={[
+          { icon: TrendingUp, wert: `~${KENNZAHLEN.entwicklungMwProJahr}`, einheit: "MWp per year", text: "of new capacity enter development in the group" },
+          { icon: Layers, wert: String(PHASEN.length), einheit: "stages", text: "from secured land to operating asset – with price ranges" },
+          { icon: ShieldCheck, wert: String(DD_EN.length), einheit: "review areas", text: "in our due diligence checklist for every project" },
+          { icon: BadgePercent, wert: "€0", einheit: "for buyers", text: "the seller pays a success fee, only on closing" },
+        ]}
+      />
+
+      <SprungLeiste
+        items={[
+          { href: "#offer", label: "Offer" },
+          { href: "#phases", label: "Phases & prices" },
+          { href: "#due-diligence", label: "Due diligence" },
+          { href: "#process", label: "Process" },
+          { href: "#co-development", label: "Co-development" },
+          { href: "#fees", label: "Fees" },
+          { href: "#search-profile", label: "Search profile" },
         ]}
       />
 
       {/* ---------------- Offer ---------------- */}
-      <Section tone="white" space="lg">
+      <Section tone="white" space="lg" id="offer" className="scroll-mt-24">
         <SectionHeading
           eyebrow="What we offer"
           title="From the first lease agreement to the operating plant."
           lead="You decide how much development risk you want to take. The earlier you enter, the lower the price per kWp – and the more important a partner who takes the project all the way to grid connection."
           className="mb-12"
         />
-        <FeatureGrid
-          cols={3}
+        <LeistungsKarten
           items={[
             { icon: Layers, title: "Project rights at any stage", text: "From secured land through grid connection commitment and zoning resolution to an adopted zoning plan – with a transparent status and open items." },
             { icon: FileSignature, title: "Ready-to-build (RTB)", text: "Building rights, grid connection, land and reports in place. EPC from within the group on request – including our own pile-driving." },
             { icon: Building2, title: "Operating assets & secondary", text: "Solar parks in operation with yield history, feed-in support or PPA – for investors seeking cash flow rather than development risk." },
             { icon: Handshake, title: "Co-development", text: "Enter early, co-fund development, secure a right of first refusal at RTB – with milestone payments and clear governance." },
             { icon: BatteryCharging, title: "Storage & co-location", text: "Battery storage at the same grid connection as the solar park, or as a stand-alone project at grid nodes." },
-            { icon: Users, title: "Citizen participation", text: "Smaller tickets? Local citizens and farmers can invest via the energy cooperative (German-language offer).", href: "/genossenschaft" },
+            { icon: Users, title: "Citizen participation", text: "Smaller tickets? An energy cooperative for local citizens and farmers is in preparation – shares cannot be subscribed yet (German-language information).", href: "/genossenschaft", hrefLang: "de" },
           ]}
         />
       </Section>
 
-      {/* ---------------- Pipeline ---------------- */}
-      <Section tone="sand" space="lg">
-        <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:gap-16">
-          <SectionHeading
-            eyebrow="Pipeline – explained honestly"
-            title={`Around ${KENNZAHLEN.entwicklungMwProJahr} MWp enter development every year.`}
-            lead="This is capacity entering project development each year – not capacity that is ready to build tomorrow. From land security to RTB typically takes two to three years."
-          />
-          <ul className="grid gap-3">
-            {[
-              "Early stages: wide choice, low price per kWp, higher risk.",
-              "From adoption of the zoning plan: predictable, less choice, higher price.",
-              "Projects from other developers join via the exchange – with the same review.",
-            ].map((t, i) => (
-              <Reveal as="li" key={t} delay={i * 60} className="flex gap-3 rounded-2xl bg-white p-5 text-[15.5px] leading-relaxed text-ink-700 ring-1 ring-ink-200/70">
-                <span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ov-500" />
-                {t}
-              </Reveal>
-            ))}
-          </ul>
+      {/* ---------------- Pipeline + Phase model ---------------- */}
+      <Section tone="sand" space="lg" id="phases" className="scroll-mt-24">
+        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16">
+          <div>
+            <SectionHeading
+              eyebrow="Pipeline & phase model"
+              title="Risk and price by development stage."
+              lead={`Around ${KENNZAHLEN.entwicklungMwProJahr} MWp enter development every year – capacity entering project development, not capacity that is ready to build tomorrow. From land security to RTB typically takes two to three years.`}
+            />
+            <ul className="mt-8 grid gap-3">
+              {[
+                "Early stages: wide choice, low price per kWp, higher risk.",
+                "From adoption of the zoning plan: predictable, less choice, higher price.",
+                "Projects from other developers join via the exchange – with the same review.",
+              ].map((t, i) => (
+                <Reveal as="li" key={t} delay={i * 60} className="flex gap-3 rounded-2xl bg-white p-4 text-[15px] leading-relaxed text-ink-700 ring-1 ring-ink-200/70">
+                  <Haken />
+                  <span className="min-w-0">{t}</span>
+                </Reveal>
+              ))}
+            </ul>
+          </div>
+          <Reveal dir="right" className="min-w-0">
+            <PhasenLeiter className="shadow-e4 ring-ink-200/70" />
+            <p className="mt-3 text-[12.5px] leading-relaxed text-ink-500">Market ranges for project rights in €/kWp, DACH 2025/26 – orientation for your search profile and valuation.</p>
+          </Reveal>
+        </div>
+        <div className="mt-16 md:mt-20">
+          <h3 className="ov-h3 mb-6 text-ink-900">Each stage in detail</h3>
+          <PhaseModel />
         </div>
       </Section>
 
-      {/* ---------------- Phase model ---------------- */}
-      <Section tone="white" space="lg" id="phases" className="scroll-mt-24">
-        <SectionHeading
-          eyebrow="Phase model"
-          title="Risk and price by development stage."
-          lead="Market ranges for project rights in €/kWp – as orientation for your search profile and your valuation."
-          className="mb-12"
-        />
-        <PhaseModel />
-      </Section>
-
       {/* ---------------- Due diligence ---------------- */}
-      <Section tone="sand" space="lg" id="due-diligence" className="scroll-mt-24">
+      <Section tone="white" space="lg" id="due-diligence" className="scroll-mt-24">
         <SectionHeading
           eyebrow="Due diligence"
           title="The checklist we apply to every project."
           lead="Before a project goes live on the exchange, we check the core documents for completeness. The full due diligence remains yours – this list helps structure it."
-          className="mb-10"
+          className="mb-12"
         />
         <DdList />
         <p className="mt-6 text-[13px] leading-relaxed text-ink-500">
@@ -176,99 +197,120 @@ export default function EnInvestors() {
       </Section>
 
       {/* ---------------- Process ---------------- */}
-      <Section tone="navy" space="lg">
-        <SectionHeading dark eyebrow="Process on the platform" title="From search profile to closing – digital and traceable." align="center" className="mb-14" />
-        <Steps
-          tone="dark"
-          cols={3}
-          items={[
-            { icon: UserPlus, title: "Search profile", text: "Define ticket size, stages, countries and technologies – register once, adjust any time." },
-            { icon: Zap, title: "Matching", text: "Matching projects are notified to you, often before they appear publicly on the exchange." },
-            { icon: ShieldCheck, title: "NDA", text: "Digital non-disclosure agreement in one click – the prerequisite for details and data room access." },
-            { icon: FolderLock, title: "Data room", text: "Leases, planning, grid, reports and Q&A in one place; every access is logged." },
-            { icon: FileSignature, title: "LOI", text: "Letter of intent with price, payment schedule and exclusivity – the start of in-depth due diligence." },
-            { icon: Handshake, title: "SPA & closing", text: "Share or asset purchase agreement, transfer of the project company (SPV), support through to construction." },
-          ]}
-        />
+      <Section tone="navy" space="lg" id="process" className="scroll-mt-24 overflow-hidden">
+        <div aria-hidden="true" className="ov-grid-bg absolute inset-0 opacity-60" />
+        <div aria-hidden="true" className="pointer-events-none absolute -left-40 -top-40 h-[480px] w-[480px] rounded-full bg-ov-500/20 blur-[120px]" />
+        <div className="relative">
+          <SectionHeading dark eyebrow="Process on the platform" title="From search profile to closing – digital and traceable." align="center" className="mb-12" />
+          <Ablauf
+            dunkel
+            cols={6}
+            items={[
+              { icon: UserPlus, title: "Search profile", text: "Define ticket size, stages, countries and technologies – register once, adjust any time." },
+              { icon: Zap, title: "Matching", text: "Matching projects are notified to you, often before they appear publicly on the exchange." },
+              { icon: ShieldCheck, title: "NDA", text: "Digital non-disclosure agreement in one click – the prerequisite for details and data room access." },
+              { icon: FolderLock, title: "Data room", text: "Leases, planning, grid, reports and Q&A in one place; every access is logged." },
+              { icon: FileSignature, title: "LOI", text: "Letter of intent with price, payment schedule and exclusivity – the start of in-depth due diligence." },
+              { icon: Handshake, title: "SPA & closing", text: "Share or asset purchase agreement, transfer of the project company (SPV), support through to construction." },
+            ]}
+          />
+        </div>
       </Section>
 
       {/* ---------------- Co-development ---------------- */}
       <Section tone="white" space="lg" id="co-development" className="scroll-mt-24">
-        <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
-          <SectionHeading
-            eyebrow="Co-development"
-            title="Enter before RTB – with milestones, not blind trust."
-            lead="You co-fund development costs of a project or a pipeline; we develop to RTB. Payments are tied to milestones such as grid connection commitment, zoning resolution and adoption of the zoning plan."
-          />
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {["flaeche", "netz", "aufstellung", "satzung"].map((id, i) => {
-              const p = PHASEN.find((x) => x.id === id);
-              return (
-                <Reveal as="li" key={id} delay={i * 60} className="rounded-2xl bg-sand-50 p-5 ring-1 ring-ink-200/70">
-                  <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-ov-700">Milestone {i + 1}</p>
-                  <p className="mt-1 font-display text-[16.5px] font-bold text-ink-900">{PHASE_EN[id].label}</p>
-                  <p className="ov-num mt-1 text-[14px] text-ink-600">
-                    €{fmtEn(p.preisProKwp.min)}–{fmtEn(p.preisProKwp.max)}/kWp · ≈ {p.monateBisRtb} months to RTB
+        <SectionHeading
+          eyebrow="Co-development"
+          title="Enter before RTB – with milestones, not blind trust."
+          lead="You co-fund development costs of a project or a pipeline; we develop to RTB. Payments are tied to milestones such as grid connection commitment, zoning resolution and adoption of the zoning plan."
+          className="mb-12"
+        />
+        <ol className="relative grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <span aria-hidden="true" className="absolute left-0 right-0 top-[22px] hidden h-[2px] bg-gradient-to-r from-sun-400 via-ov-400 to-ov-600 lg:block" />
+          {["flaeche", "netz", "aufstellung", "satzung", "rtb"].map((id, i) => {
+            const p = PHASEN.find((x) => x.id === id);
+            const ziel = id === "rtb";
+            return (
+              <Reveal as="li" key={id} delay={i * 60} className="relative">
+                <span className={ziel ? "relative z-10 flex h-11 w-11 items-center justify-center rounded-full bg-ov-600 text-white ring-[6px] ring-white" : "relative z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white font-display text-[14px] font-extrabold text-ov-700 ring-[6px] ring-white"}>
+                  <span className={ziel ? "contents" : "flex h-full w-full items-center justify-center rounded-full ring-2 ring-ov-300"}>{ziel ? <Handshake aria-hidden="true" className="h-5 w-5" /> : i + 1}</span>
+                </span>
+                <div className={ziel ? "ov-verlauf-nacht mt-4 rounded-2xl p-5 text-white ring-1 ring-white/10" : "mt-4 rounded-2xl bg-sand-50 p-5 ring-1 ring-ink-200/70"}>
+                  <p className={ziel ? "text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ov-300" : "text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ov-700"}>
+                    {ziel ? "Right of first refusal" : `Milestone ${i + 1}`}
                   </p>
-                </Reveal>
-              );
-            })}
-          </ul>
-        </div>
+                  <p className={ziel ? "mt-1 font-display text-[16.5px] font-bold text-white" : "mt-1 font-display text-[16.5px] font-bold text-ink-900"}>{PHASE_EN[id].label}</p>
+                  <p className={ziel ? "ov-num mt-2 text-[13.5px] text-white/70" : "ov-num mt-2 text-[13.5px] text-ink-600"}>
+                    €{fmtEn(p.preisProKwp.min)}–{fmtEn(p.preisProKwp.max)}/kWp
+                    <br />
+                    {ziel ? "acquisition at RTB" : `≈ ${p.monateBisRtb} months to RTB`}
+                  </p>
+                </div>
+              </Reveal>
+            );
+          })}
+        </ol>
+        <p className="mt-6 text-[13px] leading-relaxed text-ink-500">For professional and institutional investors only – not offered to retail investors. Milestone payments and a right of first refusal or acquisition right at RTB are common; minimum ticket and terms are agreed per project. Early stages can result in a total loss.</p>
       </Section>
 
       {/* ---------------- Commission ---------------- */}
-      <Section tone="sand" space="lg">
-        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+      <Section tone="sand" space="lg" id="fees" className="scroll-mt-24">
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16">
           <SectionHeading
             eyebrow="Commission model – transparent"
             title="Free of charge for investors. Full stop."
             lead="We only earn when a project changes hands – and then the seller pays. That keeps our interest clear: suitable projects that actually get built."
           />
-          <div className="grid gap-4 sm:grid-cols-3">
-            {[
-              { icon: LineChart, titel: "Investors", wert: "€0", text: "Search profile, NDA and data room free of charge" },
-              { icon: BadgePercent, titel: "Sellers", wert: SPANNE, text: "of the purchase price, only on successful closing" },
-              { icon: Sprout, titel: "Landowners", wert: "€0", text: "always free of charge for landowners" },
-            ].map((k, i) => (
-              <Reveal key={k.titel} delay={i * 70} className={i === 0 ? "rounded-3xl bg-ov-600 p-6 text-white" : "rounded-3xl bg-white p-6 ring-1 ring-ink-200/70"}>
-                <k.icon aria-hidden="true" className={i === 0 ? "h-6 w-6 text-white" : "h-6 w-6 text-ov-600"} />
-                <p className={i === 0 ? "mt-4 text-[13px] font-semibold text-white/85" : "mt-4 text-[13px] font-semibold text-ink-500"}>{k.titel}</p>
-                <p className="ov-num mt-1 font-display text-[30px] font-extrabold tracking-tight">{k.wert}</p>
-                <p className={i === 0 ? "mt-2 text-[14px] leading-relaxed text-white/85" : "mt-2 text-[14px] leading-relaxed text-ink-600"}>{k.text}</p>
-              </Reveal>
-            ))}
-            <p className="text-[13.5px] leading-relaxed text-ink-600 sm:col-span-3">
-              Example: {BEISPIEL.mwp} MWp ready-to-build at €{fmtEn(BEISPIEL.preis)}/kWp = {fmtEurEn(beispielKaufpreis)} purchase price. The success fee of {fmtEurEn(beispielKaufpreis * PROVISION.verkaeufer.min)} to{" "}
-              {fmtEurEn(beispielKaufpreis * PROVISION.verkaeufer.max)} is borne by the seller, only on closing.
-            </p>
+          <div className="min-w-0">
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                { icon: LineChart, titel: "Investors", wert: "€0", text: "Search profile, NDA and data room free of charge" },
+                { icon: BadgePercent, titel: "Sellers", wert: SPANNE, text: "of the purchase price, only on successful closing" },
+                { icon: Sprout, titel: "Landowners", wert: "€0", text: "free of charge for landowners – we earn as a developer on joint projects" },
+              ].map((k, i) => (
+                <Reveal key={k.titel} delay={i * 70} className={i === 0 ? "ov-verlauf-gruen rounded-[1.4rem] p-6 text-white shadow-e3" : "rounded-[1.4rem] bg-white p-6 ring-1 ring-ink-200/70"}>
+                  <k.icon aria-hidden="true" className={i === 0 ? "h-6 w-6 text-white" : "h-6 w-6 text-ov-600"} />
+                  <p className={i === 0 ? "mt-4 text-[13px] font-semibold text-white/85" : "mt-4 text-[13px] font-semibold text-ink-500"}>{k.titel}</p>
+                  <p className="ov-num mt-1 whitespace-nowrap font-display text-[30px] font-extrabold tracking-tight">{k.wert}</p>
+                  <p className={i === 0 ? "mt-2 text-[14px] leading-relaxed text-white/85" : "mt-2 text-[14px] leading-relaxed text-ink-600"}>{k.text}</p>
+                </Reveal>
+              ))}
+            </div>
+            <Reveal delay={200} className="mt-4 rounded-[1.4rem] bg-white p-5 ring-1 ring-ink-200/70 sm:p-6">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-ov-700">Example</p>
+              <p className="mt-2 text-[14.5px] leading-relaxed text-ink-700">
+                {BEISPIEL.mwp} MWp ready-to-build at €{fmtEn(BEISPIEL.preis)}/kWp = <strong className="ov-num text-ink-900">{fmtEurEn(beispielKaufpreis)}</strong> purchase price. The success fee of{" "}
+                <strong className="ov-num text-ink-900">
+                  {fmtEurEn(beispielKaufpreis * PROVISION.verkaeufer.min)} to {fmtEurEn(beispielKaufpreis * PROVISION.verkaeufer.max)}
+                </strong>{" "}
+                is borne by the seller, only on closing.
+              </p>
+              <div aria-hidden="true" className="mt-4 flex h-2.5 overflow-hidden rounded-full bg-ink-100">
+                <span className="h-full bg-gradient-to-r from-ov-400 to-ov-600" style={{ width: `${100 - PROVISION.verkaeufer.max * 100}%` }} />
+                <span className="h-full bg-sun-400" style={{ width: `${PROVISION.verkaeufer.max * 100}%` }} />
+              </div>
+              <p className="mt-2 flex justify-between text-[12px] text-ink-500">
+                <span>You pay the purchase price – no buyer fee</span>
+                <span>Seller fee</span>
+              </p>
+            </Reveal>
           </div>
         </div>
       </Section>
 
       {/* ---------------- Tools ---------------- */}
-      <Section tone="green" space="md">
+      <Section tone="white" space="md">
         <div className="grid gap-4 md:grid-cols-2">
-          {[
-            { href: "/rechner/solarpark", icon: LineChart, titel: "Solar park return calculator", text: "Project and equity IRR, LCOE, DSCR and 30-year cash flow – interface in German." },
-            { href: "/rechner/projektbewertung", icon: Scale, titel: "Project valuation", text: "Purchase price range per kWp by stage, grid connection, size and offtake – interface in German." },
-          ].map((t) => (
-            <Link key={t.href} href={t.href} hrefLang="de" className="group ov-card-hover flex items-start gap-5 rounded-3xl bg-white p-6 ring-1 ring-ov-100 md:p-8">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-ov-50 text-ov-600 transition-colors group-hover:bg-ov-500 group-hover:text-white">
-                <t.icon aria-hidden="true" className="h-6 w-6" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block font-display text-[20px] font-bold text-ink-900">{t.titel}</span>
-                <span className="mt-2 block text-[15px] leading-relaxed text-ink-600">{t.text}</span>
-              </span>
-            </Link>
-          ))}
+          <LinkKarte href="/rechner/solarpark" hrefLang="de" icon={LineChart} titel="Solar park return calculator" text="Project and equity IRR, LCOE, DSCR and 30-year cash flow – interface in German." />
+          <LinkKarte href="/rechner/projektbewertung" hrefLang="de" icon={Scale} titel="Project valuation" text="Purchase price range per kWp by stage, grid connection, size and offtake – interface in German." />
         </div>
       </Section>
 
       {/* ---------------- Search profile / form ---------------- */}
-      <Section tone="navy" space="lg" id="search-profile" className="scroll-mt-24">
-        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <Section tone="navy" space="lg" id="search-profile" className="scroll-mt-24 overflow-hidden">
+        <div aria-hidden="true" className="ov-grid-bg absolute inset-0 opacity-50" />
+        <div aria-hidden="true" className="pointer-events-none absolute -right-40 bottom-0 h-[420px] w-[420px] rounded-full bg-ov-500/20 blur-[120px]" />
+        <div className="relative grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
           <div>
             <SectionHeading
               dark
@@ -286,8 +328,8 @@ export default function EnInvestors() {
             </div>
             <ul className="mt-10 space-y-3 border-t border-white/10 pt-8 text-[14.5px] text-white/75">
               {["Free of charge and non-binding", "Confidential: details only after NDA", "Portal interface currently in German", `Market data as of ${datumEn(STAND)}`].map((t) => (
-                <li key={t} className="flex items-center gap-2.5">
-                  <ShieldCheck aria-hidden="true" className="h-4 w-4 shrink-0 text-ov-300" />
+                <li key={t} className="flex items-start gap-2.5">
+                  <Haken dunkel />
                   {t}
                 </li>
               ))}
@@ -309,24 +351,19 @@ export default function EnInvestors() {
       {/* ---------------- FAQ ---------------- */}
       <Section tone="sand" space="lg">
         <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
-          <SectionHeading eyebrow="FAQ" title="Good to know for investors" lead="Further questions? We are happy to answer them personally." />
+          <SectionHeading eyebrow="FAQ" title="Good to know for investors" lead="Further questions? We are happy to answer them personally – in English.">
+            <Button href="/en/contact" variant="secondary" className="mt-8" pfeil>
+              Contact the team
+            </Button>
+          </SectionHeading>
           <Faq items={FAQ} />
         </div>
       </Section>
 
-      <Querverweise
-        ueberschrift="Continue reading"
-        items={[
-          { href: "/en/project-exchange", titel: "Project exchange", text: "Listings across the DACH region – anonymous teaser in public, details after NDA." },
-          { href: "/en/sell-your-project", titel: "Sell your project", text: "For developers: confidential marketing, success fee only on closing." },
-          { href: "/en/contact", titel: "Contact", text: "Enquiries in English to the team in Ostermiething." },
-        ]}
-      />
-
       <EnCta
         eyebrow="Free of charge for investors"
         title="The right projects, before everyone sees them."
-        text="Set up your search profile. We match it against new projects from our own development and from the exchange – with vetted documents and one fixed contact person."
+        text="Set up your search profile. We match it against new projects from our own development and from the exchange – with documents pre-checked for completeness; a contact person from our team will get in touch."
         primary={{ label: "Register as investor", href: "/registrieren?rolle=investor" }}
         secondary={{ label: "Project exchange", href: "/en/project-exchange" }}
       />

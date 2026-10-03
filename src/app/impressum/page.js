@@ -6,21 +6,18 @@
 //  - § 25 Mediengesetz (MedienG)        Offenlegung
 // Alle Stammdaten kommen aus src/data/site.js (GESELLSCHAFT, KONTAKT).
 //
-// TODO vor Livegang (fachlich/rechtlich zu ergänzen, bewusst NICHT im Text):
-//  - UID-Nummer: GESELLSCHAFT.uid ist noch null -> Zeile erscheint automatisch,
-//    sobald sie eingetragen ist.
-//  - Kammerzugehörigkeit (voraussichtlich Wirtschaftskammer Oberösterreich) und
-//    Fachgruppe prüfen und ergänzen (§ 5 Abs. 1 Z 5 ECG).
-//  - Gewerbe/Berufsrecht und zuständige Aufsichtsbehörde (Gewerbebehörde,
-//    voraussichtlich Bezirkshauptmannschaft Braunau am Inn) prüfen und ergänzen
-//    (§ 5 Abs. 1 Z 4 und 6 ECG) – nur, wenn eine Gewerbeberechtigung besteht.
-//  - Beteiligungsverhältnisse (Gesellschafter mit Anteilen) nach § 25 Abs. 2
-//    MedienG aus dem aktuellen Firmenbuchauszug ergänzen.
-//  - Telefon/E-Mail: erscheinen automatisch, sobald KONTAKT freigegeben ist.
-//    § 5 Abs. 1 Z 3 ECG verlangt Angaben, die eine rasche und unmittelbare
-//    Kontaktaufnahme ermöglichen, einschließlich E-Mail-Adresse -> vor
-//    Livegang zwingend freigeben.
-//  - Verbraucherschlichtung: Teilnahmebereitschaft (AStG) rechtlich festlegen.
+// Prüfung durch die Rechtsabteilung (Gesamtabnahme der Website) – offen:
+//  - Kammer, Fachgruppe, Gewerbeberechtigungen und Aufsichtsbehörde sind aus dem
+//    Sitz abgeleitet (GESELLSCHAFT.kammer/aufsichtsbehoerde/berufsrecht) – bestätigen.
+//  - Verbraucherschlichtung: Teilnahmebereitschaft (AStG) bestätigen.
+//
+// TODO Inhaber (W0-3/E2, Stand 03.10.2026 NICHT freigegeben): Telefon, Funktionspostfach
+// (E-Mail) und UID in src/data/site.js (KONTAKT/GESELLSCHAFT) eintragen. Bis dahin zeigt die
+// Seite sichtbar „offen“ statt still nichts – die E-Mail ist Pflichtangabe nach § 5 Abs. 1
+// Z 3 ECG; ohne sie darf die Seite nicht öffentlich gehen. Nichts erfinden.
+//
+// Bild: firmensitz.jpg zeigt das Gebäude der Muttergesellschaft in Türkheim (DE), nicht den
+// Sitz der ÖkoInvest GmbH in Ostermiething (AT) – Bildtext entsprechend (Paket D).
 
 import Link from "next/link";
 import LegalShell from "@/components/Reusable/LegalShell";
@@ -43,11 +40,20 @@ export const metadata = {
     siteName: "ÖkoInvest",
     title: TITEL,
     description: BESCHREIBUNG,
-    images: [{ url: abs("/img/firmensitz.jpg"), alt: "Firmensitz der ÖkoInvest GmbH" }],
+    images: [{ url: abs("/img/firmensitz.jpg"), alt: "Firmengebäude der Muttergesellschaft ÖKOVOLT GmbH Solartechnik in Türkheim" }],
   },
 };
 
 const G = GESELLSCHAFT;
+
+/** Sichtbarer Platzhalter für noch nicht freigegebene Pflichtangaben (siehe TODO oben). */
+function Offen() {
+  return (
+    <span data-todo="kontaktdaten" className="rounded bg-sun-100 px-1.5 py-0.5 text-[14px] font-semibold text-ink-900 ring-1 ring-sun-300">
+      offen – wird nach Freigabe ergänzt
+    </span>
+  );
+}
 
 export default function ImpressumPage() {
   return (
@@ -57,58 +63,57 @@ export default function ImpressumPage() {
       lead="Informationen nach § 5 E-Commerce-Gesetz und § 14 Unternehmensgesetzbuch sowie Offenlegung nach § 25 Mediengesetz."
     >
       <h2>Diensteanbieter und Medieninhaber</h2>
-      <address className="not-italic">
-        <strong>{G.name}</strong>
-        <br />
-        {G.sitz}
-        <br />
-        {G.plz} {G.ort}
-        <br />
-        {G.land}
-      </address>
-
-      <h2>Kontakt</h2>
-      {KONTAKT.telefon && (
-        <p>
-          Telefon: <a href={KONTAKT.telefonHref || `tel:${KONTAKT.telefon.replace(/[^+\d]/g, "")}`}>{KONTAKT.telefon}</a>
-        </p>
-      )}
-      {KONTAKT.email && (
-        <p>
-          E-Mail: <a href={`mailto:${KONTAKT.email}`}>{KONTAKT.email}</a>
-        </p>
-      )}
-      <p>
-        Sie erreichen uns schriftlich über das <Link href="/kontakt">Kontaktformular</Link> oder – nach Registrierung – über die
-        Nachrichtenfunktion im Portal. Die Postanschrift finden Sie oben.
-      </p>
+      <div className="not-prose mt-5 grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <address className="relative overflow-hidden rounded-2xl bg-sand-50 p-5 not-italic ring-1 ring-ink-200/70 md:p-6">
+          <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-ov-500 to-ov-300" />
+          <strong className="font-display text-[17px]">{G.name}</strong>
+          <br />
+          {G.sitz}
+          <br />
+          {G.plz} {G.ort}
+          <br />
+          {G.land}
+        </address>
+        <div className="rounded-2xl bg-sand-50 p-5 ring-1 ring-ink-200/70 md:p-6">
+          <h2 className="!mt-0 !mb-2 !text-[17px]">Kontakt</h2>
+          {KONTAKT.telefon && (
+            <p>
+              Telefon: <a href={KONTAKT.telefonHref || `tel:${KONTAKT.telefon.replace(/[^+\d]/g, "")}`}>{KONTAKT.telefon}</a>
+            </p>
+          )}
+          <p>
+            E-Mail: {KONTAKT.email ? <a href={`mailto:${KONTAKT.email}`}>{KONTAKT.email}</a> : <Offen />}
+          </p>
+          <p>
+            Sie erreichen uns schriftlich über das <Link href="/kontakt">Kontaktformular</Link> oder – nach Registrierung – über die
+            Nachrichtenfunktion im Portal. Die Postanschrift finden Sie oben.
+          </p>
+        </div>
+      </div>
 
       <h2>Unternehmensangaben</h2>
-      <ul>
-        <li>
-          <strong>Firma und Rechtsform:</strong> {G.name}, Gesellschaft mit beschränkter Haftung
-        </li>
-        <li>
-          <strong>Sitz:</strong> {G.ort}, {G.land}
-        </li>
-        <li>
-          <strong>Firmenbuchnummer:</strong> {G.register}
-        </li>
-        <li>
-          <strong>Firmenbuchgericht:</strong> {G.gericht}
-        </li>
-        {G.uid && (
-          <li>
-            <strong>UID-Nummer:</strong> {G.uid}
-          </li>
-        )}
-        <li>
-          <strong>Geschäftsführung:</strong> {G.geschaeftsfuehrung.join(", ")}
-        </li>
-        <li>
-          <strong>Unternehmensgegenstand:</strong> {G.gegenstand}
-        </li>
-      </ul>
+      <dl className="mt-5 grid gap-px overflow-hidden rounded-2xl bg-ink-200/70 ring-1 ring-ink-200/70 sm:grid-cols-2">
+        {[
+          ["Firma und Rechtsform", `${G.name}, Gesellschaft mit beschränkter Haftung`],
+          ["Sitz", `${G.ort}, ${G.land}`],
+          ["Firmenbuchnummer", G.register],
+          ["Firmenbuchgericht", G.gericht],
+          ["UID-Nummer", G.uid || <Offen key="uid" />],
+          ["Geschäftsführung", G.geschaeftsfuehrung.join(", ")],
+          ...(G.vertretung ? [["Vertretung", G.vertretung]] : []),
+          ...(G.kammer ? [["Kammerzugehörigkeit", G.kammer]] : []),
+          ...(G.aufsichtsbehoerde ? [["Aufsichts- und Gewerbebehörde", G.aufsichtsbehoerde]] : []),
+          ...(G.berufsrecht
+            ? [["Berufsrecht", <>{G.berufsrecht.text}, abrufbar unter <a href={G.berufsrecht.url} rel="noopener noreferrer">{G.berufsrecht.url.replace("https://", "")}</a></>]]
+            : []),
+          ["Unternehmensgegenstand", G.gegenstand, true],
+        ].map(([dt, dd, breit]) => (
+          <div key={dt} className={`bg-white px-5 py-4 ${breit ? "sm:col-span-2" : ""}`}>
+            <dt className="text-[12.5px] font-semibold uppercase tracking-[0.1em] text-ink-500">{dt}</dt>
+            <dd className="mt-1 font-medium leading-relaxed text-ink-900">{dd}</dd>
+          </div>
+        ))}
+      </dl>
 
       <h2>Offenlegung nach § 25 Mediengesetz</h2>
       <p>
@@ -120,6 +125,18 @@ export default function ImpressumPage() {
       <p>
         <strong>Geschäftsführung:</strong> {G.geschaeftsfuehrung.join(", ")}.
       </p>
+      {G.gesellschafter?.length > 0 && (
+        <p>
+          <strong>Beteiligungsverhältnisse (Gesellschafter):</strong>{" "}
+          {G.gesellschafter.map((g, i) => (
+            <span key={g.name}>
+              {i > 0 && "; "}
+              {g.name} ({g.anteil})
+            </span>
+          ))}
+          .
+        </p>
+      )}
       <p>
         Die {G.name} ist Teil der {SITE.gruppe}.
         {G.beteiligungen?.length > 0 && (

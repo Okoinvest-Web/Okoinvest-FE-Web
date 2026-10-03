@@ -16,15 +16,21 @@
 // Firmenbuch-/Handelsregisterstand pruefen.
 //
 // PFLEGE: `stand` dokumentiert den Redaktionsstand und wird ausgewiesen.
+//
+// CLAIMS (Paket D, Welle 1, 03.10.2026): Keine Alleinstellungs- oder Rangaussagen
+// ohne Drittbeleg. Entfernt: „Pionier(e)“, „TOP 3 der IPC-Errichter“, „zählt zu
+// den führenden Errichtern“, „aus tausenden Projekten“ (nur Eigenangabe, § 5 UWG).
+// Eigenangaben wie „30 MWp 2021“ sind als Unternehmensangabe gekennzeichnet.
+// Wieder aufnehmen nur mit belegbarer Drittquelle (Ranking, Verband, Presse).
 
 export const STAND = "2026-09-27";
 
 /** Kurzprofil für den Einstieg. */
 export const PROFIL = {
-  kopf: "Solarpioniere aus dem Allgäu. Seit 2010.",
-  titel: "Solarpioniere aus dem Allgäu",
+  kopf: "Photovoltaik aus dem Allgäu. Seit 2010.",
+  titel: "Photovoltaik aus dem Allgäu – seit 2010",
   lead:
-    "Als wir 2010 angefangen haben, war Photovoltaik noch keine Selbstverständlichkeit, sondern Überzeugungsarbeit. Große Solaranlagen galten als Wagnis, Finanzierer waren skeptisch, und Erfahrung musste man sich selbst erarbeiten. Andreas Wegscheider und Susanne Messmer haben damals eine einfache Entscheidung getroffen: Wir planen nicht nur, wir bauen selbst. Und wir betreiben, was wir bauen. Aus dieser Haltung ist über die Jahre ein Verbund eigener Gesellschaften gewachsen, gegründet und getragen von denselben zwei Menschen.",
+    "Als wir 2010 angefangen haben, war Photovoltaik noch keine Selbstverständlichkeit, sondern Überzeugungsarbeit. Andreas Wegscheider und Susanne Messmer haben damals eine einfache Entscheidung getroffen: Wir planen nicht nur, wir bauen selbst. Und wir betreiben, was wir bauen. Aus dieser Haltung ist über die Jahre ein Verbund eigener Gesellschaften gewachsen, gegründet und getragen von denselben zwei Menschen.",
 };
 
 /** Schlusssatz des Kapitels. */
@@ -82,7 +88,7 @@ export const URSPRUNG = {
   titel: "Eine Mutter, eine Schwester – ein Verbund",
   absaetze: [
     "Türkheim ist der Ursprung und bis heute die Muttergesellschaft. Hier sitzt die Technik, hier werden die Standards gesetzt, nach denen gebaut wird.",
-    "Mit diesem deutschen Know-how wurde die österreichische Schwestergesellschaft aufgebaut – mit denselben Prozessen und derselben Qualitätslatte. Heute zählt sie zu den führenden Errichtern von PV-Anlagen für Gewerbe und Industrie in Österreich.",
+    "Mit diesem deutschen Know-how wurde die österreichische Schwestergesellschaft aufgebaut – mit denselben Prozessen und derselben Qualitätslatte. Heute errichtet sie PV-Anlagen für Gewerbe und Industrie in Österreich.",
     "Beide Gesellschaften arbeiten eng verzahnt: exklusiver Zentraleinkauf, gemeinsame Planungsdienstleistungen und eine gemeinsame EDV-Infrastruktur.",
   ],
   kennzahlen: [
@@ -97,23 +103,23 @@ export const GENERATIONEN = [
   {
     id: "erste",
     kopf: "1. Generation",
-    titel: "Die Pioniere",
+    titel: "Die Gründer",
     einleitung:
-      "Lange bevor Photovoltaik Mainstream wurde, haben die beiden Gründer sie zu ihrem Beruf gemacht – aus Überzeugung, nicht wegen einer Förderkulisse.",
+      "2010 haben die beiden Gründer die Photovoltaik zu ihrem Beruf gemacht – und sind seitdem dabeigeblieben, durch Förderstopps, Preisverfall und Boomjahre.",
     personen: [
       {
         initialen: "AW",
         name: "Andreas Wegscheider",
         rolle: "Gründer & Geschäftsführer",
-        schlagzeile: "Pionier der ersten Stunde",
+        schlagzeile: "Gründer, seit 2010 in der Photovoltaik",
         text:
-          "Andreas Wegscheider gehört zu den Pionieren der Photovoltaik im DACH-Raum. Er hat Anlagen geplant und montiert, als Module noch ein Vielfaches kosteten und jede Installation Überzeugungsarbeit war. Dieses technische Fundament – und der Anspruch, jede Anlage so zu bauen, als stünde sie auf dem eigenen Dach – prägt ÖKOVOLT bis heute.",
+          "Andreas Wegscheider plant und baut seit 2010 Photovoltaikanlagen. Er hat Anlagen geplant und montiert, als Module noch ein Vielfaches kosteten und jede Installation Überzeugungsarbeit war. Dieses technische Fundament – und der Anspruch, jede Anlage so zu bauen, als stünde sie auf dem eigenen Dach – prägt ÖKOVOLT bis heute.",
       },
       {
         initialen: "SM",
         name: "Susanne Messmer",
         rolle: "Gründerin & Geschäftsführung",
-        schlagzeile: "Pionierin der ersten Stunde",
+        schlagzeile: "Gründerin, seit 2010 in der Photovoltaik",
         text:
           "Susanne Messmer steht für strategische Weitsicht und kaufmännische Stärke. Sie hat aus einem Handwerksbetrieb eine Unternehmensgruppe gemacht und die wirtschaftliche Entwicklung über alle Marktzyklen hinweg gesteuert – durch Förderstopps, Preisverfall und Boomjahre.",
       },
@@ -145,7 +151,7 @@ export const GENERATIONEN = [
         rolle: "Vertrieb · PV GmbH",
         schlagzeile: "Seit über 10 Jahren Teil der Familie",
         text:
-          "Manuel Thaler gehört seit mehr als zehn Jahren zur ÖKOVOLT-Familie und verantwortet mit der PV GmbH den Vertrieb der Gruppe. Er begleitet Kundinnen und Kunden von der ersten Frage bis zur fertigen Anlage – und kennt die Region, die Netzbetreiber und die Förderlandschaft aus tausenden Projekten.",
+          "Manuel Thaler gehört seit mehr als zehn Jahren zur ÖKOVOLT-Familie und verantwortet mit der PV GmbH den Vertrieb der Gruppe. Er begleitet Kundinnen und Kunden von der ersten Frage bis zur fertigen Anlage – und kennt die Region, die Netzbetreiber und die Förderlandschaft aus seiner langjährigen Arbeit im Vertrieb.",
       },
     ],
   },
@@ -160,17 +166,18 @@ export const SALZBURG_AG = {
   kopf: "Ein Kapitel Konzerngeschichte",
   titel: "Die Partnerschaft mit der Salzburg AG",
   text:
-    "Die Beteiligung betraf die österreichische Schwestergesellschaft, die Ökovolt Solartechnik GmbH. Sie gehörte 2021 bereits zu den TOP 3 der IPC-Errichter Österreichs – genau deshalb kam einer der großen Landesenergieversorger auf sie zu: Die Position war der Grund für den Einstieg, nicht sein Ergebnis. Vier Jahre lang öffnete die Partnerschaft zusätzlich den Zugang zu Liegenschaften und Infrastruktur eines Landesversorgers. 2025 ist die Salzburg AG wieder ausgeschieden – die Gruppe ist seitdem vollständig in Familienhand.",
+    "Die Beteiligung betraf die österreichische Schwestergesellschaft, die Ökovolt Solartechnik GmbH. 2021 stieg die Salzburg AG, einer der großen österreichischen Landesenergieversorger, mit 49 % ein. Vier Jahre lang öffnete die Partnerschaft zusätzlich den Zugang zu Liegenschaften und Infrastruktur eines Landesversorgers. 2025 ist die Salzburg AG wieder ausgeschieden – die Gruppe ist seitdem vollständig in Familienhand.",
   kennzahlen: [
-    { wert: "TOP 3", label: "IPC-Errichter – schon vor dem Einstieg" },
+    { wert: "30 MWp", label: "2021 in Österreich errichtet (Unternehmensangabe)" },
     { wert: "49 %", label: "Beteiligung von 2021 bis 2025" },
     { wert: "2025", label: "Rückkehr in vollständigen Familienbesitz" },
   ],
+  // Vergangenheitsform: Die Beteiligung endete 2025 (siehe Kopfkommentar).
   punkte: [
-    "Bereits vor 2021 unter den TOP 3 der IPC-Errichter (Integrierter Photovoltaik-Contractor) Österreichs",
-    "Bevorzugter PV-Errichter des Salzburg AG Konzerns",
-    "Zugang zu Liegenschaften und Infrastrukturprojekten eines Landesenergieversorgers",
-    "Großprojekte im Bereich Freifläche, Agri-PV und gewerbliche Dachanlagen",
+    "2021 PV-Anlagen mit 30 MWp in Österreich errichtet (Unternehmensangabe)",
+    "Während der Beteiligung (2021–2025) bevorzugter PV-Errichter des Salzburg AG Konzerns (Unternehmensangabe)",
+    "Damals Zugang zu Liegenschaften und Infrastrukturprojekten eines Landesenergieversorgers",
+    "Projekte in den Bereichen Freifläche, Agri-PV und gewerbliche Dachanlagen",
   ],
 };
 
@@ -320,7 +327,7 @@ export const MEILENSTEINE = [
     titel: "Neu aufgestellt für die nächste Welle",
     text: [
       "Die Gründer ordnen ihre Unternehmen neu. Die Solarparks werden in der AWSM Beteiligung GmbH gebündelt, der Beteiligungsgesellschaft von Andreas Wegscheider und Susanne Messmer. Die ÖKOVOLT GmbH Solartechnik konzentriert sich seitdem ganz auf Planung, Bau und Inbetriebnahme von PV-Anlagen für Gewerbe, Industrie, Kommunen und Landwirtschaft.",
-      "Wie stark ÖKOVOLT inzwischen gewachsen ist, zeigt ein Jahr: Allein 2021 errichtet die österreichische Schwestergesellschaft Ökovolt Solartechnik GmbH PV-Anlagen mit 30 MWp Leistung und gehört damit zu den führenden Errichtern von PV-Anlagen für Gewerbe und Industrie in Österreich.",
+      "Wie stark ÖKOVOLT inzwischen gewachsen ist, zeigt ein Jahr: Allein 2021 errichtet die österreichische Schwestergesellschaft Ökovolt Solartechnik GmbH nach eigenen Angaben PV-Anlagen mit 30 MWp Leistung, vor allem für Gewerbe und Industrie.",
       "Im selben Jahr beteiligt sich die Salzburg AG, einer der großen österreichischen Landesenergieversorger, mit 49 Prozent am Unternehmen.",
     ],
     icon: "Network",
@@ -339,7 +346,7 @@ export const MEILENSTEINE = [
   },
   {
     jahr: "Heute",
-    titel: "Die Photovoltaik ist erwachsen geworden – wir waren von Anfang an dabei",
+    titel: "Die Photovoltaik ist erwachsen geworden – wir sind seit 2010 dabei",
     text: [
       "Über 15 Jahre Erfahrung und ein Team von Fachleuten in Türkheim. Dahinter stehen bis heute dieselben Gründer, die 2010 angefangen haben. Und wir machen weiter: mit Speicher, Eigenverbrauchsoptimierung und intelligentem Energiemanagement.",
     ],
@@ -375,7 +382,7 @@ export const ROLLEN_DE = {
     {
       name: "ÖKOVOLT Montage GmbH",
       rolle: "Eigene Montage",
-      text: "Seit 2010 eigene Montageteams – das Rückgrat der Ausführung. Bei Bedarf ergänzt durch geprüfte Partnerbetriebe, die Verantwortung bleibt bei uns.",
+      text: "Seit 2010 eigene Montageteams – das Rückgrat der Ausführung. Bei Bedarf ergänzt durch Partnerbetriebe, die Verantwortung bleibt bei uns.",
     },
     {
       name: "Deutsche Solar & Rammtechnik GmbH",

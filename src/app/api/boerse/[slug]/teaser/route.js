@@ -3,10 +3,15 @@
 import { route } from "@/lib/plattform/server/route";
 import { exposeDateiname, exposePdf } from "@/lib/plattform/server/expose";
 import { SITE } from "@/data/site";
+import { istDemo } from "@/lib/plattform/backend";
+import { PlattformFehler } from "@/lib/plattform/fehler";
+import { istOeffentlichSichtbar } from "@/lib/boerse/sichtbarkeit";
 
 export const GET = route({ auth: false }, async ({ backend, params }) => {
   const d = await backend.boerseDetail(null, params.slug, { zaehlen: false });
   const p = d.projekt;
+  // QM Welle 1: öffentlicher Teaser nur für öffentlich sichtbare Projekte (keine Testdatensätze)
+  if (!istOeffentlichSichtbar(p, { demo: istDemo() })) throw new PlattformFehler(404, "Projekt nicht gefunden.");
   const pdf = exposePdf({ projekt: p, teaser: true, portalUrl: `${String(SITE.url).replace(/[/]$/, "")}/projektboerse/${p.slug}` });
   return new Response(pdf, {
     headers: {

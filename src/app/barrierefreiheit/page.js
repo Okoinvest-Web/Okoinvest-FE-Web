@@ -5,8 +5,14 @@
 // (BaFG) mit Marktüberwachung durch das Sozialministeriumservice; für Nutzer
 // in Deutschland zusätzlich BFSG-Hinweise.
 //
-// TODO vor Livegang: Selbstbewertung (axe-core + manuelle Tests) für die
-// ÖkoInvest-Seiten durchführen und STAND/Einschränkungen aktualisieren.
+// TODO vor Livegang: vollständige Selbstbewertung (axe-core auf allen Seitentypen +
+// manuelle Tests: Tastatur, Screenreader, 400 % Zoom, Kontrast) durchführen und danach
+// „Stand der Vereinbarkeit“, Einschränkungen und STAND aktualisieren.
+//
+// Paket D (03.10.2026): Die Erklärung behauptete eine durchgeführte Selbstbewertung und
+// erfüllte Kontraste. Belegt ist bisher nur der automatisierte axe-Lauf aus Paket F
+// (qa/axe.mjs, 10 Kernseiten + Cookie-Banner; Altlasten in qa/axe-baseline.json).
+// Deshalb jetzt „teilweise vereinbar“ mit den bekannten Mängeln – keine Aussage ohne Prüfung.
 
 import Link from "next/link";
 import LegalShell from "@/components/Reusable/LegalShell";
@@ -18,7 +24,7 @@ const BESCHREIBUNG =
   "Erklärung zur Barrierefreiheit der ÖkoInvest-Website nach Barrierefreiheitsgesetz (AT) und BFSG (DE): Standards, Stand der Vereinbarkeit, Einschränkungen, Kontakt.";
 
 /** Datum der Erstellung bzw. letzten Überprüfung dieser Erklärung */
-const STAND = "29. September 2026";
+const STAND = "3. Oktober 2026";
 
 export const metadata = {
   title: TITEL,
@@ -70,46 +76,62 @@ export default function BarrierefreiheitPage() {
         <strong>Web Content Accessibility Guidelines (WCAG) 2.1, Konformitätsstufe AA</strong>.
       </p>
 
-      <h2>So ist unser Angebot barrierefrei nutzbar</h2>
+      <h2>Was wir umsetzen</h2>
+      <p>
+        Die folgenden Punkte sind Ziel unserer Umsetzung. Ob sie auf allen Seiten erfüllt sind, ist noch nicht vollständig geprüft – siehe
+        „Stand der Vereinbarkeit“.
+      </p>
       <ul className="space-y-1.5">
         <li>
-          <strong>Bedienung per Tastatur:</strong> Menüs, Formulare, Rechner und Dialoge lassen sich ohne Maus bedienen. Ein Sprunglink führt direkt
-          zum Hauptinhalt, der Tastaturfokus ist deutlich sichtbar. Dialoge (Menü, Privatsphäre-Einstellungen) halten den Fokus, lassen sich mit
-          der Escape-Taste schließen und geben den Fokus an den Auslöser zurück.
+          <strong>Bedienung per Tastatur:</strong> Menüs, Formulare, Rechner und Dialoge sollen sich ohne Maus bedienen lassen. Ein Sprunglink führt
+          direkt zum Hauptinhalt. Dialoge (Menü, Privatsphäre-Einstellungen) halten den Fokus, lassen sich mit der Escape-Taste schließen und geben
+          den Fokus an den Auslöser zurück.
         </li>
         <li>
-          <strong>Screenreader:</strong> Seiten sind mit Überschriften, Landmarken und Listen gegliedert. Bedienelemente, Formularfelder,
-          Pflichtfelder und Fehlermeldungen sind programmatisch beschriftet; Statusmeldungen werden angesagt. Tabellen haben Beschriftungen und
-          Kopfzellen, Diagramme eine textliche bzw. tabellarische Alternative.
+          <strong>Screenreader:</strong> Seiten sind mit Überschriften, Landmarken und Listen gegliedert. Bedienelemente und Formularfelder sind
+          programmatisch beschriftet; Tabellen haben Beschriftungen und Kopfzellen, Diagramme eine textliche bzw. tabellarische Alternative.
         </li>
         <li>
-          <strong>Kontraste und Farbe:</strong> Texte und Bedienelemente erfüllen die geforderten Mindestkontraste. Informationen werden nicht
-          allein über Farbe vermittelt.
+          <strong>Kontraste und Farbe:</strong> Ziel sind die Mindestkontraste nach WCAG 2.1 AA; Informationen sollen nicht allein über Farbe
+          vermittelt werden.
         </li>
         <li>
           <strong>Bewegung:</strong> Die Einstellung „Bewegung reduzieren“ Ihres Betriebssystems wird berücksichtigt – Animationen entfallen dann
           oder werden stark verkürzt.
         </li>
         <li>
-          <strong>Zoom und Darstellung:</strong> Die Inhalte lassen sich bis 400 % vergrößern und passen sich ohne horizontales Scrollen an schmale
-          Bildschirme an (breite Tabellen scrollen innerhalb ihres Rahmens).
+          <strong>Zoom und Darstellung:</strong> Die Inhalte sollen sich bis 400 % vergrößern lassen und sich an schmale Bildschirme anpassen
+          (breite Tabellen scrollen innerhalb ihres Rahmens).
         </li>
         <li>
-          <strong>Keine Zeitbegrenzungen</strong> in Formularen und Rechnern; Eingaben gehen beim Wechsel zwischen Schritten nicht verloren.
+          <strong>Keine Zeitbegrenzungen</strong> in Formularen und Rechnern.
         </li>
         <li>
-          <strong>Sprache:</strong> Die Seiten sind als deutschsprachig ausgezeichnet, damit Vorleseprogramme die richtige Aussprache verwenden.
+          <strong>Sprache:</strong> Die deutschsprachigen Seiten sind als deutsch, die englischen Seiten im Inhaltsbereich als englisch
+          ausgezeichnet, damit Vorleseprogramme die richtige Aussprache verwenden.
         </li>
       </ul>
 
       <h2>Stand der Vereinbarkeit</h2>
       <p>
-        Die Website ist mit den oben genannten Anforderungen <strong>weitgehend vereinbar</strong>. Die folgenden Inhalte bzw. Funktionen sind aus
-        den genannten Gründen noch nicht vollständig barrierefrei.
+        Die Website ist mit den oben genannten Anforderungen <strong>teilweise vereinbar</strong>. Eine vollständige Prüfung steht noch aus. Die
+        folgenden Inhalte bzw. Funktionen sind bekanntermaßen noch nicht vollständig barrierefrei.
       </p>
 
       <h3>Bekannte Einschränkungen</h3>
       <ul className="space-y-1.5">
+        <li>
+          <strong>Kontraste:</strong> Auf einzelnen Seiten (u. a. Freiflächen-PV und Projektbörse) erreichen einige Texte den geforderten
+          Mindestkontrast noch nicht. Wir beheben das schrittweise.
+        </li>
+        <li>
+          <strong>Aufzählungen mit Kennzahlen:</strong> Auf einzelnen Seiten (u. a. Für Landwirte, Kontakt) sind Kennzahlen-Listen technisch nicht
+          korrekt ausgezeichnet; Screenreader lesen sie teils ohne Zuordnung von Bezeichnung und Wert vor.
+        </li>
+        <li>
+          <strong>Mehrstufige Formulare:</strong> Beim Flächencheck können Eingaben aus früheren Schritten derzeit verloren gehen. Alternative:
+          Schildern Sie Ihr Anliegen über das Kontaktformular.
+        </li>
         <li>
           <strong>Karten und Flächendarstellungen</strong> (z. B. Lage einer Fläche oder eines Projekts): Die grafische Karte ist nur eingeschränkt
           für Screenreader erschlossen. <em>Alternative:</em> Die wesentlichen Angaben (Region, Größe, Kennzahlen) stehen zusätzlich als Text.
@@ -151,9 +173,10 @@ export default function BarrierefreiheitPage() {
 
       <h2>Erstellung dieser Erklärung</h2>
       <p>
-        Diese Erklärung wurde am <strong>{STAND}</strong> erstellt. Grundlage ist eine Selbstbewertung: automatisierte Prüfungen (WCAG 2.1 A/AA)
-        auf den wichtigsten Seiten in Desktop- und Smartphone-Breite sowie manuelle Tests der Tastaturbedienung, Fokusführung, Kontraste,
-        Vergrößerung und reduzierten Bewegung. Die Erklärung wird bei wesentlichen Änderungen der Website, mindestens jedoch jährlich, überprüft.
+        Diese Erklärung wurde am <strong>{STAND}</strong> erstellt. Grundlage sind bisher automatisierte Prüfungen (axe-core, WCAG 2.1 A/AA) auf
+        zehn zentralen Seiten. Eine vollständige Selbstbewertung mit manuellen Tests (Tastatur, Screenreader, Vergrößerung) ist noch nicht
+        abgeschlossen; danach aktualisieren wir diese Erklärung. Sie wird außerdem bei wesentlichen Änderungen der Website, mindestens jedoch
+        jährlich, überprüft.
       </p>
 
       <h2>Feedback und Kontakt</h2>

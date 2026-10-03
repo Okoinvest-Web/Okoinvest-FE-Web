@@ -1,16 +1,16 @@
-import { BadgePercent, BarChart3, ClipboardCheck, EyeOff, FileCheck2, FolderLock, Handshake, LayoutList, Send, ShieldCheck, UserPlus, Users } from "lucide-react";
+import { BadgePercent, BarChart3, ClipboardCheck, Eye, EyeOff, FolderLock, Handshake, Languages, LayoutList, Send, ShieldCheck, UserPlus, Users, Wallet } from "lucide-react";
 
-import PageHero from "@/components/ui/PageHero";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
-import FeatureGrid from "@/components/ui/FeatureGrid";
-import Steps from "@/components/ui/Steps";
 import Faq from "@/components/ui/Faq";
 import Button from "@/components/ui/Button";
 import Reveal from "@/components/ui/Reveal";
-import Querverweise from "@/components/Reusable/Querverweise";
+import JsonLd from "@/components/JsonLd";
 import EnCta from "@/components/En/EnCta";
+import EnHero, { Haken } from "@/components/En/EnHero";
 import ContactForm from "@/components/En/ContactForm";
+import { ProvisionBuehne } from "@/components/En/Buehnen";
+import { Ablauf, FaktenLeiste, LeistungsKarten } from "@/components/En/Teile";
 import { enMetadata, fmtEn, fmtEurEn } from "@/components/En/sprachpaare";
 import { SITE, abs } from "@/data/site";
 import { PHASEN, PROVISION } from "@/lib/invest/markt";
@@ -31,6 +31,15 @@ const RTB = PHASEN.find((p) => p.id === "rtb");
 const BEISPIEL_MWP = 10;
 const BEISPIEL_PREIS_KWP = Math.round((RTB.preisProKwp.min + RTB.preisProKwp.max) / 2);
 const BEISPIEL_KAUFPREIS = BEISPIEL_MWP * 1000 * BEISPIEL_PREIS_KWP;
+
+const PRUEFUNG = [
+  ["Land security", "Lease, option or use agreements and their term"],
+  ["Planning law", "Status of the zoning plan (B-Plan), zoning designation or permit"],
+  ["Grid connection", "Grid enquiry, commitment or reservation, distance to the point of connection"],
+  ["Plausibility", "Capacity vs. area, yield assumptions, schedule to COD"],
+  ["Price indication", "Benchmark against usual ranges for the respective stage"],
+  ["Anonymity", "Title and description without clues to the exact location"],
+];
 
 const FAQ = [
   {
@@ -74,29 +83,38 @@ export default function EnSellYourProject() {
 
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <JsonLd daten={schema} />
 
-      <PageHero
-        eyebrow="For project developers"
+      <EnHero
+        pill={{ tag: "€0", label: "No listing fees, no exclusivity – fee only on closing", kurz: "No listing fees", href: "#fees" }}
         title={
           <>
-            Your solar project in front of the <span className="ov-text-gradient">right investors</span> – confidentially.
+            Your solar project in front of the <span className="ov-text-gradient-light">right investors</span>&nbsp;– confidentially.
           </>
         }
-        lead={`Anonymous teaser, one-click NDA and a digital data room: you keep control, we bring buyers and sellers together. Success fee ${SPANNE} of the purchase price, only on closing.`}
-        image={{ src: "/img/planer-tablet.jpg", alt: "Project developer reviewing plans on a tablet" }}
-        actions={[
-          { label: "Register as seller", href: "/registrieren?rolle=anbieter" },
-          { label: "Send project details", href: "#enquiry" },
-        ]}
-        points={["No listing fees", "Anonymous until NDA", "Real-time statistics", "Across DACH"]}
-        badge={
-          <div>
-            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ov-700">Success fee</p>
-            <p className="ov-num mt-1 font-display text-[28px] font-extrabold text-ink-900">{SPANNE}</p>
-            <p className="text-[13px] text-ink-500">only on closing</p>
-          </div>
+        lead={
+          <>
+            <span className="font-medium text-white">Anonymous teaser, one-click NDA and a digital data room:</span> you keep control, we bring buyers and sellers together. Success fee {SPANNE} of the purchase price, only on closing.
+          </>
         }
+        actions={[
+          { label: "Send project details", href: "#enquiry" },
+          { label: "Register as seller", href: "/registrieren?rolle=anbieter" },
+        ]}
+        note="No documents needed for a first assessment · enquiries in English welcome"
+        chips={["No listing fees", "Anonymous until NDA", "Real-time statistics", "Across DACH"]}
+        visual={<ProvisionBuehne mwp={BEISPIEL_MWP} />}
+        caption={`Worked example in the middle of the RTB market range (€${fmtEn(RTB.preisProKwp.min)}–${fmtEn(RTB.preisProKwp.max)}/kWp, DACH) – the actual price depends on the project`}
+      />
+
+      <FaktenLeiste
+        titel="Selling via the exchange"
+        items={[
+          { icon: Wallet, wert: "€0", einheit: "listing fees", text: "no base fee, no minimum term, no exclusivity" },
+          { icon: BadgePercent, wert: SPANNE, einheit: "success fee", text: "of the purchase price, only on closing" },
+          { icon: ClipboardCheck, wert: String(PRUEFUNG.length), einheit: "checks", text: "before your teaser goes live" },
+          { icon: LayoutList, wert: "5", einheit: "steps", text: "to a reviewed listing – all in the portal" },
+        ]}
       />
 
       <Section tone="white" space="lg">
@@ -104,25 +122,24 @@ export default function EnSellYourProject() {
           eyebrow="Why here"
           title="Market your project without giving it out of your hands"
           lead="The exchange is part of a group that has been planning, building and operating solar power plants since 2010. We know the questions buyers ask – and prepare your project accordingly."
+          className="mb-12"
         />
-        <FeatureGrid
-          className="mt-12"
+        <LeistungsKarten
           items={[
             { icon: EyeOff, title: "Anonymous until NDA", text: "In public only region, capacity, stage and price indication. No municipality, no plots – landowners and municipalities are not approached prematurely." },
             { icon: FolderLock, title: "Data room with log", text: "Only released investors see the documents. Every access is logged." },
             { icon: BarChart3, title: "Transparent statistics", text: "Views, watch-list saves, NDA requests and LOIs in your portal – you see how your project is received." },
             { icon: ShieldCheck, title: "Quality review", text: "We review every project before publication. That builds trust on the buyer side – and saves you follow-up questions." },
             { icon: Users, title: "Investors with search profiles", text: "Registered investors set size, stages, countries and ticket. They see matching projects first." },
-            { icon: Handshake, title: "Support to closing", text: "From LOI through due diligence to the SPA, one fixed contact person in the back office supports you." },
+            { icon: Handshake, title: "Support to closing", text: "From LOI through due diligence to the SPA, a contact person in the back office supports you." },
           ]}
         />
       </Section>
 
       <Section tone="sand" space="lg">
-        <SectionHeading eyebrow="Process" title="Five steps to a reviewed listing" />
-        <Steps
-          className="mt-12"
-          cols={3}
+        <SectionHeading eyebrow="Process" title="Five steps to a reviewed listing" className="mb-12" />
+        <Ablauf
+          cols={5}
           items={[
             { icon: UserPlus, title: "Create a seller account", text: "Register free of charge. Your account is ready to use immediately." },
             { icon: LayoutList, title: "Enter the project", text: "Basic data, development stage, teaser and confidential details – every step is saved." },
@@ -131,13 +148,18 @@ export default function EnSellYourProject() {
             { icon: Send, title: "Publication & marketing", text: "Anonymous teaser on the exchange, data room after NDA, LOIs and closing in the portal." },
           ]}
         />
-        <p className="mt-8 text-[13.5px] text-ink-500">
-          The listing form in the portal is currently in German. Prefer to start in English? Send us the key data below and we will set up the listing with you.
+        <p className="mt-8 flex items-start gap-2.5 text-[14px] leading-relaxed text-ink-600">
+          <Languages aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" />
+          <span>
+            The listing form in the portal is currently in German. Prefer to start in English?{" "}
+            <a href="#enquiry" className="font-semibold text-ov-700 underline underline-offset-2 hover:text-ov-800">Send us the key data</a> and we will set up the listing with you.
+          </span>
         </p>
       </Section>
 
-      <Section tone="white" space="lg">
-        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+      {/* ---------------- Commission ---------------- */}
+      <Section tone="white" space="lg" id="fees" className="scroll-mt-24">
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
           <div>
             <SectionHeading
               eyebrow="Commission model"
@@ -145,60 +167,59 @@ export default function EnSellYourProject() {
               lead="No base fee, no minimum term, no exclusivity for the listing. The seller pays the fee only if an investor introduced via the exchange buys."
             />
             <ul className="mt-8 space-y-3 text-[15.5px] text-ink-700">
-              <li className="flex gap-3"><FileCheck2 aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-ov-600" /> Rate between {fmtEn(PROVISION.verkaeufer.min * 100, 1)}% and {fmtEn(PROVISION.verkaeufer.max * 100)}% of the purchase price</li>
-              <li className="flex gap-3"><FileCheck2 aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-ov-600" /> Fixed before publication, visible in the portal</li>
-              <li className="flex gap-3"><FileCheck2 aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-ov-600" /> Free of charge for investors (search profile, NDA, data room)</li>
+              <li className="flex gap-3"><Haken /><span className="min-w-0">Rate between {fmtEn(PROVISION.verkaeufer.min * 100, 1)}% and {fmtEn(PROVISION.verkaeufer.max * 100)}% of the purchase price</span></li>
+              <li className="flex gap-3"><Haken /><span className="min-w-0">Fixed before publication, visible in the portal</span></li>
+              <li className="flex gap-3"><Haken /><span className="min-w-0">Free of charge for investors (search profile, NDA, data room)</span></li>
             </ul>
           </div>
-          <Reveal className="ov-noise relative overflow-hidden rounded-[2rem] bg-navy-950 p-7 text-white md:p-10">
-            <div aria-hidden="true" className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-ov-500/30 blur-[100px]" />
-            <p className="relative text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-300">Worked example</p>
-            <p className="relative mt-3 text-[15px] text-white/70">
-              Ready-to-build ground-mounted project with {BEISPIEL_MWP} MWp, purchase price in the middle of the usual range (€{fmtEn(BEISPIEL_PREIS_KWP)}/kWp):
-            </p>
-            <dl className="relative mt-6 space-y-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-white/10 pb-4">
-                <dt className="text-white/70">Purchase price, project rights</dt>
-                <dd className="ov-num font-display text-[24px] font-extrabold">{fmtEurEn(BEISPIEL_KAUFPREIS)}</dd>
-              </div>
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <dt className="text-white/70">Success fee ({SPANNE})</dt>
-                <dd className="ov-num font-display text-[24px] font-extrabold text-ov-300">
-                  {fmtEurEn(BEISPIEL_KAUFPREIS * PROVISION.verkaeufer.min)} – {fmtEurEn(BEISPIEL_KAUFPREIS * PROVISION.verkaeufer.max)}
-                </dd>
-              </div>
-            </dl>
-            <p className="relative mt-6 text-[12.5px] leading-relaxed text-white/50">
-              Example based on the market range for ready-to-build projects (€{fmtEn(RTB.preisProKwp.min)}–{fmtEn(RTB.preisProKwp.max)}/kWp, DACH). The actual price depends on grid connection, remuneration, location and negotiation.
+          <Reveal dir="right" className="ov-verlauf-nacht ov-noise relative overflow-hidden rounded-[2rem] p-6 text-white ring-1 ring-white/10 md:p-9">
+            <div aria-hidden="true" className="ov-grid-bg pointer-events-none absolute inset-0 opacity-40" />
+            <p className="relative text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-300">When is a fee due?</p>
+            <ol className="relative mt-6 space-y-3">
+              {[
+                { icon: LayoutList, t: "Listing & review", fee: "€0" },
+                { icon: Eye, t: "Teaser views, watch list, NDA requests", fee: "€0" },
+                { icon: FolderLock, t: "Data room & LOI", fee: "€0" },
+                { icon: Handshake, t: "Closing with an investor from the exchange", fee: SPANNE, ziel: true },
+              ].map((s) => (
+                <li key={s.t} className={s.ziel ? "flex items-center gap-4 rounded-2xl bg-white p-4 text-ink-900" : "flex items-center gap-4 rounded-2xl bg-white/[0.05] p-4 ring-1 ring-white/10"}>
+                  <span className={s.ziel ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-ov-600 text-white" : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-ov-300"}>
+                    <s.icon aria-hidden="true" className="h-5 w-5" />
+                  </span>
+                  <span className={s.ziel ? "min-w-0 flex-1 text-[15px] font-semibold" : "min-w-0 flex-1 text-[15px] text-white/80"}>{s.t}</span>
+                  <span className={s.ziel ? "ov-num shrink-0 whitespace-nowrap font-display text-[20px] font-extrabold text-ov-700" : "ov-num shrink-0 font-display text-[18px] font-extrabold text-white"}>{s.fee}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="relative mt-6 text-[13px] leading-relaxed text-white/60">
+              Example: {BEISPIEL_MWP} MWp ready-to-build at €{fmtEn(BEISPIEL_PREIS_KWP)}/kWp = {fmtEurEn(BEISPIEL_KAUFPREIS)} purchase price → success fee {fmtEurEn(BEISPIEL_KAUFPREIS * PROVISION.verkaeufer.min)} – {fmtEurEn(BEISPIEL_KAUFPREIS * PROVISION.verkaeufer.max)}. Based on the market range for ready-to-build projects (€{fmtEn(RTB.preisProKwp.min)}–{fmtEn(RTB.preisProKwp.max)}/kWp, DACH); the actual price depends on grid connection, remuneration, location and negotiation.
             </p>
           </Reveal>
         </div>
       </Section>
 
-      <Section tone="ink" space="lg">
-        <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr]">
+      <Section tone="sand" space="lg">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
           <SectionHeading eyebrow="Quality review" title="What we check before publication" lead="Not a due diligence – but enough for investors to take your project seriously." />
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {[
-              ["Land security", "Lease, option or use agreements and their term"],
-              ["Planning law", "Status of the zoning plan (B-Plan), zoning designation or permit"],
-              ["Grid connection", "Grid enquiry, commitment or reservation, distance to the point of connection"],
-              ["Plausibility", "Capacity vs. area, yield assumptions, schedule to COD"],
-              ["Price indication", "Benchmark against usual ranges for the respective stage"],
-              ["Anonymity", "Title and description without clues to the exact location"],
-            ].map(([t, x]) => (
-              <li key={t} className="rounded-2xl bg-white p-5 ring-1 ring-ink-200/70">
-                <p className="font-display text-[16px] font-bold text-ink-900">{t}</p>
-                <p className="mt-1 text-[14.5px] leading-relaxed text-ink-600">{x}</p>
-              </li>
+          <ol className="grid gap-3 sm:grid-cols-2">
+            {PRUEFUNG.map(([t, x], i) => (
+              <Reveal as="li" key={t} delay={i * 50} className="flex gap-4 rounded-2xl bg-white p-5 ring-1 ring-ink-200/70">
+                <span className="ov-num flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ov-50 font-display text-[13px] font-extrabold text-ov-700 ring-1 ring-ov-200">{String(i + 1).padStart(2, "0")}</span>
+                <span className="min-w-0">
+                  <span className="block font-display text-[16px] font-bold text-ink-900">{t}</span>
+                  <span className="mt-1 block text-[14.5px] leading-relaxed text-ink-600">{x}</span>
+                </span>
+              </Reveal>
             ))}
-          </ul>
+          </ol>
         </div>
       </Section>
 
       {/* ---------------- Enquiry ---------------- */}
-      <Section tone="navy" space="lg" id="enquiry" className="scroll-mt-24">
-        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <Section tone="navy" space="lg" id="enquiry" className="scroll-mt-24 overflow-hidden">
+        <div aria-hidden="true" className="ov-grid-bg absolute inset-0 opacity-50" />
+        <div aria-hidden="true" className="pointer-events-none absolute -left-40 bottom-0 h-[420px] w-[420px] rounded-full bg-ov-500/20 blur-[120px]" />
+        <div className="relative grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
           <div>
             <SectionHeading
               dark
@@ -214,6 +235,14 @@ export default function EnSellYourProject() {
                 Listing page (German)
               </Button>
             </div>
+            <ul className="mt-10 space-y-3 border-t border-white/10 pt-8 text-[14.5px] text-white/75">
+              {["No documents needed at this point", "Confidential – nothing is published without your release", "Reply in English"].map((t) => (
+                <li key={t} className="flex items-start gap-2.5">
+                  <Haken dunkel />
+                  {t}
+                </li>
+              ))}
+            </ul>
           </div>
           <div className="rounded-[2rem] bg-white/[0.04] p-6 ring-1 ring-white/10 md:p-8">
             <ContactForm
@@ -229,20 +258,15 @@ export default function EnSellYourProject() {
       </Section>
 
       <Section tone="white" space="lg">
-        <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr]">
-          <SectionHeading eyebrow="FAQ" title="Selling via the exchange" />
+        <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr] lg:gap-20">
+          <SectionHeading eyebrow="FAQ" title="Selling via the exchange" lead="Anything else? We are happy to answer in English.">
+            <Button href="/en/contact" variant="secondary" className="mt-8" pfeil>
+              Contact the team
+            </Button>
+          </SectionHeading>
           <Faq items={FAQ} />
         </div>
       </Section>
-
-      <Querverweise
-        ueberschrift="Continue reading"
-        items={[
-          { href: "/en/project-exchange", titel: "Project exchange", text: "How teaser, NDA and data room work for both sides." },
-          { href: "/en/investors", titel: "For investors", text: "Phase model with price ranges and the buyer's due diligence checklist." },
-          { href: "/en/contact", titel: "Contact", text: "General questions in English to the team in Ostermiething." },
-        ]}
-      />
 
       <EnCta
         eyebrow="For developers"

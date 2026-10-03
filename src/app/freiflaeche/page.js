@@ -1,21 +1,23 @@
 // src/app/freiflaeche/page.js – Freiflächen-PV & Solarparks
 
 import {
-  Banknote, Bird, Check, Factory, FileCheck2, Fence, Flower2, Landmark, Layers, MapPinned, Mountain, PlugZap, Recycle,
-  Route, Ruler, ShieldAlert, Sprout, Sun, TrainFront, Trees, Waves, X,
+  Bird, CalendarRange, Factory, FileCheck2, Fence, Flower2, Gauge, Landmark, MapPinned, Recycle,
+  ShieldAlert, Sprout, TrainFront, Trees, Waves,
 } from "lucide-react";
 
-import PageHero from "@/components/ui/PageHero";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
-import FeatureGrid from "@/components/ui/FeatureGrid";
 import SplitMedia from "@/components/ui/SplitMedia";
 import Reveal from "@/components/ui/Reveal";
 import Faq from "@/components/ui/Faq";
 import CtaBand from "@/components/ui/CtaBand";
 import Querverweise from "@/components/Reusable/Querverweise";
+import JsonLd from "@/components/JsonLd";
 import SolarparkSchnitt from "@/components/Flaeche/SolarparkSchnitt";
 import Zeitleiste from "@/components/Flaeche/Zeitleiste";
+import { Faktenleiste } from "@/components/Flaeche/Seite/teile";
+import Hero from "@/components/Flaeche/Freiflaeche/Hero";
+import { Kriterien, Wertschoepfung } from "@/components/Flaeche/Freiflaeche/Abschnitte";
 import { abs } from "@/data/site";
 import { AGRI, FREIFLAECHE, KOMMUNE, PACHT, REGIONEN, STAND } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
@@ -23,7 +25,7 @@ import { fmt } from "@/lib/rechner/annahmen";
 const PFAD = "/freiflaeche";
 const TITEL = "Freiflächen-PV & Solarparks entwickeln | ÖkoInvest";
 const BESCHREIBUNG =
-  "Solarparks ab rund 3 Hektar in DE, AT und CH: Flächenkriterien, EEG-Flächenkulisse, Genehmigung, Ökologie, Rückbau und ein ehrlicher Zeitplan bis zum Betrieb.";
+  "Solarparks ab rund 3 Hektar in DE, AT und CH: Flächenkriterien, EEG-Flächenkulisse, Genehmigung, Ökologie, Rückbau und Zeitplan. Jetzt Fläche prüfen.";
 
 export const metadata = {
   title: TITEL,
@@ -42,6 +44,13 @@ export const metadata = {
 
 const mwpBei = (ha) => ha / FREIFLAECHE.haProMwp;
 const sued = REGIONEN.find((r) => r.id === "de-sued");
+
+const FAKTEN = [
+  { icon: MapPinned, wert: `ab ${FREIFLAECHE.mindestHa} ha`, einheit: "Flächengröße", text: "darunter tragen sich Planung, Gutachten und Netzanschluss selten" },
+  { icon: Gauge, wert: `${fmt(FREIFLAECHE.haProMwp, 1)} ha`, einheit: "je MWp Leistung", text: "mit heutigen Modulen, feste Aufständerung nach Süden" },
+  { icon: Landmark, wert: `${FREIFLAECHE.laufzeit} J.`, einheit: "Betrieb & Pacht", text: "danach Rückbau – abgesichert über eine Bürgschaft" },
+  { icon: CalendarRange, wert: "2–4 J.", einheit: "bis zum Betrieb", text: "Netz, Gemeinde und Artenschutz geben den Takt vor" },
+];
 
 const FAQ = [
   {
@@ -66,7 +75,7 @@ const FAQ = [
   },
   {
     q: "Wer baut den Solarpark nach 30 Jahren zurück?",
-    a: "Der Betreiber. Der Rückbau samt Entsorgung und Wiederherstellung der landwirtschaftlichen Nutzbarkeit ist im Pachtvertrag geregelt und über eine Rückbaubürgschaft einer Bank oder Versicherung abgesichert. Rammpfosten ohne Beton lassen sich vollständig ziehen; der Boden hat sich unter extensivem Grünland häufig sogar erholt.",
+    a: "Der Betreiber. Der Rückbau samt Entsorgung und Wiederherstellung der landwirtschaftlichen Nutzbarkeit ist im Pachtvertrag geregelt und über eine Rückbaubürgschaft einer Bank oder Versicherung abgesichert. Rammpfosten ohne Beton lassen sich vollständig ziehen; unter extensivem Grünland kann sich der Boden in dieser Zeit erholen – wie stark, hängt von Standort und Pflege ab.",
   },
   {
     q: "Verdient auch die Gemeinde am Solarpark?",
@@ -81,73 +90,29 @@ const FAQ = [
 export default function FreiflaechePage() {
   return (
     <div>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Service",
-            name: "Projektentwicklung Freiflächen-Photovoltaik",
-            serviceType: "Entwicklung, Bau und Betrieb von Solarparks",
-            provider: { "@id": `${abs("/")}/#organization` },
-            areaServed: ["DE", "AT", "CH"],
-            url: abs(PFAD),
-            description: BESCHREIBUNG,
-          }),
+      <JsonLd
+        daten={{
+          "@context": "https://schema.org",
+          "@type": "Service",
+          name: "Projektentwicklung Freiflächen-Photovoltaik",
+          serviceType: "Entwicklung, Bau und Betrieb von Solarparks",
+          provider: { "@id": `${abs("/")}/#organization` },
+          areaServed: ["DE", "AT", "CH"],
+          url: abs(PFAD),
+          description: BESCHREIBUNG,
         }}
       />
 
-      <PageHero
-        variant="immersive"
-        breadcrumbs={[{ name: "Freiflächen-PV" }]}
-        eyebrow="Freiflächen-Photovoltaik · DACH"
-        title={<>Solarparks, die <span className="ov-text-gradient-light">genehmigt werden</span> – und 30 Jahre tragen.</>}
-        lead="Wir entwickeln Freiflächenanlagen ab rund 3 Hektar: von der Flächensicherung über Netzanschluss und Bebauungsplan bis zum Bau und Betrieb – als Teil einer Gruppe, die seit 2012 eigene Solarparks betreibt."
-        image={{ src: "/img/solarpark-himmel.jpg", alt: "Modulreihen eines Solarparks unter blauem Himmel", position: "center 60%" }}
-        actions={[
-          { label: "Fläche prüfen", href: "/flaechencheck" },
-          { label: "Pacht berechnen", href: "/rechner/pacht" },
-        ]}
-        stats={[
-          { value: FREIFLAECHE.mindestHa, prefix: "ab ", suffix: " ha", label: "Flächengröße" },
-          { value: FREIFLAECHE.haProMwp, decimals: 1, suffix: " ha", label: "je MWp Leistung" },
-          { value: FREIFLAECHE.laufzeit, suffix: " J.", label: "Betrieb & Pacht" },
-        ]}
-      />
-
-      {/* Was wir entwickeln */}
-      <Section tone="white" space="lg">
-        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
-          <SectionHeading
-            eyebrow="Was wir entwickeln"
-            title="Vom Acker zum Kraftwerk – mit einem Partner für alle Phasen."
-            lead={`Die ÖkoInvest entwickelt rund 50 MWp pro Jahr neu. Typische Parks liegen zwischen ${FREIFLAECHE.mindestHa} und 100 Hektar – also etwa ${fmt(mwpBei(FREIFLAECHE.mindestHa), 0)} bis ${fmt(mwpBei(100), 0)} MWp.`}
-          />
-          <div className="grid gap-4 sm:grid-cols-2">
-            {[
-              { icon: MapPinned, t: "Flächensicherung", x: "Kartentisch-Prüfung, Pachtangebot, Nutzungsvertrag und Dienstbarkeit – für Eigentümer kostenfrei." },
-              { icon: PlugZap, t: "Netzanschluss", x: "Netzanfrage, Trassenplanung, Umspannwerk oder Einschleifung in die Mittelspannung." },
-              { icon: Landmark, t: "Baurecht", x: "Gemeinderat, Bebauungsplan, Gutachten, Ausgleich – oder privilegierte Baugenehmigung." },
-              { icon: Banknote, t: "Vermarktung & Finanzierung", x: "EEG-Ausschreibung oder PPA, Bankfinanzierung, Eigenbetrieb oder Verkauf an Investoren." },
-            ].map((k, i) => (
-              <Reveal key={k.t} delay={i * 70} className="rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-ov-600 ring-1 ring-ink-200">
-                  <k.icon aria-hidden="true" className="h-5 w-5" />
-                </span>
-                <h3 className="mt-4 font-display text-[18px] font-bold text-ink-900">{k.t}</h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-ink-600">{k.x}</p>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </Section>
+      <Hero />
+      <Faktenleiste titel="Eckdaten eines Solarparks" fakten={FAKTEN} />
+      <Wertschoepfung />
 
       {/* Schnitt */}
       <Section tone="sand" space="lg">
         <SectionHeading
           eyebrow="So sieht ein Solarpark aus"
           title="Ein Kraftwerk, das kaum Boden versiegelt."
-          lead="Pfosten, Wege und Station berühren nur einen kleinen Bruchteil der Fläche – meist deutlich unter 5 %. Der Rest bleibt Grünland – oft artenreicher als der Acker davor."
+          lead="Pfosten, Wege und Station berühren nur einen kleinen Bruchteil der Fläche – meist deutlich unter 5 %. Der Rest bleibt unversiegelt und wird als Grünland gepflegt."
           className="mb-10"
         />
         <Reveal>
@@ -155,65 +120,7 @@ export default function FreiflaechePage() {
         </Reveal>
       </Section>
 
-      {/* Flächenkriterien */}
-      <Section tone="white" space="lg">
-        <SectionHeading
-          eyebrow="Flächenkriterien"
-          title="Welche Fläche eignet sich?"
-          lead="Keine Fläche ist perfekt. Entscheidend ist das Zusammenspiel aus Größe, Netz, Lage und Restriktionen – das prüfen wir kostenfrei, bevor wir über Verträge sprechen."
-          className="mb-12"
-        />
-        <FeatureGrid
-          cols={3}
-          items={[
-            { icon: Ruler, title: "Größe & Zuschnitt", text: `Ab rund ${FREIFLAECHE.mindestHa} ha, ideal 10–100 ha. Kompakte Zuschnitte sind günstiger als lange, schmale Streifen. Mehrere Eigentümer können Flächen bündeln.` },
-            { icon: PlugZap, title: "Netzentfernung", text: `Jeder Kilometer Mittelspannungskabel kostet grob ${fmt(FREIFLAECHE.kabelProMeter)} Tsd. €. Unter 2–3 km ist gut, größere Parks tragen auch längere Trassen – oder einen eigenen Anschluss ans Umspannwerk.` },
-            { icon: Mountain, title: "Neigung & Ausrichtung", text: "Eben oder leicht nach Süden, Osten oder Westen geneigt. Steile Nordhänge scheiden praktisch aus, Kuppen und Senken kosten Reihenabstand." },
-            { icon: Sun, title: "Einstrahlung & Verschattung", text: "Waldränder, Gebäude und Masten werfen Schatten. Mit Abstandsflächen planen wir sie ein – sie werden zu Biotopstreifen." },
-            { icon: Route, title: "Zufahrt & Baugrund", text: "Befestigte Zufahrt für Lkw in der Bauphase, tragfähiger, rammbarer Boden. Steinige Böden oder Altlasten prüfen wir mit Rammtests." },
-            { icon: Layers, title: "Planungsrecht & Kulisse", text: "Regionalplan, Flächennutzungsplan, EEG-Kulisse und die Haltung der Gemeinde. Vorbelastete Flächen – Autobahn, Bahn, Konversion – haben die besten Chancen." },
-          ]}
-        />
-
-        <div className="mt-12 grid gap-4 lg:grid-cols-3">
-          {[
-            {
-              titel: "Gute Voraussetzungen",
-              ton: "gruen",
-              punkte: ["Randstreifen an Autobahn oder Bahn", "Konversions- und Gewerbebrachen", "Ertragsschwache Acker- und Grünlandflächen", "Netzverknüpfung in wenigen Kilometern", "Gemeinde mit Freiflächenkonzept"],
-            },
-            {
-              titel: "Genau prüfen",
-              ton: "gelb",
-              punkte: ["Landschaftsschutzgebiet", "Angrenzender Wald (Abstand, Brandschutz)", "Hangneigung, Senken, Drainagen", "Hochwertige Böden – Agri-PV als Alternative", "Bodendenkmäler, Leitungen, Richtfunk"],
-            },
-            {
-              titel: "Meist ausgeschlossen",
-              ton: "rot",
-              punkte: ["Naturschutzgebiet, Nationalpark", "Natura-2000-Kerngebiete (FFH, Vogelschutz)", "Wasserschutzzone I/II", "Festgesetztes Überschwemmungsgebiet (nur mit Ausnahme)", "Wald (Rodung ist praktisch nicht genehmigungsfähig)"],
-            },
-          ].map((s, i) => (
-            <Reveal key={s.titel} delay={i * 80} className="rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60 md:p-7">
-              <p className="flex items-center gap-2.5 font-display text-[18px] font-bold text-ink-900">
-                <span aria-hidden="true" className={s.ton === "gruen" ? "h-3 w-3 rounded-full bg-ov-500" : s.ton === "gelb" ? "h-3 w-3 rounded-full bg-sun-400" : "h-3 w-3 rounded-full bg-navy-950"} />
-                {s.titel}
-              </p>
-              <ul className="mt-4 space-y-2.5">
-                {s.punkte.map((p) => (
-                  <li key={p} className="flex gap-2.5 text-[15px] leading-snug text-ink-700">
-                    {s.ton === "rot" ? (
-                      <X aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
-                    ) : (
-                      <Check aria-hidden="true" className={s.ton === "gruen" ? "mt-0.5 h-4 w-4 shrink-0 text-ov-600" : "mt-0.5 h-4 w-4 shrink-0 text-sun-500"} strokeWidth={3} />
-                    )}
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            </Reveal>
-          ))}
-        </div>
-      </Section>
+      <Kriterien />
 
       {/* EEG-Flächenkulisse */}
       <Section tone="navy" space="lg" className="ov-noise overflow-hidden">
@@ -259,8 +166,8 @@ export default function FreiflaechePage() {
       <Section tone="white" space="lg">
         <SectionHeading
           eyebrow="Genehmigung in DACH"
-          title="Drei Länder, drei Verfahren."
-          lead="Die Technik ist überall gleich – das Planungsrecht nicht. Wir kennen die Wege in allen drei Ländern und sagen Ihnen früh, welcher für Ihre Fläche realistisch ist."
+          title="Deutschland, Österreich, Schweiz: drei Verfahren."
+          lead="Die Technik ist überall gleich – das Planungsrecht nicht. Die Übersicht zeigt die Grundzüge; welcher Weg für Ihre Fläche realistisch ist, klären wir im Einzelfall."
           className="mb-12"
         />
         <div className="grid gap-5 lg:grid-cols-3">
@@ -293,9 +200,10 @@ export default function FreiflaechePage() {
               punkte: [
                 "Außerhalb der Bauzone nur, wenn die Anlage standortgebunden ist (Raumplanungsrecht)",
                 "Agri-PV: nur bei Vorteilen für die landwirtschaftliche Produktion oder zu Versuchszwecken",
-                "Alpine Großanlagen: Sonderregeln des „Solarexpress“, befristet",
+                // Quelle: BFE, Photovoltaik-Grossanlagen (Art. 71a EnG) – Teil-Einspeisung bis 31.12.2025 war Voraussetzung; vor Veröffentlichung juristisch bestätigen
+                "Alpine Großanlagen: Der befristete „Solarexpress“ verlangte eine Teil-Einspeisung bis Ende 2025 und steht neuen Projekten nicht mehr offen",
                 "Baubewilligung der Gemeinde mit Prüfung durch kantonale Fachstellen",
-                "Förderung über die Einmalvergütung; Vermarktung zunehmend über PPA",
+                "Förderung u. a. über die Einmalvergütung; Vermarktung zunehmend über PPA",
               ],
             },
           ].map((l, i) => (
@@ -325,10 +233,10 @@ export default function FreiflaechePage() {
         <SplitMedia
           image={{ src: "/img/solarpark-baeume.jpg", alt: "Solarpark mit Bäumen und Grünland am Rand" }}
           eyebrow="Ökologie & Biodiversität"
-          title="Ein Solarpark kann mehr Natur schaffen, als er nimmt."
+          title="Solarpark und Artenvielfalt: Es kommt auf die Planung an."
           text={[
-            "Unter und zwischen den Modulen entsteht über 30 Jahre ungedüngtes, extensiv gepflegtes Grünland. Studien des Bundesverbands Neue Energiewirtschaft und von Naturschutzverbänden zeigen: Gut geplante Parks beherbergen oft mehr Arten als intensiv genutzte Äcker.",
-            "Seit dem Solarpaket I gilt für geförderte Anlagen: mindestens drei von fünf naturschutzfachlichen Mindestkriterien. Wir planen in der Regel mehr als das Minimum ein.",
+            "Unter und zwischen den Modulen kann über die Laufzeit ungedüngtes, extensiv gepflegtes Grünland entstehen. Ob ein Park die Artenvielfalt gegenüber der vorherigen Nutzung tatsächlich erhöht, hängt vom Standort, vom Pflegekonzept und von der Ausgangslage ab – das belegt erst ein Monitoring vor Ort.",
+            "Seit dem Solarpaket I gilt für geförderte Anlagen: mindestens drei von fünf naturschutzfachlichen Mindestkriterien. Welche Kriterien ein Park erfüllt, steht im Pflegekonzept des jeweiligen Projekts.",
           ]}
           points={[
             { title: "Begrenzte Überbauung", text: "Modulfläche nur auf einem Teil der Grundfläche, breitere Reihenabstände." },
@@ -342,7 +250,7 @@ export default function FreiflaechePage() {
           {[
             { icon: Fence, t: "Beweidung", x: "Schafe und – bei höherer Aufständerung – auch andere Weidetiere halten den Aufwuchs kurz. Die Fläche bleibt landwirtschaftlich nutzbar." },
             { icon: Trees, t: "Einbindung ins Landschaftsbild", x: "Hecken und Gehölzstreifen an Sichtachsen, Abstand zu Ortsrändern – das entscheidet oft über die Zustimmung vor Ort." },
-            { icon: Waves, t: "Wasser & Boden", x: "Regen versickert zwischen den Modulen, Humus baut sich auf. Drainagen und Erosionsrinnen berücksichtigen wir in der Planung." },
+            { icon: Waves, t: "Wasser & Boden", x: "Regen versickert zwischen den Modulen, unter dauerhaftem Bewuchs kann sich Humus aufbauen. Drainagen und Erosionsrinnen berücksichtigen wir in der Planung." },
           ].map((k, i) => (
             <Reveal key={k.t} delay={i * 70} className="rounded-3xl bg-white p-6 ring-1 ring-ov-100">
               <k.icon aria-hidden="true" className="h-6 w-6 text-ov-600" />
@@ -358,7 +266,7 @@ export default function FreiflaechePage() {
         <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
           <SectionHeading
             eyebrow="Rückbau & Sicherheiten"
-            title="Nach 30 Jahren bekommen Sie Ihre Fläche zurück – garantiert."
+            title="Nach Vertragsende bekommen Sie Ihre Fläche zurück – abgesichert durch Vertrag, Grundbuch und Bürgschaft."
             lead="Die wichtigste Frage vieler Eigentümer: Was, wenn der Betreiber nicht mehr existiert? Die Antwort steht im Vertrag und im Grundbuch."
           />
           <ul className="grid gap-4 sm:grid-cols-2">
@@ -403,13 +311,15 @@ export default function FreiflaechePage() {
           { href: "/flaeche-verpachten", titel: "Fläche verpachten", text: "Pachtmodelle, Vertragsinhalte und der Weg bis zur ersten Zahlung." },
           { href: "/agri-pv", titel: "Agri-PV", text: "Wenn die Landwirtschaft auf der Fläche weitergehen soll." },
           { href: "/prozess", titel: "Unser Prozess", text: "Wie wir Projekte Schritt für Schritt zur Baureife bringen." },
+          { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Solarpark-Genehmigung", text: "Der Bebauungsplan Schritt für Schritt." },
+          { href: "/ratgeber/solarpark-rueckbau-rueckbaubuergschaft", titel: "Rückbau und Rückbaubürgschaft", text: "Pflicht, Sicherheit und echte Kosten nach 30 Jahren." },
         ]}
       />
 
       <CtaBand
         eyebrow="Kostenlos & unverbindlich"
         title="Hat Ihre Fläche das Zeug zum Solarpark?"
-        text="Flurstücke nennen, wir prüfen Kulisse, Netz und Restriktionen am Kartentisch – und sagen Ihnen ehrlich, ob es sich lohnt."
+        text="Flurstücke nennen, wir prüfen Kulisse, Netz und Restriktionen am Kartentisch – und sagen Ihnen ehrlich, ob es sich lohnt. Offen gesagt: Wir sind selbst Projektentwickler und haben Interesse an geeigneten Flächen."
         primary={{ label: "Fläche prüfen", href: "/flaechencheck" }}
         secondary={{ label: "Pachtrechner", href: "/rechner/pacht" }}
       />

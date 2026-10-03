@@ -7,7 +7,8 @@
 // QUELLEN:
 //   [U]  Unternehmensangaben der ÖKOVOLT Gruppe – Ökovolt-DE-Website,
 //        src/data/unternehmen.js (Stand 27.09.2026): Meilensteine, Rollen,
-//        Betreibergesellschaften, Rammtechnik, 30 MWp AT 2021, TOP 3 IPC.
+//        Betreibergesellschaften, Rammtechnik, 30 MWp AT 2021.
+//        „TOP 3 IPC“ entfernt (Paket D, 03.10.2026): nur Eigenangabe, kein Drittbeleg.
 //   [HR] Handelsregister Amtsgericht Memmingen (öffentlich abrufbar):
 //        Artern Solarstrom GmbH & Co. KG HRA 12215 (eingetragen 05.03.2012),
 //        Tilleda Solarstrom GmbH & Co. KG HRA 12240,
@@ -123,7 +124,7 @@ export const KOMPETENZEN = [
     icon: "HardHat",
     titel: "Bau",
     gesellschaft: "ÖKOVOLT GmbH Solartechnik · ÖKOVOLT Montage GmbH",
-    text: "Planung, Bau und Inbetriebnahme für Gewerbe, Industrie, Kommunen und Landwirtschaft – seit 2010 mit eigenen Montageteams, bei Bedarf ergänzt durch geprüfte Partnerbetriebe.",
+    text: "Planung, Bau und Inbetriebnahme für Gewerbe, Industrie, Kommunen und Landwirtschaft – seit 2010 mit eigenen Montageteams, bei Bedarf ergänzt durch Partnerbetriebe.",
   },
   {
     icon: "Hammer",
@@ -147,6 +148,6 @@ export const KOMPETENZEN = [
     icon: "Globe2",
     titel: "Errichtung in Österreich",
     gesellschaft: "ÖKOVOLT Solartechnik GmbH",
-    text: "Die österreichische Schwester errichtete allein 2021 PV-Anlagen mit 30 MWp und zählte bereits vor 2021 zu den TOP 3 der IPC-Errichter Österreichs.",
+    text: "Die österreichische Schwester errichtete allein 2021 PV-Anlagen mit 30 MWp (Unternehmensangabe).",
   },
 ];

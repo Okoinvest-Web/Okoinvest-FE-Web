@@ -1,31 +1,40 @@
 import { notFound } from "next/navigation";
-import { CalendarClock, Check, Coins, Gauge, Lock, MapPin, ShieldCheck, Zap } from "lucide-react";
+import { CalendarClock, Check, Coins, FileDown, Gauge, MapPin, ShieldCheck, Zap } from "lucide-react";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import Section from "@/components/ui/Section";
 import Button from "@/components/ui/Button";
 import CtaBand from "@/components/ui/CtaBand";
-import TypIllustration from "@/components/Boerse/TypIllustration";
+import JsonLd from "@/components/JsonLd";
+import TypIllustration, { varianteAus } from "@/components/Boerse/TypIllustration";
+import Vertraulich from "@/components/Boerse/Expose/Vertraulich";
+import PhasenEinordnung from "@/components/Boerse/Expose/PhasenEinordnung";
 import { PhaseBadge } from "@/components/Boerse/ProjektKarte";
 import { abs, SITE } from "@/data/site";
-import { PHASEN, PROVISION, phaseById } from "@/lib/invest/markt";
+import { phaseById } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
-import { backend } from "@/lib/plattform/backend";
+import { backend, istDemo } from "@/lib/plattform/backend";
+import { istEigenprojekt, istOeffentlichSichtbar } from "@/lib/boerse/sichtbarkeit";
 import { aktuellerNutzer } from "@/lib/plattform/server/seite";
 import { PlattformFehler } from "@/lib/plattform/fehler";
 import { LAENDER, NETZANSCHLUSS, PROJEKT_TYPEN } from "@/lib/plattform/konstanten";
-import { VERTRAULICH_FELDER } from "@/lib/plattform/oeffentlich";
-import { mwp, preisGesamt, preisText } from "@/lib/plattform/format";
+import { mwp, preisText } from "@/lib/plattform/format";
 import { statusLabel } from "@/lib/plattform/prozesse";
 
 export const dynamic = "force-dynamic";
 
 async function holen(slug, nutzer, zaehlen) {
+  let d;
   try {
-    return await backend().boerseDetail(nutzer, slug, { zaehlen });
+    d = await backend().boerseDetail(nutzer, slug, { zaehlen });
   } catch (e) {
     if (e instanceof PlattformFehler && [403, 404].includes(e.status)) return null;
     throw e;
   }
+  // Paket D: Testprojekte nie und Demo-Projekte nur im Demo-Modus öffentlich zeigen.
+  // Anbieter und Admin (zugriff eigentuemer/admin) sehen ihr Projekt weiterhin.
+  const sonderrecht = d && ["eigentuemer", "admin"].includes(d.zugriff);
+  if (d && !sonderrecht && !istOeffentlichSichtbar(d.projekt, { demo: istDemo() })) return null;
+  return d;
 }
 
 export async function generateMetadata({ params }) {
@@ -52,27 +61,24 @@ export default async function Expose({ params }) {
   if (!d) notFound();
   const p = d.projekt;
   const phase = phaseById(p.phase);
-  const phasenIndex = PHASEN.findIndex((x) => x.id === phase.id);
   const investor = nutzer?.rollen?.includes("investor");
   const portalLink = `/portal/boerse/${p.id}`;
   const freigegeben = d.zugriff !== "oeffentlich";
-  const gesamt = preisGesamt(p);
 
+  const eigen = istEigenprojekt(p);
+  // Paket D: Ein Projekt ist keine lagernde Ware – kein Product/Offer/InStock, kein Preis
+  // (CH wäre ohnehin nicht EUR). ÖkoInvest erscheint nur bei Eigenprojekten der Gruppe als Quelle,
+  // bei Drittprojekten ist ÖkoInvest weder Verkäufer noch Marke.
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Product",
+    "@type": "WebPage",
     name: p.titel,
     description: p.beschreibung,
-    category: PROJEKT_TYPEN[p.typ],
     url: abs(`/projektboerse/${p.slug}`),
-    brand: { "@type": "Organization", name: SITE.name },
-    additionalProperty: [
-      { "@type": "PropertyValue", name: "Leistung", value: p.mwp, unitText: p.typ === "speicher" ? "MW" : "MWp" },
-      { "@type": "PropertyValue", name: "Entwicklungsphase", value: phase.label },
-      { "@type": "PropertyValue", name: "Land", value: LAENDER[p.land] },
-      { "@type": "PropertyValue", name: "Region", value: p.region },
-    ],
-    ...(gesamt ? { offers: { "@type": "Offer", price: Math.round(gesamt), priceCurrency: "EUR", availability: p.status === "reserviert" ? "https://schema.org/LimitedAvailability" : "https://schema.org/InStock", seller: { "@type": "Organization", name: SITE.firma } } } : {}),
+    inLanguage: "de",
+    keywords: [PROJEKT_TYPEN[p.typ], phase.label, LAENDER[p.land], p.region].filter(Boolean).join(", "),
+    isPartOf: { "@type": "CollectionPage", name: "Projektbörse ÖkoInvest", url: abs("/projektboerse") },
+    ...(eigen ? { sourceOrganization: { "@type": "Organization", name: SITE.firma, url: SITE.url } } : {}),
   };
 
   const eckdaten = [
@@ -84,25 +90,38 @@ export default async function Expose({ params }) {
     { icon: MapPin, label: "Lage (grob)", wert: [p.region, p.bundesland, LAENDER[p.land]].filter(Boolean).join(", ") },
   ];
 
+  const leistungGross = p.typ === "speicher" ? `${fmt(p.mwp, p.mwp < 10 ? 1 : 0)} MW` : mwp(p.mwp);
+  const leistungZusatz = p.mwhSpeicher ? `${p.typ === "speicher" ? "/" : "+"} ${fmt(p.mwhSpeicher)} MWh Speicher` : null;
+  const hauptAktion = freigegeben || investor
+    ? { href: portalLink, label: freigegeben ? "Zum Datenraum im Portal" : "Im Portal öffnen & NDA anfragen" }
+    : { href: `/registrieren?rolle=investor&weiter=${encodeURIComponent(portalLink)}`, label: "Als Investor anmelden & NDA anfragen" };
+  const schritt = freigegeben ? 3 : investor ? 1 : 0;
+
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <section className="relative overflow-hidden bg-sand-50">
-        <div aria-hidden="true" className="ov-grid-bg-light pointer-events-none absolute inset-0" />
-        <div className="ov-container relative pb-14 pt-8 md:pb-20 md:pt-12">
-          <Breadcrumbs items={[{ name: "Projektbörse", href: "/projektboerse" }, { name: p.titel }]} className="mb-8" />
-          <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+      <JsonLd daten={jsonLd} />
+      <section aria-labelledby="expose-titel" className="relative isolate overflow-hidden bg-sand-50">
+        <div aria-hidden="true" className="ov-grid-bg-light pointer-events-none absolute inset-0 -z-10" />
+        <div aria-hidden="true" className="pointer-events-none absolute -right-40 -top-40 -z-10 h-[520px] w-[520px] rounded-full bg-ov-200/40 blur-[120px]" />
+        <div className="ov-container relative pb-16 pt-6 sm:pt-8 md:pb-24 md:pt-10">
+          <Breadcrumbs items={[{ name: "Projektbörse", href: "/projektboerse" }, { name: p.titel }]} className="ov-hero-in mb-8 md:mb-12" />
+          <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-14">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="ov-hero-in flex flex-wrap items-center gap-2" style={{ "--ov-delay": "40ms" }}>
                 <PhaseBadge phase={p.phase} />
                 <span className="rounded-full bg-white px-2.5 py-1 text-[12px] font-semibold text-ink-700 ring-1 ring-ink-200/70">{PROJEKT_TYPEN[p.typ]}</span>
                 {p.status === "reserviert" && <span className="rounded-full bg-navy-900 px-2.5 py-1 text-[12px] font-semibold text-white">{statusLabel("projekt", "reserviert")}</span>}
+                {eigen && <span className="rounded-full bg-ov-600 px-2.5 py-1 text-[11.5px] font-bold uppercase tracking-wide text-white" title="Projekt aus der eigenen Entwicklung der ÖKOVOLT Gruppe – wir sind hier selbst Verkäufer">Eigenprojekt</span>}
                 {p.demo && <span className="rounded-full bg-sun-400 px-2.5 py-1 text-[11.5px] font-bold uppercase tracking-wide text-navy-950">Demo-Projekt · fiktiv</span>}
               </div>
-              <h1 className="ov-h1 mt-5 text-ink-900">{p.titel}</h1>
-              <p className="ov-lead mt-5 max-w-2xl whitespace-pre-line text-ink-600">{p.beschreibung}</p>
+              <h1 id="expose-titel" className="ov-h1 ov-hero-in mt-5 text-balance text-ink-900" style={{ "--ov-delay": "100ms" }}>{p.titel}</h1>
+              <p className="ov-hero-in mt-4 flex items-center gap-2 text-[15px] font-medium text-ink-600" style={{ "--ov-delay": "140ms" }}>
+                <MapPin aria-hidden="true" className="h-4 w-4 shrink-0 text-ov-600" />
+                {[p.region, p.bundesland, LAENDER[p.land]].filter(Boolean).join(" · ")}
+              </p>
+              <p className="ov-lead ov-hero-in mt-5 max-w-2xl whitespace-pre-line text-pretty text-ink-600" style={{ "--ov-delay": "180ms" }}>{p.beschreibung}</p>
               {p.highlights?.length > 0 && (
-                <ul className="mt-6 grid gap-2.5 sm:grid-cols-2">
+                <ul className="ov-hero-in mt-6 grid gap-2.5 sm:grid-cols-2" style={{ "--ov-delay": "220ms" }}>
                   {p.highlights.map((h) => (
                     <li key={h} className="flex items-start gap-2.5 text-[15px] text-ink-700">
                       <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ov-500 text-white"><Check aria-hidden="true" className="h-3 w-3" strokeWidth={3} /></span>
@@ -111,29 +130,43 @@ export default async function Expose({ params }) {
                   ))}
                 </ul>
               )}
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                {freigegeben || investor ? (
-                  <Button href={portalLink} size="lg" pfeil>{freigegeben ? "Zum Datenraum im Portal" : "Im Portal öffnen & NDA anfragen"}</Button>
-                ) : (
-                  <Button href={`/registrieren?rolle=investor&weiter=${encodeURIComponent(portalLink)}`} size="lg" pfeil>Als Investor anmelden & NDA anfragen</Button>
-                )}
-                {!nutzer && <Button href={`/login?weiter=${encodeURIComponent(portalLink)}`} size="lg" variant="secondary">Ich habe ein Konto</Button>}
+              <div className="ov-hero-in mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap" style={{ "--ov-delay": "260ms" }}>
+                <Button href={hauptAktion.href} size="lg" pfeil className="w-full sm:w-auto">{hauptAktion.label}</Button>
+                {!nutzer && <Button href={`/login?weiter=${encodeURIComponent(portalLink)}`} size="lg" variant="secondary" className="w-full sm:w-auto">Ich habe ein Konto</Button>}
               </div>
-              <p className="mt-4 text-[14px] text-ink-600">
-                <a href={`/api/boerse/${p.slug}/teaser`} target="_blank" rel="noopener" className="font-semibold text-ov-700 underline decoration-ov-300 underline-offset-4 hover:text-ov-800">
-                  Teaser als PDF
-                </a>{" "}
-                – öffentliche Eckdaten zum Weitergeben, ohne vertrauliche Angaben.
+              <p className="ov-hero-in mt-4 flex items-start gap-2 text-[14px] text-ink-600" style={{ "--ov-delay": "300ms" }}>
+                <FileDown aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" />
+                <span>
+                  <a href={`/api/boerse/${p.slug}/teaser`} target="_blank" rel="noopener" className="font-semibold text-ov-700 underline decoration-ov-300 underline-offset-4 hover:text-ov-800">
+                    Teaser als PDF
+                  </a>{" "}
+                  – öffentliche Eckdaten zum Weitergeben, ohne vertrauliche Angaben.
+                </span>
               </p>
             </div>
-            <div className="min-w-0">
-              <div className="overflow-hidden rounded-[2rem] bg-white shadow-[0_30px_80px_-40px_rgba(3,18,43,0.45)] ring-1 ring-ink-200/70">
-                <TypIllustration typ={p.typ} className="h-44 w-full" />
-                <dl className="grid gap-px bg-ink-100 sm:grid-cols-2">
-                  {eckdaten.map((e) => {
+
+            <div className="ov-hero-in min-w-0" style={{ "--ov-delay": "200ms" }}>
+              <div className="overflow-hidden rounded-[2rem] bg-white shadow-e4 ring-1 ring-ink-200/70">
+                <div className="relative">
+                  <TypIllustration typ={p.typ} variante={varianteAus(p.id || p.slug)} className="h-36 w-full sm:h-44" />
+                  <span className="absolute left-4 top-4 rounded-full bg-white/95 px-2.5 py-1 text-[11.5px] font-semibold text-ink-700 shadow-sm ring-1 ring-ink-200/70">Exposé · öffentliche Eckdaten</span>
+                </div>
+                <dl className="grid grid-cols-2 border-b border-ink-100">
+                  <div className="min-w-0 px-5 py-5 md:px-6">
+                    <dt className="text-[12px] font-medium text-ink-500">Leistung</dt>
+                    <dd className="ov-num mt-1 font-display text-[28px] font-extrabold leading-none tracking-tight text-ink-900 md:text-[32px]">{leistungGross}</dd>
+                    {leistungZusatz && <dd className="mt-1.5 text-[12.5px] font-medium text-ink-500">{leistungZusatz}</dd>}
+                  </div>
+                  <div className="min-w-0 border-l border-ink-100 px-5 py-5 md:px-6">
+                    <dt className="text-[12px] font-medium text-ink-500">Preisindikation</dt>
+                    <dd className="ov-num mt-1 font-display text-[28px] font-extrabold leading-none tracking-tight text-ink-900 md:text-[32px]">{preisText(p)}</dd>
+                  </div>
+                </dl>
+                <dl className="grid grid-cols-2 gap-px bg-ink-100">
+                  {eckdaten.filter((e) => !["Leistung", "Preisindikation"].includes(e.label)).map((e) => {
                     const Icon = e.icon;
                     return (
-                      <div key={e.label} className="bg-white p-4">
+                      <div key={e.label} className="min-w-0 bg-white px-5 py-4 md:px-6">
                         <dt className="flex items-center gap-1.5 text-[12px] font-medium text-ink-500"><Icon aria-hidden="true" className="h-3.5 w-3.5 text-ov-600" />{e.label}</dt>
                         <dd className="mt-1 text-[15px] font-semibold text-ink-900">{e.wert}</dd>
                       </div>
@@ -141,74 +174,20 @@ export default async function Expose({ params }) {
                   })}
                 </dl>
               </div>
-              <p className="mt-3 text-[12.5px] leading-relaxed text-ink-500">Angaben des Anbieters, vom Backoffice auf Plausibilität geprüft. Keine Anlageberatung. Für Investoren kostenfrei.</p>
+              <p className="mt-3 text-[12.5px] leading-relaxed text-ink-500">
+                Angaben des Anbieters, vom Backoffice auf Vollständigkeit und Plausibilität geprüft – keine Due Diligence. Keine Anlageberatung.
+                {eigen ? " Eigenprojekt: Verkäufer ist ein Unternehmen der ÖKOVOLT Gruppe." : " Verkäufer ist der jeweilige Anbieter."} Für
+                Investoren kostenfrei; der Verkäufer zahlt bei Abschluss eine Provision.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
       <Section tone="white" space="md">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-          <div className="relative min-w-0 overflow-hidden rounded-[2rem] bg-white ring-1 ring-ink-200/70">
-            <div className="flex items-center justify-between gap-3 border-b border-ink-100 px-6 py-4">
-              <h2 className="font-display text-[18px] font-bold text-ink-900">Vertrauliche Angaben & Datenraum</h2>
-              <Lock aria-hidden="true" className="h-5 w-5 text-ink-400" />
-            </div>
-            {/* Platzhalter – echte Werte werden NIE an nicht berechtigte Besucher ausgeliefert */}
-            <dl aria-hidden="true" className="grid select-none gap-x-6 gap-y-4 p-6 blur-[3px] sm:grid-cols-2">
-              {Object.values(VERTRAULICH_FELDER).slice(0, 8).map((label, i) => (
-                <div key={label}>
-                  <dt className="text-[12px] text-ink-500">{label}</dt>
-                  <dd className="mt-1.5 h-3.5 rounded bg-ink-200" style={{ width: `${55 + ((i * 17) % 40)}%` }} />
-                </div>
-              ))}
-            </dl>
-            <div className="absolute inset-x-0 bottom-0 top-[57px] flex items-center justify-center bg-gradient-to-b from-white/70 via-white/95 to-white p-6">
-              <div className="max-w-sm text-center">
-                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-navy-950 text-ov-300"><Lock aria-hidden="true" className="h-5 w-5" /></span>
-                <p className="mt-3 font-display text-[18px] font-bold text-ink-900">{freigegeben ? "Für Sie freigeschaltet" : "Nur nach NDA sichtbar"}</p>
-                <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-600">
-                  {freigegeben ? "Gemeinde, Flurstücke, Netzbetreiber und alle Unterlagen finden Sie im Portal." : "Gemeinde, Flurstücke, Netzbetreiber, Ertragsgutachten und Unterlagen sehen registrierte Investoren nach Annahme der Vertraulichkeitsvereinbarung."}
-                </p>
-                <div className="mt-4 flex justify-center">
-                  {freigegeben || investor ? (
-                    <Button href={portalLink} size="sm" pfeil>Im Portal öffnen</Button>
-                  ) : (
-                    <Button href={`/registrieren?rolle=investor&weiter=${encodeURIComponent(portalLink)}`} size="sm" pfeil>Als Investor anmelden & NDA anfragen</Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="min-w-0 rounded-[2rem] bg-navy-950 p-7 text-white md:p-8">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-300">Einordnung der Phase</p>
-            <p className="mt-3 font-display text-[22px] font-bold">{phase.label}</p>
-            <ol className="mt-5 flex gap-1" aria-label="Entwicklungsphasen">
-              {PHASEN.map((x, i) => (
-                <li key={x.id} className="min-w-0 flex-1" aria-current={i === phasenIndex ? "step" : undefined}>
-                  <span className={`block h-1.5 rounded-full ${i <= phasenIndex ? "bg-ov-400" : "bg-white/15"}`} />
-                  <span className="sr-only">{x.label}</span>
-                </li>
-              ))}
-            </ol>
-            <p className="mt-2 text-[12.5px] text-white/60">Stufe {phasenIndex + 1} von {PHASEN.length}: {PHASEN[0].kurz} → {PHASEN[PHASEN.length - 1].kurz}</p>
-            <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-white/10 pt-5">
-              <div>
-                <dt className="text-[12px] text-white/55">Typisches Risiko</dt>
-                <dd className="mt-1 font-semibold">{phase.risiko}</dd>
-              </div>
-              <div>
-                <dt className="text-[12px] text-white/55">Übliche Preise (Markt)</dt>
-                <dd className="mt-1 font-semibold">{fmt(phase.preisProKwp.min)}–{fmt(phase.preisProKwp.max)} €/kWp</dd>
-              </div>
-              <div className="col-span-2">
-                <dt className="text-[12px] text-white/55">Typischer Abstand bis Baureife</dt>
-                <dd className="mt-1 font-semibold">{phase.monateBisRtb ? `rund ${phase.monateBisRtb} Monate` : "baureif bzw. in Betrieb"}</dd>
-              </div>
-            </dl>
-            <p className="mt-5 text-[12.5px] leading-relaxed text-white/50">Marktspannen DACH als Orientierung – stark abhängig von Netzanschluss, Größe, Vergütung und Standort. Für Käufer kostenfrei; Anbieter zahlen {PROVISION.verkaeufer.text}.</p>
-          </div>
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-8">
+          <Vertraulich freigegeben={freigegeben} aktion={freigegeben || investor ? { href: portalLink, label: "Im Portal öffnen" } : hauptAktion} schritt={schritt} />
+          <PhasenEinordnung phase={phase} preisProKwp={p.preisModus === "proKwp" ? p.preisProKwp : null} />
         </div>
       </Section>
 

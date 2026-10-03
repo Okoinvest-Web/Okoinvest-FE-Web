@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Building2, CircleAlert } from "lucide-react";
 import AuthRahmen from "@/components/Plattform/AuthRahmen";
 import EinladungAnnehmen from "@/components/Plattform/EinladungAnnehmen";
-import { abs } from "@/data/site";
 import { aktuellerNutzer } from "@/lib/plattform/server/seite";
 import { sicherheit } from "@/lib/plattform/backend/sicherheit";
 import { ORGANISATION_ARTEN, TEAM_ROLLEN, teamRolleLabel } from "@/lib/plattform/organisation";
@@ -13,7 +12,6 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Einladung ins Team | ÖkoInvest",
   description: "Einladung in eine Organisation im Portal von ÖkoInvest: Flächen, Projekte und Interessen gemeinsam im Team bearbeiten – mit klaren Rollen und Rechten.",
-  alternates: { canonical: abs("/einladung") },
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };

@@ -1,5 +1,6 @@
 "use client";
 
+import Reveal from "@/components/ui/Reveal";
 import { useMemo } from "react";
 import { AlertTriangle, Sun, TrendingDown } from "lucide-react";
 import useLiveDaten from "./useLiveDaten";
@@ -83,10 +84,11 @@ export default function CaptureRate({ initial, initialSolar }) {
               Solarstrom erzielte heute{k.bis ? ` bis ${uhr(k.bis)} Uhr` : ""} im Schnitt <strong className="text-ink-900">{ct(k.capture)} ct/kWh</strong> an der Börse – bei
               einem Tagesmittel (Base) von {ct(k.base)} ct/kWh.
             </p>
-            <div className="mt-7 space-y-3" aria-hidden="true">
+            {/* Balken wachsen beim Eintritt (ov-balken-x am Rahmen), Wertänderungen per scaleX – nur transform */}
+            <Reveal className="mt-7 space-y-3" aria-hidden="true" dir="ohne">
               <Balken label="Base (Tagesmittel)" wert={`${ct(k.base)} ct`} breite={breiteBase / 1.4} farbe="bg-navy-700" />
-              <Balken label="Solar-Capture-Preis" wert={`${ct(k.capture)} ct`} breite={breiteCapture / 1.4} farbe="bg-sun-400" />
-            </div>
+              <Balken label="Solar-Capture-Preis" wert={`${ct(k.capture)} ct`} breite={breiteCapture / 1.4} farbe="bg-sun-400" i={4} />
+            </Reveal>
           </>
         ) : (
           <p className="mt-4 text-[15.5px] leading-relaxed text-ink-600">
@@ -129,15 +131,20 @@ export default function CaptureRate({ initial, initialSolar }) {
   );
 }
 
-function Balken({ label, wert, breite, farbe }) {
+function Balken({ label, wert, breite, farbe, i = 0 }) {
   return (
     <div>
       <div className="mb-1.5 flex justify-between text-[13px] text-ink-600">
         <span>{label}</span>
         <span className="ov-num font-semibold text-ink-900">{wert}</span>
       </div>
-      <div className="h-3 rounded-full bg-ink-100">
-        <div className={`h-full rounded-full ${farbe} transition-[width] duration-700`} style={{ width: `${Math.max(0, Math.min(100, breite))}%` }} />
+      <div className="h-3 overflow-hidden rounded-full bg-ink-100">
+        <div className="ov-balken-x h-full" style={{ "--i": i }}>
+          <div
+            className={`h-full w-full origin-left rounded-full ${farbe} transition-transform duration-700 motion-reduce:transition-none`}
+            style={{ transform: `scaleX(${Math.max(0, Math.min(100, breite)) / 100})` }}
+          />
+        </div>
       </div>
     </div>
   );

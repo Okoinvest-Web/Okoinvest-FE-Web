@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, BatteryCharging, Car, Check, Factory, FolderUp, HandCoins, Landmark, LineChart, MapPinned, MessageSquare, Sprout, Users } from "lucide-react";
 import AnfrageFormular from "@/components/Plattform/AnfrageFormular";
 import { cn } from "@/components/ui/cn";
 
@@ -23,6 +23,21 @@ export const ANLIEGEN = [
   { typ: "genossenschaft", label: "Genossenschaft", text: "Interesse an der geplanten Energiegenossenschaft? Registrieren Sie sich unverbindlich.", felder: ["telefon", "plz", "nachricht"], link: { href: "/genossenschaft", label: "Zur Genossenschaft" } },
   { typ: "kontakt", label: "Sonstiges", text: "Presse, Partnerschaften oder eine andere Frage – schreiben Sie uns.", felder: ["firma", "telefon", "nachricht"], link: null },
 ];
+
+/** Symbol je Anliegen (rein visuell) */
+const ICON = {
+  flaeche: MapPinned,
+  agri: Sprout,
+  investor: LineChart,
+  projekt: FolderUp,
+  reststrom: Factory,
+  carport: Car,
+  speicher: BatteryCharging,
+  kommune: Landmark,
+  energiegemeinschaft: Users,
+  genossenschaft: HandCoins,
+  kontakt: MessageSquare,
+};
 
 export default function KontaktAnliegen() {
   const [typ, setTyp] = useState("kontakt");
@@ -50,26 +65,33 @@ export default function KontaktAnliegen() {
     <div>
       <fieldset>
         <legend className="mb-3 text-[14.5px] font-semibold text-ink-800">Worum geht es?</legend>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2 sm:grid-cols-[repeat(3,minmax(0,1fr))]">
           {ANLIEGEN.map((x) => {
             const an = x.typ === typ;
+            const Icon = ICON[x.typ] || MessageSquare;
             return (
               <label
                 key={x.typ}
                 className={cn(
-                  "inline-flex min-h-11 cursor-pointer items-center rounded-full px-4 text-[14px] font-medium ring-1 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ov-500",
-                  an ? "bg-navy-950 font-semibold text-white ring-navy-950" : "bg-white text-ink-700 ring-ink-200 hover:ring-ink-300"
+                  "group relative flex min-h-12 min-w-0 cursor-pointer items-center gap-2 rounded-2xl py-2 pl-2 pr-2.5 text-[13.5px] sm:gap-2.5 sm:pr-3 sm:text-[14px] font-medium leading-tight ring-1 transition-[background-color,box-shadow,color] duration-150 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ov-500",
+                  an ? "bg-navy-950 font-semibold text-white shadow-e2 ring-navy-950" : "bg-white text-ink-700 ring-ink-200 hover:bg-sand-50 hover:ring-ink-300"
                 )}
               >
                 <input type="radio" name={name} value={x.typ} checked={an} onChange={() => waehlen(x.typ)} className="sr-only" />
-                {x.label}
+                <span
+                  aria-hidden="true"
+                  className={cn("flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl transition-colors", an ? "bg-white/10 text-ov-300" : "bg-ov-50 text-ov-600 group-hover:bg-white")}
+                >
+                  {an ? <Check className="h-4 w-4" strokeWidth={3} /> : <Icon className="h-4 w-4" />}
+                </span>
+                <span lang="de" className="min-w-0 break-words [hyphens:auto]">{x.label}</span>
               </label>
             );
           })}
         </div>
       </fieldset>
 
-      <div key={a.typ} className="ov-tab-panel mt-6 flex flex-col gap-3 rounded-2xl bg-sand-50 p-4 ring-1 ring-ink-200/60 sm:flex-row sm:items-center sm:justify-between">
+      <div key={a.typ} className="ov-tab-panel mt-5 flex flex-col gap-3 rounded-2xl bg-ov-50/70 p-4 ring-1 ring-ov-100 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[14.5px] leading-relaxed text-ink-700">{a.text}</p>
         {a.link && (
           <Link href={a.link.href} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-[14px] font-semibold text-ov-700 hover:text-ov-800">

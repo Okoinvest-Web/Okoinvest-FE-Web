@@ -159,13 +159,16 @@ export default function ErzeugungChart({ initial }) {
                 ))}
                 <text x={2} y={PAD.t - 14} fontSize="11" fill={TEXT}>GW</text>
 
-                {flaechen.map(({ q, d }) => (
-                  <path key={q.key} d={d} fill={q.farbe} />
-                ))}
-                {/* 2px Flächenfuge statt Umrandung */}
-                {flaechen.map(({ q, kante }) => (
-                  <path key={q.key} d={kante} fill="none" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round" />
-                ))}
+                {/* Einlauf: Erzeugungsflächen blenden ein, danach zeichnet sich die Last als Linie durch den Tag */}
+                <g className="ov-flaeche-ein" style={{ animationDelay: "120ms" }}>
+                  {flaechen.map(({ q, d }) => (
+                    <path key={q.key} d={d} fill={q.farbe} />
+                  ))}
+                  {/* 2px Flächenfuge statt Umrandung */}
+                  {flaechen.map(({ q, kante }) => (
+                    <path key={q.key} d={kante} fill="none" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round" />
+                  ))}
+                </g>
 
                 {mitternacht && (
                   <g>
@@ -180,11 +183,13 @@ export default function ErzeugungChart({ initial }) {
                 )}
 
                 {/* Last mit Flächenring */}
-                <polyline points={lastPunkte.join(" ")} fill="none" stroke="#fff" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round" />
-                <polyline points={lastPunkte.join(" ")} fill="none" stroke={TINTE} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+                <g style={{ "--ov-delay": "450ms" }}>
+                  <polyline points={lastPunkte.join(" ")} pathLength="1" fill="none" stroke="#fff" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round" className="ov-linie" />
+                  <polyline points={lastPunkte.join(" ")} pathLength="1" fill="none" stroke={TINTE} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" className="ov-linie" />
+                </g>
 
                 {labels.map((l) => (
-                  <text key={l.q.key} x={l.x} y={l.y} textAnchor="middle" fontSize="12" fontWeight="600" fill={textAuf(l.q.farbe)}>
+                  <text key={l.q.key} className="ov-flaeche-ein" style={{ animationDelay: "700ms" }} x={l.x} y={l.y} textAnchor="middle" fontSize="12" fontWeight="600" fill={textAuf(l.q.farbe)}>
                     {l.q.name}
                   </text>
                 ))}

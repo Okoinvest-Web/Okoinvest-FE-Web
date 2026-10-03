@@ -2,7 +2,6 @@ import Link from "next/link";
 import { CircleAlert, HardHat } from "lucide-react";
 import AuthRahmen from "@/components/Plattform/AuthRahmen";
 import GutachterEinladungAnnehmen from "@/components/Portal/Entwicklung/EinladungAnnehmen";
-import { abs } from "@/data/site";
 import { aktuellerNutzer } from "@/lib/plattform/server/seite";
 import { entwicklungBackend } from "@/lib/plattform/backend/entwicklung";
 import { datum } from "@/lib/plattform/format";
@@ -12,7 +11,6 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Einladung als Gutachter | ÖkoInvest",
   description: "Einladung als Gutachter oder Planer in ein Entwicklungsprojekt von ÖkoInvest: zugewiesene Meilensteine sehen, Gutachten hochladen und Rückfragen stellen.",
-  alternates: { canonical: abs("/einladung") },
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };

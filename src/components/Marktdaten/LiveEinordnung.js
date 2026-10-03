@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import useEnergyLive, { fmtCt } from "@/components/ui/useEnergyLive";
 import { LiveDot } from "@/components/ui/LiveTicker";
 import { fmt } from "@/lib/rechner/annahmen";
+import Reveal from "@/components/ui/Reveal";
 
 /**
  * Live-Börsenpreis (Day-Ahead DE-LU) im Vergleich zu den historischen
@@ -49,8 +50,9 @@ export default function LiveEinordnung({ zuschlagCt, zuschlagText, solarCt, sola
       </p>
       <p className="mt-2 text-[14px] text-white/65">Börsenstrompreis Deutschland jetzt, netto</p>
 
-      <ul className="mt-7 space-y-4">
-        {zeilen.map((z) => {
+      {/* Vergleichsbalken wachsen beim Eintritt nacheinander (ov-balken-x am Rahmen); Live-Änderungen per scaleX */}
+      <Reveal as="ul" dir="ohne" className="mt-7 space-y-4">
+        {zeilen.map((z, i) => {
           const neg = z.wert != null && z.wert < 0;
           const breite = z.wert != null ? Math.max(2, (Math.abs(z.wert) / skala) * 100) : 0;
           return (
@@ -59,17 +61,19 @@ export default function LiveEinordnung({ zuschlagCt, zuschlagText, solarCt, sola
                 <span className="text-white/80">{z.label}</span>
                 <span className="ov-num font-semibold">{z.wert != null ? `${fmt(z.wert, 2)} ct` : "–"}</span>
               </div>
-              <div className="h-2.5 rounded-full bg-white/10" aria-hidden="true">
-                <div
-                  className={`h-full rounded-full transition-[width] duration-700 ${z.live ? (neg ? "bg-sun-400" : "bg-white/85") : "bg-ov-400"}`}
-                  style={{ width: `${Math.min(100, breite)}%` }}
-                />
+              <div className="h-2.5 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
+                <div className="ov-balken-x h-full" style={{ "--i": i * 3 }}>
+                  <div
+                    className={`h-full w-full origin-left rounded-full transition-transform duration-700 motion-reduce:transition-none ${z.live ? (neg ? "bg-sun-400" : "bg-white/85") : "bg-ov-400"}`}
+                    style={{ transform: `scaleX(${Math.min(100, breite) / 100})` }}
+                  />
+                </div>
               </div>
               <p className="mt-1 text-[12px] text-white/50">{z.hinweis}</p>
             </li>
           );
         })}
-      </ul>
+      </Reveal>
 
       <Link
         href="/energie-live"

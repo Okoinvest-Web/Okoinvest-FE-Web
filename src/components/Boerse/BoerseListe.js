@@ -3,7 +3,7 @@
 // Filter-Insel der Projektbörse: die Liste wird serverseitig vollständig gerendert
 // (SEO), Filter und Sortierung laufen im Browser und stehen in der URL.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Columns3, SlidersHorizontal, X, SearchX, List, Map as KarteIcon } from "lucide-react";
 import { cn } from "@/components/ui/cn";
@@ -14,6 +14,64 @@ import { LAENDER, PROJEKT_TYPEN } from "@/lib/plattform/konstanten";
 import { statusInfo } from "@/lib/plattform/prozesse";
 import { PHASEN } from "@/lib/invest/markt";
 import { eingabe, auswahlfeld } from "@/components/Portal/felder";
+import Button from "@/components/ui/Button";
+
+const KURVE = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+/**
+ * FLIP-Übergang für die Kartenliste: Bleibende Karten gleiten an ihren neuen Platz,
+ * neu hinzukommende blenden gestaffelt ein. Nur transform/opacity (Web Animations API),
+ * nichts beim ersten Rendern, nichts bei reduzierter Bewegung, nur im sichtbaren Bereich.
+ */
+function messen(ul) {
+  const m = new Map();
+  if (ul) for (const li of ul.children) m.set(li.dataset.id, { x: li.offsetLeft, y: li.offsetTop });
+  return m;
+}
+
+function useFlipListe(schluessel) {
+  const ref = useRef(null);
+  const positionen = useRef(null);
+  const leer = schluessel === ""; // Liste ein-/ausgeblendet → Beobachter neu anhängen
+  // Positionen relativ zur Liste (ul ist `relative`); bei Größenänderung (Spaltenwechsel) neu erfassen,
+  // damit der nächste Filterwechsel nicht von veralteten Plätzen aus animiert
+  useEffect(() => {
+    const ul = ref.current;
+    if (!ul || typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(() => {
+      positionen.current = messen(ref.current);
+    });
+    ro.observe(ul);
+    return () => ro.disconnect();
+  }, [leer]);
+  useLayoutEffect(() => {
+    const ul = ref.current;
+    const alt = positionen.current;
+    const neu = messen(ul);
+    positionen.current = neu;
+    if (!ul || !alt || typeof ul.animate !== "function") return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const hoehe = window.innerHeight;
+    let neuIndex = 0;
+    for (const li of ul.children) {
+      const r = li.getBoundingClientRect();
+      if (r.bottom < -40 || r.top > hoehe + 40) continue; // außerhalb des Bildes: nichts animieren
+      const a = alt.get(li.dataset.id);
+      const n = neu.get(li.dataset.id);
+      if (a) {
+        const dx = a.x - n.x;
+        const dy = a.y - n.y;
+        if (dx || dy) li.animate([{ transform: `translate3d(${dx}px, ${dy}px, 0)` }, { transform: "none" }], { duration: 460, easing: KURVE });
+      } else {
+        li.animate(
+          [{ opacity: 0, transform: "translate3d(0, 14px, 0) scale(0.97)" }, { opacity: 1, transform: "none" }],
+          { duration: 380, delay: Math.min(neuIndex++, 6) * 50, easing: KURVE, fill: "backwards" }
+        );
+      }
+    }
+  }, [schluessel]);
+  return ref;
+}
 
 const LEER = { typ: "", land: "", phase: "", mwpMin: "", mwpMax: "", sortierung: "neu", ansicht: "alle", darstellung: "liste", region: "" };
 
@@ -59,6 +117,11 @@ export default function BoerseListe({ projekte = [], basisHref = "/projektboerse
   const liste = useMemo(() => (f.region ? basisListe.filter((p) => p.bundesland === f.region) : basisListe), [basisListe, f.region]);
 
   const aktiveFilter = ["typ", "land", "phase", "mwpMin", "mwpMax", "region"].filter((k) => f[k]).length;
+  const listeRef = useFlipListe(liste.map((p) => p.id).join("|"));
+  // Trefferzahl: kurzer Einblend-Impuls bei jeder Änderung (Feedback auf den Filter)
+  const anzahl = (
+    <span key={liste.length} className="ov-num font-semibold text-ink-900 motion-safe:animate-ov-einblenden">{liste.length}</span>
+  );
   const gemerkt = projekte.filter((p) => p.meinInteresse?.gemerkt).length;
 
   const filter = (
@@ -131,50 +194,47 @@ export default function BoerseListe({ projekte = [], basisHref = "/projektboerse
         </div>
       )}
 
-      <div className="mb-6 rounded-3xl bg-white p-4 ring-1 ring-ink-200/70 md:p-6">
+      <div className="mb-6 rounded-3xl bg-white p-4 shadow-e1 ring-1 ring-ink-200/70 md:mb-8 md:p-6">
         <div className="flex items-center justify-between gap-3 md:hidden">
           <button type="button" onClick={() => setOffen((o) => !o)} aria-expanded={offen} aria-controls="boerse-filter" className="inline-flex h-10 items-center gap-2 rounded-full bg-sand-50 px-4 text-[14px] font-semibold text-ink-800 ring-1 ring-inset ring-ink-200">
             <SlidersHorizontal aria-hidden="true" className="h-4 w-4" /> Filter{aktiveFilter ? ` (${aktiveFilter})` : ""}
           </button>
-          <p className="text-[13.5px] text-ink-500" aria-live="polite">{liste.length} Projekte</p>
+          <p className="text-[13.5px] text-ink-500" aria-live="polite">{anzahl} {liste.length === 1 ? "Projekt" : "Projekte"}</p>
         </div>
         <div id="boerse-filter" className={cn("md:block", offen ? "mt-4 block" : "hidden")}>{filter}</div>
-        <div className="mt-4 hidden items-center justify-between border-t border-ink-100 pt-4 md:flex">
-          <p className="text-[14px] text-ink-600" aria-live="polite"><span className="ov-num font-semibold text-ink-900">{liste.length}</span> {liste.length === 1 ? "Projekt" : "Projekte"} gefunden</p>
-          {aktiveFilter > 0 && (
-            <button type="button" onClick={() => setF((x) => ({ ...LEER, sortierung: x.sortierung, ansicht: x.ansicht, darstellung: x.darstellung }))} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-ink-600 hover:text-ink-900">
-              <X aria-hidden="true" className="h-4 w-4" /> Filter zurücksetzen
-            </button>
-          )}
-        </div>
-      </div>
-
-      {karte && (
-        <div className="mb-5 flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-full bg-white p-1 ring-1 ring-inset ring-ink-200" role="group" aria-label="Darstellung">
-            {[["liste", "Liste", List], ["karte", "Karte", KarteIcon]].map(([k, label, Icon]) => (
-              <button key={k} type="button" aria-pressed={f.darstellung === k} onClick={() => setze("darstellung", k)} className={cn("inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-semibold transition-colors", f.darstellung === k ? "bg-navy-900 text-white" : "text-ink-700 hover:bg-ink-50")}>
-                <Icon aria-hidden="true" className="h-4 w-4" /> {label}
-              </button>
-            ))}
-          </div>
+        <div className={cn("flex flex-wrap items-center gap-3 border-t border-ink-100 pt-4", karte ? "mt-4" : "mt-4 max-md:hidden")}>
+          <p className="hidden text-[14px] text-ink-600 md:block" aria-live="polite">{anzahl} {liste.length === 1 ? "Projekt" : "Projekte"} gefunden</p>
           {f.region && (
-            <button type="button" onClick={() => setze("region", "")} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-ov-50 px-3.5 text-[13.5px] font-semibold text-ov-800 ring-1 ring-inset ring-ov-200 hover:bg-ov-100">
+            <button type="button" onClick={() => setze("region", "")} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-ov-50 px-3 text-[13px] font-semibold text-ov-800 ring-1 ring-inset ring-ov-200 hover:bg-ov-100">
               Region: {f.region} <X aria-hidden="true" className="h-3.5 w-3.5" /><span className="sr-only">entfernen</span>
             </button>
           )}
+          {aktiveFilter > 0 && (
+            <button type="button" onClick={() => setF((x) => ({ ...LEER, sortierung: x.sortierung, ansicht: x.ansicht, darstellung: x.darstellung }))} className="inline-flex items-center gap-1.5 rounded-full text-[13.5px] font-semibold text-ink-600 hover:text-ink-900">
+              <X aria-hidden="true" className="h-4 w-4" /> Filter zurücksetzen
+            </button>
+          )}
+          {karte && (
+            <div className="ml-auto inline-flex rounded-full bg-sand-50 p-1 ring-1 ring-inset ring-ink-200" role="group" aria-label="Darstellung">
+              {[["liste", "Liste", List], ["karte", "Karte", KarteIcon]].map(([k, label, Icon]) => (
+                <button key={k} type="button" aria-pressed={f.darstellung === k} onClick={() => setze("darstellung", k)} className={cn("inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-semibold transition-colors", f.darstellung === k ? "bg-navy-900 text-white shadow-e1" : "text-ink-700 hover:bg-white")}>
+                  <Icon aria-hidden="true" className="h-4 w-4" /> {label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
       {karte && f.darstellung === "karte" && (
-        <div className="mb-8">
+        <div className="ov-tab-panel mb-8">
           <KarteDach projekte={basisListe} region={f.region} onRegion={(r) => setze("region", r)} />
         </div>
       )}
 
       {liste.length ? (
-        <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <ul ref={listeRef} className="relative grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {liste.map((p) => (
-            <li key={p.id}>
+            <li key={p.id} data-id={p.id}>
               <ProjektKarte
                 projekt={p}
                 href={`${basisHref}${portal ? p.id : p.slug}`}
@@ -198,12 +258,25 @@ export default function BoerseListe({ projekte = [], basisHref = "/projektboerse
           ))}
         </ul>
       ) : (
-        <div className="flex flex-col items-center rounded-3xl border border-dashed border-ink-200 bg-white/60 px-6 py-14 text-center">
+        <div className="ov-tab-panel flex flex-col items-center rounded-3xl border border-dashed border-ink-200 bg-white/60 px-6 py-14 text-center">
           <SearchX aria-hidden="true" className="h-8 w-8 text-ink-400" />
           <p className="mt-3 font-display text-[18px] font-bold text-ink-900">Keine passenden Projekte</p>
           <p className="mt-1 max-w-md text-[14.5px] text-ink-600">
             {portal ? "Passen Sie die Filter an – oder hinterlegen Sie ein Suchprofil, dann melden wir uns, sobald ein passendes Projekt eingeht." : "Passen Sie die Filter an oder legen Sie als Investor ein Suchprofil an – wir melden uns, sobald ein passendes Projekt eingeht."}
           </p>
+          {/* Leere Trefferliste ist ein Einstieg, keine Sackgasse: Filter lösen oder Suchprofil anlegen */}
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            {aktiveFilter > 0 && (
+              <Button variant="secondary" onClick={() => setF((x) => ({ ...LEER, sortierung: x.sortierung, ansicht: x.ansicht, darstellung: x.darstellung }))}>
+                Filter zurücksetzen
+              </Button>
+            )}
+            {!portal && (
+              <Button href="/registrieren?rolle=investor" pfeil>
+                Suchprofil anlegen
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </div>

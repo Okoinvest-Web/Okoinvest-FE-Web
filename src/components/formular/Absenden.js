@@ -70,6 +70,7 @@ export function useAbsenden({ uebersetzen = fehlerText } = {}) {
   const [status, setStatus] = useState("bereit");
   const [fehler, setFehler] = useState("");
   const aktiv = useRef(true);
+  const laeuft = useRef(false); // Doppel-Absenden sperren, auch bevor der Button neu gerendert ist
   useEffect(() => {
     aktiv.current = true;
     return () => {
@@ -78,23 +79,33 @@ export function useAbsenden({ uebersetzen = fehlerText } = {}) {
   }, []);
 
   const los = useCallback(async (fn, { toast: t = false, danach, haltezeit = 900, zuruecksetzen = true } = {}) => {
+    if (laeuft.current) return null;
+    laeuft.current = true;
     setStatus("laedt");
     setFehler("");
     let ergebnis;
     try {
       ergebnis = await fn();
     } catch (e) {
+      laeuft.current = false;
       if (aktiv.current) {
         setFehler(uebersetzen(e));
         setStatus("bereit");
       }
       return null;
     }
-    if (!aktiv.current) return ergebnis;
+    if (!aktiv.current) {
+      laeuft.current = false;
+      return ergebnis;
+    }
     setStatus("erfolg");
     await new Promise((r) => setTimeout(r, bewegungReduziert() ? 250 : haltezeit));
     if (t) toast.erfolg(t.titel, t.text);
-    if (danach) await danach(ergebnis);
+    try {
+      if (danach) await danach(ergebnis);
+    } finally {
+      laeuft.current = false;
+    }
     if (aktiv.current && zuruecksetzen) setStatus("bereit");
     return ergebnis;
   }, [uebersetzen]);

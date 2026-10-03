@@ -1033,3 +1033,199 @@ body:has(dialog.ov-dialog[open]) { overflow: hidden; }
     border-color: var(--color-ink-350);
   }
 }
+
+/* ==================================================================
+   MOTION-SYSTEM 3 – Primitive aus src/components/motion
+   API-Referenz: JSDoc in src/components/motion/*. Regeln:
+   - nur transform/opacity (Ausnahme: stroke-dashoffset beim Zeichnen)
+   - ohne JavaScript ist alles sichtbar (.js-ready-Gating bzw. CSS-Animation
+     mit Endzustand), unter prefers-reduced-motion keine Bewegung
+   - Zeiger-Effekte nur bei (hover: hover) and (pointer: fine)
+   ================================================================== */
+
+/* ---------- TextEnthuellung: Wörter / Zeilen ---------- */
+.ov-te-wort,
+.ov-te-zeile-innen {
+  display: inline-block;
+}
+.ov-te-zeile {
+  display: block;
+  overflow: clip;
+  /* Unterlängen (g, p, y) nicht abschneiden */
+  padding-block: 0.1em;
+  margin-block: -0.1em;
+}
+.ov-te-zeile-innen { display: block; }
+@keyframes ov-te-wort { from { opacity: 0.001; transform: translate3d(0, 0.42em, 0); } to { opacity: 1; transform: none; } }
+@keyframes ov-te-zeile { from { opacity: 0.001; transform: translate3d(0, 0.9em, 0); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  /* Laden: läuft ohne JS (reines CSS) und endet sichtbar */
+  .ov-te-laden .ov-te-wort {
+    animation: ov-te-wort 560ms var(--ov-ease-out) both;
+    animation-delay: calc(var(--ov-delay, 0ms) + var(--i, 0) * var(--ov-te-schritt, 40ms));
+  }
+  .ov-te-laden .ov-te-zeile-innen {
+    animation: ov-te-zeile 640ms var(--ov-ease-out) both;
+    animation-delay: calc(var(--ov-delay, 0ms) + var(--i, 0) * var(--ov-te-schritt, 90ms));
+  }
+  /* Scrollen: gesteuert vom RevealObserver (.ov-reveal → .is-visible) */
+  .ov-te-scroll .ov-te-wort,
+  .ov-te-scroll .ov-te-zeile-innen {
+    transition:
+      opacity 560ms var(--ov-ease-out),
+      transform 640ms var(--ov-ease-out);
+    transition-delay: calc(var(--ov-delay, 0ms) + var(--i, 0) * var(--ov-te-schritt, 40ms));
+  }
+  .js-ready .ov-te-scroll:not(.is-visible) .ov-te-wort { opacity: 0; transform: translate3d(0, 0.42em, 0); }
+  .js-ready .ov-te-scroll:not(.is-visible) .ov-te-zeile-innen { opacity: 0; transform: translate3d(0, 0.9em, 0); }
+}
+
+/* ---------- PfadZeichnen: SVG-Linien zeichnen sich beim Eintritt ---------- */
+.ov-pfad :is(path, line, polyline, polygon, circle, ellipse, rect)[pathLength="1"] {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .js-ready .ov-pfad.ov-reveal:not(.is-visible) :is(path, line, polyline, polygon, circle, ellipse, rect)[pathLength="1"] {
+    stroke-dashoffset: 1;
+  }
+  .ov-pfad.is-visible :is(path, line, polyline, polygon, circle, ellipse, rect)[pathLength="1"],
+  .ov-pfad.ov-sofort :is(path, line, polyline, polygon, circle, ellipse, rect)[pathLength="1"] {
+    animation: ov-zeichnen var(--ov-pfad-dauer, 1100ms) var(--ov-ease-in-out) both;
+    animation-delay: calc(var(--ov-delay, 0ms) + var(--i, 0) * var(--ov-pfad-schritt, 0ms));
+  }
+}
+
+/* ---------- Spotlight: Lichtkegel folgt dem Zeiger (Karten) ---------- */
+@layer components {
+  .ov-spotlight { position: relative; isolation: isolate; } /* Utilities (absolute …) dürfen überschreiben */
+}
+.ov-spot-licht {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ov-spot-licht::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--ov-spot-groesse, 440px);
+  height: var(--ov-spot-groesse, 440px);
+  margin: calc(var(--ov-spot-groesse, 440px) / -2) 0 0 calc(var(--ov-spot-groesse, 440px) / -2);
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, var(--ov-spot-farbe, rgba(102, 153, 51, 0.13)), transparent);
+  transform: translate3d(var(--ov-mx, -999px), var(--ov-my, -999px), 0);
+  opacity: 0;
+  transition: opacity 320ms var(--ov-ease-out);
+  will-change: transform;
+}
+.ov-spotlight[data-ton="dunkel"] { --ov-spot-farbe: rgba(174, 208, 131, 0.16); }
+.ov-spotlight.ov-zeiger-an .ov-spot-licht::before { opacity: 1; }
+@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .ov-spot-licht { display: none; }
+}
+
+/* ---------- Magnetisch: Primär-CTA folgt dem Zeiger um wenige Pixel ---------- */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .ov-magnet {
+    transform: translate3d(var(--ov-mag-x, 0px), var(--ov-mag-y, 0px), 0);
+    transition: transform 420ms var(--ov-ease-feder);
+  }
+  .ov-magnet.ov-zeiger-an { transition-duration: 140ms; transition-timing-function: var(--ov-ease-out); }
+}
+
+/* ---------- Kipp-Karte: dezentes 3D-Kippen (max. 3°) ---------- */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .ov-kipp {
+    transform: perspective(1100px) rotateX(var(--ov-kx, 0deg)) rotateY(var(--ov-ky, 0deg));
+    transition: transform 520ms var(--ov-ease-out);
+  }
+  .ov-kipp.ov-zeiger-an { transition-duration: 120ms; }
+  .ov-kipp.ov-lift:hover,
+  .ov-kipp.ov-card-hover:hover {
+    transform: perspective(1100px) rotateX(var(--ov-kx, 0deg)) rotateY(var(--ov-ky, 0deg)) translate3d(0, -3px, 0);
+  }
+}
+
+/* ---------- Parallax leicht (scroll-driven CSS, ohne JS) ---------- */
+@keyframes ov-parallax {
+  from { transform: translate3d(0, var(--ov-parallax, 32px), 0); }
+  to { transform: translate3d(0, calc(var(--ov-parallax, 32px) * -1), 0); }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* Longhands statt Kurzform: Lightning CSS verwirft sonst animation-timeline */
+    .ov-parallax {
+      animation-name: ov-parallax;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range-start: cover 0%;
+      animation-range-end: cover 100%;
+    }
+  }
+}
+
+/* ---------- ScrollFortschritt (Lesefortschritt oben) ---------- */
+.ov-scroll-fortschritt {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 110;
+  height: 3px;
+  pointer-events: none;
+  transform-origin: 0 50%;
+  transform: scaleX(var(--ov-sf, 0));
+  background: linear-gradient(90deg, var(--color-ov-500), var(--color-ov-700));
+}
+@keyframes ov-scroll-fortschritt { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .ov-scroll-fortschritt[data-css] {
+      animation-name: ov-scroll-fortschritt;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+
+/* ---------- Endlos-Animationen außerhalb des Viewports anhalten ----------
+   MotionInteraktion setzt .ov-aus auf .ov-endlos und bekannte Endlos-
+   Klassen (animate-ov-float/-ping/-marquee, .ov-live-punkt), solange sie
+   nicht sichtbar sind. */
+.ov-aus,
+.ov-aus *,
+.ov-aus::before,
+.ov-aus::after,
+.ov-aus *::before,
+.ov-aus *::after {
+  animation-play-state: paused !important;
+}
+
+/* ---------- Fokus: Ring „rastet ein“ (nur outline-offset, 140 ms)
+   In @layer base: Tailwind-Utilities (transition-*, outline-*) gewinnen. */
+@layer base {
+  @media (prefers-reduced-motion: no-preference) {
+    :where(a, button, summary, [tabindex]):where(:not(:focus-visible)) { outline-offset: 6px; }
+    :where(a, button, summary, [tabindex]) { transition: outline-offset 140ms var(--ov-ease-out); }
+  }
+}
+
+/* ---------- Pfeil-Bewegung für eigene Links/Buttons ----------
+   <a class="group …">Mehr <ArrowRight class="ov-pfeil" /></a> */
+.ov-pfeil { transition: transform 300ms var(--ov-ease-out); }
+@media (prefers-reduced-motion: no-preference) {
+  :is(.group:hover, .group:focus-visible) .ov-pfeil { transform: translate3d(4px, 0, 0); }
+}
+
+/* ---------- Feste Leisten unten (Handy/Tablet) ----------
+   Fokussierte Felder und Sprungziele landen nicht unter der Leiste. */
+@media (max-width: 1023px) {
+  html:has(body.ov-cta-sichtbar) { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  /* Leiste trägt den Nach-oben-Knopf selbst – der schwebende tritt zurück */
+  body.ov-cta-sichtbar .ov-nach-oben { opacity: 0 !important; pointer-events: none !important; transform: translate3d(0, 16px, 0) !important; }
+}

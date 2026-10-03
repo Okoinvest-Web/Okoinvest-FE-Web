@@ -119,8 +119,8 @@ export default function Page() {
         eyebrow: "Speicher am Solarpark",
         title: "Fläche, Netzanschluss oder Projekt für einen Speicher?",
         text: "Wir prüfen Co-Location an bestehenden und geplanten Parks und entwickeln Stand-alone-Standorte an Netzknoten – gemeinsam mit Ihnen.",
-        primary: { label: "Großspeicher ansehen", href: "/grossspeicher" },
-        secondary: { label: "Projekte ansehen", href: "/projektboerse" },
+        primary: { label: "Speicher-Standort anfragen", href: "/kontakt?anliegen=speicher#formular" },
+        secondary: { label: "Großspeicher ansehen", href: "/grossspeicher" },
       }}
     />
   );

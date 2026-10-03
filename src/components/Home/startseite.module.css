@@ -1,0 +1,109 @@
+/*
+ * Lokale Bewegung der Startseite (Paket Startseite).
+ * Regeln wie im Motion-System: nur transform/opacity (Pfad-Zeichnen über
+ * stroke-dashoffset wie .ov-pfad), versteckte Zustände nur mit .js-ready,
+ * alles Bewegte nur unter prefers-reduced-motion: no-preference.
+ */
+
+/* ---------- Kreislauf ---------- */
+.kreislauf .mitte,
+.kreislauf .knoten,
+.kreislauf .knotenInnen {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.kreislauf .bogen {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.kreislauf .halo {
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+}
+.kreislauf .ring {
+  transform-origin: 200px 200px;
+}
+
+/* Karte links ↔ Station rechts: Hover/Fokus hebt die zugehörige Station hervor */
+.block:has([data-kl="flaeche"]:is(:hover, :focus-visible)) [data-knoten="flaeche"] .halo,
+.block:has([data-kl="projekt"]:is(:hover, :focus-visible)) [data-knoten="projekt"] .halo,
+.block:has([data-kl="kapital"]:is(:hover, :focus-visible)) [data-knoten="kapital"] .halo,
+.block:has([data-kl="strom"]:is(:hover, :focus-visible)) [data-knoten="strom"] .halo {
+  opacity: 1;
+}
+.block:has([data-kl="flaeche"]:is(:hover, :focus-visible)) [data-knoten="flaeche"] .scheibe,
+.block:has([data-kl="projekt"]:is(:hover, :focus-visible)) [data-knoten="projekt"] .scheibe,
+.block:has([data-kl="kapital"]:is(:hover, :focus-visible)) [data-knoten="kapital"] .scheibe,
+.block:has([data-kl="strom"]:is(:hover, :focus-visible)) [data-knoten="strom"] .scheibe {
+  stroke: #8cba58;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .kreislauf .knotenInnen {
+    transition: transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .block:has([data-kl="flaeche"]:is(:hover, :focus-visible)) [data-knoten="flaeche"] .knotenInnen,
+  .block:has([data-kl="projekt"]:is(:hover, :focus-visible)) [data-knoten="projekt"] .knotenInnen,
+  .block:has([data-kl="kapital"]:is(:hover, :focus-visible)) [data-knoten="kapital"] .knotenInnen,
+  .block:has([data-kl="strom"]:is(:hover, :focus-visible)) [data-knoten="strom"] .knotenInnen {
+    transform: scale(1.07);
+  }
+
+  /* Ausgangszustand, solange das umgebende Reveal noch nicht sichtbar ist */
+  :global(.js-ready) :global(.ov-reveal:not(.is-visible)) .kreislauf .mitte,
+  :global(.js-ready) :global(.ov-reveal:not(.is-visible)) .kreislauf .knoten {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  :global(.js-ready) :global(.ov-reveal:not(.is-visible)) .kreislauf .bogen {
+    stroke-dashoffset: 1;
+  }
+  :global(.js-ready) :global(.ov-reveal:not(.is-visible)) .kreislauf .spitze {
+    opacity: 0;
+  }
+
+  /* Ein Umlauf: Mitte → Station 1 → Pfeil → Station 2 → … → zurück zur Fläche */
+  :global(.ov-reveal.is-visible) .kreislauf .mitte {
+    animation: kl-auf 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  :global(.ov-reveal.is-visible) .kreislauf .knoten {
+    animation: kl-auf 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: calc(260ms + var(--i, 0) * 380ms);
+  }
+  :global(.ov-reveal.is-visible) .kreislauf .bogen {
+    animation: kl-zeichnen 420ms cubic-bezier(0.65, 0, 0.35, 1) both;
+    animation-delay: calc(480ms + var(--i, 0) * 380ms);
+  }
+  :global(.ov-reveal.is-visible) .kreislauf .spitze {
+    animation: kl-ein 160ms ease-out both;
+    animation-delay: calc(860ms + var(--i, 0) * 380ms);
+  }
+  /* Der Kreis schließt sich: die Fläche leuchtet einmal kurz auf */
+  :global(.ov-reveal.is-visible) .kreislauf [data-knoten="flaeche"] .halo {
+    animation: kl-puls 900ms ease-out 1780ms backwards;
+  }
+  :global(.ov-reveal.is-visible) .kreislauf .ring {
+    animation: kl-drehen 120s linear 2.4s infinite;
+  }
+}
+
+@keyframes kl-auf {
+  from { opacity: 0; transform: scale(0.82); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes kl-zeichnen {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes kl-ein {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes kl-puls {
+  0% { opacity: 0; }
+  35% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes kl-drehen {
+  to { transform: rotate(360deg); }
+}

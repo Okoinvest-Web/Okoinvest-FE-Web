@@ -1,0 +1,95 @@
+/*
+ * Aufbau-Choreografie für die Schemagrafiken der Flächen-, Agri- und Dachseiten
+ * (Parkplan, Solarpark-Schnitt, Kartenstapel, Hallenschnitt, Zeitleiste).
+ *
+ * Auslöser ist der Container mit .buehne:
+ *   - zusammen mit .ov-reveal (globaler RevealObserver) → startet beim Hineinscrollen
+ *   - zusammen mit .sofort → startet beim Laden (Hero, reines CSS, auch ohne JS sichtbar)
+ * Teile im Inneren tragen eine Rollen-Klasse und optional style="--i: n" für die Reihenfolge.
+ *
+ * Regeln: nur transform/opacity (Ausnahme stroke-dashoffset beim Zeichnen),
+ * ohne JavaScript und bei reduzierter Bewegung steht alles sofort.
+ */
+
+.fallen,
+.heben,
+.pop,
+.wachsen,
+.ein {
+  transform-box: fill-box;
+}
+.fallen,
+.heben { transform-origin: 50% 100%; }
+.pop { transform-origin: 50% 50%; }
+.wachsen { transform-origin: 0% 50%; }
+.zeichnen { stroke-dasharray: 1; stroke-dashoffset: 0; }
+
+@keyframes fallen {
+  from { opacity: 0.001; transform: translate3d(0, -22px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes heben {
+  from { opacity: 0.001; transform: translate3d(0, 26px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pop {
+  0% { opacity: 0.001; transform: scale(0.35); }
+  65% { opacity: 1; transform: scale(1.12); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes wachsen {
+  from { transform: scaleX(0); }
+  to { transform: none; }
+}
+@keyframes ein {
+  from { opacity: 0.001; }
+  to { opacity: 1; }
+}
+@keyframes zeichnen {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Ausgangszustand nur, solange JS den Auslöser noch nicht gesetzt hat */
+  :global(.js-ready) .buehne:global(.ov-reveal:not(.is-visible)) .fallen,
+  :global(.js-ready) .buehne:global(.ov-reveal:not(.is-visible)) .heben,
+  :global(.js-ready) .buehne:global(.ov-reveal:not(.is-visible)) .pop,
+  :global(.js-ready) .buehne:global(.ov-reveal:not(.is-visible)) .ein { opacity: 0; }
+  :global(.js-ready) .buehne:global(.ov-reveal:not(.is-visible)) .wachsen { transform: scaleX(0); }
+  :global(.js-ready) .buehne:global(.ov-reveal:not(.is-visible)) .zeichnen { stroke-dashoffset: 1; }
+
+  .buehne:global(.is-visible) .fallen,
+  .buehne.sofort .fallen {
+    animation: fallen var(--dauer, 640ms) var(--ov-ease-out) both;
+    animation-delay: calc(var(--ov-delay, 0ms) + var(--i, 0) * var(--schritt, 55ms));
+  }
+  .buehne:global(.is-visible) .heben,
+  .buehne.sofort .heben {
+    animation: heben var(--dauer, 700ms) var(--ov-ease-out) both;
+    animation-delay: calc(var(--ov-delay, 0ms) + var(--i, 0) * var(--schritt, 55ms));
+  }
+  .buehne:global(.is-visible) .pop,
+  .buehne.sofort .pop {
+    animation: pop var(--pop-dauer, 520ms) var(--ov-ease-out) both;
+    animation-delay: calc(var(--ov-delay, 0ms) + var(--pop-start, 600ms) + var(--i, 0) * var(--pop-schritt, 90ms));
+  }
+  .buehne:global(.is-visible) .wachsen,
+  .buehne.sofort .wachsen {
+    animation: wachsen var(--dauer, 900ms) var(--ov-ease-out) both;
+    animation-delay: calc(var(--ov-delay, 0ms) + var(--i, 0) * var(--schritt, 55ms));
+  }
+  .buehne:global(.is-visible) .ein,
+  .buehne.sofort .ein {
+    animation: ein var(--ein-dauer, 600ms) var(--ov-ease-out) both;
+    animation-delay: calc(var(--ov-delay, 0ms) + var(--ein-start, 0ms) + var(--i, 0) * var(--schritt, 55ms));
+  }
+  .buehne:global(.is-visible) .zeichnen,
+  .buehne.sofort .zeichnen {
+    animation: zeichnen var(--zeichnen-dauer, 1000ms) var(--ov-ease-in-out, ease-in-out) both;
+    animation-delay: calc(var(--ov-delay, 0ms) + var(--zeichnen-start, 0ms) + var(--i, 0) * var(--schritt, 55ms));
+  }
+}
+
+/* Der Reveal-Container selbst bewegt sich nicht – die Teile erzählen den Aufbau */
+:global(.js-ready) .buehne:global(.ov-reveal:not(.is-visible)) { opacity: 1; transform: none; }

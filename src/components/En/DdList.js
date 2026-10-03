@@ -1,4 +1,4 @@
-import { Gauge, Landmark, MapPinned, PlugZap, Scale, Wrench } from "lucide-react";
+import { Check, Gauge, Landmark, MapPinned, PlugZap, Scale, Wrench } from "lucide-react";
 import Reveal from "@/components/ui/Reveal";
 
 /**
@@ -75,18 +75,23 @@ export default function DdList() {
       {DD_EN.map((b, i) => {
         const Icon = b.icon;
         return (
-          <Reveal key={b.titel} delay={i * 60} className="rounded-3xl bg-white p-6 ring-1 ring-ink-200/70">
-            <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-ov-50 text-ov-600">
+          <Reveal key={b.titel} delay={i * 60} className="flex flex-col overflow-hidden rounded-[1.4rem] bg-white ring-1 ring-ink-200/80">
+            <div className="flex items-center gap-3 border-b border-ink-100 bg-sand-50/70 px-6 py-4">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-ov-600 ring-1 ring-ov-200">
                 <Icon aria-hidden="true" className="h-5 w-5" />
               </span>
-              <h3 className="font-display text-[18px] font-bold text-ink-900">{b.titel}</h3>
+              <h3 className="min-w-0 flex-1 font-display text-[17.5px] font-bold leading-snug text-ink-900">{b.titel}</h3>
+              <span className="ov-num shrink-0 rounded-full bg-white px-2 py-0.5 text-[11.5px] font-semibold text-ink-500 ring-1 ring-ink-200">
+                {b.punkte.length} <span className="sr-only">checks</span>
+              </span>
             </div>
-            <ul className="mt-5 space-y-2.5">
+            <ul className="flex-1 space-y-3 px-6 py-5">
               {b.punkte.map((p) => (
                 <li key={p} className="flex gap-3 text-[14px] leading-relaxed text-ink-700">
-                  <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ov-500" />
-                  {p}
+                  <span aria-hidden="true" className="mt-[3px] flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-ov-100 text-ov-700">
+                    <Check className="h-2.5 w-2.5" strokeWidth={3} />
+                  </span>
+                  <span className="min-w-0">{p}</span>
                 </li>
               ))}
             </ul>

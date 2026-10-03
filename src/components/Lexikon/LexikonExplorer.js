@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Search, X } from "lucide-react";
 
@@ -27,13 +27,25 @@ const norm = (s) =>
  *
  * props:
  *  gruppen    [[buchstabe, [begriff, ...]], ...]
- *  kategorien [{ id, label }]
+ *  kategorien [{ id, label, anzahl? }]
  *  namen      { id: begriff } – für Beschriftung verwandter Begriffe
  */
 export default function LexikonExplorer({ gruppen, kategorien, namen }) {
   const [suche, setSuche] = useState("");
   const [kategorie, setKategorie] = useState("alle");
   const q = useDeferredValue(suche);
+
+  // Suche aus dem Hero übernehmen (Ereignis mit JS, ?q=… ohne JS)
+  useEffect(() => {
+    const start = new URLSearchParams(window.location.search).get("q");
+    if (start) setSuche(start);
+    const onSuche = (e) => {
+      setSuche(e.detail || "");
+      setKategorie("alle");
+    };
+    window.addEventListener("lexikon:suche", onSuche);
+    return () => window.removeEventListener("lexikon:suche", onSuche);
+  }, []);
 
   const index = useMemo(
     () =>
@@ -88,8 +100,12 @@ export default function LexikonExplorer({ gruppen, kategorien, namen }) {
   return (
     <div>
       {/* ---------- Themen ---------- */}
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Nach Thema filtern">
-        {[{ id: "alle", label: "Alle Themen" }, ...kategorien].map((k) => {
+      <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between md:gap-10">
+        <h2 className="ov-h3 text-ink-900 md:text-[28px]">Alle Begriffe</h2>
+        <p className="text-[14.5px] text-ink-500">Nach Themenfeld filtern, suchen oder über das Alphabet springen.</p>
+      </div>
+      <div className="ov-no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5 pb-1 md:-mx-8 md:px-8 lg:mx-0 lg:flex-wrap lg:px-0" role="group" aria-label="Nach Thema filtern">
+        {[{ id: "alle", label: "Alle Themen", anzahl: gruppen.reduce((s, [, l]) => s + l.length, 0) }, ...kategorien].map((k) => {
           const aktiv = kategorie === k.id;
           return (
             <button
@@ -97,11 +113,14 @@ export default function LexikonExplorer({ gruppen, kategorien, namen }) {
               type="button"
               aria-pressed={aktiv}
               onClick={() => setKategorie(k.id)}
-              className={`h-11 rounded-full px-4 text-[14px] font-semibold transition-all ${
-                aktiv ? "bg-ink-900 text-white shadow-md" : "bg-white text-ink-600 ring-1 ring-ink-200 hover:text-ink-900 hover:ring-ink-300"
+              className={`inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 text-[14px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2 ${
+                aktiv ? "bg-ink-900 text-white shadow-md" : "bg-white text-ink-700 ring-1 ring-ink-200 hover:text-ink-900 hover:ring-ink-300"
               }`}
             >
               {k.label}
+              {typeof k.anzahl === "number" && (
+                <span className={`ov-num rounded-full px-1.5 text-[12px] ${aktiv ? "bg-white/15 text-white" : "bg-ink-100 text-ink-600"}`}>{k.anzahl}</span>
+              )}
             </button>
           );
         })}
@@ -200,11 +219,16 @@ export default function LexikonExplorer({ gruppen, kategorien, namen }) {
       ) : (
         <div className="mt-4">
           {gefiltert.map(([l, liste]) => (
-            <section key={l} id={`buchstabe-${l}`} aria-labelledby={`buchstabe-${l}-titel`} className="scroll-mt-[220px] border-t border-ink-200 pt-8 first:border-t-0 lg:scroll-mt-[160px]">
-              <div className="grid gap-6 pb-10 lg:grid-cols-[88px_minmax(0,1fr)] lg:gap-10">
-                <h2 id={`buchstabe-${l}-titel`} className="font-display text-[44px] font-extrabold leading-none tracking-tight text-ov-500 lg:sticky lg:top-[160px] lg:self-start lg:text-[64px]">
-                  {l}
-                </h2>
+            <section key={l} id={`buchstabe-${l}`} aria-labelledby={`buchstabe-${l}-titel`} className="scroll-mt-[220px] border-t border-ink-200/80 pt-8 first:border-t-0 lg:scroll-mt-[160px] lg:pt-10">
+              <div className="grid gap-5 pb-10 lg:grid-cols-[88px_minmax(0,1fr)] lg:gap-10">
+                <div className="flex items-center gap-4 lg:sticky lg:top-[160px] lg:block lg:self-start">
+                  <h2 id={`buchstabe-${l}-titel`} className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white font-display text-[30px] font-extrabold leading-none tracking-tight text-ov-600 shadow-e1 ring-1 ring-ink-200/70 lg:h-[88px] lg:w-[88px] lg:text-[48px]">
+                    {l}
+                  </h2>
+                  <p className="ov-num text-[13px] font-medium text-ink-500 lg:mt-3 lg:text-center">
+                    {liste.length} {liste.length === 1 ? "Begriff" : "Begriffe"}
+                  </p>
+                </div>
                 <dl className="grid gap-4 md:grid-cols-2">
                   {liste.map((b) => (
                     <Eintrag key={b.id} b={b} namen={namen} kategorien={kategorien} />
@@ -224,7 +248,7 @@ function Eintrag({ b, namen, kategorien }) {
   return (
     <div
       id={b.id}
-      className="group relative flex scroll-mt-[220px] flex-col rounded-3xl bg-white p-6 ring-1 ring-ink-200/70 transition-shadow duration-300 target:ring-2 target:ring-ov-500 target:shadow-[0_0_0_6px_rgba(102,153,51,0.15)] hover:ring-ov-200 lg:scroll-mt-[170px] md:p-7"
+      className="group relative flex scroll-mt-[220px] flex-col rounded-3xl bg-white p-6 shadow-e1 ring-1 ring-ink-200/70 transition-shadow duration-300 target:ring-2 target:ring-ov-500 target:shadow-[0_0_0_6px_rgba(102,153,51,0.15)] hover:shadow-e3 hover:ring-ov-200 lg:scroll-mt-[170px] md:p-7"
     >
       {/* dl-Gruppe enthält nur dt/dd – Themen-Chip steckt mit im dt */}
       <dt className="flex flex-col-reverse items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
@@ -239,7 +263,7 @@ function Eintrag({ b, namen, kategorien }) {
         )}
       </dt>
       <dd className="mt-3 flex flex-1 flex-col">
-        <p className="text-[15.5px] font-medium leading-relaxed text-ink-800">{b.kurz}</p>
+        <p className="border-l-2 border-ov-400 pl-3.5 text-[15.5px] font-medium leading-relaxed text-ink-800">{b.kurz}</p>
         <p className="mt-3 text-[15px] leading-relaxed text-ink-600">{b.text}</p>
         {b.synonyme?.length > 0 && (
           <p className="mt-3 text-[13px] leading-relaxed text-ink-500">

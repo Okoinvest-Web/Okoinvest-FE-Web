@@ -34,6 +34,11 @@ const GROESSEN = {
  * size:    xs | sm | md | lg
  * laedt:   zeigt einen Spinner, sperrt den Button (aria-busy), Breite bleibt stabil
  * block:   volle Breite
+ * pfeil:   Pfeil rechts, gleitet bei Hover und Tastaturfokus nach rechts
+ * magnetisch: folgt dem Mauszeiger um wenige Pixel (nur EIN Haupt-CTA pro Ansicht,
+ *          siehe @/components/motion/Magnetisch)
+ *
+ * Feedback: Hover (Farbe/Schatten 200 ms), Druck (scale 0.975, 75 ms), Fokusring rastet ein.
  */
 export default function Button({
   href,
@@ -43,16 +48,18 @@ export default function Button({
   icon: Icon,
   laedt = false,
   block = false,
+  magnetisch = false,
   className,
   children,
   ...rest
 }) {
   const klassen = cn(
-    "group relative inline-flex select-none items-center justify-center whitespace-nowrap font-semibold tracking-[-0.005em] transition-all duration-200 ease-ov-out active:scale-[0.975] active:duration-75 disabled:opacity-50",
+    "group relative inline-flex select-none items-center justify-center whitespace-nowrap font-semibold tracking-[-0.005em] transition-[color,background-color,box-shadow,scale,translate,opacity,outline-offset] duration-200 ease-ov-out active:scale-[0.975] active:duration-75 disabled:opacity-50",
     VARIANTEN[variant] || VARIANTEN.primary,
     variant === "link" ? "gap-1.5 text-[15px]" : GROESSEN[size] || GROESSEN.md,
     block && "w-full",
     laedt && "pointer-events-none",
+    magnetisch && "ov-magnet",
     className
   );
 
@@ -67,7 +74,7 @@ export default function Button({
       {pfeil && (
         <ArrowRight
           aria-hidden="true"
-          className="h-[1.05em] w-[1.05em] shrink-0 transition-transform duration-300 group-hover:translate-x-1"
+          className="h-[1.05em] w-[1.05em] shrink-0 transition-transform duration-300 ease-ov-out group-hover:translate-x-1 group-focus-visible:translate-x-1 motion-reduce:transition-none"
         />
       )}
     </>

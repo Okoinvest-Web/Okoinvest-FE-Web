@@ -9,7 +9,7 @@
 
 import LegalShell from "@/components/Reusable/LegalShell";
 import { GESELLSCHAFT } from "@/data/site";
-import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata } from "../_teile";
+import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata, STAND_BEDINGUNGEN } from "../_teile";
 
 const PFAD = "/bedingungen/lieferanten";
 
@@ -29,6 +29,7 @@ export default function TeilnahmebedingungenLieferantenPage() {
     <LegalShell
       titel="Teilnahmebedingungen für Energieversorger"
       pfad={PFAD}
+      stand={STAND_BEDINGUNGEN}
       lead="Regeln für Energieversorger, die ÖkoInvest zu Angebotsanfragen für die Stromlieferung an Unternehmen einlädt – im Versorger-Portal oder per Angebotslink."
     >
       <EntwurfHinweis />

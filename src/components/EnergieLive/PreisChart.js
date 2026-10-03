@@ -202,9 +202,10 @@ export default function PreisChart({ initial }) {
                 ct/kWh
               </text>
 
-              {/* Günstigstes 3-Stunden-Fenster */}
+              {/* Günstigstes 3-Stunden-Fenster – erscheint nach der Kurve (lenkt den Blick auf die Handlungsempfehlung).
+                  key = Tag: beim Umschalten heute/morgen läuft der Einlauf neu */}
               {fenster && (
-                <g>
+                <g key={`f-${tag.start}`} className="ov-flaeche-ein" style={{ animationDelay: "1050ms" }}>
                   <rect x={x(fenster.start)} y={PAD.t} width={x(fenster.ende) - x(fenster.start)} height={plotH} fill={F.fenster} />
                   <rect x={x(fenster.start)} y={PAD.t - 3} width={x(fenster.ende) - x(fenster.start)} height="3" rx="1.5" fill={F.fensterKante} />
                   <text
@@ -221,10 +222,13 @@ export default function PreisChart({ initial }) {
               )}
 
               {/* Fläche + Linie, oberhalb/unterhalb 0 getrennt eingefärbt */}
-              <path d={flaeche} fill={F.flaeche} clipPath="url(#pc-oben)" />
-              {hatNegativ && <path d={flaeche} fill={F.negativFlaeche} clipPath="url(#pc-unten)" />}
-              <path d={linie} fill="none" stroke={F.linie} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" clipPath={hatNegativ ? "url(#pc-oben)" : undefined} />
-              {hatNegativ && <path d={linie} fill="none" stroke={F.negativ} strokeWidth="2" strokeLinejoin="round" clipPath="url(#pc-unten)" />}
+              {/* Einlauf: Preiskurve zeichnet sich durch den Tag (00 → 24 Uhr), Flächen blenden nach */}
+              <g key={`k-${tag.start}`}>
+                <path d={flaeche} fill={F.flaeche} clipPath="url(#pc-oben)" className="ov-flaeche-ein" />
+                {hatNegativ && <path d={flaeche} fill={F.negativFlaeche} clipPath="url(#pc-unten)" className="ov-flaeche-ein" />}
+                <path d={linie} pathLength="1" fill="none" stroke={F.linie} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" clipPath={hatNegativ ? "url(#pc-oben)" : undefined} className="ov-linie" />
+                {hatNegativ && <path d={linie} pathLength="1" fill="none" stroke={F.negativ} strokeWidth="2" strokeLinejoin="round" clipPath="url(#pc-unten)" className="ov-linie" />}
+              </g>
 
               {/* x-Achse */}
               {xTicks.map((t) => (
@@ -241,7 +245,7 @@ export default function PreisChart({ initial }) {
                 const yy = y(p.eurMwh / 10);
                 const ty = oben ? Math.max(yy - 14, PAD.t + 12) : Math.min(yy + 20, PAD.t + plotH - 6);
                 return (
-                  <g key={label}>
+                  <g key={`${label}-${tag.start}`} className="ov-flaeche-ein" style={{ animationDelay: "900ms" }}>
                     <circle cx={x(p.t + s / 2)} cy={yy} r="4" fill={p.eurMwh < 0 ? F.negativ : F.linie} stroke="#fff" strokeWidth="2" />
                     <text x={markeX(p.t)} y={ty} textAnchor="middle" fontSize="12" fontWeight="600" fill={F.tinte} className="ov-num" paintOrder="stroke" stroke="#fff" strokeWidth="4" strokeLinejoin="round">
                       {label}

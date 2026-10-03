@@ -14,8 +14,8 @@ export const metadata = rechnerMetadata({
   pfad: PFAD,
   title: "Energy-Sharing-Rechner DE, AT, CH | ÖkoInvest",
   description:
-    "Energiegemeinschaft rechnen: geteilter Strom, Netzentgelt-Abschlag (EEG lokal/regional, LEG), Vorteil je Teilnehmer und Erlös des Erzeugers – DE, AT, CH.",
-  keywords: ["Energy Sharing Rechner", "Energiegemeinschaft Rechner", "EEG Österreich Netzentgelt", "LEG Schweiz Rechner", "§ 42c EnWG", "Bürgerenergiegemeinschaft"],
+    "Energy Sharing rechnen: geteilter Strom, Netzentgelt-Abschlag (EEG lokal/regional, LEG), Vorteil je Teilnehmer und Erlös des Erzeugers – DE, AT, CH.",
+  keywords: ["Energy Sharing Rechner", "§ 42c EnWG Rechner", "LEG Schweiz Rechner", "Strom teilen Nachbarschaft", "Energy Sharing Deutschland"],
 });
 
 const at = R.at.rabatte;

@@ -117,8 +117,8 @@ export default function Page() {
         eyebrow: "Für Unternehmen",
         title: "Solarstrom aus Parks der Region – zum Festpreis.",
         text: "Wir prüfen, ob ein PPA aus einem unserer Parks zu Ihrem Lastgang passt, und kombinieren es auf Wunsch mit dem Reststrom-Pool. Unverbindlich.",
-        primary: { label: "Reststrom-Pool ansehen", href: "/reststrom" },
-        secondary: { label: "Kontakt aufnehmen", href: "/kontakt" },
+        primary: { label: "PPA anfragen", href: "/kontakt?anliegen=reststrom#formular" },
+        secondary: { label: "Reststrom-Pool ansehen", href: "/reststrom" },
       }}
     />
   );

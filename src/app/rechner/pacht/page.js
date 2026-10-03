@@ -4,6 +4,9 @@ import Link from "next/link";
 import RechnerSeite, { rechnerMetadata } from "@/components/Rechner/RechnerSeite";
 import PachtRechner from "@/components/Flaeche/PachtRechner";
 import SectionHeading from "@/components/ui/SectionHeading";
+import Reveal from "@/components/ui/Reveal";
+import { JahresSaeulen } from "@/components/Flaeche/Verpachten/Pachtmodelle";
+import { pachtRechnung } from "@/lib/rechner/pacht";
 import { ERLOESE, FREIFLAECHE, PACHT } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 
@@ -11,10 +14,10 @@ const PFAD = "/rechner/pacht";
 
 export const metadata = rechnerMetadata({
   pfad: PFAD,
-  title: "Pachtrechner Solarpark: Pacht pro Hektar | ÖkoInvest",
+  title: "Pachtrechner Solarpark: Pacht über 30 Jahre | ÖkoInvest",
   description:
     "Solarpark-Pacht berechnen: Festpacht, indexiert oder Umsatzbeteiligung über 30 Jahre – im Vergleich zu Ackerpacht und Deckungsbeitrag. Kostenlos.",
-  keywords: ["Pachtrechner Solarpark", "Pacht Photovoltaik Hektar", "Solarpark Pacht pro Hektar", "Freiflächen PV Pacht", "Fläche verpachten Solar"],
+  keywords: ["Pachtrechner Solarpark", "Solarpark Pacht berechnen", "Umsatzpacht Solarpark", "Pacht indexiert Photovoltaik", "Freiflächen PV Pacht"],
 });
 
 const FAQ = [
@@ -40,6 +43,34 @@ const FAQ = [
   },
 ];
 
+/** Mini-Vergleich der drei Modelle (Beispiel 10 ha, Süd-DE, Standardwerte des Rechners) */
+function ModellMinis() {
+  const reihen = [
+    { t: "Festpacht", x: "gleichbleibend", r: pachtRechnung({ modell: "fest" }), ton: "fill-ov-400" },
+    { t: "Indexiert", x: `+${fmt(PACHT.indexierung * 100, 1)} % p. a.`, r: pachtRechnung({ modell: "index" }), ton: "fill-ov-600" },
+    { t: "Umsatz", x: "6 % der Erlöse", r: pachtRechnung({ modell: "umsatz", umsatzAnteil: 0.06 }), ton: "fill-navy-500" },
+  ];
+  const max = Math.max(...reihen.flatMap((m) => m.r.jahre.map((j) => j.solar)));
+  return (
+    <Reveal className="mt-8 grid max-w-2xl gap-3 sm:grid-cols-3">
+      {reihen.map((m) => (
+        <div key={m.t} className="rounded-2xl bg-sand-50 p-4 ring-1 ring-ink-200/60">
+          <p className="font-display text-[15.5px] font-bold text-ink-900">{m.t}</p>
+          <p className="text-[12.5px] text-ink-600">{m.x}</p>
+          <div className="mt-3 rounded-xl bg-white px-2.5 pb-1.5 pt-2.5 ring-1 ring-ink-200/70">
+            <JahresSaeulen jahre={m.r.jahre} max={max} ton={m.ton} />
+          </div>
+          <p className="mt-2 flex items-baseline justify-between text-[12.5px] text-ink-600">
+            <span>Jahr 1–{PACHT.laufzeit}</span>
+            <span className="ov-num font-bold text-ink-900">{fmt(Math.round(m.r.summeSolar / 1000))} Tsd. €</span>
+          </p>
+        </div>
+      ))}
+      <p className="text-[12.5px] leading-relaxed text-ink-500 sm:col-span-3">Beispiel 10 ha in Süddeutschland mit den Standardwerten des Rechners; jede Säule ist ein Jahr. Nominal, vor Steuern.</p>
+    </Reveal>
+  );
+}
+
 export default function Page() {
   return (
     <RechnerSeite
@@ -63,6 +94,7 @@ export default function Page() {
             title="Die Pacht ist planbar – der Vergleich zeigt, was sie wert ist."
             lead="Ein Solarpark bindet die Fläche für Jahrzehnte. Deshalb vergleichen wir nicht nur mit der Ackerpacht, sondern auch mit dem, was Sie selbst als Deckungsbeitrag erwirtschaften würden."
           />
+          <ModellMinis />
           <div className="ov-prose mt-8 max-w-2xl">
             <p>
               Bei der <strong>Festpacht</strong> bleibt der Betrag über die Laufzeit gleich, bei der <strong>indexierten Pacht</strong> steigt er mit {fmt(PACHT.indexierung * 100, 1)} % pro Jahr. Die <strong>Umsatzbeteiligung</strong> rechnen wir auf den erwarteten Stromertrag Ihrer Region – die ersten 20 Jahre mit dem durchschnittlichen EEG-Zuschlagswert von {fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh, danach vorsichtig mit {fmt(ERLOESE.merchantCt, 1)} ct/kWh Marktwert.

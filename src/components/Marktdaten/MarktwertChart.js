@@ -34,12 +34,13 @@ export default function MarktwertChart({ daten }) {
   const ticks = [0, 5, 10, 15, 20, 25];
   const a = aktiv != null ? daten[aktiv] : null;
 
-  const balken = (x0, wert, farbe) => {
+  // Balken wachsen beim Eintritt gestaffelt (ov-balken-y, ausgelöst vom umgebenden Reveal)
+  const balken = (x0, wert, farbe, i) => {
     const y0 = y(0);
     const y1 = y(wert);
     const h = Math.max(0, y0 - y1);
     const r = Math.min(4, h, bw / 2);
-    return <path d={`M${x0},${y0}V${y1 + r}Q${x0},${y1} ${x0 + r},${y1}H${x0 + bw - r}Q${x0 + bw},${y1} ${x0 + bw},${y1 + r}V${y0}Z`} fill={farbe} />;
+    return <path d={`M${x0},${y0}V${y1 + r}Q${x0},${y1} ${x0 + r},${y1}H${x0 + bw - r}Q${x0 + bw},${y1} ${x0 + bw},${y1 + r}V${y0}Z`} fill={farbe} className="ov-balken-y" style={{ "--i": i }} />;
   };
 
   const setzen = (clientX, el) => {
@@ -93,12 +94,13 @@ export default function MarktwertChart({ daten }) {
           {a && <rect x={m.l + band * aktiv + 2} y={m.t} width={band - 4} height={ph} rx="8" fill="#151a24" fillOpacity="0.04" />}
           {daten.map((d, i) => (
             <g key={d.jahr}>
-              {balken(x(i) - bw - 1, d.spot, SPOT)}
-              {balken(x(i) + 1, d.solar, SOLAR)}
+              {balken(x(i) - bw - 1, d.spot, SPOT, i * 1.5)}
+              {balken(x(i) + 1, d.solar, SOLAR, i * 1.5 + 0.75)}
               <text x={x(i)} y={H - 30} textAnchor="middle" fontSize="11.5" fill={ACHSE} className="ov-num">
                 {d.jahr}
               </text>
-              <text x={x(i)} y={H - 12} textAnchor="middle" fontSize="12" fontWeight="700" fill="#151a24" className="ov-num">
+              {/* Capture Rate erscheint nach den Balken – sie ist das Verhältnis der beiden */}
+              <text x={x(i)} y={H - 12} textAnchor="middle" fontSize="12" fontWeight="700" fill="#151a24" className="ov-num ov-flaeche-ein" style={{ animationDelay: `${700 + i * 60}ms` }}>
                 {fmt(d.capture * 100)} %
               </text>
             </g>

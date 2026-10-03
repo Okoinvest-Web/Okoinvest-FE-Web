@@ -2,7 +2,6 @@ import Link from "next/link";
 import { CircleAlert, Landmark } from "lucide-react";
 import AuthRahmen from "@/components/Plattform/AuthRahmen";
 import { BankEinladungAnnehmen } from "@/components/Portal/Finanzierung/Aktionen";
-import { abs } from "@/data/site";
 import { aktuellerNutzer } from "@/lib/plattform/server/seite";
 import { finanzierungBackend } from "@/lib/plattform/backend/finanzierung";
 import { datum } from "@/lib/plattform/format";
@@ -12,7 +11,6 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Zugang Bankenpaket | ÖkoInvest",
   description: "Persönlicher Zugang für Finanzierungspartner zum gesicherten Bankenpaket einer Finanzierungsanfrage von ÖkoInvest – nur nach Anmeldung, nur freigegebene Unterlagen.",
-  alternates: { canonical: abs("/einladung") },
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };

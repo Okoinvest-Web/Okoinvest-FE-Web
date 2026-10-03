@@ -1,5 +1,6 @@
 import { cn } from "@/components/ui/cn";
 import Reveal from "@/components/ui/Reveal";
+import Aufbau, { aufbau } from "@/components/Flaeche/Seite/Aufbau";
 
 /**
  * Projekt-Zeitleiste als Balkendiagramm (Server-Komponente, reines HTML/CSS).
@@ -45,26 +46,37 @@ export default function Zeitleiste({ phasen = PHASEN_SOLARPARK, monate = 48, cla
               </p>
               <p className="text-[13px] leading-snug text-ink-500">{p.text}</p>
             </div>
-            <div className="relative h-3 rounded-full bg-ink-50 md:h-7">
+            <Aufbau verzoegerung={120 + i * 70} className="relative h-3 rounded-full bg-ink-50 md:h-7">
               {jahre.slice(1, -1).map((j) => (
                 <span key={j} aria-hidden="true" className="absolute inset-y-0 w-px bg-ink-200" style={{ left: pct(j * 12) }} />
               ))}
               <span
                 className={cn(
                   "absolute inset-y-0 flex items-center overflow-hidden rounded-full px-2.5 text-[11.5px] font-semibold whitespace-nowrap",
-                  p.ton === "navy" ? "bg-navy-950 text-white" : p.ton === "gruen" ? "bg-ov-600 text-white" : "bg-ov-200 text-ov-900",
-                  p.offen && "rounded-r-none bg-gradient-to-r from-navy-950 to-navy-700"
+                  p.ton === "navy" ? "text-white" : p.ton === "gruen" ? "text-white" : "text-ov-900",
+                  p.offen && "rounded-r-none"
                 )}
                 style={{ left: pct(p.von), width: pct(p.bis - p.von) }}
               >
-                <span className="hidden md:inline">{p.bis - p.von >= 5 ? dauer(p) : null}</span>
+                {/* Balken wächst von links (transform), die Beschriftung blendet danach ein */}
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "absolute inset-0 rounded-[inherit]",
+                    aufbau.wachsen,
+                    p.ton === "navy" ? "bg-navy-950" : p.ton === "gruen" ? "bg-ov-600" : "bg-ov-200",
+                    p.offen && "bg-gradient-to-r from-navy-950 to-navy-700"
+                  )}
+                  style={{ "--dauer": "800ms" }}
+                />
+                <span className={cn("relative hidden md:inline", aufbau.ein)} style={{ "--ein-start": "450ms" }}>{p.bis - p.von >= 5 ? dauer(p) : null}</span>
               </span>
               {p.bis - p.von < 5 && (
-                <span className="absolute inset-y-0 hidden items-center pl-2 text-[11.5px] md:flex font-semibold whitespace-nowrap text-ov-800" style={{ left: pct(p.bis) }}>
+                <span className={cn("absolute inset-y-0 hidden items-center pl-2 text-[11.5px] md:flex font-semibold whitespace-nowrap text-ov-800", aufbau.ein)} style={{ left: pct(p.bis), "--ein-start": "450ms" }}>
                   {dauer(p)}
                 </span>
               )}
-            </div>
+            </Aufbau>
           </Reveal>
         ))}
       </ol>

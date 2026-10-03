@@ -11,12 +11,14 @@ import { Ablauf, Abschnitt, Checkliste, KartenRaster, Kennzahlband, KurzFazit, L
  * Blocktypen siehe src/content/ratgeber/README.md.
  */
 export default function ArtikelInhalt({ artikel }) {
+  // Kapitelnummern wie im Inhaltsverzeichnis (dort zählt „Das Wichtigste in Kürze“ mit)
+  const versatz = artikel.kurzFazit?.length > 0 ? 1 : 0;
   return (
     <>
       {artikel.kurzFazit?.length > 0 && <KurzFazit punkte={artikel.kurzFazit.map((p, i) => <InlineText key={i} text={p} />)} />}
 
-      {artikel.abschnitte.map((a) => (
-        <Abschnitt key={a.id} id={a.id} titel={a.titel}>
+      {artikel.abschnitte.map((a, i) => (
+        <Abschnitt key={a.id} id={a.id} titel={a.titel} nr={i + 1 + versatz}>
           {a.bloecke.map((b, i) => (
             <Block key={i} block={b} />
           ))}
@@ -24,7 +26,7 @@ export default function ArtikelInhalt({ artikel }) {
       ))}
 
       {artikel.faq?.length > 0 && (
-        <Abschnitt id="faq" titel={artikel.faqTitel || "Häufige Fragen"}>
+        <Abschnitt id="faq" titel={artikel.faqTitel || "Häufige Fragen"} nr={artikel.abschnitte.length + 1 + versatz}>
           <Faq items={artikel.faq.map((f) => ({ q: f.q, a: <InlineText text={f.a} />, aText: klartext(f.a) }))} />
         </Abschnitt>
       )}

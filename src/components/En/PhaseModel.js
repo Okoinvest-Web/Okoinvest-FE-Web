@@ -30,7 +30,7 @@ export default function PhaseModel() {
           const stufe = RISIKO_STUFE[p.risiko] ?? 3;
           const bestand = p.id === "cod";
           return (
-            <Reveal as="li" key={p.id} delay={i * 60} className={cn("relative flex flex-col rounded-3xl p-6 ring-1", bestand ? "bg-navy-950 text-white ring-navy-900" : "bg-white ring-ink-200/70")}>
+            <Reveal as="li" key={p.id} delay={i * 60} className={cn("relative flex flex-col rounded-[1.4rem] p-6 ring-1", bestand ? "ov-verlauf-nacht text-white ring-white/10" : "bg-white ring-ink-200/80")}>
               <div className="flex items-start justify-between gap-4">
                 <span className={cn("flex h-10 w-10 items-center justify-center rounded-2xl font-display text-[15px] font-extrabold", bestand ? "bg-white/10 text-ov-300" : "bg-ov-50 text-ov-700")}>
                   {String(i + 1).padStart(2, "0")}

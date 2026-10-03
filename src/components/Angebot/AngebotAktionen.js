@@ -64,7 +64,7 @@ export function AngebotAnfrage({ code, bereitsGestellt = false }) {
       </label>
       <div className="sm:col-span-2">
         <FehlerBox>{status.fehler}</FehlerBox>
-        <button type="submit" disabled={status.laeuft} className="mt-2 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold text-white hover:bg-ov-700 disabled:opacity-60">
+        <button type="submit" disabled={status.laeuft} className="mt-2 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold text-white hover:bg-ov-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2 disabled:opacity-60">
           <Check className="h-4 w-4" aria-hidden="true" /> Unverbindlich Kontakt aufnehmen
         </button>
       </div>
@@ -117,8 +117,8 @@ export function CodeEingabe() {
       }}
     >
       <label htmlFor="code" className="sr-only">Ihr persönlicher Code</label>
-      <input id="code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="z. B. ABCDE-23456" autoComplete="off" spellCheck={false} className={`${eingabe} font-mono uppercase tracking-wider sm:max-w-xs`} />
-      <button type="submit" className="inline-flex h-12 items-center justify-center rounded-full bg-ov-600 px-6 text-[15px] font-semibold text-white hover:bg-ov-700">Steckbrief öffnen</button>
+      <input id="code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="z. B. ABCDE-23456" autoComplete="off" spellCheck={false} className={`${eingabe} min-w-0 flex-1 font-mono uppercase tracking-wider`} />
+      <button type="submit" className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-ov-600 px-6 text-[15px] font-semibold text-white shadow-[0_8px_24px_-8px_rgba(102,153,51,0.65)] transition-colors hover:bg-ov-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2">Steckbrief öffnen</button>
     </form>
   );
 }

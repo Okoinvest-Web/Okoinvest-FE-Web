@@ -1,4 +1,5 @@
 import { cn } from "@/components/ui/cn";
+import Aufbau, { aufbau } from "@/components/Flaeche/Seite/Aufbau";
 
 /**
  * Schnitt durch einen naturverträglichen Solarpark (Inline-SVG, Server-Komponente).
@@ -20,7 +21,7 @@ const LEGENDE = [
 
 function Marke({ x, y, n }) {
   return (
-    <g>
+    <g className={aufbau.pop} style={{ "--i": n - 1 }}>
       <circle cx={x} cy={y} r="17" className="fill-navy-950" />
       <circle cx={x} cy={y} r="17" fill="none" stroke="#fff" strokeWidth="2.5" />
       <text x={x} y={y + 6} textAnchor="middle" className="fill-white font-display text-[17px] font-extrabold">
@@ -73,6 +74,7 @@ export default function SolarparkSchnitt({ className }) {
   return (
     <figure className={cn("overflow-hidden rounded-[2rem] bg-white ring-1 ring-ink-200/70", className)}>
       <div className="bg-gradient-to-b from-navy-50 to-white px-2 pt-4 sm:px-4">
+        <Aufbau schritt={110} style={{ "--pop-start": "1100ms", "--pop-schritt": "80ms" }}>
         <svg viewBox="0 0 1200 440" className="block h-auto w-full" role="img" aria-labelledby="schnitt-titel schnitt-text">
           <title id="schnitt-titel">Schnitt durch einen Solarpark</title>
           <desc id="schnitt-text">
@@ -117,8 +119,10 @@ export default function SolarparkSchnitt({ className }) {
           ))}
 
           {/* Modultische */}
-          {tische.map((x) => (
-            <Tisch key={x} x={x} />
+          {tische.map((x, i) => (
+            <g key={x} className={aufbau.fallen} style={{ "--i": i + 2 }}>
+              <Tisch x={x} />
+            </g>
           ))}
 
           {/* Reihenabstand */}
@@ -128,18 +132,20 @@ export default function SolarparkSchnitt({ className }) {
             <line x1="720" x2="720" y1="228" y2="244" className="stroke-navy-700" strokeWidth="1.5" />
           </g>
 
-          <Schaf x={655} y={328} />
+          <g className={aufbau.ein} style={{ "--ein-start": "700ms" }}>
+            <Schaf x={655} y={328} />
+          </g>
 
           {/* Station */}
-          <g>
+          <g className={aufbau.heben} style={{ "--i": 8 }}>
             <rect x="1010" y="296" width="110" height="64" rx="6" className="fill-navy-700" />
             <rect x="1010" y="288" width="110" height="12" rx="4" className="fill-navy-900" />
             <path d="M1068 308 l-12 20 h10 l-6 18 l18 -24 h-10 l6 -14 z" className="fill-sun-400" />
           </g>
 
           {/* Kabel */}
-          <path d="M 300 395 H 1065 V 362" fill="none" strokeDasharray="8 6" strokeWidth="3" className="stroke-ov-600" />
-          <path d="M 1065 395 V 420 H 1200" fill="none" strokeWidth="5" className="stroke-navy-700" />
+          <path d="M 300 395 H 1065 V 362" fill="none" strokeDasharray="8 6" strokeWidth="3" className={cn("stroke-ov-600", aufbau.ein)} style={{ "--ein-start": "850ms" }} />
+          <path d="M 1065 395 V 420 H 1200" pathLength="1" fill="none" strokeWidth="5" className={cn("stroke-navy-700", aufbau.zeichnen)} style={{ "--zeichnen-start": "1000ms", "--zeichnen-dauer": "600ms" }} />
           <path d="M 1180 412 l 12 8 l -12 8" fill="none" strokeWidth="3" className="stroke-navy-700" />
 
           {/* Nummern */}
@@ -153,6 +159,7 @@ export default function SolarparkSchnitt({ className }) {
           <Marke x={1065} y={262} n={8} />
           <Marke x={1140} y={390} n={9} />
         </svg>
+        </Aufbau>
       </div>
       <figcaption className="border-t border-ink-100 p-5 md:p-7">
         <ol className="grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">

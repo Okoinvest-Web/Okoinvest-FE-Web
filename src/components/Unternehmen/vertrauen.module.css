@@ -1,0 +1,110 @@
+/* Lokale Bewegungs-Bausteine der Vertrauens- und Wissensseiten
+   (/unternehmen, /prozess, /kontakt, /referenzen, /warum-oekoinvest, /faq …).
+   Regeln wie Motion-System 3: nur transform/opacity, ohne JS alles sichtbar
+   (Gating über .js-ready + .ov-reveal), reduzierte Bewegung = Endzustand.
+   Scroll-getriebene Teile als Longhands (Lightning CSS verwirft sonst
+   animation-timeline) und nur innerhalb von @supports. */
+
+/* ------------------------------------------------------------------
+   1. Zeitstrahl, der sich beim Scrollen füllt
+   .strahl  → Füll-Linie (liegt über der blassen Schiene)
+   .knoten  → Punkt, der „zündet“, sobald die Füllung ihn erreicht
+   ------------------------------------------------------------------ */
+.strahl {
+  transform-origin: 50% 0;
+}
+@keyframes fuellen {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+@keyframes zuenden {
+  from { transform: scale(0.55); opacity: 0.45; }
+  to { transform: none; opacity: 1; }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .strahl {
+      animation-name: fuellen;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-duration: 1ms; /* Firefox: Dauer > 0 nötig, Fortschritt bestimmt die Timeline */
+      animation-timeline: view();
+      /* Füllung folgt der Bildschirmmitte */
+      animation-range-start: cover 50vh;
+      animation-range-end: cover calc(100% - 50vh);
+    }
+    .knoten {
+      animation-name: zuenden;
+      animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation-fill-mode: both;
+      animation-duration: 1ms;
+      animation-timeline: view();
+      /* zündet, während der Punkt die Bildschirmmitte erreicht */
+      animation-range-start: cover 40vh;
+      animation-range-end: cover 52vh;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------
+   2. Verbindungslinien zeichnen sich (Organigramm, Status-Schiene)
+   Elternteil trägt .ov-reveal (Reveal). Kinder:
+   .linieY (wächst von oben), .linieX (wächst aus der Mitte),
+   .linieL (wächst von links), .folgt (Knoten erscheint danach).
+   Zeitpunkt über --t (ms).
+   ------------------------------------------------------------------ */
+.linieY { transform-origin: 50% 0; }
+.linieX { transform-origin: 50% 50%; }
+.linieL { transform-origin: 0 50%; }
+@media (prefers-reduced-motion: no-preference) {
+  .linieY,
+  .linieX,
+  .linieL {
+    transition: transform 520ms cubic-bezier(0.65, 0, 0.35, 1);
+    transition-delay: var(--t, 0ms);
+  }
+  .folgt {
+    transition:
+      opacity 520ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--t, 0ms);
+  }
+  :global(.js-ready) :global(.ov-reveal:not(.is-visible)) .linieY { transform: scaleY(0); }
+  :global(.js-ready) :global(.ov-reveal:not(.is-visible)) .linieX,
+  :global(.js-ready) :global(.ov-reveal:not(.is-visible)) .linieL { transform: scaleX(0); }
+  :global(.js-ready) :global(.ov-reveal:not(.is-visible)) .folgt { opacity: 0; transform: translate3d(0, 10px, 0); }
+}
+
+/* Sofort-Variante (beim Mounten, z. B. nach Tab-Wechsel): Linien wachsen per Animation */
+@keyframes wachsenL { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes auftauchen { from { opacity: 0.001; transform: translate3d(0, 8px, 0) scale(0.9); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .sofortL {
+    transform-origin: 0 50%;
+    animation: wachsenL 420ms cubic-bezier(0.65, 0, 0.35, 1) both;
+    animation-delay: var(--t, 0ms);
+  }
+  .sofortPop {
+    animation: auftauchen 380ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: var(--t, 0ms);
+  }
+}
+
+/* Sanfte Variante für größere Marken (Schritt-Kacheln) */
+@keyframes zuendenSanft {
+  from { transform: scale(0.86); opacity: 0.55; }
+  to { transform: none; opacity: 1; }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .knotenSanft {
+      animation-name: zuendenSanft;
+      animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation-fill-mode: both;
+      animation-duration: 1ms;
+      animation-timeline: view();
+      animation-range-start: cover 38vh;
+      animation-range-end: cover 54vh;
+    }
+  }
+}

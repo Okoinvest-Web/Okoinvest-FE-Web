@@ -14,18 +14,29 @@ export function FehlerIcon({ className }) {
   );
 }
 
-/** Fehlermeldung am Feld */
+/**
+ * Fehlermeldung am Feld. Der Fehler steht in einem dauerhaft vorhandenen, leeren Live-Bereich (aria-live="polite"),
+ * damit Screenreader ihn beim Erscheinen ansagen; der Hilfetext liegt außerhalb und wird nicht wiederholt.
+ * IDs unverändert: `${id}-fehler` bzw. `${id}-hinweis`.
+ */
 export function FeldMeldung({ id, fehler, hinweis, dunkel = false }) {
-  if (fehler) {
-    return (
-      <p id={`${id}-fehler`} className={cn(fehlerKlasse(dunkel), "animate-ov-einblenden")}>
-        <FehlerIcon />
-        <span className="min-w-0">{fehler}</span>
-      </p>
-    );
-  }
-  if (hinweis) return <p id={`${id}-hinweis`} className={hinweisKlasse(dunkel)}>{hinweis}</p>;
-  return null;
+  return (
+    <>
+      {!fehler && hinweis && (
+        <p id={`${id}-hinweis`} className={hinweisKlasse(dunkel)}>
+          {hinweis}
+        </p>
+      )}
+      <div aria-live="polite">
+        {fehler && (
+          <p id={`${id}-fehler`} className={cn(fehlerKlasse(dunkel), "animate-ov-einblenden")}>
+            <FehlerIcon />
+            <span className="min-w-0">{fehler}</span>
+          </p>
+        )}
+      </div>
+    </>
+  );
 }
 
 export default function FeldRahmen({ id, label, pflicht = false, optional = false, hinweis, fehler, zusatz, dunkel = false, className, labelClassName, children }) {

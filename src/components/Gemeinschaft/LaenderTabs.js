@@ -28,7 +28,7 @@ export default function LaenderTabs() {
 
   return (
     <div>
-      <div role="tablist" aria-label="Land wählen" onKeyDown={tastatur} className="grid grid-cols-3 gap-1.5 rounded-2xl bg-white p-1.5 ring-1 ring-ink-200/70 sm:inline-grid">
+      <div role="tablist" aria-label="Land wählen" onKeyDown={tastatur} className="grid grid-cols-3 gap-1.5 rounded-2xl bg-sand-100 p-1.5 ring-1 ring-inset ring-ink-200/70 sm:inline-grid">
         {LAENDER.map((l) => {
           const an = l.id === aktiv;
           return (
@@ -45,7 +45,7 @@ export default function LaenderTabs() {
               onClick={() => setAktiv(l.id)}
               className={cn(
                 "flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 text-[14.5px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500 sm:px-6",
-                an ? "bg-navy-950 text-white shadow" : "text-ink-600 hover:bg-ink-50 hover:text-ink-900"
+                an ? "bg-navy-950 text-white shadow-e2" : "text-ink-600 hover:bg-white hover:text-ink-900"
               )}
             >
               <span className={cn("text-[12px] font-bold", an ? "text-ov-300" : "text-ink-400")}>{l.kurz}</span>
@@ -63,7 +63,7 @@ export default function LaenderTabs() {
         tabIndex={0}
         className="ov-tab-panel mt-6 grid gap-5 focus-visible:outline-none lg:grid-cols-[1.15fr_0.85fr]"
       >
-        <div className="rounded-3xl bg-white p-6 ring-1 ring-ink-200/70 md:p-8">
+        <div className="rounded-[1.75rem] bg-sand-50 p-6 ring-1 ring-ink-200/70 md:p-8">
           <p className="text-[12.5px] font-semibold uppercase tracking-[0.14em] text-ov-700">{land.name}</p>
           <h3 className="mt-2 font-display text-[clamp(1.35rem,1.1rem+0.8vw,1.75rem)] font-extrabold leading-tight text-ink-900">{land.titel}</h3>
           <p className="mt-3 text-[16px] leading-relaxed text-ink-600">{land.intro}</p>
@@ -77,7 +77,7 @@ export default function LaenderTabs() {
               </li>
             ))}
           </ul>
-          <p className="mt-6 flex gap-3 rounded-2xl bg-sand-50 p-4 text-[14.5px] leading-relaxed text-ink-600 ring-1 ring-ink-200/60">
+          <p className="mt-6 flex gap-3 rounded-2xl bg-white p-4 text-[14.5px] leading-relaxed text-ink-600 ring-1 ring-ink-200/60">
             <AlertCircle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-sun-500" />
             <span>
               <strong className="text-ink-900">Grenzen: </strong>
@@ -85,7 +85,7 @@ export default function LaenderTabs() {
             </span>
           </p>
         </div>
-        <div className="relative overflow-hidden rounded-3xl bg-navy-950 p-6 text-white md:p-8">
+        <div className="ov-verlauf-nacht relative overflow-hidden rounded-[1.75rem] p-6 text-white md:p-8">
           <div aria-hidden="true" className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-ov-500/25 blur-[80px]" />
           <Handshake aria-hidden="true" className="relative h-7 w-7 text-ov-300" />
           <h3 className="relative mt-5 font-display text-[21px] font-extrabold leading-tight">Was ÖkoInvest in {land.name === "Schweiz" ? "der Schweiz" : land.name} beiträgt</h3>

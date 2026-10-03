@@ -55,8 +55,10 @@ export default function AusschreibungsChart({ termine, jahre }) {
       </div>
 
       <div className="mt-6">
-        {ansicht === "werte" && <WerteDiagramm daten={t} />}
-        {ansicht === "mengen" && <MengenDiagramm daten={j} />}
+        {/* lauf = Zeitraum: Beim Umschalten zeichnen sich Linie bzw. Balken neu (Feedback, dass sich die Datenbasis geändert hat).
+            Die Einlauf-Klassen (ov-linie, ov-balken-y, ov-flaeche-ein) starten über das umgebende Reveal bzw. sofort danach. */}
+        {ansicht === "werte" && <WerteDiagramm lauf={zeitraum} daten={t} />}
+        {ansicht === "mengen" && <MengenDiagramm lauf={zeitraum} daten={j} />}
         {ansicht === "tabelle" && <Tabelle daten={t} />}
       </div>
     </div>
@@ -157,7 +159,7 @@ function YAchse({ g, ticks, format, breite }) {
 
 /* ------------------------------------------------------------------ */
 
-function WerteDiagramm({ daten }) {
+function WerteDiagramm({ daten, lauf }) {
   const [ref, breite] = useBreite(760);
   const [aktiv, setAktiv] = useState(null);
   const n = daten.length;
@@ -215,20 +217,27 @@ function WerteDiagramm({ daten }) {
               </text>
             ) : null
           )}
-          <path d={flaeche} fill={FARBE.spanne} />
-          <path d={hoechst} fill="none" stroke={FARBE.hoechst} strokeWidth="2" strokeDasharray="5 4" strokeLinejoin="round" />
-          <path d={linie} fill="none" stroke={FARBE.mittel} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+          {/* Einlauf: Ø-Linie zeichnet sich von 2017 bis heute, Spanne und Höchstwert blenden als Kontext dazu */}
+          <g key={lauf}>
+            <path d={flaeche} fill={FARBE.spanne} className="ov-flaeche-ein" />
+            <g className="ov-flaeche-ein">
+              <path d={hoechst} fill="none" stroke={FARBE.hoechst} strokeWidth="2" strokeDasharray="5 4" strokeLinejoin="round" />
+            </g>
+            <path d={linie} pathLength="1" fill="none" stroke={FARBE.mittel} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" className="ov-linie" />
+          </g>
           {a && (
             <g>
               <line x1={g.x(aktiv)} x2={g.x(aktiv)} y1={g.m.t} y2={g.H - g.m.b} stroke="#151a24" strokeOpacity="0.35" strokeWidth="1" />
               <circle cx={g.x(aktiv)} cy={g.y(a.mittel)} r="5" fill={FARBE.mittel} stroke="#fff" strokeWidth="2" />
             </g>
           )}
-          {/* Direktbeschriftung letzter Wert */}
-          <circle cx={g.x(n - 1)} cy={g.y(letzte.mittel)} r="4" fill={FARBE.mittel} stroke="#fff" strokeWidth="2" />
-          <text x={g.x(n - 1) - 8} y={g.y(letzte.mittel) + 20} textAnchor="end" fontSize="12" fontWeight="700" fill="#151a24" className="ov-num">
-            {ct(letzte.mittel)}
-          </text>
+          {/* Direktbeschriftung letzter Wert – erscheint, wenn die Linie dort ankommt */}
+          <g key={`ende-${lauf}`} className="ov-flaeche-ein" style={{ animationDelay: "1000ms" }}>
+            <circle cx={g.x(n - 1)} cy={g.y(letzte.mittel)} r="4" fill={FARBE.mittel} stroke="#fff" strokeWidth="2" />
+            <text x={g.x(n - 1) - 8} y={g.y(letzte.mittel) + 20} textAnchor="end" fontSize="12" fontWeight="700" fill="#151a24" className="ov-num">
+              {ct(letzte.mittel)}
+            </text>
+          </g>
         </Interaktion>
         {a && (
           <Tooltip x={g.x(aktiv)} y={g.y(a.hoechst) - 10} breite={breite}>
@@ -255,7 +264,7 @@ function WerteDiagramm({ daten }) {
 
 /* ------------------------------------------------------------------ */
 
-function MengenDiagramm({ daten }) {
+function MengenDiagramm({ daten, lauf }) {
   const [ref, breite] = useBreite(760);
   const [aktiv, setAktiv] = useState(null);
   const n = daten.length;
@@ -268,13 +277,14 @@ function MengenDiagramm({ daten }) {
   const a = aktiv != null ? daten[aktiv] : null;
 
   // Balken mit 4-px-Rundung oben, an der Grundlinie gerade
-  const balken = (x, wert, farbe, key) => {
+  const balken = (x, wert, farbe, key, i) => {
     const y0 = g.y(0);
     const y1 = g.y(wert);
     const h = Math.max(0, y0 - y1);
     const r = Math.min(4, h, bw / 2);
     const d = `M${x},${y0}V${y1 + r}Q${x},${y1} ${x + r},${y1}H${x + bw - r}Q${x + bw},${y1} ${x + bw},${y1 + r}V${y0}Z`;
-    return <path key={key} d={d} fill={farbe} />;
+    // Balken wachsen gestaffelt von der Grundlinie (transform, kein Layout)
+    return <path key={key} d={d} fill={farbe} className="ov-balken-y" style={{ "--i": i }} />;
   };
 
   return (
@@ -299,9 +309,9 @@ function MengenDiagramm({ daten }) {
           {daten.map((d, i) => {
             const mitte = g.x(i);
             return (
-              <g key={d.jahr}>
-                {balken(mitte - bw - 1, d.gebote, FARBE.gebote, "g")}
-                {balken(mitte + 1, d.zuschlag, FARBE.zuschlag, "z")}
+              <g key={`${lauf}-${d.jahr}`}>
+                {balken(mitte - bw - 1, d.gebote, FARBE.gebote, "g", i)}
+                {balken(mitte + 1, d.zuschlag, FARBE.zuschlag, "z", i + 0.5)}
                 <text x={mitte} y={g.H - 10} textAnchor="middle" fontSize="11.5" fill={FARBE.achse} className="ov-num">
                   {breite < 520 ? `’${String(d.jahr).slice(2)}` : d.jahr}
                 </text>

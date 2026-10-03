@@ -134,12 +134,21 @@ export default function Navbar() {
   const offenesItem = NAVIGATION.find((n) => n.title === (offen || zuletzt));
 
   return (
-    <header className="sticky top-0 z-[100] w-full">
+    // Scroll-Zustand ohne Layout-Sprung (CLS): Der Kopf behält seine Höhe im Fluss.
+    // Beim Scrollen gleitet er per transform nach oben – Live-Leiste und 16 px der
+    // Hauptleiste verschwinden über den Rand, sichtbar bleiben 68 px. Der Kopf selbst
+    // lässt Klicks durch (pointer-events-none), nur seine sichtbaren Teile nehmen sie an.
+    <header className="pointer-events-none sticky top-0 z-[100] w-full">
+      <div
+        className={`pointer-events-auto transition-transform duration-500 ease-ov-out ${
+          gescrollt ? "-translate-y-4 md:-translate-y-14" : "translate-y-0"
+        }`}
+      >
       {/* ---------- Live-Leiste ---------- */}
       <div
-        className={`hidden overflow-hidden bg-navy-950 transition-[max-height,opacity] duration-500 md:block ${
-          gescrollt ? "max-h-0 opacity-0" : "max-h-10 opacity-100"
-        }`}
+        // Tastaturfokus in der ausgeblendeten Leiste holt den Kopf zurück
+        onFocusCapture={() => setGescrollt(false)}
+        className={`hidden bg-navy-950 transition-opacity duration-500 md:block ${gescrollt ? "opacity-0" : "opacity-100"}`}
       >
         <div className="ov-container flex h-10 items-center justify-between gap-6">
           <LiveTicker />
@@ -178,7 +187,7 @@ export default function Navbar() {
           aria-hidden="true"
           className={`absolute inset-0 -z-10 shadow-e2 transition-opacity duration-500 ease-ov-out ${gescrollt || offen ? "opacity-100" : "opacity-0"}`}
         />
-        <div className={`ov-container flex items-center justify-between gap-6 transition-[height] duration-500 ${gescrollt ? "h-[68px]" : "h-[84px]"}`}>
+        <div className={`ov-container flex h-[84px] items-center justify-between gap-6 transition-transform duration-500 ease-ov-out ${gescrollt ? "translate-y-2" : "translate-y-0"}`}>
           <Link href="/" aria-label="ÖkoInvest – zur Startseite" className="relative shrink-0">
             <div className={`relative h-[46px] origin-left transition-transform duration-500 ${gescrollt ? "scale-[0.86]" : ""}`}>
               <Logo />
@@ -229,7 +238,7 @@ export default function Navbar() {
               className="group hidden h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-ov-600 pl-5 pr-4 text-[14.5px] font-semibold text-white shadow-gruen transition-colors hover:bg-ov-700 sm:flex"
             >
               Fläche prüfen
-              <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform duration-300 ease-ov-out group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5" />
             </Link>
             <button
               ref={menueKnopf}
@@ -261,13 +270,14 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+      </div>
 
       {/* Abdunkelung hinter dem Mega-Menü */}
       <div
         aria-hidden="true"
         onClick={() => setOffen(null)}
         className={`fixed inset-0 top-0 -z-20 hidden bg-navy-950/20 backdrop-blur-[2px] transition-opacity duration-300 xl:block ${
-          offen ? "opacity-100" : "pointer-events-none opacity-0"
+          offen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
       />
 
@@ -388,7 +398,7 @@ function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, 
       role="dialog"
       aria-modal="true"
       aria-label="Menü"
-      className={`fixed inset-0 z-[120] flex flex-col bg-white transition-[opacity,transform,visibility] xl:hidden ${
+      className={`pointer-events-auto fixed inset-0 z-[120] flex flex-col bg-white transition-[opacity,transform,visibility] xl:hidden ${
         offen
           ? "visible translate-y-0 opacity-100 duration-[420ms] ease-ov-out"
           : "invisible translate-y-6 opacity-0 duration-200 ease-ov-in"

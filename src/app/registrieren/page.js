@@ -27,6 +27,7 @@ export default async function Registrieren({ searchParams }) {
   return (
     <AuthRahmen
       rolle={rolle}
+      nutzenOben
       eyebrow={rolle ? `Registrierung · ${rolleLabel(rolle)}` : "Registrierung"}
       titel="Kostenloses Konto anlegen"
       text="In zwei Minuten startklar. Ihre Daten nutzen wir nur für die Bearbeitung Ihrer Vorgänge."

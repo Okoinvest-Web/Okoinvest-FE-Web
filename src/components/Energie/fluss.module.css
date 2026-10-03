@@ -1,0 +1,68 @@
+/* Lokale Bewegungs-Bausteine für das Paket Energie (Speicher, Carport, VK, Kommunen,
+   Genossenschaft, Energiegemeinschaften). Ergänzen das Motion-System 3, ersetzen es nicht.
+
+   Regeln wie global: nur transform/opacity (Ausnahme stroke-dashoffset bei Linien),
+   ohne JS bleibt alles sichtbar, unter prefers-reduced-motion keine Bewegung.
+
+   Auslöser: ein Vorfahre mit .ov-sofort (Hero, beim Laden) oder .is-visible
+   (Reveal/RevealObserver beim Scrollen). */
+
+/* ---------- Energie-Impuls: ein kurzer Lichtpunkt läuft einen Pfad entlang ----------
+   Pfad braucht pathLength="1". Die Strichperiode (1,32) ist länger als der Pfad, deshalb
+   steht nie mehr als ein Punkt auf der Linie; Start- und Endlage liegen außerhalb des
+   Pfads – vor dem Start und nach dem letzten Durchlauf ist nichts zu sehen.
+   Endlich viele Durchläufe (Standard 3), danach Ruhe – keine Dauer-Unruhe.
+   Variablen: --fluss-start (ms), --i (Versatz), --fluss-schritt (ms je --i),
+   --fluss-dauer (ms je Durchlauf), --fluss-n (Durchläufe). */
+.impuls {
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 0.12 1.2;
+  stroke-dashoffset: 0.12;
+}
+@keyframes lauf {
+  from { stroke-dashoffset: 0.12; }
+  to { stroke-dashoffset: -1.08; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :global(.ov-sofort) .impuls,
+  :global(.is-visible) .impuls {
+    animation-name: lauf;
+    animation-duration: var(--fluss-dauer, 1500ms);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
+    animation-iteration-count: var(--fluss-n, 3);
+    animation-fill-mode: both;
+    animation-delay: calc(var(--fluss-start, 0ms) + var(--i, 0) * var(--fluss-schritt, 160ms));
+  }
+}
+
+/* ---------- Pop: kleines Element federt herein (Anteile, Stimmen, Haken) ---------- */
+@keyframes pop {
+  0% { opacity: 0.001; transform: scale(0.4); }
+  70% { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :global(.js-ready) :global(.ov-reveal:not(.is-visible)) .pop { opacity: 0; transform: scale(0.4); }
+  :global(.ov-sofort) .pop,
+  :global(.is-visible) .pop {
+    animation: pop 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--ov-delay, 0ms) + var(--i, 0) * var(--pop-schritt, 28ms));
+  }
+}
+
+/* ---------- Aufleuchten: Ziel-Knoten bestätigt den Empfang eines Impulses (einmal) ---------- */
+@keyframes leuchten {
+  0% { opacity: 0; transform: scale(0.85); }
+  35% { opacity: 0.9; }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+.leuchten { opacity: 0; transform-box: fill-box; transform-origin: center; pointer-events: none; }
+@media (prefers-reduced-motion: no-preference) {
+  :global(.ov-sofort) .leuchten,
+  :global(.is-visible) .leuchten {
+    animation: leuchten 1100ms cubic-bezier(0.22, 1, 0.36, 1) var(--fluss-n, 3) both;
+    animation-duration: var(--fluss-dauer, 1500ms);
+    animation-delay: calc(var(--fluss-start, 0ms) + var(--i, 0) * var(--fluss-schritt, 160ms) + var(--fluss-dauer, 1500ms) * 0.55);
+  }
+}

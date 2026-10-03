@@ -65,9 +65,9 @@ export default function Footer() {
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link href="/flaechencheck" className="ov-press group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold shadow-gruen transition-colors hover:bg-ov-700">
+            <Link href="/flaechencheck" className="ov-press group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold shadow-gruen transition-[background-color,transform] hover:bg-ov-700">
               Fläche prüfen
-              <ArrowUpRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              <ArrowUpRight aria-hidden="true" className="h-4 w-4 transition-transform duration-300 ease-ov-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-focus-visible:-translate-y-0.5 group-focus-visible:translate-x-0.5" />
             </Link>
             <Link href="/projektboerse" className="inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 text-[15px] font-semibold ring-1 ring-inset ring-white/25 transition-colors hover:bg-white/10">
               Zur Projektbörse

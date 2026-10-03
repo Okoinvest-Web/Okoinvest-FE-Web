@@ -85,14 +85,14 @@ export default function DdCheckliste() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white px-5 py-4 ring-1 ring-ink-200/70">
+      <div className="sticky top-[84px] z-10 mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white/95 px-5 py-4 shadow-e2 ring-1 ring-ink-200/70 backdrop-blur max-md:static">
         <p className="flex items-center gap-2.5 text-[14.5px] font-semibold text-ink-800">
           <FileSearch aria-hidden="true" className="h-5 w-5 text-ov-600" />
           Beim Lesen eines Exposés abhaken – nichts wird gespeichert.
         </p>
         <div className="flex min-w-[200px] flex-1 items-center gap-3 sm:max-w-xs">
           <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-ink-100" role="progressbar" aria-valuemin={0} aria-valuemax={gesamt} aria-valuenow={erledigt} aria-label="Fortschritt der Checkliste">
-            <div className="h-full rounded-full bg-ov-500 motion-safe:transition-[width] motion-safe:duration-300" style={{ width: `${(erledigt / gesamt) * 100}%` }} />
+            <div className="h-full w-full origin-left rounded-full bg-ov-500 motion-safe:transition-transform motion-safe:duration-300" style={{ transform: `scaleX(${erledigt / gesamt})` }} />
           </div>
           <span className="ov-num shrink-0 text-[13.5px] font-semibold text-ink-700">
             {erledigt}/{gesamt}
@@ -103,14 +103,18 @@ export default function DdCheckliste() {
         {DD_BEREICHE.map((b) => {
           const Icon = b.icon;
           const fertig = b.punkte.every((_, i) => haken[`${b.id}-${i}`]);
+          const anzahl = b.punkte.filter((_, i) => haken[`${b.id}-${i}`]).length;
           return (
-            <fieldset key={b.id} className={cn("rounded-3xl bg-white p-6 ring-1 transition-colors", fertig ? "ring-ov-300" : "ring-ink-200/70")}>
+            <fieldset key={b.id} className={cn("rounded-3xl bg-white p-6 shadow-e1 ring-1 transition-[box-shadow,color] duration-300", fertig ? "shadow-e2 ring-2 ring-ov-400" : "ring-ink-200/70")}>
               <legend className="sr-only">{b.titel}</legend>
               <div className="flex items-center gap-3" aria-hidden="true">
                 <span className={cn("flex h-11 w-11 items-center justify-center rounded-2xl transition-colors", fertig ? "bg-ov-500 text-white" : "bg-ov-50 text-ov-600")}>
                   <Icon className="h-5 w-5" />
                 </span>
-                <h3 className="font-display text-[18px] font-bold text-ink-900">{b.titel}</h3>
+                <h3 className="min-w-0 flex-1 font-display text-[18px] font-bold text-ink-900">{b.titel}</h3>
+                <span className={cn("ov-num shrink-0 rounded-full px-2.5 py-1 text-[12px] font-semibold", fertig ? "bg-ov-600 text-white" : "bg-ink-100 text-ink-600")}>
+                  {anzahl}/{b.punkte.length}
+                </span>
               </div>
               <ul className="mt-5 space-y-2.5">
                 {b.punkte.map((p, i) => {

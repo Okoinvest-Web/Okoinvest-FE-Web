@@ -57,21 +57,27 @@ export default function DachKarte({ className }) {
         <text x={X(7.9)} y={Y(46.55)} textAnchor="middle">CH</text>
       </g>
 
+      {/* Verbindung innerhalb der Gruppe */}
+      <path d={`M${tx} ${ty} Q${(tx + ox) / 2} ${ty - 70} ${ox} ${oy}`} fill="none" stroke="#003473" strokeOpacity="0.45" strokeWidth="2.5" strokeDasharray="2 8" strokeLinecap="round" />
+
       {/* Türkheim – Muttergesellschaft */}
       <circle cx={tx} cy={ty} r="8" fill="#ffffff" stroke="#003473" strokeWidth="3" />
-      <text x={tx} y={ty - 18} textAnchor="middle" fontSize="19" fontWeight="600" fill="#394050" paintOrder="stroke" stroke="#f4f9ee" strokeWidth="6">
+      <text x={tx} y={ty + 34} textAnchor="middle" fontSize="19" fontWeight="700" fill="#262c38" paintOrder="stroke" stroke="#f4f9ee" strokeWidth="6">
         Türkheim
+      </text>
+      <text x={tx} y={ty + 56} textAnchor="middle" fontSize="15" fill="#5b6475" paintOrder="stroke" stroke="#f4f9ee" strokeWidth="6">
+        Muttergesellschaft
       </text>
 
       {/* Ostermiething – ÖkoInvest */}
       <circle cx={ox} cy={oy} r="60" fill="url(#dach-glow)" />
       <circle cx={ox} cy={oy} r="13" fill="#558227" stroke="#ffffff" strokeWidth="4" />
-      <g transform={`translate(${ox - 290} ${oy - 104})`}>
-        <rect width="276" height="64" rx="16" fill="#03122b" />
-        <text x="18" y="28" fontSize="19" fontWeight="800" fill="#ffffff" fontFamily="var(--font-display, sans-serif)">ÖkoInvest GmbH</text>
-        <text x="18" y="50" fontSize="15" fill="#aed083">Ostermiething · Oberösterreich</text>
+      <path d={`M${ox + 8} ${oy - 10} L${ox + 30} ${oy - 52}`} stroke="#03122b" strokeWidth="3" />
+      <g transform={`translate(${ox + 4} ${oy - 132})`}>
+        <rect width="256" height="68" rx="16" fill="#03122b" />
+        <text x="18" y="29" fontSize="19" fontWeight="800" fill="#ffffff" fontFamily="var(--font-display, sans-serif)">ÖkoInvest GmbH</text>
+        <text x="18" y="52" fontSize="15" fill="#aed083">Ostermiething · Oberösterreich</text>
       </g>
-      <path d={`M${ox - 8} ${oy - 10} L${ox - 30} ${oy - 40}`} stroke="#03122b" strokeWidth="3" />
     </svg>
   );
 }

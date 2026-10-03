@@ -14,7 +14,7 @@ import LegalShell from "@/components/Reusable/LegalShell";
 import { GESELLSCHAFT } from "@/data/site";
 import { PROVISION } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
-import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata } from "../_teile";
+import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata, STAND_BEDINGUNGEN } from "../_teile";
 
 const PFAD = "/bedingungen/projektboerse";
 
@@ -36,6 +36,7 @@ export default function BedingungenProjektboersePage() {
     <LegalShell
       titel="Besondere Bedingungen Projektbörse"
       pfad={PFAD}
+      stand={STAND_BEDINGUNGEN}
       lead="Rahmen für die Provisionsvereinbarung mit Projektanbietern, den Umgehungsschutz gegenüber Anbietern und Investoren und eine optionale Exklusivität."
     >
       <EntwurfHinweis />

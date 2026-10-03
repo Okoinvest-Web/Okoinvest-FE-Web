@@ -11,7 +11,7 @@
 
 import LegalShell from "@/components/Reusable/LegalShell";
 import { GESELLSCHAFT } from "@/data/site";
-import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata } from "../_teile";
+import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata, STAND_BEDINGUNGEN } from "../_teile";
 
 const PFAD = "/bedingungen/energiebeschaffung";
 
@@ -31,6 +31,7 @@ export default function ServicevertragEnergiePage() {
     <LegalShell
       titel="Servicevertrag Energiebeschaffung"
       pfad={PFAD}
+      stand={STAND_BEDINGUNGEN}
       lead="Besondere Bedingungen für Unternehmen, die ihren Strom über die ÖkoInvest-Plattform einkaufen lassen – einzeln oder gebündelt im Reststrom-Pool."
     >
       <EntwurfHinweis />

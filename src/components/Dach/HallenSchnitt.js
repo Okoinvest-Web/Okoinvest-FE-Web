@@ -1,4 +1,5 @@
 import { cn } from "@/components/ui/cn";
+import Aufbau, { aufbau } from "@/components/Flaeche/Seite/Aufbau";
 
 /**
  * Schnitt durch eine Gewerbehalle mit PV auf dem Dach (Inline-SVG,
@@ -19,7 +20,7 @@ const LEGENDE = [
 
 function Marke({ x, y, n }) {
   return (
-    <g>
+    <g className={aufbau.pop} style={{ "--i": n - 1 }}>
       <circle cx={x} cy={y} r="17" className="fill-navy-950" />
       <circle cx={x} cy={y} r="17" fill="none" stroke="#fff" strokeWidth="2.5" />
       <text x={x} y={y + 6} textAnchor="middle" className="fill-white font-display text-[17px] font-extrabold">
@@ -40,6 +41,7 @@ export default function HallenSchnitt({ className }) {
   return (
     <figure className={cn("overflow-hidden rounded-[2rem] bg-white ring-1 ring-ink-200/70", className)}>
       <div className="bg-gradient-to-b from-navy-50 to-white px-2 pt-4 sm:px-4">
+        <Aufbau schritt={70} style={{ "--pop-start": "1250ms", "--pop-schritt": "80ms" }}>
         <svg viewBox="0 0 1200 440" className="block h-auto w-full" role="img" aria-labelledby="halle-titel halle-text">
           <title id="halle-titel">Schnitt durch eine Gewerbehalle mit Photovoltaik auf dem Dach</title>
           <desc id="halle-text">
@@ -69,18 +71,18 @@ export default function HallenSchnitt({ className }) {
           ))}
 
           {/* Module */}
-          {reihen.map((x) => {
+          {reihen.map((x, i) => {
             const y = dachY(x) - 6;
             const y2 = dachY(x + 54) - 6;
             return (
-              <g key={x}>
+              <g key={x} className={aufbau.fallen} style={{ "--i": i + 2 }}>
                 <polygon points={`${x},${y} ${x + 54},${y2} ${x + 54},${y2 - 7} ${x},${y - 7}`} className="fill-navy-500" />
                 <line x1={x + 27} y1={(y + y2) / 2 - 7} x2={x + 27} y2={(y + y2) / 2} stroke="#fff" strokeOpacity="0.5" strokeWidth="1.2" />
               </g>
             );
           })}
           {/* Brandschutzstreifen */}
-          <g>
+          <g className={aufbau.ein} style={{ "--ein-start": "900ms" }}>
             <rect x="572" y={dachY(572) - 26} width="56" height="16" rx="3" className="fill-sun-300" opacity="0.55" />
           </g>
 
@@ -98,9 +100,11 @@ export default function HallenSchnitt({ className }) {
           </g>
 
           {/* Wechselrichter an der Fassade */}
-          <rect x="176" y="236" width="44" height="56" rx="6" className="fill-navy-700" />
-          <path d="M198 248 l-8 14 h7 l-4 12 l12 -16 h-7 l4 -10 z" className="fill-sun-400" />
-          <path d="M 250 170 V 200 H 198 V 236" fill="none" strokeDasharray="7 5" strokeWidth="3" className="stroke-ov-600" />
+          <g className={aufbau.heben} style={{ "--i": 14 }}>
+            <rect x="176" y="236" width="44" height="56" rx="6" className="fill-navy-700" />
+            <path d="M198 248 l-8 14 h7 l-4 12 l12 -16 h-7 l4 -10 z" className="fill-sun-400" />
+          </g>
+          <path d="M 250 170 V 200 H 198 V 236" fill="none" strokeDasharray="7 5" strokeWidth="3" className={cn("stroke-ov-600", aufbau.ein)} style={{ "--ein-start": "1000ms" }} />
 
           {/* Maschinen im Gebäude */}
           <g>
@@ -116,8 +120,8 @@ export default function HallenSchnitt({ className }) {
             <rect x="40" y="292" width="90" height="12" rx="4" className="fill-navy-900" />
             <path d="M88 312 l-10 18 h9 l-5 16 l16 -22 h-9 l5 -12 z" className="fill-sun-400" />
           </g>
-          <path d="M 198 292 V 395 H 85 V 362" fill="none" strokeDasharray="8 6" strokeWidth="3" className="stroke-ov-600" />
-          <path d="M 85 395 V 420 H 0" fill="none" strokeWidth="5" className="stroke-navy-700" />
+          <path d="M 198 292 V 395 H 85 V 362" fill="none" strokeDasharray="8 6" strokeWidth="3" className={cn("stroke-ov-600", aufbau.ein)} style={{ "--ein-start": "1100ms" }} />
+          <path d="M 85 395 V 420 H 0" pathLength="1" fill="none" strokeWidth="5" className={cn("stroke-navy-700", aufbau.zeichnen)} style={{ "--zeichnen-start": "1200ms", "--zeichnen-dauer": "600ms" }} />
 
           {/* Nummern */}
           <Marke x={420} y={100} n={1} />
@@ -129,14 +133,15 @@ export default function HallenSchnitt({ className }) {
           <Marke x={85} y={266} n={7} />
           <Marke x={600} y={268} n={8} />
         </svg>
+        </Aufbau>
       </div>
       <figcaption className="border-t border-ink-100 p-5 md:p-7">
-        <ol className="grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+        <ol className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
           {LEGENDE.map((l, i) => (
             <li key={l.t} className="flex gap-3">
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-navy-950 font-display text-[13px] font-extrabold text-white">{i + 1}</span>
-              <span className="text-[14.5px] leading-snug text-ink-600">
-                <strong className="block text-ink-900">{l.t}</strong>
+              <span className="text-[14px] leading-relaxed text-ink-600">
+                <strong className="mb-0.5 block font-display text-[15px] leading-snug text-ink-900">{l.t}</strong>
                 {l.x}
               </span>
             </li>

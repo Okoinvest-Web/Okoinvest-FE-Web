@@ -9,7 +9,7 @@
 
 import LegalShell from "@/components/Reusable/LegalShell";
 import { GESELLSCHAFT } from "@/data/site";
-import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata } from "../_teile";
+import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata, STAND_BEDINGUNGEN } from "../_teile";
 
 const PFAD = "/bedingungen/banken";
 
@@ -29,6 +29,7 @@ export default function VertraulichkeitBankenPage() {
     <LegalShell
       titel="Vertraulichkeitsbedingungen für Banken"
       pfad={PFAD}
+      stand={STAND_BEDINGUNGEN}
       lead="Regeln für Banken und Finanzierungspartner, die im Bank-Portal Finanzierungsanfragen der ÖkoInvest-Gruppe prüfen und das Bankenpaket abrufen."
     >
       <EntwurfHinweis />

@@ -165,10 +165,11 @@ export default function ReststromRechner() {
 
           {/* Preiszerlegung */}
           <h3 className="mt-9 font-display text-[18px] font-bold text-ink-900">Preiszerlegung vorher / nachher</h3>
-          <p className="mt-1 text-[13.5px] text-ink-500">Nachher mit der Mitte der Spanne. Nur die grüne Beschaffungskomponente ändert sich.</p>
+          <p className="mt-1 text-[13.5px] text-ink-500">Nachher mit der Mitte der Spanne. Nur die grüne Beschaffungskomponente ändert sich, die schraffierte Fläche ist die Ersparnis je kWh.</p>
           <PreisBalken
             className="mt-5"
             max={skala}
+            ersparnis
             zeilen={[
               { titel: "Heute (Einzelvertrag)", teile: r.vorher },
               { titel: "Mit Reststrom-Pool", teile: r.nachher },

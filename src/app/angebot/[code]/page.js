@@ -9,6 +9,7 @@ import { Leaf, MapPin, PlugZap, Ruler, ShieldCheck, Sun } from "lucide-react";
 import Section from "@/components/ui/Section";
 import PachtRechner from "@/components/Flaeche/PachtRechner";
 import { AngebotAnfrage, AufrufMelden, Widerspruch } from "@/components/Angebot/AngebotAktionen";
+import { AngebotHinweis } from "@/components/Angebot/Buehne";
 import { akquise2Backend } from "@/lib/plattform/backend/akquise2";
 import { akqLimit } from "@/lib/plattform/server/akquise2";
 import { codeNormalisieren } from "@/lib/plattform/akquise-kampagne";
@@ -51,16 +52,8 @@ function umriss(geometrie) {
   return polys.map((p) => (p[0] || []).map((q, i) => { const [x, y] = xy(q); return `${i ? "L" : "M"}${(ox + (x - minX) * s).toFixed(1)} ${(oy + (y - minY) * s).toFixed(1)}`; }).join(" ") + " Z").join(" ");
 }
 
-function Hinweisseite({ titel, text }) {
-  return (
-    <Section tone="sand" space="lg">
-      <div className="mx-auto max-w-xl rounded-[2rem] bg-white p-8 text-center ring-1 ring-ink-200/70">
-        <h1 className="font-display text-[26px] font-extrabold text-ink-900">{titel}</h1>
-        <p className="mt-3 text-[15.5px] leading-relaxed text-ink-600">{text}</p>
-        <a href="/flaeche-verpachten" className="mt-6 inline-flex h-12 items-center justify-center rounded-full bg-ov-600 px-6 text-[15px] font-semibold text-white hover:bg-ov-700">Mehr zur Flächenverpachtung</a>
-      </div>
-    </Section>
-  );
+function Hinweisseite({ titel, text, erneut }) {
+  return <AngebotHinweis titel={titel} text={text} erneut={erneut} />;
 }
 
 export default async function AngebotSeite({ params }) {
@@ -69,12 +62,12 @@ export default async function AngebotSeite({ params }) {
   try {
     akqLimit("angebotLesen", ipAdresse({ headers: await headers() }));
   } catch (e) {
-    if (e instanceof PlattformFehler) return <Hinweisseite titel="Zu viele Aufrufe" text="Bitte versuchen Sie es in einigen Minuten erneut." />;
+    if (e instanceof PlattformFehler) return <Hinweisseite erneut={false} titel="Zu viele Aufrufe" text="Bitte versuchen Sie es in einigen Minuten erneut." />;
     throw e;
   }
   const a = code ? await akquise2Backend().angebotFuerCode(code) : null;
   if (!a) return <Hinweisseite titel="Code nicht gefunden" text="Dieser persönliche Code ist nicht (mehr) gültig. Bitte prüfen Sie die Eingabe – der Code steht in unserem Schreiben rechts oben." />;
-  if (a.gesperrt) return <Hinweisseite titel="Kein weiteres Anschreiben" text="Zu diesem Code liegt ein Widerspruch vor. Wir schreiben Sie nicht mehr an; Ihre Daten sind für weitere Kontaktaufnahmen gesperrt." />;
+  if (a.gesperrt) return <Hinweisseite erneut={false} titel="Kein weiteres Anschreiben" text="Zu diesem Code liegt ein Widerspruch vor. Wir schreiben Sie nicht mehr an; Ihre Daten sind für weitere Kontaktaufnahmen gesperrt." />;
 
   const pfad = umriss(a.geometrie);
   const pachtMittel = Math.round((a.pacht.proHaMin + a.pacht.proHaMax) / 2 / 100) * 100;
@@ -92,10 +85,10 @@ export default async function AngebotSeite({ params }) {
   return (
     <>
       <AufrufMelden code={code} />
-      <Section tone="navy" space="md" className="ov-noise">
-        <p className="text-[12.5px] font-semibold uppercase tracking-[0.18em] text-ov-300">Ihr persönlicher Flächen-Steckbrief{a.demo ? " · DEMO" : ""}</p>
-        <h1 className="mt-3 max-w-3xl font-display text-[32px] font-extrabold leading-tight tracking-tight text-white md:text-[46px]">Ihre Fläche in {a.gemeinde}</h1>
-        <p className="ov-lead mt-4 max-w-2xl text-white/80">
+      <Section tone="navy" space="md" className="ov-verlauf-nacht ov-noise overflow-hidden">
+        <p className="relative text-[12.5px] font-semibold uppercase tracking-[0.18em] text-ov-300">Ihr persönlicher Flächen-Steckbrief{a.demo ? " · DEMO" : ""}</p>
+        <h1 className="relative mt-3 max-w-3xl font-display text-[32px] font-extrabold leading-tight tracking-tight text-white md:text-[46px]">Ihre Fläche in {a.gemeinde}</h1>
+        <p className="ov-lead relative mt-4 max-w-2xl text-white/80">
           Nach unserer ersten Einschätzung eignet sich der Bereich mit rund {fmt(a.ha, 1)} ha für einen Solarpark mit etwa {fmt(a.mwp, 1)} MWp. Hier sehen Sie unverbindlich, was die Fläche bringen kann – und können die Pacht selbst durchrechnen.
         </p>
       </Section>

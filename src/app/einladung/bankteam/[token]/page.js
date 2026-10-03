@@ -2,7 +2,6 @@ import Link from "next/link";
 import { CircleAlert, Users } from "lucide-react";
 import AuthRahmen from "@/components/Plattform/AuthRahmen";
 import { TeamEinladungAnnehmen } from "@/components/Portal/Finanzierung/BankAkte";
-import { abs } from "@/data/site";
 import { aktuellerNutzer } from "@/lib/plattform/server/seite";
 import { bankakteBackend } from "@/lib/plattform/backend/bankakte";
 import { datum } from "@/lib/plattform/format";
@@ -12,7 +11,6 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Einladung Bank-Team | ÖkoInvest",
   description: "Persönliche Einladung in das Bank-Portal von ÖkoInvest: Finanzierungsanfragen Ihres Hauses gemeinsam im Team bearbeiten – nur nach Anmeldung mit der eingeladenen Adresse.",
-  alternates: { canonical: abs("/einladung") },
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };

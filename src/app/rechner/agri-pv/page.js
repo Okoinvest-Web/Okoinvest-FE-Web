@@ -14,8 +14,15 @@ export const metadata = rechnerMetadata({
   title: "Agri-PV-Rechner: Pacht oder Investition? | ÖkoInvest",
   description:
     "Agri-PV-Rechner für Landwirte: Verpachten, selbst investieren oder über die Genossenschaft beteiligen – mit IRR, Amortisation, GAP-Zahlung und Deckungsbeitrag.",
-  keywords: ["Agri-PV Rechner", "Agri-PV Wirtschaftlichkeit", "Agri-PV Pacht", "Agri-PV Investition", "Agri-PV Genossenschaft", "Agri-PV GAP"],
+  keywords: ["Agri-PV Rechner", "Agri-PV Pacht berechnen", "Agri-PV Investition", "Agri-PV Genossenschaft", "Agri-PV GAP"],
 });
+
+/** Bausteine je Weg – fasst die Erklärung unten als Grafik zusammen (keine neuen Zahlen) */
+const BAUSTEINE = [
+  { weg: "C", titel: "Verpachten", invest: "keine Investition", energie: [`Agri-Pacht ${fmt(PACHT.agriProHa.mittel)} €/ha, +${fmt(PACHT.indexierung * 100, 1)} % p. a.`] },
+  { weg: "B", titel: "Selbst investieren", invest: "volle Investition", energie: ["alle Stromerlöse", "abzgl. Betrieb, Wartung, Versicherung, Rückbaurücklage"] },
+  { weg: "D", titel: "Genossenschaft", invest: "Investition anteilig", energie: ["Agri-Pacht", "Ihr Anteil an den Überschüssen"] },
+];
 
 const FAQ = [
   {
@@ -71,6 +78,28 @@ export default function Page() {
               Die Leistung ergibt sich aus dem Flächenbedarf des Systems – vertikal rund {fmt(BAUART.agriVertikal.haProMwp, 1)} ha je MWp, hoch aufgeständert rund {fmt(BAUART.agriHoch.haProMwp, 1)} ha je MWp. Welche Systeme es gibt und was die DIN SPEC 91434 verlangt, lesen Sie unter <Link href="/agri-pv">Agri-PV</Link>; welcher Weg zu Ihrem Betrieb passt, zeigt die Entscheidungshilfe für <Link href="/landwirte">Landwirte</Link>.
             </p>
           </div>
+          <ul className="mt-10 grid max-w-3xl gap-3 sm:grid-cols-3" aria-label="Bausteine der drei Wege">
+            {BAUSTEINE.map((b) => (
+              <li key={b.titel} className="flex flex-col rounded-[1.4rem] bg-white p-4 shadow-e1 ring-1 ring-ink-200/70">
+                <p className="text-[11.5px] font-bold uppercase tracking-[0.12em] text-ov-700">Weg {b.weg}</p>
+                <p className="mt-1 font-display text-[15.5px] font-bold leading-tight text-ink-900">{b.titel}</p>
+                <p className="mt-1 text-[12.5px] text-ink-500">{b.invest}</p>
+                <div className="mt-3 flex flex-1 flex-col gap-1.5">
+                  {b.energie.map((e) => (
+                    <span key={e} className="rounded-lg bg-ov-50 px-2.5 py-1.5 text-[12.5px] font-medium leading-snug text-ov-800 ring-1 ring-inset ring-ov-200">
+                      {e}
+                    </span>
+                  ))}
+                  <span className="mt-auto rounded-lg bg-sun-50 px-2.5 py-1.5 text-[12.5px] font-medium leading-snug text-sun-700 ring-1 ring-inset ring-sun-200">+ Deckungsbeitrag unter der Anlage</span>
+                  <span className="rounded-lg bg-sun-50 px-2.5 py-1.5 text-[12.5px] font-medium leading-snug text-sun-700 ring-1 ring-inset ring-sun-200">+ verbleibende GAP-Zahlung</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[12.5px] text-ink-500">
+            <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-ov-500" />Energie-Teil</span>
+            <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-sun-400" />Landwirtschaft – in allen Wegen gleich</span>
+          </p>
         </>
       }
       annahmen={[

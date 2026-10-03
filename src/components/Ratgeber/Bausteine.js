@@ -12,10 +12,16 @@ import { artikelPfad, datumLang, weitereArtikel } from "@/lib/ratgeber";
    Server-Komponenten – kein JavaScript im Browser nötig.
    ------------------------------------------------------------------ */
 
-/** Abschnitt mit Anker: h2 mit Sprunglink, Abstand zur klebenden Navigation. */
-export function Abschnitt({ id, titel, children, className }) {
+/** Abschnitt mit Anker: h2 mit Sprunglink, Abstand zur klebenden Navigation. nr (optional): Kapitelnummer wie im Inhaltsverzeichnis. */
+export function Abschnitt({ id, titel, nr, children, className }) {
   return (
-    <section id={id} aria-labelledby={`${id}-titel`} className={cn("scroll-mt-28 pt-14 first:pt-0", className)}>
+    <section id={id} aria-labelledby={`${id}-titel`} className={cn("scroll-mt-28 pt-14 first:pt-0 md:pt-16", className)}>
+      {nr ? (
+        <p aria-hidden="true" className="mb-3 flex items-center gap-3 text-[12px] font-bold uppercase tracking-[0.16em] text-ov-700">
+          <span className="ov-num">{String(nr).padStart(2, "0")}</span>
+          <span className="h-px w-10 bg-ov-300" />
+        </p>
+      ) : null}
       <h2 id={`${id}-titel`} className="group font-display text-[clamp(1.5rem,1.2rem+1vw,2.05rem)] font-extrabold leading-[1.15] tracking-tight text-ink-900">
         {titel}
         <a
@@ -54,24 +60,25 @@ export function TextLink({ href, children }) {
 export function KurzFazit({ punkte = [], id = "kurz", titel = "Das Wichtigste in Kürze" }) {
   return (
     <section id={id} aria-labelledby={`${id}-titel`} className="scroll-mt-28">
-      <div className="relative overflow-hidden rounded-3xl bg-ov-50 p-6 ring-1 ring-ov-100 md:p-8">
-        <div aria-hidden="true" className="absolute -right-16 -top-16 h-44 w-44 rounded-full bg-ov-200/50 blur-3xl" />
-        <h2 id={`${id}-titel`} className="relative flex items-center gap-2.5 font-display text-[19px] font-extrabold text-ink-900">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ov-500 text-white">
-            <Lightbulb aria-hidden="true" className="h-4 w-4" />
+      <div className="relative isolate overflow-hidden rounded-3xl bg-white p-6 shadow-e2 ring-1 ring-ov-200/70 md:p-8">
+        <div aria-hidden="true" className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-ov-400 to-ov-600" />
+        <div aria-hidden="true" className="absolute -right-16 -top-16 -z-10 h-48 w-48 rounded-full bg-ov-100/80 blur-3xl" />
+        <h2 id={`${id}-titel`} className="flex items-center gap-3 font-display text-[19px] font-extrabold text-ink-900 md:text-[20px]">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-ov-600 text-white shadow-[0_8px_20px_-8px_rgba(85,130,39,0.8)]">
+            <Lightbulb aria-hidden="true" className="h-[18px] w-[18px]" />
           </span>
           {titel}
         </h2>
-        <ul className="relative mt-5 space-y-3.5">
+        <ol className="mt-6 grid gap-4">
           {punkte.map((p, i) => (
-            <li key={typeof p === "string" ? p : i} className="flex gap-3 text-[16px] leading-relaxed text-ink-700">
-              <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-ov-600 ring-1 ring-ov-200">
-                <Check aria-hidden="true" className="h-3 w-3" strokeWidth={3} />
+            <li key={typeof p === "string" ? p : i} className="flex gap-4 text-[16px] leading-relaxed text-ink-700">
+              <span aria-hidden="true" className="ov-num mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ov-50 text-[12px] font-bold text-ov-700 ring-1 ring-inset ring-ov-200">
+                {i + 1}
               </span>
-              <span>{p}</span>
+              <span className="min-w-0">{p}</span>
             </li>
           ))}
-        </ul>
+        </ol>
       </div>
     </section>
   );

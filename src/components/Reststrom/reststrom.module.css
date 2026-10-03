@@ -1,0 +1,38 @@
+/* Lokale Bewegung „Vorhang“: Ein Balken mit Beschriftung wird von links nach rechts freigelegt,
+   ohne die Schrift zu stauchen (Deckfläche in Kartenfarbe schrumpft per scaleX).
+   Nur transform. Ohne JS und bei reduzierter Bewegung ist der Vorhang offen. */
+
+.vorhang {
+  position: relative;
+}
+.vorhang::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 2;
+  background: var(--vorhang-farbe, #ffffff);
+  transform-origin: 100% 50%;
+  transform: scaleX(0);
+  pointer-events: none;
+}
+
+@keyframes vorhangAuf {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* beim Laden (Hero), reines CSS */
+  .laden::after {
+    animation: vorhangAuf 900ms cubic-bezier(0.65, 0, 0.35, 1) both;
+    animation-delay: var(--ov-delay, 0ms);
+  }
+  /* beim Scrollen (RevealObserver setzt .is-visible an einem Vorfahren) */
+  :global(.js-ready) :global(.ov-reveal):not(:global(.is-visible)) .vorhang::after {
+    transform: scaleX(1);
+  }
+  :global(.is-visible) .vorhang::after {
+    animation: vorhangAuf 900ms cubic-bezier(0.65, 0, 0.35, 1) both;
+    animation-delay: var(--ov-delay, 0ms);
+  }
+}

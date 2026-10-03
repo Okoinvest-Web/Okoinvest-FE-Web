@@ -9,8 +9,12 @@ const BODEN = 170;
 function Boden() {
   return (
     <g>
-      <rect x="0" y={BODEN} width="320" height="30" className="fill-ink-100" />
-      <rect x="0" y={BODEN - 3} width="320" height="6" rx="3" className="fill-ov-300" />
+      <rect x="-200" y={BODEN} width="720" height="30" className="fill-sand-100" />
+      <g className="stroke-sand-200" strokeWidth="1.2">
+        <line x1="-200" x2="520" y1={BODEN + 10} y2={BODEN + 10} />
+        <line x1="-200" x2="520" y1={BODEN + 19} y2={BODEN + 19} />
+      </g>
+      <rect x="-200" y={BODEN - 3} width="720" height="6" rx="3" className="fill-ov-300" />
     </g>
   );
 }
@@ -68,11 +72,21 @@ function Modul({ x1, y1, x2, y2, dick = 4 }) {
   return <line x1={x1} y1={y1} x2={x2} y2={y2} strokeWidth={dick} strokeLinecap="round" className="stroke-navy-700" />;
 }
 
-export default function AgriBild({ typ = "vertikal", className, titel }) {
+/** fuellen: true → Bild füllt einen höheren Rahmen (unten bündig, seitlich beschnitten) */
+export default function AgriBild({ typ = "vertikal", className, titel, fuellen = false }) {
   return (
-    <svg viewBox="0 0 320 200" className={className} role="img" aria-label={titel || BESCHREIBUNG[typ]}>
-      <rect x="0" y="0" width="320" height={BODEN} className="fill-navy-50" />
+    <svg viewBox="0 0 320 200" className={className} role="img" aria-label={titel || BESCHREIBUNG[typ]} preserveAspectRatio={fuellen ? "xMidYMax slice" : undefined}>
+      {/* Himmel: über den Rand hinaus, damit er beim Füllen nicht abreißt */}
+      <rect x="-200" y="-400" width="720" height={BODEN + 400} className="fill-navy-50" />
+      <circle cx="286" cy="30" r="46" className="fill-sun-100" opacity="0.55" />
+      <circle cx="286" cy="30" r="26" className="fill-sun-200" opacity="0.6" />
       <circle cx="286" cy="30" r="14" className="fill-sun-300" />
+      <g className="fill-white" opacity="0.9">
+        <ellipse cx="72" cy="34" rx="22" ry="7" />
+        <ellipse cx="86" cy="29" rx="13" ry="8" />
+        <ellipse cx="190" cy="18" rx="16" ry="5" />
+      </g>
+      <path d={`M-200 ${BODEN - 18} C 20 ${BODEN - 34}, 90 ${BODEN - 26}, 160 ${BODEN - 20} S 280 ${BODEN - 34}, 520 ${BODEN - 22} L520 ${BODEN} L-200 ${BODEN} Z`} className="fill-ov-100" />
       {typ === "hoch" && <Hoch />}
       {typ === "vertikal" && <Vertikal />}
       {typ === "tracker" && <Tracker />}

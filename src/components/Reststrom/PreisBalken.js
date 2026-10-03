@@ -1,5 +1,6 @@
 import { cn } from "@/components/ui/cn";
 import { fmt } from "@/lib/rechner/annahmen";
+import s from "./reststrom.module.css";
 
 /**
  * Gestapelte Preisbalken (ct/kWh) – beeinflussbare vs. feste Bestandteile.
@@ -7,6 +8,7 @@ import { fmt } from "@/lib/rechner/annahmen";
  *
  * zeilen: [{ titel, teile: [{ id, label, ct, beeinflussbar }], hervorheben? }]
  * max:    Skalenende in ct/kWh (Standard: größte Zeilensumme)
+ * ersparnis: true → Lücke bis zum Skalenende als schraffierte „Ersparnis“ mit Wert zeigen
  */
 export const FARBEN = {
   beschaffung: "bg-ov-500",
@@ -16,7 +18,8 @@ export const FARBEN = {
   stromsteuer: "bg-ink-400",
 };
 
-export default function PreisBalken({ zeilen = [], max, legende = true, dunkel = false, className }) {
+export default function PreisBalken({ zeilen = [], max, legende = true, dunkel = false, ersparnis = false, className }) {
+  // Einlauf: Balken wird beim Eintritt von links freigelegt (nur auf hellem Grund, siehe reststrom.module.css)
   const summe = (z) => z.teile.reduce((s, t) => s + t.ct, 0);
   const skala = max || Math.max(...zeilen.map(summe), 1);
   const alleTeile = zeilen[0]?.teile || [];
@@ -34,7 +37,7 @@ export default function PreisBalken({ zeilen = [], max, legende = true, dunkel =
               </span>
             </figcaption>
             <div
-              className={cn("flex h-12 w-full overflow-hidden rounded-xl", dunkel ? "bg-white/10" : "bg-ink-100")}
+              className={cn("flex h-12 w-full overflow-hidden rounded-xl", dunkel ? "bg-white/10" : cn("bg-ink-100", s.vorhang))}
               role="img"
               aria-label={`${z.titel}: ${z.teile.map((t) => `${t.label} ${fmt(t.ct, 2)} ct`).join(", ")}; gesamt ${fmt(gesamt, 2)} ct/kWh`}
             >
@@ -60,6 +63,16 @@ export default function PreisBalken({ zeilen = [], max, legende = true, dunkel =
                   </div>
                 );
               })}
+              {ersparnis && skala - gesamt > 0.05 && (
+                <div
+                  className="flex h-full items-center justify-center overflow-hidden bg-[repeating-linear-gradient(135deg,#fff3d1_0_6px,#ffe8a8_6px_12px)] ring-1 ring-inset ring-sun-300"
+                  style={{ width: `${((skala - gesamt) / skala) * 100}%` }}
+                >
+                  {(skala - gesamt) / skala > 0.07 && (
+                    <span className="ov-num whitespace-nowrap px-1 text-[12.5px] font-bold text-sun-700">−{fmt(skala - gesamt, 1)}</span>
+                  )}
+                </div>
+              )}
             </div>
           </figure>
         );

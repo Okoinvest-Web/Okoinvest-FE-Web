@@ -11,6 +11,7 @@ import { cn } from "@/components/ui/cn";
 import { LAENDER } from "@/lib/plattform/konstanten";
 import { fmt } from "@/lib/rechner/annahmen";
 import { KARTE, LAENDER_PFADE, REGION_MITTE, projiziere, regionPunkt } from "./KarteGeo";
+import s from "./boerse.module.css";
 
 function cluster(projekte) {
   const m = new Map();
@@ -38,7 +39,8 @@ export default function KarteDach({ projekte = [], region = "", onRegion, titel 
 
   return (
     <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-      <figure className="relative min-w-0 overflow-hidden rounded-3xl bg-sand-50 ring-1 ring-ink-200/70">
+      {/* Cluster „ploppen“ beim Eintritt nacheinander auf (größte zuerst) – zeigt, wo die Projekte liegen */}
+      <figure suppressHydrationWarning data-dir="ohne" className="ov-reveal relative min-w-0 overflow-hidden rounded-3xl bg-sand-50 ring-1 ring-ink-200/70">
         <svg viewBox={`-10 -10 ${KARTE.breite + 20} ${KARTE.hoehe + 20}`} className="mx-auto block h-auto w-full max-w-[520px]" role="group" aria-label={`${titel}: stilisierte Karte Deutschland, Österreich, Schweiz`}>
           <defs>
             <pattern id="karte-raster" width="14" height="14" patternUnits="userSpaceOnUse">
@@ -62,7 +64,7 @@ export default function KarteDach({ projekte = [], region = "", onRegion, titel 
               <title>{p.name}</title>
             </circle>
           ))}
-          {liste.map((c) => {
+          {liste.map((c, i) => {
             const r = 11 + 9 * Math.sqrt(c.anzahl / max);
             const aktiv = c.bundesland === region;
             const hervor = aktiv || hover === c.key;
@@ -86,11 +88,14 @@ export default function KarteDach({ projekte = [], region = "", onRegion, titel 
                 onBlur={() => setHover("")}
                 className="cursor-pointer outline-none [&:focus-visible>circle.ring]:stroke-ov-500"
               >
+                {aktiv && <circle key={`puls-${region}`} cx={c.punkt[0]} cy={c.punkt[1]} r={r} className={cn(s.puls, "pointer-events-none fill-none stroke-navy-800")} strokeWidth="2" />}
+                <g className={s.blase} style={{ "--i": Math.min(i, 12) }}>
                 <circle cx={c.punkt[0]} cy={c.punkt[1]} r={r + 7} className={cn("ring transition-opacity", hervor ? "fill-ov-500/25" : "fill-ov-500/10")} strokeWidth="3" stroke="transparent" />
                 <circle cx={c.punkt[0]} cy={c.punkt[1]} r={r} className={cn("transition-colors", aktiv ? "fill-navy-800" : "fill-ov-600")} stroke="white" strokeWidth="2.5" />
                 <text x={c.punkt[0]} y={c.punkt[1] + 5} textAnchor="middle" className="pointer-events-none fill-white font-display text-[15px] font-extrabold">
                   {c.anzahl}
                 </text>
+                </g>
                 {hervor && (
                   <g className="pointer-events-none">
                     <rect x={c.punkt[0] - 78} y={c.punkt[1] - r - 36} width="156" height="26" rx="13" className="fill-navy-950" />

@@ -23,3 +23,4 @@ export { SchrittFortschritt, SchrittBuehne, useSchrittRichtung } from "./Schritt
 export { useEntwurf, AutosaveHinweis, entwurfVorbelegen } from "./Entwurf";
 export { FormFehler, FormErfolg, ErfolgsAnsicht, Zusammenfassung } from "./Meldungen";
 export * from "./stil";
+export { default as AusfuellFortschritt, pflichtErfuellt } from "./AusfuellFortschritt";

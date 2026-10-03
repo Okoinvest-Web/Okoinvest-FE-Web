@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowUpRight, MapPin, Zap } from "lucide-react";
 import { cn } from "@/components/ui/cn";
-import TypIllustration from "./TypIllustration";
+import TypIllustration, { varianteAus } from "./TypIllustration";
 import { QualitaetsBalken } from "@/components/Portal/ui";
 import { LAENDER, NETZANSCHLUSS, PROJEKT_TYPEN } from "@/lib/plattform/konstanten";
 import { mwp, preisText } from "@/lib/plattform/format";
@@ -29,9 +29,11 @@ export function PhaseBadge({ phase, className, dunkel = false }) {
 export default function ProjektKarte({ projekt: p, href, extra, aktion, className }) {
   const reserviert = p.status === "reserviert";
   return (
-    <article className={cn("group ov-card-hover relative flex h-full flex-col rounded-3xl bg-white ring-1 ring-ink-200/70 hover:ring-ov-200", className)}>
-      <div className="relative h-36 overflow-hidden rounded-t-3xl">
-        <TypIllustration typ={p.typ} className="h-full w-full transition-transform duration-700 group-hover:scale-[1.04]" />
+    <article className={cn("group ov-card-hover relative flex h-full flex-col rounded-3xl bg-white shadow-e1 ring-1 ring-ink-200/70 hover:ring-ov-200", className)}>
+      <div className="relative h-28 overflow-hidden rounded-t-3xl sm:h-36">
+        <TypIllustration typ={p.typ} variante={varianteAus(p.id || p.slug)} className="h-full w-full transition-transform duration-700 group-hover:scale-[1.04] group-focus-within:scale-[1.04] motion-reduce:transition-none" />
+        {/* Lichtkante: gleitet bei Hover/Fokus einmal über das Motiv (nur transform, bei reduzierter Bewegung aus) */}
+        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-white/35 to-transparent opacity-0 transition-[transform,opacity] duration-700 ease-out group-hover:translate-x-[320%] group-hover:opacity-100 group-focus-within:translate-x-[320%] group-focus-within:opacity-100 motion-reduce:hidden" />
         <div className="absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2">
           <PhaseBadge phase={p.phase} />
           <span className="flex flex-wrap justify-end gap-1.5">
@@ -42,28 +44,28 @@ export default function ProjektKarte({ projekt: p, href, extra, aktion, classNam
       </div>
       <div className="flex flex-1 flex-col p-5 md:p-6">
         <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ov-700">{PROJEKT_TYPEN[p.typ]}</p>
+        <h3 className="mt-1.5 font-display text-[18px] font-bold leading-snug text-ink-900">
+          <Link href={href} className="outline-none after:absolute after:inset-0 after:rounded-3xl after:content-[''] focus-visible:underline focus-visible:after:ring-2 focus-visible:after:ring-ov-500">
+            {p.titel}
+          </Link>
+        </h3>
         <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] font-medium text-ink-500">
           <MapPin aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           {[p.region, p.bundesland, LAENDER[p.land]].filter(Boolean).join(" · ")}
         </p>
-        <h3 className="mt-2 font-display text-[18px] font-bold leading-snug text-ink-900">
-          <Link href={href} className="outline-none after:absolute after:inset-0 after:rounded-3xl after:content-[''] focus-visible:underline">
-            {p.titel}
-          </Link>
-        </h3>
-        <dl className="mt-4 grid grid-cols-2 gap-3 border-y border-ink-100 py-3.5">
-          <div className="min-w-0">
+        <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-ink-100 ring-1 ring-ink-100 transition-colors duration-300 group-hover:ring-ov-200">
+          <div className="min-w-0 bg-sand-50 px-3.5 py-3">
             <dt className="text-[11.5px] text-ink-500">Leistung</dt>
-            <dd className="ov-num mt-0.5 font-display text-[17px] font-extrabold text-ink-900">{p.typ === "speicher" ? `${fmt(p.mwp, p.mwp < 10 ? 1 : 0)} MW` : mwp(p.mwp)}{p.mwhSpeicher ? <span className="ml-1 text-[13px] font-semibold text-ink-500">/ {fmt(p.mwhSpeicher)} MWh</span> : null}</dd>
+            <dd className="ov-num mt-0.5 font-display text-[18px] font-extrabold leading-tight text-ink-900">{p.typ === "speicher" ? `${fmt(p.mwp, p.mwp < 10 ? 1 : 0)} MW` : mwp(p.mwp)}{p.mwhSpeicher ? <span className="ml-1 text-[13px] font-semibold text-ink-500">/ {fmt(p.mwhSpeicher)} MWh</span> : null}</dd>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 bg-sand-50 px-3.5 py-3">
             <dt className="text-[11.5px] text-ink-500">Preisindikation</dt>
-            <dd className="mt-0.5 font-display text-[17px] font-extrabold text-ink-900">{preisText(p)}</dd>
+            <dd className="mt-0.5 font-display text-[18px] font-extrabold leading-tight text-ink-900">{preisText(p)}</dd>
           </div>
         </dl>
-        <p className="mt-3 text-[13px] leading-snug text-ink-600">
+        <p className="mt-3.5 text-[13px] leading-snug text-ink-600">
           <Zap aria-hidden="true" className="-mt-0.5 mr-1 inline h-3.5 w-3.5 text-ov-600" />{NETZANSCHLUSS[p.netzanschluss] || "Netzanschluss offen"}
-          {p.codGeplant && <span className="text-ink-400"> · COD {p.codGeplant}</span>}
+          {p.codGeplant && <span className="text-ink-500"> · COD {p.codGeplant}</span>}
         </p>
         {typeof p.datenraumQualitaet === "number" && (
           <div className="mt-3">
@@ -72,8 +74,11 @@ export default function ProjektKarte({ projekt: p, href, extra, aktion, classNam
         )}
         {extra && <div className="mt-3">{extra}</div>}
         <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-          <span className="inline-flex items-center gap-1 text-[14px] font-semibold text-ov-700">
-            Exposé ansehen <ArrowUpRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+          <span className="inline-flex items-center gap-2 text-[14px] font-semibold text-ov-700">
+            Exposé ansehen
+            <span aria-hidden="true" className="flex h-7 w-7 items-center justify-center rounded-full bg-ov-50 text-ov-700 ring-1 ring-inset ring-ov-200 transition-colors group-hover:bg-ov-600 group-hover:text-white group-hover:ring-ov-600">
+              <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-px group-hover:translate-x-px motion-reduce:transition-none" />
+            </span>
           </span>
           {aktion && <div className="relative z-10">{aktion}</div>}
         </div>

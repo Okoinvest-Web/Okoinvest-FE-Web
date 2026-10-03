@@ -32,13 +32,31 @@ function Reihen({ y0 = 96, reihen = 4, hoch = false }) {
   });
 }
 
-export default function TypIllustration({ typ = "freiflaeche", className }) {
+// Leichte Variationen (Sonnenstand, Hügel, Himmel), damit Karten desselben Typs nicht identisch wirken.
+// variante 0 entspricht der ursprünglichen Darstellung.
+const VARIANTEN = [
+  { sonne: [318, 60], himmel: FARBEN.himmel, h1: 0, h2: 0 },
+  { sonne: [164, 46], himmel: "#f1f5ec", h1: 8, h2: -4 },
+  { sonne: [236, 44], himmel: "#fbf6e8", h1: -6, h2: 6 },
+  { sonne: [270, 56], himmel: "#ecf2f9", h1: 4, h2: 8 },
+];
+
+/** Stabile Variante aus einer beliebigen Kennung (z. B. Projekt-ID) */
+export function varianteAus(kennung) {
+  const t = String(kennung || "");
+  let h = 0;
+  for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0;
+  return h % VARIANTEN.length;
+}
+
+export default function TypIllustration({ typ = "freiflaeche", className, variante = 0 }) {
+  const v = VARIANTEN[Math.abs(Number(variante) || 0) % VARIANTEN.length];
   return (
     <svg viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" className={className} aria-hidden="true" focusable="false">
-      <rect width="400" height="170" fill={FARBEN.himmel} />
-      <circle cx="318" cy="60" r="17" fill={FARBEN.sonne} opacity="0.9" />
-      <path d="M0 78 C 80 60, 160 70, 240 62 S 360 58, 400 66 L400 170 L0 170 Z" fill={FARBEN.boden} />
-      <path d="M0 100 C 120 88, 260 96, 400 90 L400 170 L0 170 Z" fill={FARBEN.boden2} opacity="0.7" />
+      <rect width="400" height="170" fill={v.himmel} />
+      <circle cx={v.sonne[0]} cy={v.sonne[1]} r="17" fill={FARBEN.sonne} opacity="0.9" />
+      <path d={`M0 ${78 + v.h1} C 80 ${60 - v.h1}, 160 ${70 + v.h1}, 240 ${62 - v.h1} S 360 ${58 + v.h1}, 400 ${66 - v.h1} L400 170 L0 170 Z`} fill={FARBEN.boden} />
+      <path d={`M0 ${100 + v.h2} C 120 ${88 - v.h2}, 260 ${96 + v.h2}, 400 ${90 - v.h2} L400 170 L0 170 Z`} fill={FARBEN.boden2} opacity="0.7" />
 
       {typ === "freiflaeche" && <Reihen />}
 

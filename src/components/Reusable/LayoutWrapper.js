@@ -7,6 +7,11 @@ import { useEffect, useRef } from "react";
 import { herkunftErfassen } from "@/lib/herkunft";
 import RevealObserver from "@/components/ui/RevealObserver";
 import MobileCta from "@/components/Reusable/MobileCta";
+import MotionInteraktion from "@/components/motion/MotionInteraktion";
+import ScrollFortschritt from "@/components/motion/ScrollFortschritt";
+
+// Lange Leseseiten: dünner Lesefortschritt oben (ScrollFortschritt)
+const LESESEITEN = [/^\/ratgeber\/[^/]+/, /^\/wissen\//, /^\/faq$/, /^\/datenschutz$/, /^\/impressum$/, /^\/nutzungsbedingungen$/, /^\/bedingungen\//];
 
 // const GoogleTagManager = dynamic(
 //   (entfernt)
@@ -51,6 +56,8 @@ export default function LayoutWrapper({ children }) {
     <>
       {/* <GoogleTagManager gtmId="GTM-WR8PDT7V" /> */}
       <RevealObserver />
+      <MotionInteraktion />
+      {LESESEITEN.some((r) => r.test(pfad)) && <ScrollFortschritt key={pfad} />}
       {/* Cookie-Banner vor dem Seitenkopf: in der Tab-Reihenfolge direkt nach dem Sprunglink erreichbar (fixiert positioniert) */}
       <CookieComponentLazy />
       <Navbar />

@@ -34,17 +34,19 @@ export default function MeritOrder() {
         </div>
         <div className="relative h-56 flex-1 border-b border-l border-ink-300 sm:h-64">
           <div className="absolute inset-0 flex items-end gap-[2px] pl-[2px]">
-            {BLOECKE.map((b) => (
+            {/* Einlauf (über das umgebende Reveal): Kraftwerksblöcke wachsen in Merit-Order-Reihenfolge –
+                billig links zuerst –, danach erscheinen die beiden Nachfrage-Szenarien */}
+            {BLOECKE.map((b, i) => (
               <div
                 key={b.name}
-                className="rounded-t-[4px]"
-                style={{ width: `calc(${b.breite}% - 2px)`, height: `${Math.max(b.hoehe, 3)}%`, background: b.farbe }}
+                className="ov-balken-y rounded-t-[4px]"
+                style={{ width: `calc(${b.breite}% - 2px)`, height: `${Math.max(b.hoehe, 3)}%`, background: b.farbe, "--i": i * 2 }}
                 title={b.name}
               />
             ))}
           </div>
           {NACHFRAGE.map((n) => (
-            <div key={n.nr} className="absolute inset-y-0" style={{ left: `${n.pos}%` }}>
+            <div key={n.nr} className="ov-flaeche-ein absolute inset-y-0" style={{ left: `${n.pos}%`, animationDelay: `${750 + n.nr * 220}ms` }}>
               <div className="absolute -top-3 bottom-0 w-0 border-l-2 border-ink-900" />
               <span className="absolute -top-6 flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full bg-ink-900 text-[12px] font-bold text-white ring-2 ring-white">
                 {n.nr}

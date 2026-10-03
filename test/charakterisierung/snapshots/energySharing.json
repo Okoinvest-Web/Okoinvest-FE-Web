@@ -8,6 +8,7 @@
    "eingabe": {
     "energiepreis": 14,
     "gemeinschaftCt": 11,
+    "kundentyp": "haushalt",
     "kwp": 250,
     "land": "de",
     "mix": "gemischt",
@@ -92,6 +93,7 @@
    "eingabe": {
     "energiepreis": 14,
     "gemeinschaftCt": 11,
+    "kundentyp": "haushalt",
     "kwp": 250,
     "land": "de",
     "mix": "gemischt",
@@ -176,6 +178,7 @@
    "eingabe": {
     "energiepreis": 12,
     "gemeinschaftCt": 10,
+    "kundentyp": "haushalt",
     "kwp": 250,
     "land": "at",
     "mix": "gemischt",
@@ -194,9 +197,14 @@
    "erzeugung": 280000,
    "geteilt": 89617.6001499,
    "geteiltJeTeilnehmer": 1493.62666917,
-   "jeTeilnehmer": 81.7159761702,
+   "jeTeilnehmer": 70.9618641522,
    "land": {
     "abgabenCt": 0.82,
+    "abgabenCtNachTyp": {
+     "haushalt": 0.1,
+     "sonstige": 0.82
+    },
+    "abgabenGueltigBis": "2026-12-31",
     "ct": "ct",
     "energiepreis": 12,
     "gemeinschaftCt": 10,
@@ -221,6 +229,7 @@
       "sub": "ohne Abschlag"
      }
     ],
+    "rabatteGueltigBis": "2026-12-31",
     "ueberschussCt": 5,
     "verwaltung": 20,
     "waehrung": "€"
@@ -254,7 +263,7 @@
      "label": "Abschlag Netzentgelt"
     },
     {
-     "ct": 0.82,
+     "ct": 0.1,
      "id": "abgaben",
      "label": "Entfallende Abgaben"
     }
@@ -262,16 +271,17 @@
    "ueberschuss": 190382.39985,
    "verbrauch": 210000,
    "verwaltungGesamt": 1200,
-   "vorteilBrutto": 6102.95857021,
-   "vorteilCt": 6.81,
-   "vorteilNetto": 4902.95857021
+   "vorteilBrutto": 5457.71184913,
+   "vorteilCt": 6.09,
+   "vorteilNetto": 4257.71184913
   },
   "ch": {
    "a": 0.45,
-   "deckung": 0.42202056419,
+   "deckung": 0.427357479122,
    "eingabe": {
-    "energiepreis": 14,
-    "gemeinschaftCt": 13,
+    "energiepreis": 11.35,
+    "gemeinschaftCt": 10.35,
+    "kundentyp": "haushalt",
     "kwp": 250,
     "land": "ch",
     "mix": "gemischt",
@@ -284,18 +294,18 @@
     "verbrauchJe": 3500,
     "verwaltung": 40
    },
-   "erloesErzeuger": 21953.7022936,
-   "erloesGeteilt": 11521.1614024,
-   "erloesUeberschuss": 10432.5408912,
-   "erzeugung": 262500,
-   "geteilt": 88624.3184799,
-   "geteiltJeTeilnehmer": 1477.07197467,
-   "jeTeilnehmer": 33.8535987333,
+   "erloesErzeuger": 20853.9105718,
+   "erloesGeteilt": 9288.61480871,
+   "erloesUeberschuss": 11565.2957631,
+   "erzeugung": 282500,
+   "geteilt": 89745.0706156,
+   "geteiltJeTeilnehmer": 1495.75117693,
+   "jeTeilnehmer": 34.7875588463,
    "land": {
     "abgabenCt": 0,
     "ct": "Rp.",
-    "energiepreis": 14,
-    "gemeinschaftCt": 13,
+    "energiepreis": 11.35,
+    "gemeinschaftCt": 10.35,
     "netzAp": 10,
     "rabatte": [
      {
@@ -316,17 +326,17 @@
     "waehrung": "CHF"
    },
    "lohntSich": true,
-   "mehrerloesErzeuger": 6203.70229359,
-   "nutzung": 0.337616451352,
+   "mehrerloesErzeuger": 3903.91057178,
+   "nutzung": 0.317681665896,
    "rabatt": {
     "anteil": 0.4,
     "id": "leg40",
     "label": "LEG, eine Ebene",
     "sub": "−40 % Netznutzung"
    },
-   "referenzErzeuger": 15750,
+   "referenzErzeuger": 16950,
    "region": {
-    "ertrag": 1050,
+    "ertrag": 1130,
     "id": "ch",
     "label": "Schweiz",
     "land": "CH",
@@ -349,12 +359,12 @@
      "label": "Entfallende Abgaben"
     }
    ],
-   "ueberschuss": 173875.68152,
+   "ueberschuss": 192754.929384,
    "verbrauch": 210000,
    "verwaltungGesamt": 2400,
-   "vorteilBrutto": 4431.215924,
+   "vorteilBrutto": 4487.25353078,
    "vorteilCt": 5,
-   "vorteilNetto": 2031.215924
+   "vorteilNetto": 2087.25353078
   },
   "de_haushalte_speicher": {
    "a": 0.47,
@@ -362,6 +372,7 @@
    "eingabe": {
     "energiepreis": 14,
     "gemeinschaftCt": 11,
+    "kundentyp": "haushalt",
     "kwp": 250,
     "land": "de",
     "mix": "haushalte",
@@ -446,6 +457,7 @@
    "eingabe": {
     "energiepreis": 14,
     "gemeinschaftCt": 11,
+    "kundentyp": "haushalt",
     "kwp": 1000,
     "land": "de",
     "mix": "gewerbe",
@@ -530,6 +542,7 @@
    "eingabe": {
     "energiepreis": 12,
     "gemeinschaftCt": 10,
+    "kundentyp": "haushalt",
     "kwp": 250,
     "land": "at",
     "mix": "gemischt",
@@ -548,9 +561,14 @@
    "erzeugung": 280000,
    "geteilt": 7875,
    "geteiltJeTeilnehmer": 1575,
-   "jeTeilnehmer": 87.2575,
+   "jeTeilnehmer": 75.9175,
    "land": {
     "abgabenCt": 0.82,
+    "abgabenCtNachTyp": {
+     "haushalt": 0.1,
+     "sonstige": 0.82
+    },
+    "abgabenGueltigBis": "2026-12-31",
     "ct": "ct",
     "energiepreis": 12,
     "gemeinschaftCt": 10,
@@ -575,6 +593,7 @@
       "sub": "ohne Abschlag"
      }
     ],
+    "rabatteGueltigBis": "2026-12-31",
     "ueberschussCt": 5,
     "verwaltung": 20,
     "waehrung": "€"
@@ -608,7 +627,7 @@
      "label": "Abschlag Netzentgelt"
     },
     {
-     "ct": 0.82,
+     "ct": 0.1,
      "id": "abgaben",
      "label": "Entfallende Abgaben"
     }
@@ -616,14 +635,15 @@
    "ueberschuss": 272125,
    "verbrauch": 17500,
    "verwaltungGesamt": 100,
-   "vorteilBrutto": 536.2875,
-   "vorteilCt": 6.81,
-   "vorteilNetto": 436.2875
+   "vorteilBrutto": 479.5875,
+   "vorteilCt": 6.09,
+   "vorteilNetto": 379.5875
   },
   "standardFuer_alle": [
    {
     "energiepreis": 14,
     "gemeinschaftCt": 11,
+    "kundentyp": "haushalt",
     "kwp": 250,
     "land": "de",
     "mix": "gemischt",
@@ -639,6 +659,7 @@
    {
     "energiepreis": 12,
     "gemeinschaftCt": 10,
+    "kundentyp": "haushalt",
     "kwp": 250,
     "land": "at",
     "mix": "gemischt",
@@ -652,8 +673,9 @@
     "verwaltung": 20
    },
    {
-    "energiepreis": 14,
-    "gemeinschaftCt": 13,
+    "energiepreis": 11.35,
+    "gemeinschaftCt": 10.35,
+    "kundentyp": "haushalt",
     "kwp": 250,
     "land": "ch",
     "mix": "gemischt",

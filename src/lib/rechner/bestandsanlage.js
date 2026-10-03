@@ -20,7 +20,7 @@
 //  - Ertragswert = Barwert der Cashflows; Spanne: Diskont ±1 Prozentpunkt
 //    kombiniert mit Ertrag ±5 %
 
-import { BESTAND, ERLOESE, FREIFLAECHE, PACHT, PHASEN, REGIONEN, regionById, npv, irr } from "../invest/markt.js";
+import { BESTAND, ERLOESE, FREIFLAECHE, PACHT, PHASEN, REGIONEN, regionById, laenderSperre, npv, irr } from "../invest/markt.js";
 
 export const PHASE_BESTAND = PHASEN.find((p) => p.id === "cod");
 
@@ -108,6 +108,8 @@ export function rechneBestand(eingabe = {}) {
 
   return {
     eingabe: e,
+    /** Länder-Sperre AT/CH: Vergütungsrichtwerte und Förderlogik sind deutsches EEG (markt.js LAENDER_SPERRE) */
+    sperre: laenderSperre(region.land),
     start,
     alter,
     foerderEnde,

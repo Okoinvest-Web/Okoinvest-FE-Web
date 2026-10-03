@@ -1,5 +1,6 @@
 "use client";
 
+import { SperrEingaben } from "./LaenderSperre";
 import { useMemo, useState } from "react";
 import { BatteryCharging, CalendarClock, Handshake, Leaf, PiggyBank, PlugZap, Sun, Wallet } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -34,9 +35,25 @@ export default function CarportRechner() {
   const r = useMemo(() => rechneCarport({ stellplaetze, regionId, strompreisCt, eigenverbrauch, ac, dc, capexKwp }), [stellplaetze, regionId, strompreisCt, eigenverbrauch, ac, dc, capexKwp]);
   const con = r.contracting;
 
+  // Länder-Sperre (Paket E): für AT/CH nur die Regionswahl und der Hinweis aus markt.js
+  const sperre = r.sperre;
+  const regionWahl = (
+    <Auswahl
+      legende="Region"
+      wert={regionId}
+      onChange={setRegionId}
+      spalten={2}
+      klein
+      optionen={REGIONEN.map((x) => ({ id: x.id, label: x.label.replace("West- & Mitteldeutschland", "West & Mitte"), sub: `${fmt(Math.round(x.ertrag * CARPORT.ertragFaktor))} kWh/kWp` }))}
+    />
+  );
+
   return (
     <RechnerRahmen
-      eingaben={
+      sperre={sperre}
+      eingaben={sperre ? (
+        <SperrEingaben>{regionWahl}</SperrEingaben>
+      ) : (
         <>
           <MobilKurz
             werte={[
@@ -48,14 +65,7 @@ export default function CarportRechner() {
           <div className="space-y-8">
             <Gruppe titel="Parkplatz">
               <Regler label="Überdachte Stellplätze" wert={stellplaetze} min={10} max={1000} step={5} onChange={setStellplaetze} hinweis={`≈ ${fmt(r.kwp)} kWp (${fmt(CARPORT.kwpProStellplatz, 1)} kWp je Stellplatz) auf rund ${fmt(r.flaecheM2)} m² Parkfläche inkl. Fahrgassen`} />
-              <Auswahl
-                legende="Region"
-                wert={regionId}
-                onChange={setRegionId}
-                spalten={2}
-                klein
-                optionen={REGIONEN.map((x) => ({ id: x.id, label: x.label.replace("West- & Mitteldeutschland", "West & Mitte"), sub: `${fmt(Math.round(x.ertrag * CARPORT.ertragFaktor))} kWh/kWp` }))}
-              />
+              {regionWahl}
               <Regler label="Baukosten Carport" wert={capexKwp} min={1000} max={1900} step={25} format={(v) => `${fmt(v)} €/kWp`} onChange={setCapex} hinweis={`Richtwert ${fmt(CARPORT.capexProKwp.min)}–${fmt(CARPORT.capexProKwp.max)} €/kWp inkl. Stahlbau, Fundamente, Entwässerung.`} />
             </Gruppe>
 
@@ -79,7 +89,7 @@ export default function CarportRechner() {
             </Gruppe>
           </div>
         </>
-      }
+      )}
       ergebnis={
         <>
           <p className="sr-only" aria-live="polite">

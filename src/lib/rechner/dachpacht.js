@@ -18,7 +18,7 @@
 //         Überschuss zur Einspeisevergütung, Betriebskosten mit Inflation
 //  - Einmalzahlung = Barwert der Jahrespacht zum Betreiber-Diskontsatz
 
-import { DACH, FREIFLAECHE, FINANZIERUNG, STROM, regionById, npv, irr } from "../invest/markt.js";
+import { DACH, FREIFLAECHE, FINANZIERUNG, STROM, regionById, laenderSperre, npv, irr } from "../invest/markt.js";
 
 export const NETZSTROM_CT = Math.round(STROM.bestandteile.reduce((s, b) => s + b.ct, 0) * 10) / 10;
 
@@ -52,7 +52,7 @@ export function rechneDach(eingabe = {}) {
   const sanierungKosten = e.m2 * DACH.sanierungProM2.mittel;
 
   if (!dach.belegbar) {
-    return { eingabe: e, dach, region, belegbar: false, sanierungKosten };
+    return { eingabe: e, sperre: laenderSperre(region.land), dach, region, belegbar: false, sanierungKosten };
   }
 
   const geneigt = e.dachart !== "flach";
@@ -118,6 +118,8 @@ export function rechneDach(eingabe = {}) {
 
   return {
     eingabe: e,
+    /** Länder-Sperre AT/CH: EEG-Dachzuschlag, DE-Strompreis und €-Pacht gelten nur für DE (markt.js LAENDER_SPERRE) */
+    sperre: laenderSperre(region.land),
     belegbar: true,
     dach,
     region,

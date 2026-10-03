@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { AlertTriangle, BatteryCharging, CalendarClock, Cable, Percent, Scale, Zap } from "lucide-react";
-import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Schalter, Zahl } from "./bausteine";
 import { useTeilbarerZustand } from "./kontext";
+import ErgebnisAnfrage from "./ErgebnisAnfrage";
 import { Ansicht, ErgebnisKopf, Hinweis, MobilKurz, RechnerRahmen } from "./InvestTeile";
 import { BalkenJahre, DiagrammKarte, FARBEN, Linien } from "./ToolTeile";
 import { DAUERN, EBENEN, ERLOESNIVEAUS, STANDARD, STANDORTE, erloesAufteilung, rechneSpeicher, vergleichStandorte } from "@/lib/rechner/grossspeicher";
@@ -209,14 +209,16 @@ export default function GrossspeicherRechner() {
             )}
           </div>
 
-          <div className="mt-7 flex flex-col gap-3 border-t border-ink-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="max-w-md text-[13px] leading-relaxed text-ink-500">
-              Modellrechnung vor Steuern und Finanzierung, ohne Gewähr. Erlöse sind stark marktabhängig – für Banken zählen Tolling- oder Floor-Verträge.
-            </p>
-            <Button href="/grossspeicher" size="lg" pfeil className="shrink-0">
-              Großspeicher planen
-            </Button>
-          </div>
+          <ErgebnisAnfrage
+            typ="speicher"
+            href="/kontakt?anliegen=speicher#formular"
+            kennzahl={r.projektIrr == null ? null : <Zahl wert={r.projektIrr * 100} stellen={1} suffix=" %" />}
+            satz={r.projektIrr == null ? "Standort und Anschluss gemeinsam prüfen" : "Projekt-IRR – Standort und Anschluss gemeinsam prüfen"}
+            signal={`${r.projektIrr}|${inv.summe}`}
+            nachricht={`Aus dem Großspeicher-Rechner: ${fmt(e.mw)} MW / ${fmt(r.mwh)} MWh, ${STANDORTE.find((x) => x.id === e.standort)?.label || e.standort}, ${EBENEN.find((x) => x.id === e.ebene)?.label || e.ebene}, ${e.lebensdauer} Jahre. Ergebnis (Modellrechnung): Projekt-IRR ${pct(r.projektIrr)}, Investition ${fmtMio(inv.summe)}. Bitte Standort und Netzanschluss mit mir prüfen.`}
+            sekundaer={[{ href: "/grossspeicher", label: "Großspeicher planen" }]}
+            hinweis="Modellrechnung vor Steuern und Finanzierung, ohne Gewähr. Erlöse sind stark marktabhängig – für Banken zählen Tolling- oder Floor-Verträge."
+          />
         </>
       }
       unten={

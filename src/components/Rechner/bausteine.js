@@ -21,6 +21,8 @@ export const eingabeMerken = () => {
   letzteEingabe = typeof performance !== "undefined" ? performance.now() : 0;
 };
 const geradeEingegeben = () => typeof performance !== "undefined" && performance.now() - letzteEingabe < 700;
+/** Millisekunden seit der letzten Nutzereingabe (für Feedback, das nur auf Eingaben antwortet). */
+export const msSeitEingabe = () => (typeof performance !== "undefined" ? performance.now() - letzteEingabe : Infinity);
 
 const vorzeichen = (text, d) => (d > 0 ? `+${text}` : `−${String(text).replace("-", "").replace("−", "")}`);
 

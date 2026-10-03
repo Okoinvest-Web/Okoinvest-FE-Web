@@ -1,5 +1,6 @@
 "use client";
 
+import { SperrEingaben } from "./LaenderSperre";
 import { useId, useMemo, useState } from "react";
 import { Banknote, CalendarClock, ClipboardCheck, Coins, FileSignature, Gauge, Scale, ShieldCheck, Sprout } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -33,6 +34,19 @@ export default function PachtangebotCheck() {
   const idBasis = useId();
   const spanne = r.spanne;
 
+  // Länder-Sperre (Paket E): für AT/CH nur die Regionswahl und der Hinweis aus markt.js
+  const sperre = r.sperre;
+  const regionWahl = (
+    <Auswahl
+      legende="Region"
+      wert={e.regionId}
+      onChange={set("regionId")}
+      spalten={3}
+      klein
+      optionen={REGIONEN.map((x) => ({ id: x.id, label: REGION_KURZ[x.id] || x.label }))}
+    />
+  );
+
   return (
     <div id="pachtcheck-bericht">
       {/* Druckansicht: nur dieser Bericht, ohne Navigation und Eingabe-Bedienelemente */}
@@ -59,7 +73,10 @@ export default function PachtangebotCheck() {
       <RechnerRahmen
         mitlaufend
         breiteLinks={430}
-        eingaben={
+        sperre={sperre}
+        eingaben={sperre ? (
+          <SperrEingaben>{regionWahl}</SperrEingaben>
+        ) : (
           <div className="pc-eingaben">
             <MobilKurz
               werte={[
@@ -75,14 +92,7 @@ export default function PachtangebotCheck() {
               <Gruppe titel="1 · Fläche">
                 <Regler label="Flächengröße" wert={e.ha} min={1} max={150} step={0.5} stellen={e.ha % 1 ? 1 : 0} einheit="ha" onChange={set("ha")} hinweis={`≈ ${fmt(r.kwp / 1000, 1)} MWp auf der Fläche`} />
                 <Auswahl legende="Art des Projekts" wert={e.flaechenart} onChange={set("flaechenart")} optionen={FLAECHENARTEN} />
-                <Auswahl
-                  legende="Region"
-                  wert={e.regionId}
-                  onChange={set("regionId")}
-                  spalten={3}
-                  klein
-                  optionen={REGIONEN.map((x) => ({ id: x.id, label: REGION_KURZ[x.id] || x.label }))}
-                />
+                {regionWahl}
               </Gruppe>
 
               <Gruppe titel="2 · Vergütung">
@@ -198,7 +208,7 @@ export default function PachtangebotCheck() {
               </Gruppe>
             </div>
           </div>
-        }
+        )}
         ergebnis={
           <>
             <p className="sr-only" aria-live="polite">
@@ -417,8 +427,8 @@ function Fragen({ r }) {
                 className="mt-1 h-4 w-4 shrink-0 accent-[#558227]"
               />
               <span className="min-w-0">
-                <span className="flex flex-wrap items-center gap-2 text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ink-500">
-                  {f.thema}
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ink-500">{f.thema}</span>
                   {f.ampel !== "standard" && <AmpelMarke ampel={f.ampel} klein />}
                 </span>
                 <span className={cn("mt-1 block text-[14px] leading-relaxed", erledigt[i] ? "text-ink-400 line-through" : "text-ink-800")}>{f.frage}</span>

@@ -7,7 +7,7 @@ import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Schalter, Zahl } 
 import { useTeilbarerZustand } from "./kontext";
 import { ErgebnisKopf, Hinweis, MobilKurz, RechnerRahmen } from "./InvestTeile";
 import { DiagrammKarte, FARBEN, Linien } from "./ToolTeile";
-import { LAENDER, MIXE, land as landDaten, rechneEnergySharing, regionenFuer, standardFuer } from "@/lib/rechner/energySharing";
+import { KUNDENTYPEN, LAENDER, MIXE, land as landDaten, rechneEnergySharing, regionenFuer, standardFuer } from "@/lib/rechner/energySharing";
 import { GEMEINSCHAFTEN } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 
@@ -20,6 +20,7 @@ export default function EnergySharingRechner() {
     optionen: {
       land: LAENDER.map((x) => x.id),
       mix: MIXE.map((x) => x.id),
+      kundentyp: KUNDENTYPEN.map((x) => x.id),
       regionId: LAENDER.flatMap((x) => regionenFuer(x.id).map((y) => y.id)),
       rabattId: LAENDER.flatMap((x) => landDaten(x.id).rabatte.map((y) => y.id)),
     },
@@ -58,6 +59,9 @@ export default function EnergySharingRechner() {
             <Gruppe titel="Land & Modell">
               <Auswahl legende="Land" wert={e.land} onChange={setLand} optionen={LAENDER} />
               {l.rabatte.length > 1 && <Auswahl legende="Form der Gemeinschaft" wert={e.rabattId} onChange={set("rabattId")} optionen={l.rabatte} klein />}
+              {l.abgabenCtNachTyp && (
+                <Auswahl legende="Teilnehmende sind überwiegend" wert={e.kundentyp} onChange={set("kundentyp")} optionen={KUNDENTYPEN} klein />
+              )}
               {regionenFuer(e.land).length > 1 && (
                 <Auswahl
                   legende="Region"

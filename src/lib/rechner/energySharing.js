@@ -28,6 +28,12 @@ export const LAENDER = [
 ];
 
 /** Gleichzeitigkeit: Anteil des Verbrauchs, der maximal zeitgleich mit PV gedeckt werden kann – eigene Näherung */
+/** Kundentyp der Teilnehmenden – in AT gilt 2026 eine nach Haushalt/sonstige getrennte Elektrizitätsabgabe */
+export const KUNDENTYPEN = [
+  { id: "haushalt", label: "Haushalte", sub: "überwiegend privat" },
+  { id: "sonstige", label: "Betriebe", sub: "Gewerbe, Gemeinde" },
+];
+
 export const MIXE = [
   { id: "haushalte", label: "Haushalte", sub: "abends viel Verbrauch", a: 0.35 },
   { id: "gemischt", label: "Gemischt", sub: "Haushalte + Betriebe", a: 0.45 },
@@ -49,6 +55,8 @@ export function standardFuer(landId) {
     teilnehmer: 60,
     verbrauchJe: 3500,
     mix: "gemischt",
+    /** Teilnehmende überwiegend Haushalte oder Betriebe (wirkt in AT auf die Elektrizitätsabgabe) */
+    kundentyp: "haushalt",
     speicher: false,
     energiepreis: l.energiepreis,
     netzAp: l.netzAp,
@@ -81,7 +89,8 @@ export function rechneEnergySharing(eingabe = {}) {
   const teile = [
     { id: "energie", label: "Günstigerer Energiepreis", ct: e.energiepreis - e.gemeinschaftCt },
     { id: "netz", label: "Abschlag Netzentgelt", ct: e.netzAp * rabatt.anteil },
-    { id: "abgaben", label: "Entfallende Abgaben", ct: l.abgabenCt },
+    // AT: Elektrizitätsabgabe 2026 je nach Kundentyp (Haushalt 0,1 ct, sonstige 0,82 ct; markt.js)
+    { id: "abgaben", label: "Entfallende Abgaben", ct: l.abgabenCtNachTyp?.[e.kundentyp] ?? l.abgabenCt },
   ];
   const vorteilCt = teile.reduce((s, t) => s + t.ct, 0);
   const vorteilBrutto = (geteilt * vorteilCt) / 100;
@@ -140,6 +149,10 @@ export function selbsttest() {
   pruefe(Math.abs(at.teile.find((t) => t.id === "netz").ct - 7 * 0.57) < 1e-9, "AT lokal: 57 % von 7 ct");
   pruefe(at.vorteilCt > atBeg.vorteilCt, "AT lokal günstiger als BEG");
   pruefe(Math.abs(ch.teile.find((t) => t.id === "netz").ct - 4) < 1e-9, "CH LEG: 40 % von 10 Rp.");
+  const atBetrieb = rechneEnergySharing({ land: "at", rabattId: "lokal", kundentyp: "sonstige" });
+  pruefe(Math.abs(at.teile.find((t) => t.id === "abgaben").ct - 0.1) < 1e-9, "AT Haushalte: Elektrizitätsabgabe 2026 0,1 ct");
+  pruefe(Math.abs(atBetrieb.teile.find((t) => t.id === "abgaben").ct - 0.82) < 1e-9, "AT Betriebe: Elektrizitätsabgabe 2026 0,82 ct");
+  pruefe(ch.teile.find((t) => t.id === "energie").ct >= 0, "CH: Gemeinschaftspreis nicht über dem Energietarif");
   pruefe(de.geteilt <= de.erzeugung && de.geteilt <= de.verbrauch, "geteilt ≤ Erzeugung und ≤ Verbrauch");
   const sp = rechneEnergySharing({ land: "de", speicher: true, kwp: 800 });
   const ohneSp = rechneEnergySharing({ land: "de", speicher: false, kwp: 800 });

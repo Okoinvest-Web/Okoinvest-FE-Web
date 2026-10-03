@@ -7,6 +7,7 @@ import { cn } from "@/components/ui/cn";
 import { mitUebergang, bewegungReduziert } from "@/components/ui/motion";
 import { RahmenKontext, useKurzwerteMelden, useRahmen } from "./kontext";
 import ErgebnisWerkzeuge from "./Werkzeuge";
+import { LaenderSperre } from "./LaenderSperre";
 import "./rechner.css";
 
 /* ------------------------------------------------------------------
@@ -22,7 +23,11 @@ import "./rechner.css";
  * `werkzeuge`: Szenario-Vergleich, Teilen, Druck unter dem Ergebnis
  * (erscheint, sobald der Rechner Kurzwerte über <MobilKurz> meldet).
  */
-export function RechnerRahmen({ eingaben, ergebnis, unten, breiteLinks = 410, mitlaufend = false, werkzeuge = true }) {
+export function RechnerRahmen({ eingaben, ergebnis, unten, breiteLinks = 410, mitlaufend = false, werkzeuge = true, sperre = null }) {
+  // Länder-Sperre (Paket E): statt Ergebnis, Tabellen und Werkzeugen nur der Hinweis aus markt.js
+  const ergebnisInhalt = sperre ? <LaenderSperre sperre={sperre} /> : ergebnis;
+  const untenInhalt = sperre ? null : unten;
+  const mitWerkzeugen = werkzeuge && !sperre;
   const [kurz, setKurz] = useState(null);
   const zustand = useRef(null);
   const eingabenRef = useRef(null);
@@ -39,12 +44,12 @@ export function RechnerRahmen({ eingaben, ergebnis, unten, breiteLinks = 410, mi
           </div>
           <div ref={ergebnisRef} id={ergebnisId} tabIndex={-1} className="min-w-0 scroll-mt-24 p-5 outline-none sm:p-6 md:p-8">
             <div className={mitlaufend ? "lg:sticky lg:top-24" : undefined}>
-              {ergebnis}
-              {werkzeuge && <ErgebnisWerkzeuge />}
+              {ergebnisInhalt}
+              {mitWerkzeugen && <ErgebnisWerkzeuge />}
             </div>
           </div>
         </div>
-        {unten && <div className="border-t border-ink-100 p-5 sm:p-6 md:p-8">{unten}</div>}
+        {untenInhalt && <div className="border-t border-ink-100 p-5 sm:p-6 md:p-8">{untenInhalt}</div>}
       </div>
     </RahmenKontext.Provider>
   );

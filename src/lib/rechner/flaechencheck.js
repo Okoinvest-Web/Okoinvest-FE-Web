@@ -4,7 +4,7 @@
 // Reine Funktion ohne React – testbar mit Node. Marktwerte aus markt.js,
 // die Punktelogik ist eine bewusst einfache, transparente Heuristik.
 
-import { AGRI, BAUART, FREIFLAECHE, PACHT, REGIONEN, regionById } from "../invest/markt.js";
+import { AGRI, BAUART, FREIFLAECHE, PACHT, REGIONEN, regionById, laenderSperre } from "../invest/markt.js";
 
 export const LAENDER = [
   { id: "DE", label: "Deutschland" },
@@ -80,7 +80,7 @@ export function flaechencheck({ land = "DE", regionId, ha = 10, nutzung = "acker
   const nutzungText = {
     acker: [5, "Ackerland ist meist eben und gut erschlossen. Gemeinden achten auf Bodenqualität – Agri-PV kann eine Alternative sein."],
     gruenland: [0, "Grünland ist möglich; bei Dauergrünland gelten teils Umbruch- und Naturschutzauflagen."],
-    konversion: [15, "Konversionsflächen sind politisch erwünscht und in Deutschland EEG-förderfähig."],
+    konversion: [15, land === "DE" ? "Konversionsflächen sind politisch erwünscht und in Deutschland EEG-förderfähig." : "Konversionsflächen sind als vorbelastete Flächen politisch erwünscht."],
     deponie: [8, "Deponien sind geeignet, brauchen aber Ballast- statt Rammfundamente und Abstimmung mit der Abfallbehörde."],
     parkplatz: [0, "Auf Parkplätzen wird statt eines Solarparks ein Solarcarport gebaut – eigenes Modell, gern prüfen wir beides."],
     sonstige: [0, "Die Nutzung klären wir im Gespräch – Brachen sind oft gut geeignet."],
@@ -90,7 +90,7 @@ export function flaechencheck({ land = "DE", regionId, ha = 10, nutzung = "acker
   // --- Besonderheiten ---------------------------------------------
   if (hat("randstreifen")) {
     add(15, land === "DE"
-      ? "Randstreifen an Autobahn/Schiene: EEG-Flächenkulisse (bis 500 m); bis 200 m ist die Anlage im Außenbereich baurechtlich privilegiert."
+      ? "Randstreifen an Autobahn/Schiene: EEG-Flächenkulisse (bis 500 m). Baurechtlich privilegiert im Außenbereich ist die Anlage bis 200 m entlang von Autobahnen oder Schienenwegen des übergeordneten Netzes mit mindestens zwei Hauptgleisen (§ 35 Abs. 1 Nr. 8 b BauGB)."
       : "Flächen entlang von Verkehrswegen gelten auch in AT/CH als vorbelastet und sind raumplanerisch oft bevorzugt.");
   }
   if (hat("benachteiligt")) {
@@ -117,10 +117,13 @@ export function flaechencheck({ land = "DE", regionId, ha = 10, nutzung = "acker
     add(0, "Entfernung zum Netz unbekannt – wir fragen die Anschlusskapazität beim Netzbetreiber an.", "info");
   } else {
     netzProKwp = (netzInfo.km * 1000 * FREIFLAECHE.kabelProMeter + (kwp / 1000) * FREIFLAECHE.netzanschlussFixProMwp) / Math.max(kwp, 1);
-    if (netzProKwp < 70) add(15, `Netzanschluss nah: rund ${Math.round(netzProKwp)} €/kWp für Kabeltrasse und Übergabestation.`);
-    else if (netzProKwp < 110) add(5, `Netzanschluss tragbar: rund ${Math.round(netzProKwp)} €/kWp.`);
-    else if (netzProKwp < 200) add(-8, `Netzanschluss teuer: rund ${Math.round(netzProKwp)} €/kWp – erst ab mehr Fläche gut tragbar.`);
-    else add(-20, `Netzanschluss sehr teuer: rund ${Math.round(netzProKwp)} €/kWp. Mit Nachbarflächen oder Speicher neu rechnen.`);
+    // Schweiz: keine €-Beträge (Kostenbasis DE, Währung CHF) – nur die Einordnung
+    const ch = land === "CH";
+    const betrag = `rund ${Math.round(netzProKwp)} €/kWp`;
+    if (netzProKwp < 70) add(15, ch ? "Netzanschluss nah: geringe Kosten für Kabeltrasse und Übergabestation." : `Netzanschluss nah: ${betrag} für Kabeltrasse und Übergabestation.`);
+    else if (netzProKwp < 110) add(5, ch ? "Netzanschluss tragbar." : `Netzanschluss tragbar: ${betrag}.`);
+    else if (netzProKwp < 200) add(-8, ch ? "Netzanschluss teuer – erst ab mehr Fläche gut tragbar." : `Netzanschluss teuer: ${betrag} – erst ab mehr Fläche gut tragbar.`);
+    else add(-20, ch ? "Netzanschluss sehr teuer. Mit Nachbarflächen oder Speicher neu rechnen." : `Netzanschluss sehr teuer: ${betrag}. Mit Nachbarflächen oder Speicher neu rechnen.`);
   }
 
   // --- Eigentum ----------------------------------------------------
@@ -134,7 +137,7 @@ export function flaechencheck({ land = "DE", regionId, ha = 10, nutzung = "acker
 
   // --- Länderhinweis ----------------------------------------------
   if (land === "AT") add(0, "Österreich: Nötig ist eine Widmung als Grünland-Photovoltaik bzw. eine Zonierung nach Landesrecht – die Regeln unterscheiden sich je Bundesland.", "info");
-  if (land === "CH") add(0, "Schweiz: Außerhalb der Bauzone braucht es Standortgebundenheit nach Raumplanungsrecht; große Freiflächenanlagen sind nur eingeschränkt möglich.", "info");
+  if (land === "CH") add(0, "Schweiz: Ausserhalb der Bauzone braucht es Standortgebundenheit nach Raumplanungsrecht; grosse Freiflächenanlagen sind nur eingeschränkt möglich.", "info");
 
   const summe = gruende.reduce((s, g) => s + g.punkte, punkte);
   const score = Math.round(clamp(Math.min(summe, deckel), 0, 100));
@@ -152,7 +155,10 @@ export function flaechencheck({ land = "DE", regionId, ha = 10, nutzung = "acker
   const agriMoeglich = ["acker", "gruenland"].includes(nutzung);
   const agriKwp = (ha / BAUART.agriVertikal.haProMwp) * 1000; // vertikal-bifazial, konservativ
 
+  // Länder-Sperre (markt.js LAENDER_SPERRE): €-Pacht und GAP nur für DE, €-Netzkosten nicht für CH
+  const sperre = laenderSperre(land);
   return {
+    sperre,
     score,
     ampel,
     gruende: gruende.sort((a, b) => Math.abs(b.punkte) - Math.abs(a.punkte)),
@@ -160,11 +166,11 @@ export function flaechencheck({ land = "DE", regionId, ha = 10, nutzung = "acker
     nutzbarHa,
     kwp,
     kwh,
-    netzProKwp,
-    pachtJahr: { min: pachtMin, max: pachtMax },
-    pacht30: { min: pachtMin * faktor30, max: pachtMax * faktor30 },
+    netzProKwp: land === "CH" ? null : netzProKwp,
+    pachtJahr: sperre ? null : { min: pachtMin, max: pachtMax },
+    pacht30: sperre ? null : { min: pachtMin * faktor30, max: pachtMax * faktor30 },
     agri: agriMoeglich
-      ? { kwp: agriKwp, pachtJahr: { min: ha * PACHT.agriProHa.min, max: ha * PACHT.agriProHa.max }, gapAnteil: AGRI.gapFoerderfaehig }
+      ? { kwp: agriKwp, pachtJahr: sperre ? null : { min: ha * PACHT.agriProHa.min, max: ha * PACHT.agriProHa.max }, gapAnteil: sperre ? null : AGRI.gapFoerderfaehig }
       : null,
     carport: nutzung === "parkplatz",
     schritte: naechsteSchritte({ ampel, land, eigentum, netz, nutzung }),

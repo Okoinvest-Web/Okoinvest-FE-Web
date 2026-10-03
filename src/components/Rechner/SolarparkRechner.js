@@ -1,15 +1,16 @@
 "use client";
 
+import { SperrEingaben } from "./LaenderSperre";
 import { useMemo, useState } from "react";
 import { AlertTriangle, Banknote, CalendarClock, ChevronDown, Gauge, Landmark, Percent, Scale, SlidersHorizontal, TableProperties } from "lucide-react";
-import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Schalter, Tooltip, Zahl, useBreite } from "./bausteine";
 import { Ansicht, ErgebnisKopf, Hinweis, Legende, MobilKurz, RechnerRahmen } from "./InvestTeile";
 import { useDiagrammTastatur } from "./ToolTeile";
 import { useTeilbarerZustand } from "./kontext";
+import ErgebnisAnfrage from "./ErgebnisAnfrage";
 import { ERLOESMODELLE, STANDARD, rechneSolarpark, sensitivitaet } from "@/lib/rechner/solarpark";
-import { REGIONEN, BAUART, FREIFLAECHE, ERLOESE, PACHT, FINANZIERUNG, AGRI } from "@/lib/invest/markt";
+import { REGIONEN, BAUART, FREIFLAECHE, ERLOESE, PACHT, FINANZIERUNG, AGRI, ZUSCHLAEGE, letzteZuschlaege } from "@/lib/invest/markt";
 import { fmt, fmtEur, fmtMio } from "@/lib/rechner/annahmen";
 
 const FARBE = { erloes: "#669933", kosten: "#c4cad5", dienst: "#1f5aa1", cf: "#151a24", ek: "#669933", projekt: "#1f5aa1", raster: "#eef0f4" };
@@ -27,6 +28,7 @@ export default function SolarparkRechner() {
   const [preisCt, setPreisCt] = useState(STANDARD.preisCt);
   const [vertragJahre, setVertragJahre] = useState(STANDARD.vertragJahre);
   const [merchantCt, setMerchantCt] = useState(STANDARD.merchantCt);
+  const [negativAnteil, setNegativAnteil] = useState(STANDARD.negativAnteil);
   const [pachtHa, setPachtHa] = useState(STANDARD.pachtHa);
   const [opexKwp, setOpex] = useState(STANDARD.opexKwp);
   const [degradation, setDegradation] = useState(STANDARD.degradation);
@@ -63,6 +65,7 @@ export default function SolarparkRechner() {
     preisCt: setPreisCt,
     vertragJahre: setVertragJahre,
     merchantCt: setMerchantCt,
+    negativAnteil: setNegativAnteil,
     pachtHa: setPachtHa,
     opexKwp: setOpex,
     degradation: setDegradation,
@@ -73,7 +76,7 @@ export default function SolarparkRechner() {
     dscrBegrenzen: setDscrBegrenzen,
   };
   useTeilbarerZustand(
-    { mwp, regionId, bauart, capexKwp, entwicklungKwp, netzKm, modell, preisCt, vertragJahre, merchantCt, pachtHa, opexKwp, degradation, fkQuote, zins, tilgungJahre, laufzeit, dscrBegrenzen },
+    { mwp, regionId, bauart, capexKwp, entwicklungKwp, netzKm, modell, preisCt, vertragJahre, merchantCt, negativAnteil, pachtHa, opexKwp, degradation, fkQuote, zins, tilgungJahre, laufzeit, dscrBegrenzen },
     (neu) => Object.entries(neu).forEach(([k, v]) => setzer[k]?.(v)),
     {
       optionen: { regionId: REGIONEN.map((x) => x.id), bauart: Object.keys(BAUART), modell: ["eeg", "ppa", "merchant"] },
@@ -85,6 +88,7 @@ export default function SolarparkRechner() {
         preisCt: [3, 9],
         vertragJahre: [3, 20],
         merchantCt: [2, 8],
+        negativAnteil: [0, 0.5],
         pachtHa: [800, 6000],
         opexKwp: [6, 22],
         degradation: [0.002, 0.008],
@@ -108,6 +112,7 @@ export default function SolarparkRechner() {
     preisCt: modell === "merchant" ? merchantCt : preisCt,
     vertragJahre,
     merchantCt,
+    negativAnteil,
     pachtHa,
     opexKwp,
     degradation,
@@ -121,6 +126,19 @@ export default function SolarparkRechner() {
   const matrix = useMemo(() => sensitivitaet(eingabe), [JSON.stringify(eingabe)]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const zielEk = FINANZIERUNG.diskont;
+
+  // Länder-Sperre (Paket E): für AT/CH nur die Regionswahl und der Hinweis aus markt.js
+  const sperre = r.sperre;
+  const regionWahl = (
+    <Auswahl
+      legende="Region"
+      wert={regionId}
+      onChange={setRegionId}
+      spalten={2}
+      klein
+      optionen={REGIONEN.map((x) => ({ id: x.id, label: x.label.replace("West- & Mitteldeutschland", "West & Mitte"), sub: `${fmt(x.ertrag)} kWh/kWp` }))}
+    />
+  );
 
   return (
     <RechnerRahmen
@@ -144,32 +162,39 @@ export default function SolarparkRechner() {
             {ansicht === "jahr" ? <CashflowJahre r={r} /> : <CashflowKumuliert r={r} />}
           </div>
 
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <div className="rounded-3xl bg-white shadow-e1 ring-1 ring-ink-200/70">
-              <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 md:px-6">
-                <div>
-                  <h3 className="font-display text-[17px] font-bold text-ink-900">Sensitivität</h3>
-                  <p className="text-[12.5px] text-ink-500">Investition (Zeilen) gegen Strompreis (Spalten, wirkt auf Vertrags- und Marktpreis)</p>
-                </div>
-                <Ansicht
-                  name="matrix-wert"
-                  label="Kennzahl der Matrix"
-                  wert={matrixWert}
-                  onChange={setMatrixWert}
-                  optionen={[
-                    { id: "projekt", label: "Projekt-IRR" },
-                    { id: "ek", label: "EK-IRR" },
-                  ]}
-                />
+          <div className="rounded-3xl bg-white shadow-e1 ring-1 ring-ink-200/70 lg:grid lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] lg:items-center lg:gap-4">
+            <div className="flex flex-col gap-4 px-5 pt-5 md:px-6 lg:self-stretch lg:border-r lg:border-ink-100 lg:py-6">
+              <div>
+                <h3 className="font-display text-[17px] font-bold text-ink-900">Sensitivität</h3>
+                <p className="mt-1 text-[13px] leading-relaxed text-ink-500">Investition (Zeilen) gegen Strompreis (Spalten, wirkt auf Vertrags- und Marktpreis)</p>
               </div>
-              <Matrix matrix={matrix} wert={matrixWert} ziel={matrixWert === "ek" ? zielEk : r.wacc} capexKwp={capexKwp} />
+              <Ansicht
+                name="matrix-wert"
+                label="Kennzahl der Matrix"
+                wert={matrixWert}
+                onChange={setMatrixWert}
+                optionen={[
+                  { id: "projekt", label: "Projekt-IRR" },
+                  { id: "ek", label: "EK-IRR" },
+                ]}
+              />
+              <ul aria-hidden="true" className="hidden space-y-2 text-[12.5px] text-ink-600 lg:mt-auto lg:block">
+                <li className="flex items-center gap-2"><span className="h-3 w-3 rounded bg-ov-500" />erreicht {matrixWert === "ek" ? "die EK-Renditeerwartung" : "die Kapitalkosten"}</li>
+                <li className="flex items-center gap-2"><span className="h-3 w-3 rounded bg-ov-100 ring-1 ring-inset ring-ov-200" />bis 1,5 Prozentpunkte darunter</li>
+                <li className="flex items-center gap-2"><span className="h-3 w-3 rounded bg-ink-100 ring-1 ring-inset ring-ink-200" />deutlich darunter</li>
+                <li className="flex items-center gap-2"><span className="h-3 w-3 rounded ring-2 ring-inset ring-ink-900" />Ihre Eingabe</li>
+              </ul>
             </div>
-
-            <Jahrestabelle r={r} />
+            <Matrix matrix={matrix} wert={matrixWert} ziel={matrixWert === "ek" ? zielEk : r.wacc} capexKwp={capexKwp} />
           </div>
+
+          <Jahrestabelle r={r} />
         </div>
       }
-      eingaben={
+      sperre={sperre}
+      eingaben={sperre ? (
+        <SperrEingaben>{regionWahl}</SperrEingaben>
+      ) : (
         <>
           <MobilKurz
             werte={[
@@ -190,14 +215,7 @@ export default function SolarparkRechner() {
                 onChange={setMwp}
                 hinweis={`≈ ${fmt(r.flaecheHa, 1)} ha Fläche · ${fmt(r.ertragJahr1 / 1e6, 1)} GWh im ersten Jahr`}
               />
-              <Auswahl
-                legende="Region"
-                wert={regionId}
-                onChange={setRegionId}
-                spalten={2}
-                klein
-                optionen={REGIONEN.map((x) => ({ id: x.id, label: x.label.replace("West- & Mitteldeutschland", "West & Mitte"), sub: `${fmt(x.ertrag)} kWh/kWp` }))}
-              />
+              {regionWahl}
               <Auswahl
                 legende="Bauart"
                 wert={bauart}
@@ -264,12 +282,24 @@ export default function SolarparkRechner() {
                   onChange={setPreisCt}
                   hinweis={
                     modell === "eeg"
-                      ? `Zuletzt ${ERLOESE.zuschlagsHistorie.map((z) => fmt(z.ct, 2)).join(" · ")} ct/kWh (Bundesnetzagentur 2025). Wirkt als Untergrenze – ein höherer Marktwert bleibt Ihnen.`
+                      ? `Zuletzt ${letzteZuschlaege(ZUSCHLAEGE.freiflaeche).map((z) => fmt(z.ct, 2)).join(" · ")} ct/kWh (Bundesnetzagentur, ${letzteZuschlaege(ZUSCHLAEGE.freiflaeche)[0].termin} bis ${letzteZuschlaege(ZUSCHLAEGE.freiflaeche).at(-1).termin}). Wirkt als Untergrenze – ein höherer Marktwert bleibt Ihnen.`
                       : `Solar-PPA (pay-as-produced) grob ${fmt(ERLOESE.ppaCt.min, 1)}–${fmt(ERLOESE.ppaCt.max, 1)} ct/kWh.`
                   }
                 />
               )}
               {modell === "ppa" && <Regler label="PPA-Laufzeit" wert={vertragJahre} min={3} max={20} step={1} einheit="Jahre" onChange={setVertragJahre} />}
+              {modell === "eeg" && (
+                <Regler
+                  label="Erzeugung bei negativen Preisen"
+                  wert={negativAnteil}
+                  min={0}
+                  max={0.5}
+                  step={0.01}
+                  format={(v) => `${fmt(v * 100)} %`}
+                  onChange={setNegativAnteil}
+                  hinweis={`§ 51 EEG: In Zeiträumen mit negativem Börsenpreis entfällt die Förderung. 2025 fielen rund ${fmt(ERLOESE.paragraph51.anteilNegativ * 100, 1)} % der Solarerzeugung in solche Stunden (LfL Bayern). Gerechnet: Abregelung, ohne Verlängerung nach § 51a.`}
+                />
+              )}
               <Regler
                 label={modell === "merchant" ? "Marktwert Solar (heute)" : `Marktwert nach Jahr ${modell === "eeg" ? 20 : vertragJahre}`}
                 wert={merchantCt}
@@ -338,7 +368,7 @@ export default function SolarparkRechner() {
             </details>
           </div>
         </>
-      }
+      )}
       ergebnis={
         <>
           <p className="sr-only" aria-live="polite">
@@ -406,16 +436,19 @@ export default function SolarparkRechner() {
             <InvestZeile r={r} />
           </div>
 
-          <div className="mt-7 flex flex-col gap-3 border-t border-ink-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="max-w-md text-[13px] leading-relaxed text-ink-500">
-              Modellrechnung vor Steuern, ohne Gewähr – ersetzt kein Ertragsgutachten und keine Bankrechnung. Wir rechnen gern mit Ihren Projektdaten.
-            </p>
-            <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-              <Button href="/projektboerse" size="lg" pfeil>
-                Projekte ansehen
-              </Button>
-            </div>
-          </div>
+          <ErgebnisAnfrage
+            typ="investor"
+            href="/kontakt?anliegen=investor#formular"
+            kennzahl={r.projektIrr == null ? null : <Zahl wert={r.projektIrr * 100} stellen={1} suffix=" %" />}
+            satz={r.projektIrr == null ? "Mit Ihren Projektdaten nachrechnen lassen" : "Projekt-IRR – mit Ihren Projektdaten nachrechnen lassen"}
+            signal={`${r.projektIrr}|${r.ekIrr}`}
+            nachricht={`Aus dem Solarpark-Renditerechner: ${fmt(mwp, mwp % 1 ? 1 : 0)} MWp, Region ${REGIONEN.find((x) => x.id === regionId)?.label || regionId}, Erlösmodell ${ERLOESMODELLE[modell]?.label || modell}, ${laufzeit} Jahre. Ergebnis (Modellrechnung): Projekt-IRR ${pct(r.projektIrr)}, Eigenkapital-IRR ${pct(r.ekIrr)}, LCOE ${fmt(r.lcoeCt, 2)} ct/kWh. Bitte mit mir über passende Projekte sprechen.`}
+            sekundaer={[
+              { href: "/projektboerse", label: "Projekte ansehen" },
+              { href: "/registrieren?rolle=investor", label: "Suchprofil anlegen" },
+            ]}
+            hinweis="Modellrechnung vor Steuern, ohne Gewähr – ersetzt kein Ertragsgutachten und keine Bankrechnung. Wir rechnen gern mit Ihren Projektdaten."
+          />
         </>
       }
     />
@@ -747,7 +780,7 @@ function Matrix({ matrix, wert, ziel, capexKwp }) {
 
 function Jahrestabelle({ r }) {
   return (
-    <details className="group self-start rounded-3xl ring-1 ring-ink-200/70">
+    <details className="group rounded-3xl bg-white ring-1 ring-ink-200/70">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 md:px-6 [&::-webkit-details-marker]:hidden">
         <span className="flex items-center gap-2.5 font-display text-[17px] font-bold text-ink-900">
           <TableProperties aria-hidden="true" className="h-5 w-5 text-ov-600" /> Jahrestabelle

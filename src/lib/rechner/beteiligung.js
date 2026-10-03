@@ -17,7 +17,7 @@
 //    Generalversammlung; negative Jahre werden vorgetragen.
 //  - Vor persönlichen Steuern; Kapitalertragsteuer optional.
 
-import { GEMEINSCHAFTEN, FREIFLAECHE, irr } from "../invest/markt.js";
+import { GEMEINSCHAFTEN, FREIFLAECHE, irr, laenderSperre } from "../invest/markt.js";
 import { STANDARD as PARK, rechneSolarpark } from "./solarpark.js";
 
 const B = GEMEINSCHAFTEN.beteiligung;
@@ -90,7 +90,8 @@ export function rechneBeteiligung(eingabe = {}) {
     const jahreOhne = mitglied.filter((m) => m.quote <= 0).length;
     return { ...s, park, eg, mitglied, summeNetto, rueckzahlung, rendite: irr(cfs), quoteMittel, quote10, jahreOhne, laufzeit };
   });
-  return { eingabe: e, einlage, steuer, szenarien, mittel: szenarien[1] };
+  // Länder-Sperre AT/CH: Der Park wird mit deutscher EEG-Logik gerechnet (markt.js LAENDER_SPERRE)
+  return { eingabe: e, sperre: laenderSperre(e.regionId), einlage, steuer, szenarien, mittel: szenarien[1] };
 }
 
 /* ------------------------------------------------------------------ */

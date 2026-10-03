@@ -11,13 +11,20 @@
 //    fortgeschrieben mit der Marktwert-Steigerung). EEG-Zuschlag wirkt im
 //    Marktprämienmodell als Untergrenze: Liegt der Marktwert darüber, bleibt
 //    der Marktwert. Ein PPA ist ein nominal fester Preis.
+//  - § 51 EEG (seit Solarspitzengesetz): In Zeiträumen mit negativem Spotpreis
+//    entfällt der anzulegende Wert. Im EEG-Modell wird in der Förderphase der
+//    Anteil `negativAnteil` abgeregelt (nicht eingespeist, nicht gefördert); der
+//    Erlös je kWh sinkt auf AW − Anteil × (AW − Marktwert) (markt.js eegErloesCt).
+//    Die Verlängerung nach § 51a EEG ist nicht gerechnet.
+//  - Länder-Sperre: Für AT/CH liefert `sperre` den Hinweis aus markt.js – die
+//    Rechner zeigen dort keine Euro-/EEG-Werte (Rechenlogik nur DE).
 //  - Kosten: Betriebskosten + Pacht (beide mit Inflation), Rückbau-Rücklage
 //  - Finanzierung: Annuitätendarlehen über die Tilgungsdauer; optional wird
 //    das Darlehen wie bei Banken üblich auf eine Mindest-DSCR begrenzt
 //  - Renditen vor Steuern (Projekt- und Eigenkapital-IRR)
 //  - LCOE nominal: konstanter Strompreis, bei dem der Kapitalwert zum WACC null ist
 
-import { FREIFLAECHE, ERLOESE, FINANZIERUNG, PACHT, BAUART, regionById, npv, irr, annuitaet } from "../invest/markt.js";
+import { FREIFLAECHE, ERLOESE, FINANZIERUNG, PACHT, BAUART, regionById, laenderSperre, eegErloesCt, npv, irr, annuitaet } from "../invest/markt.js";
 
 export const ERLOESMODELLE = {
   eeg: { label: "EEG-Zuschlag", kurz: "EEG", vertragJahre: 20, preisCt: ERLOESE.eegFreiflaecheCt },
@@ -37,6 +44,8 @@ export const STANDARD = {
   vertragJahre: 20,
   merchantCt: ERLOESE.merchantCt,
   merchantSteigerung: ERLOESE.merchantSteigerung,
+  /** § 51 EEG: Anteil der Erzeugung in Zeiträumen mit negativem Preis (ohne Vergütung im EEG-Modell) */
+  negativAnteil: ERLOESE.paragraph51.anteilNegativ,
   pachtHa: PACHT.freiflaecheProHa.mittel,
   opexKwp: FREIFLAECHE.opexProKwp,
   degradation: FREIFLAECHE.degradation,
@@ -83,12 +92,16 @@ export function rechneSolarpark(eingabe = {}) {
     const marktCt = e.merchantCt * Math.pow(1 + e.merchantSteigerung, t - 1);
     const imVertrag = t <= vertragJahre;
     const preisCt = !imVertrag ? marktCt : e.modell === "eeg" ? Math.max(e.preisCt, marktCt) : e.preisCt;
-    const erloes = (erzeugung * preisCt) / 100;
+    // § 51 EEG: In der EEG-Förderphase ist der Anteil in negativen Zeiträumen nicht gefördert (abgeregelt)
+    const mit51 = imVertrag && e.modell === "eeg";
+    const vergueteterAnteil = mit51 ? 1 - Math.min(Math.max(e.negativAnteil || 0, 0), 1) : 1;
+    const preisEffCt = mit51 ? eegErloesCt(e.preisCt, marktCt, e.negativAnteil || 0) : preisCt;
+    const erloes = (erzeugung * preisEffCt) / 100;
     const opex = kwp * e.opexKwp * indexiert;
     const pacht = flaecheHa * e.pachtHa * Math.pow(1 + PACHT.indexierung, t - 1);
     const rueckbau = (kwp * FREIFLAECHE.rueckbauProKwp) / e.laufzeit;
     const kosten = opex + pacht + rueckbau;
-    betrieb.push({ jahr: t, erzeugung, preisCt, marktCt, imVertrag, erloes, opex, pacht, rueckbau, kosten, ebitda: erloes - kosten });
+    betrieb.push({ jahr: t, erzeugung, preisCt, preisEffCt, marktCt, imVertrag, vergueteterAnteil, erloes, opex, pacht, rueckbau, kosten, ebitda: erloes - kosten });
   }
 
   // Fremdkapital: gewünschte Quote, ggf. begrenzt durch die Mindest-DSCR
@@ -167,6 +180,7 @@ export function rechneSolarpark(eingabe = {}) {
 
   return {
     eingabe: e,
+    sperre: laenderSperre(region.land),
     kwp,
     region,
     bauart,
@@ -223,7 +237,9 @@ export function selbsttest() {
     if (!ok) fehler.push(text);
   };
 
-  const r = rechneSolarpark({ mwp: 10, regionId: "de-sued", bauart: "sued", capexKwp: 530, modell: "eeg", preisCt: 5, vertragJahre: 20 });
+  // Grundfall ohne § 51-Abschlag (negativAnteil 0), damit die Plausibilitätsgrenzen die Mechanik prüfen;
+  // der Abschlag wird unten eigens geprüft.
+  const r = rechneSolarpark({ mwp: 10, regionId: "de-sued", bauart: "sued", capexKwp: 530, modell: "eeg", preisCt: 5, vertragJahre: 20, negativAnteil: 0 });
   pruefe(r.kwp === 10000, "10 MWp = 10.000 kWp");
   pruefe(Math.abs(r.ertragJahr1 - 11_000_000) < 1, "Ertrag Jahr 1: 10.000 kWp × 1.100 kWh/kWp = 11 GWh");
   pruefe(r.lcoeCt > 4.5 && r.lcoeCt < 6.5, `LCOE plausibel 4,5–6,5 ct (ist ${r.lcoeCt.toFixed(2)})`);
@@ -234,28 +250,42 @@ export function selbsttest() {
   pruefe(r.jahre[r.eingabe.tilgungJahre].schuldendienst === 0, "nach Tilgung kein Schuldendienst");
   pruefe(Math.abs(r.fk + r.ek - r.investition.summe) < 1, "FK + EK = Investition");
 
-  const teurer = rechneSolarpark({ mwp: 10, capexKwp: 600, preisCt: 5 });
+  // § 51 EEG: Anteil in negativen Zeiträumen ohne Vergütung – nur EEG-Förderphase
+  const p51 = rechneSolarpark({ mwp: 10, regionId: "de-sued", bauart: "sued", capexKwp: 530, modell: "eeg", preisCt: 5, vertragJahre: 20, negativAnteil: 0.2, merchantSteigerung: 0 });
+  const o51 = rechneSolarpark({ mwp: 10, regionId: "de-sued", bauart: "sued", capexKwp: 530, modell: "eeg", preisCt: 5, vertragJahre: 20, negativAnteil: 0, merchantSteigerung: 0 });
+  // AW 5 ct, Marktwert 4 ct: verloren geht nur die Prämie (1 ct) auf 20 % → 4,8 ct statt 5 ct
+  pruefe(Math.abs(p51.jahre[0].erloes - o51.jahre[0].erloes * (4.8 / 5)) < 1, "§ 51: 20 % negativ → Erlös = AW − 0,2 × (AW − Marktwert)");
+  const hochMarkt = rechneSolarpark({ negativAnteil: 0.2, preisCt: 4, merchantCt: 6, merchantSteigerung: 0 });
+  pruefe(Math.abs(hochMarkt.jahre[0].preisEffCt - 6) < 1e-9, "§ 51: Marktwert über AW → kein Abzug");
+  pruefe(Math.abs(p51.jahre[25].erloes - o51.jahre[25].erloes) < 1e-6, "§ 51: nach Förderende kein Abzug");
+  pruefe(p51.projektIrr < o51.projektIrr, "§ 51 senkt die Rendite");
+  const ppa51 = rechneSolarpark({ mwp: 10, modell: "ppa", preisCt: 5, vertragJahre: 10, negativAnteil: 0.2 });
+  pruefe(ppa51.jahre[0].vergueteterAnteil === 1, "§ 51 wirkt nicht auf das PPA-Modell");
+  pruefe(rechneSolarpark().eingabe.negativAnteil > 0, "Standard rechnet mit § 51-Abschlag");
+  pruefe(rechneSolarpark({ regionId: "at" }).sperre?.land === "AT" && rechneSolarpark().sperre === null, "Länder-Sperre: AT gesperrt, DE frei");
+
+  const teurer = rechneSolarpark({ negativAnteil: 0, mwp: 10, capexKwp: 600, preisCt: 5 });
   pruefe(teurer.projektIrr < r.projektIrr, "höhere Capex senken den IRR");
-  const besser = rechneSolarpark({ mwp: 10, capexKwp: 530, preisCt: 6 });
+  const besser = rechneSolarpark({ negativAnteil: 0, mwp: 10, capexKwp: 530, preisCt: 6 });
   pruefe(besser.projektIrr > r.projektIrr, "höherer Preis erhöht den IRR");
   pruefe(Math.abs(besser.lcoeCt - r.lcoeCt) < 1e-9, "LCOE unabhängig vom Erlös");
   pruefe(r.dscrMin >= r.eingabe.dscrZiel - 1e-6, "Darlehen auf Mindest-DSCR begrenzt");
-  const frei = rechneSolarpark({ mwp: 10, capexKwp: 530, preisCt: 5, dscrBegrenzen: false });
+  const frei = rechneSolarpark({ negativAnteil: 0, mwp: 10, capexKwp: 530, preisCt: 5, dscrBegrenzen: false });
   pruefe(Math.abs(frei.fkQuoteEff - 0.75) < 1e-9, "ohne Begrenzung gilt die gewünschte FK-Quote");
-  const eegBoden = rechneSolarpark({ mwp: 10, preisCt: 3, merchantCt: 5, merchantSteigerung: 0 });
+  const eegBoden = rechneSolarpark({ negativAnteil: 0, mwp: 10, preisCt: 3, merchantCt: 5, merchantSteigerung: 0 });
   pruefe(Math.abs(eegBoden.jahre[0].preisCt - 5) < 1e-9, "EEG wirkt als Untergrenze: höherer Marktwert bleibt");
-  const ppaFest = rechneSolarpark({ mwp: 10, modell: "ppa", preisCt: 3, vertragJahre: 10, merchantCt: 5, merchantSteigerung: 0 });
+  const ppaFest = rechneSolarpark({ negativAnteil: 0, mwp: 10, modell: "ppa", preisCt: 3, vertragJahre: 10, merchantCt: 5, merchantSteigerung: 0 });
   pruefe(Math.abs(ppaFest.jahre[0].preisCt - 3) < 1e-9 && Math.abs(ppaFest.jahre[10].preisCt - 5) < 1e-9, "PPA fest, danach Marktwert");
 
-  const ohneFk = rechneSolarpark({ mwp: 10, capexKwp: 530, preisCt: 5, fkQuote: 0 });
+  const ohneFk = rechneSolarpark({ negativAnteil: 0, mwp: 10, capexKwp: 530, preisCt: 5, fkQuote: 0 });
   pruefe(Math.abs(ohneFk.ekIrr - ohneFk.projektIrr) < 1e-4, "ohne Fremdkapital: EK-IRR = Projekt-IRR");
   pruefe(ohneFk.dscrMin == null, "ohne Fremdkapital kein DSCR");
 
-  const lcoePreis = rechneSolarpark({ mwp: 10, capexKwp: 530, preisCt: 5, modell: "ppa", vertragJahre: 30 });
-  const lcoeFall = rechneSolarpark({ mwp: 10, capexKwp: 530, modell: "ppa", preisCt: lcoePreis.lcoeCt, vertragJahre: 30 });
+  const lcoePreis = rechneSolarpark({ negativAnteil: 0, mwp: 10, capexKwp: 530, preisCt: 5, modell: "ppa", vertragJahre: 30 });
+  const lcoeFall = rechneSolarpark({ negativAnteil: 0, mwp: 10, capexKwp: 530, modell: "ppa", preisCt: lcoePreis.lcoeCt, vertragJahre: 30 });
   pruefe(Math.abs(lcoeFall.projektIrr - lcoeFall.wacc) < 0.001, "Preis = LCOE über die ganze Laufzeit → Projekt-IRR = WACC");
 
-  const m = sensitivitaet({ mwp: 10, capexKwp: 530, preisCt: 5 });
+  const m = sensitivitaet({ negativAnteil: 0, mwp: 10, capexKwp: 530, preisCt: 5 });
   pruefe(m.length === 5 && m[0].zellen.length === 5, "Sensitivitätsmatrix 5 × 5");
   pruefe(m[0].zellen[4].projektIrr > m[4].zellen[0].projektIrr, "günstig + teurer Strom schlägt teuer + billiger Strom");
 

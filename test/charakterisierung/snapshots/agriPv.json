@@ -43,6 +43,7 @@
    },
    "laufzeit": 30,
    "pachtJahr0": 12000,
+   "sperre": null,
    "system": "vertikal",
    "systemGewechselt": false,
    "wege": [
@@ -57,26 +58,26 @@
      "risiko": "gering"
     },
     {
-     "amortisation": 22.0598379809,
-     "energieJahr": 141102.564103,
-     "energieSumme": 875320.10894,
-     "erloesJahr": 182769.230769,
-     "gesamtSumme": 1107121.46638,
+     "amortisation": 22.6738981199,
+     "energieJahr": 133974.564103,
+     "energieSumme": 807212.70636,
+     "erloesJahr": 175641.230769,
+     "gesamtSumme": 1039014.0638,
      "id": "eigen",
      "invest": 2750000,
-     "irr": 0.0198978720086,
+     "irr": 0.0182334222403,
      "opexJahr": 38461.5384615,
      "risiko": "höher"
     },
     {
-     "amortisation": 25.3778589035,
+     "amortisation": 26.1108786935,
      "anteil": 0.2,
-     "energieJahr": 37820.5128205,
-     "energieSumme": 535435.362902,
-     "gesamtSumme": 767236.720337,
+     "energieJahr": 36394.9128205,
+     "energieSumme": 521813.882386,
+     "gesamtSumme": 753615.239822,
      "id": "genossenschaft",
      "invest": 550000,
-     "irr": 0.0102250090638,
+     "irr": 0.00853121502041,
      "risiko": "mittel"
     }
    ]
@@ -122,6 +123,7 @@
    },
    "laufzeit": 30,
    "pachtJahr0": 12000,
+   "sperre": null,
    "system": "hoch",
    "systemGewechselt": false,
    "wege": [
@@ -136,26 +138,26 @@
      "risiko": "gering"
     },
     {
-     "amortisation": 28.5685238652,
-     "energieJahr": 278447.916667,
-     "energieSumme": 278114.864157,
-     "erloesJahr": 346156.25,
-     "gesamtSumme": 501470.018285,
+     "amortisation": 29.9349724456,
+     "energieJahr": 258579.854167,
+     "energieSumme": 12627.2896676,
+     "erloesJahr": 326288.1875,
+     "gesamtSumme": 235982.443796,
      "id": "eigen",
      "invest": 6718750,
-     "irr": 0.00283812835095,
+     "irr": 0.000128313981129,
      "opexJahr": 62500,
      "risiko": "höher"
     },
     {
      "amortisation": null,
      "anteil": 0.2,
-     "energieJahr": 65289.5833333,
-     "energieSumme": 415994.313946,
-     "gesamtSumme": 639349.468074,
+     "energieJahr": 61315.9708333,
+     "energieSumme": 362896.799048,
+     "gesamtSumme": 586251.953176,
      "id": "genossenschaft",
      "invest": 1343750,
-     "irr": -0.00181168378325,
+     "irr": -0.00458387211924,
      "risiko": "mittel"
     }
    ]
@@ -201,6 +203,7 @@
    },
    "laufzeit": 30,
    "pachtJahr0": 12000,
+   "sperre": null,
    "system": "vertikal",
    "systemGewechselt": false,
    "wege": [
@@ -280,6 +283,7 @@
    },
    "laufzeit": 30,
    "pachtJahr0": 36000,
+   "sperre": null,
    "system": "hoch",
    "systemGewechselt": false,
    "wege": [
@@ -294,26 +298,26 @@
      "risiko": "gering"
     },
     {
-     "amortisation": 28.5685238652,
-     "energieJahr": 835343.75,
-     "energieSumme": 834344.592472,
-     "erloesJahr": 1038468.75,
-     "gesamtSumme": 4818137.15245,
+     "amortisation": 29.9349724456,
+     "energieJahr": 775739.5625,
+     "energieSumme": 37881.8690027,
+     "erloesJahr": 978864.5625,
+     "gesamtSumme": 4021674.42898,
      "id": "eigen",
      "invest": 20156250,
-     "irr": 0.00283812835094,
+     "irr": 0.000128313981124,
      "opexJahr": 187500,
      "risiko": "höher"
     },
     {
      "amortisation": null,
      "anteil": 0.2,
-     "energieJahr": 195868.75,
-     "energieSumme": 1247982.94184,
-     "gesamtSumme": 5231775.50181,
+     "energieJahr": 183947.9125,
+     "energieSumme": 1088690.39714,
+     "gesamtSumme": 5072482.95712,
      "id": "genossenschaft",
      "invest": 4031250,
-     "irr": -0.00181168378325,
+     "irr": -0.00458387211924,
      "risiko": "mittel"
     }
    ]
@@ -359,6 +363,7 @@
    },
    "laufzeit": 30,
    "pachtJahr0": 12000,
+   "sperre": null,
    "system": "vertikal",
    "systemGewechselt": false,
    "wege": [
@@ -373,14 +378,14 @@
      "risiko": "gering"
     },
     {
-     "amortisation": 22.0598379809,
-     "energieJahr": 141102.564103,
-     "energieSumme": 875320.10894,
-     "erloesJahr": 182769.230769,
-     "gesamtSumme": 1044244.17509,
+     "amortisation": 22.6738981199,
+     "energieJahr": 133974.564103,
+     "energieSumme": 807212.70636,
+     "erloesJahr": 175641.230769,
+     "gesamtSumme": 976136.772508,
      "id": "eigen",
      "invest": 2750000,
-     "irr": 0.0198978720086,
+     "irr": 0.0182334222403,
      "opexJahr": 38461.5384615,
      "risiko": "höher"
     },
@@ -438,6 +443,7 @@
    },
    "laufzeit": 30,
    "pachtJahr0": 1200,
+   "sperre": null,
    "system": "vertikal",
    "systemGewechselt": false,
    "wege": [
@@ -452,26 +458,26 @@
      "risiko": "gering"
     },
     {
-     "amortisation": 22.0598379809,
-     "energieJahr": 14110.2564103,
-     "energieSumme": 87532.010894,
-     "erloesJahr": 18276.9230769,
-     "gesamtSumme": 110712.146638,
+     "amortisation": 22.6738981199,
+     "energieJahr": 13397.4564103,
+     "energieSumme": 80721.270636,
+     "erloesJahr": 17564.1230769,
+     "gesamtSumme": 103901.40638,
      "id": "eigen",
      "invest": 275000,
-     "irr": 0.0198978720086,
+     "irr": 0.0182334222403,
      "opexJahr": 3846.15384615,
      "risiko": "höher"
     },
     {
-     "amortisation": 25.3778589035,
+     "amortisation": 26.1108786935,
      "anteil": 0.2,
-     "energieJahr": 3782.05128205,
-     "energieSumme": 53543.5362902,
-     "gesamtSumme": 76723.6720337,
+     "energieJahr": 3639.49128205,
+     "energieSumme": 52181.3882386,
+     "gesamtSumme": 75361.5239822,
      "id": "genossenschaft",
      "invest": 55000,
-     "irr": 0.010225009064,
+     "irr": 0.00853121502041,
      "risiko": "mittel"
     }
    ]
@@ -512,11 +518,16 @@
     "dbJahr": 4050,
     "dbOhneAnlage": 4500,
     "ertragLw": 0.9,
-    "gapJahr": 2125,
-    "summe": 231801.357435
+    "gapJahr": 0,
+    "summe": 152031.659533
    },
    "laufzeit": 30,
    "pachtJahr0": 12000,
+   "sperre": {
+    "land": "AT",
+    "text": "Für Österreich zeigen wir hier noch keine Euro-, Förder- oder Pachtwerte: Die Rechner nutzen bisher deutsche Annahmen (EEG, Pacht, GAP, Strompreis). Die Länderlogik wird gerade fachlich geprüft. Gern rechnen wir Ihr Vorhaben persönlich durch.",
+    "titel": "Rechenlogik für Österreich in Vorbereitung"
+   },
    "system": "vertikal",
    "systemGewechselt": false,
    "wege": [
@@ -524,7 +535,7 @@
      "amortisation": null,
      "energieJahr": 12000,
      "energieSumme": 450464.176393,
-     "gesamtSumme": 682265.533828,
+     "gesamtSumme": 602495.835925,
      "id": "pacht",
      "invest": 0,
      "irr": null,
@@ -535,7 +546,7 @@
      "energieJahr": 132794.871795,
      "energieSumme": 747367.97345,
      "erloesJahr": 174461.538462,
-     "gesamtSumme": 979169.330886,
+     "gesamtSumme": 899399.632983,
      "id": "eigen",
      "invest": 2750000,
      "irr": 0.0168051681372,
@@ -547,7 +558,7 @@
      "anteil": 0.2,
      "energieJahr": 36158.974359,
      "energieSumme": 509844.935804,
-     "gesamtSumme": 741646.29324,
+     "gesamtSumme": 661876.595337,
      "id": "genossenschaft",
      "invest": 550000,
      "irr": 0.00706359922299,
@@ -558,10 +569,10 @@
   "ch_10ha": {
    "anlage": {
     "capex": 2750000,
-    "kwh": 3634615.38462,
+    "kwh": 3911538.46154,
     "kwp": 3846.15384615,
     "region": {
-     "ertrag": 1050,
+     "ertrag": 1130,
      "id": "ch",
      "label": "Schweiz",
      "land": "CH",
@@ -596,6 +607,11 @@
    },
    "laufzeit": 30,
    "pachtJahr0": 12000,
+   "sperre": {
+    "land": "CH",
+    "text": "Für die Schweiz zeigen wir hier noch keine Euro-, Förder- oder Pachtwerte: Die Rechner nutzen bisher deutsche Annahmen (EEG, Pacht, GAP, Strompreis). Die Länderlogik wird gerade fachlich geprüft. Gern rechnen wir Ihr Vorhaben persönlich durch.",
+    "titel": "Rechenlogik für die Schweiz in Vorbereitung"
+   },
    "system": "vertikal",
    "systemGewechselt": false,
    "wege": [
@@ -610,26 +626,26 @@
      "risiko": "gering"
     },
     {
-     "amortisation": 25.8186908576,
-     "energieJahr": 121891.025641,
-     "energieSumme": 425253.438559,
-     "erloesJahr": 163557.692308,
-     "gesamtSumme": 577285.098091,
+     "amortisation": 23.1003861215,
+     "energieJahr": 134352.564103,
+     "energieSumme": 793384.335578,
+     "erloesJahr": 176019.230769,
+     "gesamtSumme": 945415.99511,
      "id": "eigen",
      "invest": 2750000,
-     "irr": 0.00987820528468,
+     "irr": 0.017762054345,
      "opexJahr": 38461.5384615,
      "risiko": "höher"
     },
     {
-     "amortisation": null,
+     "amortisation": 26.4483426066,
      "anteil": 0.2,
-     "energieJahr": 33978.2051282,
-     "energieSumme": 445422.028826,
-     "gesamtSumme": 597453.688358,
+     "energieJahr": 36470.5128205,
+     "energieSumme": 519048.20823,
+     "gesamtSumme": 671079.867762,
      "id": "genossenschaft",
      "invest": 550000,
-     "irr": -0.000623574157203,
+     "irr": 0.00811619516764,
      "risiko": "mittel"
     }
    ]

@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { ArrowUpRight, ChevronDown, Info } from "lucide-react";
-import PageHero from "@/components/ui/PageHero";
+import RechnerKopf from "./RechnerKopf";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Faq from "@/components/ui/Faq";
 import CtaBand from "@/components/ui/CtaBand";
 import Reveal from "@/components/ui/Reveal";
-import Querverweise from "@/components/Reusable/Querverweise";
 import { TOOLS } from "./tools";
 import { STAND } from "@/lib/rechner/annahmen";
+import { STAND_RECHENLOGIK } from "@/lib/invest/markt";
+import JsonLd from "@/components/JsonLd";
 import "./rechner.css";
 
 import { SITE } from "@/data/site";
@@ -26,11 +27,12 @@ export function rechnerMetadata({ pfad, title, description, keywords = [] }) {
     robots: { index: true, follow: true },
     openGraph: {
       type: "website",
+      locale: "de_DE",
       url,
       siteName: "ÖkoInvest",
       title,
       description,
-      images: [{ url: `${BASE}/img/solarpark-himmel.jpg`, width: 1280, height: 852, alt: title }],
+      images: [{ url: `${BASE}/img/solarpark-himmel.jpg`, width: 1280, height: 852, alt: "Solarpark unter blauem Himmel" }],
     },
     twitter: { card: "summary_large_image", title, description, images: [`${BASE}/img/solarpark-himmel.jpg`] },
   };
@@ -75,7 +77,6 @@ export default function RechnerSeite({
         inLanguage: "de-DE",
         isAccessibleForFree: true,
         featureList: app.featureList,
-        offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
         publisher: { "@id": `${BASE}/#organization` },
       },
       {
@@ -85,7 +86,8 @@ export default function RechnerSeite({
         name: app.name,
         isPartOf: { "@id": `${BASE}/#website` },
         about: { "@id": `${BASE}/#organization` },
-        dateModified: new Date().toISOString().split("T")[0],
+        // Stand der Rechenlogik statt Build-/Abrufdatum (Paket E): ändert sich nur bei echter Änderung an markt.js/Rechnern
+        dateModified: STAND_RECHENLOGIK,
         mainEntity: { "@id": `${url}/#app` },
       },
     ],
@@ -93,7 +95,7 @@ export default function RechnerSeite({
 
   return (
     <div className="ov-rechnerseite">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <JsonLd daten={schema} />
 
       {/* Kopf nur für Druck/PDF */}
       <div className="ov-druck-ein mb-6 hidden px-1">
@@ -104,26 +106,24 @@ export default function RechnerSeite({
       </div>
 
       <div className="ov-druck-aus">
-      <PageHero
-        variant="dark"
-        breadcrumbs={[{ name: "Rechner & Tools", href: "/rechner" }, { name: breadcrumb }]}
-        eyebrow={eyebrow}
-        title={title}
-        lead={lead}
-        points={chips}
-        className="[&>div.ov-container]:pb-28 md:[&>div.ov-container]:pb-36"
-      />
+      <RechnerKopf toolId={toolId} breadcrumb={breadcrumb} eyebrow={eyebrow} title={title} lead={lead} chips={chips} app={app} />
       </div>
 
       {/* Rechner überlappt den Hero – sofort sichtbar */}
-      <section aria-label="Rechner" className="relative z-10 -mt-20 pb-6 md:-mt-28 md:pb-10 print:mt-0">
+      <section id="rechner" aria-label="Rechner" className="relative z-10 -mt-20 scroll-mt-24 pb-6 md:-mt-28 md:pb-10 print:mt-0">
         <div className="ov-container">{rechner}</div>
       </section>
 
       <Section tone="white" space="md">
-        <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
-          <div className="ov-druck-aus">{erklaerung}</div>
-          <Reveal>
+        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-16 xl:gap-24">
+          <div className="ov-druck-aus min-w-0">
+            <p className="mb-5 flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.18em] text-ov-700">
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-ov-500" />
+              Methodik
+            </p>
+            <div className="ov-rechner-methodik max-w-[42rem]">{erklaerung}</div>
+          </div>
+          <Reveal className="min-w-0 lg:sticky lg:top-28">
             <AnnahmenBox punkte={annahmen} quellen={quellen} />
           </Reveal>
         </div>
@@ -143,8 +143,7 @@ export default function RechnerSeite({
         </Section>
       )}
 
-      <WeitereRechner ohne={toolId} />
-      <Querverweise items={querverweise} />
+      <WeitereRechner ohne={toolId} verweise={querverweise} />
       <CtaBand {...cta} />
       </div>
     </div>
@@ -216,38 +215,108 @@ export function AnnahmenBox({ punkte = [], quellen = [] }) {
   );
 }
 
-export function WeitereRechner({ ohne, titel = "Weitere Rechner & Tools" }) {
-  const liste = TOOLS.filter((t) => t.id !== ohne).slice(0, 6);
+const TAG_TON = {
+  Neu: "bg-ov-100 text-ov-800",
+  Profi: "bg-sun-100 text-sun-700",
+  Beliebt: "bg-navy-50 text-navy-700",
+};
+
+function passendeTools(ohne, anzahl, ausser = []) {
+  const aktuell = TOOLS.find((t) => t.id === ohne);
+  const andere = TOOLS.filter((t) => t.id !== ohne && !ausser.includes(t.href));
+  const sortiert = aktuell ? [...andere.filter((t) => t.zielgruppe === aktuell.zielgruppe), ...andere.filter((t) => t.zielgruppe !== aktuell.zielgruppe)] : andere;
+  return sortiert.slice(0, anzahl);
+}
+
+function ToolKachel({ t }) {
+  const Icon = t.icon;
+  const tag = (klasse) => t.tag && <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${TAG_TON[t.tag] || "bg-ink-100 text-ink-700"} ${klasse}`}>{t.tag}</span>;
+  return (
+    <Link
+      href={t.href}
+      className="group ov-lift flex w-full gap-4 rounded-3xl bg-gradient-to-br from-sand-50 to-white p-5 ring-1 ring-ink-200/70 transition-colors hover:ring-ov-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500 sm:flex-col sm:gap-0 md:p-6"
+    >
+      <span className="flex shrink-0 items-start justify-between gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-ov-600 shadow-e2 ring-1 ring-ink-200/70 transition-colors duration-200 group-hover:bg-ov-600 group-hover:text-white group-hover:ring-ov-600">
+          <Icon aria-hidden="true" className="h-5 w-5" />
+        </span>
+        {tag("max-sm:hidden")}
+      </span>
+      <span className="min-w-0 flex-1 sm:mt-4 sm:flex sm:flex-col">
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="font-display text-[17px] font-bold leading-snug text-ink-900">{t.titel}</span>
+          {tag("sm:hidden !py-0.5")}
+        </span>
+        <span className="mt-1 block text-[14px] leading-relaxed text-ink-600">{t.kurz}</span>
+        <span className="mt-auto hidden items-center gap-1.5 pt-4 text-[14px] font-semibold text-ov-700 sm:inline-flex">
+          Öffnen
+          <ArrowUpRight aria-hidden="true" className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none" />
+        </span>
+      </span>
+      <ArrowUpRight aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-ink-400 sm:hidden" />
+    </Link>
+  );
+}
+
+/**
+ * Weitere Rechner – Werkzeuge derselben Zielgruppe zuerst. Mit `verweise`
+ * (Querverweise der Seite: [{ href, titel, text }]) steht daneben eine
+ * dunkle Spalte „Mehr zum Thema“. Signatur rückwärtskompatibel ({ ohne, titel }).
+ */
+export function WeitereRechner({ ohne, titel = "Weitere Rechner & Tools", verweise = [] }) {
+  const mitVerweisen = verweise.length > 0;
+  const liste = passendeTools(ohne, mitVerweisen ? 4 : 6, verweise.map((v) => v.href));
   return (
     <section aria-labelledby="weitere-rechner" className="bg-white">
-      <div className="ov-container pt-16 md:pt-24">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-ink-200 pb-6">
-          <h2 id="weitere-rechner" className="ov-h3 text-ink-900 md:text-[28px]">{titel}</h2>
-          <Link href="/rechner" className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-ov-700 hover:text-ov-800">
-            Alle Tools <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
+      <div className="ov-container pb-4 pt-16 md:pt-24">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4 md:mb-10">
+          <div>
+            <p className="mb-3 flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.18em] text-ov-700">
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-ov-500" />
+              Weiterrechnen
+            </p>
+            <h2 id="weitere-rechner" className="ov-h3 text-ink-900 md:text-[28px]">{titel}</h2>
+          </div>
+          <Link
+            href="/rechner"
+            className="group inline-flex min-h-11 items-center gap-1.5 rounded-full px-1 text-[15px] font-semibold text-ov-700 hover:text-ov-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500"
+          >
+            Alle {TOOLS.length} Tools
+            <ArrowUpRight aria-hidden="true" className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none" />
           </Link>
         </div>
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {liste.map((t, i) => {
-            const Icon = t.icon;
-            return (
-              <Reveal as="li" key={t.id} delay={i * 60} className="flex">
-                <Link
-                  href={t.href}
-                  className="group ov-lift flex w-full items-start gap-4 rounded-3xl bg-sand-50 p-5 ring-1 ring-ink-200/60 transition-colors hover:bg-white hover:ring-ov-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500"
-                >
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-ov-600 ring-1 ring-ink-200 transition-colors group-hover:bg-ov-500 group-hover:text-white group-hover:ring-ov-500">
-                    <Icon aria-hidden="true" className="h-5 w-5" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block font-display text-[17px] font-bold leading-snug text-ink-900">{t.titel}</span>
-                    <span className="mt-1 block text-[14px] leading-relaxed text-ink-600">{t.kurz}</span>
-                  </span>
-                </Link>
+        <div className={mitVerweisen ? "grid gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] lg:gap-5" : undefined}>
+          <ul className={`grid gap-3 sm:grid-cols-2 lg:gap-4 ${mitVerweisen ? "lg:h-full lg:auto-rows-fr" : "lg:grid-cols-3"}`}>
+            {liste.map((t, i) => (
+              <Reveal as="li" key={t.id} delay={i * 50} className="flex">
+                <ToolKachel t={t} />
               </Reveal>
-            );
-          })}
-        </ul>
+            ))}
+          </ul>
+          {mitVerweisen && (
+            <Reveal delay={120} className="min-w-0">
+              <nav aria-labelledby="mehr-zum-thema" className="ov-verlauf-nacht ov-noise relative h-full overflow-hidden rounded-3xl p-6 text-white shadow-kante md:p-7">
+                <h3 id="mehr-zum-thema" className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-ov-300">Mehr zum Thema</h3>
+                <ul className="mt-4 divide-y divide-white/10">
+                  {verweise.map((v) => (
+                    <li key={v.href}>
+                      <Link
+                        href={v.href}
+                        className="group flex items-start justify-between gap-4 rounded-xl py-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300"
+                      >
+                        <span className="min-w-0">
+                          <span className="block font-display text-[16px] font-bold leading-snug text-white transition-colors group-hover:text-ov-200">{v.titel}</span>
+                          {v.text && <span className="mt-1 block text-[13.5px] leading-relaxed text-white/65">{v.text}</span>}
+                        </span>
+                        <ArrowUpRight aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-ov-300 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            </Reveal>
+          )}
+        </div>
       </div>
     </section>
   );

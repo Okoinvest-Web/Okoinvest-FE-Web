@@ -1,5 +1,6 @@
 "use client";
 
+import { SperrEingaben } from "./LaenderSperre";
 import { AlertTriangle, BatteryCharging, CalendarClock, Cable, Coins, Lightbulb, Network, Percent, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
@@ -30,10 +31,19 @@ export default function NetzanschlussRechner() {
   const r = useMemo(() => rechneNetzanschluss(e), [e]);
   const u = r.ueberbauung;
 
+  // Länder-Sperre (Paket E): für AT/CH nur die Regionswahl und der Hinweis aus markt.js
+  const sperre = r.sperre;
+  const regionWahl = (
+    <Auswahl legende="Land" wert={e.land} onChange={set("land")} optionen={LAENDER} />
+  );
+
   return (
     <RechnerRahmen
       mitlaufend
-      eingaben={
+      sperre={sperre}
+      eingaben={sperre ? (
+        <SperrEingaben>{regionWahl}</SperrEingaben>
+      ) : (
         <>
           <MobilKurz
             werte={[
@@ -44,7 +54,7 @@ export default function NetzanschlussRechner() {
           />
           <div className="space-y-8">
             <Gruppe titel="Anlage">
-              <Auswahl legende="Land" wert={e.land} onChange={set("land")} optionen={LAENDER} />
+              {regionWahl}
               <Regler label="Anlagengröße" wert={e.mwp} min={1} max={150} step={1} einheit="MWp" onChange={set("mwp")} />
               <Regler
                 label="Anschlussleistung (Überbauung)"
@@ -73,7 +83,7 @@ export default function NetzanschlussRechner() {
             </Gruppe>
           </div>
         </>
-      }
+      )}
       ergebnis={
         <>
           <p className="sr-only" aria-live="polite">{`Netzanschluss grob ${geld(r.spanne.min)} bis ${geld(r.spanne.max)}, Zeitrahmen ${r.monate[0]} bis ${r.monate[1]} Monate.`}</p>

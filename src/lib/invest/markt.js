@@ -17,6 +17,27 @@
 
 export const STAND = "September 2026";
 
+/**
+ * Datum der letzten fachlich geprüften Änderung an der Rechenlogik (markt.js und
+ * src/lib/rechner/*), ISO-Format. Quelle für `dateModified` der Rechnerseiten
+ * (RechnerSeite.js) – NUR ändern, wenn sich Werte oder Rechenwege wirklich ändern.
+ * Welle 1, Paket E (Zahlen-Sofortkorrektur): 03.10.2026.
+ */
+export const STAND_RECHENLOGIK = "2026-10-03";
+
+/**
+ * Länder-Sperre (Masterplan S1, „Länder-Sperre bis B1“): Für Österreich und die
+ * Schweiz rechnen die öffentlichen Rechner noch mit deutscher Förder-, Pacht-,
+ * GAP- und Strompreislogik. Bis die Länderlogik fachlich geprüft ist, zeigen die
+ * Rechner für diese Länder keine €-Pacht-, EEG-, GAP- oder DE-Strompreiswerte,
+ * sondern den Hinweis unten. Erträge (kWh) bleiben sichtbar.
+ */
+export const LAENDER_SPERRE = {
+  gesperrt: ["AT", "CH"],
+  name: { AT: "Österreich", CH: "die Schweiz" },
+  titel: { AT: "Rechenlogik für Österreich in Vorbereitung", CH: "Rechenlogik für die Schweiz in Vorbereitung" },
+};
+
 /* ------------------------------------------------------------------ */
 /* Regionen und spezifischer Ertrag                                    */
 /* ------------------------------------------------------------------ */
@@ -25,6 +46,16 @@ export const STAND = "September 2026";
  * Spezifischer Jahresertrag einer optimal ausgerichteten Freiflächenanlage
  * (Süd, fest aufgeständert, monofazial) in kWh/kWp im ersten Jahr.
  * Grundlage: PVGIS-Einstrahlung, Performance Ratio ~0,85.
+ *
+ * Prüfung Paket E (03.10.2026) gegen PVGIS 5.3 (EU JRC, API PVcalc, SARAH3,
+ * Systemverluste 14 %, optimaler Winkel), Mittel je Region aus 3–5 Standorten:
+ * de-nord ~1.000, de-ost ~1.078, de-west ~1.088, de-sued ~1.125, AT ~1.199,
+ * CH-Mittelland ~1.211 kWh/kWp (Bern 1.231, Zürich-Land 1.157, Payerne 1.255,
+ * St. Gallen-Rheintal 1.202). Die DE- und AT-Werte unten liegen bewusst 2–8 %
+ * darunter (Verfügbarkeit, Verschmutzung, Abregelung) und bleiben unverändert.
+ * CH lag mit 1.050 rund 13 % darunter und widersprach src/data/regionen/schweiz.js
+ * (1.230); korrigiert auf PVGIS-Mittel × mittleren Abschlag der übrigen Regionen
+ * (Ø 0,935) = 1.132 → 1.130. Für CH sind Geldwerte ohnehin gesperrt (LAENDER_SPERRE).
  */
 export const REGIONEN = [
   { id: "de-nord", land: "DE", label: "Norddeutschland", sub: "SH, HH, NI, HB, MV", ertrag: 960 },
@@ -32,15 +63,44 @@ export const REGIONEN = [
   { id: "de-west", land: "DE", label: "West- & Mitteldeutschland", sub: "NW, HE, RP, SL", ertrag: 1000 },
   { id: "de-sued", land: "DE", label: "Süddeutschland", sub: "BY, BW", ertrag: 1100 },
   { id: "at", land: "AT", label: "Österreich", sub: "Flach- und Hügelland", ertrag: 1120 },
-  { id: "ch", land: "CH", label: "Schweiz", sub: "Mittelland", ertrag: 1050 },
+  { id: "ch", land: "CH", label: "Schweiz", sub: "Mittelland", ertrag: 1130 },
 ];
+
+/** Land (DE/AT/CH) zu einer Regions-ID; unbekannte IDs zählen wie regionById als Süddeutschland */
+export const landVonRegion = (id) => (REGIONEN.find((r) => r.id === id) || REGIONEN[3]).land;
+
+/**
+ * Sperrhinweis für ein Land (siehe LAENDER_SPERRE) oder null, wenn gerechnet werden darf.
+ * Akzeptiert "AT"/"at" ebenso wie Regions-IDs ("at", "ch", "de-sued").
+ */
+export function laenderSperre(landOderRegion) {
+  const roh = String(landOderRegion || "DE");
+  const land = ["DE", "AT", "CH"].includes(roh.toUpperCase()) ? roh.toUpperCase() : landVonRegion(roh);
+  if (!LAENDER_SPERRE.gesperrt.includes(land)) return null;
+  return {
+    land,
+    titel: LAENDER_SPERRE.titel[land],
+    text: `Für ${LAENDER_SPERRE.name[land]} zeigen wir hier noch keine Euro-, Förder- oder Pachtwerte: Die Rechner nutzen bisher deutsche Annahmen (EEG, Pacht, GAP, Strompreis). Die Länderlogik wird gerade fachlich geprüft. Gern rechnen wir Ihr Vorhaben persönlich durch.`,
+  };
+}
 
 export const regionById = (id) => REGIONEN.find((r) => r.id === id) || REGIONEN[3];
 
-/** Mehrertrag/Minderertrag nach Anlagenbauart gegenüber fester Süd-Aufständerung */
+/**
+ * Mehrertrag/Minderertrag nach Anlagenbauart gegenüber fester Süd-Aufständerung
+ * (Bezug: REGIONEN = optimaler Winkel).
+ * ostWest: Paket E (03.10.2026) von 0,92 auf 0,84 korrigiert. Quelle PVGIS 5.3
+ * (EU JRC, API PVcalc, 14 % Verluste): Ost/West 12° je kWp gegenüber optimal
+ * ausgerichteter Süd-Anlage 0,81–0,84 an 23 Standorten DE/AT/CH, z. B. Straubing
+ * (945 + 952) / 2 / 1.131 = 0,839, Cottbus 0,814, Bern 0,827, Zürich 0,839.
+ * Der Wert-Vorteil von Ost/West (Erzeugung außerhalb der Mittagsspitze) ist hier
+ * NICHT eingerechnet. tracker 1,15: PVGIS (einachsig horizontal, ideal ohne
+ * Backtracking/Verschattung) 1,16–1,17 – unverändert, mit Verschattung eher
+ * darunter (zu prüfen). Übrige Faktoren unverändert, nicht neu geprüft.
+ */
 export const BAUART = {
   sued: { label: "Süd, fest", faktor: 1.0, haProMwp: 1.1 },
-  ostWest: { label: "Ost/West, fest", faktor: 0.92, haProMwp: 0.85 },
+  ostWest: { label: "Ost/West, fest", faktor: 0.84, haProMwp: 0.85 },
   tracker: { label: "Einachsig nachgeführt", faktor: 1.15, haProMwp: 1.5 },
   agriVertikal: { label: "Agri-PV vertikal, bifazial", faktor: 0.9, haProMwp: 2.6 },
   agriHoch: { label: "Agri-PV hoch aufgeständert", faktor: 0.95, haProMwp: 1.6 },
@@ -122,11 +182,61 @@ export const FREIFLAECHE = {
 /* Erlöse                                                              */
 /* ------------------------------------------------------------------ */
 
+/**
+ * EEG-Ausschreibungen Solar – EINE Quelle für alle Rechner, Texte und Ratgeber
+ * (ersetzt die getrennten Listen ERLOESE.zuschlagsHistorie / DACH.zuschlagsHistorie).
+ * ct = mengengewichteter durchschnittlicher Zuschlagswert, hoechstwertCt = zulässiger
+ * Höchstwert des Termins, ct/kWh. Quelle: Bundesnetzagentur, Beendete Ausschreibungen
+ * Solaranlagen erstes Segment (…/Solaranlagen1/BeendeteAusschreibungen/start.html) und
+ * zweites Segment (…/Solaranlagen2/BeendeteAusschreibungen/start.html), abgerufen
+ * 03.10.2026 (Paket E). Neue Termine hier anhängen (chronologisch).
+ */
+export const ZUSCHLAEGE = {
+  freiflaeche: [
+    { datum: "2025-03-01", termin: "1. März 2025", ct: 4.66, hoechstwertCt: 6.8 },
+    { datum: "2025-07-01", termin: "1. Juli 2025", ct: 4.84, hoechstwertCt: 6.8 },
+    { datum: "2025-12-01", termin: "1. Dezember 2025", ct: 5.0, hoechstwertCt: 6.8 },
+    { datum: "2026-03-01", termin: "1. März 2026", ct: 4.94, hoechstwertCt: 5.79 },
+    { datum: "2026-07-01", termin: "1. Juli 2026", ct: 4.79, hoechstwertCt: 5.9 },
+  ],
+  dach: [
+    { datum: "2025-02-01", termin: "1. Februar 2025", ct: 9.1, hoechstwertCt: 10.4 },
+    { datum: "2025-06-01", termin: "1. Juni 2025", ct: 9.22, hoechstwertCt: 10.4 },
+    { datum: "2025-10-01", termin: "1. Oktober 2025", ct: 9.66, hoechstwertCt: 10.4 },
+    { datum: "2026-02-01", termin: "1. Februar 2026", ct: 9.56, hoechstwertCt: 10.0 },
+    { datum: "2026-06-01", termin: "1. Juni 2026", ct: 9.72, hoechstwertCt: 10.0 },
+  ],
+  quelle: "Bundesnetzagentur, Ergebnisse der Ausschreibungen Solaranlagen (erstes und zweites Segment)",
+};
+
+/** Die letzten `n` Termine einer Liste aus ZUSCHLAEGE */
+export const letzteZuschlaege = (liste, n = 3) => liste.slice(-n);
+/** Termine eines Kalenderjahres aus einer Liste von ZUSCHLAEGE */
+const zuschlaegeJahr = (liste, jahr) => liste.filter((z) => z.datum.startsWith(String(jahr))).map(({ termin, ct }) => ({ termin, ct }));
+
+/**
+ * Anteil der Solarerzeugung in Stunden mit negativen Preisen 2025: 23,4 % (2024: 14,5 %), Bayerische
+ * Landesanstalt für Landwirtschaft (LfL), „Solar/Photovoltaik – Strommarkt in den Jahren 2025, 2024, 2023“,
+ * Erzeugung nach SMARD (lfl.bayern.de/iba/energie/372343, abgerufen 03.10.2026). Gleicher Wert wie im Ratgeber
+ * negative-strompreise-solarspitzengesetz.js. Grundlage des § 51-Abschlags (ERLOESE.paragraph51). Andere Auswertungen liegen darunter (pv magazine,
+ * 26.01.2026, ENTSO-E-Viertelstunden: 15,97 %) – der Wert ist eine Spanne, kein Naturgesetz.
+ */
+const NEGATIV_ANTEIL_SOLAR_2025 = 0.234;
+/**
+ * Bisheriger Wert 24,1 % mit Zuschreibung „dena/Pexapark“ – bleibt vorerst nur für STROM.ppa, weil
+ * src/app/rechner/ppa/page.js und PpaRechner.js ihn ausdrücklich dena/Pexapark zuschreiben. Am Original
+ * nicht geprüft (zu prüfen); nach Anpassung der Texte auf NEGATIV_ANTEIL_SOLAR_2025 umstellen.
+ */
+const NEGATIV_ANTEIL_SOLAR_2025_DENA = 0.241;
+
 export const ERLOESE = {
   /**
    * EEG-Ausschreibung Freifläche (erstes Segment): mengengewichtete
-   * durchschnittliche Zuschlagswerte lagen 2024/2025 grob zwischen 4,5 und
-   * 5,2 ct/kWh (Bundesnetzagentur). Anzulegender Wert gilt 20 Jahre.
+   * durchschnittliche Zuschlagswerte der letzten fünf Termine 4,66–5,00 ct/kWh
+   * (Bundesnetzagentur, siehe ZUSCHLAEGE.freiflaeche; zuletzt 01.07.2026: 4,79).
+   * Rechenwert 4,8 ct bleibt (Mittel der letzten drei Termine 4,91 – bewusst
+   * leicht darunter). Anzulegender Wert gilt 20 Jahre; in Viertelstunden mit
+   * negativem Spotpreis entfällt er (§ 51 EEG, siehe paragraph51 unten).
    */
   eegFreiflaecheCt: 4.8,
   /**
@@ -150,12 +260,31 @@ export const ERLOESE = {
    * wachsendem PV-Zubau die Mittagspreise sinken (Kannibalisierung).
    */
   merchantSteigerung: 0.01,
-  /** Gebotstermine 2025 (Bundesnetzagentur, erstes Segment, mengengewichteter Durchschnitt) */
-  zuschlagsHistorie: [
-    { termin: "1. März 2025", ct: 4.66 },
-    { termin: "1. Juli 2025", ct: 4.84 },
-    { termin: "1. Dezember 2025", ct: 5.0 },
-  ],
+  /**
+   * § 51 EEG (Fassung seit Solarspitzengesetz, gesetze-im-internet.de/eeg_2014/__51.html,
+   * abgerufen 03.10.2026): „Für Zeiträume, in denen der Spotmarktpreis negativ ist,
+   * verringert sich der anzulegende Wert auf null.“ § 51a EEG verlängert den
+   * Vergütungszeitraum um diese Viertelstunden (bei Solar mit Faktor 0,5,
+   * monatliche Kontingente) – das ist hier NICHT gerechnet (vorsichtig).
+   *  anteilNegativ  Anteil der Jahreserzeugung in Zeiträumen mit negativem Preis,
+   *                 für die im EEG-Modell keine Vergütung angesetzt wird. Standard =
+   *                 Anteil 2025 (23,4 %, LfL Bayern, siehe NEGATIV_ANTEIL_SOLAR_2025), im Rechner änderbar.
+   *                 Vereinfachung: In diesen Zeiträumen wird nichts erlöst (Abregelung).
+   */
+  paragraph51: { anteilNegativ: NEGATIV_ANTEIL_SOLAR_2025 },
+  /*
+   * Wirkung (Herleitung Paket E, siehe eegErloesCt): Die Marktprämie ist anzulegender Wert (AW) minus
+   * Marktwert Solar (MW, über ALLE Solarstunden inkl. der negativen). Wer in negativen Zeiträumen abregelt,
+   * erlöst in den übrigen Stunden den Börsenpreis (im Schnitt über MW) plus Prämie. Erlös je erzeugbarer kWh
+   * ≈ AW − Anteil × (AW − MW), solange AW > MW; liegt MW über AW, ändert § 51 nichts. Verloren geht also nur
+   * die Prämie auf den negativen Anteil, nicht der ganze AW.
+   */
+  /**
+   * @deprecated Termine 2025, abgeleitet aus ZUSCHLAEGE.freiflaeche – nur noch für Texte,
+   * die ausdrücklich „Gebotstermine 2025“ nennen (investoren/page.js, en/investors/page.js,
+   * rechner/solarpark/page.js). Neue Stellen nutzen ZUSCHLAEGE.freiflaeche.
+   */
+  zuschlagsHistorie: zuschlaegeJahr(ZUSCHLAEGE.freiflaeche, 2025),
   /** Fraunhofer ISE, Studie Stromgestehungskosten (Juli 2024): neue PV-Freiflächenanlagen in DE, ct/kWh */
   lcoeIseCt: { min: 4.1, max: 6.9 },
 };
@@ -228,15 +357,28 @@ export const FINANZIERUNG = {
 /* ------------------------------------------------------------------ */
 
 export const PACHT = {
-  /** Übliche Pacht für Freiflächen-PV in €/ha und Jahr (DACH, 2025/26) */
+  /**
+   * Übliche Pacht für Freiflächen-PV in €/ha und Jahr, Deutschland 2025/26 (eigene Markteinschätzung,
+   * keine Einzelquelle). Galt bisher für „DACH“ – für AT/CH gesperrt (LAENDER_SPERRE): Für Österreich
+   * nennt der Ratgeber solarpark-pacht-pro-hektar.js 3.000–5.000 €/ha (LK Steiermark 05/2022, historische
+   * Angebotsspanne), für die Schweiz gibt es keinen belegten CHF-Wert.
+   */
   freiflaecheProHa: { min: 1500, mittel: 2800, max: 4500 },
   /** Agri-PV: höhere Nutzung bleibt beim Landwirt, Pacht meist niedriger */
   /** Agri-PV: Bewirtschaftung bleibt beim Landwirt, Projekte sind knapp kalkuliert → Pacht deutlich unter Freifläche */
   agriProHa: { min: 600, mittel: 1200, max: 2000 },
   /** Alternativ: Umsatzbeteiligung in % der Stromerlöse */
   umsatzbeteiligung: { min: 0.04, max: 0.08 },
-  /** Durchschnittliche landwirtschaftliche Pacht Ackerland DE (Destatis, Landwirtschaftszählung) */
-  ackerProHa: 380,
+  /**
+   * Durchschnittliches Pachtentgelt Ackerland DE 2023: 407 €/ha (Dauergrünland 212 €/ha, alle
+   * Pachtflächen 357 €/ha). Quelle: Statistisches Bundesamt, Agrarstrukturerhebung 2023, wiedergegeben
+   * vom Bundesinformationszentrum Landwirtschaft (praxis-agrar.de/service/infografiken/pachtpreise,
+   * abgerufen 03.10.2026); Gesamtwert 357 €/ha bestätigt in Destatis-PM Nr. 153 vom 12.04.2024.
+   * Paket E: von 380 auf 407 korrigiert (380 war als Destatis-Wert ausgewiesen, aber nicht belegt).
+   */
+  ackerProHa: 407,
+  /** Dauergrünland DE 2023, €/ha (Quelle wie ackerProHa) */
+  gruenlandProHa: 212,
   /** Deckungsbeitrag Ackerbau €/ha und Jahr (Getreide, stark schwankend) */
   deckungsbeitragAcker: { min: 200, mittel: 450, max: 800 },
   /** Übliche Laufzeit in Jahren + Verlängerungsoptionen */
@@ -392,17 +534,30 @@ export const SPEICHER = {
 
 export const STROM = {
   /**
-   * Gewerblicher Strompreis Mittelstand DE (netto, ohne USt.), ct/kWh:
-   * Beschaffung/Vertrieb, Netzentgelte, Abgaben/Umlagen, Stromsteuer.
-   * Grobe Aufteilung für Neuverträge 2026 (BDEW-Strompreisanalyse, eigene Einschätzung).
+   * Gewerblicher Strompreis Mittelstand DE (netto, ohne USt.), ct/kWh, Neuverträge 2026,
+   * Verbrauch bis 1 GWh je Abnahmestelle, Mittelspannung, Stromsteuer zum Regelsatz.
+   * Paket E (03.10.2026), Quellen:
+   *  - BDEW-Strompreisanalyse August 2026, S. 40 „Strompreis-Bestandteile für Industrie“ (160 MWh–20 GWh/a,
+   *    MS): Beschaffung, Netzentgelt, Vertrieb zusammen 14,695 ct; KWKG 0,446; Offshore 0,941;
+   *    Konzessionsabgabe 0,110; Summe 17,175 ct (mit ermäßigter Stromsteuer 0,05 und § 19 im Mittel 0,933).
+   *  - Aufschlag für besondere Netznutzung (§ 19 StromNEV) 2026: 1,559 ct für die ersten 1.000.000 kWh,
+   *    darüber 0,050 ct (Veröffentlichung der Netzbetreiber, z. B. ENERVIE Vernetzt „Umlagen und Steuern
+   *    2026“; ÜNB-Veröffentlichung vom 24.10.2025; netztransparenz.de am 03.10.2026 nicht erreichbar).
+   *  - Stromsteuer Regelsatz 2,05 ct (§ 3 StromStG), produzierendes Gewerbe 0,05 ct (unten).
+   * Umlagen = 0,446 + 0,941 + 1,559 = 2,946 ct (bisher 1,8 – zu niedrig).
+   * Die Aufteilung der BDEW-Summe 14,695 auf Netz (5,5, eigene Einschätzung, unverändert) und
+   * Beschaffung & Vertrieb (Rest 9,195 → 9,2) ist eine Näherung; bisher 10,5 + 5,5 = 16,0 lag über BDEW.
+   * Gesamt 19,8 ct (bisher 19,96) = BDEW 14,695 + Umlagen bis 1 GWh 2,946 + KA 0,11 + Stromsteuer 2,05.
    */
   bestandteile: [
-    { id: "beschaffung", label: "Beschaffung & Vertrieb", ct: 10.5, beeinflussbar: true },
+    { id: "beschaffung", label: "Beschaffung & Vertrieb", ct: 9.2, beeinflussbar: true },
     { id: "netz", label: "Netzentgelte & Messung", ct: 5.5, beeinflussbar: false },
-    { id: "umlagen", label: "Umlagen (KWKG, Offshore, § 19)", ct: 1.8, beeinflussbar: false },
+    { id: "umlagen", label: "Umlagen (KWKG, Offshore, § 19; bis 1 GWh)", ct: 2.946, beeinflussbar: false },
     { id: "konzession", label: "Konzessionsabgabe", ct: 0.11, beeinflussbar: false },
     { id: "stromsteuer", label: "Stromsteuer", ct: 2.05, beeinflussbar: false },
   ],
+  /** Umlagen 2026 je Bestandteil, ct/kWh (Quellen siehe bestandteile) */
+  umlagen2026: { kwkg: 0.446, offshore: 0.941, besondereNetznutzungBis1Gwh: 1.559, besondereNetznutzungUeber1Gwh: 0.05 },
   /**
    * Stromsteuer: Regelsatz 2,05 ct/kWh; produzierendes Gewerbe sowie Land-
    * und Forstwirtschaft seit 2026 auf EU-Mindestsatz 0,05 ct/kWh entlastet.
@@ -430,7 +585,7 @@ export const STROM = {
    *  bilanzierungCt   Bilanzkreis/Ausgleichsenergie bei pay-as-produced, eigene Einschätzung
    *  residualAufschlag  Reststrom außerhalb der Solarstunden ist teurer als Base (Abend/Winter)
    *  vermarktungsAbschlag  Abschlag beim Weiterverkauf von Überschüssen
-   *  negativAnteilSolar  Anteil Solarerzeugung in Stunden mit negativen Preisen 2025: 24,1 % (dena/Pexapark)
+   *  negativAnteilSolar  Anteil Solarerzeugung in Stunden mit negativen Preisen 2025: 24,1 % (dena/Pexapark, nicht am Original geprüft; s. o.)
    */
   ppa: {
     baseTerminCt: 11.0,
@@ -440,7 +595,7 @@ export const STROM = {
     bilanzierungCt: 0.3,
     residualAufschlag: 0.05,
     vermarktungsAbschlag: 0.1,
-    negativAnteilSolar: 0.241,
+    negativAnteilSolar: NEGATIV_ANTEIL_SOLAR_2025_DENA,
   },
 };
 
@@ -453,8 +608,19 @@ export const KOMMUNE = {
   beteiligungCt: 0.2,
   /** § 29 Abs. 1 Nr. 2 GewStG: 90 % des Gewerbesteuermessbetrags an Standortgemeinde (Solar) */
   gewerbesteuerStandort: 0.9,
-  /** Hebesatz Durchschnitt DE */
-  hebesatz: 4.0,
+  /**
+   * Hebesatz Durchschnitt DE: 409 % im Jahr 2024 („durchschnittlicher Hebesatz aller Gemeinden“,
+   * Destatis-PM Nr. 309 vom 21.08.2025, abgerufen 03.10.2026). Paket E: von 400 % auf 409 % korrigiert.
+   * Ländliche Standortgemeinden liegen oft darunter – im Rechner änderbar.
+   */
+  hebesatz: 4.09,
+  /**
+   * § 6 EEG gilt bundesweit freiwillig. Mehrere Länder schreiben Zahlungen bzw. Angebote inzwischen vor
+   * (laut Übersicht FA Wind und Solar, Stand 17.07.2026: MV, BB, NI, SL, SN, ST, BY). Der Rechner bildet
+   * diese Landesregeln noch NICHT ab (Werte je Land vor Übernahme am Gesetzestext prüfen) und weist darauf hin.
+   */
+  laenderMitBeteiligungsgesetz: ["MV", "BB", "NI", "SL", "SN", "ST", "BY"],
+  laenderGesetzeStand: "17.07.2026",
   messzahl: 0.035,
   /** Betrachtungszeitraum für Kommunen (Jahre, entspricht der EEG-Förderdauer) */
   betrachtungJahre: 20,
@@ -518,10 +684,15 @@ export const GEMEINSCHAFTEN = {
    *  netzAp         Arbeitspreis Netznutzung auf der Endkundenebene
    *                 AT NE7 Beispiele 2026: Vorarlberg 4,96, Wien 6,98, NÖ 8,79 ct/kWh (Stromliste.at)
    *  rabatte        Abschlag auf den Netz-Arbeitspreis für geteilten Strom
-   *                 AT: lokal 57 %, regional 28 % (SNE-VO; Stromliste.at, Regeln ab 1.10.2026)
-   *                 CH: LEG 40 % gleiche Netzebene, 20 % über mehrere Ebenen (StromVV Art. 19h)
+   *                 AT: lokal 57 %, regional 28 % (Netzebenen 6/7) nach SNE-V 2018 – gilt bis 31.12.2026
+   *                     (gueltigBis); die Neufestlegung ab 01.01.2027 ist offen. Paket E: Prozentsätze nicht am
+   *                     RIS-Original geprüft (zu prüfen); der frühere Vermerk „Regeln ab 1.10.2026“ war irreführend.
+   *                 CH: LEG 40 % gleiche Netzebene, 20 % über mehrere Ebenen (StromVV Art. 19h) – zu prüfen
    *                 DE: nach aktuellem Stand kein Netzentgeltvorteil (§ 42c EnWG)
-   *  abgabenCt      Entfall von Abgaben auf geteilten Strom – AT: Elektrizitätsabgabe 2026 0,82 ct/kWh (ab 2027 1,5 ct)
+   *  abgabenCt      Entfall von Abgaben auf geteilten Strom – AT: Elektrizitätsabgabe 2026 befristet gesenkt auf
+   *                 0,1 ct/kWh für Haushalte und 0,82 ct/kWh für alle anderen (Nationalrat 16.12.2025, Parlamentskorrespondenz
+   *                 „Nationalrat beschließt Senkung der Elektrizitätsabgabe“, abgerufen 03.10.2026; ab 2027 wieder 1,5 ct).
+   *                 abgabenCtNachTyp trennt die Sätze; abgabenCt bleibt der Satz für Nicht-Haushalte.
    *  ueberschussCt  Vergütung für nicht geteilten Überschuss (Marktwert/Einspeisevergütung, grobe Annahme)
    *  gemeinschaftCt Preis für geteilten Strom innerhalb der Gemeinschaft (Vorschlag)
    *  verwaltung     Mess-/Abrechnungs-/Verwaltungskosten je Teilnehmer und Jahr
@@ -538,7 +709,10 @@ export const GEMEINSCHAFTEN = {
         { id: "regional", label: "EEG regional", sub: "−28 % Netz-AP", anteil: 0.28 },
         { id: "beg", label: "BEG", sub: "ohne Abschlag", anteil: 0 },
       ],
+      rabatteGueltigBis: "2026-12-31",
       abgabenCt: 0.82,
+      abgabenCtNachTyp: { haushalt: 0.1, sonstige: 0.82 },
+      abgabenGueltigBis: "2026-12-31",
       ueberschussCt: 5,
       gemeinschaftCt: 10,
       verwaltung: 20,
@@ -546,7 +720,13 @@ export const GEMEINSCHAFTEN = {
     ch: {
       waehrung: "CHF",
       ct: "Rp.",
-      energiepreis: 14,
+      /**
+       * Energietarif Grundversorgung 2027, Median Haushalt H4: 11,35 Rp./kWh (ElCom, Medienmitteilung
+       * „Leicht sinkende Strompreise 2027“, admin.ch, 08.09.2026, abgerufen 03.10.2026). Paket E: von 14 korrigiert.
+       * netzAp (10) und ueberschussCt (6) unverändert, nicht neu geprüft (Netznutzung 2027 Median 10,94 Rp. inkl.
+       * Bestandteile, auf die der LEG-Abschlag nicht wirkt; 6 Rp. Rückliefervergütung zu prüfen).
+       */
+      energiepreis: 11.35,
       netzAp: 10,
       rabatte: [
         { id: "leg40", label: "LEG, eine Ebene", sub: "−40 % Netznutzung", anteil: 0.4 },
@@ -554,7 +734,8 @@ export const GEMEINSCHAFTEN = {
       ],
       abgabenCt: 0,
       ueberschussCt: 6,
-      gemeinschaftCt: 13,
+      /** Vorschlag: 1 Rp. unter dem Energietarif (wie bisher 13 bei 14 Rp.) – eigene Annahme, im Rechner änderbar */
+      gemeinschaftCt: 10.35,
       verwaltung: 40,
     },
   },
@@ -583,8 +764,13 @@ export const GEMEINSCHAFTEN = {
 /* ------------------------------------------------------------------ */
 
 export const ALLGEMEIN = {
-  /** CO₂-Vermeidung je kWh Solarstrom (UBA, Emissionsbilanz erneuerbarer Energien, gerundet) */
-  co2KgProKwh: 0.65,
+  /**
+   * CO₂-Vermeidung je kWh Solarstrom in DEUTSCHLAND: Netto-Vermeidungsfaktor Photovoltaik 2024
+   * 684,74 g CO₂-Äq./kWh (Umweltbundesamt, Emissionsbilanz erneuerbarer Energieträger 2024,
+   * CLIMATE CHANGE 11/2026, Tabelle 10, abgerufen 03.10.2026). Paket E: von 0,65 auf 0,685 korrigiert.
+   * Gilt nur für den deutschen Strommix – für AT/CH NICHT verwenden (co2KgProKwhFuer liefert dort null).
+   */
+  co2KgProKwh: 0.685,
   /** Durchschnittlicher Haushaltsverbrauch für anschauliche Vergleiche */
   haushaltKwh: 3500,
   /**
@@ -594,6 +780,9 @@ export const ALLGEMEIN = {
    */
   pvMonatsanteile: [0.025, 0.045, 0.08, 0.115, 0.13, 0.135, 0.135, 0.12, 0.09, 0.065, 0.035, 0.025],
 };
+
+/** CO₂-Faktor (kg/kWh) für ein Land bzw. eine Regions-ID – nur DE belegt, sonst null (ausblenden) */
+export const co2KgProKwhFuer = (landOderRegion = "DE") => (laenderSperre(landOderRegion) ? null : ALLGEMEIN.co2KgProKwh);
 
 export const QUELLEN = [
   { titel: "Bundesnetzagentur – Ausschreibungen Solaranlagen erstes Segment", url: "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/Ausschreibungen/Solaranlagen1/start.html" },
@@ -609,6 +798,16 @@ export const QUELLEN = [
 /* ------------------------------------------------------------------ */
 /* Hilfsfunktionen für alle Rechner                                    */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Durchschnittlicher Erlös je erzeugbarer kWh im EEG-Marktprämienmodell mit § 51 EEG (ct/kWh):
+ * max(AW, MW) − anteilNegativ × max(AW − MW, 0). awCt = anzulegender Wert, marktCt = Marktwert Solar
+ * im Jahr (inkl. negativer Stunden). Herleitung bei ERLOESE.paragraph51; § 51a (Verlängerung) nicht gerechnet.
+ */
+export function eegErloesCt(awCt, marktCt, anteilNegativ = ERLOESE.paragraph51.anteilNegativ) {
+  const a = Math.min(Math.max(Number(anteilNegativ) || 0, 0), 1);
+  return Math.max(awCt, marktCt) - a * Math.max(awCt - marktCt, 0);
+}
 
 /** Barwert einer Zahlungsreihe (Index 0 = Jahr 0) */
 export function npv(rate, cashflows) {
@@ -698,13 +897,17 @@ export const DACH = {
   capexProKwp: { min: 600, mittel: 750, max: 950 },
   /** Betriebskosten ohne Pacht €/kWp·a (Wartung, Versicherung, Monitoring, Rücklage Wechselrichter) */
   opexProKwp: 14,
-  /** Zuschläge Ausschreibung Dach (zweites Segment, Pflicht in der Regel ab 1 MWp), ct/kWh */
-  zuschlagsHistorie: [
-    { termin: "1. Februar 2025", ct: 9.1 },
-    { termin: "1. Juni 2025", ct: 9.22 },
-    { termin: "1. Oktober 2025", ct: 9.66 },
-  ],
-  /** Rechenwert Volleinspeisung Dach (Mittel der Zuschläge 2025, gerundet) */
+  /**
+   * @deprecated Zuschläge Ausschreibung Dach 2025 (zweites Segment, Pflicht in der Regel ab 1 MWp), ct/kWh –
+   * abgeleitet aus ZUSCHLAEGE.dach. Die Termine 2026 (9,56 / 9,72) stehen dort; Texte, die „2025“ nennen,
+   * nutzen weiter diese Liste.
+   */
+  zuschlagsHistorie: zuschlaegeJahr(ZUSCHLAEGE.dach, 2025),
+  /**
+   * Rechenwert Volleinspeisung Dach (Mittel der Zuschläge 2025 = 9,33, gerundet). Paket E: unverändert,
+   * weil Texte ihn als „Ø 2025“ ausweisen; Mittel der letzten drei Termine (10/2025–06/2026) wäre 9,65 –
+   * Umstellung zusammen mit den Texten (Dach/Seite/Modelle.js, DachpachtRechner.js) vorschlagen.
+   */
   eegDachCt: 9.3,
   /**
    * Erlös für Überschuss bei Eigenverbrauch (anzulegender Wert Teileinspeisung

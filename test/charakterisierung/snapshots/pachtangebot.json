@@ -426,6 +426,7 @@
     "min": 1500,
     "mittel": 2800
    },
+   "sperre": null,
    "summe": 1449000,
    "summeVorlauf": 9000,
    "urteil": {
@@ -440,9 +441,9 @@
    }
   },
   "umsatz": {
-   "anteilMarktMittel": 0.684158257025,
-   "barwert": 839945.769418,
-   "durchschnittProHa": 2115.35662745,
+   "anteilMarktMittel": 0.67310034102,
+   "barwert": 826369.890341,
+   "durchschnittProHa": 2088.25542655,
    "eingabe": {
     "anwalt": "gedeckelt",
     "anwaltBetrag": 1000,
@@ -542,7 +543,7 @@
      "thema": "Allgemein"
     }
    ],
-   "imMarkt": 0.138940267961,
+   "imMarkt": 0.128613201463,
    "jahre": [
     {
      "betrag": 3000,
@@ -563,124 +564,124 @@
      "umsatz": 0
     },
     {
-     "betrag": 48000,
+     "betrag": 46128,
      "betrieb": true,
      "jahr": 4,
-     "umsatz": 48000
+     "umsatz": 46128
     },
     {
-     "betrag": 47808,
+     "betrag": 46036.7136,
      "betrieb": true,
      "jahr": 5,
-     "umsatz": 47808
+     "umsatz": 46036.7136
     },
     {
-     "betrag": 47616.768,
+     "betrag": 45946.3479702,
      "betrieb": true,
      "jahr": 6,
-     "umsatz": 47616.768
+     "umsatz": 45946.3479702
     },
     {
-     "betrag": 47426.300928,
+     "betrag": 45856.902739,
      "betrieb": true,
      "jahr": 7,
-     "umsatz": 47426.300928
+     "umsatz": 45856.902739
     },
     {
-     "betrag": 47236.5957243,
+     "betrag": 45768.377556,
      "betrieb": true,
      "jahr": 8,
-     "umsatz": 47236.5957243
+     "umsatz": 45768.377556
     },
     {
-     "betrag": 47047.6493414,
+     "betrag": 45680.7720923,
      "betrieb": true,
      "jahr": 9,
-     "umsatz": 47047.6493414
+     "umsatz": 45680.7720923
     },
     {
-     "betrag": 46859.458744,
+     "betrag": 45594.08604,
      "betrieb": true,
      "jahr": 10,
-     "umsatz": 46859.458744
+     "umsatz": 45594.08604
     },
     {
-     "betrag": 46672.020909,
+     "betrag": 45508.3191127,
      "betrieb": true,
      "jahr": 11,
-     "umsatz": 46672.020909
+     "umsatz": 45508.3191127
     },
     {
-     "betrag": 46485.3328254,
+     "betrag": 45423.4710451,
      "betrieb": true,
      "jahr": 12,
-     "umsatz": 46485.3328254
+     "umsatz": 45423.4710451
     },
     {
-     "betrag": 46299.3914941,
+     "betrag": 45339.5415937,
      "betrieb": true,
      "jahr": 13,
-     "umsatz": 46299.3914941
+     "umsatz": 45339.5415937
     },
     {
-     "betrag": 46114.1939281,
+     "betrag": 45256.5305361,
      "betrieb": true,
      "jahr": 14,
-     "umsatz": 46114.1939281
+     "umsatz": 45256.5305361
     },
     {
-     "betrag": 45929.7371524,
+     "betrag": 45174.4376715,
      "betrieb": true,
      "jahr": 15,
-     "umsatz": 45929.7371524
+     "umsatz": 45174.4376715
     },
     {
-     "betrag": 45746.0182038,
+     "betrag": 45093.2628206,
      "betrieb": true,
      "jahr": 16,
-     "umsatz": 45746.0182038
+     "umsatz": 45093.2628206
     },
     {
-     "betrag": 45563.034131,
+     "betrag": 45013.0058256,
      "betrieb": true,
      "jahr": 17,
-     "umsatz": 45563.034131
+     "umsatz": 45013.0058256
     },
     {
-     "betrag": 45380.7819945,
+     "betrag": 44933.6665502,
      "betrieb": true,
      "jahr": 18,
-     "umsatz": 45380.7819945
+     "umsatz": 44933.6665502
     },
     {
-     "betrag": 45199.2588665,
+     "betrag": 44855.2448799,
      "betrieb": true,
      "jahr": 19,
-     "umsatz": 45199.2588665
+     "umsatz": 44855.2448799
     },
     {
-     "betrag": 45018.461831,
+     "betrag": 44777.7407218,
      "betrieb": true,
      "jahr": 20,
-     "umsatz": 45018.461831
+     "umsatz": 44777.7407218
     },
     {
-     "betrag": 44838.3879837,
+     "betrag": 44701.1540045,
      "betrieb": true,
      "jahr": 21,
-     "umsatz": 44838.3879837
+     "umsatz": 44701.1540045
     },
     {
-     "betrag": 44659.0344318,
+     "betrag": 44625.4846787,
      "betrieb": true,
      "jahr": 22,
-     "umsatz": 44659.0344318
+     "umsatz": 44625.4846787
     },
     {
-     "betrag": 44480.398294,
+     "betrag": 44780.9727486,
      "betrieb": true,
      "jahr": 23,
-     "umsatz": 44480.398294
+     "umsatz": 44780.9727486
     },
     {
      "betrag": 45047.8673462,
@@ -750,7 +751,7 @@
      "id": "hoehe",
      "text": "Im unteren Teil der üblichen Spanne (1.500–4.500 €/ha). Mit nahem Netzanschluss und guter Kulisse ist oft mehr möglich.",
      "titel": "Pachthöhe",
-     "wert": "2.400 €/ha im 1. Betriebsjahr"
+     "wert": "2.306 €/ha im 1. Betriebsjahr"
     },
     {
      "ampel": "pruefen",
@@ -856,7 +857,7 @@
     "min": 657296.003662,
     "mittel": 1227706.83653
    },
-   "proHaErstesJahr": 2400,
+   "proHaErstesJahr": 2306.4,
    "punkte": 0.653846153846,
    "region": {
     "ertrag": 1100,
@@ -871,7 +872,8 @@
     "min": 1500,
     "mittel": 2800
    },
-   "summe": 1396135.37412,
+   "sperre": null,
+   "summe": 1378248.58152,
    "summeVorlauf": 9000,
    "urteil": {
     "id": "pruefen",
@@ -885,9 +887,9 @@
    }
   },
   "kombi_vpi": {
-   "anteilMarktMittel": 0.684158257025,
-   "barwert": 839945.769418,
-   "durchschnittProHa": 2115.35662745,
+   "anteilMarktMittel": 0.67310034102,
+   "barwert": 826369.890341,
+   "durchschnittProHa": 2088.25542655,
    "eingabe": {
     "anwalt": "gedeckelt",
     "anwaltBetrag": 1000,
@@ -987,7 +989,7 @@
      "thema": "Allgemein"
     }
    ],
-   "imMarkt": 0.138940267961,
+   "imMarkt": 0.128613201463,
    "jahre": [
     {
      "betrag": 3000,
@@ -1008,124 +1010,124 @@
      "umsatz": 0
     },
     {
-     "betrag": 48000,
+     "betrag": 46128,
      "betrieb": true,
      "jahr": 4,
-     "umsatz": 48000
+     "umsatz": 46128
     },
     {
-     "betrag": 47808,
+     "betrag": 46036.7136,
      "betrieb": true,
      "jahr": 5,
-     "umsatz": 47808
+     "umsatz": 46036.7136
     },
     {
-     "betrag": 47616.768,
+     "betrag": 45946.3479702,
      "betrieb": true,
      "jahr": 6,
-     "umsatz": 47616.768
+     "umsatz": 45946.3479702
     },
     {
-     "betrag": 47426.300928,
+     "betrag": 45856.902739,
      "betrieb": true,
      "jahr": 7,
-     "umsatz": 47426.300928
+     "umsatz": 45856.902739
     },
     {
-     "betrag": 47236.5957243,
+     "betrag": 45768.377556,
      "betrieb": true,
      "jahr": 8,
-     "umsatz": 47236.5957243
+     "umsatz": 45768.377556
     },
     {
-     "betrag": 47047.6493414,
+     "betrag": 45680.7720923,
      "betrieb": true,
      "jahr": 9,
-     "umsatz": 47047.6493414
+     "umsatz": 45680.7720923
     },
     {
-     "betrag": 46859.458744,
+     "betrag": 45594.08604,
      "betrieb": true,
      "jahr": 10,
-     "umsatz": 46859.458744
+     "umsatz": 45594.08604
     },
     {
-     "betrag": 46672.020909,
+     "betrag": 45508.3191127,
      "betrieb": true,
      "jahr": 11,
-     "umsatz": 46672.020909
+     "umsatz": 45508.3191127
     },
     {
-     "betrag": 46485.3328254,
+     "betrag": 45423.4710451,
      "betrieb": true,
      "jahr": 12,
-     "umsatz": 46485.3328254
+     "umsatz": 45423.4710451
     },
     {
-     "betrag": 46299.3914941,
+     "betrag": 45339.5415937,
      "betrieb": true,
      "jahr": 13,
-     "umsatz": 46299.3914941
+     "umsatz": 45339.5415937
     },
     {
-     "betrag": 46114.1939281,
+     "betrag": 45256.5305361,
      "betrieb": true,
      "jahr": 14,
-     "umsatz": 46114.1939281
+     "umsatz": 45256.5305361
     },
     {
-     "betrag": 45929.7371524,
+     "betrag": 45174.4376715,
      "betrieb": true,
      "jahr": 15,
-     "umsatz": 45929.7371524
+     "umsatz": 45174.4376715
     },
     {
-     "betrag": 45746.0182038,
+     "betrag": 45093.2628206,
      "betrieb": true,
      "jahr": 16,
-     "umsatz": 45746.0182038
+     "umsatz": 45093.2628206
     },
     {
-     "betrag": 45563.034131,
+     "betrag": 45013.0058256,
      "betrieb": true,
      "jahr": 17,
-     "umsatz": 45563.034131
+     "umsatz": 45013.0058256
     },
     {
-     "betrag": 45380.7819945,
+     "betrag": 44933.6665502,
      "betrieb": true,
      "jahr": 18,
-     "umsatz": 45380.7819945
+     "umsatz": 44933.6665502
     },
     {
-     "betrag": 45199.2588665,
+     "betrag": 44855.2448799,
      "betrieb": true,
      "jahr": 19,
-     "umsatz": 45199.2588665
+     "umsatz": 44855.2448799
     },
     {
-     "betrag": 45018.461831,
+     "betrag": 44777.7407218,
      "betrieb": true,
      "jahr": 20,
-     "umsatz": 45018.461831
+     "umsatz": 44777.7407218
     },
     {
-     "betrag": 44838.3879837,
+     "betrag": 44701.1540045,
      "betrieb": true,
      "jahr": 21,
-     "umsatz": 44838.3879837
+     "umsatz": 44701.1540045
     },
     {
-     "betrag": 44659.0344318,
+     "betrag": 44625.4846787,
      "betrieb": true,
      "jahr": 22,
-     "umsatz": 44659.0344318
+     "umsatz": 44625.4846787
     },
     {
-     "betrag": 44480.398294,
+     "betrag": 44780.9727486,
      "betrieb": true,
      "jahr": 23,
-     "umsatz": 44480.398294
+     "umsatz": 44780.9727486
     },
     {
      "betrag": 45047.8673462,
@@ -1195,7 +1197,7 @@
      "id": "hoehe",
      "text": "Im unteren Teil der üblichen Spanne (1.500–4.500 €/ha). Mit nahem Netzanschluss und guter Kulisse ist oft mehr möglich.",
      "titel": "Pachthöhe",
-     "wert": "2.400 €/ha im 1. Betriebsjahr"
+     "wert": "2.306 €/ha im 1. Betriebsjahr"
     },
     {
      "ampel": "pruefen",
@@ -1301,7 +1303,7 @@
     "min": 657296.003662,
     "mittel": 1227706.83653
    },
-   "proHaErstesJahr": 2400,
+   "proHaErstesJahr": 2306.4,
    "punkte": 0.653846153846,
    "region": {
     "ertrag": 1100,
@@ -1316,7 +1318,8 @@
     "min": 1500,
     "mittel": 2800
    },
-   "summe": 1396135.37412,
+   "sperre": null,
+   "summe": 1378248.58152,
    "summeVorlauf": 9000,
    "urteil": {
     "id": "pruefen",
@@ -1743,6 +1746,7 @@
     "min": 600,
     "mittel": 1200
    },
+   "sperre": null,
    "summe": 1956267.80185,
    "summeVorlauf": 9000,
    "urteil": {
@@ -2203,6 +2207,7 @@
     "min": 1500,
     "mittel": 2800
    },
+   "sperre": null,
    "summe": 480000,
    "summeVorlauf": 0,
    "urteil": {
@@ -2630,6 +2635,7 @@
     "min": 1500,
     "mittel": 2800
    },
+   "sperre": null,
    "summe": 2109000,
    "summeVorlauf": 9000,
    "urteil": {
@@ -3067,6 +3073,7 @@
     "min": 1500,
     "mittel": 2800
    },
+   "sperre": null,
    "summe": 144900,
    "summeVorlauf": 900,
    "urteil": {
@@ -3504,6 +3511,11 @@
     "min": 1500,
     "mittel": 2800
    },
+   "sperre": {
+    "land": "AT",
+    "text": "Für Österreich zeigen wir hier noch keine Euro-, Förder- oder Pachtwerte: Die Rechner nutzen bisher deutsche Annahmen (EEG, Pacht, GAP, Strompreis). Die Länderlogik wird gerade fachlich geprüft. Gern rechnen wir Ihr Vorhaben persönlich durch.",
+    "titel": "Rechenlogik für Österreich in Vorbereitung"
+   },
    "summe": 1449000,
    "summeVorlauf": 9000,
    "urteil": {
@@ -3919,7 +3931,7 @@
      "wert": "gedeckelt bis 1.000 €"
     }
    ],
-   "kwh": 19090909.0909,
+   "kwh": 20545454.5455,
    "kwp": 18181.8181818,
    "marktBw": {
     "max": 1971888.01098,
@@ -3929,7 +3941,7 @@
    "proHaErstesJahr": 2400,
    "punkte": 0.583333333333,
    "region": {
-    "ertrag": 1050,
+    "ertrag": 1130,
     "id": "ch",
     "label": "Schweiz",
     "land": "CH",
@@ -3940,6 +3952,11 @@
     "max": 4500,
     "min": 1500,
     "mittel": 2800
+   },
+   "sperre": {
+    "land": "CH",
+    "text": "Für die Schweiz zeigen wir hier noch keine Euro-, Förder- oder Pachtwerte: Die Rechner nutzen bisher deutsche Annahmen (EEG, Pacht, GAP, Strompreis). Die Länderlogik wird gerade fachlich geprüft. Gern rechnen wir Ihr Vorhaben persönlich durch.",
+    "titel": "Rechenlogik für die Schweiz in Vorbereitung"
    },
    "summe": 1449000,
    "summeVorlauf": 9000,

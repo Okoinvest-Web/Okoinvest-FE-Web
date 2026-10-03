@@ -10,7 +10,7 @@
 // Marktwerte aus src/lib/invest/markt.js (PACHT, ERLOESE, FREIFLAECHE, BAUART).
 // Die Klauselbewertung ist eine fachliche Orientierung, keine Rechtsberatung.
 
-import { BAUART, ERLOESE, FREIFLAECHE, PACHT, regionById } from "../invest/markt.js";
+import { BAUART, ERLOESE, FREIFLAECHE, PACHT, regionById, laenderSperre, eegErloesCt } from "../invest/markt.js";
 
 /* ------------------------------------------------------------------ */
 /* Auswahllisten                                                       */
@@ -126,8 +126,14 @@ export function parkLeistung(ha, regionId, flaechenart) {
   return { kwp, kwh: kwp * region.ertrag * faktor, region };
 }
 
-/** Strompreis (ct/kWh) im Betriebsjahr t (0-basiert): EEG-Wert 20 Jahre, danach Marktwert */
-const preisCt = (t) => (t < 20 ? ERLOESE.eegFreiflaecheCt : ERLOESE.merchantCt * Math.pow(1 + ERLOESE.merchantSteigerung, t));
+/**
+ * Durchschnittlicher Erlös (ct je erzeugbarer kWh) im Betriebsjahr t (0-basiert): EEG-Wert 20 Jahre mit § 51 EEG
+ * (negative Zeiträume ohne Marktprämie, markt.js eegErloesCt), danach Marktwert.
+ */
+const preisCt = (t) => {
+  const markt = ERLOESE.merchantCt * Math.pow(1 + ERLOESE.merchantSteigerung, t);
+  return t < 20 ? eegErloesCt(ERLOESE.eegFreiflaecheCt, markt) : markt;
+};
 
 /** Zahlungsreihe (Vorlauf + Betrieb) für ein Angebot */
 export function zahlungsreihe(e) {
@@ -440,6 +446,8 @@ export function pruefePachtangebot(eingabe = {}) {
 
   return {
     eingabe: e,
+    /** Länder-Sperre AT/CH: €-Spannen und EEG-Umsatzmodell gelten nur für DE (markt.js LAENDER_SPERRE) */
+    sperre: laenderSperre(region.land),
     ...r,
     durchschnittProHa: summe / jahre.length / e.ha,
     marktBw,
@@ -481,8 +489,9 @@ export function selbsttest() {
   pruefe(niedrig.klauseln[0].ampel === "kritisch" && niedrig.urteil.id === "kritisch", "Pacht unter Marktspanne → kritisch, Urteil deutlich nachverhandeln");
 
   const umsatz = pruefePachtangebot({ ha: 10, modell: "umsatz", umsatzAnteil: 0.06, vorlaufJahre: 0, regionId: "de-sued" });
-  const erwartet = (10 / FREIFLAECHE.haProMwp) * 1000 * 1100 * (ERLOESE.eegFreiflaecheCt / 100) * 0.06;
-  pruefe(Math.abs(umsatz.jahre[0].betrag - erwartet) < 1, "Umsatzbeteiligung Jahr 1 = kWh × EEG-Wert × Anteil");
+  const erwartet = (10 / FREIFLAECHE.haProMwp) * 1000 * 1100 * (eegErloesCt(ERLOESE.eegFreiflaecheCt, ERLOESE.merchantCt) / 100) * 0.06;
+  pruefe(Math.abs(umsatz.jahre[0].betrag - erwartet) < 1, "Umsatzbeteiligung Jahr 1 = kWh × EEG-Erlös nach § 51 × Anteil");
+  pruefe(pruefePachtangebot({ regionId: "ch" }).sperre?.land === "CH" && pruefePachtangebot().sperre === null, "Länder-Sperre: CH gesperrt, DE frei");
   const kombi = pruefePachtangebot({ ha: 10, modell: "kombi", umsatzAnteil: 0.01, mindestProHa: 2000, indexArt: "keine", vorlaufJahre: 0 });
   pruefe(Math.abs(kombi.jahre[0].betrag - 20000) < 1, "Mindestpacht greift bei niedrigem Umsatz");
 

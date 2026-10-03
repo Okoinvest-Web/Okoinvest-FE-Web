@@ -12,7 +12,7 @@
 // über 200.000 €, Verlustvortrag ohne Mindestbesteuerung. Typisch ist, dass in
 // den ersten Jahren durch Abschreibung und Zinsen kaum Gewerbesteuer anfällt.
 
-import { KOMMUNE, BAUART, PACHT, ERLOESE, FREIFLAECHE } from "../invest/markt.js";
+import { KOMMUNE, BAUART, PACHT, ERLOESE, FREIFLAECHE, laenderSperre } from "../invest/markt.js";
 import { rechneSolarpark } from "./solarpark.js";
 
 export const STANDARD = {
@@ -42,7 +42,10 @@ export function rechneKommune(eingabe = {}) {
   const jahre = [];
   for (let t = 1; t <= L; t++) {
     const j = park.jahre[t - 1];
-    const p6 = e.paragraph6 ? (j.erzeugung * KOMMUNE.beteiligungCt) / 100 : 0;
+    // § 6 Abs. 5 EEG: Erstattet wird nur für Strommengen, für die eine Förderung nach dem EEG in Anspruch genommen
+    // wurde (gesetze-im-internet.de/eeg_2014/__6.html, abgerufen 03.10.2026). Paket E: Zahlung daher nur in der
+    // EEG-Förderphase (vorher alle 30 Jahre) und ohne die nach § 51 EEG nicht geförderten Zeiträume (vorher volle Erzeugung).
+    const p6 = e.paragraph6 && j.imVertrag ? (j.erzeugung * j.vergueteterAnteil * KOMMUNE.beteiligungCt) / 100 : 0;
     // § 6-Zahlung ist beim Betreiber Betriebsausgabe (Erstattung durch den Netzbetreiber bei EEG-Anlagen – vereinfacht neutral)
     const ergebnis = j.ebitda - (t <= KOMMUNE.afaJahre ? afa : 0) - j.zinsen;
     const hinzurechnung = Math.max(0, j.zinsen - KOMMUNE.hinzurechnungFreibetrag) * KOMMUNE.hinzurechnungZinsen;
@@ -73,6 +76,10 @@ export function rechneKommune(eingabe = {}) {
 
   return {
     eingabe: e,
+    /** Länder-Sperre AT/CH: § 6 EEG und Gewerbesteuer sind deutsches Recht (markt.js LAENDER_SPERRE) */
+    sperre: laenderSperre(e.regionId),
+    /** Hinweis: Landesgesetze zur Beteiligung (KOMMUNE.laenderMitBeteiligungsgesetz) sind nicht gerechnet */
+    landesregeln: { laender: KOMMUNE.laenderMitBeteiligungsgesetz, stand: KOMMUNE.laenderGesetzeStand, gerechnet: false },
     jahre,
     gesamt,
     gesamtLaufzeit,
@@ -98,7 +105,10 @@ export function selbsttest() {
     if (!ok) fehler.push(text);
   };
   const r = rechneKommune({ mwp: 10, regionId: "de-sued", paragraph6: true, gemeindeflaeche: false });
-  pruefe(Math.abs(r.jahre[0].p6 - 11_000_000 * 0.002) < 1, "§ 6: 11 GWh × 0,2 ct = 22.000 €");
+  const anteil51 = 1 - ERLOESE.paragraph51.anteilNegativ;
+  pruefe(Math.abs(r.jahre[0].p6 - 11_000_000 * anteil51 * 0.002) < 1, "§ 6: 11 GWh × geförderter Anteil (§ 51) × 0,2 ct");
+  pruefe(r.jahre[19].p6 > 0 && r.jahre[20].p6 === 0, "§ 6 nur in der EEG-Förderphase (Erstattung § 6 Abs. 5)");
+  pruefe(rechneKommune({ regionId: "at" }).sperre?.land === "AT" && r.sperre === null, "Länder-Sperre: AT gesperrt, DE frei");
   pruefe(r.jahre.length === 30, "30 Jahre Laufzeit gerechnet");
   pruefe(r.gesamt.pacht === 0, "ohne Gemeindefläche keine Pacht");
   pruefe(r.gesamtLaufzeit.gewSt > 0, "über die Laufzeit fällt Gewerbesteuer an");

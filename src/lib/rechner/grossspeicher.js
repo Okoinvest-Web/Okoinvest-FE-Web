@@ -7,9 +7,14 @@
 //
 // Methodik (offen gelegt, vor Steuern, ohne Finanzierung):
 //  - Investition: Speichersystem (€/kWh) + Netzanschluss (€/kW) + Baukostenzuschuss
-//    (nur Stand-alone; netzdienliche Fahrweise mit Abschlag).
+//    auf die Bezugsleistung (netzdienliche Fahrweise mit Abschlag). Paket E: BKZ auch
+//    bei Co-Location – gerechnet werden Netz-Arbitrage und Regelenergie, also Laden
+//    aus dem Netz; der Anschluss des Solarparks ist nur für Einspeisung ausgelegt
+//    (vgl. netzanschluss.js: BKZ für Netzbezug eines Speichers; BGH EnVR 1/24).
 //  - Erlöse je MW für ein 2-h-System, aufgeteilt in Arbitrage (Day-Ahead/Intraday),
-//    aFRR und FCR; skaliert mit der Speicherdauer. Co-Location mit Abschlag wegen
+//    aFRR und FCR. Die Speicherdauer skaliert nur die Arbitrage (Energie); aFRR/FCR
+//    werden je MW vergütet und steigen mit längerer Dauer nicht, kürzer als 2 h
+//    mindert sie (Paket E, vorher wirkte der Dauerfaktor auf alle Märkte). Co-Location mit Abschlag wegen
 //    geteilter Anschlussleistung. Arbitrage sinkt mit der Kapazität (Degradation),
 //    Regelleistung hängt an der Leistung und sinkt nur halb so stark. Dazu ein
 //    allgemeiner Erlöstrend (mehr Speicher im Markt).
@@ -66,7 +71,7 @@ export function investitionSpeicher(e) {
   const system = kwh * e.capexKwh;
   const co = e.standort === "colocation";
   const netz = kw * (co ? SPEICHER.netzanschlussProKw.coLocation : SPEICHER.netzanschlussProKw[e.ebene]);
-  const bkz = co ? 0 : kw * SPEICHER.bkzProKw[e.ebene] * (e.netzdienlich ? SPEICHER.bkzNetzdienlichFaktor : 1);
+  const bkz = kw * SPEICHER.bkzProKw[e.ebene] * (e.netzdienlich ? SPEICHER.bkzNetzdienlichFaktor : 1);
   return { system, netz, bkz, summe: system + netz + bkz, kwh };
 }
 
@@ -75,14 +80,16 @@ export function rechneSpeicher(eingabe = {}) {
   const inv = investitionSpeicher(e);
   const dauerF = SPEICHER.dauerFaktor[e.dauer] ?? 1;
   const standortF = e.standort === "colocation" ? SPEICHER.coLocationErloesFaktor : 1;
-  const basis = e.mw * dauerF * standortF;
+  // Arbitrage skaliert mit der Energie (Dauer), Regelleistung je MW: höchstens Faktor 1
+  const basisArbitrage = e.mw * dauerF * standortF;
+  const basis = e.mw * Math.min(dauerF, 1) * standortF;
 
   const jahre = [];
   for (let t = 1; t <= e.lebensdauer; t++) {
     const trend = Math.pow(1 + e.erloesTrend, t - 1);
     const kap = Math.pow(1 - e.degradation, t - 1);
     const leistung = Math.pow(1 - e.degradation / 2, t - 1);
-    const arbitrage = e.erloese.arbitrage * basis * kap * trend;
+    const arbitrage = e.erloese.arbitrage * basisArbitrage * kap * trend;
     const afrr = e.erloese.afrr * basis * leistung * trend;
     const fcr = e.erloese.fcr * basis * leistung * trend;
     const erloes = arbitrage + afrr + fcr;
@@ -150,12 +157,15 @@ export function selbsttest() {
   const nd = rechneSpeicher({ mw: 10, dauer: 2, capexKwh: 250, netzdienlich: true });
   pruefe(nd.investition.bkz < r.investition.bkz && nd.projektIrr > r.projektIrr, "netzdienlicher BKZ-Abschlag verbessert die Rendite");
   const co = rechneSpeicher({ mw: 10, dauer: 2, capexKwh: 250, standort: "colocation" });
-  pruefe(co.investition.bkz === 0, "Co-Location ohne BKZ");
+  pruefe(Math.abs(co.investition.bkz - r.investition.bkz) < 1e-6, "Co-Location mit Netzbezug: BKZ wie Stand-alone");
   pruefe(co.erloesJahr1 < r.erloesJahr1, "Co-Location mit Erlösabschlag");
   const netz = rechneSpeicher({ mw: 10, dauer: 2, capexKwh: 250, netzentgeltBefreit: false });
   pruefe(netz.jahre[0].netzentgelt > 0 && netz.projektIrr < r.projektIrr, "Netzentgelte ohne Befreiung senken die Rendite");
   const lang = rechneSpeicher({ mw: 10, dauer: 4, capexKwh: 250 });
   pruefe(lang.investition.system === 2 * r.investition.system && lang.erloesJahr1 > r.erloesJahr1, "4 h: doppelte Kapazität, mehr Erlös");
+  pruefe(Math.abs(lang.jahre[0].afrr - r.jahre[0].afrr) < 1e-6 && Math.abs(lang.jahre[0].fcr - r.jahre[0].fcr) < 1e-6, "Dauer > 2 h erhöht aFRR/FCR nicht (je MW)");
+  const kurz = rechneSpeicher({ mw: 10, dauer: 1, capexKwh: 250 });
+  pruefe(kurz.jahre[0].afrr < r.jahre[0].afrr, "1 h mindert auch aFRR/FCR");
   pruefe(Math.abs(r.kumuliert[r.kumuliert.length - 1] - (r.summeCf - r.investition.summe)) < 1, "kumulierter Cashflow konsistent");
   pruefe(vergleichStandorte({ mw: 10 }).length === 2, "Vergleich beider Standorte");
   return { fehler, beispiel: rechneSpeicher() };

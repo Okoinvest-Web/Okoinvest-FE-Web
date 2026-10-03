@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { AlertTriangle, Factory, Leaf, PiggyBank, ShieldCheck, Sun, TrendingDown } from "lucide-react";
-import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Zahl } from "./bausteine";
 import { useTeilbarerZustand } from "./kontext";
+import ErgebnisAnfrage from "./ErgebnisAnfrage";
 import { Ansicht, ErgebnisKopf, Hinweis, MobilKurz, RechnerRahmen } from "./InvestTeile";
 import { BalkenJahre, DiagrammKarte, FARBEN, Linien } from "./ToolTeile";
 import { LASTPROFILE, STANDARD, STRUKTUREN, SZENARIEN, rechnePpa } from "@/lib/rechner/ppa";
@@ -186,12 +186,16 @@ export default function PpaRechner() {
             )}
           </div>
 
-          <div className="mt-7 flex flex-col gap-3 border-t border-ink-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="max-w-md text-[13px] leading-relaxed text-ink-500">Modellrechnung ohne Gewähr, netto. Netzentgelte, Umlagen und Steuern sind in beiden Fällen gleich und daher nicht enthalten.</p>
-            <Button href="/reststrom" size="lg" pfeil className="shrink-0">
-              Reststrom-Pool
-            </Button>
-          </div>
+          <ErgebnisAnfrage
+            typ="reststrom"
+            href="/kontakt?anliegen=reststrom#formular"
+            kennzahl={r.ersparnisJahr1 > 0 ? <Zahl wert={r.ersparnisJahr1} format={tsd} /> : null}
+            satz={r.ersparnisJahr1 > 0 ? "Ersparnis im ersten Jahr – mit echten Angeboten gegenrechnen" : "Absicherung und Angebote mit Ihren Lastdaten gegenrechnen"}
+            signal={`${Math.round(r.ersparnisJahr1)}|${Math.round(r.szenarien[1].summe)}`}
+            nachricht={`Aus dem PPA-Rechner: Jahresverbrauch ${e.verbrauchMwh >= 1000 ? `${fmt(e.verbrauchMwh / 1000, 1)} GWh` : `${fmt(e.verbrauchMwh)} MWh`}, Lastprofil ${LASTPROFILE.find((x) => x.id === e.profil)?.label || e.profil}, heutiger Energiepreis ${fmt(e.preisCt, 1)} ct/kWh, PPA-Laufzeit ${e.laufzeit} Jahre. Ergebnis (Modellrechnung): Ersparnis Jahr 1 ${tsd(r.ersparnisJahr1)}, über ${e.laufzeit} Jahre (Markt seitwärts) ${tsd(r.szenarien[1].summe)}. Bitte mit mir über PPA und Reststrom-Pool sprechen.`}
+            sekundaer={[{ href: "/reststrom", label: "Reststrom-Pool" }]}
+            hinweis="Modellrechnung ohne Gewähr, netto. Netzentgelte, Umlagen und Steuern sind in beiden Fällen gleich und daher nicht enthalten."
+          />
         </>
       }
       unten={

@@ -10,7 +10,7 @@
 //    zur Renditeerwartung + Betrieb − Überschusserlöse) plus Aufschlag.
 // Stand und Quellen der Werte: src/lib/invest/markt.js.
 
-import { CARPORT, ERLOESE, FINANZIERUNG, FREIFLAECHE, STROM, ALLGEMEIN, regionById, annuitaet } from "../invest/markt.js";
+import { CARPORT, ERLOESE, FINANZIERUNG, FREIFLAECHE, STROM, regionById, laenderSperre, co2KgProKwhFuer, annuitaet } from "../invest/markt.js";
 
 export const STROMPREIS_STANDARD = Math.round(STROM.bestandteile.reduce((s, b) => s + b.ct, 0) * 10) / 10;
 
@@ -97,8 +97,11 @@ export function rechneCarport(eingabe = {}) {
     conJahre.push({ jahr: t, ersparnis, kumuliert: conKum, imVertrag });
   }
 
+  const co2Faktor = co2KgProKwhFuer(region.land);
   return {
     eingabe: e,
+    /** Länder-Sperre AT/CH: DE-Strompreis und Einspeiseerlöse gelten nur für DE (markt.js LAENDER_SPERRE) */
+    sperre: laenderSperre(region.land),
     region,
     kwp,
     spez,
@@ -126,7 +129,8 @@ export function rechneCarport(eingabe = {}) {
     },
     lcoeCt: ertrag > 0 ? ((annuitaet(investPv, rendite, L) + opexPv * mittelP) / (ertrag * mittelF)) * 100 : null,
     kapitalkosten: rendite,
-    co2Tonnen: (ertrag * ALLGEMEIN.co2KgProKwh) / 1000,
+    // CO₂-Faktor nur für den deutschen Strommix belegt (UBA) – für AT/CH null
+    co2Tonnen: co2Faktor == null ? null : (ertrag * co2Faktor) / 1000,
     ladeleistungKw: e.ac * 11 + e.dc * 100,
   };
 }

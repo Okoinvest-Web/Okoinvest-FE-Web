@@ -33,7 +33,8 @@ export default function KommuneRechner() {
   useTeilbarerZustand(
     { mwp, regionId, hebesatz, paragraph6, gemeindeflaeche, anteilGemeinde, pachtHa, sitzInGemeinde, preisCt },
     (neu) => Object.entries(neu).forEach(([k, v]) => setzer[k]?.(v)),
-    { optionen: { regionId: REGIONEN.map((x) => x.id) }, grenzen: { anteilGemeinde: [0, 1] }, pruefen: rechneKommune }
+    // Länder-Sperre (Paket E): Teilen-Links nur mit DE-Regionen – § 6 EEG und Gewerbesteuer sind deutsches Recht
+    { optionen: { regionId: REGIONEN.filter((x) => x.land === "DE").map((x) => x.id) }, grenzen: { anteilGemeinde: [0, 1] }, pruefen: rechneKommune }
   );
 
   const r = useMemo(
@@ -163,6 +164,14 @@ export default function KommuneRechner() {
             </div>
             <Jahre r={r} />
           </div>
+
+          {r.landesregeln && !r.landesregeln.gerechnet ? (
+            <Hinweis icon={Info} className="mt-4">
+              Nur § 6 EEG gerechnet, und nur für geförderten Strom in der EEG-Förderphase (Erstattung nach § 6 Abs. 5 EEG). Mehrere Länder regeln Beteiligungen
+              inzwischen per Landesgesetz, teils verpflichtend ({r.landesregeln.laender.join(", ")}; Übersicht der Fachagentur Wind und Solar, Stand {r.landesregeln.stand}). Diese
+              Zahlungen sind hier nicht enthalten – in diesen Ländern kann die Gemeinde mehr erhalten.
+            </Hinweis>
+          ) : null}
 
           {!r.ersteGewSt || r.ersteGewSt > 12 ? (
             <Hinweis icon={Info} className="mt-4">

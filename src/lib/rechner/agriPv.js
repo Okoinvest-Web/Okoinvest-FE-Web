@@ -7,7 +7,7 @@
 //
 // Vereinfachungen: vor Steuern, ohne Fremdfinanzierung (Projektrendite), nominal.
 
-import { AGRI, BAUART, ERLOESE, FREIFLAECHE, PACHT, irr, regionById } from "../invest/markt.js";
+import { AGRI, BAUART, ERLOESE, FREIFLAECHE, PACHT, irr, regionById, laenderSperre, eegErloesCt } from "../invest/markt.js";
 
 export const SYSTEME = [
   { id: "vertikal", label: "Vertikal, bifazial", sub: "Kategorie II", bauart: "agriVertikal" },
@@ -56,8 +56,9 @@ export function agriVergleich({
   // Landwirtschaft läuft in allen drei Wegen weiter
   const dbJahr = ha * db * ertragLw;
   const dbOhneAnlage = ha * db;
-  // GAP: in DE/AT bleibt die Fläche zu 85 % förderfähig; CH-Direktzahlungen hier nicht gerechnet
-  const gapJahr = land === "CH" ? 0 : ha * AGRI.direktzahlungProHa * AGRI.gapFoerderfaehig;
+  // GAP: in DE bleibt die Fläche zu 85 % förderfähig (GAPDZV § 12). AT (eigener GAP-Strategieplan, AMA-Regeln)
+  // und CH (Direktzahlungen nach DZV) werden nicht mit dem DE-Satz gerechnet – Länder-Sperre (Paket E).
+  const gapJahr = land === "DE" ? ha * AGRI.direktzahlungProHa * AGRI.gapFoerderfaehig : 0;
   const pachtJahr0 = ha * PACHT.agriProHa.mittel;
 
   // Projekt-Cashflows (Jahr 0 = Investition)
@@ -65,7 +66,9 @@ export function agriVergleich({
     const cf = [-anlage.capex];
     const jahre = [];
     for (let t = 0; t < laufzeit; t++) {
-      const ct = t < 20 ? ctFoerder : ERLOESE.merchantCt * Math.pow(1 + (ERLOESE.merchantSteigerung || 0), t);
+      const markt = ERLOESE.merchantCt * Math.pow(1 + (ERLOESE.merchantSteigerung || 0), t);
+      // EEG-Phase mit § 51 EEG (markt.js eegErloesCt); PPA ohne Abzug
+      const ct = t < 20 ? (eeg ? eegErloesCt(ctFoerder, markt) : ctFoerder) : markt;
       const erloes = anlage.kwh * Math.pow(1 - FREIFLAECHE.degradation, t) * (ct / 100);
       const opex = anlage.kwp * AGRI.opexProKwp * Math.pow(1 + FREIFLAECHE.inflation, t);
       const pacht = mitPacht ? pachtJahr0 * Math.pow(1 + PACHT.indexierung, t) : 0;
@@ -127,6 +130,8 @@ export function agriVergleich({
   };
 
   return {
+    /** Länder-Sperre AT/CH: GAP, EEG und €-Pacht gelten nur für DE (markt.js LAENDER_SPERRE) */
+    sperre: laenderSperre(land),
     anlage,
     kultur,
     system: sys,

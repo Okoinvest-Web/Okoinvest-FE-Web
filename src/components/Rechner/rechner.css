@@ -57,3 +57,9 @@
     margin: 14mm;
   }
 }
+
+/* Methodik-Abschnitt: Überzeile steht direkt über der ersten Überschrift */
+.ov-rechner-methodik > :first-child,
+.ov-rechner-methodik .ov-prose > h2:first-child {
+  margin-top: 0;
+}

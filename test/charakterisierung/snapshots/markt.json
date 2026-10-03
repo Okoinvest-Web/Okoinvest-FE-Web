@@ -73,7 +73,7 @@
     "privilegierungHa": 2.5
    },
    "ALLGEMEIN": {
-    "co2KgProKwh": 0.65,
+    "co2KgProKwh": 0.685,
     "haushaltKwh": 3500,
     "pvMonatsanteile": [
      0.025,
@@ -102,7 +102,7 @@
      "label": "Agri-PV vertikal, bifazial"
     },
     "ostWest": {
-     "faktor": 0.92,
+     "faktor": 0.84,
      "haProMwp": 0.85,
      "label": "Ost/West, fest"
     },
@@ -353,6 +353,9 @@
     },
     "merchantCt": 4,
     "merchantSteigerung": 0.01,
+    "paragraph51": {
+     "anteilNegativ": 0.234
+    },
     "ppaCt": {
      "max": 5.5,
      "min": 3.8,
@@ -536,6 +539,11 @@
     "rechner": {
      "at": {
       "abgabenCt": 0.82,
+      "abgabenCtNachTyp": {
+       "haushalt": 0.1,
+       "sonstige": 0.82
+      },
+      "abgabenGueltigBis": "2026-12-31",
       "ct": "ct",
       "energiepreis": 12,
       "gemeinschaftCt": 10,
@@ -560,6 +568,7 @@
         "sub": "ohne Abschlag"
        }
       ],
+      "rabatteGueltigBis": "2026-12-31",
       "ueberschussCt": 5,
       "verwaltung": 20,
       "waehrung": "€"
@@ -567,8 +576,8 @@
      "ch": {
       "abgabenCt": 0,
       "ct": "Rp.",
-      "energiepreis": 14,
-      "gemeinschaftCt": 13,
+      "energiepreis": 11.35,
+      "gemeinschaftCt": 10.35,
       "netzAp": 10,
       "rabatte": [
        {
@@ -619,17 +628,41 @@
     "beteiligungCt": 0.2,
     "betrachtungJahre": 20,
     "gewerbesteuerStandort": 0.9,
-    "hebesatz": 4,
+    "hebesatz": 4.09,
     "hebesatzSpanne": {
      "max": 6,
      "min": 2
     },
     "hinzurechnungFreibetrag": 200000,
     "hinzurechnungZinsen": 0.25,
+    "laenderGesetzeStand": "17.07.2026",
+    "laenderMitBeteiligungsgesetz": [
+     "MV",
+     "BB",
+     "NI",
+     "SL",
+     "SN",
+     "ST",
+     "BY"
+    ],
     "messzahl": 0.035
    },
+   "LAENDER_SPERRE": {
+    "gesperrt": [
+     "AT",
+     "CH"
+    ],
+    "name": {
+     "AT": "Österreich",
+     "CH": "die Schweiz"
+    },
+    "titel": {
+     "AT": "Rechenlogik für Österreich in Vorbereitung",
+     "CH": "Rechenlogik für die Schweiz in Vorbereitung"
+    }
+   },
    "PACHT": {
-    "ackerProHa": 380,
+    "ackerProHa": 407,
     "agriProHa": {
      "max": 2000,
      "min": 600,
@@ -651,6 +684,7 @@
      "min": 1500,
      "mittel": 2800
     },
+    "gruenlandProHa": 212,
     "indexierung": 0.015,
     "laufzeit": 30,
     "reservierungJahre": {
@@ -915,7 +949,7 @@
      "sub": "Flach- und Hügelland"
     },
     {
-     "ertrag": 1050,
+     "ertrag": 1130,
      "id": "ch",
      "label": "Schweiz",
      "land": "CH",
@@ -975,11 +1009,12 @@
     "zyklenProJahr": 330
    },
    "STAND": "September 2026",
+   "STAND_RECHENLOGIK": "2026-10-03",
    "STROM": {
     "bestandteile": [
      {
       "beeinflussbar": true,
-      "ct": 10.5,
+      "ct": 9.2,
       "id": "beschaffung",
       "label": "Beschaffung & Vertrieb"
      },
@@ -991,9 +1026,9 @@
      },
      {
       "beeinflussbar": false,
-      "ct": 1.8,
+      "ct": 2.946,
       "id": "umlagen",
-      "label": "Umlagen (KWKG, Offshore, § 19)"
+      "label": "Umlagen (KWKG, Offshore, § 19; bis 1 GWh)"
      },
      {
       "beeinflussbar": false,
@@ -1056,7 +1091,80 @@
      "max": 0.4,
      "min": 0.2
     },
-    "stromsteuerProduzierend": 0.05
+    "stromsteuerProduzierend": 0.05,
+    "umlagen2026": {
+     "besondereNetznutzungBis1Gwh": 1.559,
+     "besondereNetznutzungUeber1Gwh": 0.05,
+     "kwkg": 0.446,
+     "offshore": 0.941
+    }
+   },
+   "ZUSCHLAEGE": {
+    "dach": [
+     {
+      "ct": 9.1,
+      "datum": "2025-02-01",
+      "hoechstwertCt": 10.4,
+      "termin": "1. Februar 2025"
+     },
+     {
+      "ct": 9.22,
+      "datum": "2025-06-01",
+      "hoechstwertCt": 10.4,
+      "termin": "1. Juni 2025"
+     },
+     {
+      "ct": 9.66,
+      "datum": "2025-10-01",
+      "hoechstwertCt": 10.4,
+      "termin": "1. Oktober 2025"
+     },
+     {
+      "ct": 9.56,
+      "datum": "2026-02-01",
+      "hoechstwertCt": 10,
+      "termin": "1. Februar 2026"
+     },
+     {
+      "ct": 9.72,
+      "datum": "2026-06-01",
+      "hoechstwertCt": 10,
+      "termin": "1. Juni 2026"
+     }
+    ],
+    "freiflaeche": [
+     {
+      "ct": 4.66,
+      "datum": "2025-03-01",
+      "hoechstwertCt": 6.8,
+      "termin": "1. März 2025"
+     },
+     {
+      "ct": 4.84,
+      "datum": "2025-07-01",
+      "hoechstwertCt": 6.8,
+      "termin": "1. Juli 2025"
+     },
+     {
+      "ct": 5,
+      "datum": "2025-12-01",
+      "hoechstwertCt": 6.8,
+      "termin": "1. Dezember 2025"
+     },
+     {
+      "ct": 4.94,
+      "datum": "2026-03-01",
+      "hoechstwertCt": 5.79,
+      "termin": "1. März 2026"
+     },
+     {
+      "ct": 4.79,
+      "datum": "2026-07-01",
+      "hoechstwertCt": 5.9,
+      "termin": "1. Juli 2026"
+     }
+    ],
+    "quelle": "Bundesnetzagentur, Ergebnisse der Ausschreibungen Solaranlagen (erstes und zweites Segment)"
    }
   },
   "npv_standard": 63.7851512487,

@@ -1,11 +1,12 @@
 "use client";
 
+import { SperrEingaben } from "./LaenderSperre";
 import { useMemo, useState } from "react";
 import { AlertTriangle, Coins, HandCoins, Landmark, Receipt, ShieldAlert, Users } from "lucide-react";
-import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { Auswahl, Gruppe, Kennzahl, Regler, Schalter, Zahl } from "./bausteine";
 import { useTeilbarerZustand } from "./kontext";
+import ErgebnisAnfrage from "./ErgebnisAnfrage";
 import { ErgebnisKopf, Hinweis, MobilKurz, RechnerRahmen } from "./InvestTeile";
 import { DiagrammKarte, FARBEN, Linien } from "./ToolTeile";
 import { STANDARD, rechneBeteiligung } from "@/lib/rechner/beteiligung";
@@ -28,10 +29,26 @@ export default function BeteiligungRechner() {
   const r = useMemo(() => rechneBeteiligung(e), [e]);
   const [s, m, g] = r.szenarien;
 
+  // Länder-Sperre (Paket E): für AT/CH nur die Regionswahl und der Hinweis aus markt.js
+  const sperre = r.sperre;
+  const regionWahl = (
+    <Auswahl
+      legende="Region"
+      wert={e.regionId}
+      onChange={set("regionId")}
+      spalten={3}
+      klein
+      optionen={REGIONEN.map((x) => ({ id: x.id, label: REGION_KURZ[x.id] || x.label }))}
+    />
+  );
+
   return (
     <RechnerRahmen
       mitlaufend
-      eingaben={
+      sperre={sperre}
+      eingaben={sperre ? (
+        <SperrEingaben>{regionWahl}</SperrEingaben>
+      ) : (
         <>
           <MobilKurz
             werte={[
@@ -56,14 +73,7 @@ export default function BeteiligungRechner() {
             </Gruppe>
             <Gruppe titel="Solarpark und Genossenschaft">
               <Regler label="Größe des Parks" wert={e.parkMwp} min={2} max={50} step={1} einheit="MWp" onChange={set("parkMwp")} />
-              <Auswahl
-                legende="Region"
-                wert={e.regionId}
-                onChange={set("regionId")}
-                spalten={3}
-                klein
-                optionen={REGIONEN.map((x) => ({ id: x.id, label: REGION_KURZ[x.id] || x.label }))}
-              />
+              {regionWahl}
               <Regler
                 label="Anteil der eG am Park"
                 wert={e.egQuote * 100}
@@ -91,7 +101,7 @@ export default function BeteiligungRechner() {
             </Gruppe>
           </div>
         </>
-      }
+      )}
       ergebnis={
         <>
           <p className="sr-only" aria-live="polite">
@@ -147,14 +157,17 @@ export default function BeteiligungRechner() {
             </Kennzahl>
           </div>
 
-          <div className="mt-7 flex flex-col gap-3 border-t border-ink-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="max-w-md text-[13px] leading-relaxed text-ink-500">
-              Vor persönlichen Steuern{e.steuer ? " (hier nach Kapitalertragsteuer)" : ""}. Über Ausschüttungen entscheidet die Generalversammlung.
-            </p>
-            <Button href="/genossenschaft#interesse" size="lg" pfeil className="shrink-0">
-              Interesse vormerken
-            </Button>
-          </div>
+          {/* Bewusst ohne Renditezahl neben dem Knopf: Interessenbekundung, kein Renditeversprechen */}
+          <ErgebnisAnfrage
+            typ="genossenschaft"
+            href="/genossenschaft#interesse"
+            eyebrow="Genossenschaft im Aufbau"
+            satz="Interesse unverbindlich vormerken – Unterlagen erhalten Sie vor jeder Entscheidung."
+            label="Interesse vormerken"
+            versprechen="Interessenbekundung, keine Zeichnung – erst mit dem Beitritt entsteht eine Zahlungspflicht."
+            nachricht={`Aus dem Beteiligungsrechner: Interesse an einer Beteiligung, gerechnet mit ${e.anteile} Anteil${e.anteile === 1 ? "" : "en"} (Beispiel-Einlage ${fmtEur(r.einlage)}).`}
+            hinweis={`Vor persönlichen Steuern${e.steuer ? " (hier nach Kapitalertragsteuer)" : ""}. Über Ausschüttungen entscheidet die Generalversammlung.`}
+          />
         </>
       }
       unten={

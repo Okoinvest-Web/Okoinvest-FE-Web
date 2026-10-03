@@ -118,12 +118,12 @@ export function bewerteProjekt(eingabe = {}) {
   /* --- Vermarktung ---------------------------------------------------- */
   if (e.vermarktung === "eeg") {
     if (e.land !== "DE") {
-      hinweise.push("EEG-Zuschlag gibt es nur in Deutschland – in Österreich entspricht dem die EAG-Marktprämie aus der Ausschreibung.");
-    }
-    if (pi >= idx("satzung") || bestand) {
+      // Paket E (Länder-Sperre): kein EEG-Wertaufschlag außerhalb Deutschlands
+      hinweise.push("EEG-Zuschlag gibt es nur in Deutschland – in Österreich entspricht dem die EAG-Marktprämie aus der Ausschreibung. Ein Förderaufschlag ist deshalb nicht eingerechnet.");
+    } else if (pi >= idx("satzung") || bestand) {
       faktor *= 1.12;
       risikoStufe -= 1;
-      treiber.push("Zuschlag gesichert: 20 Jahre Marktprämie als Erlösboden – bankfähig.");
+      treiber.push("Zuschlag gesichert: 20 Jahre Marktprämie als Erlösboden – erleichtert die Finanzierung.");
     } else {
       hinweise.push("Ein Zuschlag setzt in der Regel Baurecht voraus – bitte Phase prüfen.");
     }
@@ -206,6 +206,9 @@ export function selbsttest() {
   const klein = bewerteProjekt({ mwp: 2, phase: "rtb", netz: "zusage", netzKm: 1 });
   pruefe(klein.preisKwp.mittel < neutral.preisKwp.mittel, "kleine Projekte je kWp günstiger");
   const eeg = bewerteProjekt({ phase: "rtb", netz: "zusage", netzKm: 1, vermarktung: "eeg" });
+  const eegAt = bewerteProjekt({ phase: "rtb", netz: "zusage", netzKm: 1, vermarktung: "eeg", land: "AT" });
+  const ohneAt = bewerteProjekt({ phase: "rtb", netz: "zusage", netzKm: 1, vermarktung: "keine", land: "AT" });
+  pruefe(Math.abs(eegAt.preisKwp.mittel - ohneAt.preisKwp.mittel) < 1e-9, "EEG-Aufschlag nur in DE");
   pruefe(eeg.preisKwp.mittel > neutral.preisKwp.mittel && eeg.risikoStufe <= neutral.risikoStufe, "Zuschlag erhöht Wert, senkt Risiko");
   const extrem = bewerteProjekt({ mwp: 1, phase: "flaeche", netz: "offen", netzKm: 20 });
   pruefe(extrem.preisKwp.min >= 0 && extrem.preisKwp.max >= 0, "nie negative Preise");

@@ -3,7 +3,7 @@
 // Pachtrechner für Freiflächen-PV – reine Funktionen, ohne React.
 // Alle Marktannahmen aus src/lib/invest/markt.js.
 
-import { ERLOESE, FREIFLAECHE, PACHT, regionById } from "../invest/markt.js";
+import { ERLOESE, FREIFLAECHE, PACHT, regionById, laenderSperre, eegErloesCt } from "../invest/markt.js";
 
 /** Kurzbezeichnungen der Regionen für enge Auswahlfelder */
 export const REGION_KURZ = { "de-nord": "Nord-DE", "de-ost": "Ost-DE", "de-west": "West-DE", "de-sued": "Süd-DE", at: "Österreich", ch: "Schweiz" };
@@ -61,7 +61,9 @@ export function pachtRechnung({
       // Vor Baubeginn: Reservierungsprämie – die Fläche wird weiter bewirtschaftet
       solar = ha * reservierungProHa;
     } else if (modell === "umsatz") {
-      const ct = t < 20 ? ERLOESE.eegFreiflaecheCt : ERLOESE.merchantCt * Math.pow(1 + (ERLOESE.merchantSteigerung || 0), t);
+      // EEG-Phase mit § 51 EEG (negative Zeiträume ohne Marktprämie, markt.js eegErloesCt), danach Marktwert
+      const markt = ERLOESE.merchantCt * Math.pow(1 + (ERLOESE.merchantSteigerung || 0), t);
+      const ct = t < 20 ? eegErloesCt(ERLOESE.eegFreiflaecheCt, markt) : markt;
       strom = kwh * Math.pow(1 - FREIFLAECHE.degradation, t) * (ct / 100);
       solar = Math.max(strom * umsatzAnteil, ha * mindestProHa);
     } else if (modell === "index") {
@@ -83,6 +85,8 @@ export function pachtRechnung({
 
   const erstesBetriebsjahr = jahre.find((x) => x.betrieb) || jahre[0];
   return {
+    /** Länder-Sperre AT/CH: €-Pacht, DE-Ackerpacht und EEG-Umsatzmodell gelten nur für DE (markt.js LAENDER_SPERRE) */
+    sperre: laenderSperre(region.land),
     kwp,
     kwh,
     region,

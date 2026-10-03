@@ -14,7 +14,7 @@
 // wohl aber für Netzbezug, etwa eines Speichers, der aus dem Netz lädt.
 // Kostenbausteine: FREIFLAECHE (+ .netz), SPEICHER.bkzProKw (markt.js).
 
-import { ERLOESE, FREIFLAECHE, REGIONEN, SPEICHER } from "../invest/markt.js";
+import { ERLOESE, FREIFLAECHE, REGIONEN, SPEICHER, laenderSperre } from "../invest/markt.js";
 
 const N = FREIFLAECHE.netz;
 
@@ -155,6 +155,8 @@ export function rechneNetzanschluss(eingabe = {}) {
 
   return {
     eingabe: e,
+    /** Länder-Sperre AT/CH: Kosten, BKZ und EEG-Verlustbewertung folgen deutschem Recht (markt.js LAENDER_SPERRE) */
+    sperre: laenderSperre(e.land),
     anschlussMw,
     ebene,
     vorschlag,

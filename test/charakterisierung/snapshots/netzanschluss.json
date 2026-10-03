@@ -51,6 +51,7 @@
     "max": 938000,
     "min": 536000
    },
+   "sperre": null,
    "summe": 670000,
    "tipps": [
     "Netzanschlussbegehren früh und vollständig nach § 8 EEG stellen: Der Netzbetreiber muss unverzüglich einen Zeitplan nennen und spätestens nach 8 Wochen das Ergebnis der Netzverträglichkeitsprüfung samt Kostenvoranschlag vorlegen (§ 8 Abs. 5 und 6 EEG).",
@@ -123,6 +124,7 @@
     "max": 33040000,
     "min": 18880000
    },
+   "sperre": null,
    "summe": 23600000,
    "tipps": [
     "Netzanschlussbegehren früh und vollständig nach § 8 EEG stellen: Der Netzbetreiber muss unverzüglich einen Zeitplan nennen und spätestens nach 8 Wochen das Ergebnis der Netzverträglichkeitsprüfung samt Kostenvoranschlag vorlegen (§ 8 Abs. 5 und 6 EEG).",
@@ -200,6 +202,7 @@
     "max": 1813000,
     "min": 1036000
    },
+   "sperre": null,
    "summe": 1295000,
    "tipps": [
     "Netzanschlussbegehren früh und vollständig nach § 8 EEG stellen: Der Netzbetreiber muss unverzüglich einen Zeitplan nennen und spätestens nach 8 Wochen das Ergebnis der Netzverträglichkeitsprüfung samt Kostenvoranschlag vorlegen (§ 8 Abs. 5 und 6 EEG).",
@@ -267,6 +270,7 @@
     "max": 770000,
     "min": 440000
    },
+   "sperre": null,
    "summe": 550000,
    "tipps": [
     "Netzanschlussbegehren früh und vollständig nach § 8 EEG stellen: Der Netzbetreiber muss unverzüglich einen Zeitplan nennen und spätestens nach 8 Wochen das Ergebnis der Netzverträglichkeitsprüfung samt Kostenvoranschlag vorlegen (§ 8 Abs. 5 und 6 EEG).",
@@ -337,6 +341,7 @@
     "max": 343000,
     "min": 196000
    },
+   "sperre": null,
    "summe": 245000,
    "tipps": [
     "Netzanschlussbegehren früh und vollständig nach § 8 EEG stellen: Der Netzbetreiber muss unverzüglich einen Zeitplan nennen und spätestens nach 8 Wochen das Ergebnis der Netzverträglichkeitsprüfung samt Kostenvoranschlag vorlegen (§ 8 Abs. 5 und 6 EEG).",
@@ -407,6 +412,7 @@
     "max": 3014200,
     "min": 1722400
    },
+   "sperre": null,
    "summe": 2153000,
    "tipps": [
     "Netzanschlussbegehren früh und vollständig nach § 8 EEG stellen: Der Netzbetreiber muss unverzüglich einen Zeitplan nennen und spätestens nach 8 Wochen das Ergebnis der Netzverträglichkeitsprüfung samt Kostenvoranschlag vorlegen (§ 8 Abs. 5 und 6 EEG).",
@@ -476,6 +482,7 @@
     "max": 602000,
     "min": 344000
    },
+   "sperre": null,
    "summe": 430000,
    "tipps": [
     "Netzanschlussbegehren früh und vollständig nach § 8 EEG stellen: Der Netzbetreiber muss unverzüglich einen Zeitplan nennen und spätestens nach 8 Wochen das Ergebnis der Netzverträglichkeitsprüfung samt Kostenvoranschlag vorlegen (§ 8 Abs. 5 und 6 EEG).",
@@ -545,6 +552,11 @@
     "max": 938000,
     "min": 536000
    },
+   "sperre": {
+    "land": "AT",
+    "text": "Für Österreich zeigen wir hier noch keine Euro-, Förder- oder Pachtwerte: Die Rechner nutzen bisher deutsche Annahmen (EEG, Pacht, GAP, Strompreis). Die Länderlogik wird gerade fachlich geprüft. Gern rechnen wir Ihr Vorhaben persönlich durch.",
+    "titel": "Rechenlogik für Österreich in Vorbereitung"
+   },
    "summe": 670000,
    "tipps": [
     "Österreich: Netzzugang beim Verteilnetzbetreiber beantragen; es fallen Netzzutritts- und ggf. Netzbereitstellungsentgelte an. Kapazitäten werden je Netzbereich veröffentlicht – früh prüfen.",
@@ -612,6 +624,11 @@
    "spanne": {
     "max": 938000,
     "min": 536000
+   },
+   "sperre": {
+    "land": "CH",
+    "text": "Für die Schweiz zeigen wir hier noch keine Euro-, Förder- oder Pachtwerte: Die Rechner nutzen bisher deutsche Annahmen (EEG, Pacht, GAP, Strompreis). Die Länderlogik wird gerade fachlich geprüft. Gern rechnen wir Ihr Vorhaben persönlich durch.",
+    "titel": "Rechenlogik für die Schweiz in Vorbereitung"
    },
    "summe": 670000,
    "tipps": [

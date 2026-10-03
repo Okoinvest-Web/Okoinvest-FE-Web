@@ -261,6 +261,7 @@
     "max": 817.303615326,
     "min": 659.276275756
    },
+   "sperre": null,
    "start": 2027,
    "summeCf": 1919670.33638,
    "technischEnde": 2042,
@@ -526,6 +527,7 @@
     "max": 395.939618675,
     "min": 301.164453915
    },
+   "sperre": null,
    "start": 2027,
    "summeCf": 971590.635782,
    "technischEnde": 2042,
@@ -700,6 +702,7 @@
     "max": 89.4541597773,
     "min": 56.1235063057
    },
+   "sperre": null,
    "start": 2027,
    "summeCf": 200513.050111,
    "technischEnde": 2035,
@@ -1082,6 +1085,7 @@
     "max": 461.005011479,
     "min": 325.74355826
    },
+   "sperre": null,
    "start": 2027,
    "summeCf": 1381708.85918,
    "technischEnde": 2051,
@@ -1256,6 +1260,7 @@
     "max": 732.3000857,
     "min": 602.569677793
    },
+   "sperre": null,
    "start": 2027,
    "summeCf": 1646246.09025,
    "technischEnde": 2042,
@@ -1521,6 +1526,7 @@
     "max": 883.178172083,
     "min": 720.150964397
    },
+   "sperre": null,
    "start": 2027,
    "summeCf": 2089670.33638,
    "technischEnde": 2042,
@@ -1786,6 +1792,7 @@
     "max": 817.303615326,
     "min": 659.276275756
    },
+   "sperre": null,
    "start": 2027,
    "summeCf": 1919670.33638,
    "technischEnde": 2042,
@@ -2051,6 +2058,7 @@
     "max": 135.48085348,
     "min": 68.3928324539
    },
+   "sperre": null,
    "start": 2027,
    "summeCf": -6230.99128953,
    "technischEnde": 2042,
@@ -2316,6 +2324,11 @@
     "max": 817.303615326,
     "min": 659.276275756
    },
+   "sperre": {
+    "land": "AT",
+    "text": "Für Österreich zeigen wir hier noch keine Euro-, Förder- oder Pachtwerte: Die Rechner nutzen bisher deutsche Annahmen (EEG, Pacht, GAP, Strompreis). Die Länderlogik wird gerade fachlich geprüft. Gern rechnen wir Ihr Vorhaben persönlich durch.",
+    "titel": "Rechenlogik für Österreich in Vorbereitung"
+   },
    "start": 2027,
    "summeCf": 1919670.33638,
    "technischEnde": 2042,
@@ -2570,8 +2583,8 @@
     }
    ],
    "kaufIrr": null,
-   "performance": 1.02674947567,
-   "prognose": 973.947417259,
+   "performance": 0.954059247303,
+   "prognose": 1048.15293476,
    "restJahre": 16,
    "spanne": {
     "max": 1634607.23065,
@@ -2580,6 +2593,11 @@
    "spanneProKwp": {
     "max": 817.303615326,
     "min": 659.276275756
+   },
+   "sperre": {
+    "land": "CH",
+    "text": "Für die Schweiz zeigen wir hier noch keine Euro-, Förder- oder Pachtwerte: Die Rechner nutzen bisher deutsche Annahmen (EEG, Pacht, GAP, Strompreis). Die Länderlogik wird gerade fachlich geprüft. Gern rechnen wir Ihr Vorhaben persönlich durch.",
+    "titel": "Rechenlogik für die Schweiz in Vorbereitung"
    },
    "start": 2027,
    "summeCf": 1919670.33638,

@@ -60,7 +60,8 @@
     "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
     "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
    ],
-   "score": 75
+   "score": 75,
+   "sperre": null
   },
   "de_12ha": {
    "agri": {
@@ -120,7 +121,8 @@
     "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
     "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
    ],
-   "score": 75
+   "score": 75,
+   "sperre": null
   },
   "de_0_5ha": {
    "agri": {
@@ -180,7 +182,8 @@
     "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
     "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
    ],
-   "score": 30
+   "score": 30,
+   "sperre": null
   },
   "de_150ha_konversion": {
    "agri": null,
@@ -233,7 +236,8 @@
     "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
     "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
    ],
-   "score": 97
+   "score": 97,
+   "sperre": null
   },
   "de_gruenland_schutzgebiet": {
    "agri": {
@@ -303,7 +307,8 @@
     "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
     "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
    ],
-   "score": 22
+   "score": 22,
+   "sperre": null
   },
   "de_benachteiligt_randstreifen": {
    "agri": {
@@ -325,7 +330,7 @@
     {
      "art": "plus",
      "punkte": 15,
-     "text": "Randstreifen an Autobahn/Schiene: EEG-Flächenkulisse (bis 500 m); bis 200 m ist die Anlage im Außenbereich baurechtlich privilegiert."
+     "text": "Randstreifen an Autobahn/Schiene: EEG-Flächenkulisse (bis 500 m). Baurechtlich privilegiert im Außenbereich ist die Anlage bis 200 m entlang von Autobahnen oder Schienenwegen des übergeordneten Netzes mit mindestens zwei Hauptgleisen (§ 35 Abs. 1 Nr. 8 b BauGB)."
     },
     {
      "art": "plus",
@@ -373,7 +378,8 @@
     "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
     "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
    ],
-   "score": 100
+   "score": 100,
+   "sperre": null
   },
   "de_parkplatz_verpachtet": {
    "agri": null,
@@ -427,7 +433,8 @@
     "Parkplatz: Solarcarport mit Ladepunkten als Alternative rechnen.",
     "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
    ],
-   "score": 17
+   "score": 17,
+   "sperre": null
   },
   "de_wald_ueberschwemmung": {
    "agri": null,
@@ -490,16 +497,14 @@
     "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
     "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
    ],
-   "score": 52
+   "score": 52,
+   "sperre": null
   },
   "at_12ha": {
    "agri": {
-    "gapAnteil": 0.85,
+    "gapAnteil": null,
     "kwp": 4615.38461538,
-    "pachtJahr": {
-     "max": 24000,
-     "min": 7200
-    }
+    "pachtJahr": null
    },
    "ampel": "gruen",
    "carport": false,
@@ -534,14 +539,8 @@
    "kwp": 10909.0909091,
    "netzProKwp": null,
    "nutzbarHa": 12,
-   "pacht30": {
-    "max": 1835641.5188,
-    "min": 939217.807779
-   },
-   "pachtJahr": {
-    "max": 48900,
-    "min": 25020
-   },
+   "pacht30": null,
+   "pachtJahr": null,
    "region": {
     "ertrag": 1120,
     "id": "at",
@@ -555,16 +554,18 @@
     "Abstimmung mit der Gemeinde zur Widmung Grünland-Photovoltaik und zur Landes-Zonierung.",
     "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
    ],
-   "score": 75
+   "score": 75,
+   "sperre": {
+    "land": "AT",
+    "text": "Für Österreich zeigen wir hier noch keine Euro-, Förder- oder Pachtwerte: Die Rechner nutzen bisher deutsche Annahmen (EEG, Pacht, GAP, Strompreis). Die Länderlogik wird gerade fachlich geprüft. Gern rechnen wir Ihr Vorhaben persönlich durch.",
+    "titel": "Rechenlogik für Österreich in Vorbereitung"
+   }
   },
   "ch_12ha": {
    "agri": {
-    "gapAnteil": 0.85,
+    "gapAnteil": null,
     "kwp": 4615.38461538,
-    "pachtJahr": {
-     "max": 24000,
-     "min": 7200
-    }
+    "pachtJahr": null
    },
    "ampel": "gruen",
    "carport": false,
@@ -592,23 +593,17 @@
     {
      "art": "info",
      "punkte": 0,
-     "text": "Schweiz: Außerhalb der Bauzone braucht es Standortgebundenheit nach Raumplanungsrecht; große Freiflächenanlagen sind nur eingeschränkt möglich."
+     "text": "Schweiz: Ausserhalb der Bauzone braucht es Standortgebundenheit nach Raumplanungsrecht; grosse Freiflächenanlagen sind nur eingeschränkt möglich."
     }
    ],
-   "kwh": 11454545.4545,
+   "kwh": 12327272.7273,
    "kwp": 10909.0909091,
    "netzProKwp": null,
    "nutzbarHa": 12,
-   "pacht30": {
-    "max": 1835641.5188,
-    "min": 939217.807779
-   },
-   "pachtJahr": {
-    "max": 48900,
-    "min": 25020
-   },
+   "pacht30": null,
+   "pachtJahr": null,
    "region": {
-    "ertrag": 1050,
+    "ertrag": 1130,
     "id": "ch",
     "label": "Schweiz",
     "land": "CH",
@@ -620,7 +615,12 @@
     "Vorabklärung mit Gemeinde und kantonaler Fachstelle zur Standortgebundenheit.",
     "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
    ],
-   "score": 75
+   "score": 75,
+   "sperre": {
+    "land": "CH",
+    "text": "Für die Schweiz zeigen wir hier noch keine Euro-, Förder- oder Pachtwerte: Die Rechner nutzen bisher deutsche Annahmen (EEG, Pacht, GAP, Strompreis). Die Länderlogik wird gerade fachlich geprüft. Gern rechnen wir Ihr Vorhaben persönlich durch.",
+    "titel": "Rechenlogik für die Schweiz in Vorbereitung"
+   }
   },
   "ha_null": {
    "agri": {
@@ -680,7 +680,8 @@
     "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
     "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
    ],
-   "score": 30
+   "score": 30,
+   "sperre": null
   }
  }
 }

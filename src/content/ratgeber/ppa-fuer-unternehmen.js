@@ -300,6 +300,8 @@ const artikel = {
     { href: "/rechner/reststrom", titel: "Reststrom-Rechner", text: "Preisbestandteile und Sparpotenzial für Ihren Verbrauch." },
     { href: "/ratgeber/virtuelles-kraftwerk", titel: "Virtuelles Kraftwerk", text: "Wie Erzeugung, Speicher und Verbrauch zusammen vermarktet werden." },
     { href: "/ratgeber/grossspeicher-erloese", titel: "Großspeicher-Erlöse", text: "Warum Speicher Solar-PPAs wertvoller machen." },
+    { href: "/rechner/ppa", titel: "PPA-Rechner", text: "Ersparnis und Risiko eines Solar-PPA in drei Preisszenarien." },
+    { href: "/solarcarport", titel: "Solarcarport für Unternehmen", text: "Solarstrom direkt auf dem Firmenparkplatz erzeugen." },
   ],
 
   quellen: [

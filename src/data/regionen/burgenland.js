@@ -2,6 +2,8 @@
 // PV/Solar (LGBl. Nr. 60/2021 idF LGBl. Nr. 55/2026, Anlage 1 mit 95 Zonen), VO Bemessungsgrundlage Windkraft- und
 // Photovoltaikabgabe (LGBl. Nr. 47/2023 idF 58/2026), Bgld. ElWG 2006 § 5; Land Burgenland FAQ Eignungszonen;
 // energynewsmagazine (13.02.2026); Statistik Austria Agrarstrukturerhebung 2023; WKO Fläche 2025; RIS EAG § 33; PVGIS v5.3.
+import { fristenAT } from "./fristen";
+
 const region = {
   slug: "burgenland",
   land: "AT",
@@ -65,6 +67,7 @@ const region = {
       text: "Auf landwirtschaftlich genutzten Flächen und im Grünland verringert sich der Zuschlagswert der EAG-Marktprämie um 25 %. Agri-PV mit nicht oder nur gering beeinträchtigter Hauptnutzung kann ausgenommen sein – im Burgenland oft relevant, weil Zonen auf guten Böden ohnehin eine landwirtschaftliche Nutzung verlangen.",
       quelle: { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790" },
     },
+    ...fristenAT(),
   ],
   kulisse: {
     text: "Die entscheidende Frage ist schlicht: Liegt die Fläche in einer der 95 Eignungszonen? Die Zonen sind in Plänen im Maßstab 1:15.000 festgelegt und im Flächenwidmungsplan der Gemeinde ersichtlich. Außerhalb davon ist eine Freiflächenanlage über Hausgartengröße nicht zulässig. Wer eine geeignete Fläche von mindestens 10 ha außerhalb der Zonen hat, kann Unterlagen bei der Landesplanung einreichen – ob sie in eine künftige Änderung der Verordnung aufgenommen wird, entscheidet das Land.",

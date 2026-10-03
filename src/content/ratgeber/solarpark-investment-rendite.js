@@ -337,6 +337,8 @@ const artikel = {
     { href: "/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Wie Gebote, Zuschläge und Fristen funktionieren." },
     { href: "/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Stromlieferverträge als Erlös- und Absicherungsweg." },
     { href: "/investoren", titel: "Für Investoren", text: "Suchprofil anlegen und passende Projekte finden." },
+    { href: "/bestandsanlagen", titel: "Bestandsanlagen kaufen", text: "Laufende Solarparks auf dem Zweitmarkt." },
+    { href: "/rechner/solarpark", titel: "Solarpark-Renditerechner", text: "IRR, LCOE und DSCR mit eigenen Werten." },
   ],
 
   quellen: [

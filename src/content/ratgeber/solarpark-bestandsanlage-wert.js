@@ -75,10 +75,10 @@ const pct = (x) => (x == null ? "–" : fmtPct(x, 1));
 const artikel = {
   slug: "solarpark-bestandsanlage-wert",
   title: "Was ist ein bestehender Solarpark wert? Bewertung beim Kauf",
-  seoTitle: "Solarpark Bestandsanlage bewerten: Wert | ÖkoInvest",
+  seoTitle: "Wert eines Solarparks: Bewertung beim Kauf | ÖkoInvest",
   kurzTitel: "Wert einer Bestandsanlage",
   description:
-    "Solarpark-Bestandsanlage bewerten: DCF, Multiplikatoren, €/kWp, Restlaufzeit von EEG und Pacht, technische Due Diligence und zwei durchgerechnete Beispiele.",
+    "Was ist ein laufender Solarpark wert? DCF, Multiplikatoren, €/kWp, Restlaufzeit von EEG und Pacht, technische Due Diligence und zwei Rechenbeispiele.",
   excerpt:
     "Wie Käufer und Verkäufer den Wert eines laufenden Solarparks ermitteln: Barwert der Cashflows statt Faustformel, die Rolle von EEG- und Pachtrestlaufzeit und was die technische Prüfung aufdecken muss.",
   hauptKeyword: "solarpark bestandsanlage wert",
@@ -314,6 +314,8 @@ const artikel = {
     { href: "/ratgeber/repowering-solarpark", titel: "Repowering alter Solarparks", text: "Modultausch, EEG-Regeln und Wirtschaftlichkeit." },
     { href: "/rechner/projektbewertung", titel: "Projektbewertung", text: "Preisspanne je kWp für Projekte und Bestand." },
     { href: "/projektboerse/anbieten", titel: "Projekt anbieten", text: "Bestandspark in die Projektbörse einstellen." },
+    { href: "/bestandsanlagen", titel: "PV-Bestandsanlagen kaufen und verkaufen", text: "Zweitmarkt für laufende Anlagen – vertraulich, mit Datenraum." },
+    { href: "/rechner/bestandsanlage", titel: "Bestandsanlage bewerten", text: "Ertragswert Ihrer laufenden PV-Anlage berechnen." },
   ],
 
   quellen: [

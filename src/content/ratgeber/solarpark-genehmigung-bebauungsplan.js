@@ -43,7 +43,7 @@ const artikel = {
     "städtebaulicher Vertrag Solarpark",
   ],
   veroeffentlicht: "2026-09-29",
-  aktualisiert: "2026-09-29",
+  aktualisiert: "2026-10-03", // Rechtsstand nachgeprüft (Welle 1, Paket G)
   kategorie: "Recht & Genehmigung",
   bild: "/img/planer-tablet.jpg",
   bildAlt: "Ingenieur mit weißem Schutzhelm prüft Unterlagen auf einem Tablet vor einer Reihe von Solarmodulen",
@@ -268,7 +268,7 @@ const artikel = {
           typ: "kasten",
           variant: "info",
           titel: "Österreich und Schweiz funktionieren anders",
-          text: "In Österreich entscheidet die Flächenwidmung „Grünland-Photovoltaik“ nach Landesraumordnungsrecht, ab bestimmten Größen kommt eine UVP hinzu – siehe [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich). In der Schweiz sind Freiflächenanlagen außerhalb der Bauzonen nur eng begrenzt möglich; mehr unter [Freiflächen-PV in der Schweiz](/ratgeber/freiflaechen-pv-schweiz).",
+          text: "In Österreich entscheidet die Flächenwidmung „Grünland-Photovoltaik“ nach Landesraumordnungsrecht, dazu kommen je nach Größe elektrizitäts- und naturschutzrechtliche Bewilligungen; einen eigenen UVP-Tatbestand für Photovoltaik kennt das UVP-G nicht – siehe [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich). In der Schweiz sind Freiflächenanlagen außerhalb der Bauzonen nur eng begrenzt möglich; mehr unter [Freiflächen-PV in der Schweiz](/ratgeber/freiflaechen-pv-schweiz).",
         },
       ],
     },
@@ -319,7 +319,7 @@ const artikel = {
     },
     {
       q: "Brauche ich für einen Solarpark eine Umweltverträglichkeitsprüfung?",
-      a: "Im Bebauungsplanverfahren ist grundsätzlich eine Umweltprüfung mit Umweltbericht vorgesehen. Eine gesonderte UVP nach UVPG ist für Freiflächen-PV in Deutschland nach aktuellem Stand in der Regel nicht vorgeschrieben; Landesrecht und Einzelfall können abweichen.",
+      a: "Im Bebauungsplanverfahren ist grundsätzlich eine Umweltprüfung mit Umweltbericht vorgesehen. Ein Bebauungsplan für einen Solarpark im bisherigen Außenbereich kann unter Nr. 18.7 der Anlage 1 zum UVPG fallen (allgemeine Vorprüfung ab 2 ha, UVP-Pflicht ab 10 ha zulässiger Grundfläche). Die UVP wird dann nach § 50 UVPG in der Umweltprüfung des Bebauungsplans erledigt, ein gesondertes Verfahren gibt es nicht. Landesrecht und Einzelfall können abweichen.",
     },
   ],
 
@@ -328,6 +328,8 @@ const artikel = {
     { href: "/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Welche Klauseln Flächeneigentümer kennen sollten." },
     { href: "/ratgeber/projektrechte-kaufen-due-diligence", titel: "Projektrechte kaufen", text: "Due Diligence vor dem Erwerb eines Projekts." },
     { href: "/flaechencheck", titel: "Flächencheck", text: "Eignet sich Ihre Fläche für einen Solarpark?" },
+    { href: "/kommunen", titel: "Solarparks für Kommunen", text: "Planungshoheit, Kriterienkatalog und Einnahmen der Gemeinde." },
+    { href: "/freiflaeche", titel: "Freiflächen-PV entwickeln", text: "Flächenkriterien, Genehmigung und Zeitplan." },
   ],
 
   quellen: [

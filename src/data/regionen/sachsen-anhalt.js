@@ -47,7 +47,7 @@ const region = {
     {
       titel: "Akzeptanz- und Beteiligungsgesetz: Zahlung an die Gemeinde",
       text:
-        "Für Freiflächenanlagen, die ab dem 01.10.2025 in Betrieb gehen, gilt das **Gesetz zur Akzeptanzsteigerung und Beteiligung beim Ausbau der erneuerbaren Energien (AuBG)**. Betreiber zahlen der Gemeinde, auf deren Gebiet die Anlage steht, 0,3 Cent je erzeugter Kilowattstunde, mindestens aber 2,50 Euro je Kilowatt-Peak – es gilt der höhere Betrag. Individuelle Vereinbarungen zwischen Gemeinde und Betreiber sind möglich. Die Zahlung trägt der Betreiber, nicht der Flächeneigentümer.",
+        "Für Freiflächenanlagen, die ab dem 01.10.2025 in Betrieb gehen, gilt das **Gesetz zur Akzeptanzsteigerung und Beteiligung beim Ausbau der erneuerbaren Energien (AuBG)**. Betreiber zahlen der Gemeinde, auf deren Gebiet die Anlage steht, 0,3 Cent je eingespeister Kilowattstunde, mindestens aber 2,50 Euro je Kilowatt-Peak – es gilt der höhere Betrag. Individuelle Vereinbarungen zwischen Gemeinde und Betreiber sind möglich. Die Zahlung trägt der Betreiber, nicht der Flächeneigentümer.",
       quelle: { titel: "MWU Sachsen-Anhalt – Erläuterungen zum AuBG", url: "https://mwu.sachsen-anhalt.de/energie/erneuerbare-energien/akzeptanz-und-beteiligungsgesetz/page/erlaeuterungen-zum-akzeptanz-und-beteiligungsgesetz" },
     },
     {

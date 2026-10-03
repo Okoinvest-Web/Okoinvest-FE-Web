@@ -360,6 +360,8 @@ const artikel = {
     { href: "/ratgeber/agri-pv-wirtschaftlichkeit", titel: "Agri-PV Wirtschaftlichkeit", text: "Kosten, Erlöse und Rendite vertikal und hoch aufgeständert." },
     { href: "/landwirte", titel: "Agri-PV für Landwirte", text: "Verpachten, selbst investieren oder beteiligen." },
     { href: "/rechner/agri-pv", titel: "Agri-PV-Rechner", text: "Drei Wege für Ihre Fläche im Vergleich." },
+    { href: "/agri-pv", titel: "Agri-PV: Systeme und Kulturen", text: "Bauweisen, Kulturen und Rahmenbedingungen im Überblick." },
+    { href: "/flaechencheck", titel: "Flächencheck", text: "Eignet sich Ihre Fläche für Agri-PV?" },
   ],
 
   quellen: [

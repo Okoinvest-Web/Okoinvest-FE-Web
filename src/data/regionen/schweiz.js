@@ -3,6 +3,10 @@
 // (LBV/DZV, 09.01.2025), Pronovo PV-Auktionen Q4/2026, Swissolar „2026: Was gilt neu“, Kanton Graubünden Leitfaden
 // Solarexpress (Ergänzung 01.04.2025), Stromzeit Solarexpress-Stand 10/2025, energeiaplus (BFE) Agri-PV 28.05.2026,
 // Appenzell Ausserrhoden Erläuterungsbericht Richtplan Energie (17.10.2025), BFS Strukturerhebung 2025, PVGIS v5.3.
+// Nachprüfung 03.10.2026 (Paket G): Pronovo PV-Auktionen (Runde 4/2026: 18.10.–01.11.2026, Gebühr CHF 300, 24 Monate ab Rechtskraft),
+// RPG Stand 01.07.2026 (Art. 24ter seit 01.01.2026), EnG Stand 01.01.2026 (Art. 71a befristet bis 31.12.2025).
+import { fristenCH } from "./fristen";
+
 const region = {
   slug: "schweiz",
   land: "CH",
@@ -65,9 +69,10 @@ const region = {
     },
     {
       titel: "Förderung: HEIV-Auktion ab 150 kW",
-      text: "Anlagen ab 150 kW ohne Eigenverbrauch bewerben sich bei Pronovo um die hohe Einmalvergütung (HEIV) oder die gleitende Marktprämie. In der Runde vom 18. Oktober bis 1. November 2026 werden 50 MW HEIV (Höchstgebot CHF 620/kW) und 10 MW Marktprämie (Höchstgebot 10 Rp./kWh) vergeben. Das Projekt muss baureif sein; nach Zuschlag bleiben 24 Monate für die Realisierung. Für Anlagen mit Eigenverbrauch gibt es die Einmalvergütung (KLEIV/GREIV).",
+      text: "Anlagen ab 150 kW ohne Eigenverbrauch bewerben sich bei Pronovo um die hohe Einmalvergütung (HEIV) oder die gleitende Marktprämie. Die Auktionen finden in mehreren Runden pro Jahr statt; je Gebot fällt eine Teilnahmegebühr von CHF 300 an. Das Projekt muss baureif sein; ab Rechtskraft der Zuschlagsverfügung bleiben 24 Monate für die Inbetriebnahme. Für Anlagen mit Eigenverbrauch gibt es die Einmalvergütung (KLEIV/GREIV).",
       quelle: { titel: "Pronovo – PV-Auktionen 2026", url: "https://pronovo.ch/de/foerderung/photovoltaik/auktionen/" },
     },
+    ...fristenCH(),
   ],
   kulisse: {
     text: "Eine landesweite Flächenkulisse für Freiflächen-PV gibt es nicht. Die Eignung ergibt sich aus Bundesrecht, dem kantonalen Richtplan (Teil Energie) und der Interessenabwägung im Einzelfall. Nach Bundesrecht und kantonalen Merkblättern sind vor allem vorbelastete Standorte und Agri-PV mit klarem landwirtschaftlichem Nutzen aussichtsreich. Anlagen über 5 MW, die nicht an Gebäuden angebracht sind, brauchen zudem eine Umweltverträglichkeitsprüfung.",
@@ -201,7 +206,7 @@ const region = {
   ],
   unsicher: [
     "Inkrafttreten Art. 24ter RPG: Das BFE-Faktenblatt (11/2024) nannte den 1. Juli 2025; der konsolidierte RPG-Text (Stand 01.01.2026) und das Luzerner Merkblatt nennen den 1. Januar 2026. Die Datei folgt dem Gesetzestext.",
-    "Direktzahlungen bei Agri-PV: Belegt ist nur die Darstellung im SBV-Positionspapier (Art. 16 Abs. 1 Bst. f und Abs. 5 LBV, Verweis auf Art. 32c RPV). Ob der Verweis nach der RPV-Revision 2026 angepasst wurde, ist nicht geprüft. Der Ratgeber freiflaechen-pv-schweiz.js sagt, Direktzahlungen seien „nicht vorgesehen“ – das widerspricht dem SBV-Papier und sollte dort geprüft werden.",
+    "Direktzahlungen bei Agri-PV: Belegt ist nur die Darstellung im SBV-Positionspapier (Art. 16 Abs. 1 Bst. f und Abs. 5 LBV, Verweis auf Art. 32c RPV). Ob der Verweis nach der RPV-Revision 2026 angepasst wurde, ist nicht geprüft. Der Ratgeber freiflaechen-pv-schweiz.js nennt inzwischen ebenfalls „unter Bedingungen beitragsberechtigt“ (Stand 03.10.2026); der frühere Widerspruch ist behoben, die LBV-Fassung selbst bleibt zu prüfen.",
     "Die Anforderungen an Agri-PV auf Fruchtfolgeflächen (voller Erhalt von Ertragspotenzial und Bewirtschaftbarkeit, rein finanzieller Vorteil genügt nicht) stammen aus Suchergebnissen zu den RPV-Erläuterungen; der erläuternde Bericht selbst wurde nicht vollständig gelesen.",
     "Zürich und Aargau: keine kantonsspezifischen Belege zu Eignungsgebieten für Solaranlagen oder Agri-PV-Praxis gefunden (Zürcher Richtplan-Teilrevision 2026 in Auflage 14.09.–14.12.2026 betrifft nach Seiteninhalt Mobilität, Ver- und Entsorgung, öffentliche Bauten). Daher nicht als eigener Kanton aufgeführt.",
     "Kanton Bern: Richtplan-Aussagen zu Eignungsgebieten Solar nicht verifiziert (Richtplan-PDF zu gross); nur Solarexpress-Stand (Morgeten Solar) und die Existenz eines Merkblatts zu alpinen PV-Grossanlagen (Link-Liste SBV) belegt.",

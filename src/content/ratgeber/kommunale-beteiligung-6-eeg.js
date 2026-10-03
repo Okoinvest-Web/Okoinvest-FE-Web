@@ -3,6 +3,9 @@
 // BbgEESG vom 27.11.2025; BüGembeteilG M-V vom 23.04.2026 (GVOBl. M-V 2026 Nr. 12);
 // FA Wind und Solar (Übersicht Landesregelungen PV, Stand 17.07.2026; Kommunalbefragung § 6 EEG).
 // Rechenbeispiel mit dem Rechenkern des Kommunal-Rechners (src/lib/rechner/kommune.js).
+// Nachprüfung 03.10.2026 (Paket G): § 6 Abs. 4 EEG (gesetze-im-internet.de), NWindPVBetG (klimaschutz-niedersachsen.de),
+// AuBG (MWU Sachsen-Anhalt, Erläuterungen), EEErtrBetG (REVOSax, Stand 25.09.2025), BayWiVG (StMWi Bayern),
+// SGBG (MWIDE-Meldung 19.07.2024; Höhe 0,2 ct nur über FA Wind und Solar, Länderinfo 12/2025).
 
 import { KOMMUNE, ERLOESE, STAND } from "@/lib/invest/markt";
 import { rechneKommune } from "@/lib/rechner/kommune";
@@ -56,17 +59,17 @@ const artikel = {
     "Gewerbesteuer Solarpark Gemeinde",
   ],
   veroeffentlicht: "2026-09-29",
-  aktualisiert: "2026-09-29",
+  aktualisiert: "2026-10-03", // Rechtsstand nachgeprüft (Welle 1, Paket G)
   kategorie: "Strom, Markt & Gemeinschaft",
   bild: "/img/team-praesentation.jpg",
   bildAlt: "Zwei Frauen stellen einer Gesprächsrunde am Tisch ein kleines Solarmodul vor, daneben ein Flipchart",
   badge: { wert: `${fmt(KOMMUNE.beteiligungCt, 1)} ct/kWh`, text: "Kommunalbeteiligung nach § 6 EEG" },
 
   kurzFazit: [
-    `**Nach § 6 EEG dürfen Betreiber von Freiflächenanlagen der Standortgemeinde bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je tatsächlich eingespeister Kilowattstunde zahlen** – freiwillig, ohne Gegenleistung und schon vor der Genehmigung vertraglich vereinbar.`,
+    `**Nach § 6 EEG dürfen Betreiber von Freiflächenanlagen der Standortgemeinde bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je tatsächlich eingespeister Kilowattstunde zahlen** – freiwillig und ohne Gegenleistung. Vereinbart werden darf sie schon vor der Genehmigung, bei einem Bebauungsplan aber **nicht vor dessen Beschluss** (§ 6 Abs. 4 EEG).`,
     `Für einen Park mit ${MWP} MWp in Süddeutschland sind das rund **${fmtEur(P6_JAHR)} im Jahr** und über ${KOMMUNE.betrachtungJahre} Jahre gut ${rund(R.gesamt.p6, 10000)}.`,
     "Der Betreiber kann sich die Zahlung **für EEG-geförderte Strommengen vom Netzbetreiber erstatten** lassen. Für PPA-Strom und Zeiträume ohne Marktprämie gibt es keine Erstattung.",
-    "Mehrere Länder machen die Beteiligung inzwischen **zur Pflicht**, etwa Brandenburg (2.000 € je MW und Jahr) und Mecklenburg-Vorpommern (je 1.000 € je MW für Gemeinde und Einwohner). Weitere Länder folgen.",
+    "Mehrere Länder machen die Beteiligung inzwischen **zur Pflicht**, etwa Brandenburg (2.000 € je MW und Jahr), Mecklenburg-Vorpommern (je 1.000 € je MW für Gemeinde und Einwohner), Niedersachsen, Sachsen-Anhalt, Sachsen, das Saarland und seit 2026 Bayern (ab 5 MW).",
     `Die **Gewerbesteuer** steht bei Solaranlagen zu ${fmtPct(KOMMUNE.gewerbesteuerStandort, 0)} der Standortgemeinde zu, fällt wegen Abschreibung und Zinsen aber oft erst nach vielen Jahren nennenswert an.`,
   ],
 
@@ -137,7 +140,7 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: "**Die Vereinbarung braucht die Schriftform oder elektronische Form und darf schon vor der Genehmigung geschlossen werden – also auch parallel zum Bebauungsplan.** § 6 Abs. 4 EEG stellt ausdrücklich klar, dass sie nicht als Vorteil im Sinne der Korruptionsdelikte (§§ 331 bis 334 StGB) gilt.",
+          text: "**Die Vereinbarung braucht die Schriftform oder elektronische Form und darf vor der Genehmigung der Anlage geschlossen werden – wird für die Fläche ein Bebauungsplan aufgestellt, aber erst nach dem Beschluss des Bebauungsplans.** So steht es in § 6 Abs. 4 Satz 1 Nr. 2 EEG. Nur Vereinbarungen nach diesem Paragrafen gelten ausdrücklich nicht als Vorteil im Sinne der Korruptionsdelikte (§§ 331 bis 334 StGB); für einen Vertrag, der vor dem Satzungsbeschluss geschlossen wird, greift diese Klarstellung nach dem Wortlaut nicht. Lassen Sie den Zeitpunkt deshalb rechtlich prüfen.",
         },
         {
           typ: "p",
@@ -199,12 +202,16 @@ const artikel = {
           zeilen: [
             ["Brandenburg", "BbgEESG vom 27.11.2025 (zuvor BbgPVAbgG)", `Sonderabgabe **${fmt(BB_EUR_PRO_MW)} € je MW und Jahr** an die Standortgemeinde, Anlagen über ${LAND_SCHWELLE_MW} MW mit Inbetriebnahme ab 2025; Mittel zweckgebunden für Akzeptanzmaßnahmen`, "eigenständige Abgabe; nach FA-Übersicht keine Anrechnung"],
             ["Mecklenburg-Vorpommern", "BüGembeteilG M-V vom 23.04.2026", `Angebot von **${fmt(MV_GEMEINDE_EUR_PRO_MW)} € je MW** für die Gemeinde und **${fmt(MV_EINWOHNER_EUR_PRO_MW)} € je MW** für Einwohner (Gutschrift oder Direktzahlung) ab ${LAND_SCHWELLE_MW} MW; ohne Einigung Ersatzzahlung ${fmt(MV_ERSATZ_EUR_PRO_MW)} € je MW`, "§ 6-Zahlungen können nach § 3 Abs. 8 angerechnet werden"],
-            ["Niedersachsen", "NWindPVBetG (2024)", "Akzeptanzabgabe 0,2 ct/kWh an die Gemeinde, zusätzlich Angebot einer Beteiligung der Bevölkerung (im Mittel 0,1 ct/kWh)", "Anrechnung möglich"],
-            ["Übrige Länder", "keine Solarregelung oder in Vorbereitung", "freiwillige Zahlung nach § 6 EEG", "–"],
+            ["Niedersachsen", "NWindPVBetG (2024)", "ab 1 MW Akzeptanzabgabe **0,2 ct/kWh** (eingespeiste Menge) an die Gemeinde, zweckgebunden für Akzeptanzmaßnahmen; ab 5 MW zusätzlich ein Beteiligungsangebot für die Bevölkerung (angemessen z. B. 0,1 ct/kWh oder 20 % Beteiligung)", "Akzeptanzabgabe entfällt bei einer § 6-Vereinbarung über mindestens 0,2 ct/kWh"],
+            ["Sachsen-Anhalt", "AuBG (Anlagen ab Inbetriebnahme 01.10.2025)", "Zahlung an die Standortgemeinde: **0,3 ct je eingespeister kWh**, mindestens aber 2,50 € je kWp – es gilt der höhere Betrag", "§ 6-Zahlungen als alternatives Modell anrechenbar, bis höchstens 0,3 ct/kWh"],
+            ["Sachsen", "EEErtrBetG (geändert 10.09.2025)", "ab 1 MW, genehmigt nach dem 31.12.2024: **0,1 ct je eingespeister kWh** an die Standortgemeinde", "anderes Beteiligungsmodell schriftlich vereinbar, wenn wirtschaftlich angemessen"],
+            ["Saarland", "SGBG (2024)", "Pflicht zur Beteiligung der Standortgemeinde; ohne Vereinbarung Ersatzzahlung 0,2 ct/kWh (laut FA Wind und Solar); Einnahmen zweckgebunden", "Ziel ist eine Beteiligungsvereinbarung"],
+            ["Bayern", "BayWiVG (seit 01.01.2026)", "Anlagen über **5 MW**: Beteiligung der Gemeinden im Wert von mindestens 0,2 bis etwa 0,3 ct/kWh; bei Verstoß Ausgleichsabgabe 0,3 ct/kWh; ausgenommen u. a. Agri-PV, Anlagen ohne EEG-Förderung, Bürgerenergie", "die 0,2 ct können über § 6 EEG erbracht werden"],
+            ["Übrige Länder", "keine Pflicht für Solar bekannt (Hessen plant ein Gesetz)", "freiwillige Zahlung nach § 6 EEG", "–"],
           ],
           hervorheben: 2,
           minBreite: 760,
-          fussnote: "MV: gilt für Freiflächenanlagen, deren Aufstellungsbeschluss nach Inkrafttreten (29.04.2026) gefasst wird; Bürgerenergiegesellschaften und besondere Solaranlagen wie Agri-PV und Moor-PV sind ausgenommen. BB: Anlagen bis einschließlich 1 MW sind befreit. Details der übrigen Länder laut FA Wind und Solar; maßgeblich sind die jeweiligen Gesetzestexte.",
+          fussnote: "MV: gilt für Freiflächenanlagen, deren Aufstellungsbeschluss nach Inkrafttreten (29.04.2026) gefasst wird; Bürgerenergiegesellschaften und besondere Solaranlagen wie Agri-PV und Moor-PV sind ausgenommen. BB: Anlagen bis einschließlich 1 MW sind befreit. NI laut Klimaschutz- und Energieagentur Niedersachsen, ST laut Erläuterungen des MWU Sachsen-Anhalt, SN laut Gesetzestext (REVOSax, Stand 25.09.2025), BY laut StMWi Bayern, SL laut MWIDE und FA Wind und Solar (Länderinfo 12/2025; Höhe der Ersatzzahlung nicht am Gesetzestext geprüft). Maßgeblich sind die jeweiligen Gesetzestexte.",
         },
         {
           typ: "p",
@@ -254,7 +261,7 @@ const artikel = {
         {
           typ: "ablauf",
           schritte: [
-            ["Beteiligung früh ansprechen", "Schon beim [Aufstellungsbeschluss](/wissen/lexikon#aufstellungsbeschluss) klären, ob der Projektierer eine Vereinbarung nach § 6 EEG anbietet – und für welche Strommengen."],
+            ["Beteiligung früh ansprechen", "Schon beim [Aufstellungsbeschluss](/wissen/lexikon#aufstellungsbeschluss) offen klären, ob der Projektierer eine Vereinbarung nach § 6 EEG anbieten wird – und für welche Strommengen. Unterschrieben wird sie erst nach dem Beschluss des Bebauungsplans, und sie darf nie an das Abstimmungsverhalten geknüpft sein."],
             ["Landesrecht prüfen", "Gibt es eine Pflichtabgabe oder ein Beteiligungsgesetz? Welche Fristen gelten, und wird § 6 angerechnet?"],
             ["Vertrag prüfen lassen", "Mustervertrag als Grundlage nehmen, Laufzeit, Rechtsnachfolge und Abrechnung sichern; Befangenheiten im Gemeinderat klären."],
             ["Bürger mitdenken", "Neben der Gemeinde können Einwohner über Genossenschaft, Nachrangdarlehen oder Stromtarif profitieren – mehr im Ratgeber [Bürgerenergie und Akzeptanz](/ratgeber/buergerenergie-solarpark-akzeptanz) und unter [Genossenschaft](/genossenschaft)."],
@@ -268,7 +275,7 @@ const artikel = {
   faq: [
     {
       q: "Ist die Zahlung nach § 6 EEG für Solarparks Pflicht?",
-      a: "Nach Bundesrecht nein, sie ist freiwillig. Einige Länder wie Brandenburg und Mecklenburg-Vorpommern haben aber eigene Pflichten eingeführt. In der Praxis erwarten Gemeinden die Zahlung zunehmend als Teil eines fairen Projekts.",
+      a: "Nach Bundesrecht nein, sie ist freiwillig. Mehrere Länder – darunter Bayern (ab 5 MW), Brandenburg, Mecklenburg-Vorpommern, Niedersachsen, das Saarland, Sachsen und Sachsen-Anhalt – haben aber eigene Pflichten eingeführt. In der Praxis erwarten Gemeinden die Zahlung zunehmend als Teil eines fairen Projekts.",
     },
     {
       q: "Wie viel bekommt eine Gemeinde für einen Solarpark nach § 6 EEG?",
@@ -280,7 +287,7 @@ const artikel = {
     },
     {
       q: "Darf der Vertrag vor dem Satzungsbeschluss geschlossen werden?",
-      a: "Ja. § 6 Abs. 4 EEG erlaubt Vereinbarungen vor der Genehmigung und stellt klar, dass sie nicht als Vorteil im strafrechtlichen Sinn gelten. Die Zahlung darf aber nicht an eine bestimmte Entscheidung des Gemeinderats geknüpft werden.",
+      a: "Nein, wenn für den Solarpark ein Bebauungsplan aufgestellt wird. § 6 Abs. 4 EEG erlaubt Vereinbarungen zwar vor der Genehmigung der Anlage, aber nicht vor dem Beschluss des Bebauungsplans. Die strafrechtliche Klarstellung, dass die Vereinbarung kein Vorteil ist, gilt nach dem Wortlaut nur für solche Vereinbarungen. Die Zahlung darf außerdem nie an eine bestimmte Entscheidung des Gemeinderats geknüpft werden.",
     },
     {
       q: "Bekommen auch Nachbargemeinden Geld?",

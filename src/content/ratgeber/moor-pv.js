@@ -324,6 +324,8 @@ const artikel = {
     { href: "/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Termine, Zuschläge und Flächenkulisse." },
     { href: "/ratgeber/benachteiligte-gebiete-pv-freiflaeche", titel: "Benachteiligte Gebiete", text: "Die größte Kulisse für Solarparks auf Agrarland." },
     { href: "/landwirte", titel: "Für Landwirte", text: "Verpachten, selbst investieren oder beteiligen." },
+    { href: "/flaeche-verpachten", titel: "Fläche für Solarpark verpachten", text: "Pachtmodelle, Vertrag und Ablauf für Eigentümer." },
+    { href: "/rechner/pacht", titel: "Pachtrechner", text: "Pacht über die Laufzeit berechnen." },
   ],
 
   quellen: [

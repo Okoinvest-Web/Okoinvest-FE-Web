@@ -345,6 +345,8 @@ const artikel = {
     { href: "/ratgeber/negative-strompreise-solarspitzengesetz", titel: "Negative Strompreise", text: "Solarspitzengesetz und was es für Parks bedeutet." },
     { href: "/rechner/projektbewertung", titel: "Projektbewertung", text: "Was ein Projekt mit Netzzusage wert ist." },
     { href: "/grossspeicher", titel: "Großspeicher", text: "Speicher am Netzverknüpfungspunkt des Solarparks." },
+    { href: "/rechner/netzanschluss", titel: "Netzanschluss-Rechner", text: "Grobe Kosten für Trasse, Übergabestation und Umspannwerk." },
+    { href: "/freiflaeche", titel: "Freiflächen-PV entwickeln", text: "Vom Netzanschluss bis zum Betrieb eines Solarparks." },
   ],
 
   quellen: [

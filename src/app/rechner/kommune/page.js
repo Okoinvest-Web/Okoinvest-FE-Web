@@ -16,7 +16,7 @@ export const metadata = rechnerMetadata({
 const FAQ = [
   {
     q: "Was ist die Zahlung nach § 6 EEG?",
-    a: `Betreiber von Freiflächenanlagen dürfen den betroffenen Gemeinden bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je eingespeister Kilowattstunde zahlen – ohne Gegenleistung. Grundlage ist ein Vertrag zwischen Gemeinde und Betreiber, der schon vor der Genehmigung geschlossen werden darf. Bei EEG-geförderten Anlagen kann sich der Betreiber die Zahlung vom Netzbetreiber erstatten lassen. Einige Bundesländer machen die Beteiligung inzwischen verpflichtend oder verlangen zusätzliche Angebote an Bürger.`,
+    a: `Betreiber von Freiflächenanlagen dürfen der Standortgemeinde bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je tatsächlich eingespeister Kilowattstunde zahlen – ohne Gegenleistung. Grundlage ist ein schriftlicher oder elektronischer Vertrag zwischen Gemeinde und Betreiber. Er darf vor der Genehmigung der Anlage geschlossen werden, wird für die Fläche ein Bebauungsplan aufgestellt, aber nicht vor dessen Beschluss (§ 6 Abs. 4 EEG). Für EEG-geförderte Strommengen kann sich der Betreiber die Zahlung vom Netzbetreiber erstatten lassen. Mehrere Bundesländer, etwa Bayern (ab 5 MW), Brandenburg, Mecklenburg-Vorpommern, Niedersachsen, das Saarland, Sachsen und Sachsen-Anhalt, schreiben eine Beteiligung inzwischen per Landesgesetz vor; diese Landesregeln rechnet der Rechner nicht mit.`,
   },
   {
     q: "Wie viel Gewerbesteuer bleibt in der Gemeinde?",
@@ -60,7 +60,7 @@ export default function Page() {
         <div className="ov-prose max-w-none">
           <h2>So rechnet der Kommunal-Rechner</h2>
           <p>
-            <strong>§ 6 EEG:</strong> {fmt(KOMMUNE.beteiligungCt, 1)} ct je erzeugter Kilowattstunde, ab dem ersten Betriebsjahr, sofern ein Vertrag geschlossen wird.
+            <strong>§ 6 EEG:</strong> {fmt(KOMMUNE.beteiligungCt, 1)} ct je eingespeister Kilowattstunde, ab dem ersten Betriebsjahr, sofern ein Vertrag geschlossen wird. Landesrechtliche Pflichtzahlungen (z. B. in Brandenburg, Mecklenburg-Vorpommern oder Sachsen-Anhalt) sind nicht enthalten.
           </p>
           <p>
             <strong>Gewerbesteuer:</strong> Aus dem Betriebsergebnis des Parks (Erlöse minus Betrieb, Pacht, Abschreibung über {KOMMUNE.afaJahre} Jahre und Zinsen) ergibt sich der

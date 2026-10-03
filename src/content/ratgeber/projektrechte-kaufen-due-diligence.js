@@ -51,7 +51,7 @@ const artikel = {
     "Projektbörse Photovoltaik",
   ],
   veroeffentlicht: "2026-09-29",
-  aktualisiert: "2026-09-29",
+  aktualisiert: "2026-10-03", // Rechtsstand nachgeprüft (Welle 1, Paket G)
   kategorie: "Investieren & Projektbörse",
   bild: "/img/investoren-vor-ort.jpg",
   bildAlt: "Drei Personen mit weißen Schutzhelmen und Plänen gehen zwischen Modulreihen eines Solarparks",
@@ -315,7 +315,7 @@ const artikel = {
     },
     {
       q: "Gilt das auch für Projekte in Österreich und der Schweiz?",
-      a: "Der Ablauf ist ähnlich, die Rechtsgrundlagen unterscheiden sich: In Österreich sind Flächenwidmung, Netzzugangszusage und je nach Größe eine UVP zentral, die Anteilsübertragung verlangt einen Notariatsakt. In der Schweiz spielen Raumplanung und kantonales Recht die Hauptrolle. Lassen Sie die Prüfung von lokal zugelassenen Fachleuten begleiten.",
+      a: "Der Ablauf ist ähnlich, die Rechtsgrundlagen unterscheiden sich: In Österreich sind Flächenwidmung, Netzzugangszusage sowie elektrizitäts- und naturschutzrechtliche Bewilligungen zentral (einen eigenen UVP-Tatbestand für Photovoltaik kennt das UVP-G nicht), die Anteilsübertragung verlangt einen Notariatsakt. In der Schweiz spielen Raumplanung und kantonales Recht die Hauptrolle. Lassen Sie die Prüfung von lokal zugelassenen Fachleuten begleiten.",
     },
   ],
 
@@ -324,6 +324,8 @@ const artikel = {
     { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Genehmigung und Bebauungsplan", text: "Vom Aufstellungs- zum Satzungsbeschluss." },
     { href: "/rechner/projektbewertung", titel: "Projektbewertung", text: "Preisspanne je kWp für Ihr Projekt." },
     { href: "/projektboerse", titel: "Projektbörse", text: "Aktuelle Projekte ansehen oder Suchprofil anlegen." },
+    { href: "/investoren", titel: "Solarprojekte kaufen", text: "Phasenmodell, Preise und Datenraum für Investoren." },
+    { href: "/bestandsanlagen", titel: "Bestandsanlagen kaufen", text: "Laufende Solarparks auf dem Zweitmarkt." },
   ],
 
   quellen: [

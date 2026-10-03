@@ -189,7 +189,8 @@ export const FAQ_PROZESS = [
 export const FAQ_KONTAKT = [
   {
     q: "Wie schnell bekomme ich eine Antwort?",
-    a: "In der Regel innerhalb von zwei Werktagen. Jede Anfrage wird als Vorgang angelegt und einem festen Ansprechpartner zugeordnet.",
+    // QM Welle 1: keine öffentliche Zeitangabe vor 4 Wochen gemessenem Nachweis (Masterplan Abschnitt 5)
+    a: "Jede Anfrage wird als Vorgang angelegt und einer zuständigen Person für Ihr Land zugeordnet, die sich persönlich bei Ihnen meldet. Den Stand sehen Sie nach der Registrierung im Portal.",
   },
   {
     q: "Warum gibt es keine Telefonnummer auf der Website?",
@@ -309,7 +310,7 @@ const STROM_POOL = [
   FAQ_GENOSSENSCHAFT[0],
   {
     q: "Wie profitieren Gemeinden von einem Solarpark?",
-    a: `In Deutschland können Betreiber der Standortgemeinde nach § 6 EEG bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je eingespeister kWh zahlen. Zusätzlich fließen ${fmt(KOMMUNE.gewerbesteuerStandort * 100)} % der Gewerbesteuer eines Solarparks an die Standortgemeinde. Der Kommunal-Rechner zeigt die Größenordnung für Ihr Projekt.`,
+    a: `In Deutschland können Betreiber der Standortgemeinde nach § 6 EEG freiwillig bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je eingespeister kWh zahlen; mehrere Bundesländer schreiben eine Beteiligung inzwischen per Landesgesetz vor. Zusätzlich fließen ${fmt(KOMMUNE.gewerbesteuerStandort * 100)} % der Gewerbesteuer eines Solarparks an die Standortgemeinde. Der Kommunal-Rechner zeigt die Größenordnung für Ihr Projekt.`,
   },
 ];
 

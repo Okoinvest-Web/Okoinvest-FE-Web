@@ -348,6 +348,8 @@ const artikel = {
     { href: "/ratgeber/direktvermarktung-solarpark", titel: "Direktvermarktung", text: "Wie Solarparks ihren Strom nach dem EEG vermarkten." },
     { href: "/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Laufzeit, Verlängerung und Rückbau im Vertrag." },
     { href: "/rechner/solarpark", titel: "Solarpark-Rechner", text: "Erlöse, Kosten und Rendite mit eigenen Werten." },
+    { href: "/bestandsanlagen", titel: "Bestandsanlage verkaufen", text: "Laufende Parks vertraulich über den Zweitmarkt anbieten." },
+    { href: "/rechner/bestandsanlage", titel: "Bestandsanlage bewerten", text: "Ertragswert mit EEG-Restlaufzeit berechnen." },
   ],
 
   quellen: [

@@ -2,6 +2,8 @@
 // Informationsblatt PV-Freiflächen (11/2022), Studie PV-Freiflächenpotenzial Tirol (08/2022), Presse Land Tirol (TBVO-PV),
 // Kundmachung Entwurf TBVO-PV (Auflage 06–07/2026), RIS (§ 33 EAG), Statistik Austria (Agrarstrukturerhebung 2023,
 // Bevölkerung 01.01.2026), BEV/WKO (Fläche 01.01.2025), PVGIS v5.3
+import { fristenAT } from "./fristen";
+
 const region = {
   slug: "tirol",
   land: "AT",
@@ -68,6 +70,7 @@ const region = {
       text: "Für Anlagen auf landwirtschaftlich genutzten Flächen oder im Grünland verringert sich der Zuschlagswert der EAG-Marktprämie um 25 % (§ 33 EAG). Deponien, Infrastrukturstandorte und qualifizierte Agri-PV-Anlagen sind ausgenommen – für die Tiroler Standortlogik ein zusätzliches Argument für vorbelastete Flächen.",
       quelle: { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790" },
     },
+    ...fristenAT(),
   ],
   kulisse: {
     text: "Die Tiroler Flächenkulisse für Freiflächen-PV ist klein und klar auf Vorbelastung ausgerichtet. Die Potenzialstudie des Landes von 2022 schätzte das realistisch erschließbare Potenzial abseits von Almen und Hochgebirge auf rund 730 GWh pro Jahr: davon 283 GWh durch Überdachung von Großparkplätzen, 246 GWh durch Fahrbahnüberdachungen, 91 GWh auf Verkehrsrandflächen, 56 GWh auf Deponien und 50 GWh an Lärmschutzwänden, Kläranlagen und Brücken.",

@@ -347,6 +347,8 @@ const artikel = {
     { href: "/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Wie Solar-Stromlieferverträge funktionieren." },
     { href: "/ratgeber/solarpark-investment-rendite", titel: "Solarpark-Investment", text: "Rendite, Risiken und Kennzahlen." },
     { href: "/projektboerse", titel: "Projektbörse", text: "Projekte in allen Entwicklungsphasen finden." },
+    { href: "/marktdaten", titel: "Marktdaten Solar", text: "Zuschlagswerte seit 2017 und Marktwert Solar mit Quellen." },
+    { href: "/investoren", titel: "Solarprojekte kaufen", text: "Phasenmodell, Preise und Datenraum für Investoren." },
   ],
 
   quellen: [

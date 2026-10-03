@@ -361,6 +361,7 @@ const artikel = {
     { href: "/ratgeber/agri-pv-foerderung-gap", titel: "Agri-PV Förderung & GAP", text: "Direktzahlungen, EEG-Bonus und Baurecht im Überblick." },
     { href: "/ratgeber/agri-pv-wirtschaftlichkeit", titel: "Agri-PV Wirtschaftlichkeit", text: "Was vertikale und hohe Anlagen kosten und erlösen." },
     { href: "/agri-pv", titel: "Agri-PV mit ÖkoInvest", text: "Systeme, Kulturen und Beteiligungsmodelle." },
+    { href: "/landwirte", titel: "Agri-PV für Landwirte", text: "Verpachten, selbst investieren oder beteiligen." },
   ],
 
   quellen: [

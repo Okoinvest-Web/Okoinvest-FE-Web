@@ -2,6 +2,8 @@
 // Recherchestand 29.09.2026: Kanton Luzern Merkblatt Solaranlagen (gültig ab 01.01.2026, Art. 24ter RPG,
 // Art. 32c RPV), Swissolar „2026: Was gilt neu“, Pronovo PV-Auktionen (Runde Q4/2026), BFE Förderung PV,
 // Stromzeit (Solarexpress-Stand 10/2025 und Fristverlängerung vom 21.03.2025), Swissvotes (Stromgesetz 09.06.2024).
+// Nachprüfung 03.10.2026 (Paket G) an Fedlex: RPG Stand 01.07.2026 (Art. 24ter in Kraft seit 01.01.2026, Fn. 78),
+// RPV Stand 01.07.2026 (Art. 32abis Fassaden und Art. 32d freistehende Anlagen, beide in Kraft seit 01.01.2026).
 
 import { REGIONEN, GEMEINSCHAFTEN, regionById } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
@@ -58,14 +60,14 @@ const artikel = {
     "Lokale Elektrizitätsgemeinschaft LEG",
   ],
   veroeffentlicht: "2026-09-29",
-  aktualisiert: "2026-09-29",
+  aktualisiert: "2026-10-03", // Rechtsstand nachgeprüft (Welle 1, Paket G)
   kategorie: "Recht & Genehmigung",
   bild: "/img/solarpark-reihen.jpg",
   bildAlt: "Dicht gereihte Solarmodule mit Wechselrichtern und Kabeltrassen aus der Vogelperspektive",
   badge: { wert: `bis ${fmt(HEIV_MAX_ANTEIL * 100)} %`, text: "Einmalvergütung für Anlagen ohne Eigenverbrauch" },
 
   kurzFazit: [
-    "**Ausserhalb der Bauzone ist eine Solaranlage nur zulässig, wenn sie als standortgebunden gilt.** Seit 2025 regelt Art. 24ter RPG das für freistehende Anlagen: wenig empfindliches oder vorbelastetes Gebiet, angemessener Erschliessungsaufwand.",
+    "**Ausserhalb der Bauzone ist eine Solaranlage nur zulässig, wenn sie als standortgebunden gilt.** Seit 1. Januar 2026 regelt Art. 24ter RPG das für freistehende Anlagen: wenig empfindliches oder vorbelastetes Gebiet, angemessener Erschliessungsaufwand.",
     "**Agri-PV** auf landwirtschaftlicher Nutzfläche ist nur bewilligungsfähig, wenn sie der Landwirtschaft Vorteile bringt oder Versuchs- und Forschungszwecken dient.",
     `Der **Solarexpress** für alpine Grossanlagen (ab ${fmt(SOLAREXPRESS_MIN_GWH)} GWh/Jahr) setzte eine öffentliche Auflage bis 31.12.2025 voraus; gefördert wird mit bis zu ${fmt(HEIV_MAX_ANTEIL * 100)} % der Investitionskosten. Das ${fmt(SOLAREXPRESS_ZIEL_TWH)}-TWh-Ziel wird nach aktuellem Stand deutlich verfehlt.`,
     `Anlagen ab **${fmt(AUKTION_AB_KW)} kW ohne Eigenverbrauch** erhalten die hohe Einmalvergütung (HEIV) oder die gleitende Marktprämie per Auktion – Runde Q4/2026: HEIV-Höchstgebot CHF ${fmt(HEIV_HOECHSTGEBOT_CHF_KW)}/kW.`,
@@ -95,17 +97,17 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: "**Das Bundesrecht unterscheidet vier Fälle: Anlagen auf Bauten, nicht freistehende Anlagen ausserhalb der Bauzone, freistehende Anlagen und Agri-PV.** Für Anlagen auf Dächern genügt nach Art. 18a RPG in der Regel ein Meldeverfahren. Alles, was frei auf einer Fläche steht, braucht dagegen eine Baubewilligung mit Ausnahmebewilligung für das Bauen ausserhalb der Bauzone – und eine umfassende Interessenabwägung.",
+          text: "**Das Bundesrecht unterscheidet vier Fälle: Anlagen auf Bauten, nicht freistehende Anlagen ausserhalb der Bauzone, freistehende Anlagen und Agri-PV.** Für genügend angepasste Anlagen auf Dächern und – seit 2026 – an Fassaden genügt nach Art. 18a RPG in der Regel ein Meldeverfahren. Alles, was frei auf einer Fläche steht, braucht dagegen eine Baubewilligung mit Ausnahmebewilligung für das Bauen ausserhalb der Bauzone – und eine umfassende Interessenabwägung.",
         },
         {
           typ: "tabelle",
           caption: "Raumplanerische Einordnung von Solaranlagen in der Schweiz, Stand September 2026",
           kopf: ["Anlagentyp", "Rechtsgrundlage", "Voraussetzung", "Verfahren"],
           zeilen: [
-            ["Anlage auf Dach (genügend angepasst)", "Art. 18a Abs. 1 RPG, Art. 32a RPV", "angepasst an Dach, keine Kultur- oder Naturdenkmäler", "Meldeverfahren"],
+            ["Anlage auf Dach oder an Fassade (genügend angepasst)", "Art. 18a RPG, Art. 32a und 32abis RPV", "genügend angepasst an Dach bzw. Fassade, keine Kultur- oder Naturdenkmäler", "Meldeverfahren"],
             ["Nicht freistehend ausserhalb Bauzone (z. B. Parkplatz, Lärmschutzwand, Staumauer)", "Art. 32c RPV", "bildet optisch eine Einheit mit rechtmässigen, längerfristig bestehenden Bauten oder Anlagen; Netzanschluss", "Baubewilligung"],
-            ["Freistehend, ausserhalb landwirtschaftlicher Nutzfläche", "Art. 24ter Abs. 1 RPG", "wenig empfindliches oder bereits mit Bauten belastetes Gebiet; Erschliessungs- und Netzanschlussaufwand angemessen", "Baubewilligung mit Interessenabwägung"],
-            ["Agri-PV auf landwirtschaftlicher Nutzfläche", "Art. 24ter Abs. 2 RPG", "beeinträchtigt landwirtschaftliche Interessen nicht und bringt Vorteile für die Produktion – oder dient Versuchs- und Forschungszwecken", "Baubewilligung mit Interessenabwägung"],
+            ["Freistehend, ausserhalb landwirtschaftlicher Nutzfläche", "Art. 24ter Abs. 1 RPG, Art. 32d RPV", "wenig empfindliches oder bereits mit Bauten belastetes Gebiet; Erschliessungs- und Netzanschlussaufwand angemessen", "Baubewilligung mit Interessenabwägung"],
+            ["Agri-PV auf landwirtschaftlicher Nutzfläche", "Art. 24ter Abs. 2 RPG, Art. 32d RPV", "beeinträchtigt landwirtschaftliche Interessen nicht und bringt Vorteile für die Produktion – oder dient Versuchs- und Forschungszwecken", "Baubewilligung mit Interessenabwägung"],
             ["Grossanlage von nationalem Interesse", "EnG, kantonaler Richtplan", "Mindestproduktion nach Energieverordnung; Interesse an der Realisierung geht anderen nationalen Interessen grundsätzlich vor", "je nach Kanton, teils konzentriert"],
             ["Alpine Grossanlage (Solarexpress)", "Art. 71a EnG (befristet)", `mind. ${fmt(SOLAREXPRESS_MIN_GWH)} GWh/Jahr, mind. ${fmt(SOLAREXPRESS_WINTER_KWH_KW)} kWh/kW im Winterhalbjahr; öffentliche Auflage bis 31.12.2025`, "kantonale Bewilligung, Zustimmung der Standortgemeinde"],
           ],
@@ -291,6 +293,8 @@ const artikel = {
     { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Solarpark-Genehmigung in Deutschland", text: "Bebauungsplan, Privilegierung und Ablauf." },
     { href: "/ratgeber/energy-sharing-energiegemeinschaften", titel: "Energy Sharing & Energiegemeinschaften", text: "LEG, EEG und Energy Sharing im DACH-Vergleich." },
     { href: "/agri-pv", titel: "Agri-PV", text: "Doppelnutzung von Fläche für Landwirtschaft und Strom." },
+    { href: "/regionen", titel: "Solarpark nach Region", text: "Recht, Flächenkulisse und Pacht je Bundesland und Kanton." },
+    { href: "/freiflaeche", titel: "Freiflächen-PV entwickeln", text: "Solarparks in DE, AT und CH – vom Acker bis zum Betrieb." },
   ],
 
   quellen: [

@@ -2,6 +2,8 @@
 // Elektrizitätswirtschaftsgesetz (§§ 5, 19b), Gesetz über Naturschutz und Landschaftsentwicklung (§§ 24, 33, 56d, 56g),
 // VO überörtliche Freiflächen Rheintal/Walgau, Studie PV-Freiflächenpotenzial Tirol 2022 (Länderüberblick), RIS (§ 33 EAG),
 // Statistik Austria (Agrarstrukturerhebung 2023, Bevölkerung 01.01.2026), BEV/WKO (Fläche 01.01.2025), PVGIS v5.3
+import { fristenAT } from "./fristen";
+
 const region = {
   slug: "vorarlberg",
   land: "AT",
@@ -68,6 +70,7 @@ const region = {
       text: "Auf landwirtschaftlich genutzten Flächen und im Grünland sinkt der Zuschlagswert der EAG-Marktprämie um 25 % (§ 33 EAG). Ausgenommen sind unter anderem Deponien, Altlasten, Bergbau- und Infrastrukturstandorte sowie qualifizierte Agri-PV-Anlagen – das passt zur Vorarlberger Linie, Freiflächen-PV auf vorbelastete Flächen zu lenken.",
       quelle: { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790" },
     },
+    ...fristenAT(),
   ],
   kulisse: {
     text: "Die Vorarlberger Kulisse für Freiflächen-PV ist sehr eng. In den Talsohlen von Rheintal und Walgau liegt ein großer Teil der ebenen Flächen in der Landesgrünzone, dazu kommen Hochwasser-Freiflächen, Riedflächen und Schutzgebiete. Außerhalb der Täler sind Hanglagen, Wald und Alpen prägend. Realistisch sind vor allem Standorte mit Vorbelastung.",

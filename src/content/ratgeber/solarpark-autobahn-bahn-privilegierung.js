@@ -319,6 +319,8 @@ const artikel = {
     { href: "/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Flächenkulisse, Höchstwerte und Zuschläge." },
     { href: "/ratgeber/solarpark-abstand-wohnbebauung-blendgutachten", titel: "Abstand und Blendgutachten", text: "Wie Blendung geprüft und vermieden wird." },
     { href: "/flaechencheck", titel: "Flächencheck", text: "Lage zu Autobahn und Bahn prüfen lassen." },
+    { href: "/flaeche-verpachten", titel: "Fläche für Solarpark verpachten", text: "Pachtmodelle, Vertrag und Ablauf für Eigentümer." },
+    { href: "/freiflaeche", titel: "Freiflächen-PV entwickeln", text: "Flächenkriterien, Genehmigung und Zeitplan." },
   ],
 
   quellen: [

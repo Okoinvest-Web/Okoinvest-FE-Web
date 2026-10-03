@@ -63,7 +63,7 @@ const artikel = {
     "§ 22b EEG Bürgerenergie",
   ],
   veroeffentlicht: "2026-09-29",
-  aktualisiert: "2026-09-29",
+  aktualisiert: "2026-10-03", // Rechtsstand nachgeprüft (Welle 1, Paket G)
   kategorie: "Strom, Markt & Gemeinschaft",
   bild: "/img/solarpark-baeume.jpg",
   bildAlt: "Reihen von Solarmodulen unter blauem Himmel, im Hintergrund grüne Laubbäume",
@@ -231,7 +231,7 @@ const artikel = {
         {
           typ: "ablauf",
           schritte: [
-            ["Vor dem Aufstellungsbeschluss", "Gespräch mit Bürgermeister und Fraktionen, erste Visualisierung, Eckpunkte zu Fläche, Netzanschluss, Rückbau, § 6-Zahlung und Beteiligungsangebot. Hintergrund: [Aufstellungsbeschluss](/wissen/lexikon#aufstellungsbeschluss)."],
+            ["Vor dem Aufstellungsbeschluss", "Gespräch mit Bürgermeister und Fraktionen, erste Visualisierung, Eckpunkte zu Fläche, Netzanschluss, Rückbau, § 6-Zahlung und Beteiligungsangebot – unterschrieben wird eine § 6-Vereinbarung erst nach dem Beschluss des Bebauungsplans (§ 6 Abs. 4 EEG), und keine Zusage darf an das Abstimmungsverhalten geknüpft sein. Hintergrund: [Aufstellungsbeschluss](/wissen/lexikon#aufstellungsbeschluss)."],
             ["Frühzeitige Beteiligung", "Informationsabend und Sprechstunden parallel zur [frühzeitigen Beteiligung](/wissen/lexikon#fruehzeitige-beteiligung) nach § 3 Abs. 1 BauGB; Fragen sammeln und öffentlich beantworten."],
             ["Gutachten offenlegen", "Ergebnisse zu Blendung, Abständen und Artenschutz verständlich aufbereiten – siehe [Abstand und Blendgutachten](/ratgeber/solarpark-abstand-wohnbebauung-blendgutachten) und [Artenschutz und Biodiversität](/ratgeber/solarpark-artenschutz-biodiversitaet)."],
             ["Beteiligungsmodell konkretisieren", "Genossenschaft, Darlehen oder Stromtarif mit klaren Konditionen anbieten, bevor der Satzungsbeschluss ansteht."],
@@ -318,6 +318,8 @@ const artikel = {
     { href: "/energiegemeinschaften", titel: "Energiegemeinschaften", text: "Solarstrom gemeinsam nutzen in DE, AT und CH." },
     { href: "/ratgeber/kommunale-beteiligung-6-eeg", titel: "Kommunale Beteiligung § 6 EEG", text: "Was die Gemeinde erhält und wie der Vertrag aussieht." },
     { href: "/kommunen", titel: "Für Kommunen", text: "Planung, Beteiligung und Einnahmen im Überblick." },
+    { href: "/rechner/beteiligung", titel: "Beteiligungsrechner", text: "Wie die Ausschüttung einer Energiegenossenschaft entsteht." },
+    { href: "/rechner/kommune", titel: "Kommunal-Rechner", text: "Was ein Solarpark der Gemeinde pro Jahr bringt." },
   ],
 
   quellen: [

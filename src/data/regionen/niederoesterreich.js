@@ -1,6 +1,8 @@
 // Recherche: 29.09.2026 – NÖ ROG 2014 / FAQ PV Land NÖ (Mai 2025), energie-noe.at (Freiflächen-PV, Agri-PV),
 // raumordnung-noe.at (SekRop PV, LGBl. Nr. 94/2022), naturland-noe.at (RED III), Netz NÖ (Kapazitätskarte 02/2025),
 // Statistik Austria (Agrarstrukturerhebung 2023, Bevölkerung 01.01.2026), BEV/WKO (Fläche 01.01.2025), PVGIS v5.3, RIS (§ 33 EAG)
+import { fristenAT } from "./fristen";
+
 const region = {
   slug: "niederoesterreich",
   land: "AT",
@@ -67,6 +69,7 @@ const region = {
       text: "Wer eine EAG-Marktprämie anstrebt, muss auf landwirtschaftlich genutzten Flächen und im Grünland mit einem Abschlag von 25 % auf den Zuschlagswert rechnen (§ 33 EAG). Der Abschlag entfällt unter anderem für Deponien, Altlasten, Bergbau- und Infrastrukturstandorte sowie für Agri-PV-Anlagen, die die landwirtschaftliche Hauptnutzung nicht oder nur gering beeinträchtigen – für die vorbelasteten NÖ-Zonen ein wichtiger Vorteil.",
       quelle: { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790" },
     },
+    ...fristenAT(),
   ],
   kulisse: {
     text: "Die Flächenkulisse in Niederösterreich wird vor allem durch die 116 Zonen und die 2-ha-Grenze bestimmt. Wer eine größere Ackerfläche außerhalb einer Zone besitzt, kann in der Regel nur einen Teil davon für PV nutzen. Chancen bieten Flächen in oder direkt neben einer Zone, vorbelastete Standorte und Kombinationen mit landwirtschaftlicher Nutzung.",

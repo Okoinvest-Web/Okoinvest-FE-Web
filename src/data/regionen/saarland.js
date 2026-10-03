@@ -1,6 +1,7 @@
 // Recherche: 29.09.2026 – saarland.de (MWIDE): Photovoltaik auf Agrarflächen / VOEPV, Fakten Photovoltaik (MaStR bis 03/2026),
 // AG Netze; VOEPV-Text (umwelt-online), pv magazine 15.05.2024 (Saarländisches Solarpaket), Amprion Netzerweiterung Saarland,
 // § 37c EEG, Statistikportal (LF 2025, Bevölkerung), PVGIS v5.3.
+// Nachprüfung 03.10.2026 (Paket G): MWIDE-Meldung 19.07.2024 (SGBG in Kraft), FA Wind und Solar Länderinfo Saarland (12/2025).
 const region = {
   slug: "saarland",
   land: "DE",
@@ -62,10 +63,18 @@ const region = {
     },
     {
       titel: "Saarländisches Solarpaket 2024",
-      text: "Im Mai 2024 hat die Landesregierung ein Solarpaket angekündigt. Für Freiflächen sind darin unter anderem vorgesehen: Agri-PV auch in Vorranggebieten für Landwirtschaft, schnellere Verfahren für Anlagen an Autobahnen und Bahnstrecken, eine Beteiligung der Kommunen an Erträgen aus Solarparks sowie rund 25 ha ehemalige Bergbauflächen in Zusammenarbeit mit der RAG. Welche Punkte inzwischen in Kraft sind, sollte im Einzelfall geprüft werden.",
+      text: "Im Mai 2024 hat die Landesregierung ein Solarpaket angekündigt. Für Freiflächen sind darin unter anderem vorgesehen: Agri-PV auch in Vorranggebieten für Landwirtschaft, schnellere Verfahren für Anlagen an Autobahnen und Bahnstrecken, eine Beteiligung der Kommunen an Erträgen aus Solarparks sowie rund 25 ha ehemalige Bergbauflächen in Zusammenarbeit mit der RAG. Die Gemeindebeteiligung ist mit dem SGBG seit Juli 2024 in Kraft (siehe unten); ob die übrigen Punkte umgesetzt sind, sollte im Einzelfall geprüft werden.",
       quelle: {
         titel: "pv magazine – Saarland plant umfassendes Solarpaket (15.05.2024)",
         url: "https://www.pv-magazine.de/2024/05/15/saarland-plant-umfassendes-solarpaket/",
+      },
+    },
+    {
+      titel: "Gemeindebeteiligungsgesetz (SGBG): Beteiligung ist Pflicht",
+      text: "Seit Juli 2024 gilt das **Saarländische Gemeindebeteiligungsgesetz (SGBG)**. Vorhabenträger neuer PV-Freiflächenanlagen müssen die Standortgemeinde an den Erlösen beteiligen; Ziel ist eine Beteiligungsvereinbarung. Kommt keine zustande, ist nach der Übersicht der Fachagentur Wind und Solar eine Ersatzzahlung von 0,2 Cent je eingespeister Kilowattstunde fällig. Die Gemeinden müssen die Einnahmen für Maßnahmen zur Steigerung der Akzeptanz einsetzen. Die Zahlung trägt der Betreiber, nicht der Flächeneigentümer.",
+      quelle: {
+        titel: "saarland.de (MWIDE) – Windpaket tritt in Kraft, mit SGBG (19.07.2024)",
+        url: "https://www.saarland.de/mwide/DE/aktuelles/aktuelle-meldungen/2024/07/19_windpaket",
       },
     },
   ],
@@ -167,7 +176,8 @@ const region = {
   ],
   unsicher: [
     "Ob das Saarland nach Solarpaket I eine Neuregelung/Opt-out-Verordnung erlassen hat, ist offen: Das MWIDE schreibt nur, es „prüft“ eine Änderung; keine Verordnung gefunden (Suchbudget erschöpft).",
-    "Umsetzungsstand des Solarpakets 2024 (Agri-PV in LEP-Vorranggebieten Landwirtschaft, kommunale Ertragsbeteiligung, 25 ha RAG-Flächen) nicht geprüft – nur als Ankündigung formuliert.",
+    "Umsetzungsstand des Solarpakets 2024 (Agri-PV in LEP-Vorranggebieten Landwirtschaft, 25 ha RAG-Flächen) nicht geprüft – nur als Ankündigung formuliert. Die kommunale Ertragsbeteiligung (SGBG) ist laut MWIDE-Meldung vom 19.07.2024 in Kraft (geprüft 03.10.2026).",
+    "SGBG: Höhe der Ersatzzahlung (0,2 ct/kWh) nur über die Länderinfo der Fachagentur Wind und Solar (Stand 12/2025) belegt; der Gesetzestext (Amtsbl. I 2024) war nicht abrufbar – vor Nutzung in Verträgen oder Rechnern prüfen.",
     "Größe der VOEPV-Kulisse: saarland.de nennt einmal 8.300 ha, an anderer Stelle 7.470 ha Acker-/Grünland – daher nur „etwa ein Siebtel“ von 57.000 ha.",
     "Dass es im Saarland keine eigene Regionalplanungsebene gibt und der LEP unmittelbar gilt, wurde nicht explizit belegt; Text verweist daher nur auf den LEP. Zuständiges Ministerium der Landesplanung nicht namentlich genannt.",
     "Freiflächen-Zuschläge 2025 je Land aus FA-Wind-und-Solar-Tabelle für das Saarland nicht eindeutig extrahierbar – weggelassen.",

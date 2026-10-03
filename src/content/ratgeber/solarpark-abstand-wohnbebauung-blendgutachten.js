@@ -330,6 +330,8 @@ const artikel = {
     { href: "/ratgeber/solarpark-autobahn-bahn-privilegierung", titel: "Solarpark an Autobahn und Bahn", text: "Privilegierung, Förderkorridor und Anbauzonen." },
     { href: "/ratgeber/buergerenergie-solarpark-akzeptanz", titel: "Bürgerenergie und Akzeptanz", text: "Wie Beteiligung Konflikte entschärft." },
     { href: "/flaechencheck", titel: "Flächencheck", text: "Lage, Netz und Planungsrecht Ihrer Fläche prüfen." },
+    { href: "/freiflaeche", titel: "Freiflächen-PV entwickeln", text: "Flächenkriterien, Genehmigung und Zeitplan." },
+    { href: "/kommunen", titel: "Solarparks für Kommunen", text: "Wie Gemeinden Kriterien festlegen und mitverdienen." },
   ],
 
   quellen: [

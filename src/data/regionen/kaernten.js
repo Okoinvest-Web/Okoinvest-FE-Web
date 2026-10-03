@@ -2,6 +2,8 @@
 // (RIS, Fassung 15.08.2024), Land Kärnten (Regierungssitzung 30.07.2024), LK Kärnten, WKO Kärnten PV-Checkliste
 // (Stand März 2023, Naturschutz), energynewsmagazine (13.02.2026, Beschleunigungsgebiete), Statistik Austria
 // Agrarstrukturerhebung 2023, WKO Fläche 2025, RIS EAG § 33, PVGIS v5.3.
+import { fristenAT } from "./fristen";
+
 const region = {
   slug: "kaernten",
   land: "AT",
@@ -65,6 +67,7 @@ const region = {
       text: "Für Anlagen auf landwirtschaftlich genutzten Flächen oder im Grünland verringert sich der Zuschlagswert der EAG-Marktprämie um 25 %. Agri-PV-Anlagen, bei denen die landwirtschaftliche Hauptnutzung nicht oder nur gering beeinträchtigt wird, können ausgenommen sein – in Kärnten ein zusätzliches Argument für Agri-PV.",
       quelle: { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790" },
     },
+    ...fristenAT(),
   ],
   kulisse: {
     text: "Weil die Widmungsfläche auf 4 ha begrenzt ist, geht es in Kärnten weniger um die große Fläche als um den richtigen Standort: nahe an bestehender Infrastruktur, außerhalb der Schutz- und Gefahrenzonen und nicht auf den besten Böden. Vorbelastete Flächen haben einen doppelten Vorteil, weil dort bis 10 ha möglich sind. Für Agri-PV mit Beweidung gilt die Pflicht zur Infrastrukturnähe nicht.",

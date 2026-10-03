@@ -74,7 +74,7 @@ const artikel = {
     "Strom mit Nachbarn teilen",
   ],
   veroeffentlicht: "2026-09-29",
-  aktualisiert: "2026-09-29",
+  aktualisiert: "2026-10-03", // Rechtsstand nachgeprüft (Welle 1, Paket G)
   kategorie: "Strom, Markt & Gemeinschaft",
   bild: "/img/gewerbedach.jpg",
   bildAlt: "Techniker mit Funkgerät auf einem Flachdach mit Solarmodulen, im Hintergrund Wohnhäuser und Gewerbehallen",
@@ -350,7 +350,7 @@ const artikel = {
     },
     {
       q: "Brauche ich trotz Energiegemeinschaft noch einen Stromlieferanten?",
-      a: "Ja, in allen drei Ländern. Keine Gemeinschaft deckt den Bedarf jederzeit vollständig; den Reststrom liefert ein frei wählbarer Lieferant. Wie Unternehmen diesen Reststrom gebündelt beschaffen können, erklärt die Seite [Reststrom](/reststrom).",
+      a: "Ja, in allen drei Ländern. Keine Gemeinschaft deckt den Bedarf jederzeit vollständig; den Reststrom liefert ein Lieferant. In Deutschland und Österreich ist er frei wählbar. In der Schweiz haben nur Endverbraucher ab 100 MWh Jahresverbrauch Zugang zum freien Markt (Art. 11 Abs. 2 StromVV); alle anderen bleiben beim Netzbetreiber in der Grundversorgung. Wie Unternehmen diesen Reststrom gebündelt beschaffen können, erklärt die Seite [Reststrom](/reststrom).",
     },
     {
       q: "Dürfen Unternehmen an Energy Sharing teilnehmen?",
@@ -363,6 +363,8 @@ const artikel = {
     { href: "/genossenschaft", titel: "Genossenschaft", text: "Beteiligung an Solarprojekten in der Region." },
     { href: "/ratgeber/virtuelles-kraftwerk", titel: "Virtuelles Kraftwerk erklärt", text: "Wie viele kleine Anlagen gemeinsam am Strommarkt auftreten." },
     { href: "/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Solarstrom direkt vom Park beziehen." },
+    { href: "/energiegemeinschaften/software", titel: "Software für Energiegemeinschaften", text: "Gründung, Zustimmung beim Netzbetreiber und Betrieb in Österreich." },
+    { href: "/rechner/energy-sharing", titel: "Energy-Sharing-Rechner", text: "Vorteil je Teilnehmer in DE, AT und CH berechnen." },
   ],
 
   quellen: [

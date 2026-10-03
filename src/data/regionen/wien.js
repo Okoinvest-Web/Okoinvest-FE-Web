@@ -2,6 +2,8 @@
 // MA 37 Richtlinie PV-Anlagen (10.07.2026, BO-Novelle 2023, WElWG 2005), RIS Bauordnung für Wien § 6,
 // Wien Energie (Schafflerhofstraße 11.06.2021 und 28.09.2023; Top-10-Solarkraftwerke 29.04.2025),
 // Statistik Austria Agrarstrukturerhebung 2023, WKO Fläche 2025, RIS EAG § 33, PVGIS v5.3.
+import { fristenAT } from "./fristen";
+
 const region = {
   slug: "wien",
   land: "AT",
@@ -60,6 +62,7 @@ const region = {
       text: "Auch in Wien verringert sich der Zuschlagswert der EAG-Marktprämie für Anlagen auf landwirtschaftlich genutzten Flächen oder im Grünland um 25 %. Ausgenommen sein können Agri-PV-Anlagen mit nicht oder nur gering beeinträchtigter Hauptnutzung sowie vorbelastete Flächen wie Deponien – in Wien die naheliegenden Fälle.",
       quelle: { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790" },
     },
+    ...fristenAT(),
   ],
   kulisse: {
     text: "Die größte Wiener Freiflächenanlage steht auf einer ehemaligen Schotterdeponie der Stadt. Die übrigen Freiflächenanlagen in der Liste der zehn größten Wiener Solarkraftwerke von Wien Energie haben jeweils unter 1 MWp, etwa in Liesing, am Kraftwerk Donaustadt, am Zentralfriedhof oder am Gasspeicher Leopoldau. Für private Flächeneigentümer ist das ein Hinweis, wo Projekte realistisch sind: auf vorbelasteten oder technisch genutzten Flächen und in Agri-PV-Konzepten am Stadtrand.",

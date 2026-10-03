@@ -2,6 +2,8 @@
 // Steiermärkisches Verfahrenshandbuch Erneuerbare Energien PV (A13, Stand August 2025), A17-Vortrag RED III /
 // StROG-Novelle LGBl. Nr. 20/2026 (04.03.2026), Statistik Austria Agrarstrukturerhebung 2023, WKO Fläche 2025,
 // ORF Steiermark (Agri-PV Haidegg, 17.03.2024), RIS EAG § 33, Parlament EABG, PVGIS v5.3.
+import { fristenAT } from "./fristen";
+
 const region = {
   slug: "steiermark",
   land: "AT",
@@ -65,6 +67,7 @@ const region = {
       text: "Wie in ganz Österreich verringert sich der Zuschlagswert der EAG-Marktprämie für Anlagen auf landwirtschaftlich genutzten Flächen oder im Grünland um 25 %. Ausgenommen sein können unter anderem Agri-PV-Anlagen, bei denen die landwirtschaftliche Hauptnutzung nicht oder nur gering beeinträchtigt wird, sowie vorbelastete Flächen.",
       quelle: { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790" },
     },
+    ...fristenAT(),
   ],
   kulisse: {
     text: "Beispiele, die das Land selbst nennt, sind die Vorrangzone Dornau in Halbenrain und der Solarpark Dobl-Zwaring südwestlich von Graz; die Zonen umfassen nach Angaben des Landes weitgehend homogene Gebiete. Kriterien bei der Auswahl waren unter anderem eine Mindestgröße von 10 ha und die Nähe zu einem Netzanschlusspunkt. Außerhalb der Zonen entscheidet die Gemeinde im Rahmen von 2 bzw. 10 ha. Ob eine Fläche in einer Vorrang- oder Ausschlusszone liegt, zeigt der Digitale Atlas des Landes (GIS Steiermark).",

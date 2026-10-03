@@ -1,6 +1,8 @@
 // Recherche: 29.09.2026 – Salzburger Photovoltaik-Leitfaden (Stand März 2025), e5-Salzburg (Kriterien 11/2023),
 // salzburg.ORF.at (02.02.2026), pv magazine (03.02.2026), Salzburg24 (Gemeinden Beschleunigungsgebiete), SN (04.08.2026),
 // RIS (§ 33 EAG), Statistik Austria (Agrarstrukturerhebung 2023, Bevölkerung 01.01.2026), BEV/WKO (Fläche 01.01.2025), PVGIS v5.3
+import { fristenAT } from "./fristen";
+
 const region = {
   slug: "salzburg",
   land: "AT",
@@ -67,6 +69,7 @@ const region = {
       text: "Mit einer Novelle des Raumordnungsgesetzes (Februar 2026) hat Salzburg die Grundlage für RED-III-Beschleunigungsgebiete geschaffen – ausschließlich für Photovoltaik. Vorgesehen sind rund 135 ha entlang der West- und Tauernautobahn in acht Gemeinden; auf bisher unversiegelten Flächen ist nur Agri-PV geplant. Die Verordnung mit den konkreten Flächen war nach Medienberichten im August 2026 noch ein Entwurf.",
       quelle: { titel: "salzburg.ORF.at – Land bestimmt nur Gebiete für Photovoltaik-Projekte (02.02.2026)", url: "https://salzburg.orf.at/stories/3340307/" },
     },
+    ...fristenAT(),
   ],
   kulisse: {
     text: "Die Flächenkulisse in Salzburg ist schmal. Große Freiflächen gibt es kaum, und das Punktesystem bevorzugt Standorte mit Vorbelastung und geringer Bodenfunktion. Realistisch sind vor allem Projekte im Flachgau und Tennengau entlang der Autobahn, auf Abbau- und Lagerflächen sowie Agri-PV auf Grünland mit weiterer Bewirtschaftung.",

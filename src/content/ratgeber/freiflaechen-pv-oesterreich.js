@@ -2,10 +2,13 @@
 // Recherchestand 29.09.2026: EAG § 33 (RIS), Leitfaden PV Land OÖ (Stand Juni 2026), FAQ PV Land NÖ
 // (Mai 2025), energie-noe.at, Land Steiermark (SAPRO Solarenergie, 1. Novelle 13.02.2026),
 // Land Burgenland (Eignungszonen), Land Kärnten (K-PhV 2024), Parlament (EABG 11.06.2026),
+// Nachprüfung 03.10.2026 (Paket G): RIS (Sbg. ROG 2009 §§ 36, 39b; K-PhV 2024 LGBl. 58/2024; Vbg. RPG § 18; BO Wien § 6),
+// Land Tirol Verfahrenshandbuch PV (02.06.2025), USP (EABG BGBl. I 47/2026), Parlament PK1179/2025 (ElWG), UVPG Anl. 1 Nr. 18.7 und § 50,
 // WKO (EAG-Investitionszuschuss 2026), Solarserver/CMS (ElWG).
 
 import { PACHT, FREIFLAECHE, regionById } from "@/lib/invest/markt";
 import { fmt, fmtEur, fmtCt } from "@/lib/rechner/annahmen";
+import { EAG_CALL_AT } from "@/data/regionen/fristen";
 
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag für markt.js siehe Bericht */
 // EAG-Marktprämie PV 2026: Höchstpreis je Gebotstermin (Leitfaden PV Land OÖ, Stand Juni 2026 / EAG-MPV)
@@ -18,7 +21,8 @@ const EAG_ABSCHLAG = 0.25;
 const INVZ_KAT_D_EUR = 120;
 // Zuschlag für innovative Anlagen inkl. bestimmter Agri-PV (Leitfaden OÖ, § 6 EAG-IZV)
 const INVZ_ZUSCHLAG_INNOVATIV = 0.3;
-// ElWG: Netzentgelt für Einspeisung ab 2027 bei > 20 kW netzwirksamer Leistung, ct/kWh (Solarserver 12.12.2025)
+// ElWG: Versorgungsinfrastrukturbeitrag ab 01.01.2027, höchstens 0,05 ct/kWh, Einspeiser über 20 kW netzwirksamer Leistung
+// (Parlamentskorrespondenz PK1179 vom 12.12.2025, geprüft 03.10.2026)
 const ELWG_EINSPEISEENTGELT_CT = 0.05;
 
 const AT = regionById("at");
@@ -50,7 +54,7 @@ const artikel = {
     "EABG Photovoltaik",
   ],
   veroeffentlicht: "2026-09-29",
-  aktualisiert: "2026-09-29",
+  aktualisiert: "2026-10-03", // Rechtsstand nachgeprüft (Welle 1, Paket G)
   kategorie: "Recht & Genehmigung",
   bild: "/img/solarpark-himmel.jpg",
   bildAlt: "Reihen aufgeständerter Solarmodule einer Freiflächenanlage unter blauem Himmel mit Schleierwolken",
@@ -61,7 +65,7 @@ const artikel = {
     "Größere Parks sind fast überall nur in **überörtlich festgelegten Zonen** möglich: Niederösterreich hat 116 PV-Zonen, die Steiermark 36 Vorrangzonen für Anlagen über 10 ha, das Burgenland Eignungszonen.",
     `Ab **1.000 kW** ist in der Regel eine elektrizitätsrechtliche Bewilligung des Landes nötig; eine eigene UVP-Schwelle für Photovoltaik kennt das UVP-G nach aktuellem Stand nicht.`,
     `Die **EAG-Marktprämie** wird per Ausschreibung vergeben (2026: vier Termine zu je ${fmt(EAG_VOLUMEN_KWP)} kWp, Höchstpreis ${fmtCt(EAG_HOECHSTPREIS_CT, 2)}). Auf Grünland und Agrarflächen sinkt der Zuschlagswert um **${fmt(EAG_ABSCHLAG * 100)} %** – Agri-PV kann davon ausgenommen sein.`,
-    "Das im Juni 2026 im Nationalrat beschlossene **Erneuerbaren-Ausbau-Beschleunigungsgesetz (EABG)** bringt einen One-Stop-Shop und Beschleunigungsgebiete; die Umsetzung in den Ländern läuft.",
+    "Das **Erneuerbaren-Ausbau-Beschleunigungsgesetz (EABG)** ist am 1. Juli 2026 kundgemacht worden (BGBl. I Nr. 47/2026). Es bringt einen One-Stop-Shop und Beschleunigungsgebiete; Teile gelten seit Juli 2026, andere ab 1. Jänner 2027. Die Umsetzung in den Ländern läuft.",
   ],
 
   abschnitte: [
@@ -104,12 +108,14 @@ const artikel = {
             ["Oberösterreich", "mehr als **50 m²** Modulfläche im Grünland (Sonderausweisung, § 30a Oö. ROG 1994)", "Prüfung nach Kriterienkatalog der Oö. PV-Strategie 2030; Ausschluss- und Beschleunigungsgebiete für 2026 in Vorbereitung", "Ausnahme für landwirtschaftlichen Eigenbedarf; in Beschleunigungsgebieten entfällt das Widmungserfordernis"],
             ["Steiermark", "Sondernutzung im Freiland durch die Gemeinde", "örtlich in der Regel bis **2 ha**, max. **10 ha**; darüber nur in den **36 Vorrangzonen** (rund 778 ha) des Sachprogramms Solarenergie", "Ausschlusszonen für hochwertige Agrarböden und Landschaftsräume; 1. Novelle seit 13.02.2026"],
             ["Burgenland", "Widmung „Grünfläche-Photovoltaik“ oberhalb kleiner Bagatellgrenzen", "Widmung nur **innerhalb verordneter Eignungszonen**; Zonen-Mindestgröße grundsätzlich 10 ha", "Agri-PV oder extensive Grünlandnutzung in Zonen mit hoher Bodengüte verpflichtend; jährliche Landesabgabe je MW installierter Leistung (§ 22e Bgld. RPG)"],
-            ["Salzburg", "mehr als **200 m²** Kollektorfläche im Grünland (§ 36 Abs. 7 i. V. m. § 39b ROG)", "Widmung nach landesweitem Kriterienkatalog (seit November 2023); fruchtbare Böden grundsätzlich ausgeschlossen", "auf vorbelasteten Flächen (Parkplätze, Deponien, entlang hochrangiger Straßen, Bahnlinien, Freileitungen) vereinfachte Ausweisung nach dem Leitfaden des Landes"],
-            ["Kärnten", "Widmung für Freiflächenanlagen über rund 100 m²", "zusammenhängende Grünland-PV in der Regel max. **4 ha** (Kärntner Photovoltaikanlagen-Verordnung 2024)", "Vorrang für vorbelastete Flächen; Agri-PV mit echter Doppelnutzung zulässig; wertvolle Agrarböden ausgeschlossen"],
-            ["Tirol, Vorarlberg, Wien", "Sonderflächenwidmung", "Einzelfallprüfung, kaum größere Freiflächen verfügbar", "Schwerpunkt auf Dach-, Infrastruktur- und Parkplatzanlagen"],
+            ["Salzburg", "mehr als **200 m²** Kollektorfläche im Grünland (§ 36 Abs. 7 ROG 2009)", "keine eigene Widmung, sondern eine **Kennzeichnung** des Standorts im Flächenwidmungsplan (§ 39b ROG 2009); auf unbelastetem Grünland zusätzlich Standorteignung nach dem Punktesystem der Photovoltaik-Kennzeichnungsverordnung 2023", "auf vorbelasteten Flächen (Parkplätze, Deponien, entlang hochrangiger Straßen, Bahnlinien, Freileitungen) genügen die Grundvoraussetzungen des § 39b Abs. 2 ROG ohne Punktesystem"],
+            ["Kärnten", "Widmung „Grünland – Photovoltaikanlage“ für Freiflächenanlagen ohne Mindestgröße (§ 5 K-PhV 2024); ausgenommen u. a. Anlagen auf baulichen Anlagen, Parkplätzen und Infrastrukturflächen sowie bis **100 m²** im Haus- oder Vorgarten (§ 4)", "zusammenhängende Widmungsfläche max. **4 ha**, auf vorbelasteten oder versiegelten Flächen und für Pilotanlagen bis 10 ha; **1.000 m** Mindestabstand zwischen Widmungsflächen (§ 5 K-PhV 2024)", "Agri-PV im Obstbau, mit Geflügel oder Fischzucht ohne gesonderte Widmung; Agri-PV auf Weideflächen braucht die Widmung „Grünland – Agri-Photovoltaikanlage“ (§§ 3–5 K-PhV 2024)"],
+            ["Tirol", "Sonderflächenwidmung (z. B. „Sonderfläche Photovoltaikanlage“) für freistehende Anlagen im Freiland über **100 m²** Kollektorfläche – aber nur bis **250 kWp**", "Anlagen über 250 kWp brauchen eine Bewilligung nach dem Tiroler Elektrizitätsgesetz 2012 und unterliegen dann nicht Bauordnung und Raumordnungsgesetz – **kein Widmungserfordernis**", "Naturschutzbewilligung ab 2.500 m² zusammenhängend bebauter Fläche außerhalb geschlossener Ortschaften (Verfahrenshandbuch des Landes, 02.06.2025)"],
+            ["Vorarlberg", "keine eigene PV-Widmung; Widmung als **Sondergebiet** für Anlagen zur Erzeugung erneuerbarer Energie (§ 18 Abs. 4 lit. c RPG)", "in der Landesgrünzone von Rheintal und Walgau dürfen Gemeinden nur Freiflächen, Verkehrs- oder Vorbehaltsflächen widmen", "Schwerpunkt auf Dach-, Infrastruktur- und Parkplatzanlagen"],
+            ["Wien", "keine eigene Widmungskategorie für Freiflächen-PV; ländliche Gebiete sind der Land- und Forstwirtschaft vorbehalten (§ 6 BO für Wien)", "Prüfung der konkreten Widmung durch die Stadt im Einzelfall", "Schwerpunkt auf Dach-, Infrastruktur- und Parkplatzanlagen"],
           ],
           minBreite: 900,
-          fussnote: "Vereinfachte Übersicht auf Basis der Leitfäden und FAQ der Länder (NÖ Mai 2025, OÖ Juni 2026, Stmk. 2026, Bgld., Sbg., Ktn. 2024). Schwellen beziehen sich teils auf Leistung, teils auf Modul- oder Kollektorfläche. Maßgeblich sind das jeweilige Raumordnungsgesetz und die Verordnungen in der geltenden Fassung.",
+          fussnote: "Vereinfachte Übersicht auf Basis der Leitfäden und FAQ der Länder (NÖ Mai 2025, OÖ Juni 2026, Stmk. 2026, Bgld., Sbg.) sowie der Rechtstexte im RIS (Sbg. ROG 2009 §§ 36, 39b; K-PhV 2024; Vbg. RPG § 18; BO für Wien § 6) und des Verfahrenshandbuchs Tirol (02.06.2025). Schwellen beziehen sich teils auf Leistung, teils auf Modul- oder Kollektorfläche. Maßgeblich sind das jeweilige Raumordnungsgesetz und die Verordnungen in der geltenden Fassung.",
         },
         {
           typ: "h3",
@@ -153,7 +159,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Nach aktuellem Stand **enthält das österreichische UVP-G 2000 keinen eigenen Tatbestand für Photovoltaik-Freiflächenanlagen**. Bei der UVP-Novelle 2023 wurde eine Aufnahme diskutiert, aber nicht umgesetzt; auch der im September 2026 in Begutachtung gegangene Novellenentwurf setzt nach den bisher bekannten Informationen andere Schwerpunkte. Eine [UVP](/wissen/lexikon#uvp) kann sich trotzdem ergeben, wenn ein Projekt andere Tatbestände berührt – etwa Rodungen, Vorhaben in Schutzgebieten oder eine zugehörige Hochspannungsleitung. In Natura-2000-Gebieten ist regelmäßig eine Naturverträglichkeitsprüfung nötig. Zum Vergleich: In Deutschland sind Anlagen ab 10 ha Grundfläche in der Regel UVP-vorprüfungspflichtig.",
+          text: "Nach aktuellem Stand **enthält das österreichische UVP-G 2000 keinen eigenen Tatbestand für Photovoltaik-Freiflächenanlagen**. Bei der UVP-Novelle 2023 wurde eine Aufnahme diskutiert, aber nicht umgesetzt; auch der im September 2026 in Begutachtung gegangene Novellenentwurf setzt nach den bisher bekannten Informationen andere Schwerpunkte. Eine [UVP](/wissen/lexikon#uvp) kann sich trotzdem ergeben, wenn ein Projekt andere Tatbestände berührt – etwa Rodungen, Vorhaben in Schutzgebieten oder eine zugehörige Hochspannungsleitung. In Natura-2000-Gebieten ist regelmäßig eine Naturverträglichkeitsprüfung nötig. Zum Vergleich: In Deutschland kann der Bebauungsplan für einen Solarpark unter Nr. 18.7 der Anlage 1 zum UVPG fallen – allgemeine Vorprüfung ab 2 ha, UVP-Pflicht ab 10 ha zulässiger Grundfläche; geprüft wird dann in der Umweltprüfung des Bebauungsplans (§ 50 UVPG).",
         },
         {
           typ: "h3",
@@ -161,7 +167,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Der Nationalrat hat das **Erneuerbaren-Ausbau-Beschleunigungsgesetz (EABG)** am 11. Juni 2026 mit Verfassungsmehrheit beschlossen. Es setzt die EU-Richtlinie RED III um und sieht einen **One-Stop-Shop** für Genehmigungsverfahren, digitale Verfahrensführung, verbindliche Erzeugungsbeiträge je Bundesland für PV, Wind und Wasserkraft sowie die Pflicht der Länder vor, ausreichend Flächen für Erzeugungs- und Leitungsinfrastruktur auszuweisen. Die Ausbauziele wurden auf 30 TWh bis 2030 und mindestens 40 TWh bis 2035 angehoben. Oberösterreich hat bereits geregelt, dass PV-Anlagen in verordneten Beschleunigungsgebieten keine eigene Widmung brauchen. Wie schnell die Beschleunigungsgebiete in allen Ländern tatsächlich ausgewiesen werden, ist nach aktuellem Stand offen.",
+          text: "Der Nationalrat hat das **Erneuerbaren-Ausbau-Beschleunigungsgesetz (EABG)** am 11. Juni 2026 mit Verfassungsmehrheit beschlossen; kundgemacht wurde es am 1. Juli 2026 (BGBl. I Nr. 47/2026). Ein Teil gilt seit dem Tag nach der Kundmachung, ein anderer Teil ab 1. Jänner 2027. Es setzt die EU-Richtlinie RED III um und sieht einen **One-Stop-Shop** für Genehmigungsverfahren, digitale Verfahrensführung, verbindliche Erzeugungsbeiträge je Bundesland für PV, Wind und Wasserkraft sowie die Pflicht der Länder vor, ausreichend Flächen für Erzeugungs- und Leitungsinfrastruktur auszuweisen. Die Ausbauziele wurden auf 30 TWh bis 2030 und mindestens 40 TWh bis 2035 angehoben. Oberösterreich hat bereits geregelt, dass PV-Anlagen in verordneten Beschleunigungsgebieten keine eigene Widmung brauchen. Wie schnell die Beschleunigungsgebiete in allen Ländern tatsächlich ausgewiesen werden, ist nach aktuellem Stand offen.",
         },
       ],
     },
@@ -192,6 +198,10 @@ const artikel = {
           typ: "p",
           text: `Der **EAG-Investitionszuschuss** ist die Alternative für kleinere Anlagen bis 1.000 kWp. 2026 gibt es drei Fördercalls. In Kategorie D (über 100 bis 1.000 kWp) gilt ein umgekehrtes Bieterverfahren mit einem Höchstfördersatz von ${fmt(INVZ_KAT_D_EUR)} €/kWp. Auch hier wird auf Agrar- und Grünlandflächen um ${fmt(EAG_ABSCHLAG * 100)} % gekürzt, für innovative Anlagen einschließlich bestimmter Agri-PV-Anlagen gibt es einen Zuschlag von ${fmt(INVZ_ZUSCHLAG_INNOVATIV * 100)} %, dazu je 10 % „Made in Europe“-Bonus für Module, Wechselrichter und Speicher. Für Solarparks im Megawattbereich spielt der Zuschuss kaum eine Rolle.`,
         },
+        // Fristenkasten (W0-2): verschwindet nach dem 22.10.2026, Quelle und Ablaufdatum in src/data/regionen/fristen.js
+        ...(Date.now() < EAG_CALL_AT.ende
+          ? [{ typ: "kasten", variant: "wichtig", titel: EAG_CALL_AT.eintrag.titel, text: `${EAG_CALL_AT.eintrag.text} Quelle: [EAG-Abwicklungsstelle](${EAG_CALL_AT.eintrag.quelle.url}).` }]
+          : []),
       ],
     },
     {
@@ -205,7 +215,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Mit dem neuen Elektrizitätswirtschaftsgesetz (ElWG, BGBl. I Nr. 91/2025, im Dezember 2025 beschlossen) ändern sich die Entgelte schrittweise: Netzzutritts- und Netzbereitstellungsentgelt werden zu einem **Netzanschlussentgelt** zusammengefasst, das nach Leistung bemessen wird. Einspeiser mit mehr als 20 kW netzwirksamer Leistung sollen ab 2027 zudem ein Netzentgelt von **${fmt(ELWG_EINSPEISEENTGELT_CT, 2)} ct/kWh** zahlen; für neue PV-Anlagen ist eine Begrenzung der Einspeiseleistung vorgesehen. Die konkreten Beträge legt künftig die E-Control per Verordnung fest – kalkulieren Sie hier mit Puffer und lassen Sie sich die Kosten vom Netzbetreiber schriftlich bestätigen.`,
+          text: `Mit dem neuen Elektrizitätswirtschaftsgesetz (ElWG, BGBl. I Nr. 91/2025, im Dezember 2025 beschlossen) ändern sich die Entgelte schrittweise: Netzzutritts- und Netzbereitstellungsentgelt werden zu einem **Netzanschlussentgelt** zusammengefasst, das nach Leistung bemessen wird. Einspeiser mit mehr als 20 kW netzwirksamer Leistung zahlen ab 1. Jänner 2027 zudem einen **Versorgungsinfrastrukturbeitrag von höchstens ${fmt(ELWG_EINSPEISEENTGELT_CT, 2)} ct/kWh** der eingespeisten Jahresstrommenge; für neue PV-Anlagen ist eine Begrenzung der Einspeiseleistung vorgesehen. Die konkreten Beträge legt künftig die E-Control per Verordnung fest – kalkulieren Sie hier mit Puffer und lassen Sie sich die Kosten vom Netzbetreiber schriftlich bestätigen.`,
         },
       ],
     },
@@ -291,7 +301,7 @@ const artikel = {
     },
     {
       q: "Was ist das EABG?",
-      a: "Das Erneuerbaren-Ausbau-Beschleunigungsgesetz wurde am 11. Juni 2026 im Nationalrat beschlossen. Es soll Genehmigungsverfahren über einen One-Stop-Shop beschleunigen, verpflichtet die Länder zur Ausweisung von Flächen und Beschleunigungsgebieten und legt Erzeugungsbeiträge je Bundesland fest. Die Umsetzung in den Ländern läuft.",
+      a: "Das Erneuerbaren-Ausbau-Beschleunigungsgesetz wurde am 11. Juni 2026 im Nationalrat beschlossen und am 1. Juli 2026 kundgemacht (BGBl. I Nr. 47/2026); Teile gelten erst ab 1. Jänner 2027. Es soll Genehmigungsverfahren über einen One-Stop-Shop beschleunigen, verpflichtet die Länder zur Ausweisung von Flächen und Beschleunigungsgebieten und legt Erzeugungsbeiträge je Bundesland fest. Die Umsetzung in den Ländern läuft.",
     },
     {
       q: "Wie viel Pacht bekomme ich in Österreich für einen Solarpark?",
@@ -304,6 +314,8 @@ const artikel = {
     { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Solarpark-Genehmigung in Deutschland", text: "Bebauungsplan, Privilegierung und Verfahrensschritte." },
     { href: "/ratgeber/solarpark-pacht-pro-hektar", titel: "Solarpark-Pacht pro Hektar", text: "Was Flächeneigentümer realistisch erwarten können." },
     { href: "/flaeche-verpachten", titel: "Fläche verpachten", text: "So läuft die Verpachtung für einen Solarpark ab." },
+    { href: "/regionen", titel: "Solarpark nach Region", text: "Recht, Flächenkulisse und Pacht je Bundesland und Kanton." },
+    { href: "/freiflaeche", titel: "Freiflächen-PV entwickeln", text: "Solarparks in DE, AT und CH – vom Acker bis zum Betrieb." },
   ],
 
   quellen: [

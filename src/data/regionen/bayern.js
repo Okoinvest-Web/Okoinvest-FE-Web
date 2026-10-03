@@ -2,6 +2,7 @@
 // (Stand 10.12.2021), Energie-Atlas Bayern (benachteiligte Gebiete, Regionalplanung), Hinweise Eingriffsregelung
 // PV-FFA (12/2024, via pv magazine), § 37c EEG (gesetze-im-internet.de), FA Wind und Solar Analyse Ausschreibungen 2025,
 // Planungshilfe Regierung von Unterfranken (5. Fassung 07/2026), Statistikportal (LF 2025, Bevölkerung), PVGIS v5.3.
+// Nachprüfung 03.10.2026 (Paket G): StMWi Bayern, Seite „Beteiligung an Windenergie- und PV-Freiflächenanlagen“ (BayWiVG ab 01.01.2026).
 const region = {
   slug: "bayern",
   land: "DE",
@@ -76,6 +77,14 @@ const region = {
       quelle: {
         titel: "pv magazine – Im Regelfall keine Ausgleichsflächen für Solarparks in Bayern mehr notwendig (12.12.2024)",
         url: "https://www.pv-magazine.de/2024/12/12/im-regelfall-keine-ausgleichsflaechen-fuer-solarparks-in-bayern-mehr-notwendig/",
+      },
+    },
+    {
+      titel: "Gemeindebeteiligung ab 5 MW: Pflicht seit 2026",
+      text: "Seit 1. Januar 2026 müssen Vorhabenträger neuer PV-Freiflächenanlagen mit mehr als 5 MW die Gemeinden beteiligen (BayWiVG). Der Wert der Beteiligung soll mindestens 0,2 bis etwa 0,3 Cent je Kilowattstunde betragen; die 0,2 Cent können über eine Vereinbarung nach § 6 EEG erbracht werden. Wer die Pflicht verletzt, kann per Bescheid zu einer Ausgleichsabgabe von insgesamt 0,3 Cent je Kilowattstunde verpflichtet werden. Ausgenommen sind nach Angaben des Wirtschaftsministeriums unter anderem Anlagen ohne EEG-Förderung, Agri-PV und Bürgerenergiegesellschaften. Eine Bürgerbeteiligung ist freiwillig. Die Zahlung trägt der Betreiber, nicht der Flächeneigentümer.",
+      quelle: {
+        titel: "StMWi Bayern – Beteiligung an Windenergie- und PV-Freiflächenanlagen (BayWiVG)",
+        url: "https://www.stmwi.bayern.de/energie/energiewende/beteiligung-an-windenergie-und-pv-freiflaechenanlagen/",
       },
     },
   ],

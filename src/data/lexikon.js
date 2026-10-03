@@ -312,7 +312,7 @@ export const BEGRIFFE = [
     id: "einmalverguetung",
     begriff: "Einmalvergütung (Schweiz)",
     kurz: "Die Einmalvergütung ist in der Schweiz ein einmaliger Investitionsbeitrag des Bundes an neue Photovoltaikanlagen, abgewickelt über Pronovo.",
-    text: "Sie deckt in der Regel einen Teil der Investitionskosten einer Referenzanlage; für Anlagen ohne Eigenverbrauch gibt es eine erhöhte Einmalvergütung, bei großen Anlagen wird die Höhe über Auktionen bestimmt. Für große alpine Anlagen im Rahmen des Solarexpress sind nach aktuellem Stand Beiträge von bis zu 60 % der Investitionskosten möglich. Eine laufende Einspeisevergütung wie früher in Deutschland gibt es für Neuanlagen in der Schweiz nicht.",
+    text: "Sie deckt in der Regel einen Teil der Investitionskosten einer Referenzanlage; für Anlagen ohne Eigenverbrauch gibt es eine erhöhte Einmalvergütung, bei großen Anlagen wird die Höhe über Auktionen bestimmt. Für große alpine Anlagen im Rahmen des Solarexpress sind Beiträge von bis zu 60 % der Investitionskosten möglich – aber nur noch für Projekte, deren Baugesuch bis Ende 2025 öffentlich aufgelegt wurde. Daneben gibt es für Anlagen ab 150 kW ohne Eigenverbrauch die gleitende Marktprämie, die per Auktion vergeben und für 20 Jahre fixiert wird; eingespeister Strom wird zudem vom Netzbetreiber mit der Rückliefervergütung abgenommen.",
     kategorie: "gemeinschaft",
     synonyme: ["EIV", "KLEIV", "GREIV", "HEIV", "Pronovo"],
     verwandt: ["solarexpress", "zev", "leg"],
@@ -471,8 +471,8 @@ export const BEGRIFFE = [
   {
     id: "kommunalbeteiligung",
     begriff: "Kommunalbeteiligung (§ 6 EEG)",
-    kurz: `Die Kommunalbeteiligung nach § 6 EEG erlaubt Betreibern von Freiflächenanlagen, betroffenen Gemeinden freiwillig bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je eingespeister Kilowattstunde zu zahlen.`,
-    text: `Bei EEG-geförderten Anlagen kann sich der Betreiber diese Zahlung vom Netzbetreiber erstatten lassen; für die Gemeinde ist das Geld frei verwendbar. Einige Länder haben Beteiligungen inzwischen gesetzlich verpflichtend gemacht oder um Bürgerbeteiligungen ergänzt. Hinzu kommt die Gewerbesteuer, die bei Solaranlagen zu ${pct(KOMMUNE.gewerbesteuerStandort)} der Standortgemeinde zusteht.`,
+    kurz: `Die Kommunalbeteiligung nach § 6 EEG erlaubt Betreibern von Freiflächenanlagen, der Standortgemeinde freiwillig bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je tatsächlich eingespeister Kilowattstunde zu zahlen.`,
+    text: `Die Vereinbarung braucht Schrift- oder elektronische Form und darf vor der Genehmigung geschlossen werden – wenn für die Fläche ein Bebauungsplan aufgestellt wird, aber nicht vor dessen Beschluss (§ 6 Abs. 4 EEG). Bei EEG-geförderten Strommengen kann sich der Betreiber die Zahlung vom Netzbetreiber erstatten lassen; nach Bundesrecht ist das Geld für die Gemeinde nicht zweckgebunden. Mehrere Länder, darunter Brandenburg, Mecklenburg-Vorpommern, Niedersachsen, das Saarland, Sachsen und Sachsen-Anhalt, haben eigene Beteiligungsgesetze mit Zahlungspflichten. Hinzu kommt die Gewerbesteuer, die bei Solaranlagen zu ${pct(KOMMUNE.gewerbesteuerStandort)} der Standortgemeinde zusteht.`,
     kategorie: "planung",
     synonyme: ["§ 6 EEG", "Gemeindebeteiligung", "Akzeptanzabgabe"],
     verwandt: ["eeg-2023", "bebauungsplan", "aufstellungsbeschluss"],
@@ -540,6 +540,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["MaStR", "Anlagenregister"],
     verwandt: ["cod", "eeg-2023", "direktvermarktung"],
+    link: { href: "/bestandsanlagen", label: "PV-Bestandsanlagen kaufen und verkaufen" },
   },
   {
     id: "marktwert-solar",
@@ -774,8 +775,8 @@ export const BEGRIFFE = [
   {
     id: "solarexpress",
     begriff: "Solarexpress (Schweiz)",
-    kurz: "Der Solarexpress ist eine befristete Schweizer Regelung, die große alpine Photovoltaikanlagen für die Winterstromversorgung mit erleichterter Bewilligung und einer Einmalvergütung von bis zu 60 % der Investitionskosten fördert.",
-    text: "Gefördert werden Anlagen mit einer Jahresproduktion von mindestens 10 GWh und einem hohen Winterstromanteil. Nach aktuellem Stand wurde die Frist verlängert: Es genügt, dass das Baugesuch bis Ende 2025 öffentlich aufgelegt wurde. Viele Projekte sind wegen Kosten, Erschließung oder lokaler Ablehnung verzögert oder gestoppt.",
+    kurz: "Der Solarexpress war eine bis 31. Dezember 2025 befristete Schweizer Regelung (Art. 71a EnG), die große alpine Photovoltaikanlagen für die Winterstromversorgung mit erleichterter Bewilligung und einer Einmalvergütung von bis zu 60 % der Investitionskosten förderte – für neue Projekte ist er geschlossen.",
+    text: "Gefördert werden Anlagen mit einer Jahresproduktion von mindestens 10 GWh und einem hohen Winterstromanteil. Nach der Lockerung vom März 2025 profitieren nur Projekte, deren Baugesuch bis 31. Dezember 2025 öffentlich aufgelegt wurde; für neue Projekte ist der Solarexpress geschlossen. Viele Projekte sind wegen Kosten, Erschließung oder lokaler Ablehnung verzögert oder gestoppt.",
     kategorie: "gemeinschaft",
     synonyme: ["alpine Solaranlagen", "Winterstrom", "alpine PV"],
     verwandt: ["einmalverguetung", "uvp", "leg"],
@@ -839,10 +840,11 @@ export const BEGRIFFE = [
     id: "uvp",
     begriff: "Umweltverträglichkeitsprüfung (UVP)",
     kurz: "Die Umweltverträglichkeitsprüfung ist ein förmliches Verfahren, in dem die Umweltauswirkungen eines Großvorhabens vor seiner Zulassung umfassend ermittelt und bewertet werden.",
-    text: "In Deutschland wird sie für Solarparks in der Regel im Bebauungsplanverfahren über die Umweltprüfung abgedeckt; für große Vorhaben im bisherigen Außenbereich können nach dem UVPG Vorprüfungs- oder UVP-Pflichten greifen. In Österreich kennt das UVP-G nach aktuellem Stand keinen eigenen Tatbestand für Freiflächen-PV; maßgeblich sind Widmung sowie landesrechtliche Naturschutz- und Elektrizitätsverfahren. In der Schweiz ist bei großen Anlagen, etwa im Solarexpress, in der Regel eine UVP erforderlich.",
+    text: "In Deutschland wird sie für Solarparks in der Regel im Bebauungsplanverfahren über die Umweltprüfung abgedeckt; für große Vorhaben im bisherigen Außenbereich können nach dem UVPG Vorprüfungs- oder UVP-Pflichten greifen. In Österreich kennt das UVP-G nach aktuellem Stand keinen eigenen Tatbestand für Freiflächen-PV; maßgeblich sind Widmung sowie landesrechtliche Naturschutz- und Elektrizitätsverfahren. In der Schweiz sind Fotovoltaikanlagen mit mehr als 5 MW installierter Leistung, die nicht an Gebäuden angebracht sind, UVP-pflichtig (Anhang Nr. 21.9 UVPV); das Verfahren bestimmt der Kanton.",
     kategorie: "planung",
     synonyme: ["UVP", "UVPG", "UVP-G", "Vorprüfung"],
     verwandt: ["umweltbericht", "gruenland-photovoltaik", "solarexpress", "ausgleichsflaechen"],
+    link: { href: "/freiflaeche", label: "Genehmigung von Freiflächen-PV" },
   },
 
   // ---------------------------------------------------------------- V
@@ -1088,6 +1090,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Flurstücksnummer", "Gemarkung", "Flur", "Liegenschaftskataster", "Zähler Nenner"],
     verwandt: ["grundbuch-abteilungen", "katastralgemeinde", "egrid"],
+    link: { href: "/flaechencheck", label: "Fläche im Flächencheck prüfen" },
   },
   {
     id: "katastralgemeinde",
@@ -1115,6 +1118,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Abteilung II", "Abteilung III", "Grundbuchauszug", "Lasten und Beschränkungen", "Grundschuld"],
     verwandt: ["dienstbarkeit", "rangruecktritt", "niessbrauch"],
+    link: { href: "/ratgeber/dienstbarkeit-grundbuch-pv-pacht", label: "Dienstbarkeit im Grundbuch" },
   },
   {
     id: "niessbrauch",
@@ -1124,6 +1128,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Fruchtgenussrecht", "Nießbrauchsrecht", "Altenteil"],
     verwandt: ["grundbuch-abteilungen", "rangruecktritt", "dienstbarkeit"],
+    link: { href: "/flaeche-verpachten", label: "Fläche verpachten: Ablauf und Vertrag" },
   },
   {
     id: "bodenschaetzung",
@@ -1133,6 +1138,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Ackerzahl", "Grünlandzahl", "Bodenpunkte", "Bodenklimazahl", "Ertragsmesszahl", "EMZ"],
     verwandt: ["benachteiligte-gebiete", "agri-pv", "kriterienkatalog"],
+    link: { href: "/flaechencheck", label: "Eignung Ihrer Fläche prüfen" },
   },
   {
     id: "agrarumweltmassnahmen",
@@ -1142,6 +1148,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["AUKM", "ÖPUL", "Agrarumweltprogramm", "Rückforderung", "Biodiversitätsförderfläche"],
     verwandt: ["gap-direktzahlungen", "flaechenpacht", "landpachtvertrag"],
+    link: { href: "/ratgeber/agri-pv-foerderung-gap", label: "Agri-PV und GAP-Förderung" },
   },
   {
     id: "referenzertrag",
@@ -1160,6 +1167,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["FFH-Gebiet", "Vogelschutzgebiet", "Verträglichkeitsprüfung"],
     verwandt: ["umweltbericht", "benachteiligte-gebiete", "cef-massnahme"],
+    link: { href: "/flaechencheck", label: "Restriktionen Ihrer Fläche prüfen" },
   },
   {
     id: "wasserschutzgebiet",
@@ -1169,6 +1177,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["WSG", "Schutzzone III", "Trinkwasserschutz"],
     verwandt: ["natura-2000", "umweltbericht"],
+    link: { href: "/flaechencheck", label: "Restriktionen Ihrer Fläche prüfen" },
   },
   {
     id: "reservierungspraemie",
@@ -1188,6 +1197,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Indexierung", "Indexklausel", "VPI", "Preisgleitklausel"],
     verwandt: ["flaechenpacht", "reservierungspraemie"],
+    link: { href: "/rechner/pacht", label: "Indexierte Pacht berechnen" },
   },
   {
     id: "landpachtvertrag",
@@ -1197,6 +1207,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Landpacht", "Pachtende", "Kündigung Landpacht", "§ 594a BGB"],
     verwandt: ["flaechenpacht", "agrarumweltmassnahmen"],
+    link: { href: "/flaeche-verpachten", label: "Fläche für einen Solarpark verpachten" },
   },
   {
     id: "kriterienkatalog",
@@ -1245,6 +1256,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["Zählpunkt", "Zählpunktnummer AT", "Messpunkt CH"],
     verwandt: ["eeg-gemeinschaft", "marktlokation"],
+    link: { href: "/energiegemeinschaften/software", label: "Software für Energiegemeinschaften" },
   },
   {
     id: "rlm",
@@ -1254,6 +1266,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["RLM", "Lastgangmessung", "RLM-Zähler"],
     verwandt: ["slp", "lastgang", "leistungspreis"],
+    link: { href: "/rechner/reststrom", label: "Reststrom-Rechner mit Lastprofil" },
   },
   {
     id: "slp",
@@ -1291,6 +1304,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Leistungsentgelt", "Leistungspreis Netz"],
     verwandt: ["rlm", "benutzungsstunden", "grossspeicher"],
+    link: { href: "/reststrom", label: "Reststrom-Pool für den Mittelstand" },
   },
   {
     id: "individuelles-netzentgelt",
@@ -1301,6 +1315,7 @@ export const BEGRIFFE = [
     synonyme: ["§ 19 StromNEV", "atypische Netznutzung", "Bandlastprivileg"],
     buchstabe: "I",
     verwandt: ["benutzungsstunden", "leistungspreis"],
+    link: { href: "/reststrom", label: "Reststrom-Pool für den Mittelstand" },
   },
   {
     id: "dc-ac-verhaeltnis",
@@ -1310,6 +1325,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["DC/AC-Ratio", "Überbauung Wechselrichter", "ILR"],
     verwandt: ["netzverknuepfungspunkt", "ertragsgutachten"],
+    link: { href: "/rechner/netzanschluss", label: "Netzanschluss und Überbauung rechnen" },
   },
   {
     id: "spv",
@@ -1319,6 +1335,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["SPV", "Zweckgesellschaft", "Projekt-GmbH & Co. KG"],
     verwandt: ["share-deal", "asset-deal", "due-diligence"],
+    link: { href: "/investoren", label: "Solarprojekte kaufen" },
   },
   {
     id: "earn-out",
@@ -1328,6 +1345,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Earn-out", "Meilensteinzahlung", "Milestone Payment"],
     verwandt: ["projektrechte", "spa", "loi"],
+    link: { href: "/projektboerse/anbieten", label: "Solarprojekt verkaufen" },
   },
   {
     id: "enterprise-value",
@@ -1337,6 +1355,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["EV", "Unternehmenswert", "Equity Value"],
     verwandt: ["share-deal", "loi", "discounted-cash-flow"],
+    link: { href: "/rechner/bestandsanlage", label: "Bestandsanlage bewerten" },
   },
   {
     id: "co-development",
@@ -1346,6 +1365,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Co-Entwicklung", "Entwicklungspartnerschaft", "Development Partnership"],
     verwandt: ["projektrechte", "earn-out", "rtb"],
+    link: { href: "/investoren", label: "Co-Development für Investoren" },
   },
   {
     id: "eu-taxonomie",
@@ -1364,6 +1384,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["EEG-Realisierungsfrist", "Pönale EEG"],
     verwandt: ["ausschreibung-eeg", "zuschlagswert", "gebotstermin"],
+    link: { href: "/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung Freifläche" },
   },
   {
     id: "verfuegbarkeit",
@@ -1382,6 +1403,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Take-or-Pay", "Mindestmenge", "Abnahmeverpflichtung"],
     verwandt: ["energie-contracting", "ppa"],
+    link: { href: "/rechner/ppa", label: "PPA-Rechner für Unternehmen" },
   },
   {
     id: "energie-contracting",
@@ -1391,6 +1413,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Contracting", "Solar-Contracting", "On-Site-PPA", "Anlagen-Contracting"],
     verwandt: ["mindestabnahme", "endschaftsregelung", "dienstbarkeit", "ppa"],
+    link: { href: "/solarcarport", label: "Solarcarport im Contracting" },
   },
   {
     id: "endschaftsregelung",
@@ -1400,6 +1423,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Endschaft", "Kaufoption Vertragsende", "Heimfall"],
     verwandt: ["energie-contracting", "rueckbauverpflichtung"],
+    link: { href: "/ratgeber/pachtvertrag-solarpark", label: "Pachtvertrag Solarpark" },
   },
   {
     id: "nachschusspflicht",
@@ -1409,6 +1433,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["Nachschuss", "Haftsumme", "Haftung Genossenschaft"],
     verwandt: ["energiegenossenschaft"],
+    link: { href: "/genossenschaft", label: "Energiegenossenschaft für Solarparks" },
   },
 ];
 

@@ -1,6 +1,8 @@
 // Recherche: 29.09.2026 – Land OÖ: Leitfaden 2026 Photovoltaik (Stand Juni 2026), Kriterienkatalog PV-FFA (259165.htm),
 // OÖ PV-Strategie 2030 (259164.htm), Netz OÖ Netzentwicklungsplan 2026, tips.at (12/2023), RIS (§ 33 EAG),
 // Statistik Austria (Agrarstrukturerhebung 2023, Bevölkerung 01.01.2026), BEV/WKO (Fläche 01.01.2025), PVGIS v5.3
+import { fristenAT } from "./fristen";
+
 const region = {
   slug: "oberoesterreich",
   land: "AT",
@@ -67,6 +69,7 @@ const region = {
       text: "Für Freiflächenanlagen auf landwirtschaftlich genutzten Flächen oder im Grünland sinkt der Zuschlagswert der EAG-Marktprämie um 25 % (§ 33 EAG), beim Investitionszuschuss ebenso. Für bestimmte Agri-PV-Anlagen, Deponien, Altlasten und Infrastrukturstandorte entfällt der Abschlag; beim Investitionszuschuss gibt es für bestimmte Agri-PV-Anlagen zusätzlich 30 % Zuschlag.",
       quelle: { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790" },
     },
+    ...fristenAT(),
   ],
   kulisse: {
     text: "Die Flächenkulisse in Oberösterreich ergibt sich weniger aus festen Zonen als aus dem Zusammenspiel von Bodenfruchtbarkeit, Landschaftssensibilität und Netznähe. Das Land stellt die Kriterien als Kartenebenen im DORIS-System bereit, sodass sich eine erste Einschätzung für jedes Grundstück machen lässt.",

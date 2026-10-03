@@ -306,6 +306,8 @@ const artikel = {
     { href: "/ratgeber/virtuelles-kraftwerk", titel: "Virtuelles Kraftwerk", text: "Wie Speicher, Parks und Verbraucher gemeinsam vermarktet werden." },
     { href: "/ratgeber/projektrechte-kaufen-due-diligence", titel: "Projektrechte kaufen", text: "Preise, Struktur und Due Diligence." },
     { href: "/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Grünstrom langfristig beziehen." },
+    { href: "/rechner/grossspeicher", titel: "Großspeicher-Rechner", text: "Rendite eines Batteriespeichers mit eigenen Werten berechnen." },
+    { href: "/projektboerse", titel: "Projektbörse", text: "Speicher- und Solarprojekte im DACH-Raum ansehen." },
   ],
 
   quellen: [

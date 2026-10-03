@@ -1,10 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, BatteryCharging, CalendarClock, Calculator, FileBarChart, FileSignature, Gauge, Handshake, Landmark, Layers, Scale, Search, Sun, TrendingDown, Zap } from "lucide-react";
-import PageHero from "@/components/ui/PageHero";
+import { ArrowRight, BatteryCharging, CalendarClock, Calculator, FileBarChart, Gauge, Handshake, Landmark, Scale, Search, Sun, TrendingDown, Zap } from "lucide-react";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
-import SplitMedia from "@/components/ui/SplitMedia";
-import FeatureGrid from "@/components/ui/FeatureGrid";
 import Steps from "@/components/ui/Steps";
 import Faq from "@/components/ui/Faq";
 import CtaBand from "@/components/ui/CtaBand";
@@ -13,16 +10,20 @@ import Querverweise from "@/components/Reusable/Querverweise";
 import { rechnerMetadata } from "@/components/Rechner/RechnerSeite";
 import PreisBalken from "@/components/Reststrom/PreisBalken";
 import ReststromAnfrage from "@/components/Reststrom/ReststromAnfrage";
+import Hero from "@/components/Reststrom/Seite/Hero";
+import Problem from "@/components/Reststrom/Seite/Problem";
+import Zusammenspiel from "@/components/Reststrom/Seite/Zusammenspiel";
 import { STROM } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import { FAQ_RESTSTROM } from "@/data/faq";
 import { abs } from "@/data/site";
+import JsonLd from "@/components/JsonLd";
 
 const PFAD = "/reststrom";
 
 export const metadata = rechnerMetadata({
   pfad: PFAD,
-  title: "Reststrom-Pool für den Mittelstand | ÖkoInvest",
+  title: "Strombeschaffung Mittelstand: Reststrom-Pool | ÖkoInvest",
   description:
     "Was PV und Speicher nicht decken, kaufen wir gebündelt: strukturierte Beschaffung, Solarstrom aus eigenen Parks und Flexibilität für günstigeren Reststrom.",
   keywords: ["Reststrom", "Strompool Mittelstand", "Gewerbestrom", "Strombeschaffung", "Solar-PPA", "Bündelung Strom", "Stromsteuer produzierendes Gewerbe"],
@@ -35,24 +36,6 @@ const fix = STROM.bestandteile.filter((b) => !b.beeinflussbar);
 const hebelMin = STROM.poolHebel.reduce((s, h) => s + h.ct.min, 0);
 const hebelMax = STROM.poolHebel.reduce((s, h) => s + h.ct.max, 0);
 const stromsteuer = STROM.bestandteile.find((b) => b.id === "stromsteuer");
-
-const PROBLEME = [
-  {
-    icon: FileSignature,
-    title: "Einzelvertrag",
-    text: "Mit ein paar hundert MWh ist ein Betrieb für Lieferanten ein kleiner Kunde. Verhandlungsmacht hat, wer Menge bündelt – nicht, wer allein anfragt.",
-  },
-  {
-    icon: CalendarClock,
-    title: "Stichtagsrisiko",
-    text: "Der gesamte Jahresbedarf wird oft an einem Tag eingekauft. Erwischt die Ausschreibung eine Preisspitze, zahlen Sie sie zwei oder drei Jahre lang.",
-  },
-  {
-    icon: Layers,
-    title: "Aufschläge und Risikoprämien",
-    text: "Vertriebsmarge, Strukturierungskosten und Prämien für das Mengenrisiko stecken unsichtbar im Arbeitspreis – bei kleinen Abnehmern besonders hoch.",
-  },
-];
 
 const HEBEL_ICONS = { buendelung: Handshake, ppa: Sun, flex: BatteryCharging };
 const HEBEL_TEXT = {
@@ -81,6 +64,8 @@ const QUERVERWEISE = [
   { href: "/virtuelles-kraftwerk", titel: "Virtuelles Kraftwerk", text: "Wie Parks, Speicher und Unternehmen im Verbund zusammenspielen." },
   { href: "/solarcarport", titel: "Solarcarports", text: "Parkplatz-PV mit Ladepunkten – Erzeugung direkt beim Verbraucher." },
   { href: "/energie-live", titel: "Strommarkt live", text: "Börsenpreis und negative Preise in Echtzeit verfolgen." },
+  { href: "/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Grünstrom direkt vom Solarpark – Modelle, Laufzeit, Risiken." },
+  { href: "/rechner/ppa", titel: "PPA-Rechner", text: "Ersparnis und Risiko eines Solar-PPA in drei Preisszenarien." },
 ];
 
 const schema = {
@@ -100,44 +85,10 @@ const schema = {
 export default function ReststromPage() {
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <JsonLd daten={schema} />
 
-      <PageHero
-        breadcrumbs={[{ name: "Reststrom-Pool Mittelstand" }]}
-        eyebrow="Reststrom-Pool · Unternehmen"
-        title={
-          <>
-            Der Strom, den Sie noch kaufen, <span className="ov-text-gradient">wird günstiger.</span>
-          </>
-        }
-        lead="Auch mit eigener PV und Speicher bezieht ein Betrieb einen großen Teil seines Stroms aus dem Netz. Diesen Reststrom bündeln wir mit anderen Unternehmen im virtuellen Kraftwerk – strukturiert beschafft, ergänzt um Solarstrom aus den Parks der Gruppe."
-        image={{ src: "/img/gewerbedach.jpg", alt: "Photovoltaikanlage auf dem Dach eines Gewerbebetriebs" }}
-        points={["Bündelung statt Einzelvertrag", "Solar-PPA für die Tagesstunden", "Flexibilität im Verbund", "Offen auch ohne ÖKOVOLT-Anlage"]}
-        actions={[
-          { label: "Ersparnis berechnen", href: "/rechner/reststrom" },
-          { label: "Angebot anfragen", href: "#anfrage" },
-        ]}
-        badge={
-          <div>
-            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-500">Hebel des Pools</p>
-            <p className="mt-2 font-display text-[28px] font-extrabold leading-none tracking-tight text-ink-900">
-              {ct(hebelMin)}–{ct(hebelMax)} <span className="text-[16px] text-ink-500">ct/kWh</span>
-            </p>
-            <p className="mt-2 text-[13px] leading-snug text-ink-600">auf die Beschaffungskomponente – je nach Profil, Menge und Marktlage</p>
-          </div>
-        }
-      />
-
-      {/* Problem */}
-      <Section tone="white" space="lg">
-        <SectionHeading
-          eyebrow="Das Problem"
-          title="Warum der Mittelstand zu viel für Strom bezahlt"
-          lead="Große Industrie beschafft strukturiert, mit eigenen Händlern und PPAs. Der Mittelstand unterschreibt meist einen Einzelvertrag – und trägt dessen Risiken allein."
-          className="mb-10 md:mb-14"
-        />
-        <FeatureGrid items={PROBLEME} cols={3} />
-      </Section>
+      <Hero />
+      <Problem />
 
       {/* Preisbestandteile */}
       <Section tone="sand" space="lg">
@@ -198,9 +149,15 @@ export default function ReststromPage() {
                   </div>
                   <h3 className="ov-h3 mt-6 text-white">{h.label}</h3>
                   <p className="mt-3 flex-1 text-[15.5px] leading-relaxed text-white/65">{HEBEL_TEXT[h.id]}</p>
-                  <p className="mt-6 border-t border-white/10 pt-5 font-display text-[26px] font-extrabold tracking-tight text-white">
-                    {ct(h.ct.min)}–{ct(h.ct.max)} <span className="text-[15px] font-semibold text-white/60">ct/kWh</span>
-                  </p>
+                  <div className="mt-6 border-t border-white/10 pt-5">
+                    <p className="font-display text-[26px] font-extrabold tracking-tight text-white">
+                      −{ct(h.ct.min)} bis −{ct(h.ct.max)} <span className="text-[15px] font-semibold text-white/60">ct/kWh</span>
+                    </p>
+                    <div className="relative mt-3 h-2 rounded-full bg-white/10" aria-hidden="true">
+                      <span className="absolute inset-y-0 rounded-full bg-gradient-to-r from-ov-400 to-ov-300" style={{ left: `${(h.ct.min / hebelMax) * 100}%`, width: `${((h.ct.max - h.ct.min) / hebelMax) * 100}%` }} />
+                    </div>
+                    <p className="mt-2 text-[12px] text-white/55">auf die Beschaffung von rund {ct(beschaffung.ct)} ct/kWh</p>
+                  </div>
                 </Reveal>
               );
             })}
@@ -212,28 +169,7 @@ export default function ReststromPage() {
         </div>
       </Section>
 
-      {/* Zusammenspiel mit ÖKOVOLT */}
-      <Section tone="white" space="lg">
-        <SplitMedia
-          eyebrow="Zusammenspiel mit PV und Speicher"
-          title="Erst selbst erzeugen, dann gebündelt einkaufen"
-          text={[
-            "Die Muttergesellschaft ÖKOVOLT plant und baut Photovoltaik und Speicher für Gewerbe und Industrie. Die eigene Anlage ist immer der günstigste Strom – aber sie deckt nie alles.",
-            "Genau hier setzt der Pool an. Weil eigene PV die Mittagsstunden abdeckt und der Speicher Lastspitzen kappt, wird Ihr Restbezug gleichmäßiger und besser planbar. Das macht ihn für die gemeinsame Beschaffung wertvoller.",
-          ]}
-          points={[
-            { title: "1. Eigenverbrauch", text: "Solarstrom vom eigenen Dach oder Carport zuerst" },
-            { title: "2. Speicher", text: "Abendstunden und Lastspitzen abdecken" },
-            { title: "3. Reststrom-Pool", text: "den Rest gebündelt, strukturiert und mit Parkstrom beschaffen" },
-          ]}
-          image={{ src: "/img/speicher.jpg", alt: "Batteriespeicher für Gewerbe und Industrie" }}
-          reverse
-        >
-          <p className="mt-6 rounded-2xl bg-sand-50 p-4 text-[14.5px] leading-relaxed text-ink-600 ring-1 ring-ink-200/60">
-            Keine ÖKOVOLT-Anlage? Kein Problem – der Pool steht auch Unternehmen ohne eigene Erzeugung offen.
-          </p>
-        </SplitMedia>
-      </Section>
+      <Zusammenspiel />
 
       {/* Ablauf */}
       <Section tone="sand" space="lg">
@@ -250,6 +186,25 @@ export default function ReststromPage() {
             <strong className="text-ink-900">Kündigungsfristen beachten:</strong> Viele Gewerbestromverträge verlängern sich automatisch, wenn sie nicht rechtzeitig –
             oft drei Monate oder mehr vor Ablauf – gekündigt werden. Nennen Sie uns Ihr Vertragsende, dann planen wir den Wechsel und die Beschaffung
             rechtzeitig.
+          </span>
+        </Reveal>
+        {/* Fristenkasten W0-2 (nur Text, rein informativ, kein Angebot für CH). Geprüft am 03.10.2026 am Original:
+            Art. 11 Abs. 2 StromVV (SR 734.71), Stand 1. Juli 2026, fedlex.admin.ch. Die Frist gilt jährlich. */}
+        <Reveal className="mt-4 flex gap-3 rounded-2xl bg-white p-5 text-[14.5px] leading-relaxed text-ink-700 ring-1 ring-ink-200/70">
+          <CalendarClock aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-ov-600" />
+          <span>
+            <strong className="text-ink-900">Schweiz, jährlich bis 31. Oktober:</strong> Endverbraucher mit mindestens 100&nbsp;MWh Jahresverbrauch je
+            Verbrauchsstätte, die noch in der Grundversorgung sind, können ihrem Verteilnetzbetreiber bis zum 31.&nbsp;Oktober mitteilen, dass sie ab
+            1.&nbsp;Januar des Folgejahres den freien Markt nutzen. Damit entfällt die Lieferpflicht des Netzbetreibers endgültig – eine Rückkehr in die
+            Grundversorgung ist nicht vorgesehen.{" "}
+            <a
+              href="https://www.fedlex.admin.ch/eli/cc/2008/226/de#art_11"
+              className="font-medium text-ov-700 underline underline-offset-2 hover:text-ov-800"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Art.&nbsp;11 Abs.&nbsp;2 StromVV
+            </a>
           </span>
         </Reveal>
       </Section>
@@ -341,7 +296,7 @@ export default function ReststromPage() {
       <CtaBand
         eyebrow="Reststrom-Pool"
         title="Weniger zahlen für den Strom, den Sie noch brauchen."
-        text="In einer Minute zur Ersparnisspanne, in zwei Werktagen zur ersten Rückmeldung. Mit ehrlicher Preiszerlegung statt Lockangebot."
+        text="In einer Minute zur Ersparnisspanne, danach eine persönliche Rückmeldung. Mit ehrlicher Preiszerlegung statt Lockangebot."
         primary={{ label: "Ersparnis berechnen", href: "/rechner/reststrom" }}
         secondary={{ label: "Virtuelles Kraftwerk", href: "/virtuelles-kraftwerk" }}
       />

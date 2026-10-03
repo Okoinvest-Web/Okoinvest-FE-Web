@@ -1,0 +1,676 @@
+{
+ "rechner": "energySharing",
+ "modul": "src/lib/rechner/energySharing.js",
+ "faelle": {
+  "standard": {
+   "a": 0.45,
+   "deckung": 0.425487218566,
+   "eingabe": {
+    "energiepreis": 14,
+    "gemeinschaftCt": 11,
+    "kwp": 250,
+    "land": "de",
+    "mix": "gemischt",
+    "netzAp": 9,
+    "rabattId": "keiner",
+    "regionId": "de-sued",
+    "speicher": false,
+    "teilnehmer": 60,
+    "ueberschussCt": 6,
+    "verbrauchJe": 3500,
+    "verwaltung": 30
+   },
+   "erloesErzeuger": 20967.6157949,
+   "erloesGeteilt": 9828.75474887,
+   "erloesUeberschuss": 11138.8610461,
+   "erzeugung": 275000,
+   "geteilt": 89352.3158988,
+   "geteiltJeTeilnehmer": 1489.20526498,
+   "jeTeilnehmer": 14.6761579494,
+   "land": {
+    "abgabenCt": 0,
+    "ct": "ct",
+    "energiepreis": 14,
+    "gemeinschaftCt": 11,
+    "netzAp": 9,
+    "rabatte": [
+     {
+      "anteil": 0,
+      "id": "keiner",
+      "label": "Energy Sharing",
+      "sub": "§ 42c EnWG"
+     }
+    ],
+    "ueberschussCt": 6,
+    "verwaltung": 30,
+    "waehrung": "€"
+   },
+   "lohntSich": true,
+   "mehrerloesErzeuger": 4467.61579494,
+   "nutzung": 0.324917512359,
+   "rabatt": {
+    "anteil": 0,
+    "id": "keiner",
+    "label": "Energy Sharing",
+    "sub": "§ 42c EnWG"
+   },
+   "referenzErzeuger": 16500,
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "teile": [
+    {
+     "ct": 3,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 0,
+     "id": "netz",
+     "label": "Abschlag Netzentgelt"
+    },
+    {
+     "ct": 0,
+     "id": "abgaben",
+     "label": "Entfallende Abgaben"
+    }
+   ],
+   "ueberschuss": 185647.684101,
+   "verbrauch": 210000,
+   "verwaltungGesamt": 1800,
+   "vorteilBrutto": 2680.56947696,
+   "vorteilCt": 3,
+   "vorteilNetto": 880.569476964
+  },
+  "de": {
+   "a": 0.45,
+   "deckung": 0.425487218566,
+   "eingabe": {
+    "energiepreis": 14,
+    "gemeinschaftCt": 11,
+    "kwp": 250,
+    "land": "de",
+    "mix": "gemischt",
+    "netzAp": 9,
+    "rabattId": "keiner",
+    "regionId": "de-sued",
+    "speicher": false,
+    "teilnehmer": 60,
+    "ueberschussCt": 6,
+    "verbrauchJe": 3500,
+    "verwaltung": 30
+   },
+   "erloesErzeuger": 20967.6157949,
+   "erloesGeteilt": 9828.75474887,
+   "erloesUeberschuss": 11138.8610461,
+   "erzeugung": 275000,
+   "geteilt": 89352.3158988,
+   "geteiltJeTeilnehmer": 1489.20526498,
+   "jeTeilnehmer": 14.6761579494,
+   "land": {
+    "abgabenCt": 0,
+    "ct": "ct",
+    "energiepreis": 14,
+    "gemeinschaftCt": 11,
+    "netzAp": 9,
+    "rabatte": [
+     {
+      "anteil": 0,
+      "id": "keiner",
+      "label": "Energy Sharing",
+      "sub": "§ 42c EnWG"
+     }
+    ],
+    "ueberschussCt": 6,
+    "verwaltung": 30,
+    "waehrung": "€"
+   },
+   "lohntSich": true,
+   "mehrerloesErzeuger": 4467.61579494,
+   "nutzung": 0.324917512359,
+   "rabatt": {
+    "anteil": 0,
+    "id": "keiner",
+    "label": "Energy Sharing",
+    "sub": "§ 42c EnWG"
+   },
+   "referenzErzeuger": 16500,
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "teile": [
+    {
+     "ct": 3,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 0,
+     "id": "netz",
+     "label": "Abschlag Netzentgelt"
+    },
+    {
+     "ct": 0,
+     "id": "abgaben",
+     "label": "Entfallende Abgaben"
+    }
+   ],
+   "ueberschuss": 185647.684101,
+   "verbrauch": 210000,
+   "verwaltungGesamt": 1800,
+   "vorteilBrutto": 2680.56947696,
+   "vorteilCt": 3,
+   "vorteilNetto": 880.569476964
+  },
+  "at": {
+   "a": 0.45,
+   "deckung": 0.426750476905,
+   "eingabe": {
+    "energiepreis": 12,
+    "gemeinschaftCt": 10,
+    "kwp": 250,
+    "land": "at",
+    "mix": "gemischt",
+    "netzAp": 7,
+    "rabattId": "lokal",
+    "regionId": "at",
+    "speicher": false,
+    "teilnehmer": 60,
+    "ueberschussCt": 5,
+    "verbrauchJe": 3500,
+    "verwaltung": 20
+   },
+   "erloesErzeuger": 18480.8800075,
+   "erloesGeteilt": 8961.76001499,
+   "erloesUeberschuss": 9519.1199925,
+   "erzeugung": 280000,
+   "geteilt": 89617.6001499,
+   "geteiltJeTeilnehmer": 1493.62666917,
+   "jeTeilnehmer": 81.7159761702,
+   "land": {
+    "abgabenCt": 0.82,
+    "ct": "ct",
+    "energiepreis": 12,
+    "gemeinschaftCt": 10,
+    "netzAp": 7,
+    "rabatte": [
+     {
+      "anteil": 0.57,
+      "id": "lokal",
+      "label": "EEG lokal",
+      "sub": "−57 % Netz-AP"
+     },
+     {
+      "anteil": 0.28,
+      "id": "regional",
+      "label": "EEG regional",
+      "sub": "−28 % Netz-AP"
+     },
+     {
+      "anteil": 0,
+      "id": "beg",
+      "label": "BEG",
+      "sub": "ohne Abschlag"
+     }
+    ],
+    "ueberschussCt": 5,
+    "verwaltung": 20,
+    "waehrung": "€"
+   },
+   "lohntSich": true,
+   "mehrerloesErzeuger": 4480.8800075,
+   "nutzung": 0.320062857678,
+   "rabatt": {
+    "anteil": 0.57,
+    "id": "lokal",
+    "label": "EEG lokal",
+    "sub": "−57 % Netz-AP"
+   },
+   "referenzErzeuger": 14000,
+   "region": {
+    "ertrag": 1120,
+    "id": "at",
+    "label": "Österreich",
+    "land": "AT",
+    "sub": "Flach- und Hügelland"
+   },
+   "teile": [
+    {
+     "ct": 2,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 3.99,
+     "id": "netz",
+     "label": "Abschlag Netzentgelt"
+    },
+    {
+     "ct": 0.82,
+     "id": "abgaben",
+     "label": "Entfallende Abgaben"
+    }
+   ],
+   "ueberschuss": 190382.39985,
+   "verbrauch": 210000,
+   "verwaltungGesamt": 1200,
+   "vorteilBrutto": 6102.95857021,
+   "vorteilCt": 6.81,
+   "vorteilNetto": 4902.95857021
+  },
+  "ch": {
+   "a": 0.45,
+   "deckung": 0.42202056419,
+   "eingabe": {
+    "energiepreis": 14,
+    "gemeinschaftCt": 13,
+    "kwp": 250,
+    "land": "ch",
+    "mix": "gemischt",
+    "netzAp": 10,
+    "rabattId": "leg40",
+    "regionId": "ch",
+    "speicher": false,
+    "teilnehmer": 60,
+    "ueberschussCt": 6,
+    "verbrauchJe": 3500,
+    "verwaltung": 40
+   },
+   "erloesErzeuger": 21953.7022936,
+   "erloesGeteilt": 11521.1614024,
+   "erloesUeberschuss": 10432.5408912,
+   "erzeugung": 262500,
+   "geteilt": 88624.3184799,
+   "geteiltJeTeilnehmer": 1477.07197467,
+   "jeTeilnehmer": 33.8535987333,
+   "land": {
+    "abgabenCt": 0,
+    "ct": "Rp.",
+    "energiepreis": 14,
+    "gemeinschaftCt": 13,
+    "netzAp": 10,
+    "rabatte": [
+     {
+      "anteil": 0.4,
+      "id": "leg40",
+      "label": "LEG, eine Ebene",
+      "sub": "−40 % Netznutzung"
+     },
+     {
+      "anteil": 0.2,
+      "id": "leg20",
+      "label": "LEG, mehrere Ebenen",
+      "sub": "−20 % Netznutzung"
+     }
+    ],
+    "ueberschussCt": 6,
+    "verwaltung": 40,
+    "waehrung": "CHF"
+   },
+   "lohntSich": true,
+   "mehrerloesErzeuger": 6203.70229359,
+   "nutzung": 0.337616451352,
+   "rabatt": {
+    "anteil": 0.4,
+    "id": "leg40",
+    "label": "LEG, eine Ebene",
+    "sub": "−40 % Netznutzung"
+   },
+   "referenzErzeuger": 15750,
+   "region": {
+    "ertrag": 1050,
+    "id": "ch",
+    "label": "Schweiz",
+    "land": "CH",
+    "sub": "Mittelland"
+   },
+   "teile": [
+    {
+     "ct": 1,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 4,
+     "id": "netz",
+     "label": "Abschlag Netzentgelt"
+    },
+    {
+     "ct": 0,
+     "id": "abgaben",
+     "label": "Entfallende Abgaben"
+    }
+   ],
+   "ueberschuss": 173875.68152,
+   "verbrauch": 210000,
+   "verwaltungGesamt": 2400,
+   "vorteilBrutto": 4431.215924,
+   "vorteilCt": 5,
+   "vorteilNetto": 2031.215924
+  },
+  "de_haushalte_speicher": {
+   "a": 0.47,
+   "deckung": 0.441022727281,
+   "eingabe": {
+    "energiepreis": 14,
+    "gemeinschaftCt": 11,
+    "kwp": 250,
+    "land": "de",
+    "mix": "haushalte",
+    "netzAp": 9,
+    "rabattId": "keiner",
+    "regionId": "de-sued",
+    "speicher": true,
+    "teilnehmer": 60,
+    "ueberschussCt": 6,
+    "verbrauchJe": 3500,
+    "verwaltung": 30
+   },
+   "erloesErzeuger": 21130.7386365,
+   "erloesGeteilt": 10187.6250002,
+   "erloesUeberschuss": 10943.1136363,
+   "erzeugung": 275000,
+   "geteilt": 92614.7727291,
+   "geteiltJeTeilnehmer": 1543.57954548,
+   "jeTeilnehmer": 16.3073863645,
+   "land": {
+    "abgabenCt": 0,
+    "ct": "ct",
+    "energiepreis": 14,
+    "gemeinschaftCt": 11,
+    "netzAp": 9,
+    "rabatte": [
+     {
+      "anteil": 0,
+      "id": "keiner",
+      "label": "Energy Sharing",
+      "sub": "§ 42c EnWG"
+     }
+    ],
+    "ueberschussCt": 6,
+    "verwaltung": 30,
+    "waehrung": "€"
+   },
+   "lohntSich": true,
+   "mehrerloesErzeuger": 4630.73863645,
+   "nutzung": 0.336780991742,
+   "rabatt": {
+    "anteil": 0,
+    "id": "keiner",
+    "label": "Energy Sharing",
+    "sub": "§ 42c EnWG"
+   },
+   "referenzErzeuger": 16500,
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "teile": [
+    {
+     "ct": 3,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 0,
+     "id": "netz",
+     "label": "Abschlag Netzentgelt"
+    },
+    {
+     "ct": 0,
+     "id": "abgaben",
+     "label": "Entfallende Abgaben"
+    }
+   ],
+   "ueberschuss": 182385.227271,
+   "verbrauch": 210000,
+   "verwaltungGesamt": 1800,
+   "vorteilBrutto": 2778.44318187,
+   "vorteilCt": 3,
+   "vorteilNetto": 978.443181872
+  },
+  "de_gewerbe_gross": {
+   "a": 0.6,
+   "deckung": 0.556276660851,
+   "eingabe": {
+    "energiepreis": 14,
+    "gemeinschaftCt": 11,
+    "kwp": 1000,
+    "land": "de",
+    "mix": "gewerbe",
+    "netzAp": 9,
+    "rabattId": "keiner",
+    "regionId": "de-sued",
+    "speicher": false,
+    "teilnehmer": 200,
+    "ueberschussCt": 6,
+    "verbrauchJe": 3500,
+    "verwaltung": 30
+   },
+   "erloesErzeuger": 85469.6831298,
+   "erloesGeteilt": 42833.3028855,
+   "erloesUeberschuss": 42636.3802443,
+   "erzeugung": 1100000,
+   "geteilt": 389393.662596,
+   "geteiltJeTeilnehmer": 1946.96831298,
+   "jeTeilnehmer": 28.4090493894,
+   "land": {
+    "abgabenCt": 0,
+    "ct": "ct",
+    "energiepreis": 14,
+    "gemeinschaftCt": 11,
+    "netzAp": 9,
+    "rabatte": [
+     {
+      "anteil": 0,
+      "id": "keiner",
+      "label": "Energy Sharing",
+      "sub": "§ 42c EnWG"
+     }
+    ],
+    "ueberschussCt": 6,
+    "verwaltung": 30,
+    "waehrung": "€"
+   },
+   "lohntSich": true,
+   "mehrerloesErzeuger": 19469.6831298,
+   "nutzung": 0.353994238723,
+   "rabatt": {
+    "anteil": 0,
+    "id": "keiner",
+    "label": "Energy Sharing",
+    "sub": "§ 42c EnWG"
+   },
+   "referenzErzeuger": 66000,
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "teile": [
+    {
+     "ct": 3,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 0,
+     "id": "netz",
+     "label": "Abschlag Netzentgelt"
+    },
+    {
+     "ct": 0,
+     "id": "abgaben",
+     "label": "Entfallende Abgaben"
+    }
+   ],
+   "ueberschuss": 710606.337404,
+   "verbrauch": 700000,
+   "verwaltungGesamt": 6000,
+   "vorteilBrutto": 11681.8098779,
+   "vorteilCt": 3,
+   "vorteilNetto": 5681.80987787
+  },
+  "at_wenig_teilnehmer": {
+   "a": 0.45,
+   "deckung": 0.45,
+   "eingabe": {
+    "energiepreis": 12,
+    "gemeinschaftCt": 10,
+    "kwp": 250,
+    "land": "at",
+    "mix": "gemischt",
+    "netzAp": 7,
+    "rabattId": "lokal",
+    "regionId": "at",
+    "speicher": false,
+    "teilnehmer": 5,
+    "ueberschussCt": 5,
+    "verbrauchJe": 3500,
+    "verwaltung": 20
+   },
+   "erloesErzeuger": 14393.75,
+   "erloesGeteilt": 787.5,
+   "erloesUeberschuss": 13606.25,
+   "erzeugung": 280000,
+   "geteilt": 7875,
+   "geteiltJeTeilnehmer": 1575,
+   "jeTeilnehmer": 87.2575,
+   "land": {
+    "abgabenCt": 0.82,
+    "ct": "ct",
+    "energiepreis": 12,
+    "gemeinschaftCt": 10,
+    "netzAp": 7,
+    "rabatte": [
+     {
+      "anteil": 0.57,
+      "id": "lokal",
+      "label": "EEG lokal",
+      "sub": "−57 % Netz-AP"
+     },
+     {
+      "anteil": 0.28,
+      "id": "regional",
+      "label": "EEG regional",
+      "sub": "−28 % Netz-AP"
+     },
+     {
+      "anteil": 0,
+      "id": "beg",
+      "label": "BEG",
+      "sub": "ohne Abschlag"
+     }
+    ],
+    "ueberschussCt": 5,
+    "verwaltung": 20,
+    "waehrung": "€"
+   },
+   "lohntSich": true,
+   "mehrerloesErzeuger": 393.75,
+   "nutzung": 0.028125,
+   "rabatt": {
+    "anteil": 0.57,
+    "id": "lokal",
+    "label": "EEG lokal",
+    "sub": "−57 % Netz-AP"
+   },
+   "referenzErzeuger": 14000,
+   "region": {
+    "ertrag": 1120,
+    "id": "at",
+    "label": "Österreich",
+    "land": "AT",
+    "sub": "Flach- und Hügelland"
+   },
+   "teile": [
+    {
+     "ct": 2,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 3.99,
+     "id": "netz",
+     "label": "Abschlag Netzentgelt"
+    },
+    {
+     "ct": 0.82,
+     "id": "abgaben",
+     "label": "Entfallende Abgaben"
+    }
+   ],
+   "ueberschuss": 272125,
+   "verbrauch": 17500,
+   "verwaltungGesamt": 100,
+   "vorteilBrutto": 536.2875,
+   "vorteilCt": 6.81,
+   "vorteilNetto": 436.2875
+  },
+  "standardFuer_alle": [
+   {
+    "energiepreis": 14,
+    "gemeinschaftCt": 11,
+    "kwp": 250,
+    "land": "de",
+    "mix": "gemischt",
+    "netzAp": 9,
+    "rabattId": "keiner",
+    "regionId": "de-sued",
+    "speicher": false,
+    "teilnehmer": 60,
+    "ueberschussCt": 6,
+    "verbrauchJe": 3500,
+    "verwaltung": 30
+   },
+   {
+    "energiepreis": 12,
+    "gemeinschaftCt": 10,
+    "kwp": 250,
+    "land": "at",
+    "mix": "gemischt",
+    "netzAp": 7,
+    "rabattId": "lokal",
+    "regionId": "at",
+    "speicher": false,
+    "teilnehmer": 60,
+    "ueberschussCt": 5,
+    "verbrauchJe": 3500,
+    "verwaltung": 20
+   },
+   {
+    "energiepreis": 14,
+    "gemeinschaftCt": 13,
+    "kwp": 250,
+    "land": "ch",
+    "mix": "gemischt",
+    "netzAp": 10,
+    "rabattId": "leg40",
+    "regionId": "ch",
+    "speicher": false,
+    "teilnehmer": 60,
+    "ueberschussCt": 6,
+    "verbrauchJe": 3500,
+    "verwaltung": 40
+   }
+  ],
+  "geteilteMenge_reihe": [
+   53224.4274491,
+   60372.6310973,
+   67848.2149792
+  ]
+ }
+}

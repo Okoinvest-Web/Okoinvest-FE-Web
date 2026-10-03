@@ -1,0 +1,390 @@
+{
+ "rechner": "projektbewertung",
+ "modul": "src/lib/rechner/projektbewertung.js",
+ "faelle": {
+  "standard": {
+   "abzugKwp": 6,
+   "eingabe": {
+    "land": "DE",
+    "mwp": 10,
+    "netz": "zusage",
+    "netzKm": 1.5,
+    "phase": "satzung",
+    "vermarktung": "keine"
+   },
+   "faktor": 1,
+   "gesamt": {
+    "max": 840000,
+    "min": 390000,
+    "mittel": 615000
+   },
+   "hinweise": [
+    "Noch ohne Vermarktung: Zuletzt lagen EEG-Zuschläge um 4,8 ct/kWh, PPA-Preise grob zwischen 3,8 und 5,5 ct/kWh."
+   ],
+   "kaufpreisNull": false,
+   "kwp": 10000,
+   "minderer": [
+    "Kabeltrasse 1,5 km: rund 6 €/kWp Mehrkosten für den Käufer."
+   ],
+   "monateBisRtb": 6,
+   "phase": {
+    "id": "satzung",
+    "kurz": "Baurecht",
+    "label": "Satzungsbeschluss / Baurecht",
+    "monateBisRtb": 6,
+    "preisProKwp": {
+     "max": 90,
+     "min": 45
+    },
+    "risiko": "mittel"
+   },
+   "phaseIndex": 3,
+   "preisKwp": {
+    "max": 84,
+    "min": 39,
+    "mittel": 61.5
+   },
+   "risiko": "mittel",
+   "risikoStufe": 2,
+   "treiber": [
+    "Netzzusage mit benanntem Einspeisepunkt."
+   ]
+  },
+  "flaeche_offen": {
+   "abzugKwp": 6,
+   "eingabe": {
+    "land": "DE",
+    "mwp": 10,
+    "netz": "offen",
+    "netzKm": 1.5,
+    "phase": "flaeche",
+    "vermarktung": "keine"
+   },
+   "faktor": 1,
+   "gesamt": {
+    "max": 140000,
+    "min": 0,
+    "mittel": 70000
+   },
+   "hinweise": [
+    "Frühe Phase: Viele Käufer zahlen gestaffelt – ein Teil bei Signing, der Rest bei Meilensteinen (Satzungsbeschluss, RTB)."
+   ],
+   "kaufpreisNull": false,
+   "kwp": 10000,
+   "minderer": [
+    "Netzanschluss noch nicht angefragt – in vielen Regionen der Engpass Nummer eins.",
+    "Kabeltrasse 1,5 km: rund 6 €/kWp Mehrkosten für den Käufer."
+   ],
+   "monateBisRtb": 30,
+   "phase": {
+    "id": "flaeche",
+    "kurz": "Flächensicherung",
+    "label": "Fläche gesichert",
+    "monateBisRtb": 30,
+    "preisProKwp": {
+     "max": 20,
+     "min": 5
+    },
+    "risiko": "sehr hoch"
+   },
+   "phaseIndex": 0,
+   "preisKwp": {
+    "max": 14,
+    "min": 0,
+    "mittel": 7
+   },
+   "risiko": "sehr hoch",
+   "risikoStufe": 5,
+   "treiber": []
+  },
+  "rtb_reserviert_eeg": {
+   "abzugKwp": 6,
+   "eingabe": {
+    "land": "DE",
+    "mwp": 10,
+    "netz": "reserviert",
+    "netzKm": 1.5,
+    "phase": "rtb",
+    "vermarktung": "eeg"
+   },
+   "faktor": 1.232,
+   "gesamt": {
+    "max": 1541600,
+    "min": 679200,
+    "mittel": 1110400
+   },
+   "hinweise": [],
+   "kaufpreisNull": false,
+   "kwp": 10000,
+   "minderer": [
+    "Kabeltrasse 1,5 km: rund 6 €/kWp Mehrkosten für den Käufer."
+   ],
+   "monateBisRtb": 0,
+   "phase": {
+    "id": "rtb",
+    "kurz": "Baureif",
+    "label": "Ready-to-Build (RTB)",
+    "monateBisRtb": 0,
+    "preisProKwp": {
+     "max": 130,
+     "min": 60
+    },
+    "risiko": "gering"
+   },
+   "phaseIndex": 4,
+   "preisKwp": {
+    "max": 154.16,
+    "min": 67.92,
+    "mittel": 111.04
+   },
+   "risiko": "gering",
+   "risikoStufe": 1,
+   "treiber": [
+    "Netzkapazität vertraglich reserviert – der größte Engpass im Markt ist gelöst.",
+    "Zuschlag gesichert: 20 Jahre Marktprämie als Erlösboden – bankfähig."
+   ]
+  },
+  "cod_ppa_50mwp": {
+   "abzugKwp": 0,
+   "eingabe": {
+    "land": "DE",
+    "mwp": 50,
+    "netz": "zusage",
+    "netzKm": 1.5,
+    "phase": "cod",
+    "vermarktung": "ppa"
+   },
+   "faktor": 1.232,
+   "gesamt": {
+    "max": 52360000,
+    "min": 33880000,
+    "mittel": 43120000
+   },
+   "hinweise": [
+    "Bestandsanlage: Maßgeblich sind Erlöse, Restlaufzeit von Förderung/PPA, Pachtvertrag, technischer Zustand und Ertragshistorie – der Wert folgt dem Barwert der Cashflows."
+   ],
+   "kaufpreisNull": false,
+   "kwp": 50000,
+   "minderer": [],
+   "monateBisRtb": 0,
+   "phase": {
+    "id": "cod",
+    "kurz": "Bestand",
+    "label": "In Betrieb (COD / Bestand)",
+    "monateBisRtb": 0,
+    "preisProKwp": {
+     "max": 850,
+     "min": 550
+    },
+    "risiko": "sehr gering"
+   },
+   "phaseIndex": 5,
+   "preisKwp": {
+    "max": 1047.2,
+    "min": 677.6,
+    "mittel": 862.4
+   },
+   "risiko": "sehr gering",
+   "risikoStufe": 0,
+   "treiber": [
+    "Ab 50 MWp: interessant für institutionelle Investoren und Portfoliokäufer.",
+    "Unterschriebener PPA: planbare Erlöse, erleichtert die Finanzierung."
+   ]
+  },
+  "netz_weit": {
+   "abzugKwp": 168,
+   "eingabe": {
+    "land": "DE",
+    "mwp": 10,
+    "netz": "anfrage",
+    "netzKm": 15,
+    "phase": "satzung",
+    "vermarktung": "keine"
+   },
+   "faktor": 0.7,
+   "gesamt": {
+    "max": 0,
+    "min": 0,
+    "mittel": 0
+   },
+   "hinweise": [
+    "Noch ohne Vermarktung: Zuletzt lagen EEG-Zuschläge um 4,8 ct/kWh, PPA-Preise grob zwischen 3,8 und 5,5 ct/kWh."
+   ],
+   "kaufpreisNull": true,
+   "kwp": 10000,
+   "minderer": [
+    "Für diese Phase fehlt die Netzzusage noch – Käufer preisen Verzögerung und Kosten ein.",
+    "Kabeltrasse 15 km: rund 168 €/kWp Mehrkosten für den Käufer.",
+    "Lange Trasse bedeutet zusätzliche Wegerechte und Genehmigungen."
+   ],
+   "monateBisRtb": 6,
+   "phase": {
+    "id": "satzung",
+    "kurz": "Baurecht",
+    "label": "Satzungsbeschluss / Baurecht",
+    "monateBisRtb": 6,
+    "preisProKwp": {
+     "max": 90,
+     "min": 45
+    },
+    "risiko": "mittel"
+   },
+   "phaseIndex": 3,
+   "preisKwp": {
+    "max": 0,
+    "min": 0,
+    "mittel": 0
+   },
+   "risiko": "hoch",
+   "risikoStufe": 4,
+   "treiber": []
+  },
+  "klein_1mwp": {
+   "abzugKwp": 60,
+   "eingabe": {
+    "land": "DE",
+    "mwp": 1,
+    "netz": "zusage",
+    "netzKm": 1.5,
+    "phase": "satzung",
+    "vermarktung": "keine"
+   },
+   "faktor": 0.75,
+   "gesamt": {
+    "max": 7500,
+    "min": 0,
+    "mittel": 3750
+   },
+   "hinweise": [
+    "Noch ohne Vermarktung: Zuletzt lagen EEG-Zuschläge um 4,8 ct/kWh, PPA-Preise grob zwischen 3,8 und 5,5 ct/kWh."
+   ],
+   "kaufpreisNull": false,
+   "kwp": 1000,
+   "minderer": [
+    "Kabeltrasse 1,5 km: rund 60 €/kWp Mehrkosten für den Käufer.",
+    "Unter 3 MWp: Fixkosten für Netz, Gutachten und Due Diligence verteilen sich auf wenig Leistung – kleinerer Käuferkreis."
+   ],
+   "monateBisRtb": 6,
+   "phase": {
+    "id": "satzung",
+    "kurz": "Baurecht",
+    "label": "Satzungsbeschluss / Baurecht",
+    "monateBisRtb": 6,
+    "preisProKwp": {
+     "max": 90,
+     "min": 45
+    },
+    "risiko": "mittel"
+   },
+   "phaseIndex": 3,
+   "preisKwp": {
+    "max": 7.5,
+    "min": 0,
+    "mittel": 3.75
+   },
+   "risiko": "mittel",
+   "risikoStufe": 2,
+   "treiber": [
+    "Netzzusage mit benanntem Einspeisepunkt."
+   ]
+  },
+  "at": {
+   "abzugKwp": 6,
+   "eingabe": {
+    "land": "AT",
+    "mwp": 10,
+    "netz": "zusage",
+    "netzKm": 1.5,
+    "phase": "satzung",
+    "vermarktung": "keine"
+   },
+   "faktor": 1,
+   "gesamt": {
+    "max": 840000,
+    "min": 390000,
+    "mittel": 615000
+   },
+   "hinweise": [
+    "Noch ohne Vermarktung: Zuletzt lagen EEG-Zuschläge um 4,8 ct/kWh, PPA-Preise grob zwischen 3,8 und 5,5 ct/kWh.",
+    "Österreich: Flächenwidmung (z. B. Grünland-Photovoltaik) und Förderung nach EAG (Marktprämie bzw. Investitionszuschuss) prägen den Wert; ab bestimmten Größen ist eine UVP-Prüfung nötig."
+   ],
+   "kaufpreisNull": false,
+   "kwp": 10000,
+   "minderer": [
+    "Kabeltrasse 1,5 km: rund 6 €/kWp Mehrkosten für den Käufer."
+   ],
+   "monateBisRtb": 6,
+   "phase": {
+    "id": "satzung",
+    "kurz": "Baurecht",
+    "label": "Satzungsbeschluss / Baurecht",
+    "monateBisRtb": 6,
+    "preisProKwp": {
+     "max": 90,
+     "min": 45
+    },
+    "risiko": "mittel"
+   },
+   "phaseIndex": 3,
+   "preisKwp": {
+    "max": 84,
+    "min": 39,
+    "mittel": 61.5
+   },
+   "risiko": "mittel",
+   "risikoStufe": 2,
+   "treiber": [
+    "Netzzusage mit benanntem Einspeisepunkt."
+   ]
+  },
+  "ch": {
+   "abzugKwp": 6,
+   "eingabe": {
+    "land": "CH",
+    "mwp": 10,
+    "netz": "zusage",
+    "netzKm": 1.5,
+    "phase": "satzung",
+    "vermarktung": "keine"
+   },
+   "faktor": 0.9,
+   "gesamt": {
+    "max": 750000,
+    "min": 345000,
+    "mittel": 547500
+   },
+   "hinweise": [
+    "Noch ohne Vermarktung: Zuletzt lagen EEG-Zuschläge um 4,8 ct/kWh, PPA-Preise grob zwischen 3,8 und 5,5 ct/kWh.",
+    "Schweiz: kleiner Markt für Freiflächenprojekte, Bewilligung meist über Nutzungsplanung bzw. Solarexpress (alpine Anlagen) – Vergleichswerte sind rar, die Spanne ist unsicherer."
+   ],
+   "kaufpreisNull": false,
+   "kwp": 10000,
+   "minderer": [
+    "Kabeltrasse 1,5 km: rund 6 €/kWp Mehrkosten für den Käufer."
+   ],
+   "monateBisRtb": 6,
+   "phase": {
+    "id": "satzung",
+    "kurz": "Baurecht",
+    "label": "Satzungsbeschluss / Baurecht",
+    "monateBisRtb": 6,
+    "preisProKwp": {
+     "max": 90,
+     "min": 45
+    },
+    "risiko": "mittel"
+   },
+   "phaseIndex": 3,
+   "preisKwp": {
+    "max": 75,
+    "min": 34.5,
+    "mittel": 54.75
+   },
+   "risiko": "mittel",
+   "risikoStufe": 2,
+   "treiber": [
+    "Netzzusage mit benanntem Einspeisepunkt."
+   ]
+  }
+ }
+}

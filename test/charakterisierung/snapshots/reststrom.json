@@ -1,0 +1,863 @@
+{
+ "rechner": "reststrom",
+ "modul": "src/lib/rechner/reststrom.js",
+ "faelle": {
+  "standard": {
+   "beschaffungVorher": 10.54,
+   "eigenverbrauch": 0,
+   "fixSumme": 9.46,
+   "gesamt": {
+    "anteilMax": 0.18445,
+    "anteilMin": 0.04887925,
+    "ctMax": 3.689,
+    "ctMin": 0.977585,
+    "ctMitte": 2.3332925,
+    "eurMax": 18445,
+    "eurMin": 4887.925,
+    "eurMitte": 11666.4625
+   },
+   "hebel": [
+    {
+     "ctMax": 1.1067,
+     "ctMin": 0.3689,
+     "eurMax": 5533.5,
+     "eurMin": 1844.5,
+     "id": "buendelung",
+     "label": "Bündelung & strukturierte Beschaffung"
+    },
+    {
+     "ctMax": 1.8445,
+     "ctMin": 0.461125,
+     "eurMax": 9222.5,
+     "eurMin": 2305.625,
+     "id": "ppa",
+     "label": "Solarstrom aus Parks der Gruppe (PPA)"
+    },
+    {
+     "ctMax": 0.7378,
+     "ctMin": 0.14756,
+     "eurMax": 3689,
+     "eurMin": 737.8,
+     "id": "flex",
+     "label": "Flexibilität & Speicher im virtuellen Kraftwerk"
+    }
+   ],
+   "klein": false,
+   "kostenVorher": 100000,
+   "nachher": [
+    {
+     "beeinflussbar": true,
+     "ct": 8.2067075,
+     "id": "beschaffung",
+     "label": "Beschaffung & Vertrieb (Pool)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 5.5,
+     "id": "netz",
+     "label": "Netzentgelte & Messung"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 1.8,
+     "id": "umlagen",
+     "label": "Umlagen (KWKG, Offshore, § 19)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 0.11,
+     "id": "konzession",
+     "label": "Konzessionsabgabe"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 2.05,
+     "id": "stromsteuer",
+     "label": "Stromsteuer"
+    }
+   ],
+   "preisUnplausibel": false,
+   "profil": {
+    "eigenverbrauch": 0.7,
+    "flex": 0.8,
+    "id": "einschicht",
+    "label": "Einschicht",
+    "ppa": 1,
+    "sub": "ca. 6–16 Uhr",
+    "tag": 0.62
+   },
+   "pvDeckungTag": 0,
+   "pvErtrag": 0,
+   "reststromKwh": 500000,
+   "stromsteuer": null,
+   "verbrauchKwh": 500000,
+   "vorher": [
+    {
+     "beeinflussbar": true,
+     "ct": 10.54,
+     "id": "beschaffung",
+     "label": "Beschaffung & Vertrieb"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 5.5,
+     "id": "netz",
+     "label": "Netzentgelte & Messung"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 1.8,
+     "id": "umlagen",
+     "label": "Umlagen (KWKG, Offshore, § 19)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 0.11,
+     "id": "konzession",
+     "label": "Konzessionsabgabe"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 2.05,
+     "id": "stromsteuer",
+     "label": "Stromsteuer"
+    }
+   ]
+  },
+  "zweischicht_2000": {
+   "beschaffungVorher": 8.54,
+   "eigenverbrauch": 0,
+   "fixSumme": 9.46,
+   "gesamt": {
+    "anteilMax": 0.166055555556,
+    "anteilMin": 0.0436428062678,
+    "ctMax": 2.989,
+    "ctMin": 0.785570512821,
+    "ctMitte": 1.88728525641,
+    "eurMax": 59780,
+    "eurMin": 15711.4102564,
+    "eurMitte": 37745.7051282
+   },
+   "hebel": [
+    {
+     "ctMax": 0.919692307692,
+     "ctMin": 0.306564102564,
+     "eurMax": 18393.8461538,
+     "eurMin": 6131.28205128,
+     "id": "buendelung",
+     "label": "Bündelung & strukturierte Beschaffung"
+    },
+    {
+     "ctMax": 1.3028974359,
+     "ctMin": 0.325724358974,
+     "eurMax": 26057.9487179,
+     "eurMin": 6514.48717949,
+     "id": "ppa",
+     "label": "Solarstrom aus Parks der Gruppe (PPA)"
+    },
+    {
+     "ctMax": 0.76641025641,
+     "ctMin": 0.153282051282,
+     "eurMax": 15328.2051282,
+     "eurMin": 3065.64102564,
+     "id": "flex",
+     "label": "Flexibilität & Speicher im virtuellen Kraftwerk"
+    }
+   ],
+   "klein": false,
+   "kostenVorher": 360000,
+   "nachher": [
+    {
+     "beeinflussbar": true,
+     "ct": 6.65271474359,
+     "id": "beschaffung",
+     "label": "Beschaffung & Vertrieb (Pool)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 5.5,
+     "id": "netz",
+     "label": "Netzentgelte & Messung"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 1.8,
+     "id": "umlagen",
+     "label": "Umlagen (KWKG, Offshore, § 19)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 0.11,
+     "id": "konzession",
+     "label": "Konzessionsabgabe"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 2.05,
+     "id": "stromsteuer",
+     "label": "Stromsteuer"
+    }
+   ],
+   "preisUnplausibel": false,
+   "profil": {
+    "eigenverbrauch": 0.8,
+    "flex": 1,
+    "id": "zweischicht",
+    "label": "Zweischicht",
+    "ppa": 0.85,
+    "sub": "ca. 6–22 Uhr",
+    "tag": 0.5
+   },
+   "pvDeckungTag": 0,
+   "pvErtrag": 0,
+   "reststromKwh": 2000000,
+   "stromsteuer": null,
+   "verbrauchKwh": 2000000,
+   "vorher": [
+    {
+     "beeinflussbar": true,
+     "ct": 8.54,
+     "id": "beschaffung",
+     "label": "Beschaffung & Vertrieb"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 5.5,
+     "id": "netz",
+     "label": "Netzentgelte & Messung"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 1.8,
+     "id": "umlagen",
+     "label": "Umlagen (KWKG, Offshore, § 19)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 0.11,
+     "id": "konzession",
+     "label": "Konzessionsabgabe"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 2.05,
+     "id": "stromsteuer",
+     "label": "Stromsteuer"
+    }
+   ]
+  },
+  "dreischicht_produzierend": {
+   "beschaffungVorher": 10.54,
+   "eigenverbrauch": 0,
+   "fixSumme": 9.46,
+   "gesamt": {
+    "anteilMax": 0.1625,
+    "anteilMin": 0.04375,
+    "ctMax": 3.25,
+    "ctMin": 0.875,
+    "ctMitte": 2.0625,
+    "eurMax": 162500,
+    "eurMin": 43750,
+    "eurMitte": 103125
+   },
+   "hebel": [
+    {
+     "ctMax": 1.2,
+     "ctMin": 0.4,
+     "eurMax": 60000,
+     "eurMin": 20000,
+     "id": "buendelung",
+     "label": "Bündelung & strukturierte Beschaffung"
+    },
+    {
+     "ctMax": 1.3,
+     "ctMin": 0.325,
+     "eurMax": 65000,
+     "eurMin": 16250,
+     "id": "ppa",
+     "label": "Solarstrom aus Parks der Gruppe (PPA)"
+    },
+    {
+     "ctMax": 0.75,
+     "ctMin": 0.15,
+     "eurMax": 37500,
+     "eurMin": 7500,
+     "id": "flex",
+     "label": "Flexibilität & Speicher im virtuellen Kraftwerk"
+    }
+   ],
+   "klein": false,
+   "kostenVorher": 1000000,
+   "nachher": [
+    {
+     "beeinflussbar": true,
+     "ct": 8.4775,
+     "id": "beschaffung",
+     "label": "Beschaffung & Vertrieb (Pool)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 5.5,
+     "id": "netz",
+     "label": "Netzentgelte & Messung"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 1.8,
+     "id": "umlagen",
+     "label": "Umlagen (KWKG, Offshore, § 19)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 0.11,
+     "id": "konzession",
+     "label": "Konzessionsabgabe"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 2.05,
+     "id": "stromsteuer",
+     "label": "Stromsteuer"
+    }
+   ],
+   "preisUnplausibel": false,
+   "profil": {
+    "eigenverbrauch": 0.9,
+    "flex": 0.75,
+    "id": "dreischicht",
+    "label": "Dreischicht",
+    "ppa": 0.65,
+    "sub": "rund um die Uhr",
+    "tag": 0.38
+   },
+   "pvDeckungTag": 0,
+   "pvErtrag": 0,
+   "reststromKwh": 5000000,
+   "stromsteuer": {
+    "ctJeKwh": 2,
+    "eur": 100000
+   },
+   "verbrauchKwh": 5000000,
+   "vorher": [
+    {
+     "beeinflussbar": true,
+     "ct": 10.54,
+     "id": "beschaffung",
+     "label": "Beschaffung & Vertrieb"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 5.5,
+     "id": "netz",
+     "label": "Netzentgelte & Messung"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 1.8,
+     "id": "umlagen",
+     "label": "Umlagen (KWKG, Offshore, § 19)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 0.11,
+     "id": "konzession",
+     "label": "Konzessionsabgabe"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 2.05,
+     "id": "stromsteuer",
+     "label": "Stromsteuer"
+    }
+   ]
+  },
+  "handel_mit_pv": {
+   "beschaffungVorher": 10.54,
+   "eigenverbrauch": 0,
+   "fixSumme": 9.46,
+   "gesamt": {
+    "anteilMax": 0.157251136364,
+    "anteilMin": 0.0418377840909,
+    "ctMax": 3.14502272727,
+    "ctMin": 0.836755681818,
+    "ctMitte": 1.99088920455,
+    "eurMax": 25160.1818182,
+    "eurMin": 6694.04545455,
+    "eurMitte": 15927.1136364
+   },
+   "hebel": [
+    {
+     "ctMax": 1.2,
+     "ctMin": 0.4,
+     "eurMax": 9600,
+     "eurMin": 3200,
+     "id": "buendelung",
+     "label": "Bündelung & strukturierte Beschaffung"
+    },
+    {
+     "ctMax": 0.955022727273,
+     "ctMin": 0.238755681818,
+     "eurMax": 7640.18181818,
+     "eurMin": 1910.04545455,
+     "id": "ppa",
+     "label": "Solarstrom aus Parks der Gruppe (PPA)"
+    },
+    {
+     "ctMax": 0.99,
+     "ctMin": 0.198,
+     "eurMax": 7920,
+     "eurMin": 1584,
+     "id": "flex",
+     "label": "Flexibilität & Speicher im virtuellen Kraftwerk"
+    }
+   ],
+   "klein": false,
+   "kostenVorher": 160000,
+   "nachher": [
+    {
+     "beeinflussbar": true,
+     "ct": 8.54911079545,
+     "id": "beschaffung",
+     "label": "Beschaffung & Vertrieb (Pool)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 5.5,
+     "id": "netz",
+     "label": "Netzentgelte & Messung"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 1.8,
+     "id": "umlagen",
+     "label": "Umlagen (KWKG, Offshore, § 19)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 0.11,
+     "id": "konzession",
+     "label": "Konzessionsabgabe"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 2.05,
+     "id": "stromsteuer",
+     "label": "Stromsteuer"
+    }
+   ],
+   "preisUnplausibel": false,
+   "profil": {
+    "eigenverbrauch": 0.75,
+    "flex": 0.9,
+    "id": "handel",
+    "label": "Handel & Büro",
+    "ppa": 0.9,
+    "sub": "Laden, Kühlung, Klima",
+    "tag": 0.55
+   },
+   "pvDeckungTag": 0.469431818182,
+   "pvErtrag": 275400,
+   "reststromKwh": 800000,
+   "stromsteuer": null,
+   "verbrauchKwh": 800000,
+   "vorher": [
+    {
+     "beeinflussbar": true,
+     "ct": 10.54,
+     "id": "beschaffung",
+     "label": "Beschaffung & Vertrieb"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 5.5,
+     "id": "netz",
+     "label": "Netzentgelte & Messung"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 1.8,
+     "id": "umlagen",
+     "label": "Umlagen (KWKG, Offshore, § 19)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 0.11,
+     "id": "konzession",
+     "label": "Konzessionsabgabe"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 2.05,
+     "id": "stromsteuer",
+     "label": "Stromsteuer"
+    }
+   ]
+  },
+  "unter_schwelle_50": {
+   "beschaffungVorher": 10.54,
+   "eigenverbrauch": 0,
+   "fixSumme": 9.46,
+   "gesamt": {
+    "anteilMax": 0.18445,
+    "anteilMin": 0.04887925,
+    "ctMax": 3.689,
+    "ctMin": 0.977585,
+    "ctMitte": 2.3332925,
+    "eurMax": 1844.5,
+    "eurMin": 488.7925,
+    "eurMitte": 1166.64625
+   },
+   "hebel": [
+    {
+     "ctMax": 1.1067,
+     "ctMin": 0.3689,
+     "eurMax": 553.35,
+     "eurMin": 184.45,
+     "id": "buendelung",
+     "label": "Bündelung & strukturierte Beschaffung"
+    },
+    {
+     "ctMax": 1.8445,
+     "ctMin": 0.461125,
+     "eurMax": 922.25,
+     "eurMin": 230.5625,
+     "id": "ppa",
+     "label": "Solarstrom aus Parks der Gruppe (PPA)"
+    },
+    {
+     "ctMax": 0.7378,
+     "ctMin": 0.14756,
+     "eurMax": 368.9,
+     "eurMin": 73.78,
+     "id": "flex",
+     "label": "Flexibilität & Speicher im virtuellen Kraftwerk"
+    }
+   ],
+   "klein": true,
+   "kostenVorher": 10000,
+   "nachher": [
+    {
+     "beeinflussbar": true,
+     "ct": 8.2067075,
+     "id": "beschaffung",
+     "label": "Beschaffung & Vertrieb (Pool)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 5.5,
+     "id": "netz",
+     "label": "Netzentgelte & Messung"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 1.8,
+     "id": "umlagen",
+     "label": "Umlagen (KWKG, Offshore, § 19)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 0.11,
+     "id": "konzession",
+     "label": "Konzessionsabgabe"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 2.05,
+     "id": "stromsteuer",
+     "label": "Stromsteuer"
+    }
+   ],
+   "preisUnplausibel": false,
+   "profil": {
+    "eigenverbrauch": 0.7,
+    "flex": 0.8,
+    "id": "einschicht",
+    "label": "Einschicht",
+    "ppa": 1,
+    "sub": "ca. 6–16 Uhr",
+    "tag": 0.62
+   },
+   "pvDeckungTag": 0,
+   "pvErtrag": 0,
+   "reststromKwh": 50000,
+   "stromsteuer": null,
+   "verbrauchKwh": 50000,
+   "vorher": [
+    {
+     "beeinflussbar": true,
+     "ct": 10.54,
+     "id": "beschaffung",
+     "label": "Beschaffung & Vertrieb"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 5.5,
+     "id": "netz",
+     "label": "Netzentgelte & Messung"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 1.8,
+     "id": "umlagen",
+     "label": "Umlagen (KWKG, Offshore, § 19)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 0.11,
+     "id": "konzession",
+     "label": "Konzessionsabgabe"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 2.05,
+     "id": "stromsteuer",
+     "label": "Stromsteuer"
+    }
+   ]
+  },
+  "preis_niedrig": {
+   "beschaffungVorher": 0.54,
+   "eigenverbrauch": 0,
+   "fixSumme": 9.46,
+   "gesamt": {
+    "anteilMax": 0.0189,
+    "anteilMin": 0.0050085,
+    "ctMax": 0.189,
+    "ctMin": 0.050085,
+    "ctMitte": 0.1195425,
+    "eurMax": 945,
+    "eurMin": 250.425,
+    "eurMitte": 597.7125
+   },
+   "hebel": [
+    {
+     "ctMax": 0.0567,
+     "ctMin": 0.0189,
+     "eurMax": 283.5,
+     "eurMin": 94.5,
+     "id": "buendelung",
+     "label": "Bündelung & strukturierte Beschaffung"
+    },
+    {
+     "ctMax": 0.0945,
+     "ctMin": 0.023625,
+     "eurMax": 472.5,
+     "eurMin": 118.125,
+     "id": "ppa",
+     "label": "Solarstrom aus Parks der Gruppe (PPA)"
+    },
+    {
+     "ctMax": 0.0378,
+     "ctMin": 0.00756,
+     "eurMax": 189,
+     "eurMin": 37.8,
+     "id": "flex",
+     "label": "Flexibilität & Speicher im virtuellen Kraftwerk"
+    }
+   ],
+   "klein": false,
+   "kostenVorher": 50000,
+   "nachher": [
+    {
+     "beeinflussbar": true,
+     "ct": 0.4204575,
+     "id": "beschaffung",
+     "label": "Beschaffung & Vertrieb (Pool)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 5.5,
+     "id": "netz",
+     "label": "Netzentgelte & Messung"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 1.8,
+     "id": "umlagen",
+     "label": "Umlagen (KWKG, Offshore, § 19)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 0.11,
+     "id": "konzession",
+     "label": "Konzessionsabgabe"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 2.05,
+     "id": "stromsteuer",
+     "label": "Stromsteuer"
+    }
+   ],
+   "preisUnplausibel": true,
+   "profil": {
+    "eigenverbrauch": 0.7,
+    "flex": 0.8,
+    "id": "einschicht",
+    "label": "Einschicht",
+    "ppa": 1,
+    "sub": "ca. 6–16 Uhr",
+    "tag": 0.62
+   },
+   "pvDeckungTag": 0,
+   "pvErtrag": 0,
+   "reststromKwh": 500000,
+   "stromsteuer": null,
+   "verbrauchKwh": 500000,
+   "vorher": [
+    {
+     "beeinflussbar": true,
+     "ct": 0.54,
+     "id": "beschaffung",
+     "label": "Beschaffung & Vertrieb"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 5.5,
+     "id": "netz",
+     "label": "Netzentgelte & Messung"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 1.8,
+     "id": "umlagen",
+     "label": "Umlagen (KWKG, Offshore, § 19)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 0.11,
+     "id": "konzession",
+     "label": "Konzessionsabgabe"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 2.05,
+     "id": "stromsteuer",
+     "label": "Stromsteuer"
+    }
+   ]
+  },
+  "verbrauch_null": {
+   "beschaffungVorher": 10.54,
+   "eigenverbrauch": 0,
+   "fixSumme": 9.46,
+   "gesamt": {
+    "anteilMax": 0,
+    "anteilMin": 0,
+    "ctMax": 3.689,
+    "ctMin": 0.977585,
+    "ctMitte": 2.3332925,
+    "eurMax": 0,
+    "eurMin": 0,
+    "eurMitte": 0
+   },
+   "hebel": [
+    {
+     "ctMax": 1.1067,
+     "ctMin": 0.3689,
+     "eurMax": 0,
+     "eurMin": 0,
+     "id": "buendelung",
+     "label": "Bündelung & strukturierte Beschaffung"
+    },
+    {
+     "ctMax": 1.8445,
+     "ctMin": 0.461125,
+     "eurMax": 0,
+     "eurMin": 0,
+     "id": "ppa",
+     "label": "Solarstrom aus Parks der Gruppe (PPA)"
+    },
+    {
+     "ctMax": 0.7378,
+     "ctMin": 0.14756,
+     "eurMax": 0,
+     "eurMin": 0,
+     "id": "flex",
+     "label": "Flexibilität & Speicher im virtuellen Kraftwerk"
+    }
+   ],
+   "klein": true,
+   "kostenVorher": 0,
+   "nachher": [
+    {
+     "beeinflussbar": true,
+     "ct": 8.2067075,
+     "id": "beschaffung",
+     "label": "Beschaffung & Vertrieb (Pool)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 5.5,
+     "id": "netz",
+     "label": "Netzentgelte & Messung"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 1.8,
+     "id": "umlagen",
+     "label": "Umlagen (KWKG, Offshore, § 19)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 0.11,
+     "id": "konzession",
+     "label": "Konzessionsabgabe"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 2.05,
+     "id": "stromsteuer",
+     "label": "Stromsteuer"
+    }
+   ],
+   "preisUnplausibel": false,
+   "profil": {
+    "eigenverbrauch": 0.7,
+    "flex": 0.8,
+    "id": "einschicht",
+    "label": "Einschicht",
+    "ppa": 1,
+    "sub": "ca. 6–16 Uhr",
+    "tag": 0.62
+   },
+   "pvDeckungTag": 0,
+   "pvErtrag": 0,
+   "reststromKwh": 0,
+   "stromsteuer": null,
+   "verbrauchKwh": 0,
+   "vorher": [
+    {
+     "beeinflussbar": true,
+     "ct": 10.54,
+     "id": "beschaffung",
+     "label": "Beschaffung & Vertrieb"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 5.5,
+     "id": "netz",
+     "label": "Netzentgelte & Messung"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 1.8,
+     "id": "umlagen",
+     "label": "Umlagen (KWKG, Offshore, § 19)"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 0.11,
+     "id": "konzession",
+     "label": "Konzessionsabgabe"
+    },
+    {
+     "beeinflussbar": false,
+     "ct": 2.05,
+     "id": "stromsteuer",
+     "label": "Stromsteuer"
+    }
+   ]
+  }
+ }
+}

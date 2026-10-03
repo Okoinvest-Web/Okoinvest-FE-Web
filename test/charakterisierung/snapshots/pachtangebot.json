@@ -1,0 +1,4174 @@
+{
+ "rechner": "pachtangebot",
+ "modul": "src/lib/rechner/pachtangebot.js",
+ "faelle": {
+  "standard": {
+   "anteilMarktMittel": 0.708206933759,
+   "barwert": 869470.494254,
+   "durchschnittProHa": 2195.45454545,
+   "eingabe": {
+    "anwalt": "gedeckelt",
+    "anwaltBetrag": 1000,
+    "bewirtschaftung": "ohne",
+    "dienstbarkeit": "sofortLoeschung",
+    "diskont": 0.03,
+    "flaechenart": "freiflaeche",
+    "ha": 20,
+    "indexArt": "keine",
+    "indexSatz": 0.015,
+    "kuendigung": "unbefristet",
+    "laufzeit": 30,
+    "mindestProHa": 1500,
+    "modell": "fest",
+    "nebenflaechen": "teilweise",
+    "nichtbau": "rueckgabe",
+    "optionsfrist": 5,
+    "proHa": 2400,
+    "rangruecktritt": false,
+    "regionId": "de-sued",
+    "reservierungProHa": 150,
+    "rueckbau": "konzern",
+    "rueckbauAb": "baubeginn",
+    "umsatzAnteil": 0.05,
+    "verlaengerungJahre": 10,
+    "vorlaufJahre": 3
+   },
+   "fragen": [
+    {
+     "ampel": "pruefen",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "thema": "Pachthöhe"
+    },
+    {
+     "ampel": "kritisch",
+     "frage": "Wie wird die Pacht wertgesichert – Index, Basisjahr, Anpassungsrhythmus, Schwelle – und gilt das auch für die Mindestpacht?",
+     "thema": "Wertsicherung (Indexierung)"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "thema": "Längste Frist bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "thema": "Rückbausicherheit"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "thema": "Kündigungs- und Rücktrittsrechte"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "thema": "Nebenflächen (Zuwegung, Kabel, Ausgleich)"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "thema": "Ausgleich, wenn nicht gebaut wird"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "thema": "Bewirtschaftung bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "thema": "Dienstbarkeit und Rang im Grundbuch"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wer ist Vertragspartner – eine Projektgesellschaft? Darf der Vertrag ohne meine Zustimmung an Dritte übertragen werden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Versicherungen bestehen (Haftpflicht, Schäden an Nachbarflächen), und wer haftet für Schäden am Boden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wie ist der Zustand der Fläche nach dem Rückbau definiert (Fundamente, Kabel, Bodenverdichtung)?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Was bedeutet die Verpachtung für Erbschaft- und Grundsteuer sowie für die Zuordnung zum land- und forstwirtschaftlichen Vermögen? (Steuerberatung einbeziehen)",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Unterlagen erhalte ich, und darf ich die Fläche nach einem gescheiterten Projekt anderweitig anbieten?",
+     "thema": "Allgemein"
+    }
+   ],
+   "imMarkt": 0.161399498407,
+   "jahre": [
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 1,
+     "umsatz": 0
+    },
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 2,
+     "umsatz": 0
+    },
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 3,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 4,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 5,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 6,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 7,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 8,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 9,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 10,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 11,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 12,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 13,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 14,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 15,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 16,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 17,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 18,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 19,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 20,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 21,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 22,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 23,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 24,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 25,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 26,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 27,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 28,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 29,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 30,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 31,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 32,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 33,
+     "umsatz": 0
+    }
+   ],
+   "klauseln": [
+    {
+     "ampel": "pruefen",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "id": "hoehe",
+     "text": "Im unteren Teil der üblichen Spanne (1.500–4.500 €/ha). Mit nahem Netzanschluss und guter Kulisse ist oft mehr möglich.",
+     "titel": "Pachthöhe",
+     "wert": "2.400 €/ha im 1. Betriebsjahr"
+    },
+    {
+     "ampel": "kritisch",
+     "frage": "Wie wird die Pacht wertgesichert – Index, Basisjahr, Anpassungsrhythmus, Schwelle – und gilt das auch für die Mindestpacht?",
+     "id": "index",
+     "text": "Ohne Wertsicherung hat die letzte Jahrespacht bei 2 % Inflation nur noch rund 55 % der heutigen Kaufkraft. Üblich ist eine Anpassung an den Verbraucherpreisindex oder eine feste Staffel.",
+     "titel": "Wertsicherung (Indexierung)",
+     "wert": "keine"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Ab wann läuft die Festlaufzeit, zu welchen Konditionen werden Optionen ausgeübt und gibt es ein spätestes Enddatum?",
+     "id": "laufzeit",
+     "text": "Marktüblich. Wichtig: Beginnt die Laufzeit mit Vertragsschluss oder erst mit Baubeginn/Inbetriebnahme – und endet sie spätestens zu einem festen Datum?",
+     "titel": "Laufzeit und Verlängerung",
+     "wert": "30 Jahre fest + 10 Jahre Option"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Wird die Reservierungsprämie jährlich im Voraus gezahlt, und wird sie auf die spätere Pacht angerechnet?",
+     "id": "reservierung",
+     "text": "Marktüblich. Sie bewirtschaften die Fläche bis Baubeginn in der Regel weiter.",
+     "titel": "Reservierungsprämie bis Baubeginn",
+     "wert": "150 €/ha pro Jahr"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "id": "optionsfrist",
+     "text": "Vertretbar, wenn die Prämie in der Verlängerung steigt und Sie danach frei werden.",
+     "titel": "Längste Frist bis Baubeginn",
+     "wert": "5 Jahre"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "id": "rueckbau",
+     "text": "Eine Konzernbürgschaft ist nur so viel wert wie die Muttergesellschaft in 30 Jahren. Besser ist eine Bank- oder Versicherungsbürgschaft.",
+     "titel": "Rückbausicherheit",
+     "wert": "Konzernbürgschaft, ab Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "id": "kuendigung",
+     "text": "Ein Rücktrittsrecht ohne Frist lässt Sie jahrelang im Unklaren. Koppeln Sie es an das späteste Baubeginn-Datum.",
+     "titel": "Kündigungs- und Rücktrittsrechte",
+     "wert": "Offen – Rücktritt ohne Frist"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "id": "nebenflaechen",
+     "text": "Kabeltrassen, Zufahrten und Ausgleichsflächen belasten weitere Grundstücke, oft über Dienstbarkeiten für Jahrzehnte. Verlangen Sie eine eigene Vergütung je Meter oder Hektar.",
+     "titel": "Nebenflächen (Zuwegung, Kabel, Ausgleich)",
+     "wert": "Teilweise"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "id": "nichtbau",
+     "text": "Die Fläche kommt zurück, aber ohne Ausgleich für die Jahre der Bindung. Eine Abstandszahlung ist verhandelbar.",
+     "titel": "Ausgleich, wenn nicht gebaut wird",
+     "wert": "Nur Rückgabe"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "id": "bewirtschaftung",
+     "text": "Üblich ist, weiter zu bewirtschaften – aber Flurschäden und Ernteausfälle sollten ersetzt werden, und der Baubeginn sollte mit Vorlauf angekündigt werden.",
+     "titel": "Bewirtschaftung bis Baubeginn",
+     "wert": "Ja, ohne Ausgleich"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "id": "dienstbarkeit",
+     "text": "Eine sofortige Eintragung (oder Vormerkung) ist verbreitet. Wichtig ist die Pflicht zur Löschung auf Kosten des Pächters, falls nicht gebaut wird.",
+     "titel": "Dienstbarkeit und Rang im Grundbuch",
+     "wert": "Sofort mit Löschungspflicht"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Übernehmen Sie die Kosten einer unabhängigen anwaltlichen Prüfung meiner Wahl sowie Notar- und Grundbuchkosten?",
+     "id": "anwalt",
+     "text": "Gut – nutzen Sie eine unabhängige Kanzlei Ihrer Wahl, nicht die des Projektierers.",
+     "titel": "Kosten für Anwalt und Notar",
+     "wert": "gedeckelt bis 1.000 €"
+    }
+   ],
+   "kwh": 20000000,
+   "kwp": 18181.8181818,
+   "marktBw": {
+    "max": 1971888.01098,
+    "min": 657296.003662,
+    "mittel": 1227706.83653
+   },
+   "proHaErstesJahr": 2400,
+   "punkte": 0.583333333333,
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "rueckbauKosten": 454545.454545,
+   "spanne": {
+    "max": 4500,
+    "min": 1500,
+    "mittel": 2800
+   },
+   "summe": 1449000,
+   "summeVorlauf": 9000,
+   "urteil": {
+    "id": "pruefen",
+    "text": "Die Richtung stimmt, einzelne Klauseln sollten Sie aber verbessern oder schriftlich klarstellen lassen.",
+    "titel": "Nachverhandeln"
+   },
+   "zaehler": {
+    "gut": 3,
+    "kritisch": 1,
+    "pruefen": 8
+   }
+  },
+  "umsatz": {
+   "anteilMarktMittel": 0.684158257025,
+   "barwert": 839945.769418,
+   "durchschnittProHa": 2115.35662745,
+   "eingabe": {
+    "anwalt": "gedeckelt",
+    "anwaltBetrag": 1000,
+    "bewirtschaftung": "ohne",
+    "dienstbarkeit": "sofortLoeschung",
+    "diskont": 0.03,
+    "flaechenart": "freiflaeche",
+    "ha": 20,
+    "indexArt": "keine",
+    "indexSatz": 0.015,
+    "kuendigung": "unbefristet",
+    "laufzeit": 30,
+    "mindestProHa": 1500,
+    "modell": "umsatz",
+    "nebenflaechen": "teilweise",
+    "nichtbau": "rueckgabe",
+    "optionsfrist": 5,
+    "proHa": 2400,
+    "rangruecktritt": false,
+    "regionId": "de-sued",
+    "reservierungProHa": 150,
+    "rueckbau": "konzern",
+    "rueckbauAb": "baubeginn",
+    "umsatzAnteil": 0.05,
+    "verlaengerungJahre": 10,
+    "vorlaufJahre": 3
+   },
+   "fragen": [
+    {
+     "ampel": "pruefen",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "thema": "Pachthöhe"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Auf welche Erlöse bezieht sich die Umsatzbeteiligung genau, wie wird sie abgerechnet und welches Einsichtsrecht in die Abrechnung habe ich?",
+     "thema": "Umsatzbeteiligung"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "thema": "Längste Frist bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "thema": "Rückbausicherheit"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "thema": "Kündigungs- und Rücktrittsrechte"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "thema": "Nebenflächen (Zuwegung, Kabel, Ausgleich)"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "thema": "Ausgleich, wenn nicht gebaut wird"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "thema": "Bewirtschaftung bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "thema": "Dienstbarkeit und Rang im Grundbuch"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wer ist Vertragspartner – eine Projektgesellschaft? Darf der Vertrag ohne meine Zustimmung an Dritte übertragen werden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Versicherungen bestehen (Haftpflicht, Schäden an Nachbarflächen), und wer haftet für Schäden am Boden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wie ist der Zustand der Fläche nach dem Rückbau definiert (Fundamente, Kabel, Bodenverdichtung)?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Was bedeutet die Verpachtung für Erbschaft- und Grundsteuer sowie für die Zuordnung zum land- und forstwirtschaftlichen Vermögen? (Steuerberatung einbeziehen)",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Unterlagen erhalte ich, und darf ich die Fläche nach einem gescheiterten Projekt anderweitig anbieten?",
+     "thema": "Allgemein"
+    }
+   ],
+   "imMarkt": 0.138940267961,
+   "jahre": [
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 1,
+     "umsatz": 0
+    },
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 2,
+     "umsatz": 0
+    },
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 3,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 4,
+     "umsatz": 48000
+    },
+    {
+     "betrag": 47808,
+     "betrieb": true,
+     "jahr": 5,
+     "umsatz": 47808
+    },
+    {
+     "betrag": 47616.768,
+     "betrieb": true,
+     "jahr": 6,
+     "umsatz": 47616.768
+    },
+    {
+     "betrag": 47426.300928,
+     "betrieb": true,
+     "jahr": 7,
+     "umsatz": 47426.300928
+    },
+    {
+     "betrag": 47236.5957243,
+     "betrieb": true,
+     "jahr": 8,
+     "umsatz": 47236.5957243
+    },
+    {
+     "betrag": 47047.6493414,
+     "betrieb": true,
+     "jahr": 9,
+     "umsatz": 47047.6493414
+    },
+    {
+     "betrag": 46859.458744,
+     "betrieb": true,
+     "jahr": 10,
+     "umsatz": 46859.458744
+    },
+    {
+     "betrag": 46672.020909,
+     "betrieb": true,
+     "jahr": 11,
+     "umsatz": 46672.020909
+    },
+    {
+     "betrag": 46485.3328254,
+     "betrieb": true,
+     "jahr": 12,
+     "umsatz": 46485.3328254
+    },
+    {
+     "betrag": 46299.3914941,
+     "betrieb": true,
+     "jahr": 13,
+     "umsatz": 46299.3914941
+    },
+    {
+     "betrag": 46114.1939281,
+     "betrieb": true,
+     "jahr": 14,
+     "umsatz": 46114.1939281
+    },
+    {
+     "betrag": 45929.7371524,
+     "betrieb": true,
+     "jahr": 15,
+     "umsatz": 45929.7371524
+    },
+    {
+     "betrag": 45746.0182038,
+     "betrieb": true,
+     "jahr": 16,
+     "umsatz": 45746.0182038
+    },
+    {
+     "betrag": 45563.034131,
+     "betrieb": true,
+     "jahr": 17,
+     "umsatz": 45563.034131
+    },
+    {
+     "betrag": 45380.7819945,
+     "betrieb": true,
+     "jahr": 18,
+     "umsatz": 45380.7819945
+    },
+    {
+     "betrag": 45199.2588665,
+     "betrieb": true,
+     "jahr": 19,
+     "umsatz": 45199.2588665
+    },
+    {
+     "betrag": 45018.461831,
+     "betrieb": true,
+     "jahr": 20,
+     "umsatz": 45018.461831
+    },
+    {
+     "betrag": 44838.3879837,
+     "betrieb": true,
+     "jahr": 21,
+     "umsatz": 44838.3879837
+    },
+    {
+     "betrag": 44659.0344318,
+     "betrieb": true,
+     "jahr": 22,
+     "umsatz": 44659.0344318
+    },
+    {
+     "betrag": 44480.398294,
+     "betrieb": true,
+     "jahr": 23,
+     "umsatz": 44480.398294
+    },
+    {
+     "betrag": 45047.8673462,
+     "betrieb": true,
+     "jahr": 24,
+     "umsatz": 45047.8673462
+    },
+    {
+     "betrag": 45316.3526356,
+     "betrieb": true,
+     "jahr": 25,
+     "umsatz": 45316.3526356
+    },
+    {
+     "betrag": 45586.4380973,
+     "betrieb": true,
+     "jahr": 26,
+     "umsatz": 45586.4380973
+    },
+    {
+     "betrag": 45858.1332683,
+     "betrieb": true,
+     "jahr": 27,
+     "umsatz": 45858.1332683
+    },
+    {
+     "betrag": 46131.4477426,
+     "betrieb": true,
+     "jahr": 28,
+     "umsatz": 46131.4477426
+    },
+    {
+     "betrag": 46406.3911712,
+     "betrieb": true,
+     "jahr": 29,
+     "umsatz": 46406.3911712
+    },
+    {
+     "betrag": 46682.9732625,
+     "betrieb": true,
+     "jahr": 30,
+     "umsatz": 46682.9732625
+    },
+    {
+     "betrag": 46961.2037832,
+     "betrieb": true,
+     "jahr": 31,
+     "umsatz": 46961.2037832
+    },
+    {
+     "betrag": 47241.0925577,
+     "betrieb": true,
+     "jahr": 32,
+     "umsatz": 47241.0925577
+    },
+    {
+     "betrag": 47522.6494694,
+     "betrieb": true,
+     "jahr": 33,
+     "umsatz": 47522.6494694
+    }
+   ],
+   "klauseln": [
+    {
+     "ampel": "pruefen",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "id": "hoehe",
+     "text": "Im unteren Teil der üblichen Spanne (1.500–4.500 €/ha). Mit nahem Netzanschluss und guter Kulisse ist oft mehr möglich.",
+     "titel": "Pachthöhe",
+     "wert": "2.400 €/ha im 1. Betriebsjahr"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Auf welche Erlöse bezieht sich die Umsatzbeteiligung genau, wie wird sie abgerechnet und welches Einsichtsrecht in die Abrechnung habe ich?",
+     "id": "modell",
+     "text": "Ohne Mindestpacht tragen Sie das volle Preis- und Ertragsrisiko – auch bei Abregelung und negativen Strompreisen. Üblich ist eine Kombination mit Mindestpacht.",
+     "titel": "Umsatzbeteiligung",
+     "wert": "5,0 % der Stromerlöse, ohne Mindestpacht"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Wie wird die Pacht wertgesichert – Index, Basisjahr, Anpassungsrhythmus, Schwelle – und gilt das auch für die Mindestpacht?",
+     "id": "index",
+     "text": "Eine reine Umsatzbeteiligung wächst mit Strompreis und Erzeugung – eine eigene Indexierung ist nicht nötig.",
+     "titel": "Wertsicherung (Indexierung)",
+     "wert": "über Umsatz"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Ab wann läuft die Festlaufzeit, zu welchen Konditionen werden Optionen ausgeübt und gibt es ein spätestes Enddatum?",
+     "id": "laufzeit",
+     "text": "Marktüblich. Wichtig: Beginnt die Laufzeit mit Vertragsschluss oder erst mit Baubeginn/Inbetriebnahme – und endet sie spätestens zu einem festen Datum?",
+     "titel": "Laufzeit und Verlängerung",
+     "wert": "30 Jahre fest + 10 Jahre Option"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Wird die Reservierungsprämie jährlich im Voraus gezahlt, und wird sie auf die spätere Pacht angerechnet?",
+     "id": "reservierung",
+     "text": "Marktüblich. Sie bewirtschaften die Fläche bis Baubeginn in der Regel weiter.",
+     "titel": "Reservierungsprämie bis Baubeginn",
+     "wert": "150 €/ha pro Jahr"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "id": "optionsfrist",
+     "text": "Vertretbar, wenn die Prämie in der Verlängerung steigt und Sie danach frei werden.",
+     "titel": "Längste Frist bis Baubeginn",
+     "wert": "5 Jahre"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "id": "rueckbau",
+     "text": "Eine Konzernbürgschaft ist nur so viel wert wie die Muttergesellschaft in 30 Jahren. Besser ist eine Bank- oder Versicherungsbürgschaft.",
+     "titel": "Rückbausicherheit",
+     "wert": "Konzernbürgschaft, ab Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "id": "kuendigung",
+     "text": "Ein Rücktrittsrecht ohne Frist lässt Sie jahrelang im Unklaren. Koppeln Sie es an das späteste Baubeginn-Datum.",
+     "titel": "Kündigungs- und Rücktrittsrechte",
+     "wert": "Offen – Rücktritt ohne Frist"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "id": "nebenflaechen",
+     "text": "Kabeltrassen, Zufahrten und Ausgleichsflächen belasten weitere Grundstücke, oft über Dienstbarkeiten für Jahrzehnte. Verlangen Sie eine eigene Vergütung je Meter oder Hektar.",
+     "titel": "Nebenflächen (Zuwegung, Kabel, Ausgleich)",
+     "wert": "Teilweise"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "id": "nichtbau",
+     "text": "Die Fläche kommt zurück, aber ohne Ausgleich für die Jahre der Bindung. Eine Abstandszahlung ist verhandelbar.",
+     "titel": "Ausgleich, wenn nicht gebaut wird",
+     "wert": "Nur Rückgabe"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "id": "bewirtschaftung",
+     "text": "Üblich ist, weiter zu bewirtschaften – aber Flurschäden und Ernteausfälle sollten ersetzt werden, und der Baubeginn sollte mit Vorlauf angekündigt werden.",
+     "titel": "Bewirtschaftung bis Baubeginn",
+     "wert": "Ja, ohne Ausgleich"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "id": "dienstbarkeit",
+     "text": "Eine sofortige Eintragung (oder Vormerkung) ist verbreitet. Wichtig ist die Pflicht zur Löschung auf Kosten des Pächters, falls nicht gebaut wird.",
+     "titel": "Dienstbarkeit und Rang im Grundbuch",
+     "wert": "Sofort mit Löschungspflicht"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Übernehmen Sie die Kosten einer unabhängigen anwaltlichen Prüfung meiner Wahl sowie Notar- und Grundbuchkosten?",
+     "id": "anwalt",
+     "text": "Gut – nutzen Sie eine unabhängige Kanzlei Ihrer Wahl, nicht die des Projektierers.",
+     "titel": "Kosten für Anwalt und Notar",
+     "wert": "gedeckelt bis 1.000 €"
+    }
+   ],
+   "kwh": 20000000,
+   "kwp": 18181.8181818,
+   "marktBw": {
+    "max": 1971888.01098,
+    "min": 657296.003662,
+    "mittel": 1227706.83653
+   },
+   "proHaErstesJahr": 2400,
+   "punkte": 0.653846153846,
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "rueckbauKosten": 454545.454545,
+   "spanne": {
+    "max": 4500,
+    "min": 1500,
+    "mittel": 2800
+   },
+   "summe": 1396135.37412,
+   "summeVorlauf": 9000,
+   "urteil": {
+    "id": "pruefen",
+    "text": "Die Richtung stimmt, einzelne Klauseln sollten Sie aber verbessern oder schriftlich klarstellen lassen.",
+    "titel": "Nachverhandeln"
+   },
+   "zaehler": {
+    "gut": 4,
+    "kritisch": 0,
+    "pruefen": 9
+   }
+  },
+  "kombi_vpi": {
+   "anteilMarktMittel": 0.684158257025,
+   "barwert": 839945.769418,
+   "durchschnittProHa": 2115.35662745,
+   "eingabe": {
+    "anwalt": "gedeckelt",
+    "anwaltBetrag": 1000,
+    "bewirtschaftung": "ohne",
+    "dienstbarkeit": "sofortLoeschung",
+    "diskont": 0.03,
+    "flaechenart": "freiflaeche",
+    "ha": 20,
+    "indexArt": "vpi",
+    "indexSatz": 0.015,
+    "kuendigung": "unbefristet",
+    "laufzeit": 30,
+    "mindestProHa": 1500,
+    "modell": "kombi",
+    "nebenflaechen": "teilweise",
+    "nichtbau": "rueckgabe",
+    "optionsfrist": 5,
+    "proHa": 2400,
+    "rangruecktritt": false,
+    "regionId": "de-sued",
+    "reservierungProHa": 150,
+    "rueckbau": "konzern",
+    "rueckbauAb": "baubeginn",
+    "umsatzAnteil": 0.05,
+    "verlaengerungJahre": 10,
+    "vorlaufJahre": 3
+   },
+   "fragen": [
+    {
+     "ampel": "pruefen",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "thema": "Pachthöhe"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Auf welche Erlöse bezieht sich die Umsatzbeteiligung genau, wie wird sie abgerechnet und welches Einsichtsrecht in die Abrechnung habe ich?",
+     "thema": "Umsatzbeteiligung"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "thema": "Längste Frist bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "thema": "Rückbausicherheit"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "thema": "Kündigungs- und Rücktrittsrechte"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "thema": "Nebenflächen (Zuwegung, Kabel, Ausgleich)"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "thema": "Ausgleich, wenn nicht gebaut wird"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "thema": "Bewirtschaftung bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "thema": "Dienstbarkeit und Rang im Grundbuch"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wer ist Vertragspartner – eine Projektgesellschaft? Darf der Vertrag ohne meine Zustimmung an Dritte übertragen werden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Versicherungen bestehen (Haftpflicht, Schäden an Nachbarflächen), und wer haftet für Schäden am Boden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wie ist der Zustand der Fläche nach dem Rückbau definiert (Fundamente, Kabel, Bodenverdichtung)?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Was bedeutet die Verpachtung für Erbschaft- und Grundsteuer sowie für die Zuordnung zum land- und forstwirtschaftlichen Vermögen? (Steuerberatung einbeziehen)",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Unterlagen erhalte ich, und darf ich die Fläche nach einem gescheiterten Projekt anderweitig anbieten?",
+     "thema": "Allgemein"
+    }
+   ],
+   "imMarkt": 0.138940267961,
+   "jahre": [
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 1,
+     "umsatz": 0
+    },
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 2,
+     "umsatz": 0
+    },
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 3,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 4,
+     "umsatz": 48000
+    },
+    {
+     "betrag": 47808,
+     "betrieb": true,
+     "jahr": 5,
+     "umsatz": 47808
+    },
+    {
+     "betrag": 47616.768,
+     "betrieb": true,
+     "jahr": 6,
+     "umsatz": 47616.768
+    },
+    {
+     "betrag": 47426.300928,
+     "betrieb": true,
+     "jahr": 7,
+     "umsatz": 47426.300928
+    },
+    {
+     "betrag": 47236.5957243,
+     "betrieb": true,
+     "jahr": 8,
+     "umsatz": 47236.5957243
+    },
+    {
+     "betrag": 47047.6493414,
+     "betrieb": true,
+     "jahr": 9,
+     "umsatz": 47047.6493414
+    },
+    {
+     "betrag": 46859.458744,
+     "betrieb": true,
+     "jahr": 10,
+     "umsatz": 46859.458744
+    },
+    {
+     "betrag": 46672.020909,
+     "betrieb": true,
+     "jahr": 11,
+     "umsatz": 46672.020909
+    },
+    {
+     "betrag": 46485.3328254,
+     "betrieb": true,
+     "jahr": 12,
+     "umsatz": 46485.3328254
+    },
+    {
+     "betrag": 46299.3914941,
+     "betrieb": true,
+     "jahr": 13,
+     "umsatz": 46299.3914941
+    },
+    {
+     "betrag": 46114.1939281,
+     "betrieb": true,
+     "jahr": 14,
+     "umsatz": 46114.1939281
+    },
+    {
+     "betrag": 45929.7371524,
+     "betrieb": true,
+     "jahr": 15,
+     "umsatz": 45929.7371524
+    },
+    {
+     "betrag": 45746.0182038,
+     "betrieb": true,
+     "jahr": 16,
+     "umsatz": 45746.0182038
+    },
+    {
+     "betrag": 45563.034131,
+     "betrieb": true,
+     "jahr": 17,
+     "umsatz": 45563.034131
+    },
+    {
+     "betrag": 45380.7819945,
+     "betrieb": true,
+     "jahr": 18,
+     "umsatz": 45380.7819945
+    },
+    {
+     "betrag": 45199.2588665,
+     "betrieb": true,
+     "jahr": 19,
+     "umsatz": 45199.2588665
+    },
+    {
+     "betrag": 45018.461831,
+     "betrieb": true,
+     "jahr": 20,
+     "umsatz": 45018.461831
+    },
+    {
+     "betrag": 44838.3879837,
+     "betrieb": true,
+     "jahr": 21,
+     "umsatz": 44838.3879837
+    },
+    {
+     "betrag": 44659.0344318,
+     "betrieb": true,
+     "jahr": 22,
+     "umsatz": 44659.0344318
+    },
+    {
+     "betrag": 44480.398294,
+     "betrieb": true,
+     "jahr": 23,
+     "umsatz": 44480.398294
+    },
+    {
+     "betrag": 45047.8673462,
+     "betrieb": true,
+     "jahr": 24,
+     "umsatz": 45047.8673462
+    },
+    {
+     "betrag": 45316.3526356,
+     "betrieb": true,
+     "jahr": 25,
+     "umsatz": 45316.3526356
+    },
+    {
+     "betrag": 45586.4380973,
+     "betrieb": true,
+     "jahr": 26,
+     "umsatz": 45586.4380973
+    },
+    {
+     "betrag": 45858.1332683,
+     "betrieb": true,
+     "jahr": 27,
+     "umsatz": 45858.1332683
+    },
+    {
+     "betrag": 46131.4477426,
+     "betrieb": true,
+     "jahr": 28,
+     "umsatz": 46131.4477426
+    },
+    {
+     "betrag": 46406.3911712,
+     "betrieb": true,
+     "jahr": 29,
+     "umsatz": 46406.3911712
+    },
+    {
+     "betrag": 46682.9732625,
+     "betrieb": true,
+     "jahr": 30,
+     "umsatz": 46682.9732625
+    },
+    {
+     "betrag": 46961.2037832,
+     "betrieb": true,
+     "jahr": 31,
+     "umsatz": 46961.2037832
+    },
+    {
+     "betrag": 47241.0925577,
+     "betrieb": true,
+     "jahr": 32,
+     "umsatz": 47241.0925577
+    },
+    {
+     "betrag": 47522.6494694,
+     "betrieb": true,
+     "jahr": 33,
+     "umsatz": 47522.6494694
+    }
+   ],
+   "klauseln": [
+    {
+     "ampel": "pruefen",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "id": "hoehe",
+     "text": "Im unteren Teil der üblichen Spanne (1.500–4.500 €/ha). Mit nahem Netzanschluss und guter Kulisse ist oft mehr möglich.",
+     "titel": "Pachthöhe",
+     "wert": "2.400 €/ha im 1. Betriebsjahr"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Auf welche Erlöse bezieht sich die Umsatzbeteiligung genau, wie wird sie abgerechnet und welches Einsichtsrecht in die Abrechnung habe ich?",
+     "id": "modell",
+     "text": "Üblich sind 4–8 % der Erlöse. Wichtig: Worauf genau bezieht sich der Prozentsatz (Netto-Stromerlös, inkl. Marktprämie, nach Direktvermarktungskosten?) und welches Einsichtsrecht haben Sie?",
+     "titel": "Umsatzbeteiligung",
+     "wert": "5,0 % der Stromerlöse, mind. 1.500 €/ha"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Wie wird die Pacht wertgesichert – Index, Basisjahr, Anpassungsrhythmus, Schwelle – und gilt das auch für die Mindestpacht?",
+     "id": "index",
+     "text": "Die Pacht ist gegen Geldentwertung gesichert. Prüfen Sie, ob die Anpassung jährlich oder erst ab einer Schwelle greift und ob sie auch nach unten wirken kann.",
+     "titel": "Wertsicherung (Indexierung)",
+     "wert": "Verbraucherpreisindex"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Ab wann läuft die Festlaufzeit, zu welchen Konditionen werden Optionen ausgeübt und gibt es ein spätestes Enddatum?",
+     "id": "laufzeit",
+     "text": "Marktüblich. Wichtig: Beginnt die Laufzeit mit Vertragsschluss oder erst mit Baubeginn/Inbetriebnahme – und endet sie spätestens zu einem festen Datum?",
+     "titel": "Laufzeit und Verlängerung",
+     "wert": "30 Jahre fest + 10 Jahre Option"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Wird die Reservierungsprämie jährlich im Voraus gezahlt, und wird sie auf die spätere Pacht angerechnet?",
+     "id": "reservierung",
+     "text": "Marktüblich. Sie bewirtschaften die Fläche bis Baubeginn in der Regel weiter.",
+     "titel": "Reservierungsprämie bis Baubeginn",
+     "wert": "150 €/ha pro Jahr"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "id": "optionsfrist",
+     "text": "Vertretbar, wenn die Prämie in der Verlängerung steigt und Sie danach frei werden.",
+     "titel": "Längste Frist bis Baubeginn",
+     "wert": "5 Jahre"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "id": "rueckbau",
+     "text": "Eine Konzernbürgschaft ist nur so viel wert wie die Muttergesellschaft in 30 Jahren. Besser ist eine Bank- oder Versicherungsbürgschaft.",
+     "titel": "Rückbausicherheit",
+     "wert": "Konzernbürgschaft, ab Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "id": "kuendigung",
+     "text": "Ein Rücktrittsrecht ohne Frist lässt Sie jahrelang im Unklaren. Koppeln Sie es an das späteste Baubeginn-Datum.",
+     "titel": "Kündigungs- und Rücktrittsrechte",
+     "wert": "Offen – Rücktritt ohne Frist"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "id": "nebenflaechen",
+     "text": "Kabeltrassen, Zufahrten und Ausgleichsflächen belasten weitere Grundstücke, oft über Dienstbarkeiten für Jahrzehnte. Verlangen Sie eine eigene Vergütung je Meter oder Hektar.",
+     "titel": "Nebenflächen (Zuwegung, Kabel, Ausgleich)",
+     "wert": "Teilweise"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "id": "nichtbau",
+     "text": "Die Fläche kommt zurück, aber ohne Ausgleich für die Jahre der Bindung. Eine Abstandszahlung ist verhandelbar.",
+     "titel": "Ausgleich, wenn nicht gebaut wird",
+     "wert": "Nur Rückgabe"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "id": "bewirtschaftung",
+     "text": "Üblich ist, weiter zu bewirtschaften – aber Flurschäden und Ernteausfälle sollten ersetzt werden, und der Baubeginn sollte mit Vorlauf angekündigt werden.",
+     "titel": "Bewirtschaftung bis Baubeginn",
+     "wert": "Ja, ohne Ausgleich"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "id": "dienstbarkeit",
+     "text": "Eine sofortige Eintragung (oder Vormerkung) ist verbreitet. Wichtig ist die Pflicht zur Löschung auf Kosten des Pächters, falls nicht gebaut wird.",
+     "titel": "Dienstbarkeit und Rang im Grundbuch",
+     "wert": "Sofort mit Löschungspflicht"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Übernehmen Sie die Kosten einer unabhängigen anwaltlichen Prüfung meiner Wahl sowie Notar- und Grundbuchkosten?",
+     "id": "anwalt",
+     "text": "Gut – nutzen Sie eine unabhängige Kanzlei Ihrer Wahl, nicht die des Projektierers.",
+     "titel": "Kosten für Anwalt und Notar",
+     "wert": "gedeckelt bis 1.000 €"
+    }
+   ],
+   "kwh": 20000000,
+   "kwp": 18181.8181818,
+   "marktBw": {
+    "max": 1971888.01098,
+    "min": 657296.003662,
+    "mittel": 1227706.83653
+   },
+   "proHaErstesJahr": 2400,
+   "punkte": 0.653846153846,
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "rueckbauKosten": 454545.454545,
+   "spanne": {
+    "max": 4500,
+    "min": 1500,
+    "mittel": 2800
+   },
+   "summe": 1396135.37412,
+   "summeVorlauf": 9000,
+   "urteil": {
+    "id": "pruefen",
+    "text": "Die Richtung stimmt, einzelne Klauseln sollten Sie aber verbessern oder schriftlich klarstellen lassen.",
+    "titel": "Nachverhandeln"
+   },
+   "zaehler": {
+    "gut": 4,
+    "kritisch": 0,
+    "pruefen": 9
+   }
+  },
+  "agri_fest_index": {
+   "anteilMarktMittel": 2.10860677168,
+   "barwert": 1123097.6732,
+   "durchschnittProHa": 2964.04212401,
+   "eingabe": {
+    "anwalt": "gedeckelt",
+    "anwaltBetrag": 1000,
+    "bewirtschaftung": "ohne",
+    "dienstbarkeit": "sofortLoeschung",
+    "diskont": 0.03,
+    "flaechenart": "agri",
+    "ha": 20,
+    "indexArt": "fest",
+    "indexSatz": 0.02,
+    "kuendigung": "unbefristet",
+    "laufzeit": 30,
+    "mindestProHa": 1500,
+    "modell": "fest",
+    "nebenflaechen": "teilweise",
+    "nichtbau": "rueckgabe",
+    "optionsfrist": 5,
+    "proHa": 2400,
+    "rangruecktritt": false,
+    "regionId": "de-sued",
+    "reservierungProHa": 150,
+    "rueckbau": "konzern",
+    "rueckbauAb": "baubeginn",
+    "umsatzAnteil": 0.05,
+    "verlaengerungJahre": 10,
+    "vorlaufJahre": 3
+   },
+   "fragen": [
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "thema": "Längste Frist bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "thema": "Rückbausicherheit"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "thema": "Kündigungs- und Rücktrittsrechte"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "thema": "Nebenflächen (Zuwegung, Kabel, Ausgleich)"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "thema": "Ausgleich, wenn nicht gebaut wird"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "thema": "Bewirtschaftung bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "thema": "Dienstbarkeit und Rang im Grundbuch"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wer ist Vertragspartner – eine Projektgesellschaft? Darf der Vertrag ohne meine Zustimmung an Dritte übertragen werden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Versicherungen bestehen (Haftpflicht, Schäden an Nachbarflächen), und wer haftet für Schäden am Boden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wie ist der Zustand der Fläche nach dem Rückbau definiert (Fundamente, Kabel, Bodenverdichtung)?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Was bedeutet die Verpachtung für Erbschaft- und Grundsteuer sowie für die Zuordnung zum land- und forstwirtschaftlichen Vermögen? (Steuerberatung einbeziehen)",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Unterlagen erhalte ich, und darf ich die Fläche nach einem gescheiterten Projekt anderweitig anbieten?",
+     "thema": "Allgemein"
+    }
+   ],
+   "imMarkt": 1.38300277903,
+   "jahre": [
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 1,
+     "umsatz": 0
+    },
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 2,
+     "umsatz": 0
+    },
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 3,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 4,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48960,
+     "betrieb": true,
+     "jahr": 5,
+     "umsatz": 0
+    },
+    {
+     "betrag": 49939.2,
+     "betrieb": true,
+     "jahr": 6,
+     "umsatz": 0
+    },
+    {
+     "betrag": 50937.984,
+     "betrieb": true,
+     "jahr": 7,
+     "umsatz": 0
+    },
+    {
+     "betrag": 51956.74368,
+     "betrieb": true,
+     "jahr": 8,
+     "umsatz": 0
+    },
+    {
+     "betrag": 52995.8785536,
+     "betrieb": true,
+     "jahr": 9,
+     "umsatz": 0
+    },
+    {
+     "betrag": 54055.7961247,
+     "betrieb": true,
+     "jahr": 10,
+     "umsatz": 0
+    },
+    {
+     "betrag": 55136.9120472,
+     "betrieb": true,
+     "jahr": 11,
+     "umsatz": 0
+    },
+    {
+     "betrag": 56239.6502881,
+     "betrieb": true,
+     "jahr": 12,
+     "umsatz": 0
+    },
+    {
+     "betrag": 57364.4432939,
+     "betrieb": true,
+     "jahr": 13,
+     "umsatz": 0
+    },
+    {
+     "betrag": 58511.7321597,
+     "betrieb": true,
+     "jahr": 14,
+     "umsatz": 0
+    },
+    {
+     "betrag": 59681.9668029,
+     "betrieb": true,
+     "jahr": 15,
+     "umsatz": 0
+    },
+    {
+     "betrag": 60875.606139,
+     "betrieb": true,
+     "jahr": 16,
+     "umsatz": 0
+    },
+    {
+     "betrag": 62093.1182618,
+     "betrieb": true,
+     "jahr": 17,
+     "umsatz": 0
+    },
+    {
+     "betrag": 63334.980627,
+     "betrieb": true,
+     "jahr": 18,
+     "umsatz": 0
+    },
+    {
+     "betrag": 64601.6802396,
+     "betrieb": true,
+     "jahr": 19,
+     "umsatz": 0
+    },
+    {
+     "betrag": 65893.7138443,
+     "betrieb": true,
+     "jahr": 20,
+     "umsatz": 0
+    },
+    {
+     "betrag": 67211.5881212,
+     "betrieb": true,
+     "jahr": 21,
+     "umsatz": 0
+    },
+    {
+     "betrag": 68555.8198837,
+     "betrieb": true,
+     "jahr": 22,
+     "umsatz": 0
+    },
+    {
+     "betrag": 69926.9362813,
+     "betrieb": true,
+     "jahr": 23,
+     "umsatz": 0
+    },
+    {
+     "betrag": 71325.475007,
+     "betrieb": true,
+     "jahr": 24,
+     "umsatz": 0
+    },
+    {
+     "betrag": 72751.9845071,
+     "betrieb": true,
+     "jahr": 25,
+     "umsatz": 0
+    },
+    {
+     "betrag": 74207.0241972,
+     "betrieb": true,
+     "jahr": 26,
+     "umsatz": 0
+    },
+    {
+     "betrag": 75691.1646812,
+     "betrieb": true,
+     "jahr": 27,
+     "umsatz": 0
+    },
+    {
+     "betrag": 77204.9879748,
+     "betrieb": true,
+     "jahr": 28,
+     "umsatz": 0
+    },
+    {
+     "betrag": 78749.0877343,
+     "betrieb": true,
+     "jahr": 29,
+     "umsatz": 0
+    },
+    {
+     "betrag": 80324.069489,
+     "betrieb": true,
+     "jahr": 30,
+     "umsatz": 0
+    },
+    {
+     "betrag": 81930.5508788,
+     "betrieb": true,
+     "jahr": 31,
+     "umsatz": 0
+    },
+    {
+     "betrag": 83569.1618963,
+     "betrieb": true,
+     "jahr": 32,
+     "umsatz": 0
+    },
+    {
+     "betrag": 85240.5451343,
+     "betrieb": true,
+     "jahr": 33,
+     "umsatz": 0
+    }
+   ],
+   "klauseln": [
+    {
+     "ampel": "gut",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "id": "hoehe",
+     "text": "Im oberen Teil der üblichen Spanne (600–2.000 €/ha). Achten Sie darauf, dass die übrigen Klauseln die Pacht nicht wieder entwerten.",
+     "titel": "Pachthöhe",
+     "wert": "2.400 €/ha im 1. Betriebsjahr"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Wie wird die Pacht wertgesichert – Index, Basisjahr, Anpassungsrhythmus, Schwelle – und gilt das auch für die Mindestpacht?",
+     "id": "index",
+     "text": "Die Pacht ist gegen Geldentwertung gesichert. Prüfen Sie, ob die Anpassung jährlich oder erst ab einer Schwelle greift und ob sie auch nach unten wirken kann.",
+     "titel": "Wertsicherung (Indexierung)",
+     "wert": "fest 2,0 % p. a."
+    },
+    {
+     "ampel": "gut",
+     "frage": "Ab wann läuft die Festlaufzeit, zu welchen Konditionen werden Optionen ausgeübt und gibt es ein spätestes Enddatum?",
+     "id": "laufzeit",
+     "text": "Marktüblich. Wichtig: Beginnt die Laufzeit mit Vertragsschluss oder erst mit Baubeginn/Inbetriebnahme – und endet sie spätestens zu einem festen Datum?",
+     "titel": "Laufzeit und Verlängerung",
+     "wert": "30 Jahre fest + 10 Jahre Option"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Wird die Reservierungsprämie jährlich im Voraus gezahlt, und wird sie auf die spätere Pacht angerechnet?",
+     "id": "reservierung",
+     "text": "Marktüblich. Sie bewirtschaften die Fläche bis Baubeginn in der Regel weiter.",
+     "titel": "Reservierungsprämie bis Baubeginn",
+     "wert": "150 €/ha pro Jahr"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "id": "optionsfrist",
+     "text": "Vertretbar, wenn die Prämie in der Verlängerung steigt und Sie danach frei werden.",
+     "titel": "Längste Frist bis Baubeginn",
+     "wert": "5 Jahre"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "id": "rueckbau",
+     "text": "Eine Konzernbürgschaft ist nur so viel wert wie die Muttergesellschaft in 30 Jahren. Besser ist eine Bank- oder Versicherungsbürgschaft.",
+     "titel": "Rückbausicherheit",
+     "wert": "Konzernbürgschaft, ab Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "id": "kuendigung",
+     "text": "Ein Rücktrittsrecht ohne Frist lässt Sie jahrelang im Unklaren. Koppeln Sie es an das späteste Baubeginn-Datum.",
+     "titel": "Kündigungs- und Rücktrittsrechte",
+     "wert": "Offen – Rücktritt ohne Frist"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "id": "nebenflaechen",
+     "text": "Kabeltrassen, Zufahrten und Ausgleichsflächen belasten weitere Grundstücke, oft über Dienstbarkeiten für Jahrzehnte. Verlangen Sie eine eigene Vergütung je Meter oder Hektar.",
+     "titel": "Nebenflächen (Zuwegung, Kabel, Ausgleich)",
+     "wert": "Teilweise"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "id": "nichtbau",
+     "text": "Die Fläche kommt zurück, aber ohne Ausgleich für die Jahre der Bindung. Eine Abstandszahlung ist verhandelbar.",
+     "titel": "Ausgleich, wenn nicht gebaut wird",
+     "wert": "Nur Rückgabe"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "id": "bewirtschaftung",
+     "text": "Üblich ist, weiter zu bewirtschaften – aber Flurschäden und Ernteausfälle sollten ersetzt werden, und der Baubeginn sollte mit Vorlauf angekündigt werden.",
+     "titel": "Bewirtschaftung bis Baubeginn",
+     "wert": "Ja, ohne Ausgleich"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "id": "dienstbarkeit",
+     "text": "Eine sofortige Eintragung (oder Vormerkung) ist verbreitet. Wichtig ist die Pflicht zur Löschung auf Kosten des Pächters, falls nicht gebaut wird.",
+     "titel": "Dienstbarkeit und Rang im Grundbuch",
+     "wert": "Sofort mit Löschungspflicht"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Übernehmen Sie die Kosten einer unabhängigen anwaltlichen Prüfung meiner Wahl sowie Notar- und Grundbuchkosten?",
+     "id": "anwalt",
+     "text": "Gut – nutzen Sie eine unabhängige Kanzlei Ihrer Wahl, nicht die des Projektierers.",
+     "titel": "Kosten für Anwalt und Notar",
+     "wert": "gedeckelt bis 1.000 €"
+    }
+   ],
+   "kwh": 13062500,
+   "kwp": 12500,
+   "marktBw": {
+    "max": 885823.376065,
+    "min": 266312.735091,
+    "mittel": 532625.470181
+   },
+   "proHaErstesJahr": 2400,
+   "punkte": 0.708333333333,
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "rueckbauKosten": 312500,
+   "spanne": {
+    "max": 2000,
+    "min": 600,
+    "mittel": 1200
+   },
+   "summe": 1956267.80185,
+   "summeVorlauf": 9000,
+   "urteil": {
+    "id": "pruefen",
+    "text": "Die Richtung stimmt, einzelne Klauseln sollten Sie aber verbessern oder schriftlich klarstellen lassen.",
+    "titel": "Nachverhandeln"
+   },
+   "zaehler": {
+    "gut": 5,
+    "kritisch": 0,
+    "pruefen": 7
+   }
+  },
+  "niedriges_angebot": {
+   "anteilMarktMittel": 0.231434342982,
+   "barwert": 262640.976868,
+   "durchschnittProHa": 666.666666667,
+   "eingabe": {
+    "anwalt": "gedeckelt",
+    "anwaltBetrag": 1000,
+    "bewirtschaftung": "ohne",
+    "dienstbarkeit": "sofortLoeschung",
+    "diskont": 0.03,
+    "flaechenart": "freiflaeche",
+    "ha": 20,
+    "indexArt": "keine",
+    "indexSatz": 0.015,
+    "kuendigung": "unbefristet",
+    "laufzeit": 30,
+    "mindestProHa": 1500,
+    "modell": "fest",
+    "nebenflaechen": "teilweise",
+    "nichtbau": "rueckgabe",
+    "optionsfrist": 10,
+    "proHa": 800,
+    "rangruecktritt": false,
+    "regionId": "de-sued",
+    "reservierungProHa": 0,
+    "rueckbau": "konzern",
+    "rueckbauAb": "baubeginn",
+    "umsatzAnteil": 0.05,
+    "verlaengerungJahre": 10,
+    "vorlaufJahre": 6
+   },
+   "fragen": [
+    {
+     "ampel": "kritisch",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "thema": "Pachthöhe"
+    },
+    {
+     "ampel": "kritisch",
+     "frage": "Wie wird die Pacht wertgesichert – Index, Basisjahr, Anpassungsrhythmus, Schwelle – und gilt das auch für die Mindestpacht?",
+     "thema": "Wertsicherung (Indexierung)"
+    },
+    {
+     "ampel": "kritisch",
+     "frage": "Wird die Reservierungsprämie jährlich im Voraus gezahlt, und wird sie auf die spätere Pacht angerechnet?",
+     "thema": "Reservierungsprämie bis Baubeginn"
+    },
+    {
+     "ampel": "kritisch",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "thema": "Längste Frist bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "thema": "Rückbausicherheit"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "thema": "Kündigungs- und Rücktrittsrechte"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "thema": "Nebenflächen (Zuwegung, Kabel, Ausgleich)"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "thema": "Ausgleich, wenn nicht gebaut wird"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "thema": "Bewirtschaftung bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "thema": "Dienstbarkeit und Rang im Grundbuch"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wer ist Vertragspartner – eine Projektgesellschaft? Darf der Vertrag ohne meine Zustimmung an Dritte übertragen werden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Versicherungen bestehen (Haftpflicht, Schäden an Nachbarflächen), und wer haftet für Schäden am Boden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wie ist der Zustand der Fläche nach dem Rückbau definiert (Fundamente, Kabel, Bodenverdichtung)?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Was bedeutet die Verpachtung für Erbschaft- und Grundsteuer sowie für die Zuordnung zum land- und forstwirtschaftlichen Vermögen? (Steuerberatung einbeziehen)",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Unterlagen erhalte ich, und darf ich die Fläche nach einem gescheiterten Projekt anderweitig anbieten?",
+     "thema": "Allgemein"
+    }
+   ],
+   "imMarkt": -0.283719300672,
+   "jahre": [
+    {
+     "betrag": 0,
+     "betrieb": false,
+     "jahr": 1,
+     "umsatz": 0
+    },
+    {
+     "betrag": 0,
+     "betrieb": false,
+     "jahr": 2,
+     "umsatz": 0
+    },
+    {
+     "betrag": 0,
+     "betrieb": false,
+     "jahr": 3,
+     "umsatz": 0
+    },
+    {
+     "betrag": 0,
+     "betrieb": false,
+     "jahr": 4,
+     "umsatz": 0
+    },
+    {
+     "betrag": 0,
+     "betrieb": false,
+     "jahr": 5,
+     "umsatz": 0
+    },
+    {
+     "betrag": 0,
+     "betrieb": false,
+     "jahr": 6,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 7,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 8,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 9,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 10,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 11,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 12,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 13,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 14,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 15,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 16,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 17,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 18,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 19,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 20,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 21,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 22,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 23,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 24,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 25,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 26,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 27,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 28,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 29,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 30,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 31,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 32,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 33,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 34,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 35,
+     "umsatz": 0
+    },
+    {
+     "betrag": 16000,
+     "betrieb": true,
+     "jahr": 36,
+     "umsatz": 0
+    }
+   ],
+   "klauseln": [
+    {
+     "ampel": "kritisch",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "id": "hoehe",
+     "text": "Unter der üblichen Spanne von 1.500–4.500 €/ha. Das kann an Netz, Größe oder Baurecht liegen – lassen Sie sich die Kalkulation erläutern und holen Sie ein Vergleichsangebot ein.",
+     "titel": "Pachthöhe",
+     "wert": "800 €/ha im 1. Betriebsjahr"
+    },
+    {
+     "ampel": "kritisch",
+     "frage": "Wie wird die Pacht wertgesichert – Index, Basisjahr, Anpassungsrhythmus, Schwelle – und gilt das auch für die Mindestpacht?",
+     "id": "index",
+     "text": "Ohne Wertsicherung hat die letzte Jahrespacht bei 2 % Inflation nur noch rund 55 % der heutigen Kaufkraft. Üblich ist eine Anpassung an den Verbraucherpreisindex oder eine feste Staffel.",
+     "titel": "Wertsicherung (Indexierung)",
+     "wert": "keine"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Ab wann läuft die Festlaufzeit, zu welchen Konditionen werden Optionen ausgeübt und gibt es ein spätestes Enddatum?",
+     "id": "laufzeit",
+     "text": "Marktüblich. Wichtig: Beginnt die Laufzeit mit Vertragsschluss oder erst mit Baubeginn/Inbetriebnahme – und endet sie spätestens zu einem festen Datum?",
+     "titel": "Laufzeit und Verlängerung",
+     "wert": "30 Jahre fest + 10 Jahre Option"
+    },
+    {
+     "ampel": "kritisch",
+     "frage": "Wird die Reservierungsprämie jährlich im Voraus gezahlt, und wird sie auf die spätere Pacht angerechnet?",
+     "id": "reservierung",
+     "text": "Ohne Prämie binden Sie die Fläche für Jahre, ohne dafür bezahlt zu werden. Üblich sind 100–300 €/ha und Jahr bis Baubeginn.",
+     "titel": "Reservierungsprämie bis Baubeginn",
+     "wert": "keine"
+    },
+    {
+     "ampel": "kritisch",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "id": "optionsfrist",
+     "text": "Länger als üblich. Planung und Genehmigung dauern oft 3–5 Jahre – eine Verlängerung sollte nur gegen höhere Prämie möglich sein.",
+     "titel": "Längste Frist bis Baubeginn",
+     "wert": "10 Jahre"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "id": "rueckbau",
+     "text": "Eine Konzernbürgschaft ist nur so viel wert wie die Muttergesellschaft in 30 Jahren. Besser ist eine Bank- oder Versicherungsbürgschaft.",
+     "titel": "Rückbausicherheit",
+     "wert": "Konzernbürgschaft, ab Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "id": "kuendigung",
+     "text": "Ein Rücktrittsrecht ohne Frist lässt Sie jahrelang im Unklaren. Koppeln Sie es an das späteste Baubeginn-Datum.",
+     "titel": "Kündigungs- und Rücktrittsrechte",
+     "wert": "Offen – Rücktritt ohne Frist"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "id": "nebenflaechen",
+     "text": "Kabeltrassen, Zufahrten und Ausgleichsflächen belasten weitere Grundstücke, oft über Dienstbarkeiten für Jahrzehnte. Verlangen Sie eine eigene Vergütung je Meter oder Hektar.",
+     "titel": "Nebenflächen (Zuwegung, Kabel, Ausgleich)",
+     "wert": "Teilweise"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "id": "nichtbau",
+     "text": "Die Fläche kommt zurück, aber ohne Ausgleich für die Jahre der Bindung. Eine Abstandszahlung ist verhandelbar.",
+     "titel": "Ausgleich, wenn nicht gebaut wird",
+     "wert": "Nur Rückgabe"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "id": "bewirtschaftung",
+     "text": "Üblich ist, weiter zu bewirtschaften – aber Flurschäden und Ernteausfälle sollten ersetzt werden, und der Baubeginn sollte mit Vorlauf angekündigt werden.",
+     "titel": "Bewirtschaftung bis Baubeginn",
+     "wert": "Ja, ohne Ausgleich"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "id": "dienstbarkeit",
+     "text": "Eine sofortige Eintragung (oder Vormerkung) ist verbreitet. Wichtig ist die Pflicht zur Löschung auf Kosten des Pächters, falls nicht gebaut wird.",
+     "titel": "Dienstbarkeit und Rang im Grundbuch",
+     "wert": "Sofort mit Löschungspflicht"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Übernehmen Sie die Kosten einer unabhängigen anwaltlichen Prüfung meiner Wahl sowie Notar- und Grundbuchkosten?",
+     "id": "anwalt",
+     "text": "Gut – nutzen Sie eine unabhängige Kanzlei Ihrer Wahl, nicht die des Projektierers.",
+     "titel": "Kosten für Anwalt und Notar",
+     "wert": "gedeckelt bis 1.000 €"
+    }
+   ],
+   "kwh": 20000000,
+   "kwp": 18181.8181818,
+   "marktBw": {
+    "max": 1821528.53456,
+    "min": 607176.178187,
+    "mittel": 1134840.117
+   },
+   "proHaErstesJahr": 800,
+   "punkte": 0.416666666667,
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "rueckbauKosten": 454545.454545,
+   "spanne": {
+    "max": 4500,
+    "min": 1500,
+    "mittel": 2800
+   },
+   "summe": 480000,
+   "summeVorlauf": 0,
+   "urteil": {
+    "id": "kritisch",
+    "text": "Mehrere zentrale Punkte liegen unter dem Marktüblichen. Unterschreiben Sie nicht, bevor diese geklärt sind.",
+    "titel": "Deutlich nachverhandeln"
+   },
+   "zaehler": {
+    "gut": 2,
+    "kritisch": 4,
+    "pruefen": 6
+   }
+  },
+  "gutes_angebot": {
+   "anteilMarktMittel": 1.02963380662,
+   "barwert": 1264088.46351,
+   "durchschnittProHa": 3195.45454545,
+   "eingabe": {
+    "anwalt": "voll",
+    "anwaltBetrag": 1000,
+    "bewirtschaftung": "ohne",
+    "dienstbarkeit": "sofortLoeschung",
+    "diskont": 0.03,
+    "flaechenart": "freiflaeche",
+    "ha": 20,
+    "indexArt": "keine",
+    "indexSatz": 0.015,
+    "kuendigung": "unbefristet",
+    "laufzeit": 30,
+    "mindestProHa": 1500,
+    "modell": "fest",
+    "nebenflaechen": "teilweise",
+    "nichtbau": "rueckgabe",
+    "optionsfrist": 5,
+    "proHa": 3500,
+    "rangruecktritt": true,
+    "regionId": "de-sued",
+    "reservierungProHa": 150,
+    "rueckbau": "buergschaft",
+    "rueckbauAb": "baubeginn",
+    "umsatzAnteil": 0.05,
+    "verlaengerungJahre": 10,
+    "vorlaufJahre": 3
+   },
+   "fragen": [
+    {
+     "ampel": "kritisch",
+     "frage": "Wie wird die Pacht wertgesichert – Index, Basisjahr, Anpassungsrhythmus, Schwelle – und gilt das auch für die Mindestpacht?",
+     "thema": "Wertsicherung (Indexierung)"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "thema": "Längste Frist bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "thema": "Kündigungs- und Rücktrittsrechte"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "thema": "Nebenflächen (Zuwegung, Kabel, Ausgleich)"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "thema": "Ausgleich, wenn nicht gebaut wird"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "thema": "Bewirtschaftung bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "thema": "Dienstbarkeit und Rang im Grundbuch"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wer ist Vertragspartner – eine Projektgesellschaft? Darf der Vertrag ohne meine Zustimmung an Dritte übertragen werden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Versicherungen bestehen (Haftpflicht, Schäden an Nachbarflächen), und wer haftet für Schäden am Boden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wie ist der Zustand der Fläche nach dem Rückbau definiert (Fundamente, Kabel, Bodenverdichtung)?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Was bedeutet die Verpachtung für Erbschaft- und Grundsteuer sowie für die Zuordnung zum land- und forstwirtschaftlichen Vermögen? (Steuerberatung einbeziehen)",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Unterlagen erhalte ich, und darf ich die Fläche nach einem gescheiterten Projekt anderweitig anbieten?",
+     "thema": "Allgemein"
+    }
+   ],
+   "imMarkt": 0.461582343773,
+   "jahre": [
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 1,
+     "umsatz": 0
+    },
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 2,
+     "umsatz": 0
+    },
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 3,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 4,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 5,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 6,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 7,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 8,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 9,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 10,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 11,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 12,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 13,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 14,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 15,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 16,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 17,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 18,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 19,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 20,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 21,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 22,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 23,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 24,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 25,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 26,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 27,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 28,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 29,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 30,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 31,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 32,
+     "umsatz": 0
+    },
+    {
+     "betrag": 70000,
+     "betrieb": true,
+     "jahr": 33,
+     "umsatz": 0
+    }
+   ],
+   "klauseln": [
+    {
+     "ampel": "gut",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "id": "hoehe",
+     "text": "Im oberen Teil der üblichen Spanne (1.500–4.500 €/ha). Achten Sie darauf, dass die übrigen Klauseln die Pacht nicht wieder entwerten.",
+     "titel": "Pachthöhe",
+     "wert": "3.500 €/ha im 1. Betriebsjahr"
+    },
+    {
+     "ampel": "kritisch",
+     "frage": "Wie wird die Pacht wertgesichert – Index, Basisjahr, Anpassungsrhythmus, Schwelle – und gilt das auch für die Mindestpacht?",
+     "id": "index",
+     "text": "Ohne Wertsicherung hat die letzte Jahrespacht bei 2 % Inflation nur noch rund 55 % der heutigen Kaufkraft. Üblich ist eine Anpassung an den Verbraucherpreisindex oder eine feste Staffel.",
+     "titel": "Wertsicherung (Indexierung)",
+     "wert": "keine"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Ab wann läuft die Festlaufzeit, zu welchen Konditionen werden Optionen ausgeübt und gibt es ein spätestes Enddatum?",
+     "id": "laufzeit",
+     "text": "Marktüblich. Wichtig: Beginnt die Laufzeit mit Vertragsschluss oder erst mit Baubeginn/Inbetriebnahme – und endet sie spätestens zu einem festen Datum?",
+     "titel": "Laufzeit und Verlängerung",
+     "wert": "30 Jahre fest + 10 Jahre Option"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Wird die Reservierungsprämie jährlich im Voraus gezahlt, und wird sie auf die spätere Pacht angerechnet?",
+     "id": "reservierung",
+     "text": "Marktüblich. Sie bewirtschaften die Fläche bis Baubeginn in der Regel weiter.",
+     "titel": "Reservierungsprämie bis Baubeginn",
+     "wert": "150 €/ha pro Jahr"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "id": "optionsfrist",
+     "text": "Vertretbar, wenn die Prämie in der Verlängerung steigt und Sie danach frei werden.",
+     "titel": "Längste Frist bis Baubeginn",
+     "wert": "5 Jahre"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "id": "rueckbau",
+     "text": "Standard. Achten Sie auf eine unbefristete, selbstschuldnerische Bürgschaft eines Kreditinstituts oder Versicherers über mindestens die Rückbaukosten (Größenordnung 455.000 €) und eine regelmäßige Anpassung.",
+     "titel": "Rückbausicherheit",
+     "wert": "Bankbürgschaft, ab Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "id": "kuendigung",
+     "text": "Ein Rücktrittsrecht ohne Frist lässt Sie jahrelang im Unklaren. Koppeln Sie es an das späteste Baubeginn-Datum.",
+     "titel": "Kündigungs- und Rücktrittsrechte",
+     "wert": "Offen – Rücktritt ohne Frist"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "id": "nebenflaechen",
+     "text": "Kabeltrassen, Zufahrten und Ausgleichsflächen belasten weitere Grundstücke, oft über Dienstbarkeiten für Jahrzehnte. Verlangen Sie eine eigene Vergütung je Meter oder Hektar.",
+     "titel": "Nebenflächen (Zuwegung, Kabel, Ausgleich)",
+     "wert": "Teilweise"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "id": "nichtbau",
+     "text": "Die Fläche kommt zurück, aber ohne Ausgleich für die Jahre der Bindung. Eine Abstandszahlung ist verhandelbar.",
+     "titel": "Ausgleich, wenn nicht gebaut wird",
+     "wert": "Nur Rückgabe"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "id": "bewirtschaftung",
+     "text": "Üblich ist, weiter zu bewirtschaften – aber Flurschäden und Ernteausfälle sollten ersetzt werden, und der Baubeginn sollte mit Vorlauf angekündigt werden.",
+     "titel": "Bewirtschaftung bis Baubeginn",
+     "wert": "Ja, ohne Ausgleich"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "id": "dienstbarkeit",
+     "text": "Eine sofortige Eintragung (oder Vormerkung) ist verbreitet. Wichtig ist die Pflicht zur Löschung auf Kosten des Pächters, falls nicht gebaut wird. Die Banken des Parks verlangen meist den ersten Rang: Bestehende Grundschulden müssen zurücktreten – sprechen Sie früh mit Ihrer Bank, das kann Ihre eigene Finanzierung berühren.",
+     "titel": "Dienstbarkeit und Rang im Grundbuch",
+     "wert": "Sofort mit Löschungspflicht, Rangrücktritt gefordert"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Übernehmen Sie die Kosten einer unabhängigen anwaltlichen Prüfung meiner Wahl sowie Notar- und Grundbuchkosten?",
+     "id": "anwalt",
+     "text": "Gut – nutzen Sie eine unabhängige Kanzlei Ihrer Wahl, nicht die des Projektierers.",
+     "titel": "Kosten für Anwalt und Notar",
+     "wert": "Voll"
+    }
+   ],
+   "kwh": 20000000,
+   "kwp": 18181.8181818,
+   "marktBw": {
+    "max": 1971888.01098,
+    "min": 657296.003662,
+    "mittel": 1227706.83653
+   },
+   "proHaErstesJahr": 3500,
+   "punkte": 0.666666666667,
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "rueckbauKosten": 454545.454545,
+   "spanne": {
+    "max": 4500,
+    "min": 1500,
+    "mittel": 2800
+   },
+   "summe": 2109000,
+   "summeVorlauf": 9000,
+   "urteil": {
+    "id": "pruefen",
+    "text": "Die Richtung stimmt, einzelne Klauseln sollten Sie aber verbessern oder schriftlich klarstellen lassen.",
+    "titel": "Nachverhandeln"
+   },
+   "zaehler": {
+    "gut": 5,
+    "kritisch": 1,
+    "pruefen": 6
+   }
+  },
+  "klein_2ha_ost": {
+   "anteilMarktMittel": 0.708206933759,
+   "barwert": 86947.0494254,
+   "durchschnittProHa": 2195.45454545,
+   "eingabe": {
+    "anwalt": "gedeckelt",
+    "anwaltBetrag": 1000,
+    "bewirtschaftung": "ohne",
+    "dienstbarkeit": "sofortLoeschung",
+    "diskont": 0.03,
+    "flaechenart": "freiflaeche",
+    "ha": 2,
+    "indexArt": "keine",
+    "indexSatz": 0.015,
+    "kuendigung": "unbefristet",
+    "laufzeit": 30,
+    "mindestProHa": 1500,
+    "modell": "fest",
+    "nebenflaechen": "teilweise",
+    "nichtbau": "rueckgabe",
+    "optionsfrist": 5,
+    "proHa": 2400,
+    "rangruecktritt": false,
+    "regionId": "de-ost",
+    "reservierungProHa": 150,
+    "rueckbau": "konzern",
+    "rueckbauAb": "baubeginn",
+    "umsatzAnteil": 0.05,
+    "verlaengerungJahre": 10,
+    "vorlaufJahre": 3
+   },
+   "fragen": [
+    {
+     "ampel": "pruefen",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "thema": "Pachthöhe"
+    },
+    {
+     "ampel": "kritisch",
+     "frage": "Wie wird die Pacht wertgesichert – Index, Basisjahr, Anpassungsrhythmus, Schwelle – und gilt das auch für die Mindestpacht?",
+     "thema": "Wertsicherung (Indexierung)"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "thema": "Längste Frist bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "thema": "Rückbausicherheit"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "thema": "Kündigungs- und Rücktrittsrechte"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "thema": "Nebenflächen (Zuwegung, Kabel, Ausgleich)"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "thema": "Ausgleich, wenn nicht gebaut wird"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "thema": "Bewirtschaftung bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "thema": "Dienstbarkeit und Rang im Grundbuch"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wer ist Vertragspartner – eine Projektgesellschaft? Darf der Vertrag ohne meine Zustimmung an Dritte übertragen werden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Versicherungen bestehen (Haftpflicht, Schäden an Nachbarflächen), und wer haftet für Schäden am Boden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wie ist der Zustand der Fläche nach dem Rückbau definiert (Fundamente, Kabel, Bodenverdichtung)?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Was bedeutet die Verpachtung für Erbschaft- und Grundsteuer sowie für die Zuordnung zum land- und forstwirtschaftlichen Vermögen? (Steuerberatung einbeziehen)",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Unterlagen erhalte ich, und darf ich die Fläche nach einem gescheiterten Projekt anderweitig anbieten?",
+     "thema": "Allgemein"
+    }
+   ],
+   "imMarkt": 0.161399498407,
+   "jahre": [
+    {
+     "betrag": 300,
+     "betrieb": false,
+     "jahr": 1,
+     "umsatz": 0
+    },
+    {
+     "betrag": 300,
+     "betrieb": false,
+     "jahr": 2,
+     "umsatz": 0
+    },
+    {
+     "betrag": 300,
+     "betrieb": false,
+     "jahr": 3,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 4,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 5,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 6,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 7,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 8,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 9,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 10,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 11,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 12,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 13,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 14,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 15,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 16,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 17,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 18,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 19,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 20,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 21,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 22,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 23,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 24,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 25,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 26,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 27,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 28,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 29,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 30,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 31,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 32,
+     "umsatz": 0
+    },
+    {
+     "betrag": 4800,
+     "betrieb": true,
+     "jahr": 33,
+     "umsatz": 0
+    }
+   ],
+   "klauseln": [
+    {
+     "ampel": "pruefen",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "id": "hoehe",
+     "text": "Im unteren Teil der üblichen Spanne (1.500–4.500 €/ha). Mit nahem Netzanschluss und guter Kulisse ist oft mehr möglich.",
+     "titel": "Pachthöhe",
+     "wert": "2.400 €/ha im 1. Betriebsjahr"
+    },
+    {
+     "ampel": "kritisch",
+     "frage": "Wie wird die Pacht wertgesichert – Index, Basisjahr, Anpassungsrhythmus, Schwelle – und gilt das auch für die Mindestpacht?",
+     "id": "index",
+     "text": "Ohne Wertsicherung hat die letzte Jahrespacht bei 2 % Inflation nur noch rund 55 % der heutigen Kaufkraft. Üblich ist eine Anpassung an den Verbraucherpreisindex oder eine feste Staffel.",
+     "titel": "Wertsicherung (Indexierung)",
+     "wert": "keine"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Ab wann läuft die Festlaufzeit, zu welchen Konditionen werden Optionen ausgeübt und gibt es ein spätestes Enddatum?",
+     "id": "laufzeit",
+     "text": "Marktüblich. Wichtig: Beginnt die Laufzeit mit Vertragsschluss oder erst mit Baubeginn/Inbetriebnahme – und endet sie spätestens zu einem festen Datum?",
+     "titel": "Laufzeit und Verlängerung",
+     "wert": "30 Jahre fest + 10 Jahre Option"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Wird die Reservierungsprämie jährlich im Voraus gezahlt, und wird sie auf die spätere Pacht angerechnet?",
+     "id": "reservierung",
+     "text": "Marktüblich. Sie bewirtschaften die Fläche bis Baubeginn in der Regel weiter.",
+     "titel": "Reservierungsprämie bis Baubeginn",
+     "wert": "150 €/ha pro Jahr"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "id": "optionsfrist",
+     "text": "Vertretbar, wenn die Prämie in der Verlängerung steigt und Sie danach frei werden.",
+     "titel": "Längste Frist bis Baubeginn",
+     "wert": "5 Jahre"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "id": "rueckbau",
+     "text": "Eine Konzernbürgschaft ist nur so viel wert wie die Muttergesellschaft in 30 Jahren. Besser ist eine Bank- oder Versicherungsbürgschaft.",
+     "titel": "Rückbausicherheit",
+     "wert": "Konzernbürgschaft, ab Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "id": "kuendigung",
+     "text": "Ein Rücktrittsrecht ohne Frist lässt Sie jahrelang im Unklaren. Koppeln Sie es an das späteste Baubeginn-Datum.",
+     "titel": "Kündigungs- und Rücktrittsrechte",
+     "wert": "Offen – Rücktritt ohne Frist"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "id": "nebenflaechen",
+     "text": "Kabeltrassen, Zufahrten und Ausgleichsflächen belasten weitere Grundstücke, oft über Dienstbarkeiten für Jahrzehnte. Verlangen Sie eine eigene Vergütung je Meter oder Hektar.",
+     "titel": "Nebenflächen (Zuwegung, Kabel, Ausgleich)",
+     "wert": "Teilweise"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "id": "nichtbau",
+     "text": "Die Fläche kommt zurück, aber ohne Ausgleich für die Jahre der Bindung. Eine Abstandszahlung ist verhandelbar.",
+     "titel": "Ausgleich, wenn nicht gebaut wird",
+     "wert": "Nur Rückgabe"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "id": "bewirtschaftung",
+     "text": "Üblich ist, weiter zu bewirtschaften – aber Flurschäden und Ernteausfälle sollten ersetzt werden, und der Baubeginn sollte mit Vorlauf angekündigt werden.",
+     "titel": "Bewirtschaftung bis Baubeginn",
+     "wert": "Ja, ohne Ausgleich"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "id": "dienstbarkeit",
+     "text": "Eine sofortige Eintragung (oder Vormerkung) ist verbreitet. Wichtig ist die Pflicht zur Löschung auf Kosten des Pächters, falls nicht gebaut wird.",
+     "titel": "Dienstbarkeit und Rang im Grundbuch",
+     "wert": "Sofort mit Löschungspflicht"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Übernehmen Sie die Kosten einer unabhängigen anwaltlichen Prüfung meiner Wahl sowie Notar- und Grundbuchkosten?",
+     "id": "anwalt",
+     "text": "Gut – nutzen Sie eine unabhängige Kanzlei Ihrer Wahl, nicht die des Projektierers.",
+     "titel": "Kosten für Anwalt und Notar",
+     "wert": "gedeckelt bis 1.000 €"
+    }
+   ],
+   "kwh": 1854545.45455,
+   "kwp": 1818.18181818,
+   "marktBw": {
+    "max": 197188.801098,
+    "min": 65729.6003662,
+    "mittel": 122770.683653
+   },
+   "proHaErstesJahr": 2400,
+   "punkte": 0.583333333333,
+   "region": {
+    "ertrag": 1020,
+    "id": "de-ost",
+    "label": "Ostdeutschland",
+    "land": "DE",
+    "sub": "BB, BE, SN, ST, TH"
+   },
+   "rueckbauKosten": 45454.5454545,
+   "spanne": {
+    "max": 4500,
+    "min": 1500,
+    "mittel": 2800
+   },
+   "summe": 144900,
+   "summeVorlauf": 900,
+   "urteil": {
+    "id": "pruefen",
+    "text": "Die Richtung stimmt, einzelne Klauseln sollten Sie aber verbessern oder schriftlich klarstellen lassen.",
+    "titel": "Nachverhandeln"
+   },
+   "zaehler": {
+    "gut": 3,
+    "kritisch": 1,
+    "pruefen": 8
+   }
+  },
+  "at": {
+   "anteilMarktMittel": 0.708206933759,
+   "barwert": 869470.494254,
+   "durchschnittProHa": 2195.45454545,
+   "eingabe": {
+    "anwalt": "gedeckelt",
+    "anwaltBetrag": 1000,
+    "bewirtschaftung": "ohne",
+    "dienstbarkeit": "sofortLoeschung",
+    "diskont": 0.03,
+    "flaechenart": "freiflaeche",
+    "ha": 20,
+    "indexArt": "keine",
+    "indexSatz": 0.015,
+    "kuendigung": "unbefristet",
+    "laufzeit": 30,
+    "mindestProHa": 1500,
+    "modell": "fest",
+    "nebenflaechen": "teilweise",
+    "nichtbau": "rueckgabe",
+    "optionsfrist": 5,
+    "proHa": 2400,
+    "rangruecktritt": false,
+    "regionId": "at",
+    "reservierungProHa": 150,
+    "rueckbau": "konzern",
+    "rueckbauAb": "baubeginn",
+    "umsatzAnteil": 0.05,
+    "verlaengerungJahre": 10,
+    "vorlaufJahre": 3
+   },
+   "fragen": [
+    {
+     "ampel": "pruefen",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "thema": "Pachthöhe"
+    },
+    {
+     "ampel": "kritisch",
+     "frage": "Wie wird die Pacht wertgesichert – Index, Basisjahr, Anpassungsrhythmus, Schwelle – und gilt das auch für die Mindestpacht?",
+     "thema": "Wertsicherung (Indexierung)"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "thema": "Längste Frist bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "thema": "Rückbausicherheit"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "thema": "Kündigungs- und Rücktrittsrechte"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "thema": "Nebenflächen (Zuwegung, Kabel, Ausgleich)"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "thema": "Ausgleich, wenn nicht gebaut wird"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "thema": "Bewirtschaftung bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "thema": "Dienstbarkeit und Rang im Grundbuch"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wer ist Vertragspartner – eine Projektgesellschaft? Darf der Vertrag ohne meine Zustimmung an Dritte übertragen werden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Versicherungen bestehen (Haftpflicht, Schäden an Nachbarflächen), und wer haftet für Schäden am Boden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wie ist der Zustand der Fläche nach dem Rückbau definiert (Fundamente, Kabel, Bodenverdichtung)?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Was bedeutet die Verpachtung für Erbschaft- und Grundsteuer sowie für die Zuordnung zum land- und forstwirtschaftlichen Vermögen? (Steuerberatung einbeziehen)",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Unterlagen erhalte ich, und darf ich die Fläche nach einem gescheiterten Projekt anderweitig anbieten?",
+     "thema": "Allgemein"
+    }
+   ],
+   "imMarkt": 0.161399498407,
+   "jahre": [
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 1,
+     "umsatz": 0
+    },
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 2,
+     "umsatz": 0
+    },
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 3,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 4,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 5,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 6,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 7,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 8,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 9,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 10,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 11,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 12,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 13,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 14,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 15,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 16,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 17,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 18,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 19,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 20,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 21,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 22,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 23,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 24,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 25,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 26,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 27,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 28,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 29,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 30,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 31,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 32,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 33,
+     "umsatz": 0
+    }
+   ],
+   "klauseln": [
+    {
+     "ampel": "pruefen",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "id": "hoehe",
+     "text": "Im unteren Teil der üblichen Spanne (1.500–4.500 €/ha). Mit nahem Netzanschluss und guter Kulisse ist oft mehr möglich.",
+     "titel": "Pachthöhe",
+     "wert": "2.400 €/ha im 1. Betriebsjahr"
+    },
+    {
+     "ampel": "kritisch",
+     "frage": "Wie wird die Pacht wertgesichert – Index, Basisjahr, Anpassungsrhythmus, Schwelle – und gilt das auch für die Mindestpacht?",
+     "id": "index",
+     "text": "Ohne Wertsicherung hat die letzte Jahrespacht bei 2 % Inflation nur noch rund 55 % der heutigen Kaufkraft. Üblich ist eine Anpassung an den Verbraucherpreisindex oder eine feste Staffel.",
+     "titel": "Wertsicherung (Indexierung)",
+     "wert": "keine"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Ab wann läuft die Festlaufzeit, zu welchen Konditionen werden Optionen ausgeübt und gibt es ein spätestes Enddatum?",
+     "id": "laufzeit",
+     "text": "Marktüblich. Wichtig: Beginnt die Laufzeit mit Vertragsschluss oder erst mit Baubeginn/Inbetriebnahme – und endet sie spätestens zu einem festen Datum?",
+     "titel": "Laufzeit und Verlängerung",
+     "wert": "30 Jahre fest + 10 Jahre Option"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Wird die Reservierungsprämie jährlich im Voraus gezahlt, und wird sie auf die spätere Pacht angerechnet?",
+     "id": "reservierung",
+     "text": "Marktüblich. Sie bewirtschaften die Fläche bis Baubeginn in der Regel weiter.",
+     "titel": "Reservierungsprämie bis Baubeginn",
+     "wert": "150 €/ha pro Jahr"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "id": "optionsfrist",
+     "text": "Vertretbar, wenn die Prämie in der Verlängerung steigt und Sie danach frei werden.",
+     "titel": "Längste Frist bis Baubeginn",
+     "wert": "5 Jahre"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "id": "rueckbau",
+     "text": "Eine Konzernbürgschaft ist nur so viel wert wie die Muttergesellschaft in 30 Jahren. Besser ist eine Bank- oder Versicherungsbürgschaft.",
+     "titel": "Rückbausicherheit",
+     "wert": "Konzernbürgschaft, ab Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "id": "kuendigung",
+     "text": "Ein Rücktrittsrecht ohne Frist lässt Sie jahrelang im Unklaren. Koppeln Sie es an das späteste Baubeginn-Datum.",
+     "titel": "Kündigungs- und Rücktrittsrechte",
+     "wert": "Offen – Rücktritt ohne Frist"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "id": "nebenflaechen",
+     "text": "Kabeltrassen, Zufahrten und Ausgleichsflächen belasten weitere Grundstücke, oft über Dienstbarkeiten für Jahrzehnte. Verlangen Sie eine eigene Vergütung je Meter oder Hektar.",
+     "titel": "Nebenflächen (Zuwegung, Kabel, Ausgleich)",
+     "wert": "Teilweise"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "id": "nichtbau",
+     "text": "Die Fläche kommt zurück, aber ohne Ausgleich für die Jahre der Bindung. Eine Abstandszahlung ist verhandelbar.",
+     "titel": "Ausgleich, wenn nicht gebaut wird",
+     "wert": "Nur Rückgabe"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "id": "bewirtschaftung",
+     "text": "Üblich ist, weiter zu bewirtschaften – aber Flurschäden und Ernteausfälle sollten ersetzt werden, und der Baubeginn sollte mit Vorlauf angekündigt werden.",
+     "titel": "Bewirtschaftung bis Baubeginn",
+     "wert": "Ja, ohne Ausgleich"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "id": "dienstbarkeit",
+     "text": "Eine sofortige Eintragung (oder Vormerkung) ist verbreitet. Wichtig ist die Pflicht zur Löschung auf Kosten des Pächters, falls nicht gebaut wird.",
+     "titel": "Dienstbarkeit und Rang im Grundbuch",
+     "wert": "Sofort mit Löschungspflicht"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Übernehmen Sie die Kosten einer unabhängigen anwaltlichen Prüfung meiner Wahl sowie Notar- und Grundbuchkosten?",
+     "id": "anwalt",
+     "text": "Gut – nutzen Sie eine unabhängige Kanzlei Ihrer Wahl, nicht die des Projektierers.",
+     "titel": "Kosten für Anwalt und Notar",
+     "wert": "gedeckelt bis 1.000 €"
+    }
+   ],
+   "kwh": 20363636.3636,
+   "kwp": 18181.8181818,
+   "marktBw": {
+    "max": 1971888.01098,
+    "min": 657296.003662,
+    "mittel": 1227706.83653
+   },
+   "proHaErstesJahr": 2400,
+   "punkte": 0.583333333333,
+   "region": {
+    "ertrag": 1120,
+    "id": "at",
+    "label": "Österreich",
+    "land": "AT",
+    "sub": "Flach- und Hügelland"
+   },
+   "rueckbauKosten": 454545.454545,
+   "spanne": {
+    "max": 4500,
+    "min": 1500,
+    "mittel": 2800
+   },
+   "summe": 1449000,
+   "summeVorlauf": 9000,
+   "urteil": {
+    "id": "pruefen",
+    "text": "Die Richtung stimmt, einzelne Klauseln sollten Sie aber verbessern oder schriftlich klarstellen lassen.",
+    "titel": "Nachverhandeln"
+   },
+   "zaehler": {
+    "gut": 3,
+    "kritisch": 1,
+    "pruefen": 8
+   }
+  },
+  "ch": {
+   "anteilMarktMittel": 0.708206933759,
+   "barwert": 869470.494254,
+   "durchschnittProHa": 2195.45454545,
+   "eingabe": {
+    "anwalt": "gedeckelt",
+    "anwaltBetrag": 1000,
+    "bewirtschaftung": "ohne",
+    "dienstbarkeit": "sofortLoeschung",
+    "diskont": 0.03,
+    "flaechenart": "freiflaeche",
+    "ha": 20,
+    "indexArt": "keine",
+    "indexSatz": 0.015,
+    "kuendigung": "unbefristet",
+    "laufzeit": 30,
+    "mindestProHa": 1500,
+    "modell": "fest",
+    "nebenflaechen": "teilweise",
+    "nichtbau": "rueckgabe",
+    "optionsfrist": 5,
+    "proHa": 2400,
+    "rangruecktritt": false,
+    "regionId": "ch",
+    "reservierungProHa": 150,
+    "rueckbau": "konzern",
+    "rueckbauAb": "baubeginn",
+    "umsatzAnteil": 0.05,
+    "verlaengerungJahre": 10,
+    "vorlaufJahre": 3
+   },
+   "fragen": [
+    {
+     "ampel": "pruefen",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "thema": "Pachthöhe"
+    },
+    {
+     "ampel": "kritisch",
+     "frage": "Wie wird die Pacht wertgesichert – Index, Basisjahr, Anpassungsrhythmus, Schwelle – und gilt das auch für die Mindestpacht?",
+     "thema": "Wertsicherung (Indexierung)"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "thema": "Längste Frist bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "thema": "Rückbausicherheit"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "thema": "Kündigungs- und Rücktrittsrechte"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "thema": "Nebenflächen (Zuwegung, Kabel, Ausgleich)"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "thema": "Ausgleich, wenn nicht gebaut wird"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "thema": "Bewirtschaftung bis Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "thema": "Dienstbarkeit und Rang im Grundbuch"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wer ist Vertragspartner – eine Projektgesellschaft? Darf der Vertrag ohne meine Zustimmung an Dritte übertragen werden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Versicherungen bestehen (Haftpflicht, Schäden an Nachbarflächen), und wer haftet für Schäden am Boden?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Wie ist der Zustand der Fläche nach dem Rückbau definiert (Fundamente, Kabel, Bodenverdichtung)?",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Was bedeutet die Verpachtung für Erbschaft- und Grundsteuer sowie für die Zuordnung zum land- und forstwirtschaftlichen Vermögen? (Steuerberatung einbeziehen)",
+     "thema": "Allgemein"
+    },
+    {
+     "ampel": "standard",
+     "frage": "Welche Unterlagen erhalte ich, und darf ich die Fläche nach einem gescheiterten Projekt anderweitig anbieten?",
+     "thema": "Allgemein"
+    }
+   ],
+   "imMarkt": 0.161399498407,
+   "jahre": [
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 1,
+     "umsatz": 0
+    },
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 2,
+     "umsatz": 0
+    },
+    {
+     "betrag": 3000,
+     "betrieb": false,
+     "jahr": 3,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 4,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 5,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 6,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 7,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 8,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 9,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 10,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 11,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 12,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 13,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 14,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 15,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 16,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 17,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 18,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 19,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 20,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 21,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 22,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 23,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 24,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 25,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 26,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 27,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 28,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 29,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 30,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 31,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 32,
+     "umsatz": 0
+    },
+    {
+     "betrag": 48000,
+     "betrieb": true,
+     "jahr": 33,
+     "umsatz": 0
+    }
+   ],
+   "klauseln": [
+    {
+     "ampel": "pruefen",
+     "frage": "Wie setzt sich die angebotene Pacht zusammen, und welche Annahmen zu Netzanschluss, Leistung und Erlösen liegen ihr zugrunde?",
+     "id": "hoehe",
+     "text": "Im unteren Teil der üblichen Spanne (1.500–4.500 €/ha). Mit nahem Netzanschluss und guter Kulisse ist oft mehr möglich.",
+     "titel": "Pachthöhe",
+     "wert": "2.400 €/ha im 1. Betriebsjahr"
+    },
+    {
+     "ampel": "kritisch",
+     "frage": "Wie wird die Pacht wertgesichert – Index, Basisjahr, Anpassungsrhythmus, Schwelle – und gilt das auch für die Mindestpacht?",
+     "id": "index",
+     "text": "Ohne Wertsicherung hat die letzte Jahrespacht bei 2 % Inflation nur noch rund 55 % der heutigen Kaufkraft. Üblich ist eine Anpassung an den Verbraucherpreisindex oder eine feste Staffel.",
+     "titel": "Wertsicherung (Indexierung)",
+     "wert": "keine"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Ab wann läuft die Festlaufzeit, zu welchen Konditionen werden Optionen ausgeübt und gibt es ein spätestes Enddatum?",
+     "id": "laufzeit",
+     "text": "Marktüblich. Wichtig: Beginnt die Laufzeit mit Vertragsschluss oder erst mit Baubeginn/Inbetriebnahme – und endet sie spätestens zu einem festen Datum?",
+     "titel": "Laufzeit und Verlängerung",
+     "wert": "30 Jahre fest + 10 Jahre Option"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Wird die Reservierungsprämie jährlich im Voraus gezahlt, und wird sie auf die spätere Pacht angerechnet?",
+     "id": "reservierung",
+     "text": "Marktüblich. Sie bewirtschaften die Fläche bis Baubeginn in der Regel weiter.",
+     "titel": "Reservierungsprämie bis Baubeginn",
+     "wert": "150 €/ha pro Jahr"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Bis zu welchem Datum muss spätestens gebaut werden, und was passiert automatisch, wenn es nicht dazu kommt?",
+     "id": "optionsfrist",
+     "text": "Vertretbar, wenn die Prämie in der Verlängerung steigt und Sie danach frei werden.",
+     "titel": "Längste Frist bis Baubeginn",
+     "wert": "5 Jahre"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+     "id": "rueckbau",
+     "text": "Eine Konzernbürgschaft ist nur so viel wert wie die Muttergesellschaft in 30 Jahren. Besser ist eine Bank- oder Versicherungsbürgschaft.",
+     "titel": "Rückbausicherheit",
+     "wert": "Konzernbürgschaft, ab Baubeginn"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche Kündigungs- und Rücktrittsrechte haben beide Seiten – vor und nach Baubeginn – und was gilt bei Insolvenz des Betreibers?",
+     "id": "kuendigung",
+     "text": "Ein Rücktrittsrecht ohne Frist lässt Sie jahrelang im Unklaren. Koppeln Sie es an das späteste Baubeginn-Datum.",
+     "titel": "Kündigungs- und Rücktrittsrechte",
+     "wert": "Offen – Rücktritt ohne Frist"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Welche weiteren Flächen (Zuwegung, Kabeltrasse, Ausgleichsflächen) werden genutzt, und wie werden sie vergütet?",
+     "id": "nebenflaechen",
+     "text": "Kabeltrassen, Zufahrten und Ausgleichsflächen belasten weitere Grundstücke, oft über Dienstbarkeiten für Jahrzehnte. Verlangen Sie eine eigene Vergütung je Meter oder Hektar.",
+     "titel": "Nebenflächen (Zuwegung, Kabel, Ausgleich)",
+     "wert": "Teilweise"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Was erhalte ich, wenn das Projekt nicht gebaut wird – Entschädigung, Löschung der Einträge, Übergabe der Gutachten?",
+     "id": "nichtbau",
+     "text": "Die Fläche kommt zurück, aber ohne Ausgleich für die Jahre der Bindung. Eine Abstandszahlung ist verhandelbar.",
+     "titel": "Ausgleich, wenn nicht gebaut wird",
+     "wert": "Nur Rückgabe"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Darf ich bis Baubeginn weiter bewirtschaften, mit welcher Ankündigungsfrist beginnt der Bau, und wer ersetzt Flurschäden?",
+     "id": "bewirtschaftung",
+     "text": "Üblich ist, weiter zu bewirtschaften – aber Flurschäden und Ernteausfälle sollten ersetzt werden, und der Baubeginn sollte mit Vorlauf angekündigt werden.",
+     "titel": "Bewirtschaftung bis Baubeginn",
+     "wert": "Ja, ohne Ausgleich"
+    },
+    {
+     "ampel": "pruefen",
+     "frage": "Wann wird die Dienstbarkeit eingetragen, welchen Rang braucht sie, wer trägt die Kosten und wann wird sie gelöscht?",
+     "id": "dienstbarkeit",
+     "text": "Eine sofortige Eintragung (oder Vormerkung) ist verbreitet. Wichtig ist die Pflicht zur Löschung auf Kosten des Pächters, falls nicht gebaut wird.",
+     "titel": "Dienstbarkeit und Rang im Grundbuch",
+     "wert": "Sofort mit Löschungspflicht"
+    },
+    {
+     "ampel": "gut",
+     "frage": "Übernehmen Sie die Kosten einer unabhängigen anwaltlichen Prüfung meiner Wahl sowie Notar- und Grundbuchkosten?",
+     "id": "anwalt",
+     "text": "Gut – nutzen Sie eine unabhängige Kanzlei Ihrer Wahl, nicht die des Projektierers.",
+     "titel": "Kosten für Anwalt und Notar",
+     "wert": "gedeckelt bis 1.000 €"
+    }
+   ],
+   "kwh": 19090909.0909,
+   "kwp": 18181.8181818,
+   "marktBw": {
+    "max": 1971888.01098,
+    "min": 657296.003662,
+    "mittel": 1227706.83653
+   },
+   "proHaErstesJahr": 2400,
+   "punkte": 0.583333333333,
+   "region": {
+    "ertrag": 1050,
+    "id": "ch",
+    "label": "Schweiz",
+    "land": "CH",
+    "sub": "Mittelland"
+   },
+   "rueckbauKosten": 454545.454545,
+   "spanne": {
+    "max": 4500,
+    "min": 1500,
+    "mittel": 2800
+   },
+   "summe": 1449000,
+   "summeVorlauf": 9000,
+   "urteil": {
+    "id": "pruefen",
+    "text": "Die Richtung stimmt, einzelne Klauseln sollten Sie aber verbessern oder schriftlich klarstellen lassen.",
+    "titel": "Nachverhandeln"
+   },
+   "zaehler": {
+    "gut": 3,
+    "kritisch": 1,
+    "pruefen": 8
+   }
+  },
+  "zahlungsreihe_standard": [
+   {
+    "betrag": 3000,
+    "betrieb": false,
+    "jahr": 1,
+    "umsatz": 0
+   },
+   {
+    "betrag": 3000,
+    "betrieb": false,
+    "jahr": 2,
+    "umsatz": 0
+   },
+   {
+    "betrag": 3000,
+    "betrieb": false,
+    "jahr": 3,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 4,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 5,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 6,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 7,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 8,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 9,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 10,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 11,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 12,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 13,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 14,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 15,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 16,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 17,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 18,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 19,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 20,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 21,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 22,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 23,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 24,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 25,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 26,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 27,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 28,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 29,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 30,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 31,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 32,
+    "umsatz": 0
+   },
+   {
+    "betrag": 48000,
+    "betrieb": true,
+    "jahr": 33,
+    "umsatz": 0
+   }
+  ],
+  "marktSpanne_agri": {
+   "max": 2000,
+   "min": 600,
+   "mittel": 1200
+  },
+  "parkLeistung_20ha": {
+   "kwh": 20000000,
+   "kwp": 18181.8181818,
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   }
+  }
+ }
+}

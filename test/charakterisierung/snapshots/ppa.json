@@ -1,0 +1,2053 @@
+{
+ "rechner": "ppa",
+ "modul": "src/lib/rechner/ppa.js",
+ "faelle": {
+  "standard": {
+   "absicherung": 0.285,
+   "bandMit": 90090,
+   "bandOhne": 126000,
+   "breakEvenCt": 6.63157894737,
+   "breakEvenIdx": 0.631578947368,
+   "co2T": 390,
+   "effektivCt": 6.3,
+   "eingabe": {
+    "anteil": 0.3,
+    "laufzeit": 10,
+    "ppaCt": 6,
+    "preisCt": 10.5,
+    "profil": "einschicht",
+    "struktur": "pap",
+    "strukturCt": 1.8,
+    "verbrauchMwh": 2000
+   },
+   "ersparnisJahr1": 22050,
+   "heute": {
+    "direkt": 600000,
+    "erloesUeberschuss": 0,
+    "kostenPpa": 37800,
+    "kostenRest": 150150,
+    "mit": 187950,
+    "ohne": 210000,
+    "rest": 1400000,
+    "ueberschuss": 0,
+    "vPpa": 600000,
+    "wertUeberschussCt": 5.94
+   },
+   "negativRisikoKwh": 144600,
+   "profil": {
+    "eigenverbrauch": 0.7,
+    "flex": 0.8,
+    "id": "einschicht",
+    "label": "Einschicht",
+    "ppa": 1,
+    "sub": "ca. 6–16 Uhr",
+    "tag": 0.62
+   },
+   "szenarien": [
+    {
+     "anteil": 0.043389261745,
+     "id": "fall",
+     "jahre": [
+      {
+       "ersparnis": 17561.25,
+       "idx": 0.925,
+       "jahr": 1,
+       "kum": 17561.25,
+       "mit": 176688.75,
+       "ohne": 194250
+      },
+      {
+       "ersparnis": 13072.5,
+       "idx": 0.85,
+       "jahr": 2,
+       "kum": 30633.75,
+       "mit": 165427.5,
+       "ohne": 178500
+      },
+      {
+       "ersparnis": 8583.75,
+       "idx": 0.775,
+       "jahr": 3,
+       "kum": 39217.5,
+       "mit": 154166.25,
+       "ohne": 162750
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 4,
+       "kum": 43312.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 5,
+       "kum": 47407.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 6,
+       "kum": 51502.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 7,
+       "kum": 55597.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 8,
+       "kum": 59692.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 9,
+       "kum": 63787.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 10,
+       "kum": 67882.5,
+       "mit": 142905,
+       "ohne": 147000
+      }
+     ],
+     "label": "Preisverfall",
+     "sub": "−30 % in 4 Jahren",
+     "summe": 67882.5,
+     "summeMit": 1496617.5,
+     "summeOhne": 1564500,
+     "ziel": 0.7
+    },
+    {
+     "anteil": 0.105,
+     "id": "seit",
+     "jahre": [
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 1,
+       "kum": 22050,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 2,
+       "kum": 44100,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 3,
+       "kum": 66150,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 4,
+       "kum": 88200,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 5,
+       "kum": 110250,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 6,
+       "kum": 132300,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 7,
+       "kum": 154350,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 8,
+       "kum": 176400,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 9,
+       "kum": 198450,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 10,
+       "kum": 220500,
+       "mit": 187950,
+       "ohne": 210000
+      }
+     ],
+     "label": "Seitwärts",
+     "sub": "Niveau hält",
+     "summe": 220500,
+     "summeMit": 1879500,
+     "summeOhne": 2100000,
+     "ziel": 1
+    },
+    {
+     "anteil": 0.141573705179,
+     "id": "anstieg",
+     "jahre": [
+      {
+       "ersparnis": 26538.75,
+       "idx": 1.075,
+       "jahr": 1,
+       "kum": 26538.75,
+       "mit": 199211.25,
+       "ohne": 225750
+      },
+      {
+       "ersparnis": 31027.5,
+       "idx": 1.15,
+       "jahr": 2,
+       "kum": 57566.25,
+       "mit": 210472.5,
+       "ohne": 241500
+      },
+      {
+       "ersparnis": 35516.25,
+       "idx": 1.225,
+       "jahr": 3,
+       "kum": 93082.5,
+       "mit": 221733.75,
+       "ohne": 257250
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 4,
+       "kum": 133087.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 5,
+       "kum": 173092.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 6,
+       "kum": 213097.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 7,
+       "kum": 253102.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 8,
+       "kum": 293107.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 9,
+       "kum": 333112.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 10,
+       "kum": 373117.5,
+       "mit": 232995,
+       "ohne": 273000
+      }
+     ],
+     "label": "Anstieg",
+     "sub": "+30 % in 4 Jahren",
+     "summe": 373117.5,
+     "summeMit": 2262382.5,
+     "summeOhne": 2635500,
+     "ziel": 1.3
+    }
+   ],
+   "ueberschussAnteil": 0
+  },
+  "base": {
+   "absicherung": 0.3,
+   "bandMit": 88200,
+   "bandOhne": 126000,
+   "breakEvenCt": 7.8,
+   "breakEvenIdx": 0.742857142857,
+   "co2T": 390,
+   "effektivCt": 7.8,
+   "eingabe": {
+    "anteil": 0.3,
+    "laufzeit": 10,
+    "ppaCt": 6,
+    "preisCt": 10.5,
+    "profil": "einschicht",
+    "struktur": "base",
+    "strukturCt": 1.8,
+    "verbrauchMwh": 2000
+   },
+   "ersparnisJahr1": 16200,
+   "heute": {
+    "direkt": 600000,
+    "erloesUeberschuss": 0,
+    "kostenPpa": 46800,
+    "kostenRest": 147000,
+    "mit": 193800,
+    "ohne": 210000,
+    "rest": 1400000,
+    "ueberschuss": 0,
+    "vPpa": 600000
+   },
+   "negativRisikoKwh": 0,
+   "profil": {
+    "eigenverbrauch": 0.7,
+    "flex": 0.8,
+    "id": "einschicht",
+    "label": "Einschicht",
+    "ppa": 1,
+    "sub": "ca. 6–16 Uhr",
+    "tag": 0.62
+   },
+   "szenarien": [
+    {
+     "anteil": 0.000862895493768,
+     "id": "fall",
+     "jahre": [
+      {
+       "ersparnis": 11475,
+       "idx": 0.925,
+       "jahr": 1,
+       "kum": 11475,
+       "mit": 182775,
+       "ohne": 194250
+      },
+      {
+       "ersparnis": 6750,
+       "idx": 0.85,
+       "jahr": 2,
+       "kum": 18225,
+       "mit": 171750,
+       "ohne": 178500
+      },
+      {
+       "ersparnis": 2025,
+       "idx": 0.775,
+       "jahr": 3,
+       "kum": 20250,
+       "mit": 160725,
+       "ohne": 162750
+      },
+      {
+       "ersparnis": -2700,
+       "idx": 0.7,
+       "jahr": 4,
+       "kum": 17550,
+       "mit": 149700,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": -2700,
+       "idx": 0.7,
+       "jahr": 5,
+       "kum": 14850,
+       "mit": 149700,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": -2700,
+       "idx": 0.7,
+       "jahr": 6,
+       "kum": 12150,
+       "mit": 149700,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": -2700,
+       "idx": 0.7,
+       "jahr": 7,
+       "kum": 9450,
+       "mit": 149700,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": -2700,
+       "idx": 0.7,
+       "jahr": 8,
+       "kum": 6750,
+       "mit": 149700,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": -2700,
+       "idx": 0.7,
+       "jahr": 9,
+       "kum": 4050,
+       "mit": 149700,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": -2700,
+       "idx": 0.7,
+       "jahr": 10,
+       "kum": 1350,
+       "mit": 149700,
+       "ohne": 147000
+      }
+     ],
+     "label": "Preisverfall",
+     "sub": "−30 % in 4 Jahren",
+     "summe": 1350,
+     "summeMit": 1563150,
+     "summeOhne": 1564500,
+     "ziel": 0.7
+    },
+    {
+     "anteil": 0.0771428571429,
+     "id": "seit",
+     "jahre": [
+      {
+       "ersparnis": 16200,
+       "idx": 1,
+       "jahr": 1,
+       "kum": 16200,
+       "mit": 193800,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 16200,
+       "idx": 1,
+       "jahr": 2,
+       "kum": 32400,
+       "mit": 193800,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 16200,
+       "idx": 1,
+       "jahr": 3,
+       "kum": 48600,
+       "mit": 193800,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 16200,
+       "idx": 1,
+       "jahr": 4,
+       "kum": 64800,
+       "mit": 193800,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 16200,
+       "idx": 1,
+       "jahr": 5,
+       "kum": 81000,
+       "mit": 193800,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 16200,
+       "idx": 1,
+       "jahr": 6,
+       "kum": 97200,
+       "mit": 193800,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 16200,
+       "idx": 1,
+       "jahr": 7,
+       "kum": 113400,
+       "mit": 193800,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 16200,
+       "idx": 1,
+       "jahr": 8,
+       "kum": 129600,
+       "mit": 193800,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 16200,
+       "idx": 1,
+       "jahr": 9,
+       "kum": 145800,
+       "mit": 193800,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 16200,
+       "idx": 1,
+       "jahr": 10,
+       "kum": 162000,
+       "mit": 193800,
+       "ohne": 210000
+      }
+     ],
+     "label": "Seitwärts",
+     "sub": "Niveau hält",
+     "summe": 162000,
+     "summeMit": 1938000,
+     "summeOhne": 2100000,
+     "ziel": 1
+    },
+    {
+     "anteil": 0.122424587365,
+     "id": "anstieg",
+     "jahre": [
+      {
+       "ersparnis": 20925,
+       "idx": 1.075,
+       "jahr": 1,
+       "kum": 20925,
+       "mit": 204825,
+       "ohne": 225750
+      },
+      {
+       "ersparnis": 25650,
+       "idx": 1.15,
+       "jahr": 2,
+       "kum": 46575,
+       "mit": 215850,
+       "ohne": 241500
+      },
+      {
+       "ersparnis": 30375,
+       "idx": 1.225,
+       "jahr": 3,
+       "kum": 76950,
+       "mit": 226875,
+       "ohne": 257250
+      },
+      {
+       "ersparnis": 35100,
+       "idx": 1.3,
+       "jahr": 4,
+       "kum": 112050,
+       "mit": 237900,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 35100,
+       "idx": 1.3,
+       "jahr": 5,
+       "kum": 147150,
+       "mit": 237900,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 35100,
+       "idx": 1.3,
+       "jahr": 6,
+       "kum": 182250,
+       "mit": 237900,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 35100,
+       "idx": 1.3,
+       "jahr": 7,
+       "kum": 217350,
+       "mit": 237900,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 35100,
+       "idx": 1.3,
+       "jahr": 8,
+       "kum": 252450,
+       "mit": 237900,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 35100,
+       "idx": 1.3,
+       "jahr": 9,
+       "kum": 287550,
+       "mit": 237900,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 35100,
+       "idx": 1.3,
+       "jahr": 10,
+       "kum": 322650,
+       "mit": 237900,
+       "ohne": 273000
+      }
+     ],
+     "label": "Anstieg",
+     "sub": "+30 % in 4 Jahren",
+     "summe": 322650,
+     "summeMit": 2312850,
+     "summeOhne": 2635500,
+     "ziel": 1.3
+    }
+   ],
+   "ueberschussAnteil": 0
+  },
+  "dreischicht_anteil_70": {
+   "absicherung": 0.512822857143,
+   "bandMit": 306921.6,
+   "bandOhne": 630000,
+   "breakEvenCt": 8.59946068818,
+   "breakEvenIdx": 0.818996256017,
+   "co2T": 4550,
+   "effektivCt": 6.76894736842,
+   "eingabe": {
+    "anteil": 0.7,
+    "laufzeit": 10,
+    "ppaCt": 6,
+    "preisCt": 10.5,
+    "profil": "dreischicht",
+    "struktur": "pap",
+    "strukturCt": 1.8,
+    "verbrauchMwh": 10000
+   },
+   "ersparnisJahr1": 97464,
+   "heute": {
+    "direkt": 3040000,
+    "erloesUeberschuss": 235224,
+    "kostenPpa": 441000,
+    "kostenRest": 746760,
+    "mit": 952536,
+    "ohne": 1050000,
+    "rest": 6960000,
+    "ueberschuss": 3960000,
+    "vPpa": 7000000,
+    "wertUeberschussCt": 5.94
+   },
+   "negativRisikoKwh": 1687000,
+   "profil": {
+    "eigenverbrauch": 0.9,
+    "flex": 0.75,
+    "id": "dreischicht",
+    "label": "Dreischicht",
+    "ppa": 0.65,
+    "sub": "rund um die Uhr",
+    "tag": 0.38
+   },
+   "szenarien": [
+    {
+     "anteil": -0.0509355321189,
+     "id": "fall",
+     "jahre": [
+      {
+       "ersparnis": 57079.2,
+       "idx": 0.925,
+       "jahr": 1,
+       "kum": 57079.2,
+       "mit": 914170.8,
+       "ohne": 971250
+      },
+      {
+       "ersparnis": 16694.4,
+       "idx": 0.85,
+       "jahr": 2,
+       "kum": 73773.6,
+       "mit": 875805.6,
+       "ohne": 892500
+      },
+      {
+       "ersparnis": -23690.4,
+       "idx": 0.775,
+       "jahr": 3,
+       "kum": 50083.2,
+       "mit": 837440.4,
+       "ohne": 813750
+      },
+      {
+       "ersparnis": -64075.2,
+       "idx": 0.7,
+       "jahr": 4,
+       "kum": -13992,
+       "mit": 799075.2,
+       "ohne": 735000
+      },
+      {
+       "ersparnis": -64075.2,
+       "idx": 0.7,
+       "jahr": 5,
+       "kum": -78067.2,
+       "mit": 799075.2,
+       "ohne": 735000
+      },
+      {
+       "ersparnis": -64075.2,
+       "idx": 0.7,
+       "jahr": 6,
+       "kum": -142142.4,
+       "mit": 799075.2,
+       "ohne": 735000
+      },
+      {
+       "ersparnis": -64075.2,
+       "idx": 0.7,
+       "jahr": 7,
+       "kum": -206217.6,
+       "mit": 799075.2,
+       "ohne": 735000
+      },
+      {
+       "ersparnis": -64075.2,
+       "idx": 0.7,
+       "jahr": 8,
+       "kum": -270292.8,
+       "mit": 799075.2,
+       "ohne": 735000
+      },
+      {
+       "ersparnis": -64075.2,
+       "idx": 0.7,
+       "jahr": 9,
+       "kum": -334368,
+       "mit": 799075.2,
+       "ohne": 735000
+      },
+      {
+       "ersparnis": -64075.2,
+       "idx": 0.7,
+       "jahr": 10,
+       "kum": -398443.2,
+       "mit": 799075.2,
+       "ohne": 735000
+      }
+     ],
+     "label": "Preisverfall",
+     "sub": "−30 % in 4 Jahren",
+     "summe": -398443.2,
+     "summeMit": 8220943.2,
+     "summeOhne": 7822500,
+     "ziel": 0.7
+    },
+    {
+     "anteil": 0.0928228571429,
+     "id": "seit",
+     "jahre": [
+      {
+       "ersparnis": 97464,
+       "idx": 1,
+       "jahr": 1,
+       "kum": 97464,
+       "mit": 952536,
+       "ohne": 1050000
+      },
+      {
+       "ersparnis": 97464,
+       "idx": 1,
+       "jahr": 2,
+       "kum": 194928,
+       "mit": 952536,
+       "ohne": 1050000
+      },
+      {
+       "ersparnis": 97464,
+       "idx": 1,
+       "jahr": 3,
+       "kum": 292392,
+       "mit": 952536,
+       "ohne": 1050000
+      },
+      {
+       "ersparnis": 97464,
+       "idx": 1,
+       "jahr": 4,
+       "kum": 389856,
+       "mit": 952536,
+       "ohne": 1050000
+      },
+      {
+       "ersparnis": 97464,
+       "idx": 1,
+       "jahr": 5,
+       "kum": 487320,
+       "mit": 952536,
+       "ohne": 1050000
+      },
+      {
+       "ersparnis": 97464,
+       "idx": 1,
+       "jahr": 6,
+       "kum": 584784,
+       "mit": 952536,
+       "ohne": 1050000
+      },
+      {
+       "ersparnis": 97464,
+       "idx": 1,
+       "jahr": 7,
+       "kum": 682248,
+       "mit": 952536,
+       "ohne": 1050000
+      },
+      {
+       "ersparnis": 97464,
+       "idx": 1,
+       "jahr": 8,
+       "kum": 779712,
+       "mit": 952536,
+       "ohne": 1050000
+      },
+      {
+       "ersparnis": 97464,
+       "idx": 1,
+       "jahr": 9,
+       "kum": 877176,
+       "mit": 952536,
+       "ohne": 1050000
+      },
+      {
+       "ersparnis": 97464,
+       "idx": 1,
+       "jahr": 10,
+       "kum": 974640,
+       "mit": 952536,
+       "ohne": 1050000
+      }
+     ],
+     "label": "Seitwärts",
+     "sub": "Niveau hält",
+     "summe": 974640,
+     "summeMit": 9525360,
+     "summeOhne": 10500000,
+     "ziel": 1
+    },
+    {
+     "anteil": 0.178161502561,
+     "id": "anstieg",
+     "jahre": [
+      {
+       "ersparnis": 137848.8,
+       "idx": 1.075,
+       "jahr": 1,
+       "kum": 137848.8,
+       "mit": 990901.2,
+       "ohne": 1128750
+      },
+      {
+       "ersparnis": 178233.6,
+       "idx": 1.15,
+       "jahr": 2,
+       "kum": 316082.4,
+       "mit": 1029266.4,
+       "ohne": 1207500
+      },
+      {
+       "ersparnis": 218618.4,
+       "idx": 1.225,
+       "jahr": 3,
+       "kum": 534700.8,
+       "mit": 1067631.6,
+       "ohne": 1286250
+      },
+      {
+       "ersparnis": 259003.2,
+       "idx": 1.3,
+       "jahr": 4,
+       "kum": 793704,
+       "mit": 1105996.8,
+       "ohne": 1365000
+      },
+      {
+       "ersparnis": 259003.2,
+       "idx": 1.3,
+       "jahr": 5,
+       "kum": 1052707.2,
+       "mit": 1105996.8,
+       "ohne": 1365000
+      },
+      {
+       "ersparnis": 259003.2,
+       "idx": 1.3,
+       "jahr": 6,
+       "kum": 1311710.4,
+       "mit": 1105996.8,
+       "ohne": 1365000
+      },
+      {
+       "ersparnis": 259003.2,
+       "idx": 1.3,
+       "jahr": 7,
+       "kum": 1570713.6,
+       "mit": 1105996.8,
+       "ohne": 1365000
+      },
+      {
+       "ersparnis": 259003.2,
+       "idx": 1.3,
+       "jahr": 8,
+       "kum": 1829716.8,
+       "mit": 1105996.8,
+       "ohne": 1365000
+      },
+      {
+       "ersparnis": 259003.2,
+       "idx": 1.3,
+       "jahr": 9,
+       "kum": 2088720,
+       "mit": 1105996.8,
+       "ohne": 1365000
+      },
+      {
+       "ersparnis": 259003.2,
+       "idx": 1.3,
+       "jahr": 10,
+       "kum": 2347723.2,
+       "mit": 1105996.8,
+       "ohne": 1365000
+      }
+     ],
+     "label": "Anstieg",
+     "sub": "+30 % in 4 Jahren",
+     "summe": 2347723.2,
+     "summeMit": 10829776.8,
+     "summeOhne": 13177500,
+     "ziel": 1.3
+    }
+   ],
+   "ueberschussAnteil": 0.565714285714
+  },
+  "handel_15_jahre": {
+   "absicherung": 0.285,
+   "bandMit": 90090,
+   "bandOhne": 126000,
+   "breakEvenCt": 6.63157894737,
+   "breakEvenIdx": 0.631578947368,
+   "co2T": 390,
+   "effektivCt": 6.3,
+   "eingabe": {
+    "anteil": 0.3,
+    "laufzeit": 15,
+    "ppaCt": 6,
+    "preisCt": 10.5,
+    "profil": "handel",
+    "struktur": "pap",
+    "strukturCt": 1.8,
+    "verbrauchMwh": 2000
+   },
+   "ersparnisJahr1": 22050,
+   "heute": {
+    "direkt": 600000,
+    "erloesUeberschuss": 0,
+    "kostenPpa": 37800,
+    "kostenRest": 150150,
+    "mit": 187950,
+    "ohne": 210000,
+    "rest": 1400000,
+    "ueberschuss": 0,
+    "vPpa": 600000,
+    "wertUeberschussCt": 5.94
+   },
+   "negativRisikoKwh": 144600,
+   "profil": {
+    "eigenverbrauch": 0.75,
+    "flex": 0.9,
+    "id": "handel",
+    "label": "Handel & Büro",
+    "ppa": 0.9,
+    "sub": "Laden, Kühlung, Klima",
+    "tag": 0.55
+   },
+   "szenarien": [
+    {
+     "anteil": 0.0384246575342,
+     "id": "fall",
+     "jahre": [
+      {
+       "ersparnis": 17561.25,
+       "idx": 0.925,
+       "jahr": 1,
+       "kum": 17561.25,
+       "mit": 176688.75,
+       "ohne": 194250
+      },
+      {
+       "ersparnis": 13072.5,
+       "idx": 0.85,
+       "jahr": 2,
+       "kum": 30633.75,
+       "mit": 165427.5,
+       "ohne": 178500
+      },
+      {
+       "ersparnis": 8583.75,
+       "idx": 0.775,
+       "jahr": 3,
+       "kum": 39217.5,
+       "mit": 154166.25,
+       "ohne": 162750
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 4,
+       "kum": 43312.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 5,
+       "kum": 47407.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 6,
+       "kum": 51502.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 7,
+       "kum": 55597.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 8,
+       "kum": 59692.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 9,
+       "kum": 63787.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 10,
+       "kum": 67882.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 11,
+       "kum": 71977.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 12,
+       "kum": 76072.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 13,
+       "kum": 80167.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 14,
+       "kum": 84262.5,
+       "mit": 142905,
+       "ohne": 147000
+      },
+      {
+       "ersparnis": 4095,
+       "idx": 0.7,
+       "jahr": 15,
+       "kum": 88357.5,
+       "mit": 142905,
+       "ohne": 147000
+      }
+     ],
+     "label": "Preisverfall",
+     "sub": "−30 % in 4 Jahren",
+     "summe": 88357.5,
+     "summeMit": 2211142.5,
+     "summeOhne": 2299500,
+     "ziel": 0.7
+    },
+    {
+     "anteil": 0.105,
+     "id": "seit",
+     "jahre": [
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 1,
+       "kum": 22050,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 2,
+       "kum": 44100,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 3,
+       "kum": 66150,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 4,
+       "kum": 88200,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 5,
+       "kum": 110250,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 6,
+       "kum": 132300,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 7,
+       "kum": 154350,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 8,
+       "kum": 176400,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 9,
+       "kum": 198450,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 10,
+       "kum": 220500,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 11,
+       "kum": 242550,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 12,
+       "kum": 264600,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 13,
+       "kum": 286650,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 14,
+       "kum": 308700,
+       "mit": 187950,
+       "ohne": 210000
+      },
+      {
+       "ersparnis": 22050,
+       "idx": 1,
+       "jahr": 15,
+       "kum": 330750,
+       "mit": 187950,
+       "ohne": 210000
+      }
+     ],
+     "label": "Seitwärts",
+     "sub": "Niveau hält",
+     "summe": 330750,
+     "summeMit": 2819250,
+     "summeOhne": 3150000,
+     "ziel": 1
+    },
+    {
+     "anteil": 0.143267716535,
+     "id": "anstieg",
+     "jahre": [
+      {
+       "ersparnis": 26538.75,
+       "idx": 1.075,
+       "jahr": 1,
+       "kum": 26538.75,
+       "mit": 199211.25,
+       "ohne": 225750
+      },
+      {
+       "ersparnis": 31027.5,
+       "idx": 1.15,
+       "jahr": 2,
+       "kum": 57566.25,
+       "mit": 210472.5,
+       "ohne": 241500
+      },
+      {
+       "ersparnis": 35516.25,
+       "idx": 1.225,
+       "jahr": 3,
+       "kum": 93082.5,
+       "mit": 221733.75,
+       "ohne": 257250
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 4,
+       "kum": 133087.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 5,
+       "kum": 173092.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 6,
+       "kum": 213097.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 7,
+       "kum": 253102.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 8,
+       "kum": 293107.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 9,
+       "kum": 333112.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 10,
+       "kum": 373117.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 11,
+       "kum": 413122.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 12,
+       "kum": 453127.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 13,
+       "kum": 493132.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 14,
+       "kum": 533137.5,
+       "mit": 232995,
+       "ohne": 273000
+      },
+      {
+       "ersparnis": 40005,
+       "idx": 1.3,
+       "jahr": 15,
+       "kum": 573142.5,
+       "mit": 232995,
+       "ohne": 273000
+      }
+     ],
+     "label": "Anstieg",
+     "sub": "+30 % in 4 Jahren",
+     "summe": 573142.5,
+     "summeMit": 3427357.5,
+     "summeOhne": 4000500,
+     "ziel": 1.3
+    }
+   ],
+   "ueberschussAnteil": 0
+  },
+  "ppa_teurer_als_preis": {
+   "absicherung": 0.285,
+   "bandMit": 77220,
+   "bandOhne": 108000,
+   "breakEvenCt": 12.9473684211,
+   "breakEvenIdx": 1.43859649123,
+   "co2T": 390,
+   "effektivCt": 12.3,
+   "eingabe": {
+    "anteil": 0.3,
+    "laufzeit": 10,
+    "ppaCt": 12,
+    "preisCt": 9,
+    "profil": "einschicht",
+    "struktur": "pap",
+    "strukturCt": 1.8,
+    "verbrauchMwh": 2000
+   },
+   "ersparnisJahr1": -22500,
+   "heute": {
+    "direkt": 600000,
+    "erloesUeberschuss": 0,
+    "kostenPpa": 73800,
+    "kostenRest": 128700,
+    "mit": 202500,
+    "ohne": 180000,
+    "rest": 1400000,
+    "ueberschuss": 0,
+    "vPpa": 600000,
+    "wertUeberschussCt": 5.94
+   },
+   "negativRisikoKwh": 144600,
+   "profil": {
+    "eigenverbrauch": 0.7,
+    "flex": 0.8,
+    "id": "einschicht",
+    "label": "Einschicht",
+    "ppa": 1,
+    "sub": "ca. 6–16 Uhr",
+    "tag": 0.62
+   },
+   "szenarien": [
+    {
+     "anteil": -0.26533557047,
+     "id": "fall",
+     "jahre": [
+      {
+       "ersparnis": -26347.5,
+       "idx": 0.925,
+       "jahr": 1,
+       "kum": -26347.5,
+       "mit": 192847.5,
+       "ohne": 166500
+      },
+      {
+       "ersparnis": -30195,
+       "idx": 0.85,
+       "jahr": 2,
+       "kum": -56542.5,
+       "mit": 183195,
+       "ohne": 153000
+      },
+      {
+       "ersparnis": -34042.5,
+       "idx": 0.775,
+       "jahr": 3,
+       "kum": -90585,
+       "mit": 173542.5,
+       "ohne": 139500
+      },
+      {
+       "ersparnis": -37890,
+       "idx": 0.7,
+       "jahr": 4,
+       "kum": -128475,
+       "mit": 163890,
+       "ohne": 126000
+      },
+      {
+       "ersparnis": -37890,
+       "idx": 0.7,
+       "jahr": 5,
+       "kum": -166365,
+       "mit": 163890,
+       "ohne": 126000
+      },
+      {
+       "ersparnis": -37890,
+       "idx": 0.7,
+       "jahr": 6,
+       "kum": -204255,
+       "mit": 163890,
+       "ohne": 126000
+      },
+      {
+       "ersparnis": -37890,
+       "idx": 0.7,
+       "jahr": 7,
+       "kum": -242145,
+       "mit": 163890,
+       "ohne": 126000
+      },
+      {
+       "ersparnis": -37890,
+       "idx": 0.7,
+       "jahr": 8,
+       "kum": -280035,
+       "mit": 163890,
+       "ohne": 126000
+      },
+      {
+       "ersparnis": -37890,
+       "idx": 0.7,
+       "jahr": 9,
+       "kum": -317925,
+       "mit": 163890,
+       "ohne": 126000
+      },
+      {
+       "ersparnis": -37890,
+       "idx": 0.7,
+       "jahr": 10,
+       "kum": -355815,
+       "mit": 163890,
+       "ohne": 126000
+      }
+     ],
+     "label": "Preisverfall",
+     "sub": "−30 % in 4 Jahren",
+     "summe": -355815,
+     "summeMit": 1696815,
+     "summeOhne": 1341000,
+     "ziel": 0.7
+    },
+    {
+     "anteil": -0.125,
+     "id": "seit",
+     "jahre": [
+      {
+       "ersparnis": -22500,
+       "idx": 1,
+       "jahr": 1,
+       "kum": -22500,
+       "mit": 202500,
+       "ohne": 180000
+      },
+      {
+       "ersparnis": -22500,
+       "idx": 1,
+       "jahr": 2,
+       "kum": -45000,
+       "mit": 202500,
+       "ohne": 180000
+      },
+      {
+       "ersparnis": -22500,
+       "idx": 1,
+       "jahr": 3,
+       "kum": -67500,
+       "mit": 202500,
+       "ohne": 180000
+      },
+      {
+       "ersparnis": -22500,
+       "idx": 1,
+       "jahr": 4,
+       "kum": -90000,
+       "mit": 202500,
+       "ohne": 180000
+      },
+      {
+       "ersparnis": -22500,
+       "idx": 1,
+       "jahr": 5,
+       "kum": -112500,
+       "mit": 202500,
+       "ohne": 180000
+      },
+      {
+       "ersparnis": -22500,
+       "idx": 1,
+       "jahr": 6,
+       "kum": -135000,
+       "mit": 202500,
+       "ohne": 180000
+      },
+      {
+       "ersparnis": -22500,
+       "idx": 1,
+       "jahr": 7,
+       "kum": -157500,
+       "mit": 202500,
+       "ohne": 180000
+      },
+      {
+       "ersparnis": -22500,
+       "idx": 1,
+       "jahr": 8,
+       "kum": -180000,
+       "mit": 202500,
+       "ohne": 180000
+      },
+      {
+       "ersparnis": -22500,
+       "idx": 1,
+       "jahr": 9,
+       "kum": -202500,
+       "mit": 202500,
+       "ohne": 180000
+      },
+      {
+       "ersparnis": -22500,
+       "idx": 1,
+       "jahr": 10,
+       "kum": -225000,
+       "mit": 202500,
+       "ohne": 180000
+      }
+     ],
+     "label": "Seitwärts",
+     "sub": "Niveau hält",
+     "summe": -225000,
+     "summeMit": 2025000,
+     "summeOhne": 1800000,
+     "ziel": 1
+    },
+    {
+     "anteil": -0.0416932270916,
+     "id": "anstieg",
+     "jahre": [
+      {
+       "ersparnis": -18652.5,
+       "idx": 1.075,
+       "jahr": 1,
+       "kum": -18652.5,
+       "mit": 212152.5,
+       "ohne": 193500
+      },
+      {
+       "ersparnis": -14805,
+       "idx": 1.15,
+       "jahr": 2,
+       "kum": -33457.5,
+       "mit": 221805,
+       "ohne": 207000
+      },
+      {
+       "ersparnis": -10957.5,
+       "idx": 1.225,
+       "jahr": 3,
+       "kum": -44415,
+       "mit": 231457.5,
+       "ohne": 220500
+      },
+      {
+       "ersparnis": -7110,
+       "idx": 1.3,
+       "jahr": 4,
+       "kum": -51525,
+       "mit": 241110,
+       "ohne": 234000
+      },
+      {
+       "ersparnis": -7110,
+       "idx": 1.3,
+       "jahr": 5,
+       "kum": -58635,
+       "mit": 241110,
+       "ohne": 234000
+      },
+      {
+       "ersparnis": -7110,
+       "idx": 1.3,
+       "jahr": 6,
+       "kum": -65745,
+       "mit": 241110,
+       "ohne": 234000
+      },
+      {
+       "ersparnis": -7110,
+       "idx": 1.3,
+       "jahr": 7,
+       "kum": -72855,
+       "mit": 241110,
+       "ohne": 234000
+      },
+      {
+       "ersparnis": -7110,
+       "idx": 1.3,
+       "jahr": 8,
+       "kum": -79965,
+       "mit": 241110,
+       "ohne": 234000
+      },
+      {
+       "ersparnis": -7110,
+       "idx": 1.3,
+       "jahr": 9,
+       "kum": -87075,
+       "mit": 241110,
+       "ohne": 234000
+      },
+      {
+       "ersparnis": -7110,
+       "idx": 1.3,
+       "jahr": 10,
+       "kum": -94185,
+       "mit": 241110,
+       "ohne": 234000
+      }
+     ],
+     "label": "Anstieg",
+     "sub": "+30 % in 4 Jahren",
+     "summe": -94185,
+     "summeMit": 2353185,
+     "summeOhne": 2259000,
+     "ziel": 1.3
+    }
+   ],
+   "ueberschussAnteil": 0
+  },
+  "klein_200": {
+   "absicherung": 0.285,
+   "bandMit": 9009,
+   "bandOhne": 12600,
+   "breakEvenCt": 6.63157894737,
+   "breakEvenIdx": 0.631578947368,
+   "co2T": 39,
+   "effektivCt": 6.3,
+   "eingabe": {
+    "anteil": 0.3,
+    "laufzeit": 10,
+    "ppaCt": 6,
+    "preisCt": 10.5,
+    "profil": "einschicht",
+    "struktur": "pap",
+    "strukturCt": 1.8,
+    "verbrauchMwh": 200
+   },
+   "ersparnisJahr1": 2205,
+   "heute": {
+    "direkt": 60000,
+    "erloesUeberschuss": 0,
+    "kostenPpa": 3780,
+    "kostenRest": 15015,
+    "mit": 18795,
+    "ohne": 21000,
+    "rest": 140000,
+    "ueberschuss": 0,
+    "vPpa": 60000,
+    "wertUeberschussCt": 5.94
+   },
+   "negativRisikoKwh": 14460,
+   "profil": {
+    "eigenverbrauch": 0.7,
+    "flex": 0.8,
+    "id": "einschicht",
+    "label": "Einschicht",
+    "ppa": 1,
+    "sub": "ca. 6–16 Uhr",
+    "tag": 0.62
+   },
+   "szenarien": [
+    {
+     "anteil": 0.043389261745,
+     "id": "fall",
+     "jahre": [
+      {
+       "ersparnis": 1756.125,
+       "idx": 0.925,
+       "jahr": 1,
+       "kum": 1756.125,
+       "mit": 17668.875,
+       "ohne": 19425
+      },
+      {
+       "ersparnis": 1307.25,
+       "idx": 0.85,
+       "jahr": 2,
+       "kum": 3063.375,
+       "mit": 16542.75,
+       "ohne": 17850
+      },
+      {
+       "ersparnis": 858.375,
+       "idx": 0.775,
+       "jahr": 3,
+       "kum": 3921.75,
+       "mit": 15416.625,
+       "ohne": 16275
+      },
+      {
+       "ersparnis": 409.5,
+       "idx": 0.7,
+       "jahr": 4,
+       "kum": 4331.25,
+       "mit": 14290.5,
+       "ohne": 14700
+      },
+      {
+       "ersparnis": 409.5,
+       "idx": 0.7,
+       "jahr": 5,
+       "kum": 4740.75,
+       "mit": 14290.5,
+       "ohne": 14700
+      },
+      {
+       "ersparnis": 409.5,
+       "idx": 0.7,
+       "jahr": 6,
+       "kum": 5150.25,
+       "mit": 14290.5,
+       "ohne": 14700
+      },
+      {
+       "ersparnis": 409.5,
+       "idx": 0.7,
+       "jahr": 7,
+       "kum": 5559.75,
+       "mit": 14290.5,
+       "ohne": 14700
+      },
+      {
+       "ersparnis": 409.5,
+       "idx": 0.7,
+       "jahr": 8,
+       "kum": 5969.25,
+       "mit": 14290.5,
+       "ohne": 14700
+      },
+      {
+       "ersparnis": 409.5,
+       "idx": 0.7,
+       "jahr": 9,
+       "kum": 6378.75,
+       "mit": 14290.5,
+       "ohne": 14700
+      },
+      {
+       "ersparnis": 409.5,
+       "idx": 0.7,
+       "jahr": 10,
+       "kum": 6788.25,
+       "mit": 14290.5,
+       "ohne": 14700
+      }
+     ],
+     "label": "Preisverfall",
+     "sub": "−30 % in 4 Jahren",
+     "summe": 6788.25,
+     "summeMit": 149661.75,
+     "summeOhne": 156450,
+     "ziel": 0.7
+    },
+    {
+     "anteil": 0.105,
+     "id": "seit",
+     "jahre": [
+      {
+       "ersparnis": 2205,
+       "idx": 1,
+       "jahr": 1,
+       "kum": 2205,
+       "mit": 18795,
+       "ohne": 21000
+      },
+      {
+       "ersparnis": 2205,
+       "idx": 1,
+       "jahr": 2,
+       "kum": 4410,
+       "mit": 18795,
+       "ohne": 21000
+      },
+      {
+       "ersparnis": 2205,
+       "idx": 1,
+       "jahr": 3,
+       "kum": 6615,
+       "mit": 18795,
+       "ohne": 21000
+      },
+      {
+       "ersparnis": 2205,
+       "idx": 1,
+       "jahr": 4,
+       "kum": 8820,
+       "mit": 18795,
+       "ohne": 21000
+      },
+      {
+       "ersparnis": 2205,
+       "idx": 1,
+       "jahr": 5,
+       "kum": 11025,
+       "mit": 18795,
+       "ohne": 21000
+      },
+      {
+       "ersparnis": 2205,
+       "idx": 1,
+       "jahr": 6,
+       "kum": 13230,
+       "mit": 18795,
+       "ohne": 21000
+      },
+      {
+       "ersparnis": 2205,
+       "idx": 1,
+       "jahr": 7,
+       "kum": 15435,
+       "mit": 18795,
+       "ohne": 21000
+      },
+      {
+       "ersparnis": 2205,
+       "idx": 1,
+       "jahr": 8,
+       "kum": 17640,
+       "mit": 18795,
+       "ohne": 21000
+      },
+      {
+       "ersparnis": 2205,
+       "idx": 1,
+       "jahr": 9,
+       "kum": 19845,
+       "mit": 18795,
+       "ohne": 21000
+      },
+      {
+       "ersparnis": 2205,
+       "idx": 1,
+       "jahr": 10,
+       "kum": 22050,
+       "mit": 18795,
+       "ohne": 21000
+      }
+     ],
+     "label": "Seitwärts",
+     "sub": "Niveau hält",
+     "summe": 22050,
+     "summeMit": 187950,
+     "summeOhne": 210000,
+     "ziel": 1
+    },
+    {
+     "anteil": 0.141573705179,
+     "id": "anstieg",
+     "jahre": [
+      {
+       "ersparnis": 2653.875,
+       "idx": 1.075,
+       "jahr": 1,
+       "kum": 2653.875,
+       "mit": 19921.125,
+       "ohne": 22575
+      },
+      {
+       "ersparnis": 3102.75,
+       "idx": 1.15,
+       "jahr": 2,
+       "kum": 5756.625,
+       "mit": 21047.25,
+       "ohne": 24150
+      },
+      {
+       "ersparnis": 3551.625,
+       "idx": 1.225,
+       "jahr": 3,
+       "kum": 9308.25,
+       "mit": 22173.375,
+       "ohne": 25725
+      },
+      {
+       "ersparnis": 4000.5,
+       "idx": 1.3,
+       "jahr": 4,
+       "kum": 13308.75,
+       "mit": 23299.5,
+       "ohne": 27300
+      },
+      {
+       "ersparnis": 4000.5,
+       "idx": 1.3,
+       "jahr": 5,
+       "kum": 17309.25,
+       "mit": 23299.5,
+       "ohne": 27300
+      },
+      {
+       "ersparnis": 4000.5,
+       "idx": 1.3,
+       "jahr": 6,
+       "kum": 21309.75,
+       "mit": 23299.5,
+       "ohne": 27300
+      },
+      {
+       "ersparnis": 4000.5,
+       "idx": 1.3,
+       "jahr": 7,
+       "kum": 25310.25,
+       "mit": 23299.5,
+       "ohne": 27300
+      },
+      {
+       "ersparnis": 4000.5,
+       "idx": 1.3,
+       "jahr": 8,
+       "kum": 29310.75,
+       "mit": 23299.5,
+       "ohne": 27300
+      },
+      {
+       "ersparnis": 4000.5,
+       "idx": 1.3,
+       "jahr": 9,
+       "kum": 33311.25,
+       "mit": 23299.5,
+       "ohne": 27300
+      },
+      {
+       "ersparnis": 4000.5,
+       "idx": 1.3,
+       "jahr": 10,
+       "kum": 37311.75,
+       "mit": 23299.5,
+       "ohne": 27300
+      }
+     ],
+     "label": "Anstieg",
+     "sub": "+30 % in 4 Jahren",
+     "summe": 37311.75,
+     "summeMit": 226238.25,
+     "summeOhne": 263550,
+     "ziel": 1.3
+    }
+   ],
+   "ueberschussAnteil": 0
+  },
+  "index_fall_5": 0.7,
+  "index_anstieg_5": 1.3
+ }
+}

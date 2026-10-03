@@ -1,0 +1,69 @@
+# Prüf-Gate (Paket F, Welle 1). Nur als Datei angelegt – es gibt noch kein Remote.
+# Wirkt erst, wenn der Mensch ein privates Remote einrichtet (W0-1).
+# Gleicher Ablauf wie lokal: npm run verify (seriell, < 10 min).
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      QA_BASIS_URL: http://localhost:3100
+      NEXT_TELEMETRY_DISABLED: "1"
+      # PLATTFORM_BACKEND bleibt ungesetzt (Demo-Backend); die E2E fängt alle POSTs ohnehin ab
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Abhängigkeiten
+        run: npm ci
+
+      - name: Playwright (nur für die Prüfung, nicht in package.json)
+        run: |
+          npm i --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Dev-Server starten
+        run: |
+          nohup npm run dev > dev-server.log 2>&1 &
+          for i in $(seq 1 90); do
+            curl -sf -o /dev/null http://localhost:3100/icon.svg && break
+            sleep 2
+          done
+          # Kernseiten einmal vorkompilieren, damit die Prüfungen nicht an der ersten Kompilierung hängen
+          for p in / /flaechencheck /freiflaeche /landwirte /investoren /kommunen /reststrom /rechner/pacht /projektboerse /kontakt; do
+            curl -s -o /dev/null -m 300 "http://localhost:3100$p" || true
+          done
+
+      - name: npm run verify
+        run: npm run verify
+
+      - name: npm audit (hohe Kritikalität)
+        run: npm audit --audit-level=high --omit=dev
+
+      - name: Protokolle sichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-protokolle
+          path: |
+            qa/out/
+            dev-server.log
+          retention-days: 14

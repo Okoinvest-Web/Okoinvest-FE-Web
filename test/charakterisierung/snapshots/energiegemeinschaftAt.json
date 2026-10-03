@@ -1,0 +1,584 @@
+{
+ "rechner": "energiegemeinschaftAt",
+ "modul": "src/lib/plattform/eg/interesse.js",
+ "faelle": {
+  "standard": {
+   "annahmen": {
+    "ertragKwhJeKwp": 1008,
+    "faktor": 0.75,
+    "maxQuote": 0.4,
+    "nutzungsgrad": 0.708,
+    "verhaeltnis": 0.7
+   },
+   "bezugKwh": 1302,
+   "co2Kg": 846,
+   "eingabe": {
+    "deckung": "ausgewogen",
+    "jahr": 2026,
+    "modell": "eeg_lokal",
+    "profil": "haushalt",
+    "rolle": "verbraucher"
+   },
+   "eingebrachtKwh": 0,
+   "erzeugungKwh": 0,
+   "gebuehrenEur": 20,
+   "hinweise": [
+    {
+     "id": "luecke",
+     "text": "Okt.–Dez. 2026: Ob die reduzierten Netzentgelte nach SNE-V 2018 im Übergang weiter gelten, wird unterschiedlich dargestellt – maßgeblich ist Ihre Netzrechnung (zu bestätigen)."
+    }
+   ],
+   "nettoEur": 68.63,
+   "nutzungsgradPct": 70.8,
+   "quotePct": 37.2,
+   "regel": {
+    "abgabenBefreit": true,
+    "quelle": "SNE-V 2018 § 5 Abs. 1a (EEG lokal, NE 6/7)",
+    "reduktionPct": 57,
+    "status": "gesichert",
+    "text": "−57 % Netznutzungs-Arbeitspreis"
+   },
+   "teile": [
+    {
+     "ct": 2,
+     "eur": 26.03,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 3.99,
+     "eur": 51.93,
+     "id": "netz",
+     "label": "Reduziertes Netzentgelt (−57 % Arbeitspreis)"
+    },
+    {
+     "ct": 0.82,
+     "eur": 10.67,
+     "id": "abgaben",
+     "label": "Elektrizitätsabgabe entfällt"
+    }
+   ],
+   "vorteilEur": 88.63,
+   "vorteilJeKwhCt": 6.81
+  },
+  "eeg_regional": {
+   "annahmen": {
+    "ertragKwhJeKwp": 1008,
+    "faktor": 0.75,
+    "maxQuote": 0.4,
+    "nutzungsgrad": 0.708,
+    "verhaeltnis": 0.7
+   },
+   "bezugKwh": 1302,
+   "co2Kg": 846,
+   "eingabe": {
+    "deckung": "ausgewogen",
+    "jahr": 2026,
+    "modell": "eeg_regional",
+    "profil": "haushalt",
+    "rolle": "verbraucher"
+   },
+   "eingebrachtKwh": 0,
+   "erzeugungKwh": 0,
+   "gebuehrenEur": 20,
+   "hinweise": [
+    {
+     "id": "luecke",
+     "text": "Okt.–Dez. 2026: Ob die reduzierten Netzentgelte nach SNE-V 2018 im Übergang weiter gelten, wird unterschiedlich dargestellt – maßgeblich ist Ihre Netzrechnung (zu bestätigen)."
+    }
+   ],
+   "nettoEur": 42.21,
+   "nutzungsgradPct": 70.8,
+   "quotePct": 37.2,
+   "regel": {
+    "abgabenBefreit": true,
+    "quelle": "SNE-V 2018 § 5 Abs. 1a (EEG regional, NE 6/7)",
+    "reduktionPct": 28,
+    "status": "gesichert",
+    "text": "−28 % Netznutzungs-Arbeitspreis"
+   },
+   "teile": [
+    {
+     "ct": 2,
+     "eur": 26.03,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 1.96,
+     "eur": 25.51,
+     "id": "netz",
+     "label": "Reduziertes Netzentgelt (−28 % Arbeitspreis)"
+    },
+    {
+     "ct": 0.82,
+     "eur": 10.67,
+     "id": "abgaben",
+     "label": "Elektrizitätsabgabe entfällt"
+    }
+   ],
+   "vorteilEur": 62.21,
+   "vorteilJeKwhCt": 4.78
+  },
+  "beg": {
+   "annahmen": {
+    "ertragKwhJeKwp": 1008,
+    "faktor": 0.75,
+    "maxQuote": 0.4,
+    "nutzungsgrad": 0.708,
+    "verhaeltnis": 0.7
+   },
+   "bezugKwh": 1302,
+   "co2Kg": 846,
+   "eingabe": {
+    "deckung": "ausgewogen",
+    "jahr": 2026,
+    "modell": "beg",
+    "profil": "haushalt",
+    "rolle": "verbraucher"
+   },
+   "eingebrachtKwh": 0,
+   "erzeugungKwh": 0,
+   "gebuehrenEur": 20,
+   "hinweise": [
+    {
+     "id": "beg",
+     "text": "Bürgerenergiegemeinschaften erhalten nach heutigem Stand keine Netzentgelt-Reduktion und keine Abgabenbefreiung – der Vorteil entsteht über den Preis."
+    }
+   ],
+   "nettoEur": 6.03,
+   "nutzungsgradPct": 70.8,
+   "quotePct": 37.2,
+   "regel": {
+    "abgabenBefreit": false,
+    "quelle": "SNE-V 2018 § 5 Abs. 1a gilt nur für EEG",
+    "reduktionPct": 0,
+    "status": "gesichert",
+    "text": "keine Netzentgelt-Reduktion"
+   },
+   "teile": [
+    {
+     "ct": 2,
+     "eur": 26.03,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 0,
+     "eur": 0,
+     "id": "netz",
+     "label": "Netzentgelt (keine Reduktion)"
+    }
+   ],
+   "vorteilEur": 26.03,
+   "vorteilJeKwhCt": 2
+  },
+  "gea": {
+   "annahmen": {
+    "ertragKwhJeKwp": 1008,
+    "faktor": 0.75,
+    "maxQuote": 0.4,
+    "nutzungsgrad": 0.708,
+    "verhaeltnis": 0.7
+   },
+   "bezugKwh": 1302,
+   "co2Kg": 846,
+   "eingabe": {
+    "deckung": "ausgewogen",
+    "jahr": 2026,
+    "modell": "gea",
+    "profil": "haushalt",
+    "rolle": "verbraucher"
+   },
+   "eingebrachtKwh": 0,
+   "erzeugungKwh": 0,
+   "gebuehrenEur": 20,
+   "hinweise": [
+    {
+     "id": "luecke",
+     "text": "Okt.–Dez. 2026: Ob die reduzierten Netzentgelte nach SNE-V 2018 im Übergang weiter gelten, wird unterschiedlich dargestellt – maßgeblich ist Ihre Netzrechnung (zu bestätigen)."
+    }
+   ],
+   "nettoEur": 107.81,
+   "nutzungsgradPct": 70.8,
+   "quotePct": 37.2,
+   "regel": {
+    "abgabenBefreit": true,
+    "quelle": "Eigendeckung hinter dem Netzanschluss ohne Netznutzung (ElWG § 68; Koordinationsstelle)",
+    "reduktionPct": 100,
+    "status": "entwurf",
+    "text": "−100 % Netznutzungs-Arbeitspreis"
+   },
+   "teile": [
+    {
+     "ct": 2,
+     "eur": 26.03,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 7,
+     "eur": 91.11,
+     "id": "netz",
+     "label": "Reduziertes Netzentgelt (−100 % Arbeitspreis)"
+    },
+    {
+     "ct": 0.82,
+     "eur": 10.67,
+     "id": "abgaben",
+     "label": "Elektrizitätsabgabe entfällt"
+    }
+   ],
+   "vorteilEur": 127.81,
+   "vorteilJeKwhCt": 9.82
+  },
+  "erzeuger_20kwp": {
+   "annahmen": {
+    "ertragKwhJeKwp": 1008,
+    "faktor": 0.75,
+    "maxQuote": 0.4,
+    "nutzungsgrad": 0.708,
+    "verhaeltnis": 0.7
+   },
+   "bezugKwh": 0,
+   "co2Kg": 5523,
+   "eingabe": {
+    "deckung": "ausgewogen",
+    "jahr": 2026,
+    "modell": "eeg_lokal",
+    "profil": "haushalt",
+    "rolle": "erzeuger"
+   },
+   "eingebrachtKwh": 8497,
+   "erzeugungKwh": 20160,
+   "gebuehrenEur": 20,
+   "hinweise": [
+    {
+     "id": "luecke",
+     "text": "Okt.–Dez. 2026: Ob die reduzierten Netzentgelte nach SNE-V 2018 im Übergang weiter gelten, wird unterschiedlich dargestellt – maßgeblich ist Ihre Netzrechnung (zu bestätigen)."
+    }
+   ],
+   "nettoEur": 234.9,
+   "nutzungsgradPct": 70.8,
+   "quotePct": 37.2,
+   "regel": {
+    "abgabenBefreit": true,
+    "quelle": "SNE-V 2018 § 5 Abs. 1a (EEG lokal, NE 6/7)",
+    "reduktionPct": 57,
+    "status": "gesichert",
+    "text": "−57 % Netznutzungs-Arbeitspreis"
+   },
+   "teile": [
+    {
+     "ct": 3,
+     "eur": 254.9,
+     "id": "erzeuger",
+     "label": "Mehrerlös für eingebrachten Strom"
+    }
+   ],
+   "vorteilEur": 254.9,
+   "vorteilJeKwhCt": 0
+  },
+  "prosumer_reichlich": {
+   "annahmen": {
+    "ertragKwhJeKwp": 1008,
+    "faktor": 0.9,
+    "maxQuote": 0.55,
+    "nutzungsgrad": 0.531,
+    "verhaeltnis": 1.5
+   },
+   "bezugKwh": 1925,
+   "co2Kg": 3322,
+   "eingabe": {
+    "deckung": "reichlich",
+    "jahr": 2026,
+    "modell": "eeg_lokal",
+    "profil": "haushalt_flex",
+    "rolle": "prosumer"
+   },
+   "eingebrachtKwh": 3186,
+   "erzeugungKwh": 10080,
+   "gebuehrenEur": 20,
+   "hinweise": [
+    {
+     "id": "luecke",
+     "text": "Okt.–Dez. 2026: Ob die reduzierten Netzentgelte nach SNE-V 2018 im Übergang weiter gelten, wird unterschiedlich dargestellt – maßgeblich ist Ihre Netzrechnung (zu bestätigen)."
+    }
+   ],
+   "nettoEur": 206.69,
+   "nutzungsgradPct": 53.1,
+   "quotePct": 55,
+   "regel": {
+    "abgabenBefreit": true,
+    "quelle": "SNE-V 2018 § 5 Abs. 1a (EEG lokal, NE 6/7)",
+    "reduktionPct": 57,
+    "status": "gesichert",
+    "text": "−57 % Netznutzungs-Arbeitspreis"
+   },
+   "teile": [
+    {
+     "ct": 2,
+     "eur": 38.5,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 3.99,
+     "eur": 76.81,
+     "id": "netz",
+     "label": "Reduziertes Netzentgelt (−57 % Arbeitspreis)"
+    },
+    {
+     "ct": 0.82,
+     "eur": 15.79,
+     "id": "abgaben",
+     "label": "Elektrizitätsabgabe entfällt"
+    },
+    {
+     "ct": 3,
+     "eur": 95.59,
+     "id": "erzeuger",
+     "label": "Mehrerlös für eingebrachten Strom"
+    }
+   ],
+   "vorteilEur": 226.69,
+   "vorteilJeKwhCt": 6.81
+  },
+  "gewerbe_knapp": {
+   "annahmen": {
+    "ertragKwhJeKwp": 1008,
+    "faktor": 1,
+    "maxQuote": 0.65,
+    "nutzungsgrad": 0.85,
+    "verhaeltnis": 0.3
+   },
+   "bezugKwh": 12750,
+   "co2Kg": 8288,
+   "eingabe": {
+    "deckung": "knapp",
+    "jahr": 2026,
+    "modell": "eeg_lokal",
+    "profil": "gewerbe",
+    "rolle": "verbraucher"
+   },
+   "eingebrachtKwh": 0,
+   "erzeugungKwh": 0,
+   "gebuehrenEur": 20,
+   "hinweise": [
+    {
+     "id": "luecke",
+     "text": "Okt.–Dez. 2026: Ob die reduzierten Netzentgelte nach SNE-V 2018 im Übergang weiter gelten, wird unterschiedlich dargestellt – maßgeblich ist Ihre Netzrechnung (zu bestätigen)."
+    }
+   ],
+   "nettoEur": 848.28,
+   "nutzungsgradPct": 85,
+   "quotePct": 25.5,
+   "regel": {
+    "abgabenBefreit": true,
+    "quelle": "SNE-V 2018 § 5 Abs. 1a (EEG lokal, NE 6/7)",
+    "reduktionPct": 57,
+    "status": "gesichert",
+    "text": "−57 % Netznutzungs-Arbeitspreis"
+   },
+   "teile": [
+    {
+     "ct": 2,
+     "eur": 255,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 3.99,
+     "eur": 508.73,
+     "id": "netz",
+     "label": "Reduziertes Netzentgelt (−57 % Arbeitspreis)"
+    },
+    {
+     "ct": 0.82,
+     "eur": 104.55,
+     "id": "abgaben",
+     "label": "Elektrizitätsabgabe entfällt"
+    }
+   ],
+   "vorteilEur": 868.28,
+   "vorteilJeKwhCt": 6.81
+  },
+  "landwirtschaft": {
+   "annahmen": {
+    "ertragKwhJeKwp": 1008,
+    "faktor": 0.85,
+    "maxQuote": 0.5,
+    "nutzungsgrad": 0.708,
+    "verhaeltnis": 0.7
+   },
+   "bezugKwh": 8429,
+   "co2Kg": 5479,
+   "eingabe": {
+    "deckung": "ausgewogen",
+    "jahr": 2026,
+    "modell": "eeg_lokal",
+    "profil": "landwirtschaft",
+    "rolle": "verbraucher"
+   },
+   "eingebrachtKwh": 0,
+   "erzeugungKwh": 0,
+   "gebuehrenEur": 20,
+   "hinweise": [
+    {
+     "id": "luecke",
+     "text": "Okt.–Dez. 2026: Ob die reduzierten Netzentgelte nach SNE-V 2018 im Übergang weiter gelten, wird unterschiedlich dargestellt – maßgeblich ist Ihre Netzrechnung (zu bestätigen)."
+    }
+   ],
+   "nettoEur": 554.02,
+   "nutzungsgradPct": 70.8,
+   "quotePct": 42.1,
+   "regel": {
+    "abgabenBefreit": true,
+    "quelle": "SNE-V 2018 § 5 Abs. 1a (EEG lokal, NE 6/7)",
+    "reduktionPct": 57,
+    "status": "gesichert",
+    "text": "−57 % Netznutzungs-Arbeitspreis"
+   },
+   "teile": [
+    {
+     "ct": 2,
+     "eur": 168.58,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 3.99,
+     "eur": 336.32,
+     "id": "netz",
+     "label": "Reduziertes Netzentgelt (−57 % Arbeitspreis)"
+    },
+    {
+     "ct": 0.82,
+     "eur": 69.12,
+     "id": "abgaben",
+     "label": "Elektrizitätsabgabe entfällt"
+    }
+   ],
+   "vorteilEur": 574.02,
+   "vorteilJeKwhCt": 6.81
+  },
+  "jahr_2027": {
+   "annahmen": {
+    "ertragKwhJeKwp": 1008,
+    "faktor": 0.75,
+    "maxQuote": 0.4,
+    "nutzungsgrad": 0.708,
+    "verhaeltnis": 0.7
+   },
+   "bezugKwh": 1302,
+   "co2Kg": 846,
+   "eingabe": {
+    "deckung": "ausgewogen",
+    "jahr": 2027,
+    "modell": "eeg_lokal",
+    "profil": "haushalt",
+    "rolle": "verbraucher"
+   },
+   "eingebrachtKwh": 0,
+   "erzeugungKwh": 0,
+   "gebuehrenEur": 20,
+   "hinweise": [
+    {
+     "id": "platzhalter",
+     "text": "Ab 2027 richtet sich das Netzentgelt nach dem Nahebereich; die Werte der neuen Verordnung stehen noch aus – hier als Arbeitshypothese gerechnet."
+    }
+   ],
+   "nettoEur": 68.63,
+   "nutzungsgradPct": 70.8,
+   "quotePct": 37.2,
+   "regel": {
+    "abgabenBefreit": true,
+    "quelle": "Arbeitshypothese Fachkonzept 1.3 (Lokalbereich, neue SNE-VO)",
+    "reduktionPct": 57,
+    "status": "platzhalter",
+    "text": "−57 % Netznutzungs-Arbeitspreis (Platzhalter bis zur neuen SNE-VO)"
+   },
+   "teile": [
+    {
+     "ct": 2,
+     "eur": 26.03,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 3.99,
+     "eur": 51.93,
+     "id": "netz",
+     "label": "Reduziertes Netzentgelt (−57 % Arbeitspreis)"
+    },
+    {
+     "ct": 0.82,
+     "eur": 10.67,
+     "id": "abgaben",
+     "label": "Elektrizitätsabgabe entfällt"
+    }
+   ],
+   "vorteilEur": 88.63,
+   "vorteilJeKwhCt": 6.81
+  },
+  "ungueltige_eingaben": {
+   "annahmen": {
+    "ertragKwhJeKwp": 1008,
+    "faktor": 0.75,
+    "maxQuote": 0.4,
+    "nutzungsgrad": 0.708,
+    "verhaeltnis": 0.7
+   },
+   "bezugKwh": 1302,
+   "co2Kg": 846,
+   "eingabe": {
+    "deckung": "ausgewogen",
+    "jahr": 2026,
+    "modell": "eeg_lokal",
+    "profil": "haushalt",
+    "rolle": "verbraucher"
+   },
+   "eingebrachtKwh": 0,
+   "erzeugungKwh": 0,
+   "gebuehrenEur": 20,
+   "hinweise": [
+    {
+     "id": "luecke",
+     "text": "Okt.–Dez. 2026: Ob die reduzierten Netzentgelte nach SNE-V 2018 im Übergang weiter gelten, wird unterschiedlich dargestellt – maßgeblich ist Ihre Netzrechnung (zu bestätigen)."
+    }
+   ],
+   "nettoEur": 68.63,
+   "nutzungsgradPct": 70.8,
+   "quotePct": 37.2,
+   "regel": {
+    "abgabenBefreit": true,
+    "quelle": "SNE-V 2018 § 5 Abs. 1a (EEG lokal, NE 6/7)",
+    "reduktionPct": 57,
+    "status": "gesichert",
+    "text": "−57 % Netznutzungs-Arbeitspreis"
+   },
+   "teile": [
+    {
+     "ct": 2,
+     "eur": 26.03,
+     "id": "energie",
+     "label": "Günstigerer Energiepreis"
+    },
+    {
+     "ct": 3.99,
+     "eur": 51.93,
+     "id": "netz",
+     "label": "Reduziertes Netzentgelt (−57 % Arbeitspreis)"
+    },
+    {
+     "ct": 0.82,
+     "eur": 10.67,
+     "id": "abgaben",
+     "label": "Elektrizitätsabgabe entfällt"
+    }
+   ],
+   "vorteilEur": 88.63,
+   "vorteilJeKwhCt": 6.81
+  }
+ }
+}

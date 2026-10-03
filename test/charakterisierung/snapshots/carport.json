@@ -1,0 +1,2820 @@
+{
+ "rechner": "carport",
+ "modul": "src/lib/rechner/carport.js",
+ "faelle": {
+  "standard": {
+   "co2Tonnen": 103.7322,
+   "contracting": {
+    "ersparnisJahr1": 1896.02685322,
+    "invest": 70000,
+    "jahre": [
+     {
+      "ersparnis": 1896.02685322,
+      "imVertrag": true,
+      "jahr": 1,
+      "kumuliert": -68103.9731468
+     },
+     {
+      "ersparnis": 2333.5017602,
+      "imVertrag": true,
+      "jahr": 2,
+      "kumuliert": -65770.4713866
+     },
+     {
+      "ersparnis": 2776.31210707,
+      "imVertrag": true,
+      "jahr": 3,
+      "kumuliert": -62994.1592795
+     },
+     {
+      "ersparnis": 3224.54935067,
+      "imVertrag": true,
+      "jahr": 4,
+      "kumuliert": -59769.6099288
+     },
+     {
+      "ersparnis": 3678.30637776,
+      "imVertrag": true,
+      "jahr": 5,
+      "kumuliert": -56091.3035511
+     },
+     {
+      "ersparnis": 4137.67752792,
+      "imVertrag": true,
+      "jahr": 6,
+      "kumuliert": -51953.6260232
+     },
+     {
+      "ersparnis": 4602.75861674,
+      "imVertrag": true,
+      "jahr": 7,
+      "kumuliert": -47350.8674064
+     },
+     {
+      "ersparnis": 5073.64695944,
+      "imVertrag": true,
+      "jahr": 8,
+      "kumuliert": -42277.220447
+     },
+     {
+      "ersparnis": 5550.44139486,
+      "imVertrag": true,
+      "jahr": 9,
+      "kumuliert": -36726.7790521
+     },
+     {
+      "ersparnis": 6033.24230978,
+      "imVertrag": true,
+      "jahr": 10,
+      "kumuliert": -30693.5367423
+     },
+     {
+      "ersparnis": 6522.15166372,
+      "imVertrag": true,
+      "jahr": 11,
+      "kumuliert": -24171.3850786
+     },
+     {
+      "ersparnis": 7017.27301403,
+      "imVertrag": true,
+      "jahr": 12,
+      "kumuliert": -17154.1120646
+     },
+     {
+      "ersparnis": 7518.71154145,
+      "imVertrag": true,
+      "jahr": 13,
+      "kumuliert": -9635.40052313
+     },
+     {
+      "ersparnis": 8026.57407607,
+      "imVertrag": true,
+      "jahr": 14,
+      "kumuliert": -1608.82644706
+     },
+     {
+      "ersparnis": 8540.96912365,
+      "imVertrag": true,
+      "jahr": 15,
+      "kumuliert": 6932.14267659
+     },
+     {
+      "ersparnis": 9062.00689243,
+      "imVertrag": true,
+      "jahr": 16,
+      "kumuliert": 15994.149569
+     },
+     {
+      "ersparnis": 9589.79932033,
+      "imVertrag": true,
+      "jahr": 17,
+      "kumuliert": 25583.9488893
+     },
+     {
+      "ersparnis": 10124.4601026,
+      "imVertrag": true,
+      "jahr": 18,
+      "kumuliert": 35708.4089919
+     },
+     {
+      "ersparnis": 10666.1047198,
+      "imVertrag": true,
+      "jahr": 19,
+      "kumuliert": 46374.5137117
+     },
+     {
+      "ersparnis": 11214.8504664,
+      "imVertrag": true,
+      "jahr": 20,
+      "kumuliert": 57589.3641781
+     },
+     {
+      "ersparnis": 28932.5151894,
+      "imVertrag": false,
+      "jahr": 21,
+      "kumuliert": 86521.8793675
+     },
+     {
+      "ersparnis": 29343.7248789,
+      "imVertrag": false,
+      "jahr": 22,
+      "kumuliert": 115865.604246
+     },
+     {
+      "ersparnis": 29761.3381311,
+      "imVertrag": false,
+      "jahr": 23,
+      "kumuliert": 145626.942378
+     },
+     {
+      "ersparnis": 30185.4506529,
+      "imVertrag": false,
+      "jahr": 24,
+      "kumuliert": 175812.39303
+     },
+     {
+      "ersparnis": 30616.1595632,
+      "imVertrag": false,
+      "jahr": 25,
+      "kumuliert": 206428.552594
+     }
+    ],
+    "lohntSich": true,
+    "preisCt": 18.3027484583,
+    "ueberschuss": 206428.552594
+   },
+   "eigenKwh": 111711.6,
+   "eingabe": {
+    "ac": 10,
+    "capexKwp": 1350,
+    "dc": 1,
+    "eigenverbrauch": 0.7,
+    "regionId": "de-sued",
+    "stellplaetze": 60,
+    "strompreisCt": 20
+   },
+   "ertrag": 159588,
+   "flaecheM2": 1500,
+   "invest": {
+    "laden": 70000,
+    "pv": 210600,
+    "summe": 280600
+   },
+   "kapitalkosten": 0.05,
+   "kauf": {
+    "amortisation": 11.8677732538,
+    "einspeisungJahr1": 1915.056,
+    "ersparnisJahr1": 22342.32,
+    "jahre": [
+     {
+      "cf": 21917.376,
+      "einspeisung": 1915.056,
+      "ersparnis": 22342.32,
+      "jahr": 1,
+      "kosten": 2340,
+      "kumuliert": -258682.624
+     },
+     {
+      "cf": 22218.6055104,
+      "einspeisung": 1907.395776,
+      "ersparnis": 22698.0097344,
+      "jahr": 2,
+      "kosten": 2386.8,
+      "kumuliert": -236464.01849
+     },
+     {
+      "cf": 22524.5922423,
+      "einspeisung": 1899.7661929,
+      "ersparnis": 23059.3620494,
+      "jahr": 3,
+      "kosten": 2434.536,
+      "kumuliert": -213939.426247
+     },
+     {
+      "cf": 22835.4075013,
+      "einspeisung": 1892.16712812,
+      "ersparnis": 23426.4670932,
+      "jahr": 4,
+      "kosten": 2483.22672,
+      "kumuliert": -191104.018746
+     },
+     {
+      "cf": 23151.1236545,
+      "einspeisung": 1884.59845961,
+      "ersparnis": 23799.4164493,
+      "jahr": 5,
+      "kosten": 2532.8912544,
+      "kumuliert": -167952.895091
+     },
+     {
+      "cf": 23471.8141455,
+      "einspeisung": 1877.06006577,
+      "ersparnis": 24178.3031592,
+      "jahr": 6,
+      "kosten": 2583.54907949,
+      "kumuliert": -144481.080946
+     },
+     {
+      "cf": 23797.5535099,
+      "einspeisung": 1869.55182551,
+      "ersparnis": 24563.2217455,
+      "jahr": 7,
+      "kosten": 2635.22006108,
+      "kumuliert": -120683.527436
+     },
+     {
+      "cf": 24128.4173916,
+      "einspeisung": 1862.07361821,
+      "ersparnis": 24954.2682357,
+      "jahr": 8,
+      "kosten": 2687.9244623,
+      "kumuliert": -96555.1100445
+     },
+     {
+      "cf": 24464.4825582,
+      "einspeisung": 1854.62532374,
+      "ersparnis": 25351.540186,
+      "jahr": 9,
+      "kosten": 2741.68295155,
+      "kumuliert": -72090.6274863
+     },
+     {
+      "cf": 24805.8269176,
+      "einspeisung": 1847.20682244,
+      "ersparnis": 25755.1367058,
+      "jahr": 10,
+      "kosten": 2796.51661058,
+      "kumuliert": -47284.8005687
+     },
+     {
+      "cf": 25152.5295345,
+      "einspeisung": 1839.81799515,
+      "ersparnis": 26165.1584821,
+      "jahr": 11,
+      "kosten": 2852.44694279,
+      "kumuliert": -22132.2710342
+     },
+     {
+      "cf": 25504.6706467,
+      "einspeisung": 1832.45872317,
+      "ersparnis": 26581.7078051,
+      "jahr": 12,
+      "kosten": 2909.49588164,
+      "kumuliert": 3372.39961244
+     },
+     {
+      "cf": 25862.3316824,
+      "einspeisung": 1825.12888828,
+      "ersparnis": 27004.8885934,
+      "jahr": 13,
+      "kosten": 2967.68579928,
+      "kumuliert": 29234.7312948
+     },
+     {
+      "cf": 26225.5952773,
+      "einspeisung": 1817.82837272,
+      "ersparnis": 27434.8064198,
+      "jahr": 14,
+      "kosten": 3027.03951526,
+      "kumuliert": 55460.3265721
+     },
+     {
+      "cf": 26594.5452917,
+      "einspeisung": 1810.55705923,
+      "ersparnis": 27871.568538,
+      "jahr": 15,
+      "kosten": 3087.58030557,
+      "kumuliert": 82054.8718638
+     },
+     {
+      "cf": 26969.2668285,
+      "einspeisung": 1803.314831,
+      "ersparnis": 28315.2839091,
+      "jahr": 16,
+      "kosten": 3149.33191168,
+      "kumuliert": 109024.138692
+     },
+     {
+      "cf": 27349.8462507,
+      "einspeisung": 1796.10157167,
+      "ersparnis": 28766.063229,
+      "jahr": 17,
+      "kosten": 3212.31854991,
+      "kumuliert": 136373.984943
+     },
+     {
+      "cf": 27736.3712,
+      "einspeisung": 1788.91716539,
+      "ersparnis": 29224.0189556,
+      "jahr": 18,
+      "kosten": 3276.56492091,
+      "kumuliert": 164110.356143
+     },
+     {
+      "cf": 28128.9306147,
+      "einspeisung": 1781.76149672,
+      "ersparnis": 29689.2653373,
+      "jahr": 19,
+      "kosten": 3342.09621933,
+      "kumuliert": 192239.286758
+     },
+     {
+      "cf": 28527.6147485,
+      "einspeisung": 1774.63445074,
+      "ersparnis": 30161.9184415,
+      "jahr": 20,
+      "kosten": 3408.93814372,
+      "kumuliert": 220766.901506
+     },
+     {
+      "cf": 28932.5151894,
+      "einspeisung": 1767.53591293,
+      "ersparnis": 30642.0961831,
+      "jahr": 21,
+      "kosten": 3477.11690659,
+      "kumuliert": 249699.416696
+     },
+     {
+      "cf": 29343.7248789,
+      "einspeisung": 1760.46576928,
+      "ersparnis": 31129.9183543,
+      "jahr": 22,
+      "kosten": 3546.65924472,
+      "kumuliert": 279043.141575
+     },
+     {
+      "cf": 29761.3381311,
+      "einspeisung": 1753.42390621,
+      "ersparnis": 31625.5066545,
+      "jahr": 23,
+      "kosten": 3617.59242962,
+      "kumuliert": 308804.479706
+     },
+     {
+      "cf": 30185.4506529,
+      "einspeisung": 1746.41021058,
+      "ersparnis": 32128.9847205,
+      "jahr": 24,
+      "kosten": 3689.94427821,
+      "kumuliert": 338989.930359
+     },
+     {
+      "cf": 30616.1595632,
+      "einspeisung": 1739.42456974,
+      "ersparnis": 32640.4781572,
+      "jahr": 25,
+      "kosten": 3763.74316377,
+      "kumuliert": 369606.089922
+     }
+    ],
+    "nettoJahr1": 21917.376,
+    "ueberschuss": 369606.089922
+   },
+   "kwp": 156,
+   "ladeleistungKw": 210,
+   "lcoeCt": 11.5739930218,
+   "opexPv": 2340,
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "spez": 1023,
+   "ueberschussKwh": 47876.4
+  },
+  "gross_300": {
+   "co2Tonnen": 518.661,
+   "contracting": {
+    "ersparnisJahr1": 9480.13426608,
+    "invest": 280000,
+    "jahre": [
+     {
+      "ersparnis": 9480.13426608,
+      "imVertrag": true,
+      "jahr": 1,
+      "kumuliert": -270519.865734
+     },
+     {
+      "ersparnis": 11667.508801,
+      "imVertrag": true,
+      "jahr": 2,
+      "kumuliert": -258852.356933
+     },
+     {
+      "ersparnis": 13881.5605354,
+      "imVertrag": true,
+      "jahr": 3,
+      "kumuliert": -244970.796398
+     },
+     {
+      "ersparnis": 16122.7467533,
+      "imVertrag": true,
+      "jahr": 4,
+      "kumuliert": -228848.049644
+     },
+     {
+      "ersparnis": 18391.5318888,
+      "imVertrag": true,
+      "jahr": 5,
+      "kumuliert": -210456.517755
+     },
+     {
+      "ersparnis": 20688.3876396,
+      "imVertrag": true,
+      "jahr": 6,
+      "kumuliert": -189768.130116
+     },
+     {
+      "ersparnis": 23013.7930837,
+      "imVertrag": true,
+      "jahr": 7,
+      "kumuliert": -166754.337032
+     },
+     {
+      "ersparnis": 25368.2347972,
+      "imVertrag": true,
+      "jahr": 8,
+      "kumuliert": -141386.102235
+     },
+     {
+      "ersparnis": 27752.2069743,
+      "imVertrag": true,
+      "jahr": 9,
+      "kumuliert": -113633.895261
+     },
+     {
+      "ersparnis": 30166.2115489,
+      "imVertrag": true,
+      "jahr": 10,
+      "kumuliert": -83467.6837117
+     },
+     {
+      "ersparnis": 32610.7583186,
+      "imVertrag": true,
+      "jahr": 11,
+      "kumuliert": -50856.9253931
+     },
+     {
+      "ersparnis": 35086.3650702,
+      "imVertrag": true,
+      "jahr": 12,
+      "kumuliert": -15770.5603229
+     },
+     {
+      "ersparnis": 37593.5577073,
+      "imVertrag": true,
+      "jahr": 13,
+      "kumuliert": 21822.9973844
+     },
+     {
+      "ersparnis": 40132.8703803,
+      "imVertrag": true,
+      "jahr": 14,
+      "kumuliert": 61955.8677647
+     },
+     {
+      "ersparnis": 42704.8456182,
+      "imVertrag": true,
+      "jahr": 15,
+      "kumuliert": 104660.713383
+     },
+     {
+      "ersparnis": 45310.0344622,
+      "imVertrag": true,
+      "jahr": 16,
+      "kumuliert": 149970.747845
+     },
+     {
+      "ersparnis": 47948.9966017,
+      "imVertrag": true,
+      "jahr": 17,
+      "kumuliert": 197919.744447
+     },
+     {
+      "ersparnis": 50622.3005129,
+      "imVertrag": true,
+      "jahr": 18,
+      "kumuliert": 248542.04496
+     },
+     {
+      "ersparnis": 53330.5235988,
+      "imVertrag": true,
+      "jahr": 19,
+      "kumuliert": 301872.568558
+     },
+     {
+      "ersparnis": 56074.252332,
+      "imVertrag": true,
+      "jahr": 20,
+      "kumuliert": 357946.82089
+     },
+     {
+      "ersparnis": 144662.575947,
+      "imVertrag": false,
+      "jahr": 21,
+      "kumuliert": 502609.396838
+     },
+     {
+      "ersparnis": 146718.624395,
+      "imVertrag": false,
+      "jahr": 22,
+      "kumuliert": 649328.021232
+     },
+     {
+      "ersparnis": 148806.690656,
+      "imVertrag": false,
+      "jahr": 23,
+      "kumuliert": 798134.711888
+     },
+     {
+      "ersparnis": 150927.253264,
+      "imVertrag": false,
+      "jahr": 24,
+      "kumuliert": 949061.965152
+     },
+     {
+      "ersparnis": 153080.797816,
+      "imVertrag": false,
+      "jahr": 25,
+      "kumuliert": 1102142.76297
+     }
+    ],
+    "lohntSich": true,
+    "preisCt": 18.3027484583,
+    "ueberschuss": 1102142.76297
+   },
+   "eigenKwh": 558558,
+   "eingabe": {
+    "ac": 40,
+    "capexKwp": 1350,
+    "dc": 4,
+    "eigenverbrauch": 0.7,
+    "regionId": "de-sued",
+    "stellplaetze": 300,
+    "strompreisCt": 20
+   },
+   "ertrag": 797940,
+   "flaecheM2": 7500,
+   "invest": {
+    "laden": 280000,
+    "pv": 1053000,
+    "summe": 1333000
+   },
+   "kapitalkosten": 0.05,
+   "kauf": {
+    "amortisation": 11.3188541874,
+    "einspeisungJahr1": 9575.28,
+    "ersparnisJahr1": 111711.6,
+    "jahre": [
+     {
+      "cf": 109586.88,
+      "einspeisung": 9575.28,
+      "ersparnis": 111711.6,
+      "jahr": 1,
+      "kosten": 11700,
+      "kumuliert": -1223413.12
+     },
+     {
+      "cf": 111093.027552,
+      "einspeisung": 9536.97888,
+      "ersparnis": 113490.048672,
+      "jahr": 2,
+      "kosten": 11934,
+      "kumuliert": -1112320.09245
+     },
+     {
+      "cf": 112622.961211,
+      "einspeisung": 9498.83096448,
+      "ersparnis": 115296.810247,
+      "jahr": 3,
+      "kosten": 12172.68,
+      "kumuliert": -999697.131237
+     },
+     {
+      "cf": 114177.037507,
+      "einspeisung": 9460.83564062,
+      "ersparnis": 117132.335466,
+      "jahr": 4,
+      "kosten": 12416.1336,
+      "kumuliert": -885520.09373
+     },
+     {
+      "cf": 115755.618273,
+      "einspeisung": 9422.99229806,
+      "ersparnis": 118997.082247,
+      "jahr": 5,
+      "kosten": 12664.456272,
+      "kumuliert": -769764.475457
+     },
+     {
+      "cf": 117359.070727,
+      "einspeisung": 9385.30032887,
+      "ersparnis": 120891.515796,
+      "jahr": 6,
+      "kosten": 12917.7453974,
+      "kumuliert": -652405.40473
+     },
+     {
+      "cf": 118987.76755,
+      "einspeisung": 9347.75912755,
+      "ersparnis": 122816.108727,
+      "jahr": 7,
+      "kosten": 13176.1003054,
+      "kumuliert": -533417.63718
+     },
+     {
+      "cf": 120642.086958,
+      "einspeisung": 9310.36809104,
+      "ersparnis": 124771.341178,
+      "jahr": 8,
+      "kosten": 13439.6223115,
+      "kumuliert": -412775.550222
+     },
+     {
+      "cf": 122322.412791,
+      "einspeisung": 9273.12661868,
+      "ersparnis": 126757.70093,
+      "jahr": 9,
+      "kosten": 13708.4147577,
+      "kumuliert": -290453.137432
+     },
+     {
+      "cf": 124029.134588,
+      "einspeisung": 9236.0341122,
+      "ersparnis": 128775.683529,
+      "jahr": 10,
+      "kosten": 13982.5830529,
+      "kumuliert": -166424.002843
+     },
+     {
+      "cf": 125762.647672,
+      "einspeisung": 9199.08997575,
+      "ersparnis": 130825.792411,
+      "jahr": 11,
+      "kosten": 14262.2347139,
+      "kumuliert": -40661.3551711
+     },
+     {
+      "cf": 127523.353233,
+      "einspeisung": 9162.29361585,
+      "ersparnis": 132908.539026,
+      "jahr": 12,
+      "kosten": 14547.4794082,
+      "kumuliert": 86861.9980622
+     },
+     {
+      "cf": 129311.658412,
+      "einspeisung": 9125.64444139,
+      "ersparnis": 135024.442967,
+      "jahr": 13,
+      "kosten": 14838.4289964,
+      "kumuliert": 216173.656474
+     },
+     {
+      "cf": 131127.976386,
+      "einspeisung": 9089.14186362,
+      "ersparnis": 137174.032099,
+      "jahr": 14,
+      "kosten": 15135.1975763,
+      "kumuliert": 347301.632861
+     },
+     {
+      "cf": 132972.726458,
+      "einspeisung": 9052.78529617,
+      "ersparnis": 139357.84269,
+      "jahr": 15,
+      "kosten": 15437.9015278,
+      "kumuliert": 480274.359319
+     },
+     {
+      "cf": 134846.334142,
+      "einspeisung": 9016.57415498,
+      "ersparnis": 141576.419546,
+      "jahr": 16,
+      "kosten": 15746.6595584,
+      "kumuliert": 615120.693461
+     },
+     {
+      "cf": 136749.231254,
+      "einspeisung": 8980.50785836,
+      "ersparnis": 143830.316145,
+      "jahr": 17,
+      "kosten": 16061.5927496,
+      "kumuliert": 751869.924715
+     },
+     {
+      "cf": 138681.856,
+      "einspeisung": 8944.58582693,
+      "ersparnis": 146120.094778,
+      "jahr": 18,
+      "kosten": 16382.8246046,
+      "kumuliert": 890551.780715
+     },
+     {
+      "cf": 140644.653074,
+      "einspeisung": 8908.80748362,
+      "ersparnis": 148446.326687,
+      "jahr": 19,
+      "kosten": 16710.4810966,
+      "kumuliert": 1031196.43379
+     },
+     {
+      "cf": 142638.073743,
+      "einspeisung": 8873.17225369,
+      "ersparnis": 150809.592208,
+      "jahr": 20,
+      "kosten": 17044.6907186,
+      "kumuliert": 1173834.50753
+     },
+     {
+      "cf": 144662.575947,
+      "einspeisung": 8837.67956467,
+      "ersparnis": 153210.480916,
+      "jahr": 21,
+      "kosten": 17385.5845329,
+      "kumuliert": 1318497.08348
+     },
+     {
+      "cf": 146718.624395,
+      "einspeisung": 8802.32884641,
+      "ersparnis": 155649.591772,
+      "jahr": 22,
+      "kosten": 17733.2962236,
+      "kumuliert": 1465215.70787
+     },
+     {
+      "cf": 148806.690656,
+      "einspeisung": 8767.11953103,
+      "ersparnis": 158127.533273,
+      "jahr": 23,
+      "kosten": 18087.9621481,
+      "kumuliert": 1614022.39853
+     },
+     {
+      "cf": 150927.253264,
+      "einspeisung": 8732.0510529,
+      "ersparnis": 160644.923602,
+      "jahr": 24,
+      "kosten": 18449.721391,
+      "kumuliert": 1764949.65179
+     },
+     {
+      "cf": 153080.797816,
+      "einspeisung": 8697.12284869,
+      "ersparnis": 163202.390786,
+      "jahr": 25,
+      "kosten": 18818.7158189,
+      "kumuliert": 1918030.44961
+     }
+    ],
+    "nettoJahr1": 109586.88,
+    "ueberschuss": 1918030.44961
+   },
+   "kwp": 780,
+   "ladeleistungKw": 840,
+   "lcoeCt": 11.5739930218,
+   "opexPv": 11700,
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "spez": 1023,
+   "ueberschussKwh": 239382
+  },
+  "ohne_laden": {
+   "co2Tonnen": 103.7322,
+   "contracting": {
+    "ersparnisJahr1": 1896.02685322,
+    "invest": 0,
+    "jahre": [
+     {
+      "ersparnis": 1896.02685322,
+      "imVertrag": true,
+      "jahr": 1,
+      "kumuliert": 1896.02685322
+     },
+     {
+      "ersparnis": 2333.5017602,
+      "imVertrag": true,
+      "jahr": 2,
+      "kumuliert": 4229.52861342
+     },
+     {
+      "ersparnis": 2776.31210707,
+      "imVertrag": true,
+      "jahr": 3,
+      "kumuliert": 7005.84072049
+     },
+     {
+      "ersparnis": 3224.54935067,
+      "imVertrag": true,
+      "jahr": 4,
+      "kumuliert": 10230.3900712
+     },
+     {
+      "ersparnis": 3678.30637776,
+      "imVertrag": true,
+      "jahr": 5,
+      "kumuliert": 13908.6964489
+     },
+     {
+      "ersparnis": 4137.67752792,
+      "imVertrag": true,
+      "jahr": 6,
+      "kumuliert": 18046.3739768
+     },
+     {
+      "ersparnis": 4602.75861674,
+      "imVertrag": true,
+      "jahr": 7,
+      "kumuliert": 22649.1325936
+     },
+     {
+      "ersparnis": 5073.64695944,
+      "imVertrag": true,
+      "jahr": 8,
+      "kumuliert": 27722.779553
+     },
+     {
+      "ersparnis": 5550.44139486,
+      "imVertrag": true,
+      "jahr": 9,
+      "kumuliert": 33273.2209479
+     },
+     {
+      "ersparnis": 6033.24230978,
+      "imVertrag": true,
+      "jahr": 10,
+      "kumuliert": 39306.4632577
+     },
+     {
+      "ersparnis": 6522.15166372,
+      "imVertrag": true,
+      "jahr": 11,
+      "kumuliert": 45828.6149214
+     },
+     {
+      "ersparnis": 7017.27301403,
+      "imVertrag": true,
+      "jahr": 12,
+      "kumuliert": 52845.8879354
+     },
+     {
+      "ersparnis": 7518.71154145,
+      "imVertrag": true,
+      "jahr": 13,
+      "kumuliert": 60364.5994769
+     },
+     {
+      "ersparnis": 8026.57407607,
+      "imVertrag": true,
+      "jahr": 14,
+      "kumuliert": 68391.1735529
+     },
+     {
+      "ersparnis": 8540.96912365,
+      "imVertrag": true,
+      "jahr": 15,
+      "kumuliert": 76932.1426766
+     },
+     {
+      "ersparnis": 9062.00689243,
+      "imVertrag": true,
+      "jahr": 16,
+      "kumuliert": 85994.149569
+     },
+     {
+      "ersparnis": 9589.79932033,
+      "imVertrag": true,
+      "jahr": 17,
+      "kumuliert": 95583.9488893
+     },
+     {
+      "ersparnis": 10124.4601026,
+      "imVertrag": true,
+      "jahr": 18,
+      "kumuliert": 105708.408992
+     },
+     {
+      "ersparnis": 10666.1047198,
+      "imVertrag": true,
+      "jahr": 19,
+      "kumuliert": 116374.513712
+     },
+     {
+      "ersparnis": 11214.8504664,
+      "imVertrag": true,
+      "jahr": 20,
+      "kumuliert": 127589.364178
+     },
+     {
+      "ersparnis": 28932.5151894,
+      "imVertrag": false,
+      "jahr": 21,
+      "kumuliert": 156521.879368
+     },
+     {
+      "ersparnis": 29343.7248789,
+      "imVertrag": false,
+      "jahr": 22,
+      "kumuliert": 185865.604246
+     },
+     {
+      "ersparnis": 29761.3381311,
+      "imVertrag": false,
+      "jahr": 23,
+      "kumuliert": 215626.942378
+     },
+     {
+      "ersparnis": 30185.4506529,
+      "imVertrag": false,
+      "jahr": 24,
+      "kumuliert": 245812.39303
+     },
+     {
+      "ersparnis": 30616.1595632,
+      "imVertrag": false,
+      "jahr": 25,
+      "kumuliert": 276428.552594
+     }
+    ],
+    "lohntSich": true,
+    "preisCt": 18.3027484583,
+    "ueberschuss": 276428.552594
+   },
+   "eigenKwh": 111711.6,
+   "eingabe": {
+    "ac": 0,
+    "capexKwp": 1350,
+    "dc": 0,
+    "eigenverbrauch": 0.7,
+    "regionId": "de-sued",
+    "stellplaetze": 60,
+    "strompreisCt": 20
+   },
+   "ertrag": 159588,
+   "flaecheM2": 1500,
+   "invest": {
+    "laden": 0,
+    "pv": 210600,
+    "summe": 210600
+   },
+   "kapitalkosten": 0.05,
+   "kauf": {
+    "amortisation": 9.08427969337,
+    "einspeisungJahr1": 1915.056,
+    "ersparnisJahr1": 22342.32,
+    "jahre": [
+     {
+      "cf": 21917.376,
+      "einspeisung": 1915.056,
+      "ersparnis": 22342.32,
+      "jahr": 1,
+      "kosten": 2340,
+      "kumuliert": -188682.624
+     },
+     {
+      "cf": 22218.6055104,
+      "einspeisung": 1907.395776,
+      "ersparnis": 22698.0097344,
+      "jahr": 2,
+      "kosten": 2386.8,
+      "kumuliert": -166464.01849
+     },
+     {
+      "cf": 22524.5922423,
+      "einspeisung": 1899.7661929,
+      "ersparnis": 23059.3620494,
+      "jahr": 3,
+      "kosten": 2434.536,
+      "kumuliert": -143939.426247
+     },
+     {
+      "cf": 22835.4075013,
+      "einspeisung": 1892.16712812,
+      "ersparnis": 23426.4670932,
+      "jahr": 4,
+      "kosten": 2483.22672,
+      "kumuliert": -121104.018746
+     },
+     {
+      "cf": 23151.1236545,
+      "einspeisung": 1884.59845961,
+      "ersparnis": 23799.4164493,
+      "jahr": 5,
+      "kosten": 2532.8912544,
+      "kumuliert": -97952.8950915
+     },
+     {
+      "cf": 23471.8141455,
+      "einspeisung": 1877.06006577,
+      "ersparnis": 24178.3031592,
+      "jahr": 6,
+      "kosten": 2583.54907949,
+      "kumuliert": -74481.080946
+     },
+     {
+      "cf": 23797.5535099,
+      "einspeisung": 1869.55182551,
+      "ersparnis": 24563.2217455,
+      "jahr": 7,
+      "kosten": 2635.22006108,
+      "kumuliert": -50683.5274361
+     },
+     {
+      "cf": 24128.4173916,
+      "einspeisung": 1862.07361821,
+      "ersparnis": 24954.2682357,
+      "jahr": 8,
+      "kosten": 2687.9244623,
+      "kumuliert": -26555.1100445
+     },
+     {
+      "cf": 24464.4825582,
+      "einspeisung": 1854.62532374,
+      "ersparnis": 25351.540186,
+      "jahr": 9,
+      "kosten": 2741.68295155,
+      "kumuliert": -2090.62748631
+     },
+     {
+      "cf": 24805.8269176,
+      "einspeisung": 1847.20682244,
+      "ersparnis": 25755.1367058,
+      "jahr": 10,
+      "kosten": 2796.51661058,
+      "kumuliert": 22715.1994313
+     },
+     {
+      "cf": 25152.5295345,
+      "einspeisung": 1839.81799515,
+      "ersparnis": 26165.1584821,
+      "jahr": 11,
+      "kosten": 2852.44694279,
+      "kumuliert": 47867.7289658
+     },
+     {
+      "cf": 25504.6706467,
+      "einspeisung": 1832.45872317,
+      "ersparnis": 26581.7078051,
+      "jahr": 12,
+      "kosten": 2909.49588164,
+      "kumuliert": 73372.3996124
+     },
+     {
+      "cf": 25862.3316824,
+      "einspeisung": 1825.12888828,
+      "ersparnis": 27004.8885934,
+      "jahr": 13,
+      "kosten": 2967.68579928,
+      "kumuliert": 99234.7312948
+     },
+     {
+      "cf": 26225.5952773,
+      "einspeisung": 1817.82837272,
+      "ersparnis": 27434.8064198,
+      "jahr": 14,
+      "kosten": 3027.03951526,
+      "kumuliert": 125460.326572
+     },
+     {
+      "cf": 26594.5452917,
+      "einspeisung": 1810.55705923,
+      "ersparnis": 27871.568538,
+      "jahr": 15,
+      "kosten": 3087.58030557,
+      "kumuliert": 152054.871864
+     },
+     {
+      "cf": 26969.2668285,
+      "einspeisung": 1803.314831,
+      "ersparnis": 28315.2839091,
+      "jahr": 16,
+      "kosten": 3149.33191168,
+      "kumuliert": 179024.138692
+     },
+     {
+      "cf": 27349.8462507,
+      "einspeisung": 1796.10157167,
+      "ersparnis": 28766.063229,
+      "jahr": 17,
+      "kosten": 3212.31854991,
+      "kumuliert": 206373.984943
+     },
+     {
+      "cf": 27736.3712,
+      "einspeisung": 1788.91716539,
+      "ersparnis": 29224.0189556,
+      "jahr": 18,
+      "kosten": 3276.56492091,
+      "kumuliert": 234110.356143
+     },
+     {
+      "cf": 28128.9306147,
+      "einspeisung": 1781.76149672,
+      "ersparnis": 29689.2653373,
+      "jahr": 19,
+      "kosten": 3342.09621933,
+      "kumuliert": 262239.286758
+     },
+     {
+      "cf": 28527.6147485,
+      "einspeisung": 1774.63445074,
+      "ersparnis": 30161.9184415,
+      "jahr": 20,
+      "kosten": 3408.93814372,
+      "kumuliert": 290766.901506
+     },
+     {
+      "cf": 28932.5151894,
+      "einspeisung": 1767.53591293,
+      "ersparnis": 30642.0961831,
+      "jahr": 21,
+      "kosten": 3477.11690659,
+      "kumuliert": 319699.416696
+     },
+     {
+      "cf": 29343.7248789,
+      "einspeisung": 1760.46576928,
+      "ersparnis": 31129.9183543,
+      "jahr": 22,
+      "kosten": 3546.65924472,
+      "kumuliert": 349043.141575
+     },
+     {
+      "cf": 29761.3381311,
+      "einspeisung": 1753.42390621,
+      "ersparnis": 31625.5066545,
+      "jahr": 23,
+      "kosten": 3617.59242962,
+      "kumuliert": 378804.479706
+     },
+     {
+      "cf": 30185.4506529,
+      "einspeisung": 1746.41021058,
+      "ersparnis": 32128.9847205,
+      "jahr": 24,
+      "kosten": 3689.94427821,
+      "kumuliert": 408989.930359
+     },
+     {
+      "cf": 30616.1595632,
+      "einspeisung": 1739.42456974,
+      "ersparnis": 32640.4781572,
+      "jahr": 25,
+      "kosten": 3763.74316377,
+      "kumuliert": 439606.089922
+     }
+    ],
+    "nettoJahr1": 21917.376,
+    "ueberschuss": 439606.089922
+   },
+   "kwp": 156,
+   "ladeleistungKw": 0,
+   "lcoeCt": 11.5739930218,
+   "opexPv": 2340,
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "spez": 1023,
+   "ueberschussKwh": 47876.4
+  },
+  "wenig_eigenverbrauch_nord": {
+   "co2Tonnen": 90.52992,
+   "contracting": {
+    "ersparnisJahr1": -12079.2393868,
+    "invest": 70000,
+    "jahre": [
+     {
+      "ersparnis": -12079.2393868,
+      "imVertrag": true,
+      "jahr": 1,
+      "kumuliert": -82079.2393868
+     },
+     {
+      "ersparnis": -11919.946675,
+      "imVertrag": true,
+      "jahr": 2,
+      "kumuliert": -93999.1860618
+     },
+     {
+      "ersparnis": -11759.5244,
+      "imVertrag": true,
+      "jahr": 3,
+      "kumuliert": -105758.710462
+     },
+     {
+      "ersparnis": -11597.9489538,
+      "imVertrag": true,
+      "jahr": 4,
+      "kumuliert": -117356.659416
+     },
+     {
+      "ersparnis": -11435.1963747,
+      "imVertrag": true,
+      "jahr": 5,
+      "kumuliert": -128791.85579
+     },
+     {
+      "ersparnis": -11271.2423423,
+      "imVertrag": true,
+      "jahr": 6,
+      "kumuliert": -140063.098133
+     },
+     {
+      "ersparnis": -11106.0621711,
+      "imVertrag": true,
+      "jahr": 7,
+      "kumuliert": -151169.160304
+     },
+     {
+      "ersparnis": -10939.630805,
+      "imVertrag": true,
+      "jahr": 8,
+      "kumuliert": -162108.791109
+     },
+     {
+      "ersparnis": -10771.9228111,
+      "imVertrag": true,
+      "jahr": 9,
+      "kumuliert": -172880.71392
+     },
+     {
+      "ersparnis": -10602.9123735,
+      "imVertrag": true,
+      "jahr": 10,
+      "kumuliert": -183483.626293
+     },
+     {
+      "ersparnis": -10432.5732876,
+      "imVertrag": true,
+      "jahr": 11,
+      "kumuliert": -193916.199581
+     },
+     {
+      "ersparnis": -10260.8789532,
+      "imVertrag": true,
+      "jahr": 12,
+      "kumuliert": -204177.078534
+     },
+     {
+      "ersparnis": -10087.8023687,
+      "imVertrag": true,
+      "jahr": 13,
+      "kumuliert": -214264.880903
+     },
+     {
+      "ersparnis": -9913.31612397,
+      "imVertrag": true,
+      "jahr": 14,
+      "kumuliert": -224178.197027
+     },
+     {
+      "ersparnis": -9737.39239451,
+      "imVertrag": true,
+      "jahr": 15,
+      "kumuliert": -233915.589421
+     },
+     {
+      "ersparnis": -9560.00293416,
+      "imVertrag": true,
+      "jahr": 16,
+      "kumuliert": -243475.592355
+     },
+     {
+      "ersparnis": -9381.11906859,
+      "imVertrag": true,
+      "jahr": 17,
+      "kumuliert": -252856.711424
+     },
+     {
+      "ersparnis": -9200.71168833,
+      "imVertrag": true,
+      "jahr": 18,
+      "kumuliert": -262057.423112
+     },
+     {
+      "ersparnis": -9018.75124176,
+      "imVertrag": true,
+      "jahr": 19,
+      "kumuliert": -271076.174354
+     },
+     {
+      "ersparnis": -8835.20772799,
+      "imVertrag": true,
+      "jahr": 20,
+      "kumuliert": -279911.382082
+     },
+     {
+      "ersparnis": 8277.04779878,
+      "imVertrag": false,
+      "jahr": 21,
+      "kumuliert": -271634.334283
+     },
+     {
+      "ersparnis": 8312.69008332,
+      "imVertrag": false,
+      "jahr": 22,
+      "kumuliert": -263321.6442
+     },
+     {
+      "ersparnis": 8348.943827,
+      "imVertrag": false,
+      "jahr": 23,
+      "kumuliert": -254972.700373
+     },
+     {
+      "ersparnis": 8385.81177854,
+      "imVertrag": false,
+      "jahr": 24,
+      "kumuliert": -246586.888594
+     },
+     {
+      "ersparnis": 8423.29662215,
+      "imVertrag": false,
+      "jahr": 25,
+      "kumuliert": -238163.591972
+     }
+    ],
+    "lohntSich": false,
+    "preisCt": 63.3641474631,
+    "ueberschuss": -238163.591972
+   },
+   "eigenKwh": 27855.36,
+   "eingabe": {
+    "ac": 10,
+    "capexKwp": 1350,
+    "dc": 1,
+    "eigenverbrauch": 0.2,
+    "regionId": "de-nord",
+    "stellplaetze": 60,
+    "strompreisCt": 20
+   },
+   "ertrag": 139276.8,
+   "flaecheM2": 1500,
+   "invest": {
+    "laden": 70000,
+    "pv": 210600,
+    "summe": 280600
+   },
+   "kapitalkosten": 0.05,
+   "kauf": {
+    "amortisation": null,
+    "einspeisungJahr1": 4456.8576,
+    "ersparnisJahr1": 5571.072,
+    "jahre": [
+     {
+      "cf": 7687.9296,
+      "einspeisung": 4456.8576,
+      "ersparnis": 5571.072,
+      "jahr": 1,
+      "kosten": 2340,
+      "kumuliert": -272912.0704
+     },
+     {
+      "cf": 7711.99363584,
+      "einspeisung": 4439.0301696,
+      "ersparnis": 5659.76346624,
+      "jahr": 2,
+      "kosten": 2386.8,
+      "kumuliert": -265200.076764
+     },
+     {
+      "cf": 7736.60494954,
+      "einspeisung": 4421.27404892,
+      "ersparnis": 5749.86690062,
+      "jahr": 3,
+      "kosten": 2434.536,
+      "kumuliert": -257463.471815
+     },
+     {
+      "cf": 7761.76701441,
+      "einspeisung": 4403.58895273,
+      "ersparnis": 5841.40478168,
+      "jahr": 4,
+      "kosten": 2483.22672,
+      "kumuliert": -249701.7048
+     },
+     {
+      "cf": 7787.48328832,
+      "einspeisung": 4385.97459692,
+      "ersparnis": 5934.3999458,
+      "jahr": 5,
+      "kosten": 2532.8912544,
+      "kumuliert": -241914.221512
+     },
+     {
+      "cf": 7813.75721198,
+      "einspeisung": 4368.43069853,
+      "ersparnis": 6028.87559294,
+      "jahr": 6,
+      "kosten": 2583.54907949,
+      "kumuliert": -234100.4643
+     },
+     {
+      "cf": 7840.59220704,
+      "einspeisung": 4350.95697573,
+      "ersparnis": 6124.85529238,
+      "jahr": 7,
+      "kosten": 2635.22006108,
+      "kumuliert": -226259.872093
+     },
+     {
+      "cf": 7867.99167417,
+      "einspeisung": 4333.55314783,
+      "ersparnis": 6222.36298864,
+      "jahr": 8,
+      "kosten": 2687.9244623,
+      "kumuliert": -218391.880419
+     },
+     {
+      "cf": 7895.95899111,
+      "einspeisung": 4316.21893524,
+      "ersparnis": 6321.42300742,
+      "jahr": 9,
+      "kosten": 2741.68295155,
+      "kumuliert": -210495.921428
+     },
+     {
+      "cf": 7924.49751062,
+      "einspeisung": 4298.9540595,
+      "ersparnis": 6422.06006169,
+      "jahr": 10,
+      "kosten": 2796.51661058,
+      "kumuliert": -202571.423917
+     },
+     {
+      "cf": 7953.61055835,
+      "einspeisung": 4281.75824326,
+      "ersparnis": 6524.29925788,
+      "jahr": 11,
+      "kosten": 2852.44694279,
+      "kumuliert": -194617.813359
+     },
+     {
+      "cf": 7983.3014307,
+      "einspeisung": 4264.63121029,
+      "ersparnis": 6628.16610206,
+      "jahr": 12,
+      "kosten": 2909.49588164,
+      "kumuliert": -186634.511928
+     },
+     {
+      "cf": 8013.57339258,
+      "einspeisung": 4247.57268545,
+      "ersparnis": 6733.68650641,
+      "jahr": 13,
+      "kosten": 2967.68579928,
+      "kumuliert": -178620.938535
+     },
+     {
+      "cf": 8044.42967503,
+      "einspeisung": 4230.5823947,
+      "ersparnis": 6840.88679559,
+      "jahr": 14,
+      "kosten": 3027.03951526,
+      "kumuliert": -170576.50886
+     },
+     {
+      "cf": 8075.87347293,
+      "einspeisung": 4213.66006513,
+      "ersparnis": 6949.79371337,
+      "jahr": 15,
+      "kosten": 3087.58030557,
+      "kumuliert": -162500.635387
+     },
+     {
+      "cf": 8107.90794248,
+      "einspeisung": 4196.80542486,
+      "ersparnis": 7060.43442929,
+      "jahr": 16,
+      "kosten": 3149.33191168,
+      "kumuliert": -154392.727445
+     },
+     {
+      "cf": 8140.53619866,
+      "einspeisung": 4180.01820317,
+      "ersparnis": 7172.8365454,
+      "jahr": 17,
+      "kosten": 3212.31854991,
+      "kumuliert": -146252.191246
+     },
+     {
+      "cf": 8173.76131265,
+      "einspeisung": 4163.29813035,
+      "ersparnis": 7287.02810321,
+      "jahr": 18,
+      "kosten": 3276.56492091,
+      "kumuliert": -138078.429934
+     },
+     {
+      "cf": 8207.58630911,
+      "einspeisung": 4146.64493783,
+      "ersparnis": 7403.03759061,
+      "jahr": 19,
+      "kosten": 3342.09621933,
+      "kumuliert": -129870.843624
+     },
+     {
+      "cf": 8242.01416342,
+      "einspeisung": 4130.05835808,
+      "ersparnis": 7520.89394905,
+      "jahr": 20,
+      "kosten": 3408.93814372,
+      "kumuliert": -121628.829461
+     },
+     {
+      "cf": 8277.04779878,
+      "einspeisung": 4113.53812465,
+      "ersparnis": 7640.62658072,
+      "jahr": 21,
+      "kosten": 3477.11690659,
+      "kumuliert": -113351.781662
+     },
+     {
+      "cf": 8312.69008332,
+      "einspeisung": 4097.08397215,
+      "ersparnis": 7762.26535589,
+      "jahr": 22,
+      "kosten": 3546.65924472,
+      "kumuliert": -105039.091579
+     },
+     {
+      "cf": 8348.943827,
+      "einspeisung": 4080.69563626,
+      "ersparnis": 7885.84062035,
+      "jahr": 23,
+      "kosten": 3617.59242962,
+      "kumuliert": -96690.147752
+     },
+     {
+      "cf": 8385.81177854,
+      "einspeisung": 4064.37285372,
+      "ersparnis": 8011.38320303,
+      "jahr": 24,
+      "kosten": 3689.94427821,
+      "kumuliert": -88304.3359734
+     },
+     {
+      "cf": 8423.29662215,
+      "einspeisung": 4048.1153623,
+      "ersparnis": 8138.92442362,
+      "jahr": 25,
+      "kosten": 3763.74316377,
+      "kumuliert": -79881.0393513
+     }
+    ],
+    "nettoJahr1": 7687.9296,
+    "ueberschuss": -79881.0393513
+   },
+   "kwp": 156,
+   "ladeleistungKw": 210,
+   "lcoeCt": 13.2618670042,
+   "opexPv": 2340,
+   "region": {
+    "ertrag": 960,
+    "id": "de-nord",
+    "label": "Norddeutschland",
+    "land": "DE",
+    "sub": "SH, HH, NI, HB, MV"
+   },
+   "spez": 892.8,
+   "ueberschussKwh": 111421.44
+  },
+  "klein_10": {
+   "co2Tonnen": 17.2887,
+   "contracting": {
+    "ersparnisJahr1": 316.004475536,
+    "invest": 70000,
+    "jahre": [
+     {
+      "ersparnis": 316.004475536,
+      "imVertrag": true,
+      "jahr": 1,
+      "kumuliert": -69683.9955245
+     },
+     {
+      "ersparnis": 388.916960034,
+      "imVertrag": true,
+      "jahr": 2,
+      "kumuliert": -69295.0785644
+     },
+     {
+      "ersparnis": 462.718684512,
+      "imVertrag": true,
+      "jahr": 3,
+      "kumuliert": -68832.3598799
+     },
+     {
+      "ersparnis": 537.424891778,
+      "imVertrag": true,
+      "jahr": 4,
+      "kumuliert": -68294.9349881
+     },
+     {
+      "ersparnis": 613.05106296,
+      "imVertrag": true,
+      "jahr": 5,
+      "kumuliert": -67681.8839252
+     },
+     {
+      "ersparnis": 689.61292132,
+      "imVertrag": true,
+      "jahr": 6,
+      "kumuliert": -66992.2710039
+     },
+     {
+      "ersparnis": 767.126436123,
+      "imVertrag": true,
+      "jahr": 7,
+      "kumuliert": -66225.1445677
+     },
+     {
+      "ersparnis": 845.607826574,
+      "imVertrag": true,
+      "jahr": 8,
+      "kumuliert": -65379.5367412
+     },
+     {
+      "ersparnis": 925.07356581,
+      "imVertrag": true,
+      "jahr": 9,
+      "kumuliert": -64454.4631754
+     },
+     {
+      "ersparnis": 1005.54038496,
+      "imVertrag": true,
+      "jahr": 10,
+      "kumuliert": -63448.9227904
+     },
+     {
+      "ersparnis": 1087.02527729,
+      "imVertrag": true,
+      "jahr": 11,
+      "kumuliert": -62361.8975131
+     },
+     {
+      "ersparnis": 1169.54550234,
+      "imVertrag": true,
+      "jahr": 12,
+      "kumuliert": -61192.3520108
+     },
+     {
+      "ersparnis": 1253.11859024,
+      "imVertrag": true,
+      "jahr": 13,
+      "kumuliert": -59939.2334205
+     },
+     {
+      "ersparnis": 1337.76234601,
+      "imVertrag": true,
+      "jahr": 14,
+      "kumuliert": -58601.4710745
+     },
+     {
+      "ersparnis": 1423.49485394,
+      "imVertrag": true,
+      "jahr": 15,
+      "kumuliert": -57177.9762206
+     },
+     {
+      "ersparnis": 1510.33448207,
+      "imVertrag": true,
+      "jahr": 16,
+      "kumuliert": -55667.6417385
+     },
+     {
+      "ersparnis": 1598.29988672,
+      "imVertrag": true,
+      "jahr": 17,
+      "kumuliert": -54069.3418518
+     },
+     {
+      "ersparnis": 1687.4100171,
+      "imVertrag": true,
+      "jahr": 18,
+      "kumuliert": -52381.9318347
+     },
+     {
+      "ersparnis": 1777.68411996,
+      "imVertrag": true,
+      "jahr": 19,
+      "kumuliert": -50604.2477147
+     },
+     {
+      "ersparnis": 1869.1417444,
+      "imVertrag": true,
+      "jahr": 20,
+      "kumuliert": -48735.1059703
+     },
+     {
+      "ersparnis": 4822.08586491,
+      "imVertrag": false,
+      "jahr": 21,
+      "kumuliert": -43913.0201054
+     },
+     {
+      "ersparnis": 4890.62081315,
+      "imVertrag": false,
+      "jahr": 22,
+      "kumuliert": -39022.3992923
+     },
+     {
+      "ersparnis": 4960.22302186,
+      "imVertrag": false,
+      "jahr": 23,
+      "kumuliert": -34062.1762704
+     },
+     {
+      "ersparnis": 5030.90844214,
+      "imVertrag": false,
+      "jahr": 24,
+      "kumuliert": -29031.2678283
+     },
+     {
+      "ersparnis": 5102.69326053,
+      "imVertrag": false,
+      "jahr": 25,
+      "kumuliert": -23928.5745677
+     }
+    ],
+    "lohntSich": true,
+    "preisCt": 18.3027484583,
+    "ueberschuss": -23928.5745677
+   },
+   "eigenKwh": 18618.6,
+   "eingabe": {
+    "ac": 10,
+    "capexKwp": 1350,
+    "dc": 1,
+    "eigenverbrauch": 0.7,
+    "regionId": "de-sued",
+    "stellplaetze": 10,
+    "strompreisCt": 20
+   },
+   "ertrag": 26598,
+   "flaecheM2": 250,
+   "invest": {
+    "laden": 70000,
+    "pv": 35100,
+    "summe": 105100
+   },
+   "kapitalkosten": 0.05,
+   "kauf": {
+    "amortisation": 24.3596162876,
+    "einspeisungJahr1": 319.176,
+    "ersparnisJahr1": 3723.72,
+    "jahre": [
+     {
+      "cf": 3652.896,
+      "einspeisung": 319.176,
+      "ersparnis": 3723.72,
+      "jahr": 1,
+      "kosten": 390,
+      "kumuliert": -101447.104
+     },
+     {
+      "cf": 3703.1009184,
+      "einspeisung": 317.899296,
+      "ersparnis": 3783.0016224,
+      "jahr": 2,
+      "kosten": 397.8,
+      "kumuliert": -97744.0030816
+     },
+     {
+      "cf": 3754.09870704,
+      "einspeisung": 316.627698816,
+      "ersparnis": 3843.22700823,
+      "jahr": 3,
+      "kosten": 405.756,
+      "kumuliert": -93989.9043746
+     },
+     {
+      "cf": 3805.90125022,
+      "einspeisung": 315.361188021,
+      "ersparnis": 3904.4111822,
+      "jahr": 4,
+      "kosten": 413.87112,
+      "kumuliert": -90184.0031243
+     },
+     {
+      "cf": 3858.52060909,
+      "einspeisung": 314.099743269,
+      "ersparnis": 3966.56940822,
+      "jahr": 5,
+      "kosten": 422.1485424,
+      "kumuliert": -86325.4825152
+     },
+     {
+      "cf": 3911.96902425,
+      "einspeisung": 312.843344296,
+      "ersparnis": 4029.7171932,
+      "jahr": 6,
+      "kosten": 430.591513248,
+      "kumuliert": -82413.513491
+     },
+     {
+      "cf": 3966.25891832,
+      "einspeisung": 311.591970918,
+      "ersparnis": 4093.87029091,
+      "jahr": 7,
+      "kosten": 439.203343513,
+      "kumuliert": -78447.2545727
+     },
+     {
+      "cf": 4021.4028986,
+      "einspeisung": 310.345603035,
+      "ersparnis": 4159.04470595,
+      "jahr": 8,
+      "kosten": 447.987410383,
+      "kumuliert": -74425.8516741
+     },
+     {
+      "cf": 4077.4137597,
+      "einspeisung": 309.104220623,
+      "ersparnis": 4225.25669766,
+      "jahr": 9,
+      "kosten": 456.947158591,
+      "kumuliert": -70348.4379144
+     },
+     {
+      "cf": 4134.30448627,
+      "einspeisung": 307.86780374,
+      "ersparnis": 4292.52278429,
+      "jahr": 10,
+      "kosten": 466.086101763,
+      "kumuliert": -66214.1334281
+     },
+     {
+      "cf": 4192.08825574,
+      "einspeisung": 306.636332525,
+      "ersparnis": 4360.85974702,
+      "jahr": 11,
+      "kosten": 475.407823798,
+      "kumuliert": -62022.0451724
+     },
+     {
+      "cf": 4250.77844111,
+      "einspeisung": 305.409787195,
+      "ersparnis": 4430.28463419,
+      "jahr": 12,
+      "kosten": 484.915980274,
+      "kumuliert": -57771.2667313
+     },
+     {
+      "cf": 4310.38861373,
+      "einspeisung": 304.188148046,
+      "ersparnis": 4500.81476557,
+      "jahr": 13,
+      "kosten": 494.614299879,
+      "kumuliert": -53460.8781175
+     },
+     {
+      "cf": 4370.93254621,
+      "einspeisung": 302.971395454,
+      "ersparnis": 4572.46773663,
+      "jahr": 14,
+      "kosten": 504.506585877,
+      "kumuliert": -49089.9455713
+     },
+     {
+      "cf": 4432.42421528,
+      "einspeisung": 301.759509872,
+      "ersparnis": 4645.261423,
+      "jahr": 15,
+      "kosten": 514.596717595,
+      "kumuliert": -44657.521356
+     },
+     {
+      "cf": 4494.87780474,
+      "einspeisung": 300.552471833,
+      "ersparnis": 4719.21398486,
+      "jahr": 16,
+      "kosten": 524.888651946,
+      "kumuliert": -40162.6435513
+     },
+     {
+      "cf": 4558.30770845,
+      "einspeisung": 299.350261945,
+      "ersparnis": 4794.34387149,
+      "jahr": 17,
+      "kosten": 535.386424985,
+      "kumuliert": -35604.3358428
+     },
+     {
+      "cf": 4622.72853334,
+      "einspeisung": 298.152860898,
+      "ersparnis": 4870.66982593,
+      "jahr": 18,
+      "kosten": 546.094153485,
+      "kumuliert": -30981.6073095
+     },
+     {
+      "cf": 4688.15510246,
+      "einspeisung": 296.960249454,
+      "ersparnis": 4948.21088956,
+      "jahr": 19,
+      "kosten": 557.016036555,
+      "kumuliert": -26293.452207
+     },
+     {
+      "cf": 4754.60245809,
+      "einspeisung": 295.772408456,
+      "ersparnis": 5026.98640692,
+      "jahr": 20,
+      "kosten": 568.156357286,
+      "kumuliert": -21538.849749
+     },
+     {
+      "cf": 4822.08586491,
+      "einspeisung": 294.589318822,
+      "ersparnis": 5107.01603052,
+      "jahr": 21,
+      "kosten": 579.519484432,
+      "kumuliert": -16716.763884
+     },
+     {
+      "cf": 4890.62081315,
+      "einspeisung": 293.410961547,
+      "ersparnis": 5188.31972572,
+      "jahr": 22,
+      "kosten": 591.10987412,
+      "kumuliert": -11826.1430709
+     },
+     {
+      "cf": 4960.22302186,
+      "einspeisung": 292.237317701,
+      "ersparnis": 5270.91777576,
+      "jahr": 23,
+      "kosten": 602.932071603,
+      "kumuliert": -6865.92004904
+     },
+     {
+      "cf": 5030.90844214,
+      "einspeisung": 291.06836843,
+      "ersparnis": 5354.83078675,
+      "jahr": 24,
+      "kosten": 614.990713035,
+      "kumuliert": -1835.0116069
+     },
+     {
+      "cf": 5102.69326053,
+      "einspeisung": 289.904094956,
+      "ersparnis": 5440.07969287,
+      "jahr": 25,
+      "kosten": 627.290527295,
+      "kumuliert": 3267.68165364
+     }
+    ],
+    "nettoJahr1": 3652.896,
+    "ueberschuss": 3267.68165364
+   },
+   "kwp": 26,
+   "ladeleistungKw": 210,
+   "lcoeCt": 11.5739930218,
+   "opexPv": 390,
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "spez": 1023,
+   "ueberschussKwh": 7979.4
+  },
+  "at": {
+   "co2Tonnen": 105.61824,
+   "contracting": {
+    "ersparnisJahr1": 2340.55197322,
+    "invest": 70000,
+    "jahre": [
+     {
+      "ersparnis": 2340.55197322,
+      "imVertrag": true,
+      "jahr": 1,
+      "kumuliert": -67659.4480268
+     },
+     {
+      "ersparnis": 2784.3407618,
+      "imVertrag": true,
+      "jahr": 2,
+      "kumuliert": -64875.107265
+     },
+     {
+      "ersparnis": 3233.5685591,
+      "imVertrag": true,
+      "jahr": 3,
+      "kumuliert": -61641.5387059
+     },
+     {
+      "ersparnis": 3688.32845856,
+      "imVertrag": true,
+      "jahr": 4,
+      "kumuliert": -57953.2102473
+     },
+     {
+      "ersparnis": 4148.71500967,
+      "imVertrag": true,
+      "jahr": 5,
+      "kumuliert": -53804.4952377
+     },
+     {
+      "ersparnis": 4614.82424122,
+      "imVertrag": true,
+      "jahr": 6,
+      "kumuliert": -49189.6709964
+     },
+     {
+      "ersparnis": 5086.75368499,
+      "imVertrag": true,
+      "jahr": 7,
+      "kumuliert": -44102.9173115
+     },
+     {
+      "ersparnis": 5564.60239973,
+      "imVertrag": true,
+      "jahr": 8,
+      "kumuliert": -38538.3149117
+     },
+     {
+      "ersparnis": 6048.47099562,
+      "imVertrag": true,
+      "jahr": 9,
+      "kumuliert": -32489.8439161
+     },
+     {
+      "ersparnis": 6538.46165907,
+      "imVertrag": true,
+      "jahr": 10,
+      "kumuliert": -25951.382257
+     },
+     {
+      "ersparnis": 7034.67817785,
+      "imVertrag": true,
+      "jahr": 11,
+      "kumuliert": -18916.7040792
+     },
+     {
+      "ersparnis": 7537.22596677,
+      "imVertrag": true,
+      "jahr": 12,
+      "kumuliert": -11379.4781124
+     },
+     {
+      "ersparnis": 8046.21209365,
+      "imVertrag": true,
+      "jahr": 13,
+      "kumuliert": -3333.26601877
+     },
+     {
+      "ersparnis": 8561.7453057,
+      "imVertrag": true,
+      "jahr": 14,
+      "kumuliert": 5228.47928693
+     },
+     {
+      "ersparnis": 9083.93605643,
+      "imVertrag": true,
+      "jahr": 15,
+      "kumuliert": 14312.4153434
+     },
+     {
+      "ersparnis": 9612.89653285,
+      "imVertrag": true,
+      "jahr": 16,
+      "kumuliert": 23925.3118762
+     },
+     {
+      "ersparnis": 10148.7406832,
+      "imVertrag": true,
+      "jahr": 17,
+      "kumuliert": 34074.0525594
+     },
+     {
+      "ersparnis": 10691.5842451,
+      "imVertrag": true,
+      "jahr": 18,
+      "kumuliert": 44765.6368045
+     },
+     {
+      "ersparnis": 11241.544774,
+      "imVertrag": true,
+      "jahr": 19,
+      "kumuliert": 56007.1815785
+     },
+     {
+      "ersparnis": 11798.7416725,
+      "imVertrag": true,
+      "jahr": 20,
+      "kumuliert": 67805.923251
+     },
+     {
+      "ersparnis": 29521.7812276,
+      "imVertrag": false,
+      "jahr": 21,
+      "kumuliert": 97327.7044786
+     },
+     {
+      "ersparnis": 29941.731863,
+      "imVertrag": false,
+      "jahr": 22,
+      "kumuliert": 127269.436342
+     },
+     {
+      "ersparnis": 30368.2277777,
+      "imVertrag": false,
+      "jahr": 23,
+      "kumuliert": 157637.664119
+     },
+     {
+      "ersparnis": 30801.3669243,
+      "imVertrag": false,
+      "jahr": 24,
+      "kumuliert": 188439.031044
+     },
+     {
+      "ersparnis": 31241.2487037,
+      "imVertrag": false,
+      "jahr": 25,
+      "kumuliert": 219680.279747
+     }
+    ],
+    "lohntSich": true,
+    "preisCt": 17.9422401951,
+    "ueberschuss": 219680.279747
+   },
+   "eigenKwh": 113742.72,
+   "eingabe": {
+    "ac": 10,
+    "capexKwp": 1350,
+    "dc": 1,
+    "eigenverbrauch": 0.7,
+    "regionId": "at",
+    "stellplaetze": 60,
+    "strompreisCt": 20
+   },
+   "ertrag": 162489.6,
+   "flaecheM2": 1500,
+   "invest": {
+    "laden": 70000,
+    "pv": 210600,
+    "summe": 280600
+   },
+   "kapitalkosten": 0.05,
+   "kauf": {
+    "amortisation": 11.6500497495,
+    "einspeisungJahr1": 1949.8752,
+    "ersparnisJahr1": 22748.544,
+    "jahre": [
+     {
+      "cf": 22358.4192,
+      "einspeisung": 1949.8752,
+      "ersparnis": 22748.544,
+      "jahr": 1,
+      "kosten": 2340,
+      "kumuliert": -258241.5808
+     },
+     {
+      "cf": 22665.9765197,
+      "einspeisung": 1942.0756992,
+      "ersparnis": 23110.7008205,
+      "jahr": 2,
+      "kosten": 2386.8,
+      "kumuliert": -235575.60428
+     },
+     {
+      "cf": 22978.3945739,
+      "einspeisung": 1934.3073964,
+      "ersparnis": 23478.6231775,
+      "jahr": 3,
+      "kosten": 2434.536,
+      "kumuliert": -212597.209706
+     },
+     {
+      "cf": 23295.7463053,
+      "einspeisung": 1926.57016682,
+      "ersparnis": 23852.4028585,
+      "jahr": 4,
+      "kosten": 2483.22672,
+      "kumuliert": -189301.463401
+     },
+     {
+      "cf": 23618.1057438,
+      "einspeisung": 1918.86388615,
+      "ersparnis": 24232.133112,
+      "jahr": 5,
+      "kosten": 2532.8912544,
+      "kumuliert": -165683.357657
+     },
+     {
+      "cf": 23945.5480223,
+      "einspeisung": 1911.18843061,
+      "ersparnis": 24617.9086712,
+      "jahr": 6,
+      "kosten": 2583.54907949,
+      "kumuliert": -141737.809635
+     },
+     {
+      "cf": 24278.149393,
+      "einspeisung": 1903.54367688,
+      "ersparnis": 25009.8257772,
+      "jahr": 7,
+      "kosten": 2635.22006108,
+      "kumuliert": -117459.660242
+     },
+     {
+      "cf": 24615.9872435,
+      "einspeisung": 1895.92950218,
+      "ersparnis": 25407.9822036,
+      "jahr": 8,
+      "kosten": 2687.9244623,
+      "kumuliert": -92843.6729984
+     },
+     {
+      "cf": 24959.1401129,
+      "einspeisung": 1888.34578417,
+      "ersparnis": 25812.4772803,
+      "jahr": 9,
+      "kosten": 2741.68295155,
+      "kumuliert": -67884.5328855
+     },
+     {
+      "cf": 25307.687709,
+      "einspeisung": 1880.79240103,
+      "ersparnis": 26223.4119186,
+      "jahr": 10,
+      "kosten": 2796.51661058,
+      "kumuliert": -42576.8451765
+     },
+     {
+      "cf": 25661.710925,
+      "einspeisung": 1873.26923143,
+      "ersparnis": 26640.8886363,
+      "jahr": 11,
+      "kosten": 2852.44694279,
+      "kumuliert": -16915.1342515
+     },
+     {
+      "cf": 26021.2918563,
+      "einspeisung": 1865.7761545,
+      "ersparnis": 27065.0115834,
+      "jahr": 12,
+      "kosten": 2909.49588164,
+      "kumuliert": 9106.15760474
+     },
+     {
+      "cf": 26386.5138184,
+      "einspeisung": 1858.31304988,
+      "ersparnis": 27495.8865678,
+      "jahr": 13,
+      "kosten": 2967.68579928,
+      "kumuliert": 35492.6714232
+     },
+     {
+      "cf": 26757.4613644,
+      "einspeisung": 1850.87979768,
+      "ersparnis": 27933.621082,
+      "jahr": 14,
+      "kosten": 3027.03951526,
+      "kumuliert": 62250.1327876
+     },
+     {
+      "cf": 27134.2203025,
+      "einspeisung": 1843.47627849,
+      "ersparnis": 28378.3243296,
+      "jahr": 15,
+      "kosten": 3087.58030557,
+      "kumuliert": 89384.3530901
+     },
+     {
+      "cf": 27516.8777146,
+      "einspeisung": 1836.10237338,
+      "ersparnis": 28830.1072529,
+      "jahr": 16,
+      "kosten": 3149.33191168,
+      "kumuliert": 116901.230805
+     },
+     {
+      "cf": 27905.5219744,
+      "einspeisung": 1828.75796388,
+      "ersparnis": 29289.0825604,
+      "jahr": 17,
+      "kosten": 3212.31854991,
+      "kumuliert": 144806.752779
+     },
+     {
+      "cf": 28300.2427659,
+      "einspeisung": 1821.44293203,
+      "ersparnis": 29755.3647548,
+      "jahr": 18,
+      "kosten": 3276.56492091,
+      "kumuliert": 173106.995545
+     },
+     {
+      "cf": 28701.1311026,
+      "einspeisung": 1814.1571603,
+      "ersparnis": 30229.0701617,
+      "jahr": 19,
+      "kosten": 3342.09621933,
+      "kumuliert": 201808.126648
+     },
+     {
+      "cf": 29108.2793466,
+      "einspeisung": 1806.90053166,
+      "ersparnis": 30710.3169586,
+      "jahr": 20,
+      "kosten": 3408.93814372,
+      "kumuliert": 230916.405994
+     },
+     {
+      "cf": 29521.7812276,
+      "einspeisung": 1799.67292953,
+      "ersparnis": 31199.2252046,
+      "jahr": 21,
+      "kosten": 3477.11690659,
+      "kumuliert": 260438.187222
+     },
+     {
+      "cf": 29941.731863,
+      "einspeisung": 1792.47423782,
+      "ersparnis": 31695.9168699,
+      "jahr": 22,
+      "kosten": 3546.65924472,
+      "kumuliert": 290379.919085
+     },
+     {
+      "cf": 30368.2277777,
+      "einspeisung": 1785.30434086,
+      "ersparnis": 32200.5158664,
+      "jahr": 23,
+      "kosten": 3617.59242962,
+      "kumuliert": 320748.146862
+     },
+     {
+      "cf": 30801.3669243,
+      "einspeisung": 1778.1631235,
+      "ersparnis": 32713.148079,
+      "jahr": 24,
+      "kosten": 3689.94427821,
+      "kumuliert": 351549.513787
+     },
+     {
+      "cf": 31241.2487037,
+      "einspeisung": 1771.05047101,
+      "ersparnis": 33233.9413965,
+      "jahr": 25,
+      "kosten": 3763.74316377,
+      "kumuliert": 382790.76249
+     }
+    ],
+    "nettoJahr1": 22358.4192,
+    "ueberschuss": 382790.76249
+   },
+   "kwp": 156,
+   "ladeleistungKw": 210,
+   "lcoeCt": 11.367314575,
+   "opexPv": 2340,
+   "region": {
+    "ertrag": 1120,
+    "id": "at",
+    "label": "Österreich",
+    "land": "AT",
+    "sub": "Flach- und Hügelland"
+   },
+   "spez": 1041.6,
+   "ueberschussKwh": 48746.88
+  },
+  "ch": {
+   "co2Tonnen": 99.0171,
+   "contracting": {
+    "ersparnisJahr1": 784.714053215,
+    "invest": 70000,
+    "jahre": [
+     {
+      "ersparnis": 784.714053215,
+      "imVertrag": true,
+      "jahr": 1,
+      "kumuliert": -69215.2859468
+     },
+     {
+      "ersparnis": 1206.4042562,
+      "imVertrag": true,
+      "jahr": 2,
+      "kumuliert": -68008.8816906
+     },
+     {
+      "ersparnis": 1633.170977,
+      "imVertrag": true,
+      "jahr": 3,
+      "kumuliert": -66375.7107136
+     },
+     {
+      "ersparnis": 2065.10158093,
+      "imVertrag": true,
+      "jahr": 4,
+      "kumuliert": -64310.6091326
+     },
+     {
+      "ersparnis": 2502.28479799,
+      "imVertrag": true,
+      "jahr": 5,
+      "kumuliert": -61808.3243347
+     },
+     {
+      "ersparnis": 2944.81074467,
+      "imVertrag": true,
+      "jahr": 6,
+      "kumuliert": -58863.51359
+     },
+     {
+      "ersparnis": 3392.77094612,
+      "imVertrag": true,
+      "jahr": 7,
+      "kumuliert": -55470.7426439
+     },
+     {
+      "ersparnis": 3846.25835873,
+      "imVertrag": true,
+      "jahr": 8,
+      "kumuliert": -51624.4842851
+     },
+     {
+      "ersparnis": 4305.36739295,
+      "imVertrag": true,
+      "jahr": 9,
+      "kumuliert": -47319.1168922
+     },
+     {
+      "ersparnis": 4770.19393658,
+      "imVertrag": true,
+      "jahr": 10,
+      "kumuliert": -42548.9229556
+     },
+     {
+      "ersparnis": 5240.83537842,
+      "imVertrag": true,
+      "jahr": 11,
+      "kumuliert": -37308.0875772
+     },
+     {
+      "ersparnis": 5717.39063219,
+      "imVertrag": true,
+      "jahr": 12,
+      "kumuliert": -31590.696945
+     },
+     {
+      "ersparnis": 6199.96016098,
+      "imVertrag": true,
+      "jahr": 13,
+      "kumuliert": -25390.736784
+     },
+     {
+      "ersparnis": 6688.64600199,
+      "imVertrag": true,
+      "jahr": 14,
+      "kumuliert": -18702.090782
+     },
+     {
+      "ersparnis": 7183.55179169,
+      "imVertrag": true,
+      "jahr": 15,
+      "kumuliert": -11518.5389904
+     },
+     {
+      "ersparnis": 7684.78279137,
+      "imVertrag": true,
+      "jahr": 16,
+      "kumuliert": -3833.75619898
+     },
+     {
+      "ersparnis": 8192.44591316,
+      "imVertrag": true,
+      "jahr": 17,
+      "kumuliert": 4358.68971417
+     },
+     {
+      "ersparnis": 8706.64974632,
+      "imVertrag": true,
+      "jahr": 18,
+      "kumuliert": 13065.3394605
+     },
+     {
+      "ersparnis": 9227.50458413,
+      "imVertrag": true,
+      "jahr": 19,
+      "kumuliert": 22292.8440446
+     },
+     {
+      "ersparnis": 9755.12245106,
+      "imVertrag": true,
+      "jahr": 20,
+      "kumuliert": 32047.9664957
+     },
+     {
+      "ersparnis": 27459.3500942,
+      "imVertrag": false,
+      "jahr": 21,
+      "kumuliert": 59507.3165899
+     },
+     {
+      "ersparnis": 27848.7074187,
+      "imVertrag": false,
+      "jahr": 22,
+      "kumuliert": 87356.0240086
+     },
+     {
+      "ersparnis": 28244.1140147,
+      "imVertrag": false,
+      "jahr": 23,
+      "kumuliert": 115600.138023
+     },
+     {
+      "ersparnis": 28645.6599742,
+      "imVertrag": false,
+      "jahr": 24,
+      "kumuliert": 144245.797998
+     },
+     {
+      "ersparnis": 29053.436712,
+      "imVertrag": false,
+      "jahr": 25,
+      "kumuliert": 173299.234709
+     }
+    ],
+    "lohntSich": true,
+    "preisCt": 19.2641038271,
+    "ueberschuss": 173299.234709
+   },
+   "eigenKwh": 106633.8,
+   "eingabe": {
+    "ac": 10,
+    "capexKwp": 1350,
+    "dc": 1,
+    "eigenverbrauch": 0.7,
+    "regionId": "ch",
+    "stellplaetze": 60,
+    "strompreisCt": 20
+   },
+   "ertrag": 152334,
+   "flaecheM2": 1500,
+   "invest": {
+    "laden": 70000,
+    "pv": 210600,
+    "summe": 280600
+   },
+   "kapitalkosten": 0.05,
+   "kauf": {
+    "amortisation": 12.4464829985,
+    "einspeisungJahr1": 1828.008,
+    "ersparnisJahr1": 21326.76,
+    "jahre": [
+     {
+      "cf": 20814.768,
+      "einspeisung": 1828.008,
+      "ersparnis": 21326.76,
+      "jahr": 1,
+      "kosten": 2340,
+      "kumuliert": -259785.232
+     },
+     {
+      "cf": 21100.1779872,
+      "einspeisung": 1820.695968,
+      "ersparnis": 21666.2820192,
+      "jahr": 2,
+      "kosten": 2386.8,
+      "kumuliert": -238685.054013
+     },
+     {
+      "cf": 21390.0864131,
+      "einspeisung": 1813.41318413,
+      "ersparnis": 22011.2092289,
+      "jahr": 3,
+      "kosten": 2434.536,
+      "kumuliert": -217294.9676
+     },
+     {
+      "cf": 21684.5604913,
+      "einspeisung": 1806.15953139,
+      "ersparnis": 22361.6276799,
+      "jahr": 4,
+      "kosten": 2483.22672,
+      "kumuliert": -195610.407108
+     },
+     {
+      "cf": 21983.6684314,
+      "einspeisung": 1798.93489327,
+      "ersparnis": 22717.6247925,
+      "jahr": 5,
+      "kosten": 2532.8912544,
+      "kumuliert": -173626.738677
+     },
+     {
+      "cf": 22287.4794534,
+      "einspeisung": 1791.73915369,
+      "ersparnis": 23079.2893792,
+      "jahr": 6,
+      "kosten": 2583.54907949,
+      "kumuliert": -151339.259224
+     },
+     {
+      "cf": 22596.0638021,
+      "einspeisung": 1784.57219708,
+      "ersparnis": 23446.7116661,
+      "jahr": 7,
+      "kosten": 2635.22006108,
+      "kumuliert": -128743.195421
+     },
+     {
+      "cf": 22909.4927619,
+      "einspeisung": 1777.43390829,
+      "ersparnis": 23819.9833159,
+      "jahr": 8,
+      "kosten": 2687.9244623,
+      "kumuliert": -105833.70266
+     },
+     {
+      "cf": 23227.8386714,
+      "einspeisung": 1770.32417266,
+      "ersparnis": 24199.1974503,
+      "jahr": 9,
+      "kosten": 2741.68295155,
+      "kumuliert": -82605.8639882
+     },
+     {
+      "cf": 23551.1749391,
+      "einspeisung": 1763.24287597,
+      "ersparnis": 24584.4486737,
+      "jahr": 10,
+      "kosten": 2796.51661058,
+      "kumuliert": -59054.6890492
+     },
+     {
+      "cf": 23879.5760582,
+      "einspeisung": 1756.18990446,
+      "ersparnis": 24975.8330966,
+      "jahr": 11,
+      "kosten": 2852.44694279,
+      "kumuliert": -35175.112991
+     },
+     {
+      "cf": 24213.1176227,
+      "einspeisung": 1749.16514484,
+      "ersparnis": 25373.4483595,
+      "jahr": 12,
+      "kosten": 2909.49588164,
+      "kumuliert": -10961.9953683
+     },
+     {
+      "cf": 24551.8763423,
+      "einspeisung": 1742.16848426,
+      "ersparnis": 25777.3936573,
+      "jahr": 13,
+      "kosten": 2967.68579928,
+      "kumuliert": 13589.880974
+     },
+     {
+      "cf": 24895.9300594,
+      "einspeisung": 1735.19981033,
+      "ersparnis": 26187.7697644,
+      "jahr": 14,
+      "kosten": 3027.03951526,
+      "kumuliert": 38485.8110335
+     },
+     {
+      "cf": 25245.3577645,
+      "einspeisung": 1728.25901109,
+      "ersparnis": 26604.679059,
+      "jahr": 15,
+      "kosten": 3087.58030557,
+      "kumuliert": 63731.168798
+     },
+     {
+      "cf": 25600.239613,
+      "einspeisung": 1721.34597504,
+      "ersparnis": 27028.2255496,
+      "jahr": 16,
+      "kosten": 3149.33191168,
+      "kumuliert": 89331.408411
+     },
+     {
+      "cf": 25960.6569416,
+      "einspeisung": 1714.46059114,
+      "ersparnis": 27458.5149004,
+      "jahr": 17,
+      "kosten": 3212.31854991,
+      "kumuliert": 115292.065353
+     },
+     {
+      "cf": 26326.6922855,
+      "einspeisung": 1707.60274878,
+      "ersparnis": 27895.6544576,
+      "jahr": 18,
+      "kosten": 3276.56492091,
+      "kumuliert": 141618.757638
+     },
+     {
+      "cf": 26698.429395,
+      "einspeisung": 1700.77233778,
+      "ersparnis": 28339.7532766,
+      "jahr": 19,
+      "kosten": 3342.09621933,
+      "kumuliert": 168317.187033
+     },
+     {
+      "cf": 27075.9532534,
+      "einspeisung": 1693.96924843,
+      "ersparnis": 28790.9221487,
+      "jahr": 20,
+      "kosten": 3408.93814372,
+      "kumuliert": 195393.140286
+     },
+     {
+      "cf": 27459.3500942,
+      "einspeisung": 1687.19337144,
+      "ersparnis": 29249.2736293,
+      "jahr": 21,
+      "kosten": 3477.11690659,
+      "kumuliert": 222852.490381
+     },
+     {
+      "cf": 27848.7074187,
+      "einspeisung": 1680.44459795,
+      "ersparnis": 29714.9220655,
+      "jahr": 22,
+      "kosten": 3546.65924472,
+      "kumuliert": 250701.197799
+     },
+     {
+      "cf": 28244.1140147,
+      "einspeisung": 1673.72281956,
+      "ersparnis": 30187.9836248,
+      "jahr": 23,
+      "kosten": 3617.59242962,
+      "kumuliert": 278945.311814
+     },
+     {
+      "cf": 28645.6599742,
+      "einspeisung": 1667.02792828,
+      "ersparnis": 30668.5763241,
+      "jahr": 24,
+      "kosten": 3689.94427821,
+      "kumuliert": 307590.971788
+     },
+     {
+      "cf": 29053.436712,
+      "einspeisung": 1660.35981657,
+      "ersparnis": 31156.8200592,
+      "jahr": 25,
+      "kosten": 3763.74316377,
+      "kumuliert": 336644.4085
+     }
+    ],
+    "nettoJahr1": 20814.768,
+    "ueberschuss": 336644.4085
+   },
+   "kwp": 156,
+   "ladeleistungKw": 210,
+   "lcoeCt": 12.1251355467,
+   "opexPv": 2340,
+   "region": {
+    "ertrag": 1050,
+    "id": "ch",
+    "label": "Schweiz",
+    "land": "CH",
+    "sub": "Mittelland"
+   },
+   "spez": 976.5,
+   "ueberschussKwh": 45700.2
+  }
+ }
+}

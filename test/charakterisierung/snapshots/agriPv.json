@@ -1,0 +1,658 @@
+{
+ "rechner": "agriPv",
+ "modul": "src/lib/rechner/agriPv.js",
+ "faelle": {
+  "standard": {
+   "anlage": {
+    "capex": 2750000,
+    "kwh": 3807692.30769,
+    "kwp": 3846.15384615,
+    "region": {
+     "ertrag": 1100,
+     "id": "de-sued",
+     "label": "Süddeutschland",
+     "land": "DE",
+     "sub": "BY, BW"
+    },
+    "system": {
+     "bauart": "agriVertikal",
+     "id": "vertikal",
+     "label": "Vertikal, bifazial",
+     "sub": "Kategorie II"
+    }
+   },
+   "ctFoerder": 4.8,
+   "eeg": true,
+   "kultur": {
+    "db": 450,
+    "ertrag": {
+     "hoch": 0.85,
+     "vertikal": 0.9
+    },
+    "id": "acker",
+    "label": "Ackerbau",
+    "sub": "Getreide, Raps, Mais"
+   },
+   "land": "DE",
+   "landwirtschaft": {
+    "dbJahr": 4050,
+    "dbOhneAnlage": 4500,
+    "ertragLw": 0.9,
+    "gapJahr": 2125,
+    "summe": 231801.357435
+   },
+   "laufzeit": 30,
+   "pachtJahr0": 12000,
+   "system": "vertikal",
+   "systemGewechselt": false,
+   "wege": [
+    {
+     "amortisation": null,
+     "energieJahr": 12000,
+     "energieSumme": 450464.176393,
+     "gesamtSumme": 682265.533828,
+     "id": "pacht",
+     "invest": 0,
+     "irr": null,
+     "risiko": "gering"
+    },
+    {
+     "amortisation": 22.0598379809,
+     "energieJahr": 141102.564103,
+     "energieSumme": 875320.10894,
+     "erloesJahr": 182769.230769,
+     "gesamtSumme": 1107121.46638,
+     "id": "eigen",
+     "invest": 2750000,
+     "irr": 0.0198978720086,
+     "opexJahr": 38461.5384615,
+     "risiko": "höher"
+    },
+    {
+     "amortisation": 25.3778589035,
+     "anteil": 0.2,
+     "energieJahr": 37820.5128205,
+     "energieSumme": 535435.362902,
+     "gesamtSumme": 767236.720337,
+     "id": "genossenschaft",
+     "invest": 550000,
+     "irr": 0.0102250090638,
+     "risiko": "mittel"
+    }
+   ]
+  },
+  "hoch_acker": {
+   "anlage": {
+    "capex": 6718750,
+    "kwh": 6531250,
+    "kwp": 6250,
+    "region": {
+     "ertrag": 1100,
+     "id": "de-sued",
+     "label": "Süddeutschland",
+     "land": "DE",
+     "sub": "BY, BW"
+    },
+    "system": {
+     "bauart": "agriHoch",
+     "id": "hoch",
+     "label": "Hoch aufgeständert",
+     "sub": "Kategorie I"
+    }
+   },
+   "ctFoerder": 5.3,
+   "eeg": true,
+   "kultur": {
+    "db": 450,
+    "ertrag": {
+     "hoch": 0.85,
+     "vertikal": 0.9
+    },
+    "id": "acker",
+    "label": "Ackerbau",
+    "sub": "Getreide, Raps, Mais"
+   },
+   "land": "DE",
+   "landwirtschaft": {
+    "dbJahr": 3825,
+    "dbOhneAnlage": 4500,
+    "ertragLw": 0.85,
+    "gapJahr": 2125,
+    "summe": 223355.154128
+   },
+   "laufzeit": 30,
+   "pachtJahr0": 12000,
+   "system": "hoch",
+   "systemGewechselt": false,
+   "wege": [
+    {
+     "amortisation": null,
+     "energieJahr": 12000,
+     "energieSumme": 450464.176393,
+     "gesamtSumme": 673819.330521,
+     "id": "pacht",
+     "invest": 0,
+     "irr": null,
+     "risiko": "gering"
+    },
+    {
+     "amortisation": 28.5685238652,
+     "energieJahr": 278447.916667,
+     "energieSumme": 278114.864157,
+     "erloesJahr": 346156.25,
+     "gesamtSumme": 501470.018285,
+     "id": "eigen",
+     "invest": 6718750,
+     "irr": 0.00283812835095,
+     "opexJahr": 62500,
+     "risiko": "höher"
+    },
+    {
+     "amortisation": null,
+     "anteil": 0.2,
+     "energieJahr": 65289.5833333,
+     "energieSumme": 415994.313946,
+     "gesamtSumme": 639349.468074,
+     "id": "genossenschaft",
+     "invest": 1343750,
+     "irr": -0.00181168378325,
+     "risiko": "mittel"
+    }
+   ]
+  },
+  "vertikal_gruenland_ppa": {
+   "anlage": {
+    "capex": 2750000,
+    "kwh": 3807692.30769,
+    "kwp": 3846.15384615,
+    "region": {
+     "ertrag": 1100,
+     "id": "de-sued",
+     "label": "Süddeutschland",
+     "land": "DE",
+     "sub": "BY, BW"
+    },
+    "system": {
+     "bauart": "agriVertikal",
+     "id": "vertikal",
+     "label": "Vertikal, bifazial",
+     "sub": "Kategorie II"
+    }
+   },
+   "ctFoerder": 4.5,
+   "eeg": false,
+   "kultur": {
+    "db": 300,
+    "ertrag": {
+     "hoch": 0.9,
+     "vertikal": 0.92
+    },
+    "id": "gruenland",
+    "label": "Grünland",
+    "sub": "Mahd, Futterbau"
+   },
+   "land": "DE",
+   "landwirtschaft": {
+    "dbJahr": 2760,
+    "dbOhneAnlage": 3000,
+    "ertragLw": 0.92,
+    "gapJahr": 2125,
+    "summe": 183376.458473
+   },
+   "laufzeit": 30,
+   "pachtJahr0": 12000,
+   "system": "vertikal",
+   "systemGewechselt": false,
+   "wege": [
+    {
+     "amortisation": null,
+     "energieJahr": 12000,
+     "energieSumme": 450464.176393,
+     "gesamtSumme": 633840.634866,
+     "id": "pacht",
+     "invest": 0,
+     "irr": null,
+     "risiko": "gering"
+    },
+    {
+     "amortisation": 24.0447603356,
+     "energieJahr": 129679.487179,
+     "energieSumme": 655335.249196,
+     "erloesJahr": 171346.153846,
+     "gesamtSumme": 838711.707669,
+     "id": "eigen",
+     "invest": 2750000,
+     "irr": 0.0148680676993,
+     "opexJahr": 38461.5384615,
+     "risiko": "höher"
+    },
+    {
+     "amortisation": 27.7565704436,
+     "anteil": 0.2,
+     "energieJahr": 35535.8974359,
+     "energieSumme": 491438.390953,
+     "gesamtSumme": 674814.849426,
+     "id": "genossenschaft",
+     "invest": 550000,
+     "irr": 0.00492615409632,
+     "risiko": "mittel"
+    }
+   ]
+  },
+  "sonder_hoch_30ha": {
+   "anlage": {
+    "capex": 20156250,
+    "kwh": 19593750,
+    "kwp": 18750,
+    "region": {
+     "ertrag": 1100,
+     "id": "de-sued",
+     "label": "Süddeutschland",
+     "land": "DE",
+     "sub": "BY, BW"
+    },
+    "system": {
+     "bauart": "agriHoch",
+     "id": "hoch",
+     "label": "Hoch aufgeständert",
+     "sub": "Kategorie I"
+    }
+   },
+   "ctFoerder": 5.3,
+   "eeg": true,
+   "kultur": {
+    "db": 3500,
+    "ertrag": {
+     "hoch": 0.95,
+     "vertikal": null
+    },
+    "id": "sonder",
+    "label": "Obst & Beeren",
+    "sub": "Sonderkultur"
+   },
+   "land": "DE",
+   "landwirtschaft": {
+    "dbJahr": 99750,
+    "dbOhneAnlage": 105000,
+    "ertragLw": 0.95,
+    "gapJahr": 6375,
+    "summe": 3983792.55997
+   },
+   "laufzeit": 30,
+   "pachtJahr0": 36000,
+   "system": "hoch",
+   "systemGewechselt": false,
+   "wege": [
+    {
+     "amortisation": null,
+     "energieJahr": 36000,
+     "energieSumme": 1351392.52918,
+     "gesamtSumme": 5335185.08915,
+     "id": "pacht",
+     "invest": 0,
+     "irr": null,
+     "risiko": "gering"
+    },
+    {
+     "amortisation": 28.5685238652,
+     "energieJahr": 835343.75,
+     "energieSumme": 834344.592472,
+     "erloesJahr": 1038468.75,
+     "gesamtSumme": 4818137.15245,
+     "id": "eigen",
+     "invest": 20156250,
+     "irr": 0.00283812835094,
+     "opexJahr": 187500,
+     "risiko": "höher"
+    },
+    {
+     "amortisation": null,
+     "anteil": 0.2,
+     "energieJahr": 195868.75,
+     "energieSumme": 1247982.94184,
+     "gesamtSumme": 5231775.50181,
+     "id": "genossenschaft",
+     "invest": 4031250,
+     "irr": -0.00181168378325,
+     "risiko": "mittel"
+    }
+   ]
+  },
+  "weide_anteil_0": {
+   "anlage": {
+    "capex": 2750000,
+    "kwh": 3807692.30769,
+    "kwp": 3846.15384615,
+    "region": {
+     "ertrag": 1100,
+     "id": "de-sued",
+     "label": "Süddeutschland",
+     "land": "DE",
+     "sub": "BY, BW"
+    },
+    "system": {
+     "bauart": "agriVertikal",
+     "id": "vertikal",
+     "label": "Vertikal, bifazial",
+     "sub": "Kategorie II"
+    }
+   },
+   "ctFoerder": 4.8,
+   "eeg": true,
+   "kultur": {
+    "db": 250,
+    "ertrag": {
+     "hoch": 0.95,
+     "vertikal": 0.95
+    },
+    "id": "weide",
+    "label": "Weide",
+    "sub": "Schafe, Rinder, Geflügel"
+   },
+   "land": "DE",
+   "landwirtschaft": {
+    "dbJahr": 2375,
+    "dbOhneAnlage": 2500,
+    "ertragLw": 0.95,
+    "gapJahr": 2125,
+    "summe": 168924.066147
+   },
+   "laufzeit": 30,
+   "pachtJahr0": 12000,
+   "system": "vertikal",
+   "systemGewechselt": false,
+   "wege": [
+    {
+     "amortisation": null,
+     "energieJahr": 12000,
+     "energieSumme": 450464.176393,
+     "gesamtSumme": 619388.24254,
+     "id": "pacht",
+     "invest": 0,
+     "irr": null,
+     "risiko": "gering"
+    },
+    {
+     "amortisation": 22.0598379809,
+     "energieJahr": 141102.564103,
+     "energieSumme": 875320.10894,
+     "erloesJahr": 182769.230769,
+     "gesamtSumme": 1044244.17509,
+     "id": "eigen",
+     "invest": 2750000,
+     "irr": 0.0198978720086,
+     "opexJahr": 38461.5384615,
+     "risiko": "höher"
+    },
+    {
+     "amortisation": null,
+     "anteil": 0,
+     "energieJahr": 12000,
+     "energieSumme": 450464.176393,
+     "gesamtSumme": 619388.24254,
+     "id": "genossenschaft",
+     "invest": 0,
+     "irr": 0.25,
+     "risiko": "mittel"
+    }
+   ]
+  },
+  "klein_1ha": {
+   "anlage": {
+    "capex": 275000,
+    "kwh": 380769.230769,
+    "kwp": 384.615384615,
+    "region": {
+     "ertrag": 1100,
+     "id": "de-sued",
+     "label": "Süddeutschland",
+     "land": "DE",
+     "sub": "BY, BW"
+    },
+    "system": {
+     "bauart": "agriVertikal",
+     "id": "vertikal",
+     "label": "Vertikal, bifazial",
+     "sub": "Kategorie II"
+    }
+   },
+   "ctFoerder": 4.8,
+   "eeg": true,
+   "kultur": {
+    "db": 450,
+    "ertrag": {
+     "hoch": 0.85,
+     "vertikal": 0.9
+    },
+    "id": "acker",
+    "label": "Ackerbau",
+    "sub": "Getreide, Raps, Mais"
+   },
+   "land": "DE",
+   "landwirtschaft": {
+    "dbJahr": 405,
+    "dbOhneAnlage": 450,
+    "ertragLw": 0.9,
+    "gapJahr": 212.5,
+    "summe": 23180.1357435
+   },
+   "laufzeit": 30,
+   "pachtJahr0": 1200,
+   "system": "vertikal",
+   "systemGewechselt": false,
+   "wege": [
+    {
+     "amortisation": null,
+     "energieJahr": 1200,
+     "energieSumme": 45046.4176393,
+     "gesamtSumme": 68226.5533828,
+     "id": "pacht",
+     "invest": 0,
+     "irr": null,
+     "risiko": "gering"
+    },
+    {
+     "amortisation": 22.0598379809,
+     "energieJahr": 14110.2564103,
+     "energieSumme": 87532.010894,
+     "erloesJahr": 18276.9230769,
+     "gesamtSumme": 110712.146638,
+     "id": "eigen",
+     "invest": 275000,
+     "irr": 0.0198978720086,
+     "opexJahr": 3846.15384615,
+     "risiko": "höher"
+    },
+    {
+     "amortisation": 25.3778589035,
+     "anteil": 0.2,
+     "energieJahr": 3782.05128205,
+     "energieSumme": 53543.5362902,
+     "gesamtSumme": 76723.6720337,
+     "id": "genossenschaft",
+     "invest": 55000,
+     "irr": 0.010225009064,
+     "risiko": "mittel"
+    }
+   ]
+  },
+  "at_10ha": {
+   "anlage": {
+    "capex": 2750000,
+    "kwh": 3876923.07692,
+    "kwp": 3846.15384615,
+    "region": {
+     "ertrag": 1120,
+     "id": "at",
+     "label": "Österreich",
+     "land": "AT",
+     "sub": "Flach- und Hügelland"
+    },
+    "system": {
+     "bauart": "agriVertikal",
+     "id": "vertikal",
+     "label": "Vertikal, bifazial",
+     "sub": "Kategorie II"
+    }
+   },
+   "ctFoerder": 4.5,
+   "eeg": false,
+   "kultur": {
+    "db": 450,
+    "ertrag": {
+     "hoch": 0.85,
+     "vertikal": 0.9
+    },
+    "id": "acker",
+    "label": "Ackerbau",
+    "sub": "Getreide, Raps, Mais"
+   },
+   "land": "AT",
+   "landwirtschaft": {
+    "dbJahr": 4050,
+    "dbOhneAnlage": 4500,
+    "ertragLw": 0.9,
+    "gapJahr": 2125,
+    "summe": 231801.357435
+   },
+   "laufzeit": 30,
+   "pachtJahr0": 12000,
+   "system": "vertikal",
+   "systemGewechselt": false,
+   "wege": [
+    {
+     "amortisation": null,
+     "energieJahr": 12000,
+     "energieSumme": 450464.176393,
+     "gesamtSumme": 682265.533828,
+     "id": "pacht",
+     "invest": 0,
+     "irr": null,
+     "risiko": "gering"
+    },
+    {
+     "amortisation": 23.4063831869,
+     "energieJahr": 132794.871795,
+     "energieSumme": 747367.97345,
+     "erloesJahr": 174461.538462,
+     "gesamtSumme": 979169.330886,
+     "id": "eigen",
+     "invest": 2750000,
+     "irr": 0.0168051681372,
+     "opexJahr": 38461.5384615,
+     "risiko": "höher"
+    },
+    {
+     "amortisation": 26.868400599,
+     "anteil": 0.2,
+     "energieJahr": 36158.974359,
+     "energieSumme": 509844.935804,
+     "gesamtSumme": 741646.29324,
+     "id": "genossenschaft",
+     "invest": 550000,
+     "irr": 0.00706359922299,
+     "risiko": "mittel"
+    }
+   ]
+  },
+  "ch_10ha": {
+   "anlage": {
+    "capex": 2750000,
+    "kwh": 3634615.38462,
+    "kwp": 3846.15384615,
+    "region": {
+     "ertrag": 1050,
+     "id": "ch",
+     "label": "Schweiz",
+     "land": "CH",
+     "sub": "Mittelland"
+    },
+    "system": {
+     "bauart": "agriVertikal",
+     "id": "vertikal",
+     "label": "Vertikal, bifazial",
+     "sub": "Kategorie II"
+    }
+   },
+   "ctFoerder": 4.5,
+   "eeg": false,
+   "kultur": {
+    "db": 450,
+    "ertrag": {
+     "hoch": 0.85,
+     "vertikal": 0.9
+    },
+    "id": "acker",
+    "label": "Ackerbau",
+    "sub": "Getreide, Raps, Mais"
+   },
+   "land": "CH",
+   "landwirtschaft": {
+    "dbJahr": 4050,
+    "dbOhneAnlage": 4500,
+    "ertragLw": 0.9,
+    "gapJahr": 0,
+    "summe": 152031.659533
+   },
+   "laufzeit": 30,
+   "pachtJahr0": 12000,
+   "system": "vertikal",
+   "systemGewechselt": false,
+   "wege": [
+    {
+     "amortisation": null,
+     "energieJahr": 12000,
+     "energieSumme": 450464.176393,
+     "gesamtSumme": 602495.835925,
+     "id": "pacht",
+     "invest": 0,
+     "irr": null,
+     "risiko": "gering"
+    },
+    {
+     "amortisation": 25.8186908576,
+     "energieJahr": 121891.025641,
+     "energieSumme": 425253.438559,
+     "erloesJahr": 163557.692308,
+     "gesamtSumme": 577285.098091,
+     "id": "eigen",
+     "invest": 2750000,
+     "irr": 0.00987820528468,
+     "opexJahr": 38461.5384615,
+     "risiko": "höher"
+    },
+    {
+     "amortisation": null,
+     "anteil": 0.2,
+     "energieJahr": 33978.2051282,
+     "energieSumme": 445422.028826,
+     "gesamtSumme": 597453.688358,
+     "id": "genossenschaft",
+     "invest": 550000,
+     "irr": -0.000623574157203,
+     "risiko": "mittel"
+    }
+   ]
+  },
+  "anlage_hoch_5ha": {
+   "capex": 3359375,
+   "kwh": 3028125,
+   "kwp": 3125,
+   "region": {
+    "ertrag": 1020,
+    "id": "de-ost",
+    "label": "Ostdeutschland",
+    "land": "DE",
+    "sub": "BB, BE, SN, ST, TH"
+   },
+   "system": {
+    "bauart": "agriHoch",
+    "id": "hoch",
+    "label": "Hoch aufgeständert",
+    "sub": "Kategorie I"
+   }
+  },
+  "amortisation_beispiel": 3.2,
+  "amortisation_nie": null
+ }
+}

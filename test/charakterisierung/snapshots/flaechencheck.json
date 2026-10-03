@@ -1,0 +1,686 @@
+{
+ "rechner": "flaechencheck",
+ "modul": "src/lib/rechner/flaechencheck.js",
+ "faelle": {
+  "standard": {
+   "agri": {
+    "gapAnteil": 0.85,
+    "kwp": 3846.15384615,
+    "pachtJahr": {
+     "max": 20000,
+     "min": 6000
+    }
+   },
+   "ampel": "gruen",
+   "carport": false,
+   "gruende": [
+    {
+     "art": "plus",
+     "punkte": 15,
+     "text": "Gute Größe: Fixkosten für Planung und Netzanschluss verteilen sich auf viel Leistung."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Ackerland ist meist eben und gut erschlossen. Gemeinden achten auf Bodenqualität – Agri-PV kann eine Alternative sein."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Alleineigentum: kurze Wege bis zur Unterschrift."
+    },
+    {
+     "art": "info",
+     "punkte": 0,
+     "text": "Entfernung zum Netz unbekannt – wir fragen die Anschlusskapazität beim Netzbetreiber an."
+    }
+   ],
+   "kwh": 8727272.72727,
+   "kwp": 9090.90909091,
+   "netzProKwp": null,
+   "nutzbarHa": 10,
+   "pacht30": {
+    "max": 1529701.26567,
+    "min": 782681.506482
+   },
+   "pachtJahr": {
+    "max": 40750,
+    "min": 20850
+   },
+   "region": {
+    "ertrag": 960,
+    "id": "de-nord",
+    "label": "Norddeutschland",
+    "land": "DE",
+    "sub": "SH, HH, NI, HB, MV"
+   },
+   "schritte": [
+    "Flurstücke nennen – wir prüfen Schutzgebiete, Regionalplan, Netz und Einstrahlung am Kartentisch (kostenfrei).",
+    "Netzanschlussanfrage beim Netzbetreiber – erst die Kapazität entscheidet über die Parkgröße.",
+    "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
+    "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
+   ],
+   "score": 75
+  },
+  "de_12ha": {
+   "agri": {
+    "gapAnteil": 0.85,
+    "kwp": 4615.38461538,
+    "pachtJahr": {
+     "max": 24000,
+     "min": 7200
+    }
+   },
+   "ampel": "gruen",
+   "carport": false,
+   "gruende": [
+    {
+     "art": "plus",
+     "punkte": 15,
+     "text": "Gute Größe: Fixkosten für Planung und Netzanschluss verteilen sich auf viel Leistung."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Ackerland ist meist eben und gut erschlossen. Gemeinden achten auf Bodenqualität – Agri-PV kann eine Alternative sein."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Alleineigentum: kurze Wege bis zur Unterschrift."
+    },
+    {
+     "art": "info",
+     "punkte": 0,
+     "text": "Entfernung zum Netz unbekannt – wir fragen die Anschlusskapazität beim Netzbetreiber an."
+    }
+   ],
+   "kwh": 11127272.7273,
+   "kwp": 10909.0909091,
+   "netzProKwp": null,
+   "nutzbarHa": 12,
+   "pacht30": {
+    "max": 1835641.5188,
+    "min": 939217.807779
+   },
+   "pachtJahr": {
+    "max": 48900,
+    "min": 25020
+   },
+   "region": {
+    "ertrag": 1020,
+    "id": "de-ost",
+    "label": "Ostdeutschland",
+    "land": "DE",
+    "sub": "BB, BE, SN, ST, TH"
+   },
+   "schritte": [
+    "Flurstücke nennen – wir prüfen Schutzgebiete, Regionalplan, Netz und Einstrahlung am Kartentisch (kostenfrei).",
+    "Netzanschlussanfrage beim Netzbetreiber – erst die Kapazität entscheidet über die Parkgröße.",
+    "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
+    "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
+   ],
+   "score": 75
+  },
+  "de_0_5ha": {
+   "agri": {
+    "gapAnteil": 0.85,
+    "kwp": 192.307692308,
+    "pachtJahr": {
+     "max": 1000,
+     "min": 300
+    }
+   },
+   "ampel": "rot",
+   "carport": false,
+   "gruende": [
+    {
+     "art": "minus",
+     "punkte": -30,
+     "text": "Unter 1 ha ist ein eigener Solarpark kaum wirtschaftlich – eher Agri-PV am Hof, Carport oder Anschluss an eine Nachbarfläche."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Ackerland ist meist eben und gut erschlossen. Gemeinden achten auf Bodenqualität – Agri-PV kann eine Alternative sein."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Alleineigentum: kurze Wege bis zur Unterschrift."
+    },
+    {
+     "art": "info",
+     "punkte": 0,
+     "text": "Entfernung zum Netz unbekannt – wir fragen die Anschlusskapazität beim Netzbetreiber an."
+    }
+   ],
+   "kwh": 500000,
+   "kwp": 454.545454545,
+   "netzProKwp": null,
+   "nutzbarHa": 0.5,
+   "pacht30": {
+    "max": 52554.1539125,
+    "min": 28154.0110245
+   },
+   "pachtJahr": {
+    "max": 1400,
+    "min": 750
+   },
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "schritte": [
+    "Flurstücke nennen – wir prüfen Schutzgebiete, Regionalplan, Netz und Einstrahlung am Kartentisch (kostenfrei).",
+    "Netzanschlussanfrage beim Netzbetreiber – erst die Kapazität entscheidet über die Parkgröße.",
+    "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
+    "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
+   ],
+   "score": 30
+  },
+  "de_150ha_konversion": {
+   "agri": null,
+   "ampel": "gruen",
+   "carport": false,
+   "gruende": [
+    {
+     "art": "plus",
+     "punkte": 15,
+     "text": "Konversionsflächen sind politisch erwünscht und in Deutschland EEG-förderfähig."
+    },
+    {
+     "art": "plus",
+     "punkte": 15,
+     "text": "Netzanschluss nah: rund 36 €/kWp für Kabeltrasse und Übergabestation."
+    },
+    {
+     "art": "plus",
+     "punkte": 12,
+     "text": "Sehr große Fläche – attraktiv, aber Netzkapazität und Genehmigung werden zum Engpass; ggf. in Abschnitten."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Alleineigentum: kurze Wege bis zur Unterschrift."
+    }
+   ],
+   "kwh": 130909090.909,
+   "kwp": 136363.636364,
+   "netzProKwp": 35.616,
+   "nutzbarHa": 150,
+   "pacht30": {
+    "max": 25338609.9221,
+    "min": 12838229.0272
+   },
+   "pachtJahr": {
+    "max": 675000,
+    "min": 342000
+   },
+   "region": {
+    "ertrag": 960,
+    "id": "de-nord",
+    "label": "Norddeutschland",
+    "land": "DE",
+    "sub": "SH, HH, NI, HB, MV"
+   },
+   "schritte": [
+    "Flurstücke nennen – wir prüfen Schutzgebiete, Regionalplan, Netz und Einstrahlung am Kartentisch (kostenfrei).",
+    "Netzanschlussanfrage beim Netzbetreiber – erst die Kapazität entscheidet über die Parkgröße.",
+    "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
+    "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
+   ],
+   "score": 97
+  },
+  "de_gruenland_schutzgebiet": {
+   "agri": {
+    "gapAnteil": 0.85,
+    "kwp": 7692.30769231,
+    "pachtJahr": {
+     "max": 40000,
+     "min": 12000
+    }
+   },
+   "ampel": "rot",
+   "carport": false,
+   "gruende": [
+    {
+     "art": "minus",
+     "punkte": -30,
+     "text": "Schutzgebiet: Naturschutz-, FFH- und Wasserschutzgebiete schließen einen Solarpark meist aus; Landschaftsschutzgebiete im Einzelfall möglich."
+    },
+    {
+     "art": "plus",
+     "punkte": 20,
+     "text": "Gute Größe: Fixkosten für Planung und Netzanschluss verteilen sich auf viel Leistung."
+    },
+    {
+     "art": "minus",
+     "punkte": -10,
+     "text": "Hangneigung: Süd- und leichte Ost/West-Hänge gehen gut, steile Nordhänge kaum."
+    },
+    {
+     "art": "minus",
+     "punkte": -8,
+     "text": "Netzanschluss teuer: rund 118 €/kWp – erst ab mehr Fläche gut tragbar."
+    },
+    {
+     "art": "info",
+     "punkte": 0,
+     "text": "Grünland ist möglich; bei Dauergrünland gelten teils Umbruch- und Naturschutzauflagen."
+    },
+    {
+     "art": "info",
+     "punkte": 0,
+     "text": "Mehrere Eigentümer: Alle müssen zustimmen – wir helfen bei der Abstimmung."
+    }
+   ],
+   "kwh": 17272727.2727,
+   "kwp": 17272.7272727,
+   "netzProKwp": 118.368421053,
+   "nutzbarHa": 19,
+   "pacht30": {
+    "max": 2102166.1565,
+    "min": 1126160.44098
+   },
+   "pachtJahr": {
+    "max": 56000,
+    "min": 30000
+   },
+   "region": {
+    "ertrag": 1000,
+    "id": "de-west",
+    "label": "West- & Mitteldeutschland",
+    "land": "DE",
+    "sub": "NW, HE, RP, SL"
+   },
+   "schritte": [
+    "Flurstücke nennen – wir prüfen Schutzgebiete, Regionalplan, Netz und Einstrahlung am Kartentisch (kostenfrei).",
+    "Alle Miteigentümer frühzeitig einbinden – ein gemeinsames Gespräch spart Monate.",
+    "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
+    "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
+   ],
+   "score": 22
+  },
+  "de_benachteiligt_randstreifen": {
+   "agri": {
+    "gapAnteil": 0.85,
+    "kwp": 3076.92307692,
+    "pachtJahr": {
+     "max": 16000,
+     "min": 4800
+    }
+   },
+   "ampel": "gruen",
+   "carport": false,
+   "gruende": [
+    {
+     "art": "plus",
+     "punkte": 15,
+     "text": "Gute Größe: Fixkosten für Planung und Netzanschluss verteilen sich auf viel Leistung."
+    },
+    {
+     "art": "plus",
+     "punkte": 15,
+     "text": "Randstreifen an Autobahn/Schiene: EEG-Flächenkulisse (bis 500 m); bis 200 m ist die Anlage im Außenbereich baurechtlich privilegiert."
+    },
+    {
+     "art": "plus",
+     "punkte": 15,
+     "text": "Netzanschluss nah: rund 68 €/kWp für Kabeltrasse und Übergabestation."
+    },
+    {
+     "art": "plus",
+     "punkte": 8,
+     "text": "Benachteiligtes Gebiet: Acker- und Grünland ist dort grundsätzlich EEG-förderfähig, sofern das Land nicht ausgeschlossen hat."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Ackerland ist meist eben und gut erschlossen. Gemeinden achten auf Bodenqualität – Agri-PV kann eine Alternative sein."
+    },
+    {
+     "art": "info",
+     "punkte": 0,
+     "text": "Kommunale oder kirchliche Fläche: Gremienbeschluss und ggf. Ausschreibung einplanen."
+    }
+   ],
+   "kwh": 8000000,
+   "kwp": 7272.72727273,
+   "netzProKwp": 68,
+   "nutzbarHa": 8,
+   "pacht30": {
+    "max": 1351392.52918,
+    "min": 684705.548117
+   },
+   "pachtJahr": {
+    "max": 36000,
+    "min": 18240
+   },
+   "region": {
+    "ertrag": 1100,
+    "id": "de-sued",
+    "label": "Süddeutschland",
+    "land": "DE",
+    "sub": "BY, BW"
+   },
+   "schritte": [
+    "Flurstücke nennen – wir prüfen Schutzgebiete, Regionalplan, Netz und Einstrahlung am Kartentisch (kostenfrei).",
+    "Netzanschlussanfrage beim Netzbetreiber – erst die Kapazität entscheidet über die Parkgröße.",
+    "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
+    "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
+   ],
+   "score": 100
+  },
+  "de_parkplatz_verpachtet": {
+   "agri": null,
+   "ampel": "rot",
+   "carport": true,
+   "gruende": [
+    {
+     "art": "minus",
+     "punkte": -20,
+     "text": "Netzanschluss sehr teuer: rund 299 €/kWp. Mit Nachbarflächen oder Speicher neu rechnen."
+    },
+    {
+     "art": "minus",
+     "punkte": -10,
+     "text": "Unter 3 ha wird es knapp; mit Nachbarflächen oder als Agri-PV kann es passen."
+    },
+    {
+     "art": "minus",
+     "punkte": -3,
+     "text": "Bestehender Landpachtvertrag: Kündigungsfristen und Ausgleich für den Pächter einplanen."
+    },
+    {
+     "art": "info",
+     "punkte": 0,
+     "text": "Auf Parkplätzen wird statt eines Solarparks ein Solarcarport gebaut – eigenes Modell, gern prüfen wir beides."
+    }
+   ],
+   "kwh": 1745454.54545,
+   "kwp": 1818.18181818,
+   "netzProKwp": 299,
+   "nutzbarHa": 2,
+   "pacht30": {
+    "max": 210216.61565,
+    "min": 112616.044098
+   },
+   "pachtJahr": {
+    "max": 5600,
+    "min": 3000
+   },
+   "region": {
+    "ertrag": 960,
+    "id": "de-nord",
+    "label": "Norddeutschland",
+    "land": "DE",
+    "sub": "SH, HH, NI, HB, MV"
+   },
+   "schritte": [
+    "Flurstücke nennen – wir prüfen Schutzgebiete, Regionalplan, Netz und Einstrahlung am Kartentisch (kostenfrei).",
+    "Laufenden Landpachtvertrag prüfen: Kündigungsfrist, Teilflächen, Ausgleich für den Pächter.",
+    "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
+    "Parkplatz: Solarcarport mit Ladepunkten als Alternative rechnen.",
+    "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
+   ],
+   "score": 17
+  },
+  "de_wald_ueberschwemmung": {
+   "agri": null,
+   "ampel": "gelb",
+   "carport": false,
+   "gruende": [
+    {
+     "art": "plus",
+     "punkte": 20,
+     "text": "Gute Größe: Fixkosten für Planung und Netzanschluss verteilen sich auf viel Leistung."
+    },
+    {
+     "art": "minus",
+     "punkte": -20,
+     "text": "Überschwemmungsgebiet: nur mit wasserrechtlicher Ausnahme und erhöhter Aufständerung."
+    },
+    {
+     "art": "minus",
+     "punkte": -8,
+     "text": "Waldrand: Abstand, Verschattung und Brandschutz kosten nutzbare Fläche."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Netzanschluss tragbar: rund 71 €/kWp."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Alleineigentum: kurze Wege bis zur Unterschrift."
+    },
+    {
+     "art": "info",
+     "punkte": 0,
+     "text": "Die Nutzung klären wir im Gespräch – Brachen sind oft gut geeignet."
+    }
+   ],
+   "kwh": 24087272.7273,
+   "kwp": 25090.9090909,
+   "netzProKwp": 70.8695652174,
+   "nutzbarHa": 27.6,
+   "pacht30": {
+    "max": 3855222.57629,
+    "min": 2011322.54759
+   },
+   "pachtJahr": {
+    "max": 102700,
+    "min": 53580
+   },
+   "region": {
+    "ertrag": 960,
+    "id": "de-nord",
+    "label": "Norddeutschland",
+    "land": "DE",
+    "sub": "SH, HH, NI, HB, MV"
+   },
+   "schritte": [
+    "Flurstücke nennen – wir prüfen Schutzgebiete, Regionalplan, Netz und Einstrahlung am Kartentisch (kostenfrei).",
+    "Netzanschlussanfrage beim Netzbetreiber – erst die Kapazität entscheidet über die Parkgröße.",
+    "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
+    "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
+   ],
+   "score": 52
+  },
+  "at_12ha": {
+   "agri": {
+    "gapAnteil": 0.85,
+    "kwp": 4615.38461538,
+    "pachtJahr": {
+     "max": 24000,
+     "min": 7200
+    }
+   },
+   "ampel": "gruen",
+   "carport": false,
+   "gruende": [
+    {
+     "art": "plus",
+     "punkte": 15,
+     "text": "Gute Größe: Fixkosten für Planung und Netzanschluss verteilen sich auf viel Leistung."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Ackerland ist meist eben und gut erschlossen. Gemeinden achten auf Bodenqualität – Agri-PV kann eine Alternative sein."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Alleineigentum: kurze Wege bis zur Unterschrift."
+    },
+    {
+     "art": "info",
+     "punkte": 0,
+     "text": "Entfernung zum Netz unbekannt – wir fragen die Anschlusskapazität beim Netzbetreiber an."
+    },
+    {
+     "art": "info",
+     "punkte": 0,
+     "text": "Österreich: Nötig ist eine Widmung als Grünland-Photovoltaik bzw. eine Zonierung nach Landesrecht – die Regeln unterscheiden sich je Bundesland."
+    }
+   ],
+   "kwh": 12218181.8182,
+   "kwp": 10909.0909091,
+   "netzProKwp": null,
+   "nutzbarHa": 12,
+   "pacht30": {
+    "max": 1835641.5188,
+    "min": 939217.807779
+   },
+   "pachtJahr": {
+    "max": 48900,
+    "min": 25020
+   },
+   "region": {
+    "ertrag": 1120,
+    "id": "at",
+    "label": "Österreich",
+    "land": "AT",
+    "sub": "Flach- und Hügelland"
+   },
+   "schritte": [
+    "Flurstücke nennen – wir prüfen Schutzgebiete, Regionalplan, Netz und Einstrahlung am Kartentisch (kostenfrei).",
+    "Netzanschlussanfrage beim Netzbetreiber – erst die Kapazität entscheidet über die Parkgröße.",
+    "Abstimmung mit der Gemeinde zur Widmung Grünland-Photovoltaik und zur Landes-Zonierung.",
+    "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
+   ],
+   "score": 75
+  },
+  "ch_12ha": {
+   "agri": {
+    "gapAnteil": 0.85,
+    "kwp": 4615.38461538,
+    "pachtJahr": {
+     "max": 24000,
+     "min": 7200
+    }
+   },
+   "ampel": "gruen",
+   "carport": false,
+   "gruende": [
+    {
+     "art": "plus",
+     "punkte": 15,
+     "text": "Gute Größe: Fixkosten für Planung und Netzanschluss verteilen sich auf viel Leistung."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Ackerland ist meist eben und gut erschlossen. Gemeinden achten auf Bodenqualität – Agri-PV kann eine Alternative sein."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Alleineigentum: kurze Wege bis zur Unterschrift."
+    },
+    {
+     "art": "info",
+     "punkte": 0,
+     "text": "Entfernung zum Netz unbekannt – wir fragen die Anschlusskapazität beim Netzbetreiber an."
+    },
+    {
+     "art": "info",
+     "punkte": 0,
+     "text": "Schweiz: Außerhalb der Bauzone braucht es Standortgebundenheit nach Raumplanungsrecht; große Freiflächenanlagen sind nur eingeschränkt möglich."
+    }
+   ],
+   "kwh": 11454545.4545,
+   "kwp": 10909.0909091,
+   "netzProKwp": null,
+   "nutzbarHa": 12,
+   "pacht30": {
+    "max": 1835641.5188,
+    "min": 939217.807779
+   },
+   "pachtJahr": {
+    "max": 48900,
+    "min": 25020
+   },
+   "region": {
+    "ertrag": 1050,
+    "id": "ch",
+    "label": "Schweiz",
+    "land": "CH",
+    "sub": "Mittelland"
+   },
+   "schritte": [
+    "Flurstücke nennen – wir prüfen Schutzgebiete, Regionalplan, Netz und Einstrahlung am Kartentisch (kostenfrei).",
+    "Netzanschlussanfrage beim Netzbetreiber – erst die Kapazität entscheidet über die Parkgröße.",
+    "Vorabklärung mit Gemeinde und kantonaler Fachstelle zur Standortgebundenheit.",
+    "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
+   ],
+   "score": 75
+  },
+  "ha_null": {
+   "agri": {
+    "gapAnteil": 0.85,
+    "kwp": 0,
+    "pachtJahr": {
+     "max": 0,
+     "min": 0
+    }
+   },
+   "ampel": "rot",
+   "carport": false,
+   "gruende": [
+    {
+     "art": "minus",
+     "punkte": -30,
+     "text": "Unter 1 ha ist ein eigener Solarpark kaum wirtschaftlich – eher Agri-PV am Hof, Carport oder Anschluss an eine Nachbarfläche."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Ackerland ist meist eben und gut erschlossen. Gemeinden achten auf Bodenqualität – Agri-PV kann eine Alternative sein."
+    },
+    {
+     "art": "plus",
+     "punkte": 5,
+     "text": "Alleineigentum: kurze Wege bis zur Unterschrift."
+    },
+    {
+     "art": "info",
+     "punkte": 0,
+     "text": "Entfernung zum Netz unbekannt – wir fragen die Anschlusskapazität beim Netzbetreiber an."
+    }
+   ],
+   "kwh": 0,
+   "kwp": 0,
+   "netzProKwp": null,
+   "nutzbarHa": 0,
+   "pacht30": {
+    "max": 0,
+    "min": 0
+   },
+   "pachtJahr": {
+    "max": 0,
+    "min": 0
+   },
+   "region": {
+    "ertrag": 960,
+    "id": "de-nord",
+    "label": "Norddeutschland",
+    "land": "DE",
+    "sub": "SH, HH, NI, HB, MV"
+   },
+   "schritte": [
+    "Flurstücke nennen – wir prüfen Schutzgebiete, Regionalplan, Netz und Einstrahlung am Kartentisch (kostenfrei).",
+    "Netzanschlussanfrage beim Netzbetreiber – erst die Kapazität entscheidet über die Parkgröße.",
+    "Frühes Gespräch mit der Gemeinde – ohne Bebauungsplan (Ausnahme: privilegierte Flächen) geht es in Deutschland nicht.",
+    "Pachtangebot mit Vertragsentwurf – Sie prüfen in Ruhe, gern mit Ihrer Beratung."
+   ],
+   "score": 30
+  }
+ }
+}

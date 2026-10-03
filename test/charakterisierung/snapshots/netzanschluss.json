@@ -1,0 +1,652 @@
+{
+ "rechner": "netzanschluss",
+ "modul": "src/lib/rechner/netzanschluss.js",
+ "faelle": {
+  "standard": {
+   "ampel": "pruefen",
+   "anschlussMw": 10,
+   "anteil": 0.142553191489,
+   "ebene": "msLeitung",
+   "eingabe": {
+    "anschlussQuote": 1,
+    "cluster": false,
+    "ebene": "auto",
+    "kapazitaet": "unbekannt",
+    "km": 2,
+    "land": "de",
+    "mwp": 10,
+    "speicherMw": 0,
+    "speicherNetzbezug": false
+   },
+   "kabelSysteme": 1,
+   "monate": [
+    9,
+    30
+   ],
+   "posten": [
+    {
+     "eur": 350000,
+     "geteilt": false,
+     "id": "station",
+     "label": "Übergabe- und Trafostationen im Park"
+    },
+    {
+     "eur": 80000,
+     "geteilt": false,
+     "id": "einschleifen",
+     "label": "Einschleifen in die MS-Leitung"
+    },
+    {
+     "eur": 240000,
+     "geteilt": false,
+     "id": "kabel",
+     "label": "Kabeltrasse 20 kV (1 System)"
+    }
+   ],
+   "proKwp": 67,
+   "risiken": [
+    "Kapazität unbekannt: Die Netzverträglichkeitsprüfung kann einen weiter entfernten Verknüpfungspunkt ergeben – das ändert Kosten und Zeitplan erheblich."
+   ],
+   "spanne": {
+    "max": 938000,
+    "min": 536000
+   },
+   "summe": 670000,
+   "tipps": [
+    "Netzanschlussbegehren früh und vollständig nach § 8 EEG stellen: Der Netzbetreiber muss unverzüglich einen Zeitplan nennen und spätestens nach 8 Wochen das Ergebnis der Netzverträglichkeitsprüfung samt Kostenvoranschlag vorlegen (§ 8 Abs. 5 und 6 EEG).",
+    "Reservierung klären: Viele Netzbetreiber reservieren Kapazität nur befristet und verlangen Nachweise zum Projektfortschritt (etwa Flächensicherung, Aufstellungsbeschluss) – teils mit Reservierungsentgelt. Die Regeln unterscheiden sich je Netzbetreiber.",
+    "Clusterung prüfen: Mit Nachbarprojekten eine gemeinsame Trasse oder ein gemeinsames Umspannwerk nutzen – das teilt Kosten und Planungsaufwand.",
+    "Überbauung erwägen: Mit 70–80 % Anschlussleistung je MWp gehen oft nur wenige Prozent Ertrag verloren; eine flexible Netzanschlussvereinbarung nach § 8a EEG kann Kapazität schneller verfügbar machen.",
+    "Speicher am selben Anschluss (Co-Location) glättet die Einspeisespitze, fängt Abregelung auf und schafft zusätzliche Erlöse.",
+    "Leitungsrechte früh sichern: Dienstbarkeiten entlang der Trasse sind oft der längste Weg – parallel zum B-Plan-Verfahren beginnen."
+   ],
+   "ueberbauung": {
+    "einsparung": 0,
+    "lohnt": false,
+    "speicherAuffang": 0,
+    "verlust": 0,
+    "verlustBarwert": 0,
+    "verlustEurJahr": 0,
+    "verlustKwh": 0
+   },
+   "vorschlag": "msLeitung"
+  },
+  "gross_80mwp_hs": {
+   "ampel": "kritisch",
+   "anschlussMw": 80,
+   "anteil": 0.627659574468,
+   "ebene": "hs",
+   "eingabe": {
+    "anschlussQuote": 1,
+    "cluster": false,
+    "ebene": "hs",
+    "kapazitaet": "unbekannt",
+    "km": 12,
+    "land": "de",
+    "mwp": 80,
+    "speicherMw": 0,
+    "speicherNetzbezug": false
+   },
+   "kabelSysteme": 7,
+   "monate": [
+    27,
+    69
+   ],
+   "posten": [
+    {
+     "eur": 2800000,
+     "geteilt": false,
+     "id": "station",
+     "label": "Übergabe- und Trafostationen im Park"
+    },
+    {
+     "eur": 5200000,
+     "geteilt": false,
+     "id": "uw",
+     "label": "Eigenes Umspannwerk 110/20 kV"
+    },
+    {
+     "eur": 15600000,
+     "geteilt": false,
+     "id": "kabel",
+     "label": "Kabeltrasse 110 kV"
+    }
+   ],
+   "proKwp": 295,
+   "risiken": [
+    "Kapazität unbekannt: Die Netzverträglichkeitsprüfung kann einen weiter entfernten Verknüpfungspunkt ergeben – das ändert Kosten und Zeitplan erheblich.",
+    "Lange Trasse (12 km): Jedes Flurstück braucht eine Leitungsdienstbarkeit; Querungen von Straßen, Bahn und Gewässern verlängern Planung und Genehmigung.",
+    "110-kV-Anschluss: eigenes Umspannwerk mit langen Lieferzeiten für Transformatoren und eigenem Genehmigungsverfahren.",
+    "Der Netzanschluss macht rund 63 % der Anlagenkosten aus – das drückt die Rendite spürbar."
+   ],
+   "spanne": {
+    "max": 33040000,
+    "min": 18880000
+   },
+   "summe": 23600000,
+   "tipps": [
+    "Netzanschlussbegehren früh und vollständig nach § 8 EEG stellen: Der Netzbetreiber muss unverzüglich einen Zeitplan nennen und spätestens nach 8 Wochen das Ergebnis der Netzverträglichkeitsprüfung samt Kostenvoranschlag vorlegen (§ 8 Abs. 5 und 6 EEG).",
+    "Reservierung klären: Viele Netzbetreiber reservieren Kapazität nur befristet und verlangen Nachweise zum Projektfortschritt (etwa Flächensicherung, Aufstellungsbeschluss) – teils mit Reservierungsentgelt. Die Regeln unterscheiden sich je Netzbetreiber.",
+    "Clusterung prüfen: Mit Nachbarprojekten eine gemeinsame Trasse oder ein gemeinsames Umspannwerk nutzen – das teilt Kosten und Planungsaufwand.",
+    "Überbauung erwägen: Mit 70–80 % Anschlussleistung je MWp gehen oft nur wenige Prozent Ertrag verloren; eine flexible Netzanschlussvereinbarung nach § 8a EEG kann Kapazität schneller verfügbar machen.",
+    "Speicher am selben Anschluss (Co-Location) glättet die Einspeisespitze, fängt Abregelung auf und schafft zusätzliche Erlöse.",
+    "Leitungsrechte früh sichern: Dienstbarkeiten entlang der Trasse sind oft der längste Weg – parallel zum B-Plan-Verfahren beginnen."
+   ],
+   "ueberbauung": {
+    "einsparung": 0,
+    "lohnt": false,
+    "speicherAuffang": 0,
+    "verlust": 0,
+    "verlustBarwert": 0,
+    "verlustEurJahr": 0,
+    "verlustKwh": 0
+   },
+   "vorschlag": "hs"
+  },
+  "knapp_ueberbaut_speicher": {
+   "ampel": "kritisch",
+   "anschlussMw": 7,
+   "anteil": 0.275531914894,
+   "ebene": "msLeitung",
+   "eingabe": {
+    "anschlussQuote": 0.7,
+    "cluster": false,
+    "ebene": "auto",
+    "kapazitaet": "knapp",
+    "km": 2,
+    "land": "de",
+    "mwp": 10,
+    "speicherMw": 5,
+    "speicherNetzbezug": true
+   },
+   "kabelSysteme": 1,
+   "monate": [
+    33,
+    78
+   ],
+   "posten": [
+    {
+     "eur": 350000,
+     "geteilt": false,
+     "id": "station",
+     "label": "Übergabe- und Trafostationen im Park"
+    },
+    {
+     "eur": 80000,
+     "geteilt": false,
+     "id": "einschleifen",
+     "label": "Einschleifen in die MS-Leitung"
+    },
+    {
+     "eur": 240000,
+     "geteilt": false,
+     "id": "kabel",
+     "label": "Kabeltrasse 20 kV (1 System)"
+    },
+    {
+     "eur": 625000,
+     "geteilt": false,
+     "id": "bkz",
+     "label": "Baukostenzuschuss für Netzbezug des Speichers"
+    }
+   ],
+   "proKwp": 129.5,
+   "risiken": [
+    "Netzausbau durch den Netzbetreiber nötig – die Kosten trägt er (§ 17 EEG), die Zeit tragen Sie: oft mehrere Jahre bis zur Einspeisung.",
+    "Der Netzanschluss macht rund 28 % der Anlagenkosten aus – das drückt die Rendite spürbar.",
+    "Speicher mit Netzbezug: Baukostenzuschuss (BGH, 15.07.2025) und Bezugsnetzentgelte einplanen; Befreiungen nach aktuellem Stand befristet."
+   ],
+   "spanne": {
+    "max": 1813000,
+    "min": 1036000
+   },
+   "summe": 1295000,
+   "tipps": [
+    "Netzanschlussbegehren früh und vollständig nach § 8 EEG stellen: Der Netzbetreiber muss unverzüglich einen Zeitplan nennen und spätestens nach 8 Wochen das Ergebnis der Netzverträglichkeitsprüfung samt Kostenvoranschlag vorlegen (§ 8 Abs. 5 und 6 EEG).",
+    "Reservierung klären: Viele Netzbetreiber reservieren Kapazität nur befristet und verlangen Nachweise zum Projektfortschritt (etwa Flächensicherung, Aufstellungsbeschluss) – teils mit Reservierungsentgelt. Die Regeln unterscheiden sich je Netzbetreiber.",
+    "Clusterung prüfen: Mit Nachbarprojekten eine gemeinsame Trasse oder ein gemeinsames Umspannwerk nutzen – das teilt Kosten und Planungsaufwand.",
+    "Leitungsrechte früh sichern: Dienstbarkeiten entlang der Trasse sind oft der längste Weg – parallel zum B-Plan-Verfahren beginnen."
+   ],
+   "ueberbauung": {
+    "einsparung": 0,
+    "lohnt": false,
+    "speicherAuffang": 0.8,
+    "verlust": 0.008,
+    "verlustBarwert": 48811.9854697,
+    "verlustEurJahr": 3916.8,
+    "verlustKwh": 81600
+   },
+   "vorschlag": "msLeitung"
+  },
+  "cluster_frei": {
+   "ampel": "gut",
+   "anschlussMw": 10,
+   "anteil": 0.117021276596,
+   "ebene": "msLeitung",
+   "eingabe": {
+    "anschlussQuote": 1,
+    "cluster": true,
+    "ebene": "auto",
+    "kapazitaet": "frei",
+    "km": 2,
+    "land": "de",
+    "mwp": 10,
+    "speicherMw": 0,
+    "speicherNetzbezug": false
+   },
+   "kabelSysteme": 1,
+   "monate": [
+    9,
+    18
+   ],
+   "posten": [
+    {
+     "eur": 350000,
+     "geteilt": false,
+     "id": "station",
+     "label": "Übergabe- und Trafostationen im Park"
+    },
+    {
+     "eur": 80000,
+     "geteilt": false,
+     "id": "einschleifen",
+     "label": "Einschleifen in die MS-Leitung"
+    },
+    {
+     "eur": 120000,
+     "geteilt": true,
+     "id": "kabel",
+     "label": "Kabeltrasse 20 kV (1 System)"
+    }
+   ],
+   "proKwp": 55,
+   "risiken": [
+    "Keine auffälligen Risiken aus den Angaben – entscheidend ist die verbindliche Auskunft des Netzbetreibers."
+   ],
+   "spanne": {
+    "max": 770000,
+    "min": 440000
+   },
+   "summe": 550000,
+   "tipps": [
+    "Netzanschlussbegehren früh und vollständig nach § 8 EEG stellen: Der Netzbetreiber muss unverzüglich einen Zeitplan nennen und spätestens nach 8 Wochen das Ergebnis der Netzverträglichkeitsprüfung samt Kostenvoranschlag vorlegen (§ 8 Abs. 5 und 6 EEG).",
+    "Reservierung klären: Viele Netzbetreiber reservieren Kapazität nur befristet und verlangen Nachweise zum Projektfortschritt (etwa Flächensicherung, Aufstellungsbeschluss) – teils mit Reservierungsentgelt. Die Regeln unterscheiden sich je Netzbetreiber.",
+    "Clusterung: Kostenaufteilung, Bauabfolge und Haftung bei Verzögerung eines Partners vertraglich regeln.",
+    "Überbauung erwägen: Mit 70–80 % Anschlussleistung je MWp gehen oft nur wenige Prozent Ertrag verloren; eine flexible Netzanschlussvereinbarung nach § 8a EEG kann Kapazität schneller verfügbar machen.",
+    "Speicher am selben Anschluss (Co-Location) glättet die Einspeisespitze, fängt Abregelung auf und schafft zusätzliche Erlöse.",
+    "Leitungsrechte früh sichern: Dienstbarkeiten entlang der Trasse sind oft der längste Weg – parallel zum B-Plan-Verfahren beginnen."
+   ],
+   "ueberbauung": {
+    "einsparung": 0,
+    "lohnt": false,
+    "speicherAuffang": 0,
+    "verlust": 0,
+    "verlustBarwert": 0,
+    "verlustEurJahr": 0,
+    "verlustKwh": 0
+   },
+   "vorschlag": "msLeitung"
+  },
+  "msLeitung_kurz": {
+   "ampel": "pruefen",
+   "anschlussMw": 3,
+   "anteil": 0.173758865248,
+   "ebene": "msLeitung",
+   "eingabe": {
+    "anschlussQuote": 1,
+    "cluster": false,
+    "ebene": "msLeitung",
+    "kapazitaet": "unbekannt",
+    "km": 0.5,
+    "land": "de",
+    "mwp": 3,
+    "speicherMw": 0,
+    "speicherNetzbezug": false
+   },
+   "kabelSysteme": 1,
+   "monate": [
+    9,
+    30
+   ],
+   "posten": [
+    {
+     "eur": 105000,
+     "geteilt": false,
+     "id": "station",
+     "label": "Übergabe- und Trafostationen im Park"
+    },
+    {
+     "eur": 80000,
+     "geteilt": false,
+     "id": "einschleifen",
+     "label": "Einschleifen in die MS-Leitung"
+    },
+    {
+     "eur": 60000,
+     "geteilt": false,
+     "id": "kabel",
+     "label": "Kabeltrasse 20 kV (1 System)"
+    }
+   ],
+   "proKwp": 81.6666666667,
+   "risiken": [
+    "Kapazität unbekannt: Die Netzverträglichkeitsprüfung kann einen weiter entfernten Verknüpfungspunkt ergeben – das ändert Kosten und Zeitplan erheblich.",
+    "Der Netzanschluss macht rund 17 % der Anlagenkosten aus – das drückt die Rendite spürbar."
+   ],
+   "spanne": {
+    "max": 343000,
+    "min": 196000
+   },
+   "summe": 245000,
+   "tipps": [
+    "Netzanschlussbegehren früh und vollständig nach § 8 EEG stellen: Der Netzbetreiber muss unverzüglich einen Zeitplan nennen und spätestens nach 8 Wochen das Ergebnis der Netzverträglichkeitsprüfung samt Kostenvoranschlag vorlegen (§ 8 Abs. 5 und 6 EEG).",
+    "Reservierung klären: Viele Netzbetreiber reservieren Kapazität nur befristet und verlangen Nachweise zum Projektfortschritt (etwa Flächensicherung, Aufstellungsbeschluss) – teils mit Reservierungsentgelt. Die Regeln unterscheiden sich je Netzbetreiber.",
+    "Clusterung prüfen: Mit Nachbarprojekten eine gemeinsame Trasse oder ein gemeinsames Umspannwerk nutzen – das teilt Kosten und Planungsaufwand.",
+    "Überbauung erwägen: Mit 70–80 % Anschlussleistung je MWp gehen oft nur wenige Prozent Ertrag verloren; eine flexible Netzanschlussvereinbarung nach § 8a EEG kann Kapazität schneller verfügbar machen.",
+    "Speicher am selben Anschluss (Co-Location) glättet die Einspeisespitze, fängt Abregelung auf und schafft zusätzliche Erlöse.",
+    "Leitungsrechte früh sichern: Dienstbarkeiten entlang der Trasse sind oft der längste Weg – parallel zum B-Plan-Verfahren beginnen."
+   ],
+   "ueberbauung": {
+    "einsparung": 0,
+    "lohnt": false,
+    "speicherAuffang": 0,
+    "verlust": 0,
+    "verlustBarwert": 0,
+    "verlustEurJahr": 0,
+    "verlustKwh": 0
+   },
+   "vorschlag": "msLeitung"
+  },
+  "uwMs": {
+   "ampel": "pruefen",
+   "anschlussMw": 25,
+   "anteil": 0.183234042553,
+   "ebene": "uwMs",
+   "eingabe": {
+    "anschlussQuote": 1,
+    "cluster": false,
+    "ebene": "uwMs",
+    "kapazitaet": "unbekannt",
+    "km": 2,
+    "land": "de",
+    "mwp": 25,
+    "speicherMw": 0,
+    "speicherNetzbezug": false
+   },
+   "kabelSysteme": 3,
+   "monate": [
+    12,
+    42
+   ],
+   "posten": [
+    {
+     "eur": 875000,
+     "geteilt": false,
+     "id": "station",
+     "label": "Übergabe- und Trafostationen im Park"
+    },
+    {
+     "eur": 750000,
+     "geteilt": false,
+     "id": "feld",
+     "label": "Schaltfelder im Umspannwerk (3)"
+    },
+    {
+     "eur": 528000,
+     "geteilt": false,
+     "id": "kabel",
+     "label": "Kabeltrasse 20 kV (3 Systeme)"
+    }
+   ],
+   "proKwp": 86.12,
+   "risiken": [
+    "Kapazität unbekannt: Die Netzverträglichkeitsprüfung kann einen weiter entfernten Verknüpfungspunkt ergeben – das ändert Kosten und Zeitplan erheblich.",
+    "Der Netzanschluss macht rund 18 % der Anlagenkosten aus – das drückt die Rendite spürbar."
+   ],
+   "spanne": {
+    "max": 3014200,
+    "min": 1722400
+   },
+   "summe": 2153000,
+   "tipps": [
+    "Netzanschlussbegehren früh und vollständig nach § 8 EEG stellen: Der Netzbetreiber muss unverzüglich einen Zeitplan nennen und spätestens nach 8 Wochen das Ergebnis der Netzverträglichkeitsprüfung samt Kostenvoranschlag vorlegen (§ 8 Abs. 5 und 6 EEG).",
+    "Reservierung klären: Viele Netzbetreiber reservieren Kapazität nur befristet und verlangen Nachweise zum Projektfortschritt (etwa Flächensicherung, Aufstellungsbeschluss) – teils mit Reservierungsentgelt. Die Regeln unterscheiden sich je Netzbetreiber.",
+    "Clusterung prüfen: Mit Nachbarprojekten eine gemeinsame Trasse oder ein gemeinsames Umspannwerk nutzen – das teilt Kosten und Planungsaufwand.",
+    "Überbauung erwägen: Mit 70–80 % Anschlussleistung je MWp gehen oft nur wenige Prozent Ertrag verloren; eine flexible Netzanschlussvereinbarung nach § 8a EEG kann Kapazität schneller verfügbar machen.",
+    "Speicher am selben Anschluss (Co-Location) glättet die Einspeisespitze, fängt Abregelung auf und schafft zusätzliche Erlöse.",
+    "Leitungsrechte früh sichern: Dienstbarkeiten entlang der Trasse sind oft der längste Weg – parallel zum B-Plan-Verfahren beginnen."
+   ],
+   "ueberbauung": {
+    "einsparung": 0,
+    "lohnt": false,
+    "speicherAuffang": 0,
+    "verlust": 0,
+    "verlustBarwert": 0,
+    "verlustEurJahr": 0,
+    "verlustKwh": 0
+   },
+   "vorschlag": "uwMs"
+  },
+  "km_null": {
+   "ampel": "pruefen",
+   "anschlussMw": 10,
+   "anteil": 0.0914893617021,
+   "ebene": "msLeitung",
+   "eingabe": {
+    "anschlussQuote": 1,
+    "cluster": false,
+    "ebene": "auto",
+    "kapazitaet": "unbekannt",
+    "km": 0,
+    "land": "de",
+    "mwp": 10,
+    "speicherMw": 0,
+    "speicherNetzbezug": false
+   },
+   "kabelSysteme": 1,
+   "monate": [
+    9,
+    30
+   ],
+   "posten": [
+    {
+     "eur": 350000,
+     "geteilt": false,
+     "id": "station",
+     "label": "Übergabe- und Trafostationen im Park"
+    },
+    {
+     "eur": 80000,
+     "geteilt": false,
+     "id": "einschleifen",
+     "label": "Einschleifen in die MS-Leitung"
+    },
+    {
+     "eur": 0,
+     "geteilt": false,
+     "id": "kabel",
+     "label": "Kabeltrasse 20 kV (1 System)"
+    }
+   ],
+   "proKwp": 43,
+   "risiken": [
+    "Kapazität unbekannt: Die Netzverträglichkeitsprüfung kann einen weiter entfernten Verknüpfungspunkt ergeben – das ändert Kosten und Zeitplan erheblich."
+   ],
+   "spanne": {
+    "max": 602000,
+    "min": 344000
+   },
+   "summe": 430000,
+   "tipps": [
+    "Netzanschlussbegehren früh und vollständig nach § 8 EEG stellen: Der Netzbetreiber muss unverzüglich einen Zeitplan nennen und spätestens nach 8 Wochen das Ergebnis der Netzverträglichkeitsprüfung samt Kostenvoranschlag vorlegen (§ 8 Abs. 5 und 6 EEG).",
+    "Reservierung klären: Viele Netzbetreiber reservieren Kapazität nur befristet und verlangen Nachweise zum Projektfortschritt (etwa Flächensicherung, Aufstellungsbeschluss) – teils mit Reservierungsentgelt. Die Regeln unterscheiden sich je Netzbetreiber.",
+    "Clusterung prüfen: Mit Nachbarprojekten eine gemeinsame Trasse oder ein gemeinsames Umspannwerk nutzen – das teilt Kosten und Planungsaufwand.",
+    "Überbauung erwägen: Mit 70–80 % Anschlussleistung je MWp gehen oft nur wenige Prozent Ertrag verloren; eine flexible Netzanschlussvereinbarung nach § 8a EEG kann Kapazität schneller verfügbar machen.",
+    "Speicher am selben Anschluss (Co-Location) glättet die Einspeisespitze, fängt Abregelung auf und schafft zusätzliche Erlöse.",
+    "Leitungsrechte früh sichern: Dienstbarkeiten entlang der Trasse sind oft der längste Weg – parallel zum B-Plan-Verfahren beginnen."
+   ],
+   "ueberbauung": {
+    "einsparung": 0,
+    "lohnt": false,
+    "speicherAuffang": 0,
+    "verlust": 0,
+    "verlustBarwert": 0,
+    "verlustEurJahr": 0,
+    "verlustKwh": 0
+   },
+   "vorschlag": "msLeitung"
+  },
+  "at": {
+   "ampel": "pruefen",
+   "anschlussMw": 10,
+   "anteil": 0.142553191489,
+   "ebene": "msLeitung",
+   "eingabe": {
+    "anschlussQuote": 1,
+    "cluster": false,
+    "ebene": "auto",
+    "kapazitaet": "unbekannt",
+    "km": 2,
+    "land": "at",
+    "mwp": 10,
+    "speicherMw": 0,
+    "speicherNetzbezug": false
+   },
+   "kabelSysteme": 1,
+   "monate": [
+    9,
+    30
+   ],
+   "posten": [
+    {
+     "eur": 350000,
+     "geteilt": false,
+     "id": "station",
+     "label": "Übergabe- und Trafostationen im Park"
+    },
+    {
+     "eur": 80000,
+     "geteilt": false,
+     "id": "einschleifen",
+     "label": "Einschleifen in die MS-Leitung"
+    },
+    {
+     "eur": 240000,
+     "geteilt": false,
+     "id": "kabel",
+     "label": "Kabeltrasse 20 kV (1 System)"
+    }
+   ],
+   "proKwp": 67,
+   "risiken": [
+    "Kapazität unbekannt: Die Netzverträglichkeitsprüfung kann einen weiter entfernten Verknüpfungspunkt ergeben – das ändert Kosten und Zeitplan erheblich."
+   ],
+   "spanne": {
+    "max": 938000,
+    "min": 536000
+   },
+   "summe": 670000,
+   "tipps": [
+    "Österreich: Netzzugang beim Verteilnetzbetreiber beantragen; es fallen Netzzutritts- und ggf. Netzbereitstellungsentgelte an. Kapazitäten werden je Netzbereich veröffentlicht – früh prüfen.",
+    "Clusterung prüfen: Mit Nachbarprojekten eine gemeinsame Trasse oder ein gemeinsames Umspannwerk nutzen – das teilt Kosten und Planungsaufwand.",
+    "Überbauung erwägen: Mit 70–80 % Anschlussleistung je MWp gehen oft nur wenige Prozent Ertrag verloren; eine flexible Netzanschlussvereinbarung nach § 8a EEG kann Kapazität schneller verfügbar machen.",
+    "Speicher am selben Anschluss (Co-Location) glättet die Einspeisespitze, fängt Abregelung auf und schafft zusätzliche Erlöse.",
+    "Leitungsrechte früh sichern: Dienstbarkeiten entlang der Trasse sind oft der längste Weg – parallel zum B-Plan-Verfahren beginnen."
+   ],
+   "ueberbauung": {
+    "einsparung": 0,
+    "lohnt": false,
+    "speicherAuffang": 0,
+    "verlust": 0,
+    "verlustBarwert": 0,
+    "verlustEurJahr": 0,
+    "verlustKwh": 0
+   },
+   "vorschlag": "msLeitung"
+  },
+  "ch": {
+   "ampel": "pruefen",
+   "anschlussMw": 10,
+   "anteil": 0.142553191489,
+   "ebene": "msLeitung",
+   "eingabe": {
+    "anschlussQuote": 1,
+    "cluster": false,
+    "ebene": "auto",
+    "kapazitaet": "unbekannt",
+    "km": 2,
+    "land": "ch",
+    "mwp": 10,
+    "speicherMw": 0,
+    "speicherNetzbezug": false
+   },
+   "kabelSysteme": 1,
+   "monate": [
+    9,
+    30
+   ],
+   "posten": [
+    {
+     "eur": 350000,
+     "geteilt": false,
+     "id": "station",
+     "label": "Übergabe- und Trafostationen im Park"
+    },
+    {
+     "eur": 80000,
+     "geteilt": false,
+     "id": "einschleifen",
+     "label": "Einschleifen in die MS-Leitung"
+    },
+    {
+     "eur": 240000,
+     "geteilt": false,
+     "id": "kabel",
+     "label": "Kabeltrasse 20 kV (1 System)"
+    }
+   ],
+   "proKwp": 67,
+   "risiken": [
+    "Kapazität unbekannt: Die Netzverträglichkeitsprüfung kann einen weiter entfernten Verknüpfungspunkt ergeben – das ändert Kosten und Zeitplan erheblich."
+   ],
+   "spanne": {
+    "max": 938000,
+    "min": 536000
+   },
+   "summe": 670000,
+   "tipps": [
+    "Schweiz: Anschlussbedingungen des Verteilnetzbetreibers maßgeblich; notwendige Netzverstärkungen werden in der Regel über die Netzkosten (Swissgrid) getragen – vorab bestätigen lassen.",
+    "Clusterung prüfen: Mit Nachbarprojekten eine gemeinsame Trasse oder ein gemeinsames Umspannwerk nutzen – das teilt Kosten und Planungsaufwand.",
+    "Überbauung erwägen: Mit 70–80 % Anschlussleistung je MWp gehen oft nur wenige Prozent Ertrag verloren; eine flexible Netzanschlussvereinbarung nach § 8a EEG kann Kapazität schneller verfügbar machen.",
+    "Speicher am selben Anschluss (Co-Location) glättet die Einspeisespitze, fängt Abregelung auf und schafft zusätzliche Erlöse.",
+    "Leitungsrechte früh sichern: Dienstbarkeiten entlang der Trasse sind oft der längste Weg – parallel zum B-Plan-Verfahren beginnen."
+   ],
+   "ueberbauung": {
+    "einsparung": 0,
+    "lohnt": false,
+    "speicherAuffang": 0,
+    "verlust": 0,
+    "verlustBarwert": 0,
+    "verlustEurJahr": 0,
+    "verlustKwh": 0
+   },
+   "vorschlag": "msLeitung"
+  },
+  "abregelVerlust_reihe": [
+   0,
+   0.005,
+   0.015,
+   0.04,
+   0.08,
+   0.15
+  ],
+  "ebeneFuer_reihe": [
+   "msLeitung",
+   "msLeitung",
+   "uwMs",
+   "uwMs",
+   "hs",
+   "hs"
+  ]
+ }
+}

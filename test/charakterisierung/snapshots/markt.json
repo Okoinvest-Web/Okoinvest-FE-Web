@@ -1,0 +1,1088 @@
+{
+ "rechner": "markt",
+ "modul": "src/lib/invest/markt.js",
+ "faelle": {
+  "daten": {
+   "AGRI": {
+    "beteiligungAnteil": {
+     "max": 0.49,
+     "min": 0.05,
+     "standard": 0.2
+    },
+    "capexProKwp": {
+     "hoch": {
+      "max": 1300,
+      "min": 850,
+      "mittel": 1000
+     },
+     "vertikal": {
+      "max": 800,
+      "min": 550,
+      "mittel": 640
+     }
+    },
+    "direktzahlungProHa": 250,
+    "eagAbschlagAt": 0.25,
+    "flaechenverlustMaxKat1": 0.1,
+    "flaechenverlustMaxKat2": 0.15,
+    "gapFoerderfaehig": 0.85,
+    "kulturen": [
+     {
+      "db": 450,
+      "ertrag": {
+       "hoch": 0.85,
+       "vertikal": 0.9
+      },
+      "id": "acker",
+      "label": "Ackerbau",
+      "sub": "Getreide, Raps, Mais"
+     },
+     {
+      "db": 300,
+      "ertrag": {
+       "hoch": 0.9,
+       "vertikal": 0.92
+      },
+      "id": "gruenland",
+      "label": "Grünland",
+      "sub": "Mahd, Futterbau"
+     },
+     {
+      "db": 250,
+      "ertrag": {
+       "hoch": 0.95,
+       "vertikal": 0.95
+      },
+      "id": "weide",
+      "label": "Weide",
+      "sub": "Schafe, Rinder, Geflügel"
+     },
+     {
+      "db": 3500,
+      "ertrag": {
+       "hoch": 0.95,
+       "vertikal": null
+      },
+      "id": "sonder",
+      "label": "Obst & Beeren",
+      "sub": "Sonderkultur"
+     }
+    ],
+    "mindestErtrag": 0.66,
+    "opexProKwp": 10,
+    "privilegierungHa": 2.5
+   },
+   "ALLGEMEIN": {
+    "co2KgProKwh": 0.65,
+    "haushaltKwh": 3500,
+    "pvMonatsanteile": [
+     0.025,
+     0.045,
+     0.08,
+     0.115,
+     0.13,
+     0.135,
+     0.135,
+     0.12,
+     0.09,
+     0.065,
+     0.035,
+     0.025
+    ]
+   },
+   "BAUART": {
+    "agriHoch": {
+     "faktor": 0.95,
+     "haProMwp": 1.6,
+     "label": "Agri-PV hoch aufgeständert"
+    },
+    "agriVertikal": {
+     "faktor": 0.9,
+     "haProMwp": 2.6,
+     "label": "Agri-PV vertikal, bifazial"
+    },
+    "ostWest": {
+     "faktor": 0.92,
+     "haProMwp": 0.85,
+     "label": "Ost/West, fest"
+    },
+    "sued": {
+     "faktor": 1,
+     "haProMwp": 1.1,
+     "label": "Süd, fest"
+    },
+    "tracker": {
+     "faktor": 1.15,
+     "haProMwp": 1.5,
+     "label": "Einachsig nachgeführt"
+    }
+   },
+   "BESTAND": {
+    "bewertungsjahr": 2027,
+    "degradation": 0.005,
+    "direktvermarktungCt": 0.3,
+    "diskont": {
+     "max": 0.09,
+     "min": 0.045,
+     "standard": 0.06
+    },
+    "foerderJahre": 20,
+    "minderertragWarnung": 0.9,
+    "nutzungsdauer": 30,
+    "nutzungsdauerSpanne": {
+     "max": 40,
+     "min": 25
+    },
+    "opexProKwp": 13,
+    "verguetungRichtwerte": [
+     {
+      "bis": 2009,
+      "ct": 32
+     },
+     {
+      "bis": 2010,
+      "ct": 27
+     },
+     {
+      "bis": 2011,
+      "ct": 22
+     },
+     {
+      "bis": 2012,
+      "ct": 16
+     },
+     {
+      "bis": 2014,
+      "ct": 11
+     },
+     {
+      "bis": 2017,
+      "ct": 8
+     },
+     {
+      "bis": 2022,
+      "ct": 5.2
+     },
+     {
+      "bis": 2030,
+      "ct": 5
+     }
+    ],
+    "wechselrichterJahre": {
+     "max": 15,
+     "min": 12
+    },
+    "wechselrichterProKwp": {
+     "max": 90,
+     "min": 40,
+     "mittel": 60
+    }
+   },
+   "CARPORT": {
+    "capexProKwp": {
+     "max": 1700,
+     "min": 1100,
+     "mittel": 1350
+    },
+    "contractingJahre": 20,
+    "contractingMarge": 0.1,
+    "ertragFaktor": 0.93,
+    "kwpProStellplatz": 2.6,
+    "ladepunktAc": 2500,
+    "ladepunktDc": 45000,
+    "laufzeit": 25,
+    "opexProKwp": 15,
+    "stellplatzM2": 25
+   },
+   "DACH": {
+    "ausrichtung": [
+     {
+      "faktor": 1,
+      "id": "sued",
+      "label": "Süd"
+     },
+     {
+      "faktor": 0.97,
+      "id": "suedOstWest",
+      "label": "Südost/-west"
+     },
+     {
+      "faktor": 0.9,
+      "id": "ostWest",
+      "label": "Ost/West"
+     },
+     {
+      "faktor": 0.78,
+      "id": "nord",
+      "label": "Nord, flach geneigt"
+     }
+    ],
+    "capexProKwp": {
+     "max": 950,
+     "min": 600,
+     "mittel": 750
+    },
+    "dacharten": [
+     {
+      "belegbar": true,
+      "ertragFaktor": 0.95,
+      "id": "trapez",
+      "label": "Trapezblech",
+      "lastKgM2": "ca. 12–15 kg/m²",
+      "m2ProKwp": 6,
+      "sub": "geneigt, Aufdach"
+     },
+     {
+      "belegbar": true,
+      "ertragFaktor": 0.95,
+      "id": "sandwich",
+      "label": "Sandwichpaneel",
+      "lastKgM2": "ca. 12–15 kg/m²",
+      "m2ProKwp": 6,
+      "sub": "Halle, gedämmt"
+     },
+     {
+      "belegbar": true,
+      "ertragFaktor": 0.9,
+      "id": "flach",
+      "label": "Flachdach",
+      "lastKgM2": "ca. 15–25 kg/m² mit Ballast",
+      "m2ProKwp": 7,
+      "sub": "Folie/Bitumen, Ost/West"
+     },
+     {
+      "belegbar": false,
+      "ertragFaktor": null,
+      "id": "faserzement",
+      "label": "Faserzement",
+      "lastKgM2": "–",
+      "m2ProKwp": null,
+      "sub": "Wellplatten"
+     }
+    ],
+    "eegDachCt": 9.3,
+    "eigenverbrauch": {
+     "max": 0.8,
+     "min": 0.3,
+     "standard": 0.4
+    },
+    "einmalDiskont": 0.05,
+    "laufzeit": 20,
+    "lcoeIseCt": {
+     "max": 10.4,
+     "min": 5
+    },
+    "mindestM2": 1000,
+    "opexProKwp": 14,
+    "pachtProKwp": {
+     "max": 18,
+     "min": 6,
+     "mittel": 10
+    },
+    "pachtProM2": {
+     "max": 3,
+     "min": 1,
+     "mittel": 1.5
+    },
+    "ppaPachtAnteil": 0.5,
+    "ppaVorOrtCt": {
+     "max": 16,
+     "min": 10,
+     "mittel": 13
+    },
+    "quellen": [
+     {
+      "titel": "Bundesnetzagentur – Ausschreibungen Solaranlagen zweites Segment",
+      "url": "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/Ausschreibungen/Solaranlagen2/artikel.html"
+     },
+     {
+      "titel": "Fraunhofer ISE – Stromgestehungskosten erneuerbarer Energien",
+      "url": "https://www.ise.fraunhofer.de/de/veroeffentlichungen/studien/studie-stromgestehungskosten-erneuerbare-energien.html"
+     },
+     {
+      "titel": "Bund der Steuerzahler – Gewerbliche Infizierung bei Photovoltaikanlagen",
+      "url": "https://steuerzahler.de/aktuelles/detail/gewerbliche-infizierung-von-vermietungseinkuenften-beim-betreiben-von-photovoltaikanlagen/"
+     }
+    ],
+    "restnutzungMinJahre": 25,
+    "sanierungProM2": {
+     "max": 95,
+     "min": 45,
+     "mittel": 65
+    },
+    "ueberschussCt": 6.5,
+    "umsatzbeteiligung": {
+     "max": 0.08,
+     "min": 0.04
+    },
+    "verlaengerung": "1–2 × 5 Jahre Option",
+    "zuschlagsHistorie": [
+     {
+      "ct": 9.1,
+      "termin": "1. Februar 2025"
+     },
+     {
+      "ct": 9.22,
+      "termin": "1. Juni 2025"
+     },
+     {
+      "ct": 9.66,
+      "termin": "1. Oktober 2025"
+     }
+    ]
+   },
+   "ENTWICKLUNG": {
+    "preisBasis": "mitte",
+    "wahrscheinlichkeit": {
+     "akquise": 0.05,
+     "aufstellung": 0.4,
+     "cod": 1,
+     "flaeche": 0.15,
+     "netz": 0.25,
+     "rtb": 0.85,
+     "satzung": 0.65
+    },
+    "zielMwpJahr": 50
+   },
+   "ERLOESE": {
+    "eegBesondereCt": 5.3,
+    "eegFreiflaecheCt": 4.8,
+    "lcoeIseCt": {
+     "max": 6.9,
+     "min": 4.1
+    },
+    "merchantCt": 4,
+    "merchantSteigerung": 0.01,
+    "ppaCt": {
+     "max": 5.5,
+     "min": 3.8,
+     "mittel": 4.5
+    },
+    "zuschlagsHistorie": [
+     {
+      "ct": 4.66,
+      "termin": "1. März 2025"
+     },
+     {
+      "ct": 4.84,
+      "termin": "1. Juli 2025"
+     },
+     {
+      "ct": 5,
+      "termin": "1. Dezember 2025"
+     }
+    ]
+   },
+   "FINANZIERUNG": {
+    "afaDegressiv": {
+     "AT": 0.3,
+     "CH": 0,
+     "DE": 0.3
+    },
+    "diskont": 0.065,
+    "dscrZiel": 1.15,
+    "foerderkredit": {
+     "AT": {
+      "anlaufJahre": 1,
+      "anteilMax": 0.8,
+      "laufzeit": 15,
+      "tilgung": "annuitaet",
+      "zins": 0.045
+     },
+     "CH": {
+      "anlaufJahre": 1,
+      "anteilMax": 0.8,
+      "laufzeit": 15,
+      "tilgung": "annuitaet",
+      "zins": 0.03
+     },
+     "DE": {
+      "anlaufJahre": 3,
+      "anteilMax": 1,
+      "laufzeit": 20,
+      "tilgung": "linear",
+      "zins": 0.041
+     }
+    },
+    "fremdkapitalQuote": 0.75,
+    "ifbAt": {
+     "befristetBis": "2026-12-31",
+     "maxBemessung": 1000000,
+     "regulaer": 0.15,
+     "satz": 0.22
+    },
+    "leasing": {
+     "laufzeit": 15,
+     "restwert": 0.1,
+     "sonderzahlung": 0.1,
+     "zinsAufschlag": 0.01
+    },
+    "mietkauf": {
+     "anzahlung": 0.1,
+     "laufzeit": 15,
+     "zinsAufschlag": 0.0075
+    },
+    "projekt": {
+     "bearbeitungPct": 1,
+     "dscrDefault": 1.05,
+     "dscrLockup": 1.1,
+     "dscrP50": 1.2,
+     "dscrP90": 1.1,
+     "dsraMonate": 6,
+     "fkMaxQuote": 0.85,
+     "laufzeitJahre": 18,
+     "margePct": 1.8,
+     "referenzzinsPct": 2.7
+    },
+    "quellensteuerAusschuettung": {
+     "AT": 0.275,
+     "CH": 0.35,
+     "DE": 0.26375
+    },
+    "steuer": 0.3,
+    "steuerLand": {
+     "AT": 0.23,
+     "CH": 0.18,
+     "DE": 0.3
+    },
+    "tilgungJahre": 18,
+    "zins": 0.045
+   },
+   "FREIFLAECHE": {
+    "capexProKwp": {
+     "max": 600,
+     "min": 400,
+     "mittel": 470
+    },
+    "degradation": 0.004,
+    "entwicklungProKwp": {
+     "max": 90,
+     "min": 40
+    },
+    "haProMwp": 1.1,
+    "inflation": 0.02,
+    "kabelProMeter": 120,
+    "laufzeit": 30,
+    "mindestHa": 3,
+    "netz": {
+     "abregelung": [
+      [
+       1,
+       0
+      ],
+      [
+       0.9,
+       0.005
+      ],
+      [
+       0.8,
+       0.015
+      ],
+      [
+       0.7,
+       0.04
+      ],
+      [
+       0.6,
+       0.08
+      ],
+      [
+       0.5,
+       0.15
+      ]
+     ],
+     "einschleifen": 80000,
+     "grenzeMsMw": 12,
+     "grenzeUwMw": 35,
+     "hsKabelProKm": {
+      "max": 2000000,
+      "min": 900000,
+      "mittel": 1300000
+     },
+     "kundenUwFix": 2000000,
+     "kundenUwProMva": 40000,
+     "msSystemMw": 12,
+     "pruefWochen": 8,
+     "uwFeld": {
+      "max": 400000,
+      "min": 150000,
+      "mittel": 250000
+     },
+     "zusatzSystemFaktor": 0.6
+    },
+    "netzanschlussFixProMwp": 35000,
+    "opexProKwp": 9,
+    "rueckbauProKwp": 25
+   },
+   "GEMEINSCHAFTEN": {
+    "at": {
+     "text": "Lokale und regionale EEGs erhalten reduzierte Netzentgelte; BEGs dürfen österreichweit tätig sein. Teilnahme an mehreren Gemeinschaften ist möglich.",
+     "titel": "Erneuerbare-Energie-Gemeinschaft (EEG) und Bürgerenergiegemeinschaft (BEG)"
+    },
+    "beteiligung": {
+     "anteilEur": 250,
+     "kapitalertragsteuer": 0.26375,
+     "ruecklageAnteil": 0.1,
+     "verwaltungAnteil": 0.01
+    },
+    "ch": {
+     "text": "Seit 2026 können Verbraucher innerhalb einer Gemeinde über das Verteilnetz Strom teilen (LEG) – mit reduziertem Netznutzungsentgelt.",
+     "titel": "ZEV, vZEV und lokale Elektrizitätsgemeinschaft (LEG)"
+    },
+    "de": {
+     "text": "Gemeinsame Nutzung von Strom aus Anlagen in derselben Region über das öffentliche Netz – zunächst im Netzgebiet eines Verteilnetzbetreibers, später auch in angrenzenden Gebieten.",
+     "titel": "Energy Sharing (§ 42c EnWG)"
+    },
+    "rechner": {
+     "at": {
+      "abgabenCt": 0.82,
+      "ct": "ct",
+      "energiepreis": 12,
+      "gemeinschaftCt": 10,
+      "netzAp": 7,
+      "rabatte": [
+       {
+        "anteil": 0.57,
+        "id": "lokal",
+        "label": "EEG lokal",
+        "sub": "−57 % Netz-AP"
+       },
+       {
+        "anteil": 0.28,
+        "id": "regional",
+        "label": "EEG regional",
+        "sub": "−28 % Netz-AP"
+       },
+       {
+        "anteil": 0,
+        "id": "beg",
+        "label": "BEG",
+        "sub": "ohne Abschlag"
+       }
+      ],
+      "ueberschussCt": 5,
+      "verwaltung": 20,
+      "waehrung": "€"
+     },
+     "ch": {
+      "abgabenCt": 0,
+      "ct": "Rp.",
+      "energiepreis": 14,
+      "gemeinschaftCt": 13,
+      "netzAp": 10,
+      "rabatte": [
+       {
+        "anteil": 0.4,
+        "id": "leg40",
+        "label": "LEG, eine Ebene",
+        "sub": "−40 % Netznutzung"
+       },
+       {
+        "anteil": 0.2,
+        "id": "leg20",
+        "label": "LEG, mehrere Ebenen",
+        "sub": "−20 % Netznutzung"
+       }
+      ],
+      "ueberschussCt": 6,
+      "verwaltung": 40,
+      "waehrung": "CHF"
+     },
+     "de": {
+      "abgabenCt": 0,
+      "ct": "ct",
+      "energiepreis": 14,
+      "gemeinschaftCt": 11,
+      "netzAp": 9,
+      "rabatte": [
+       {
+        "anteil": 0,
+        "id": "keiner",
+        "label": "Energy Sharing",
+        "sub": "§ 42c EnWG"
+       }
+      ],
+      "ueberschussCt": 6,
+      "verwaltung": 30,
+      "waehrung": "€"
+     }
+    },
+    "steuerAbzug": {
+     "AT": 0.275,
+     "CH": 0.35,
+     "DE": 0.26375,
+     "freibetragDeEur": 1000
+    }
+   },
+   "KOMMUNE": {
+    "afaJahre": 20,
+    "beteiligungCt": 0.2,
+    "betrachtungJahre": 20,
+    "gewerbesteuerStandort": 0.9,
+    "hebesatz": 4,
+    "hebesatzSpanne": {
+     "max": 6,
+     "min": 2
+    },
+    "hinzurechnungFreibetrag": 200000,
+    "hinzurechnungZinsen": 0.25,
+    "messzahl": 0.035
+   },
+   "PACHT": {
+    "ackerProHa": 380,
+    "agriProHa": {
+     "max": 2000,
+     "min": 600,
+     "mittel": 1200
+    },
+    "anwaltskosten": {
+     "max": 3000,
+     "min": 1000
+    },
+    "deckungsbeitragAcker": {
+     "max": 800,
+     "min": 200,
+     "mittel": 450
+    },
+    "diskontEigentuemer": 0.03,
+    "festlaufzeitMax": 30,
+    "freiflaecheProHa": {
+     "max": 4500,
+     "min": 1500,
+     "mittel": 2800
+    },
+    "indexierung": 0.015,
+    "laufzeit": 30,
+    "reservierungJahre": {
+     "max": 5,
+     "ueblich": 3
+    },
+    "reservierungProHa": {
+     "max": 300,
+     "min": 100
+    },
+    "umsatzbeteiligung": {
+     "max": 0.08,
+     "min": 0.04
+    },
+    "verlaengerung": "2 × 5 Jahre Option",
+    "verlaengerungMax": 10
+   },
+   "PHASEN": [
+    {
+     "id": "flaeche",
+     "kurz": "Flächensicherung",
+     "label": "Fläche gesichert",
+     "monateBisRtb": 30,
+     "preisProKwp": {
+      "max": 20,
+      "min": 5
+     },
+     "risiko": "sehr hoch"
+    },
+    {
+     "id": "netz",
+     "kurz": "Netzzusage",
+     "label": "Netzanschlusszusage",
+     "monateBisRtb": 24,
+     "preisProKwp": {
+      "max": 40,
+      "min": 15
+     },
+     "risiko": "hoch"
+    },
+    {
+     "id": "aufstellung",
+     "kurz": "Aufstellungsbeschluss",
+     "label": "Aufstellungsbeschluss B-Plan",
+     "monateBisRtb": 15,
+     "preisProKwp": {
+      "max": 55,
+      "min": 25
+     },
+     "risiko": "mittel–hoch"
+    },
+    {
+     "id": "satzung",
+     "kurz": "Baurecht",
+     "label": "Satzungsbeschluss / Baurecht",
+     "monateBisRtb": 6,
+     "preisProKwp": {
+      "max": 90,
+      "min": 45
+     },
+     "risiko": "mittel"
+    },
+    {
+     "id": "rtb",
+     "kurz": "Baureif",
+     "label": "Ready-to-Build (RTB)",
+     "monateBisRtb": 0,
+     "preisProKwp": {
+      "max": 130,
+      "min": 60
+     },
+     "risiko": "gering"
+    },
+    {
+     "id": "cod",
+     "kurz": "Bestand",
+     "label": "In Betrieb (COD / Bestand)",
+     "monateBisRtb": 0,
+     "preisProKwp": {
+      "max": 850,
+      "min": 550
+     },
+     "risiko": "sehr gering"
+    }
+   ],
+   "PROJEKTKOSTEN": {
+    "ausgleichProHa": 2000,
+    "bauzeitMonate": {
+     "agri": 8,
+     "carport": 6,
+     "dach": 4,
+     "freiflaeche": 6,
+     "hybrid": 8,
+     "speicher": 9
+    },
+    "contingency": {
+     "abrechnung": 0,
+     "angebote": 0.05,
+     "kostenberechnung": 0.07,
+     "kostenrahmen": 0.1,
+     "schaetzung": 0.15,
+     "vergabe": 0.03
+    },
+    "dienstbarkeitProM": 5,
+    "entwicklungAnteile": {
+     "gebuehren": 0.15,
+     "netzpruefung": 0.2,
+     "pacht": 0,
+     "planung": 0.45,
+     "recht": 0.2
+    },
+    "epcAnteile": {
+     "carport": {
+      "ac": 0.05,
+      "bauleitung": 0.1,
+      "bos": 0.03,
+      "dc": 0.05,
+      "module": 0.15,
+      "unterkonstruktion": 0.53,
+      "wechselrichter": 0.05,
+      "wege": 0.04,
+      "zaun": 0
+     },
+     "dach": {
+      "ac": 0.08,
+      "bauleitung": 0.13,
+      "bos": 0.1,
+      "dc": 0.1,
+      "module": 0.3,
+      "unterkonstruktion": 0.2,
+      "wechselrichter": 0.09,
+      "wege": 0,
+      "zaun": 0
+     },
+     "standard": {
+      "ac": 0.06,
+      "bauleitung": 0.1,
+      "bos": 0.08,
+      "dc": 0.08,
+      "module": 0.24,
+      "unterkonstruktion": 0.3,
+      "wechselrichter": 0.07,
+      "wege": 0.04,
+      "zaun": 0.03
+     }
+    },
+    "gutachtenEur": {
+     "gutachten_archaeologie": 12000,
+     "gutachten_artenschutz": 25000,
+     "gutachten_blendung": 4000,
+     "gutachten_boden": 18000,
+     "gutachten_entwaesserung": 7000,
+     "gutachten_ffh": 8000,
+     "gutachten_kampfmittel": 9000,
+     "gutachten_landschaft": 7000,
+     "gutachten_nvp": 15000,
+     "gutachten_schall": 5000,
+     "nutzungskonzept_agri": 6000,
+     "standard": 8000,
+     "statik": 8000,
+     "umweltbericht": 20000
+    },
+    "kameraProHa": 1500,
+    "notarJeFlaeche": 2500,
+    "querung": {
+     "bahn": 60000,
+     "gewaesser": 25000,
+     "strasse": 15000
+    },
+    "trasseProM": {
+     "asphalt": 230,
+     "bankett": 160,
+     "graben": 120,
+     "pflug": 85,
+     "spuelbohrung": 280
+    },
+    "versicherungBau": 0.003,
+    "wegeProHa": 12000,
+    "zaunProM": 55
+   },
+   "PROVISION": {
+    "flaeche": {
+     "text": "für Flächeneigentümer immer kostenfrei"
+    },
+    "kaeufer": {
+     "text": "für Investoren kostenfrei (Suchprofil, NDA, Datenraum)"
+    },
+    "verkaeufer": {
+     "max": 0.03,
+     "min": 0.015,
+     "text": "1,5–3 % des Kaufpreises, nur bei erfolgreichem Abschluss"
+    }
+   },
+   "QUELLEN": [
+    {
+     "titel": "Bundesnetzagentur – Ausschreibungen Solaranlagen erstes Segment",
+     "url": "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/Ausschreibungen/Solaranlagen1/start.html"
+    },
+    {
+     "titel": "Fraunhofer ISE – Stromgestehungskosten erneuerbarer Energien",
+     "url": "https://www.ise.fraunhofer.de/de/veroeffentlichungen/studien/studie-stromgestehungskosten-erneuerbare-energien.html"
+    },
+    {
+     "titel": "Fraunhofer ISE – Agri-Photovoltaik: Chance für Landwirtschaft und Energiewende (Leitfaden)",
+     "url": "https://www.ise.fraunhofer.de/de/veroeffentlichungen/studien/agri-photovoltaik-chance-fuer-landwirtschaft-und-energiewende.html"
+    },
+    {
+     "titel": "EU JRC – PVGIS Photovoltaic Geographical Information System",
+     "url": "https://re.jrc.ec.europa.eu/pvg_tools/de/"
+    },
+    {
+     "titel": "BDEW – Strompreisanalyse",
+     "url": "https://www.bdew.de/service/daten-und-grafiken/bdew-strompreisanalyse/"
+    },
+    {
+     "titel": "Umweltbundesamt – Emissionsbilanz erneuerbarer Energieträger",
+     "url": "https://www.umweltbundesamt.de/publikationen"
+    },
+    {
+     "titel": "Gesetz für den Ausbau erneuerbarer Energien (EEG 2023), § 6",
+     "url": "https://www.gesetze-im-internet.de/eeg_2014/__6.html"
+    },
+    {
+     "titel": "Baugesetzbuch § 35 (Bauen im Außenbereich)",
+     "url": "https://www.gesetze-im-internet.de/bbaug/__35.html"
+    }
+   ],
+   "REGIONEN": [
+    {
+     "ertrag": 960,
+     "id": "de-nord",
+     "label": "Norddeutschland",
+     "land": "DE",
+     "sub": "SH, HH, NI, HB, MV"
+    },
+    {
+     "ertrag": 1020,
+     "id": "de-ost",
+     "label": "Ostdeutschland",
+     "land": "DE",
+     "sub": "BB, BE, SN, ST, TH"
+    },
+    {
+     "ertrag": 1000,
+     "id": "de-west",
+     "label": "West- & Mitteldeutschland",
+     "land": "DE",
+     "sub": "NW, HE, RP, SL"
+    },
+    {
+     "ertrag": 1100,
+     "id": "de-sued",
+     "label": "Süddeutschland",
+     "land": "DE",
+     "sub": "BY, BW"
+    },
+    {
+     "ertrag": 1120,
+     "id": "at",
+     "label": "Österreich",
+     "land": "AT",
+     "sub": "Flach- und Hügelland"
+    },
+    {
+     "ertrag": 1050,
+     "id": "ch",
+     "label": "Schweiz",
+     "land": "CH",
+     "sub": "Mittelland"
+    }
+   ],
+   "SPEICHER": {
+    "bkzNetzdienlichFaktor": 0.3,
+    "bkzProKw": {
+     "hs": 97,
+     "ms": 125
+    },
+    "capexProKwh": {
+     "max": 340,
+     "min": 200,
+     "mittel": 260
+    },
+    "coLocationErloesFaktor": 0.85,
+    "dauerFaktor": {
+     "1": 0.6,
+     "2": 1,
+     "3": 1.2,
+     "4": 1.35
+    },
+    "degradation": 0.02,
+    "diskont": 0.08,
+    "erloesMix": {
+     "afrr": 0.5,
+     "arbitrage": 0.4,
+     "fcr": 0.1
+    },
+    "erloesProMwJahr": {
+     "max": 180000,
+     "min": 90000,
+     "mittel": 130000
+    },
+    "erloesTrend": -0.02,
+    "indexErloes2025": {
+     "afrrArbeit": 76500,
+     "afrrLeistung": 146000,
+     "dayAhead": 91000,
+     "fcr": 106000,
+     "gesamt1h": 151000,
+     "gesamt2h": 259000
+    },
+    "lebensdauer": 15,
+    "netzanschlussProKw": {
+     "coLocation": 20,
+     "hs": 110,
+     "ms": 60
+    },
+    "netzentgeltBefreiungBis": "4. August 2029",
+    "netzentgeltCt": 1.5,
+    "opexAnteilCapex": 0.015,
+    "vermarktungAnteil": 0.07,
+    "wirkungsgrad": 0.87,
+    "zyklenProJahr": 330
+   },
+   "STAND": "September 2026",
+   "STROM": {
+    "bestandteile": [
+     {
+      "beeinflussbar": true,
+      "ct": 10.5,
+      "id": "beschaffung",
+      "label": "Beschaffung & Vertrieb"
+     },
+     {
+      "beeinflussbar": false,
+      "ct": 5.5,
+      "id": "netz",
+      "label": "Netzentgelte & Messung"
+     },
+     {
+      "beeinflussbar": false,
+      "ct": 1.8,
+      "id": "umlagen",
+      "label": "Umlagen (KWKG, Offshore, § 19)"
+     },
+     {
+      "beeinflussbar": false,
+      "ct": 0.11,
+      "id": "konzession",
+      "label": "Konzessionsabgabe"
+     },
+     {
+      "beeinflussbar": false,
+      "ct": 2.05,
+      "id": "stromsteuer",
+      "label": "Stromsteuer"
+     }
+    ],
+    "poolHebel": [
+     {
+      "ct": {
+       "max": 1.2,
+       "min": 0.4
+      },
+      "id": "buendelung",
+      "label": "Bündelung & strukturierte Beschaffung"
+     },
+     {
+      "ct": {
+       "max": 2,
+       "min": 0.5
+      },
+      "id": "ppa",
+      "label": "Solarstrom aus Parks der Gruppe (PPA)"
+     },
+     {
+      "ct": {
+       "max": 1,
+       "min": 0.2
+      },
+      "id": "flex",
+      "label": "Flexibilität & Speicher im virtuellen Kraftwerk"
+     }
+    ],
+    "ppa": {
+     "baseTerminCt": 11,
+     "bilanzierungCt": 0.3,
+     "captureRate": 0.6,
+     "negativAnteilSolar": 0.241,
+     "pppCt": {
+      "max": 7.5,
+      "min": 5,
+      "mittel": 6
+     },
+     "residualAufschlag": 0.05,
+     "strukturierungCt": {
+      "max": 3,
+      "min": 1,
+      "mittel": 1.8
+     },
+     "vermarktungsAbschlag": 0.1
+    },
+    "ppaDeckungsanteil": {
+     "max": 0.4,
+     "min": 0.2
+    },
+    "stromsteuerProduzierend": 0.05
+   }
+  },
+  "npv_standard": 63.7851512487,
+  "npv_null": 0,
+  "irr_standard": 0.0771384733263,
+  "irr_ohne_vorzeichenwechsel": null,
+  "irr_verlust": -0.629843788221,
+  "annuitaet_standard": 82236.8975381,
+  "annuitaet_zins_null": 100000,
+  "regionById_unbekannt": {
+   "ertrag": 1100,
+   "id": "de-sued",
+   "label": "Süddeutschland",
+   "land": "DE",
+   "sub": "BY, BW"
+  },
+  "phaseById_unbekannt": {
+   "id": "flaeche",
+   "kurz": "Flächensicherung",
+   "label": "Fläche gesichert",
+   "monateBisRtb": 30,
+   "preisProKwp": {
+    "max": 20,
+    "min": 5
+   },
+   "risiko": "sehr hoch"
+  }
+ }
+}

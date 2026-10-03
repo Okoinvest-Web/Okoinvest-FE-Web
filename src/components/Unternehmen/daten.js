@@ -59,7 +59,7 @@ export const PERSONEN = [
     initialen: "AW",
     name: "Andreas Wegscheider",
     rolle: "Geschäftsführer",
-    text: "Gründer der ÖKOVOLT Gruppe und Pionier der Photovoltaik im DACH-Raum. Er hat Anlagen geplant und montiert, als Module noch ein Vielfaches kosteten – und mit den ersten eigenen Solarparks ab 2012 den Schritt vom Dach auf die Freifläche gemacht.",
+    text: "Gründer der ÖKOVOLT Gruppe. Er hat Anlagen geplant und montiert, als Module noch ein Vielfaches kosteten – und mit den ersten eigenen Solarparks ab 2012 den Schritt vom Dach auf die Freifläche gemacht.",
   },
   {
     initialen: "MT",

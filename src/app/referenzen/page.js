@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { ArrowUpRight, Building2, FileCheck2, Gauge, Globe2, Hammer, HardHat, Landmark, LineChart, MapPin, PencilRuler, ScrollText, Sprout, Sun, Users, Zap, Handshake, Factory } from "lucide-react";
+import { ArrowUpRight, Building2, CalendarClock, FileCheck2, Gauge, Globe2, Hammer, HardHat, Landmark, LineChart, MapPin, PencilRuler, ScrollText, Sprout, Sun, Users, Zap, Handshake, Factory } from "lucide-react";
 
-import PageHero from "@/components/ui/PageHero";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import CtaBand from "@/components/ui/CtaBand";
@@ -9,8 +8,12 @@ import Reveal from "@/components/ui/Reveal";
 import Querverweise from "@/components/Reusable/Querverweise";
 import { rechnerMetadata } from "@/components/Rechner/RechnerSeite";
 import DachKarte from "@/components/Referenzen/DachKarte";
+import NachweisBuehne from "@/components/Referenzen/NachweisBuehne";
+import NachtHero from "@/components/Unternehmen/NachtHero";
+import Faktenleiste from "@/components/Unternehmen/Faktenleiste";
 import { BETRIEB_CHRONIK, KOMPETENZEN, PARKS, QUELLEN_REFERENZEN, REFERENZEN_STAND } from "@/data/referenzen";
 import { KENNZAHLEN, SITE, abs } from "@/data/site";
+import JsonLd from "@/components/JsonLd";
 
 const PFAD = "/referenzen";
 
@@ -99,33 +102,34 @@ function QuellenMarke({ ids }) {
 export default function ReferenzenSeite() {
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <JsonLd daten={schema} />
 
-      <PageHero
+      <NachtHero
+        mitLeiste
         breadcrumbs={[{ name: "Referenzen" }]}
-        eyebrow="Referenzen & Vertrauen"
+        hinweis={{ label: "Belegt", text: "Jede Angabe mit Register oder Quelle", href: "#quellen" }}
         title={
           <>
-            Nicht versprochen. <span className="ov-text-gradient">Gebaut – und selbst betrieben.</span>
+            Nicht versprochen. <span className="ov-text-gradient-light">Gebaut – und selbst betrieben.</span>
           </>
         }
         lead="Die ÖKOVOLT Gruppe baut seit 2010 Solaranlagen und betreibt seit 2012 eigene Solarparks. Auf dieser Seite steht nur, was sich belegen lässt – mit Register und Quelle."
-        image={{ src: "/img/solarpark-reihen.jpg", alt: "Modulreihen eines Solarparks" }}
-        badge={
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ov-600 text-white">
-              <Sun aria-hidden="true" className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="font-display text-[16px] font-bold text-ink-900">Seit 2012 im Eigenbetrieb</p>
-              <p className="text-[13px] text-ink-500">Je Park eine eigene Betreibergesellschaft</p>
-            </div>
-          </div>
-        }
-        stats={[
-          { value: 15, suffix: "+", label: `Jahre Solargeschäft der Gruppe (seit ${KENNZAHLEN.gruppeGegruendet})` },
-          { value: 30, suffix: " MWp", label: "errichtet von der AT-Schwester allein 2021" },
-          { value: KENNZAHLEN.entwicklungMwProJahr, prefix: "~", suffix: " MWp", label: "gehen pro Jahr neu in Entwicklung" },
+        actions={[
+          { label: "Bestandsparks ansehen", href: "#parks" },
+          { label: "Kontakt aufnehmen", href: "/kontakt" },
+        ]}
+        chips={["Je Park eine eigene Betreibergesellschaft", "Eigene Rammtechnik seit 2012", "Planung, Bau und Betrieb in einer Gruppe", "Kundenprojekte nur mit Zustimmung"]}
+        buehne={<NachweisBuehne />}
+      />
+
+      <Faktenleiste
+        titel="Belegte Kennzahlen der Gruppe"
+        unten="navy"
+        items={[
+          { icon: CalendarClock, wert: String(KENNZAHLEN.gruppeGegruendet), label: "Gegründet", text: "seither Planung, Bau und Inbetriebnahme aus einer Hand" },
+          { icon: Sun, wert: String(PARKS.length), label: "eigene Solarparks", text: "je Park eine eigene Betreibergesellschaft" },
+          { icon: Globe2, wert: "30", einheit: "MWp", label: "allein 2021", text: "errichtet von der österreichischen Schwester" },
+          { icon: LineChart, wert: `~${KENNZAHLEN.entwicklungMwProJahr}`, einheit: "MWp", label: "pro Jahr", text: "gehen neu in die Entwicklung" },
         ]}
       />
 
@@ -170,19 +174,20 @@ export default function ReferenzenSeite() {
         />
         <ul className="grid gap-5 lg:grid-cols-3">
           {PARKS.map((p, i) => (
-            <Reveal as="li" key={p.id} delay={i * 80} className="flex flex-col rounded-3xl bg-white p-6 ring-1 ring-ink-200/70 md:p-8">
-              <div className="flex items-start justify-between gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-ov-50 text-ov-600">
-                  <Sun aria-hidden="true" className="h-6 w-6" />
+            <Reveal as="li" key={p.id} delay={i * 80} className="flex flex-col overflow-hidden rounded-3xl bg-white shadow-e2 ring-1 ring-ink-200/70">
+              <div className="ov-verlauf-nacht relative flex items-center justify-between gap-4 px-6 py-5 text-white md:px-8">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-sun-300 ring-1 ring-white/15">
+                  <Sun aria-hidden="true" className="h-5 w-5" />
                 </span>
-                <span className="rounded-full bg-ink-100 px-2.5 py-1 text-[11.5px] font-semibold text-ink-600">{p.region}</span>
+                <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11.5px] font-semibold text-white ring-1 ring-white/15">{p.region}</span>
               </div>
-              <h3 className="ov-h3 mt-6 text-ink-900">{p.name}</h3>
+              <div className="flex flex-1 flex-col p-6 md:p-8">
+              <h3 className="ov-h3 text-ink-900">{p.name}</h3>
               <p className="mt-1.5 flex items-start gap-1.5 text-[14.5px] text-ink-600">
                 <MapPin aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" />
                 {p.ort}
               </p>
-              <p className="mt-4 text-[15px] leading-relaxed text-ink-600">{p.text}</p>
+              <p className="mt-4 flex-1 text-[15px] leading-relaxed text-ink-600">{p.text}</p>
               <dl className="mt-6 space-y-3 border-t border-ink-100 pt-5 text-[14.5px]">
                 <div>
                   <dt className="text-[12px] font-semibold uppercase tracking-[0.12em] text-ov-700">Betreibergesellschaft</dt>
@@ -209,6 +214,7 @@ export default function ReferenzenSeite() {
                   </div>
                 ))}
               </dl>
+              </div>
             </Reveal>
           ))}
         </ul>

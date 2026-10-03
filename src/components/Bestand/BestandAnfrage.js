@@ -90,7 +90,7 @@ export default function BestandAnfrage() {
           daten={{ phase: "cod", quelle: "bestandsanlagen", ...werte }}
           felder={["firma", "telefon", "land", "nachricht"]}
           button={kaufen ? "Suchprofil senden" : "Anlage vorstellen"}
-          erfolgText="Danke! Ihre Anfrage ist eingegangen. Wir melden uns in der Regel innerhalb von zwei Werktagen – registrieren Sie sich mit derselben E-Mail, dann sehen Sie den Stand im Portal."
+          erfolgText="Danke! Ihre Anfrage ist eingegangen. Wir melden uns persönlich – registrieren Sie sich mit derselben E-Mail, dann sehen Sie den Stand im Portal."
         />
       </div>
     </div>

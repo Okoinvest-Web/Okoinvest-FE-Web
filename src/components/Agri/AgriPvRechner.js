@@ -1,13 +1,16 @@
 "use client";
 
+import { SperrEingaben } from "@/components/Rechner/LaenderSperre";
 import { useMemo, useState } from "react";
 import { Banknote, Gauge, Info, Sprout, Sun, Trophy, Zap } from "lucide-react";
 import Button from "@/components/ui/Button";
+import ZumFlaechencheck from "@/components/Flaeche/Seite/ZumFlaechencheck";
 import { cn } from "@/components/ui/cn";
 import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Zahl } from "@/components/Rechner/bausteine";
 import { useTeilbarerZustand } from "@/components/Rechner/kontext";
 import { ErgebnisKopf, MobilKurz, RechnerRahmen } from "@/components/Rechner/InvestTeile";
 import { WEGE } from "./wege";
+import AgriBild from "./AgriBild";
 import { AGRI, ERLOESE, PACHT, REGIONEN } from "@/lib/invest/markt";
 import { SYSTEME, agriVergleich, kulturById, systemPasst } from "@/lib/rechner/agriPv";
 import { REGION_KURZ } from "@/lib/rechner/pacht";
@@ -64,11 +67,20 @@ export default function AgriPvRechner() {
     }
   );
 
+  // Länder-Sperre (Paket E): für AT/CH nur die Regionswahl und der Hinweis aus markt.js
+  const sperre = r.sperre;
+  const regionWahl = (
+    <Auswahl legende="Region" wert={regionId} onChange={setRegionId} spalten={3} klein optionen={REGIONEN.map((x) => ({ id: x.id, label: REGION_KURZ[x.id] || x.label }))} />
+  );
+
   return (
     <RechnerRahmen
       breiteLinks={390}
       mitlaufend
-      eingaben={
+      sperre={sperre}
+      eingaben={sperre ? (
+        <SperrEingaben>{regionWahl}</SperrEingaben>
+      ) : (
         <>
           <MobilKurz
             werte={[
@@ -87,7 +99,7 @@ export default function AgriPvRechner() {
                 onChange={(v) => (systemPasst(kultur, v) ? setSystem(v) : null)}
                 optionen={SYSTEME.map((s) => ({ id: s.id, label: s.label, sub: systemPasst(kultur, s.id) ? s.sub : "für Kultur unüblich" }))}
               />
-              <Auswahl legende="Region" wert={regionId} onChange={setRegionId} spalten={3} klein optionen={REGIONEN.map((x) => ({ id: x.id, label: REGION_KURZ[x.id] || x.label }))} />
+              {regionWahl}
             </Gruppe>
 
             <Gruppe titel="Vermarktung & Beteiligung">
@@ -130,9 +142,20 @@ export default function AgriPvRechner() {
                 hinweis={`Unter dem System ca. ${fmt(r.landwirtschaft.ertragLw * 100)} % davon (inkl. Flächenverlust)`}
               />
             </Gruppe>
+
+            {/* Vorschau des gewählten Systems */}
+            <figure className="overflow-hidden rounded-2xl bg-white ring-1 ring-ink-200/70">
+              <AgriBild typ={r.system} className="block h-auto w-full" />
+              <figcaption className="flex items-center justify-between gap-3 border-t border-ink-100 px-4 py-3 text-[12.5px]">
+                <span className="font-semibold text-ink-800">{SYSTEME.find((x) => x.id === r.system)?.label}</span>
+                <span className="ov-num shrink-0 text-ink-500">
+                  {fmt(ha, ha % 1 ? 1 : 0)} ha · {fmt(r.anlage.kwp / 1000, 2)} MWp
+                </span>
+              </figcaption>
+            </figure>
           </div>
         </>
-      }
+      )}
       ergebnis={
         <>
           <p className="sr-only" aria-live="polite">
@@ -172,12 +195,18 @@ export default function AgriPvRechner() {
                     <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", top ? "bg-ov-500 text-white" : "bg-sand-50 text-ov-600 ring-1 ring-ink-200")}>
                       <Icon aria-hidden="true" className="h-5 w-5" />
                     </span>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="font-display text-[16.5px] font-bold leading-tight text-ink-900">{m.titel}</p>
-                      <p className="text-[12.5px] leading-snug text-ink-500">{m.sub}</p>
+                      <p className="text-[12.5px] leading-snug text-ink-500">
+                        <span className="font-semibold text-ink-600">Weg {m.weg.buchstabe}</span> · {m.sub}
+                      </p>
                     </div>
                   </div>
-                  <p className="mt-5 text-[12.5px] font-medium text-ink-500">Summe {r.laufzeit} Jahre inkl. Landwirtschaft</p>
+                  {/* Anteil an der höchsten Summe */}
+                  <div aria-hidden="true" className="mt-4 h-1.5 overflow-hidden rounded-full bg-ink-100">
+                    <span className={cn("block h-full rounded-full", top ? "bg-ov-500" : "bg-ink-300")} style={{ width: `${Math.max(0, (w.gesamtSumme / maxSumme) * 100)}%` }} />
+                  </div>
+                  <p className="mt-4 text-[12.5px] font-medium text-ink-500">Summe {r.laufzeit} Jahre inkl. Landwirtschaft</p>
                   <p className="ov-num font-display text-[26px] font-extrabold leading-tight tracking-tight text-ink-900">
                     <Zahl wert={w.gesamtSumme / 1000} suffix=" Tsd. €" />
                   </p>
@@ -194,7 +223,7 @@ export default function AgriPvRechner() {
           </div>
 
           {/* Balken */}
-          <div className="mt-5 rounded-3xl ring-1 ring-ink-200/70 p-5 md:p-6">
+          <div className="mt-5 rounded-3xl p-5 ring-1 ring-ink-200/70 md:p-6">
             <p className="font-display text-[16px] font-bold text-ink-900">Woraus sich die Summe zusammensetzt</p>
             <div className="mt-4 space-y-3.5">
               {r.wege.map((w) => {
@@ -206,13 +235,15 @@ export default function AgriPvRechner() {
                       <span className="font-semibold text-ink-800">{WEG_META[w.id].titel}</span>
                       <span className="ov-num text-right text-ink-600">
                         {betrag(w.gesamtSumme)}
-                        {en < 0 && <span className="block text-[12px] text-ink-500">Energie-Teil {betrag(en)}</span>}
                       </span>
                     </div>
                     <div className="flex h-3 overflow-hidden rounded-full bg-ink-100">
                       <span className="h-full bg-sun-400" style={{ width: `${(Math.max(0, lw) / maxSumme) * 100}%` }} />
                       <span className="h-full bg-ov-500" style={{ width: `${(Math.max(0, en) / maxSumme) * 100}%` }} />
                     </div>
+                    <p className="ov-num mt-1 text-[12px] text-ink-500">
+                      Landwirtschaft {betrag(lw)} · Energie {betrag(en)}
+                    </p>
                   </div>
                 );
               })}
@@ -230,13 +261,27 @@ export default function AgriPvRechner() {
             <Mini icon={Zap} k="Agri-Pacht/Jahr" v={fmtEur(r.pachtJahr0)} z={`${fmt(PACHT.agriProHa.mittel)} €/ha, +${fmt(PACHT.indexierung * 100, 1)} % p. a.`} />
           </div>
 
-          <div className="mt-7 flex flex-col gap-3 border-t border-ink-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="max-w-md text-[13px] leading-relaxed text-ink-500">
+          <div className="mt-7 border-t border-ink-100 pt-6">
+            <div className="flex flex-col gap-4 rounded-3xl bg-ov-50 p-5 ring-1 ring-ov-200 md:p-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-ov-800">Mit diesem Ergebnis weiter</p>
+                <p className="mt-1 font-display text-[19px] font-bold leading-snug text-ink-900">
+                  {fmt(ha, ha % 1 ? 1 : 0)} ha · Agri-Pacht ≈ <span className="ov-num">{fmtEur(r.pachtJahr0)}</span> pro Jahr – unverbindlich prüfen lassen
+                </p>
+                <p className="mt-1 text-[13px] leading-snug text-ink-600">Größe und Region übernehmen wir in den Flächencheck.</p>
+              </div>
+              <div className="flex shrink-0 flex-col gap-2.5 sm:flex-row lg:flex-col xl:flex-row">
+                <ZumFlaechencheck ha={ha} regionId={regionId} size="lg" data-ov-cta>
+                  Fläche prüfen
+                </ZumFlaechencheck>
+                <Button href="/landwirte#anfrage" size="lg" variant="secondary">
+                  Mit uns durchrechnen
+                </Button>
+              </div>
+            </div>
+            <p className="mt-4 text-[13px] leading-relaxed text-ink-500">
               Projektrendite ohne Fremdkapital und vor Steuern, nominal – eine Orientierung, kein Angebot. Eigenverbrauch am Hof, Speicher und eingesparte Schutznetze sind nicht eingerechnet – sie verbessern Weg B oft deutlich.
             </p>
-            <Button href="/landwirte#anfrage" size="lg" pfeil className="shrink-0">
-              Mit uns durchrechnen
-            </Button>
           </div>
         </>
       }

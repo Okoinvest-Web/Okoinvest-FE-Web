@@ -5,7 +5,6 @@ import {
   AlertTriangle, ArrowUpRight, BadgePercent, Calculator, Globe2, HardHat, LayoutDashboard, Megaphone, Network, Sprout, Store, UserRound, Zap,
 } from "lucide-react";
 
-import PageHero from "@/components/ui/PageHero";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import FeatureGrid from "@/components/ui/FeatureGrid";
@@ -14,9 +13,13 @@ import Faq from "@/components/ui/Faq";
 import CtaBand from "@/components/ui/CtaBand";
 import Querverweise from "@/components/Reusable/Querverweise";
 import ModellVergleich from "@/components/Vergleich/ModellVergleich";
+import ModellBilanz from "@/components/Vergleich/ModellBilanz";
+import NachtHero from "@/components/Unternehmen/NachtHero";
+import { cn } from "@/components/ui/cn";
 import { abs, KENNZAHLEN } from "@/data/site";
 import { PROVISION, STAND } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import JsonLd from "@/components/JsonLd";
 
 const PFAD = "/warum-oekoinvest";
 const TITEL = "Warum ÖkoInvest: Plattform-Modelle im Vergleich | ÖkoInvest";
@@ -37,7 +40,7 @@ export const metadata = {
   },
 };
 
-const provisionKurz = `${fmt(PROVISION.verkaeufer.min * 100, 1)}–${fmt(PROVISION.verkaeufer.max * 100)} %`;
+const provisionKurz = `${fmt(PROVISION.verkaeufer.min * 100, 1)}⁠–⁠${fmt(PROVISION.verkaeufer.max * 100)} %`;
 
 const SPALTEN = [
   { id: "markt", titel: "Reiner Marktplatz", sub: "Inserate von Anbietern, Plattform vermittelt Kontakt" },
@@ -138,28 +141,25 @@ const FAQ = [
 export default function WarumOekoinvestPage() {
   return (
     <div>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "WebPage",
-            name: "Warum ÖkoInvest – Plattform-Modelle im Vergleich",
-            url: abs(PFAD),
-            description: BESCHREIBUNG,
-            about: { "@id": `${abs("/")}/#organization` },
-            inLanguage: "de-DE",
-          }),
+      <JsonLd
+        daten={{
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          name: "Warum ÖkoInvest – Plattform-Modelle im Vergleich",
+          url: abs(PFAD),
+          description: BESCHREIBUNG,
+          about: { "@id": `${abs("/")}/#organization` },
+          inLanguage: "de-DE",
         }}
       />
 
-      <PageHero
-        variant="dark"
+      <NachtHero
         breadcrumbs={[{ name: "Warum ÖkoInvest" }]}
         eyebrow="Offener Vergleich"
+        buehne={<ModellBilanz spalten={SPALTEN} zeilen={ZEILEN} />}
         title={<>Marktplatz, Makler oder <span className="ov-text-gradient-light">Entwickler-Plattform?</span></>}
         lead="Wer im PV-Projekthandel kauft, verkauft oder verpachtet, hat drei Arten von Partnern zur Auswahl. Jedes Modell hat Stärken. Hier sehen Sie offen, worin sie sich unterscheiden – und wo unsere Grenzen liegen."
-        points={["Konditionen öffentlich", "Rechner mit Rechenweg", "Entwicklung, Bau und Betrieb in der Gruppe"]}
+        chips={["Konditionen öffentlich", "Rechner mit Rechenweg", "Entwicklung, Bau und Betrieb in der Gruppe", "Grenzen offen benannt"]}
         actions={[
           { label: "Zum Vergleich", href: "#vergleich" },
           { label: "Zur Projektbörse", href: "/projektboerse" },
@@ -180,15 +180,26 @@ export default function WarumOekoinvestPage() {
             { icon: UserRound, t: "Makler / Berater", stark: "Persönliche Begleitung, gezielte Ansprache, Verhandlung im Mandat.", grenze: "Abhängig von Netzwerk und Kapazität einzelner Personen; Konditionen und Bewertung meist nicht öffentlich." },
             { icon: HardHat, t: "Entwickler-Plattform", stark: "Börse plus Fachwissen aus Entwicklung, Bau und Betrieb – mit offenen Konditionen und Rechnern.", grenze: "Junge Plattform mit noch begrenzter Reichweite; die Gruppe kann selbst Marktteilnehmer sein." },
           ].map((m, i) => (
-            <Reveal key={m.t} delay={i * 80} className="flex flex-col rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60 md:p-8">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-ov-600 ring-1 ring-ink-200">
-                <m.icon aria-hidden="true" className="h-5 w-5" />
-              </span>
-              <h3 className="mt-5 font-display text-[20px] font-bold text-ink-900">{m.t}</h3>
-              <p className="mt-4 text-[12px] font-semibold uppercase tracking-[0.14em] text-ov-700">Stärke</p>
-              <p className="mt-1 text-[15px] leading-relaxed text-ink-700">{m.stark}</p>
-              <p className="mt-4 text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-500">Grenze</p>
-              <p className="mt-1 text-[15px] leading-relaxed text-ink-600">{m.grenze}</p>
+            <Reveal
+              key={m.t}
+              delay={i * 80}
+              className={cn("relative flex flex-col overflow-hidden rounded-3xl p-6 md:p-8", i === 2 ? "ov-verlauf-nacht text-white shadow-e4" : "bg-sand-50 ring-1 ring-ink-200/60")}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <span className={cn("flex h-11 w-11 items-center justify-center rounded-2xl", i === 2 ? "bg-white/10 text-ov-300 ring-1 ring-white/15" : "bg-white text-ov-600 ring-1 ring-ink-200")}>
+                  <m.icon aria-hidden="true" className="h-5 w-5" />
+                </span>
+                {i === 2 && <span className="rounded-full bg-ov-300 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-navy-950">Unser Modell</span>}
+              </div>
+              <h3 className={cn("mt-5 font-display text-[20px] font-bold", i === 2 ? "text-white" : "text-ink-900")}>{m.t}</h3>
+              <div className={cn("mt-5 rounded-2xl p-4", i === 2 ? "bg-white/[0.06] ring-1 ring-white/10" : "bg-white ring-1 ring-ink-200/60")}>
+                <p className={cn("ov-overline", i === 2 ? "text-ov-300" : "text-ov-700")}>Stärke</p>
+                <p className={cn("mt-1.5 text-[15px] leading-relaxed", i === 2 ? "text-white/85" : "text-ink-700")}>{m.stark}</p>
+              </div>
+              <div className="mt-3 px-4">
+                <p className={cn("ov-overline", i === 2 ? "text-white/60" : "text-ink-500")}>Grenze</p>
+                <p className={cn("mt-1.5 text-[15px] leading-relaxed", i === 2 ? "text-white/70" : "text-ink-600")}>{m.grenze}</p>
+              </div>
             </Reveal>
           ))}
         </div>

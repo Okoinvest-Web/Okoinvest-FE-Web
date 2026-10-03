@@ -46,7 +46,8 @@ export const metadata = {
   title: TITEL,
   description: BESCHREIBUNG,
   alternates: { canonical: PAGE_URL },
-  robots: { index: true, follow: true },
+  // QM Welle 1: Rechtstext im ENTWURF (Strang R) – bis zur schriftlichen Freigabe noindex (Masterplan Abschnitt 11)
+  robots: { index: false, follow: true },
   openGraph: {
     type: "website",
     locale: "de_AT",
@@ -97,19 +98,29 @@ export default function DatenschutzPage() {
     <LegalShell
       titel="Datenschutzerklärung"
       pfad="/datenschutz"
+      stand={STAND}
       lead="Welche personenbezogenen Daten wir auf dieser Website, im Portal, in der Projektbörse und in unseren Fachmodulen verarbeiten, wozu, auf welcher Rechtsgrundlage – und welche Rechte Sie haben."
     >
-      <nav aria-label="Inhalt der Datenschutzerklärung" className="mb-10 rounded-2xl bg-sand-50 p-5 ring-1 ring-ink-200/60 md:p-6">
-        <p className="font-display text-[16px] font-bold text-ink-900">Schnellzugriff</p>
-        <ul className="mt-3 grid gap-x-6 gap-y-1.5 text-[15px] sm:grid-cols-2">
-          <li><a href="#konto">Portal, Anmeldung und Teams (6–6g)</a></li>
-          <li><a href="#boerse">Projektbörse, Signatur, Closing (7–7b)</a></li>
-          <li><a href="#pruefungen">Identität, Bonität, Register (8b–8e)</a></li>
-          <li><a href="#akquise">Flächenakquise und Grundbuch (8f)</a></li>
-          <li><a href="#energie">Energiebeschaffung (8g)</a></li>
-          <li><a href="#finanzierung">Finanzierung, Monitoring, Abrechnung (8h–8j)</a></li>
-          <li><a href="#empfaenger">Empfänger (12)</a></li>
-          <li><a href="#speicherdauer">Speicherdauer (13) und Ihre Rechte (14)</a></li>
+      <nav aria-label="Inhalt der Datenschutzerklärung" className="mb-12 rounded-2xl bg-sand-50 p-4 ring-1 ring-ink-200/60 sm:p-5 md:p-6">
+        <p className="px-1 font-display text-[16px] font-bold text-ink-900">Schnellzugriff</p>
+        <ul className="!mt-3 grid !list-none gap-2 !pl-0 text-[14.5px] sm:grid-cols-2 [&_li+li]:!mt-0">
+          {[
+            ["#konto", "Portal, Anmeldung und Teams (6–6g)"],
+            ["#boerse", "Projektbörse, Signatur, Closing (7–7b)"],
+            ["#pruefungen", "Identität, Bonität, Register (8b–8e)"],
+            ["#akquise", "Flächenakquise und Grundbuch (8f)"],
+            ["#energie", "Energiebeschaffung (8g)"],
+            ["#finanzierung", "Finanzierung, Monitoring, Abrechnung (8h–8j)"],
+            ["#empfaenger", "Empfänger (12)"],
+            ["#speicherdauer", "Speicherdauer (13) und Ihre Rechte (14)"],
+          ].map(([href, text]) => (
+            <li key={href}>
+              <a href={href} className="flex h-full items-center gap-2.5 rounded-xl bg-white px-3.5 py-2.5 font-medium !text-ink-800 !no-underline ring-1 ring-ink-200/70 transition-colors hover:!text-ov-800 hover:ring-ov-300">
+                <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-ov-500" />
+                {text}
+              </a>
+            </li>
+          ))}
         </ul>
       </nav>
 
@@ -806,20 +817,20 @@ export default function DatenschutzPage() {
         Wir speichern personenbezogene Daten nur so lange, wie es für den jeweiligen Zweck erforderlich ist oder gesetzliche Aufbewahrungspflichten
         bestehen. Richtwerte:
       </p>
-      <div className="not-prose -mx-1 overflow-x-auto" tabIndex={0} role="region" aria-label="Speicherfristen">
-        <table className="mt-4 w-full min-w-[520px] border-collapse text-left text-[15px]">
+      <div className="mt-5 overflow-hidden rounded-2xl ring-1 ring-ink-200/80">
+        <table className="w-full border-collapse text-left text-[15px] max-sm:block">
           <caption className="sr-only">Speicherfristen nach Datenkategorie</caption>
-          <thead>
+          <thead className="bg-sand-50 max-sm:sr-only">
             <tr className="border-b border-ink-200">
-              <th scope="col" className="py-2.5 pr-4 font-semibold text-ink-900">Daten</th>
-              <th scope="col" className="py-2.5 font-semibold text-ink-900">Speicherdauer</th>
+              <th scope="col" className="w-[42%] px-5 py-3 text-[12.5px] font-semibold uppercase tracking-[0.1em] text-ink-600">Daten</th>
+              <th scope="col" className="px-5 py-3 text-[12.5px] font-semibold uppercase tracking-[0.1em] text-ink-600">Speicherdauer</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-ink-100">
+          <tbody className="divide-y divide-ink-100 max-sm:block">
             {FRISTEN.map(([daten, dauer]) => (
-              <tr key={daten}>
-                <th scope="row" className="py-2.5 pr-4 align-top font-medium text-ink-900">{daten}</th>
-                <td className="py-2.5 align-top">
+              <tr key={daten} className="transition-colors hover:bg-sand-50/70 max-sm:block max-sm:px-4 max-sm:py-3.5">
+                <th scope="row" className="px-5 py-3.5 align-top font-semibold leading-snug text-ink-900 max-sm:block max-sm:p-0">{daten}</th>
+                <td className="px-5 py-3.5 align-top leading-relaxed text-ink-700 max-sm:mt-1 max-sm:block max-sm:p-0">
                   {dauer.startsWith("[Platzhalter: ") ? <Platzhalter>{dauer.slice(14, -1)}</Platzhalter> : dauer}
                 </td>
               </tr>

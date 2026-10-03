@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { ArrowRight, BarChart3, Database, ExternalLink, Gavel, Sun, TrendingDown, Zap } from "lucide-react";
-import PageHero from "@/components/ui/PageHero";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Faq from "@/components/ui/Faq";
@@ -13,6 +12,8 @@ import { rechnerMetadata } from "@/components/Rechner/RechnerSeite";
 import AusschreibungsChart from "@/components/Marktdaten/AusschreibungsChart";
 import MarktwertChart from "@/components/Marktdaten/MarktwertChart";
 import LiveEinordnung from "@/components/Marktdaten/LiveEinordnung";
+import Hero from "@/components/Marktdaten/Seite/Hero";
+import Kennzahlen from "@/components/Marktdaten/Seite/Kennzahlen";
 import { abs } from "@/data/site";
 import {
   AUSSCHREIBUNGEN,
@@ -35,6 +36,7 @@ import {
 import { PACHT, ERLOESE, FREIFLAECHE } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import { getEnergySnapshot } from "@/lib/energy";
+import JsonLd from "@/components/JsonLd";
 
 export const revalidate = 900;
 
@@ -45,7 +47,7 @@ export const metadata = rechnerMetadata({
   pfad: PFAD,
   title: "Marktdaten Solar: EEG-Zuschläge & Marktwert | ÖkoInvest",
   description:
-    "Marktdaten Freiflächen-PV: EEG-Zuschlagswerte Solar seit 2017, Höchstwerte, Gebotsmengen, Marktwert Solar, Capture Rate, Zubau DACH und Pachtniveau – mit Quellen.",
+    "Marktdaten Freiflächen-PV: EEG-Zuschlagswerte seit 2017, Höchstwerte, Gebotsmengen, Marktwert Solar, Capture Rate, Zubau DACH und Pacht – mit Quellen.",
   keywords: [
     "EEG Ausschreibung Solar Ergebnisse",
     "Zuschlagswert Solar Freifläche",
@@ -77,10 +79,11 @@ const faktorAcker = PACHT.freiflaecheProHa.mittel / LANDPACHT_DESTATIS.schnitt;
 const ANTWORT = `Beim letzten Gebotstermin am ${termin(L.datum)} lag der mengengewichtete Zuschlagswert für Freiflächen-Solaranlagen bei ${ct(L.mittel)} (Vorrunde: ${ct(VORLETZTE.mittel)}). Seit ${ERSTER.datum.slice(0, 4)} schwankten die Ergebnisse zwischen ${ct(MIN_ZUSCHLAG.mittel)} (${termin(MIN_ZUSCHLAG.datum)}) und ${ct(MAX_ZUSCHLAG.mittel)} (${termin(MAX_ZUSCHLAG.datum)}).`;
 
 const KENNZAHLEN = [
-  { icon: Gavel, wert: fmt(L.mittel, 2), einheit: "ct/kWh", text: `Ø Zuschlag Solar, ${termin(L.datum)}` },
-  { icon: BarChart3, wert: fmt(L.gebote / L.volumen, 1), einheit: "fach", text: `überzeichnet im ${MONATE[Number(L.datum.slice(5, 7)) - 1]} ${L.datum.slice(0, 4)}` },
-  { icon: Sun, wert: fmt(LETZTER_MARKTWERT.capture * 100), einheit: "%", text: `Capture Rate Solar ${LETZTER_MARKTWERT.jahr}` },
-  { icon: TrendingDown, wert: fmt(NEG_2025.stunden), einheit: "h", text: `Stunden mit negativem Preis ${NEG_2025.jahr}` },
+  // zahl/stellen: dieselben Werte wie `wert`, als Zahl für den Count-up (nur Werte, die auf der Seite stehen)
+  { icon: Gavel, wert: fmt(L.mittel, 2), zahl: Number(L.mittel.toFixed(2)), stellen: 2, einheit: "ct/kWh", text: `Ø Zuschlag Solar, ${termin(L.datum)}` },
+  { icon: BarChart3, wert: fmt(L.gebote / L.volumen, 1), zahl: Number((L.gebote / L.volumen).toFixed(1)), stellen: 1, einheit: "fach", text: `überzeichnet im ${MONATE[Number(L.datum.slice(5, 7)) - 1]} ${L.datum.slice(0, 4)}` },
+  { icon: Sun, wert: fmt(LETZTER_MARKTWERT.capture * 100), zahl: Math.round(LETZTER_MARKTWERT.capture * 100), stellen: 0, einheit: "%", text: `Capture Rate Solar ${LETZTER_MARKTWERT.jahr}` },
+  { icon: TrendingDown, wert: fmt(NEG_2025.stunden), zahl: Math.round(NEG_2025.stunden), stellen: 0, einheit: "h", text: `Stunden mit negativem Preis ${NEG_2025.jahr}` },
 ];
 
 const PHASEN_TEXT = [
@@ -243,6 +246,8 @@ export default async function MarktdatenPage() {
   }
 
   const jahreAbsteigend = [...AUSSCHREIBUNGEN_JAHR].reverse();
+  const zubauMax = Math.max(...ZUBAU.flatMap((z) => z.werte.map((w) => w.gw)));
+  const negMax = Math.max(...NEGATIVE_STUNDEN.map((n) => n.stunden));
   const marktwertZeilen = [
     ...[...MARKTWERTE].reverse().map((m) => [String(m.jahr), fmt(m.spot, 2), fmt(m.solar, 2), `${fmt(m.capture * 100)} %`]),
     ...[...MARKTWERT_SOLAR_FRUEHER].reverse().map((m) => [`${m.jahr}*`, "–", fmt(m.solar, 2), "–"]),
@@ -250,34 +255,11 @@ export default async function MarktdatenPage() {
 
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(datasetSchema) }} />
+      <JsonLd daten={webPageSchema} />
+      <JsonLd daten={datasetSchema} />
 
-      <PageHero
-        variant="dark"
-        breadcrumbs={[{ name: "Wissen", href: "/ratgeber" }, { name: "Marktdaten" }]}
-        eyebrow="Marktdaten · Freiflächen-PV DACH"
-        title={
-          <>
-            Marktdaten Solar: <span className="ov-text-gradient-light">Zuschläge, Marktwerte, Trends</span>
-          </>
-        }
-        lead="Alle EEG-Ausschreibungen für Freiflächen-Solaranlagen seit 2017, der Marktwert von Solarstrom, die Capture Rate, negative Preise, Zubau und Pachtniveau – mit Quellen, als Diagramm und Tabelle."
-      >
-        <ul className="mt-12 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {KENNZAHLEN.map((k) => (
-            <li key={k.text} className="ov-glass rounded-3xl p-4 sm:p-5">
-              <k.icon aria-hidden="true" className="h-5 w-5 text-ov-300" />
-              <p className="mt-4 flex items-baseline gap-1.5 font-display font-extrabold leading-none">
-                <span className="ov-num text-[28px] sm:text-[34px]">{k.wert}</span>
-                <span className="text-[15px] font-bold text-white/65">{k.einheit}</span>
-              </p>
-              <p className="mt-2 text-[13.5px] leading-snug text-white/65">{k.text}</p>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-5 text-[12.5px] text-white/50">Datenstand {MARKTDATEN_STAND_TEXT}. Börsenpreis live weiter unten.</p>
-      </PageHero>
+      <Hero standText={MARKTDATEN_STAND_TEXT} />
+      <Kennzahlen kennzahlen={KENNZAHLEN} />
 
       {/* Ausschreibungen */}
       <Section tone="white" space="lg" id="ausschreibungen" className="scroll-mt-24">
@@ -295,14 +277,21 @@ export default async function MarktdatenPage() {
           <AusschreibungsChart termine={AUSSCHREIBUNGEN} jahre={AUSSCHREIBUNGEN_JAHR} />
         </Reveal>
 
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
-          {PHASEN_TEXT.map((p, i) => (
-            <Reveal key={p.titel} delay={i * 80} className="rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60 md:p-7">
-              <h3 className="font-display text-[18px] font-bold text-ink-900">{p.titel}</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-ink-600">{p.text}</p>
-            </Reveal>
-          ))}
-        </div>
+        <ol className="relative mt-12 grid gap-5 md:grid-cols-3">
+          <span aria-hidden="true" className="absolute left-0 right-0 top-[15px] hidden h-px bg-gradient-to-r from-ov-200 via-sun-300 to-ov-400 md:block" />
+          {PHASEN_TEXT.map((p, i) => {
+            const [zeit, ...rest] = p.titel.split(": ");
+            return (
+              <Reveal as="li" key={p.titel} delay={i * 80} className="relative">
+                <span className="relative z-10 inline-flex h-[30px] items-center rounded-full bg-navy-950 px-3.5 text-[12.5px] font-bold tracking-[0.04em] text-white ring-4 ring-white">{zeit}</span>
+                <div className="mt-4 rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60 md:p-7">
+                  <h3 className="font-display text-[18px] font-bold leading-snug text-ink-900">{rest.join(": ").replace(/^./, (c) => c.toUpperCase())}</h3>
+                  <p className="mt-2 text-[15px] leading-relaxed text-ink-600">{p.text}</p>
+                </div>
+              </Reveal>
+            );
+          })}
+        </ol>
 
         <div className="mt-12 grid gap-10 lg:grid-cols-[1.25fr_0.75fr] lg:gap-14">
           <Tabelle
@@ -380,12 +369,22 @@ export default async function MarktdatenPage() {
               Ratgeber <TextLink href="/ratgeber/negative-strompreise-solarspitzengesetz">Negative Strompreise und Solarspitzengesetz</TextLink>.
             </p>
           </div>
-          <Tabelle
-            caption="Stunden mit negativem Day-Ahead-Preis (DE-LU) je Jahr"
-            kopf={["Jahr", "Stunden"]}
-            zeilen={[...NEGATIVE_STUNDEN].reverse().map((n) => [String(n.jahr), fmt(n.stunden)])}
-            minBreite={260}
-          />
+<figure className="rounded-3xl bg-white p-5 ring-1 ring-ink-200/70 sm:p-6">
+            <figcaption className="text-[13px] font-semibold text-ink-600">Stunden mit negativem Day-Ahead-Preis (DE-LU) je Jahr</figcaption>
+            <ul className="mt-5 flex h-48 items-end gap-2 sm:gap-3">
+              {NEGATIVE_STUNDEN.map((n, i) => {
+                const letzte = i === NEGATIVE_STUNDEN.length - 1;
+                return (
+                  <li key={n.jahr} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1.5">
+                    <span className={`ov-num text-[12px] font-bold ${letzte ? "text-sun-700" : "text-ink-700"}`}>{fmt(n.stunden)}<span className="sr-only"> Stunden im Jahr {n.jahr}</span></span>
+                    <span aria-hidden="true" className={`w-full rounded-t-lg ${letzte ? "bg-gradient-to-t from-sun-500 to-sun-300" : "bg-gradient-to-t from-navy-700 to-navy-400"}`} style={{ height: `${Math.max(3, (n.stunden / negMax) * 78)}%` }} />
+                    <span aria-hidden="true" className="text-[11.5px] text-ink-500">{n.jahr}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-4 text-[12.5px] text-ink-500">Quelle: Energy-Charts (Fraunhofer ISE), eigene Auswertung</p>
+          </figure>
         </div>
       </Section>
 
@@ -406,13 +405,18 @@ export default async function MarktdatenPage() {
               </div>
               <dl className="mt-5 space-y-2">
                 {z.werte.map((w) => (
-                  <div key={w.jahr} className="flex items-baseline justify-between gap-3 border-b border-ink-200/70 pb-2">
-                    <dt className="text-[14px] text-ink-600">Zubau {w.jahr}</dt>
-                    <dd className="ov-num font-display text-[20px] font-bold text-ink-900">{fmt(w.gw, 1)} GW</dd>
+                  <div key={w.jahr} className="border-b border-ink-200/70 pb-2.5">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <dt className="text-[14px] text-ink-600">Zubau {w.jahr}</dt>
+                      <dd className="ov-num font-display text-[20px] font-bold text-ink-900">{fmt(w.gw, 1)} GW</dd>
+                    </div>
+                    <div aria-hidden="true" className="mt-1.5 h-1.5 rounded-full bg-white ring-1 ring-inset ring-ink-200/60">
+                      <div className="h-full rounded-full bg-gradient-to-r from-ov-400 to-ov-600" style={{ width: `${Math.max(2, (w.gw / zubauMax) * 100)}%` }} />
+                    </div>
                   </div>
                 ))}
               </dl>
-              <p className="mt-4 text-[14px] leading-relaxed text-ink-700">
+                            <p className="mt-4 text-[14px] leading-relaxed text-ink-700">
                 <strong className="text-ink-900">Freifläche:</strong> {z.freiflaeche}
               </p>
               <p className="mt-2 text-[14px] leading-relaxed text-ink-600">{z.einordnung}</p>
@@ -421,7 +425,7 @@ export default async function MarktdatenPage() {
           ))}
         </div>
         <p className="mt-6 text-[13.5px] leading-relaxed text-ink-500">
-          Grobe Einordnung, Bruttozubau aller Segmente. Rahmenbedingungen im Detail:{" "}
+          Grobe Einordnung, Bruttozubau aller Segmente; Balken in gleicher Skala für alle Länder. Rahmenbedingungen im Detail:{" "}
           <TextLink href="/ratgeber/freiflaechen-pv-oesterreich">Freiflächen-PV in Österreich</TextLink> und{" "}
           <TextLink href="/ratgeber/freiflaechen-pv-schweiz">Freiflächen-PV in der Schweiz</TextLink>.
         </p>
@@ -449,6 +453,30 @@ export default async function MarktdatenPage() {
               <ArrowRight aria-hidden="true" className="h-4 w-4" />
             </Link>
           </div>
+          <div className="space-y-5">
+          <Reveal className="rounded-3xl bg-white p-5 shadow-e2 ring-1 ring-ink-200/70 sm:p-6">
+            <p className="text-[13px] font-semibold text-ink-600">Pacht je Hektar und Jahr im Vergleich</p>
+            <ul className="mt-5 space-y-4">
+              {[
+                { label: "Freiflächen-PV", min: PACHT.freiflaecheProHa.min, max: PACHT.freiflaecheProHa.max, farbe: "from-ov-400 to-ov-600" },
+                { label: "Agri-PV", min: PACHT.agriProHa.min, max: PACHT.agriProHa.max, farbe: "from-sun-300 to-sun-500" },
+                { label: `Landpacht DE Ø ${LANDPACHT_DESTATIS.jahr}`, min: 0, max: LANDPACHT_DESTATIS.schnitt, farbe: "from-ink-300 to-ink-400", punkt: true },
+              ].map((b) => {
+                const skala = Math.max(PACHT.freiflaecheProHa.max, PACHT.agriProHa.max);
+                return (
+                  <li key={b.label}>
+                    <div className="flex items-baseline justify-between gap-3 text-[14px]">
+                      <span className="font-semibold text-ink-800">{b.label}</span>
+                      <span className="ov-num font-display font-bold text-ink-900">{b.punkt ? fmt(b.max) : `${fmt(b.min)}–${fmt(b.max)}`} €</span>
+                    </div>
+                    <div aria-hidden="true" className="relative mt-1.5 h-2.5 rounded-full bg-ink-100">
+                      <span className={`absolute inset-y-0 rounded-full bg-gradient-to-r ${b.farbe}`} style={{ left: `${(b.min / skala) * 100}%`, width: `${Math.max(1.5, ((b.max - b.min) / skala) * 100)}%` }} />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </Reveal>
           <Tabelle
             caption="Pachtniveau je Hektar und Jahr, Orientierung"
             kopf={["Nutzung", "€ je ha und Jahr"]}
@@ -463,6 +491,7 @@ export default async function MarktdatenPage() {
             markiert={0}
             minBreite={440}
           />
+          </div>
         </div>
       </Section>
 

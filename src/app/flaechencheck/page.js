@@ -1,6 +1,5 @@
 // src/app/flaechencheck/page.js – Flächencheck (Wizard)
 
-import PageHero from "@/components/ui/PageHero";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
@@ -8,15 +7,17 @@ import Faq from "@/components/ui/Faq";
 import CtaBand from "@/components/ui/CtaBand";
 import Querverweise from "@/components/Reusable/Querverweise";
 import FlaechenWizard from "@/components/Flaeche/FlaechenWizard";
+import { CheckHero, SoBewertenWir } from "@/components/Flaeche/Check/Abschnitte";
 import { AnnahmenBox } from "@/components/Rechner/RechnerSeite";
 import { abs } from "@/data/site";
 import { FREIFLAECHE, PACHT, PROVISION } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import JsonLd from "@/components/JsonLd";
 
 const PFAD = "/flaechencheck";
-const TITEL = "Flächencheck: Eignet sich Ihre Fläche? | ÖkoInvest";
+const TITEL = "Flächencheck Solarpark: Eignet sich Ihre Fläche? | ÖkoInvest";
 const BESCHREIBUNG =
-  "Flächencheck für Solarpark und Agri-PV: Lage, Größe, Nutzung und Netzentfernung angeben – Ampel, mögliche Leistung, Stromertrag und Pachtspanne in zwei Minuten.";
+  "Eignet sich Ihre Fläche für Solarpark oder Agri-PV? Lage, Größe, Nutzung und Netz angeben – Ampel, Leistung, Stromertrag und Pachtspanne in zwei Minuten.";
 
 export const metadata = {
   title: TITEL,
@@ -60,64 +61,33 @@ const FAQ = [
 export default function FlaechencheckPage() {
   return (
     <div>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "WebApplication",
-            name: "ÖkoInvest Flächencheck",
-            url: abs(PFAD),
-            description: BESCHREIBUNG,
-            applicationCategory: "BusinessApplication",
-            operatingSystem: "Web",
-            inLanguage: "de",
-            isAccessibleForFree: true,
-            offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
-            publisher: { "@id": `${abs("/")}/#organization` },
-          }),
+      <JsonLd
+        daten={{
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          name: "ÖkoInvest Flächencheck",
+          url: abs(PFAD),
+          description: BESCHREIBUNG,
+          applicationCategory: "BusinessApplication",
+          operatingSystem: "Web",
+          inLanguage: "de",
+          isAccessibleForFree: true,
+          publisher: { "@id": `${abs("/")}/#organization` },
         }}
       />
 
-      <PageHero
-        variant="dark"
-        breadcrumbs={[{ name: "Rechner & Tools", href: "/rechner" }, { name: "Flächencheck" }]}
-        eyebrow="Flächencheck · DE · AT · CH"
-        title={<>Hat Ihre Fläche das Zeug <span className="ov-text-gradient-light">zum Solarpark?</span></>}
-        lead="Vier kurze Schritte: Lage, Größe, Besonderheiten, Netz. Sie erhalten eine Ampel mit Begründung, die mögliche Leistung, den Stromertrag und eine realistische Pachtspanne."
-        points={["Kostenlos & ohne Anmeldung", "Ergebnis sofort", "Mit Agri-PV-Option"]}
-        className="[&>div.ov-container]:pb-28 md:[&>div.ov-container]:pb-36"
-      />
+      <CheckHero />
 
-      <section aria-label="Flächencheck" className="relative z-10 -mt-20 pb-6 md:-mt-28 md:pb-10">
+      <section id="check" aria-label="Flächencheck" className="relative z-10 -mt-20 scroll-mt-24 pb-6 md:-mt-28 md:pb-10">
         <div className="ov-container">
           <FlaechenWizard />
         </div>
       </section>
 
-      <Section tone="white" space="md">
+      <Section tone="white" space="lg">
         <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
-          <div>
-            <SectionHeading
-              eyebrow="So bewerten wir"
-              title="Eine offene Punkteliste statt einer Blackbox."
-              lead="Jede Fläche startet bei 50 Punkten. Größe, Nutzung, Besonderheiten, Netzkosten je kWp und Eigentumsverhältnisse schieben den Wert nach oben oder unten – jeder Punkt wird im Ergebnis begründet."
-            />
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              {[
-                ["Größe", "Ab rund 3 ha wirtschaftlich, 10–100 ha ideal."],
-                ["Nutzung", "Konversion und Randstreifen vorne, Schutzgebiete fast immer ausgeschlossen."],
-                ["Netz", "Kabeltrasse und Übergabestation je kWp – kleine Parks reagieren empfindlicher."],
-                ["Eigentum", "Alleineigentum ist am schnellsten; Gemeinschaften brauchen alle Unterschriften."],
-              ].map(([t, x], i) => (
-                <Reveal key={t} delay={i * 60} className="rounded-2xl bg-sand-50 p-5 ring-1 ring-ink-200/60">
-                  <p className="font-display text-[16.5px] font-bold text-ink-900">{t}</p>
-                  <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-600">{x}</p>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-          <Reveal>
+          <SoBewertenWir />
+          <Reveal className="lg:sticky lg:top-28 lg:self-start">
             <AnnahmenBox
               punkte={[
                 ["Ampel", "grün ab 65, gelb ab 40 Punkten"],

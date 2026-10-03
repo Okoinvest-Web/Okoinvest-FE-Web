@@ -1,6 +1,7 @@
 // Der Weg von der Anfrage bis zum Betrieb – je Zielgruppe.
 // Dauern sind typische Spannen (DACH, Stand 2026), keine Zusagen.
 // `portal`: Statusstufe, die im Portal angezeigt wird.
+// `monate`: [min, max] – dieselbe Spanne wie `dauer`, als Zahl für Diagramme.
 
 import { PACHT, PROVISION, AGRI } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
@@ -16,7 +17,7 @@ export const ZIELGRUPPEN = [
     schritte: [
       {
         titel: "Flächencheck & Anfrage",
-        dauer: "5 Minuten online, Rückmeldung in ca. 2 Werktagen",
+        dauer: "5 Minuten online, danach persönliche Rückmeldung",
         sie: "Lage, Größe und Nutzung angeben – Flurstücke genügen.",
         wir: "Erste Prüfung von Netzentfernung, Schutzgebieten und Planungsrecht.",
         portal: "Eingegangen",
@@ -25,6 +26,7 @@ export const ZIELGRUPPEN = [
       {
         titel: "Standortprüfung",
         dauer: "2–6 Wochen",
+        monate: [0.5, 1.5],
         sie: "Fragen zu Zufahrt, Leitungen und Bewirtschaftung beantworten.",
         wir: "Netzanfrage, Restriktionen, Gespräch mit der Gemeinde, Ertragsprognose.",
         portal: "In Prüfung",
@@ -33,6 +35,7 @@ export const ZIELGRUPPEN = [
       {
         titel: "Pachtangebot & Nutzungsvertrag",
         dauer: "2–8 Wochen",
+        monate: [0.5, 2],
         sie: "Angebot prüfen – gern mit Anwalt oder Steuerberatung.",
         wir: `Pachtangebot (Orientierung ${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} €/ha und Jahr), Vertragsentwurf, Rückbausicherheit.`,
         portal: "Vertrag",
@@ -41,6 +44,7 @@ export const ZIELGRUPPEN = [
       {
         titel: "Planung & Genehmigung",
         dauer: "12–30 Monate",
+        monate: [12, 30],
         sie: "Dienstbarkeit notariell bewilligen, bei Bedarf Termine in der Gemeinde.",
         wir: "Gutachten, Bebauungsplan (DE) bzw. Umwidmung (AT), Netzanschlusszusage, Vergütung oder PPA.",
         portal: "Genehmigung",
@@ -49,6 +53,7 @@ export const ZIELGRUPPEN = [
       {
         titel: "Bau",
         dauer: "3–6 Monate",
+        monate: [3, 6],
         sie: "Nichts – Zufahrt und Termine stimmen wir mit Ihnen ab.",
         wir: "Bau mit Rammtechnik der Gruppe, Netzanschluss, Inbetriebnahme.",
         portal: "Bau",
@@ -74,7 +79,7 @@ export const ZIELGRUPPEN = [
     schritte: [
       {
         titel: "Anfrage & Agri-Check",
-        dauer: "Rückmeldung in ca. 2 Werktagen",
+        dauer: "Persönliche Rückmeldung",
         sie: "Fläche, Kulturen und Fruchtfolge beschreiben.",
         wir: "Eignung für vertikale oder hoch aufgeständerte Agri-PV, Netz, Planungsrecht.",
         portal: "Eingegangen",

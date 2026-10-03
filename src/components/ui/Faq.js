@@ -1,5 +1,6 @@
 import { Plus } from "lucide-react";
 import { cn } from "./cn";
+import JsonLd from "@/components/JsonLd";
 
 /**
  * FAQ-Akkordeon auf Basis von <details> – funktioniert ohne JavaScript,
@@ -8,20 +9,25 @@ import { cn } from "./cn";
  */
 export default function Faq({ items = [], schema = true, className, tone = "light" }) {
   const dunkel = tone === "dark";
+  // Schema nur für Fragen mit Antworttext (JSX-Antworten ohne `aText` würden
+  // sonst als leere – für Google ungültige – Answer ausgeliefert).
+  const schemaItems = items
+    .map((it) => ({ q: it.q, text: it.aText || (typeof it.a === "string" ? it.a : "") }))
+    .filter((it) => typeof it.q === "string" && it.q && it.text);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: items.map((it) => ({
+    mainEntity: schemaItems.map((it) => ({
       "@type": "Question",
       name: it.q,
-      acceptedAnswer: { "@type": "Answer", text: it.aText || (typeof it.a === "string" ? it.a : "") },
+      acceptedAnswer: { "@type": "Answer", text: it.text },
     })),
   };
 
   return (
     <div className={cn("divide-y", dunkel ? "divide-white/10" : "divide-ink-200", className)}>
-      {schema && items.length > 0 && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {schema && schemaItems.length > 0 && (
+        <JsonLd daten={jsonLd} />
       )}
       {items.map((it, i) => (
         <details key={it.q} className="group py-1" open={i === 0 ? undefined : undefined}>

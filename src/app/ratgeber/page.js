@@ -1,29 +1,17 @@
 // src/app/ratgeber/page.js
 
-import Link from "next/link";
-import { ArrowUpRight, BookOpen, Calculator, Coins, HelpCircle, Map as KarteIcon, Scale, Sprout, Zap } from "lucide-react";
-
-import PageHero from "@/components/ui/PageHero";
 import Section from "@/components/ui/Section";
-import SectionHeading from "@/components/ui/SectionHeading";
-import FeatureGrid from "@/components/ui/FeatureGrid";
 import CtaBand from "@/components/ui/CtaBand";
-import Reveal from "@/components/ui/Reveal";
-import { ArtikelKarte } from "@/components/Ratgeber/Bausteine";
+import { Eyebrow } from "@/components/ui/SectionHeading";
 import RatgeberListe from "@/components/Ratgeber/RatgeberListe";
+import RatgeberHero from "@/components/Ratgeber/RatgeberHero";
+import { FaktenBand, Lesepfade, ThemenRaster, WeiterWissen } from "@/components/Ratgeber/Uebersicht";
 import { KATEGORIEN, alleArtikel, artikelPfad } from "@/lib/ratgeber";
 import { BEGRIFFE } from "@/data/lexikon";
 import { AGRI, KOMMUNE, PACHT, PROVISION, STAND } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import { SITE, abs } from "@/data/site";
-
-const KATEGORIE_ICONS = {
-  "Fläche & Pacht": KarteIcon,
-  "Agri-PV & Landwirtschaft": Sprout,
-  "Investieren & Projektbörse": Coins,
-  "Recht & Genehmigung": Scale,
-  "Strom, Markt & Gemeinschaft": Zap,
-};
+import JsonLd from "@/components/JsonLd";
 
 const PAGE_URL = abs("/ratgeber");
 
@@ -54,7 +42,9 @@ const EMPFOHLEN = ["solarpark-pacht-pro-hektar", "agri-pv-wirtschaftlichkeit", "
 export default function RatgeberPage() {
   const artikel = alleArtikel();
   const empfohlen = EMPFOHLEN.map((s) => artikel.find((a) => a.slug === s)).filter(Boolean);
-  const [top, ...rest] = empfohlen.length === EMPFOHLEN.length ? empfohlen : artikel;
+  const buehne = (empfohlen.length === EMPFOHLEN.length ? empfohlen : artikel).slice(0, 3);
+  const themen = KATEGORIEN.map((k) => ({ name: k, artikel: artikel.filter((a) => a.kategorie === k) }));
+  const zuletzt = artikel.reduce((m, a) => (a.aktualisiert > m ? a.aktualisiert : m), artikel[0]?.aktualisiert || "");
   const vorhanden = new Set(artikel.map((a) => a.slug));
   const ratgeberOder = (slug, ersatz) => (vorhanden.has(slug) ? artikelPfad(slug) : ersatz);
 
@@ -95,6 +85,7 @@ export default function RatgeberPage() {
     {
       wert: `${fmt(AGRI.gapFoerderfaehig * 100)} %`,
       text: "der Fläche einer Agri-PV-Anlage bleiben in Deutschland für GAP-Direktzahlungen förderfähig",
+      anteil: AGRI.gapFoerderfaehig,
       href: ratgeberOder("agri-pv-foerderung-gap", "/agri-pv"),
     },
     {
@@ -111,114 +102,41 @@ export default function RatgeberPage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+      <JsonLd daten={jsonLd} />
 
-      <PageHero
-        variant="dark"
-        breadcrumbs={[{ name: "Ratgeber" }]}
-        eyebrow={`Wissen aus der Projektentwicklung · Stand ${STAND}`}
-        title={
-          <>
-            Ratgeber für <span className="ov-text-gradient-light">Fläche, Projekt und Kapital</span>
-          </>
-        }
-        lead="Was bringt eine Fläche an Pacht, wie läuft ein Bebauungsplan, was ist ein Projekt in welcher Phase wert und wie funktionieren PPA und Energiegemeinschaften? Fachartikel für Deutschland, Österreich und die Schweiz – mit Quellen, Rechenbeispielen und ehrlichen Grenzen."
-        stats={[
-          { value: artikel.length, label: "Fachartikel" },
-          { value: BEGRIFFE.length, label: "Begriffe im Lexikon" },
-          { value: 3, label: "Märkte: DE, AT, CH" },
+      <RatgeberHero
+        empfohlen={buehne}
+        themen={themen.map((t) => ({ name: t.name, anzahl: t.artikel.length }))}
+        stand={STAND}
+        aktualisiert={zuletzt}
+        kennzahlen={[
+          { wert: artikel.length, label: "Fachartikel" },
+          { wert: BEGRIFFE.length, label: "Begriffe im Lexikon" },
+          { wert: "DE · AT · CH", label: "drei Märkte" },
         ]}
       />
 
-      <Section tone="sand" space="lg">
-        <SectionHeading eyebrow="Themenbereiche" title="Wählen Sie Ihr Thema" className="mb-10" />
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {KATEGORIEN.map((k, i) => {
-            const liste = artikel.filter((a) => a.kategorie === k);
-            const Icon = KATEGORIE_ICONS[k] || BookOpen;
-            return (
-              <Reveal as="li" key={k} delay={i * 60} className="flex">
-                <div className="flex w-full flex-col rounded-3xl bg-white p-6 ring-1 ring-ink-200/60">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-ov-50 text-ov-600">
-                    <Icon aria-hidden="true" className="h-5 w-5" />
-                  </span>
-                  <h3 className="mt-5 font-display text-[17px] font-bold leading-snug text-ink-900">{k}</h3>
-                  <p className="mt-1 text-[13.5px] text-ink-500">{liste.length} Artikel</p>
-                  <ul className="mt-4 space-y-2 text-[14px]">
-                    {liste.slice(0, 4).map((a) => (
-                      <li key={a.slug}>
-                        <Link href={artikelPfad(a.slug)} className="text-ink-700 underline-offset-2 hover:text-ov-700 hover:underline">
-                          {a.kurzTitel || a.title}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </Reveal>
-            );
-          })}
-        </ul>
+      <ThemenRaster themen={themen} gesamt={artikel.length} />
 
-        {top && (
-          <div className="mt-14">
-            <SectionHeading eyebrow="Empfohlen" title="Hier fangen die meisten an" className="mb-8" />
-            <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
-              <ArtikelKarte artikel={top} gross />
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1">
-                {rest.slice(0, 2).map((a, i) => (
-                  <ArtikelKarte key={a.slug} artikel={a} delay={(i + 1) * 90} />
-                ))}
-              </div>
-            </div>
+      <Lesepfade artikel={artikel} />
+
+      <FaktenBand fakten={fakten} stand={STAND} />
+
+      <Section tone="sand" space="lg" id="alle-artikel" aria-labelledby="alle-titel" className="scroll-mt-16">
+        <div className="mb-10 flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-10">
+          <div className="max-w-2xl">
+            <Eyebrow className="mb-3">Alle Ratgeber</Eyebrow>
+            <h2 id="alle-titel" className="ov-h2 text-balance text-ink-900">Alle Artikel durchsuchen.</h2>
           </div>
-        )}
-      </Section>
-
-      <Section tone="white" space="lg" id="alle-artikel">
-        <SectionHeading eyebrow="Alle Ratgeber" title="Alle Artikel durchsuchen" className="mb-10" />
+          <p className="max-w-sm text-[15.5px] leading-relaxed text-ink-600">Nach Thema filtern oder nach Stichwort suchen – Titel, Kurzfassung und Schlagwörter werden durchsucht.</p>
+        </div>
         <RatgeberListe
           kategorien={KATEGORIEN}
           artikel={artikel.map(({ slug, title, excerpt, kategorie, bild, bildAlt, lesezeit, keywords }) => ({ slug, title, excerpt, kategorie, bild, bildAlt, lesezeit, keywords: keywords || [] }))}
         />
       </Section>
 
-      <Section tone="navy" space="lg" className="overflow-hidden">
-        <div aria-hidden="true" className="ov-grid-bg absolute inset-0" />
-        <div aria-hidden="true" className="absolute -right-32 top-0 h-[420px] w-[420px] rounded-full bg-ov-500/20 blur-[130px]" />
-        <div className="relative">
-          <SectionHeading dark eyebrow="Mehr Wissen" title="Kurz nachschlagen oder selbst rechnen" className="mb-12" />
-          <FeatureGrid
-            tone="dark"
-            cols={3}
-            items={[
-              { icon: BookOpen, title: "Lexikon", text: `${BEGRIFFE.length} Fachbegriffe von Aufstellungsbeschluss bis Zuschlagswert – jeweils mit Definition in einem Satz.`, href: "/wissen/lexikon" },
-              { icon: Calculator, title: "Rechner", text: "Pacht, Agri-PV, Solarpark, Projektbewertung und Reststrom – mit denselben Marktannahmen wie in den Artikeln.", href: "/rechner" },
-              { icon: HelpCircle, title: "Häufige Fragen", text: "Kurze Antworten zu Flächencheck, Projektbörse, Portal, Provision und Ablauf.", href: "/faq" },
-            ]}
-          />
-        </div>
-      </Section>
-
-      <Section tone="white" space="lg">
-        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
-          <SectionHeading
-            eyebrow="Auf einen Blick"
-            title="Zahlen, die Sie kennen sollten"
-            lead={`Richtwerte aus unseren Ratgebern und Rechnern, Stand ${STAND} – mit der ausführlichen Erklärung verlinkt.`}
-          />
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {fakten.map((f, i) => (
-              <Reveal as="li" key={f.text} delay={i * 70} className="flex">
-                <Link href={f.href} className="group ov-card-hover relative flex w-full flex-col rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60 hover:bg-white hover:ring-ov-200 md:p-7">
-                  <ArrowUpRight aria-hidden="true" className="absolute right-5 top-5 h-5 w-5 text-ink-300 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ov-600" />
-                  <span className="ov-num pr-6 font-display text-[clamp(1.7rem,1.4rem+1vw,2.4rem)] font-extrabold leading-none tracking-tight text-ink-900">{f.wert}</span>
-                  <span className="mt-3 text-[15px] leading-relaxed text-ink-600">{f.text}</span>
-                </Link>
-              </Reveal>
-            ))}
-          </ul>
-        </div>
-      </Section>
+      <WeiterWissen begriffe={BEGRIFFE.length} />
 
       <CtaBand
         eyebrow="Vom Lesen zum Projekt"

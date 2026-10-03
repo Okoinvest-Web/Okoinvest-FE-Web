@@ -1,8 +1,9 @@
 "use client";
 
+import { SperrEingaben } from "@/components/Rechner/LaenderSperre";
 import { useMemo, useState } from "react";
 import { CalendarClock, Coins, HandCoins, Sun, TrendingUp, Wheat } from "lucide-react";
-import Button from "@/components/ui/Button";
+import ZumFlaechencheck from "@/components/Flaeche/Seite/ZumFlaechencheck";
 import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Schalter, Tooltip, Zahl, useBreite } from "@/components/Rechner/bausteine";
 import { useTeilbarerZustand } from "@/components/Rechner/kontext";
 import { ErgebnisKopf, MobilKurz, RechnerRahmen } from "@/components/Rechner/InvestTeile";
@@ -59,10 +60,26 @@ export default function PachtRechner({ start = {} } = {}) {
     }
   );
 
+  // Länder-Sperre (Paket E): für AT/CH nur die Regionswahl und der Hinweis aus markt.js
+  const sperre = r.sperre;
+  const regionWahl = (
+    <Auswahl
+      legende="Region"
+      wert={regionId}
+      onChange={setRegionId}
+      spalten={3}
+      klein
+      optionen={REGIONEN.map((x) => ({ id: x.id, label: REGION_KURZ[x.id] || x.label, sub: `${fmt(x.ertrag)} kWh/kWp` }))}
+    />
+  );
+
   return (
     <RechnerRahmen
       mitlaufend
-      eingaben={
+      sperre={sperre}
+      eingaben={sperre ? (
+        <SperrEingaben>{regionWahl}</SperrEingaben>
+      ) : (
         <>
           <MobilKurz
             werte={[
@@ -74,14 +91,7 @@ export default function PachtRechner({ start = {} } = {}) {
           <div className="space-y-8">
             <Gruppe titel="Fläche">
               <Regler label="Flächengröße" wert={ha} min={1} max={100} step={0.5} stellen={ha % 1 ? 1 : 0} einheit="ha" onChange={setHa} hinweis={`≈ ${fmt(r.kwp / 1000, 1)} MWp Solarpark, ${fmt(r.kwh / 1e6, 1)} GWh Strom pro Jahr`} />
-              <Auswahl
-                legende="Region"
-                wert={regionId}
-                onChange={setRegionId}
-                spalten={3}
-                klein
-                optionen={REGIONEN.map((x) => ({ id: x.id, label: REGION_KURZ[x.id] || x.label, sub: `${fmt(x.ertrag)} kWh/kWp` }))}
-              />
+              {regionWahl}
             </Gruppe>
 
             <Gruppe titel="Pachtmodell">
@@ -115,7 +125,7 @@ export default function PachtRechner({ start = {} } = {}) {
             </Gruppe>
           </div>
         </>
-      }
+      )}
       ergebnis={
         <>
           <p className="sr-only" aria-live="polite">
@@ -153,13 +163,22 @@ export default function PachtRechner({ start = {} } = {}) {
             </p>
           )}
 
-          <div className="mt-7 flex flex-col gap-3 border-t border-ink-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="max-w-md text-[13px] leading-relaxed text-ink-500">
+          <div className="mt-7 border-t border-ink-100 pt-6">
+            <div className="flex flex-col gap-4 rounded-3xl bg-ov-50 p-5 ring-1 ring-ov-200 sm:flex-row sm:items-center sm:justify-between md:p-6">
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-ov-800">Mit diesem Ergebnis weiter</p>
+                <p className="mt-1 font-display text-[19px] font-bold leading-snug text-ink-900">
+                  ≈ <span className="ov-num">{fmtEur(r.ersteJahrespacht)}</span> pro Jahr – unverbindlich prüfen lassen
+                </p>
+                <p className="mt-1 text-[13px] leading-snug text-ink-600">Größe und Region übernehmen wir in den Flächencheck.</p>
+              </div>
+              <ZumFlaechencheck ha={ha} regionId={regionId} size="lg" className="shrink-0" data-ov-cta>
+                Mit diesem Ergebnis prüfen
+              </ZumFlaechencheck>
+            </div>
+            <p className="mt-4 text-[13px] leading-relaxed text-ink-500">
               Nominal und vor Steuern – eine Orientierung, kein Angebot. Das konkrete Pachtangebot hängt von Netzanschluss, Kulisse und Baurecht ab.
             </p>
-            <Button href="/flaechencheck" size="lg" pfeil className="shrink-0">
-              Fläche prüfen lassen
-            </Button>
           </div>
         </>
       }

@@ -108,7 +108,7 @@ export default function WegeEntscheider() {
           {fertig ? "Ihre Empfehlung" : `Frage ${schritt + 1} von ${FRAGEN.length}`}
         </p>
         <div className="flex h-2 w-32 overflow-hidden rounded-full bg-ink-100 sm:w-48" role="progressbar" aria-valuemin={0} aria-valuemax={FRAGEN.length} aria-valuenow={Math.min(schritt, FRAGEN.length)} aria-label="Fortschritt">
-          <div className="h-full rounded-full bg-ov-500 motion-safe:transition-[width] motion-safe:duration-500" style={{ width: `${(Math.min(schritt, FRAGEN.length) / FRAGEN.length) * 100}%` }} />
+          <div className="ov-fortschritt h-full w-full rounded-full bg-ov-500" style={{ transform: `scaleX(${Math.min(schritt, FRAGEN.length) / FRAGEN.length})` }} />
         </div>
       </div>
 
@@ -124,14 +124,14 @@ export default function WegeEntscheider() {
                     <label
                       key={a.id}
                       className={cn(
-                        "relative flex cursor-pointer flex-col rounded-3xl p-5 pr-12 transition-all focus-within:ring-2 focus-within:ring-ov-500",
+                        "ov-press relative flex cursor-pointer flex-col rounded-3xl p-5 pr-12 transition-[background-color,box-shadow,transform] focus-within:ring-2 focus-within:ring-ov-500",
                         an ? "bg-ov-50 ring-2 ring-ov-500" : "bg-sand-50 ring-1 ring-ink-200 hover:bg-white hover:ring-ink-300"
                       )}
                     >
                       <input type="radio" name={f.id} value={a.id} checked={an} onChange={() => waehle(f.id, a.id)} className="sr-only" />
                       <span className="font-display text-[17px] font-bold text-ink-900">{a.label}</span>
                       <span className="mt-1 text-[14px] leading-snug text-ink-500">{a.sub}</span>
-                      <span aria-hidden="true" className={cn("absolute right-4 top-5 flex h-6 w-6 items-center justify-center rounded-full", an ? "bg-ov-500 text-white" : "bg-white ring-1 ring-ink-300")}>
+                      <span aria-hidden="true" className={cn("absolute right-4 top-5 flex h-6 w-6 items-center justify-center rounded-full", an ? "ov-erfolg bg-ov-500 text-white" : "bg-white ring-1 ring-ink-300")}>
                         {an && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
                       </span>
                     </label>
@@ -194,26 +194,33 @@ function Empfehlung({ liste, onNeu, onZurueck }) {
             </p>
           )}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Link href={erster.href} className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold text-white hover:bg-ov-700">
+            <Link href={erster.href} className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold text-white transition-colors hover:bg-ov-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950">
               Mehr zu Weg {erster.buchstabe}
-              <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <ArrowRight aria-hidden="true" className="ov-pfeil h-4 w-4" />
             </Link>
-            <Link href="/rechner/agri-pv" className="inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 text-[15px] font-semibold text-white ring-1 ring-inset ring-white/35 hover:bg-white/10">
+            <Link href="/rechner/agri-pv" className="inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 text-[15px] font-semibold text-white ring-1 ring-inset ring-white/35 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
               Wege durchrechnen
             </Link>
           </div>
+          <p className="mt-5 text-[14px] text-white/70">
+            Lieber gleich gemeinsam prüfen?{" "}
+            <a href="#anfrage" className="rounded font-semibold text-white underline decoration-sun-300/70 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
+              Anfrage zu Weg {erster.buchstabe} stellen
+            </a>{" "}
+            – wir melden uns persönlich.
+          </p>
         </div>
       </div>
 
       <div className="mt-6">
         <p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-ink-500">Alle Wege im Abgleich mit Ihren Antworten</p>
-        <ul className="mt-3 space-y-2.5">
-          {liste.map((w) => (
+        <ul className="ov-sofort mt-3 space-y-2.5" style={{ "--ov-delay": "250ms" }}>
+          {liste.map((w, i) => (
             <li key={w.id} className="grid grid-cols-[2rem_1fr] items-center gap-3 sm:grid-cols-[2rem_minmax(0,16rem)_1fr]">
               <span className={cn("flex h-8 w-8 items-center justify-center rounded-full font-display text-[13px] font-extrabold", w.id === erster.id ? "bg-ov-600 text-white" : "bg-ink-100 text-ink-600")}>{w.buchstabe}</span>
               <span className="text-[14.5px] font-semibold text-ink-800">{w.titel}</span>
               <span className="col-span-2 h-2.5 overflow-hidden rounded-full bg-ink-100 sm:col-span-1">
-                <span className={cn("block h-full rounded-full motion-safe:transition-[width] motion-safe:duration-700", w.id === erster.id ? "bg-ov-500" : "bg-ov-200")} style={{ width: `${Math.max(6, w.anteil * 100)}%` }} />
+                <span className={cn("ov-balken-x block h-full rounded-full", w.id === erster.id ? "bg-ov-500" : "bg-ov-200")} style={{ width: `${Math.max(6, w.anteil * 100)}%`, "--i": i * 3 }} />
               </span>
             </li>
           ))}

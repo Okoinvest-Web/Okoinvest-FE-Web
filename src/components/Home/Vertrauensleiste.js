@@ -8,10 +8,12 @@ import { GESELLSCHAFT, KENNZAHLEN } from "@/data/site";
  * keine Auszeichnungen, keine erfundenen Kennzahlen.
  */
 const FAKTEN = [
-  { icon: Factory, titel: "ÖKOVOLT Gruppe", text: `Solarkraftwerke seit ${KENNZAHLEN.gruppeGegruendet}` },
+  { icon: Factory, titel: "ÖKOVOLT Gruppe", text: `Photovoltaik seit ${KENNZAHLEN.gruppeGegruendet}` },
   { icon: SunMedium, titel: "Eigene Solarparks", text: "im Betrieb seit 2012" },
   { icon: Hammer, titel: "Eigene Rammtechnik", text: "Fundamente aus der Gruppe" },
-  { icon: MapPinned, titel: "DE · AT · CH", text: "Projekte im gesamten DACH-Raum" },
+  // Paket D: nicht „Projekte im gesamten DACH-Raum“ – belegt sind Gesellschaften in DE und AT
+  // (Register siehe src/data/unternehmen.js); die Schweiz startet nur mit Daten und Werkzeugen (E11/E14).
+  { icon: MapPinned, titel: "DE · AT", text: "Gesellschaften in Deutschland und Österreich" },
   { icon: Landmark, titel: GESELLSCHAFT.register, text: GESELLSCHAFT.gericht.replace("Landesgericht", "LG") },
 ];
 

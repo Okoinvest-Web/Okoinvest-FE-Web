@@ -1,8 +1,12 @@
 // src/app/rechner/page.js – Hub „Rechner & Tools"
 
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
-import PageHero from "@/components/ui/PageHero";
+import { ArrowDown, ArrowRight, ArrowUpRight, Check } from "lucide-react";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import Button from "@/components/ui/Button";
+import CountUp from "@/components/ui/CountUp";
+import { TextEnthuellung } from "@/components/motion";
+import HubBuehne from "@/components/Rechner/HubBuehne";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Faq from "@/components/ui/Faq";
@@ -17,6 +21,7 @@ import { rechneKommune } from "@/lib/rechner/kommune";
 import { abs } from "@/data/site";
 import { STAND } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import JsonLd from "@/components/JsonLd";
 
 const PFAD = "/rechner";
 
@@ -24,7 +29,7 @@ export const metadata = rechnerMetadata({
   pfad: PFAD,
   title: "Rechner für Solarparks, Pacht & Agri-PV | ÖkoInvest",
   description:
-    "Kostenlose Profi-Rechner für den DACH-Raum: Flächencheck, Pacht, Agri-PV, Solarpark-Rendite, Projektbewertung, Reststrom, Solarcarport und Kommunal-Einnahmen.",
+    "Kostenlose Rechner für den DACH-Raum: Flächencheck, Pacht, Agri-PV, Solarpark-Rendite, Projektbewertung, Reststrom, Solarcarport und Kommunal-Einnahmen.",
   keywords: ["Solarpark Rechner", "Pachtrechner Photovoltaik", "Agri-PV Rechner", "Projektbewertung Solar", "Solarcarport Rechner", "Solarpark Gemeinde Einnahmen"],
 });
 
@@ -61,6 +66,31 @@ const ZUGEORDNET = new Set(GRUPPEN_ROH.flatMap((g) => [...g.ids, ...g.weitere]))
 const GRUPPEN = GRUPPEN_ROH.map((g, i) =>
   i === GRUPPEN_ROH.length - 1 ? { ...g, weitere: [...g.weitere, ...TOOLS.filter((t) => !ZUGEORDNET.has(t.id)).map((t) => t.id)] } : g
 );
+
+const WEGWEISER = [
+  ["Fläche verpachten", "flaechencheck", "Eignung, Pachtspanne"],
+  ["Pachtangebot vergleichen", "pacht", "Pacht über 30 Jahre"],
+  ["Agri-PV auf dem eigenen Hof", "agri-pv", "Pacht vs. Investition"],
+  ["Solarpark kaufen oder finanzieren", "solarpark", "IRR, LCOE, DSCR"],
+  ["Projektrechte verkaufen", "projektbewertung", "Kaufpreis je kWp"],
+  ["Stromkosten im Betrieb senken", "reststrom", "Ersparnis im Pool"],
+  ["Parkplatz mit PV überdachen", "solarcarport", "Amortisation, Contracting"],
+  ["Solarpark in der Gemeinde", "kommune", "Einnahmen je Quelle"],
+  ["Angebot eines Projektierers prüfen", "pachtangebot-check", "Ampel je Klausel, Barwert"],
+  ["Gewerbedach verpachten", "dachpacht", "Pachtspanne, Ertrag"],
+  ["Netzanschluss abschätzen", "netzanschluss", "Kosten, Zeitrahmen"],
+  ["Solarstrom per PPA beziehen", "ppa", "Ersparnis in drei Szenarien"],
+  ["In einen Großspeicher investieren", "grossspeicher", "IRR, Amortisation"],
+  ["Laufende PV-Anlage bewerten", "bestandsanlage", "Ertragswert, Wert je kWp"],
+  ["Strom in der Gemeinschaft teilen", "energy-sharing", "Vorteil je Teilnehmer"],
+  ["Als Bürger beteiligen", "beteiligung", "Ausschüttung in drei Szenarien"],
+];
+
+const TAG_TON = {
+  Neu: "bg-ov-100 text-ov-800",
+  Profi: "bg-sun-100 text-sun-700",
+  Beliebt: "bg-navy-50 text-navy-700",
+};
 
 const FAQ = [
   {
@@ -130,37 +160,82 @@ export default function RechnerHub() {
 
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
+      <JsonLd daten={itemList} />
 
-      <PageHero
-        variant="dark"
-        breadcrumbs={[{ name: "Rechner & Tools" }]}
-        eyebrow="Rechner & Tools"
-        title={
-          <>
-            Erst rechnen, <span className="ov-text-gradient-light">dann entscheiden.</span>
-          </>
-        }
-        lead={`${TOOLS.length} kostenlose Werkzeuge für Flächen, Projekte, Kapital und Strom – mit offengelegten Marktannahmen für Deutschland, Österreich und die Schweiz.`}
-        stats={[
-          { value: TOOLS.length, label: "kostenlose Tools" },
-          { value: 3, label: "Länder im DACH-Raum" },
-          { value: 30, suffix: " J.", label: "Cashflow je Solarpark" },
-        ]}
-        className="[&>div.ov-container]:pb-28 md:[&>div.ov-container]:pb-36"
-      />
+      <section aria-labelledby="hub-titel" className="ov-verlauf-nacht ov-noise relative isolate overflow-hidden text-white">
+        <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10 opacity-50" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-ov-300/40 to-transparent" />
+        <div aria-hidden="true" className="pointer-events-none absolute -left-40 -top-40 -z-10 h-[520px] w-[520px] rounded-full bg-ov-500/20 blur-[120px]" />
+        <div aria-hidden="true" className="pointer-events-none absolute -right-24 top-1/4 -z-10 h-[460px] w-[460px] rounded-full bg-navy-400/25 blur-[120px]" />
 
-      <section aria-label="Alle Rechner und Tools" className="relative z-10 -mt-20 md:-mt-28">
+        <div className="ov-container pb-32 pt-6 sm:pt-8 md:pb-40 md:pt-10">
+          <Breadcrumbs items={[{ name: "Rechner & Tools" }]} dark className="ov-hero-in mb-8 md:mb-12" />
+
+          <div className="grid items-center gap-y-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-x-12 xl:gap-x-20">
+            <div className="max-w-[38rem]">
+              <p
+                className="ov-hero-in inline-flex items-center gap-2.5 rounded-full bg-white/[0.06] py-1 pl-1 pr-3.5 text-[13px] font-medium text-white/85 ring-1 ring-inset ring-white/15"
+                style={{ "--ov-delay": "40ms" }}
+              >
+                <span className="rounded-full bg-ov-300 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-navy-950">Kostenlos</span>
+                <span className="sm:hidden">Ohne Anmeldung</span>
+                <span className="max-sm:hidden">Ohne Anmeldung · Annahmen offengelegt</span>
+              </p>
+              <h1 id="hub-titel" className="ov-h1 mt-6 text-balance md:mt-8">
+                <TextEnthuellung verzoegerung={80}>
+                  Erst rechnen, <span className="ov-text-gradient-light">dann entscheiden.</span>
+                </TextEnthuellung>
+              </h1>
+              <p className="ov-lead ov-hero-in mt-5 text-pretty text-white/75 md:mt-6" style={{ "--ov-delay": "180ms" }}>
+                {TOOLS.length} kostenlose Werkzeuge für Flächen, Projekte, Kapital und Strom – mit offengelegten Marktannahmen für Deutschland, Österreich und die Schweiz.
+              </p>
+              <div className="ov-hero-in mt-8 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-10" style={{ "--ov-delay": "260ms" }}>
+                <Button href="#werkzeuge" size="lg" icon={ArrowDown} magnetisch className="w-full sm:w-auto">
+                  Rechner finden
+                </Button>
+                <Button href="#wegweiser" size="lg" variant="outlineLight" className="w-full sm:w-auto">
+                  Nach Vorhaben wählen
+                </Button>
+              </div>
+              <dl className="ov-hero-in mt-10 grid grid-cols-3 gap-4 border-t border-white/10 pt-7 md:mt-12" style={{ "--ov-delay": "340ms" }}>
+                {[
+                  { value: TOOLS.length, label: "kostenlose Tools" },
+                  { value: 3, label: "Länder im DACH-Raum" },
+                  { value: 30, suffix: " J.", label: "Cashflow je Solarpark" },
+                ].map((x) => (
+                  <div key={x.label}>
+                    <dt className="sr-only">{x.label}</dt>
+                    <dd className="font-display text-[clamp(1.5rem,1.1rem+1.4vw,2.25rem)] font-extrabold leading-none tracking-tight text-white">
+                      <CountUp value={x.value} suffix={x.suffix} />
+                    </dd>
+                    <dd className="mt-2 text-[13px] leading-snug text-white/65">{x.label}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            <figure className="ov-hero-in relative max-sm:hidden sm:px-6 lg:px-0" style={{ "--ov-delay": "220ms" }}>
+              <div aria-hidden="true" className="pointer-events-none absolute -inset-x-8 -inset-y-12 -z-10 rounded-full bg-[radial-gradient(closest-side,rgba(140,186,88,0.22),transparent_70%)] blur-2xl" />
+              <HubBuehne park={park} cashflow={cf} />
+              <figcaption className="mt-6 text-center text-[12px] text-white/60 sm:mt-16 lg:text-right">
+                Beispielrechnung mit den Standardannahmen der Rechner
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section id="werkzeuge" aria-label="Alle Rechner und Tools" className="relative z-10 -mt-20 scroll-mt-20 md:-mt-28">
         <div className="ov-container">
           <div className="divide-y divide-ink-100 rounded-[2rem] bg-white px-5 shadow-[0_40px_80px_-40px_rgba(3,18,43,0.45)] ring-1 ring-ink-200/70 sm:px-6 md:px-8">
             {/* Sprungnavigation: in einem Tipp zur eigenen Zielgruppe */}
-            <nav aria-label="Rechner nach Zielgruppe" className="flex flex-wrap items-center gap-2 py-5">
+            <nav aria-label="Rechner nach Zielgruppe" className="ov-no-scrollbar -mx-5 flex items-center gap-2 overflow-x-auto px-5 py-5 sm:mx-0 sm:flex-wrap sm:px-0">
               <span className="mr-1 text-[12px] font-bold uppercase tracking-[0.16em] text-ink-500">Für</span>
               {GRUPPEN.map((g) => (
                 <a
                   key={g.id}
                   href={`#${g.id}`}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-full bg-sand-50 px-4 text-[14px] font-semibold text-ink-800 ring-1 ring-ink-200/70 transition-colors hover:bg-ov-50 hover:text-ov-800 hover:ring-ov-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500"
+                  className="inline-flex min-h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-sand-50 px-4 text-[14px] font-semibold text-ink-800 ring-1 ring-ink-200/70 transition-colors hover:bg-ov-50 hover:text-ov-800 hover:ring-ov-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500"
                 >
                   {g.kurz}
                   <span className="ov-num rounded-full bg-white px-1.5 text-[12px] font-bold text-ink-500 ring-1 ring-ink-200/70">{g.ids.length + g.weitere.length}</span>
@@ -189,7 +264,7 @@ export default function RechnerHub() {
                   })}
                 </ul>
                 {g.weitere.length > 0 && (
-                  <ul suppressHydrationWarning className="ov-reveal ov-stagger mt-4 grid gap-3 md:grid-cols-2 lg:mt-5 lg:grid-cols-3" aria-label={`Weitere Werkzeuge: ${g.kurz}`}>
+                  <ul suppressHydrationWarning className={cn("ov-reveal ov-stagger mt-4 grid gap-3 md:grid-cols-2 lg:mt-5", g.weitere.length % 3 === 0 && "lg:grid-cols-3")} aria-label={`Weitere Werkzeuge: ${g.kurz}`}>
                     {g.weitere.map((id) => {
                       const t = toolById(id);
                       if (!t) return null;
@@ -207,58 +282,42 @@ export default function RechnerHub() {
         </div>
       </section>
 
-      <Section tone="white" space="md">
-        <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
-          <SectionHeading eyebrow="Wegweiser" title="Welcher Rechner passt zu Ihrer Frage?" lead="Wählen Sie das Werkzeug nach Ihrem Vorhaben – Ergebnisse lassen sich direkt in eine Anfrage übernehmen." />
-          <Reveal className="min-w-0">
-            <div tabIndex={0} role="region" aria-label="Wegweiser: Vorhaben und passender Rechner" className="overflow-x-auto rounded-3xl ring-1 ring-ink-200/70">
-              <table className="w-full min-w-[520px] text-left text-[15px]">
-                <caption className="sr-only">Wegweiser: Vorhaben und passender Rechner</caption>
-                <thead className="bg-sand-50 text-[12.5px] uppercase tracking-[0.12em] text-ink-600">
-                  <tr>
-                    <th scope="col" className="px-5 py-3.5 font-semibold">Ihr Vorhaben</th>
-                    <th scope="col" className="px-5 py-3.5 font-semibold">Passender Rechner</th>
-                    <th scope="col" className="px-5 py-3.5 font-semibold">Ergebnis</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-ink-100">
-                  {[
-                    ["Fläche verpachten", "flaechencheck", "Eignung, Pachtspanne"],
-                    ["Pachtangebot vergleichen", "pacht", "Pacht über 30 Jahre"],
-                    ["Agri-PV auf dem eigenen Hof", "agri-pv", "Pacht vs. Investition"],
-                    ["Solarpark kaufen oder finanzieren", "solarpark", "IRR, LCOE, DSCR"],
-                    ["Projektrechte verkaufen", "projektbewertung", "Kaufpreis je kWp"],
-                    ["Stromkosten im Betrieb senken", "reststrom", "Ersparnis im Pool"],
-                    ["Parkplatz mit PV überdachen", "solarcarport", "Amortisation, Contracting"],
-                    ["Solarpark in der Gemeinde", "kommune", "Einnahmen je Quelle"],
-                    ["Angebot eines Projektierers prüfen", "pachtangebot-check", "Ampel je Klausel, Barwert"],
-                    ["Gewerbedach verpachten", "dachpacht", "Pachtspanne, Ertrag"],
-                    ["Netzanschluss abschätzen", "netzanschluss", "Kosten, Zeitrahmen"],
-                    ["Solarstrom per PPA beziehen", "ppa", "Ersparnis in drei Szenarien"],
-                    ["In einen Großspeicher investieren", "grossspeicher", "IRR, Amortisation"],
-                    ["Laufende PV-Anlage bewerten", "bestandsanlage", "Ertragswert, Wert je kWp"],
-                    ["Strom in der Gemeinschaft teilen", "energy-sharing", "Vorteil je Teilnehmer"],
-                    ["Als Bürger beteiligen", "beteiligung", "Ausschüttung in drei Szenarien"],
-                  ].map(([frage, id, ergebnis]) => {
-                    const t = toolById(id);
-                    if (!t) return null;
-                    return (
-                      <tr key={id} className="bg-white">
-                        <td className="px-5 py-3.5 text-ink-700">{frage}</td>
-                        <td className="px-5 py-3.5">
-                          <Link href={t.href} className="inline-flex items-center gap-1.5 font-semibold text-ov-700 hover:text-ov-800">
-                            {t.titel} <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
-                          </Link>
-                        </td>
-                        <td className="px-5 py-3.5 text-ink-500">{ergebnis}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </Reveal>
+      <Section tone="white" space="md" id="wegweiser" className="scroll-mt-20">
+        <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
+          <SectionHeading eyebrow="Wegweiser" title="Welcher Rechner passt zu Ihrer Frage?" className="max-w-2xl" />
+          <p className="max-w-md text-pretty text-[15.5px] leading-relaxed text-ink-600 [hyphens:manual] lg:pb-2">
+            Wählen Sie das Werkzeug nach Ihrem Vorhaben – Ergebnisse lassen sich direkt in eine Anfrage übernehmen.
+          </p>
         </div>
+        <ul suppressHydrationWarning className="ov-reveal ov-stagger mt-10 grid gap-3 sm:grid-cols-2 lg:mt-12 lg:grid-cols-4">
+          {WEGWEISER.map(([frage, id, ergebnis]) => {
+            const t = toolById(id);
+            if (!t) return null;
+            const Icon = t.icon;
+            return (
+              <li key={id} className="flex">
+                <Link
+                  href={t.href}
+                  className="group ov-lift flex w-full flex-col gap-4 rounded-2xl bg-white p-5 ring-1 ring-ink-200/70 transition-colors hover:ring-ov-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500"
+                >
+                  <span className="flex items-start justify-between gap-3">
+                    <span className="font-display text-[16.5px] font-bold leading-snug text-ink-900">{frage}</span>
+                    <ArrowUpRight aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-ink-400 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ov-700 motion-reduce:transition-none" />
+                  </span>
+                  <span className="mt-auto flex items-center gap-2.5 border-t border-ink-100 pt-3.5">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ov-50 text-ov-600 ring-1 ring-ov-100 transition-colors group-hover:bg-ov-600 group-hover:text-white group-hover:ring-ov-600">
+                      <Icon aria-hidden="true" className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13.5px] font-semibold text-ov-700">{t.titel}</span>
+                      <span className="block truncate text-[12.5px] text-ink-500">{ergebnis}</span>
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </Section>
 
       <Section tone="sand" space="md">
@@ -294,11 +353,13 @@ function ToolKarte({ tool, ton, gross, children }) {
         <span className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", dunkel ? "bg-white/10 text-ov-300 ring-1 ring-white/15" : "bg-ov-50 text-ov-600 ring-1 ring-ov-100")}>
           <Icon aria-hidden="true" className="h-6 w-6" />
         </span>
-        {tool.tag && <span className={cn("rounded-full px-2.5 py-1 text-[11.5px] font-semibold", dunkel ? "bg-sun-300 text-navy-950" : "bg-ink-900 text-white")}>{tool.tag}</span>}
+        {tool.tag && <span className={cn("rounded-full px-2.5 py-1 text-[11.5px] font-bold", dunkel ? "bg-sun-300 text-navy-950" : TAG_TON[tool.tag] || "bg-ink-100 text-ink-700")}>{tool.tag}</span>}
       </div>
       <h3 className={cn("mt-5 font-display font-extrabold leading-tight tracking-tight", gross ? "text-[24px]" : "text-[20px]", dunkel ? "text-white" : "text-ink-900")}>{tool.titel}</h3>
       <p className={cn("mt-2 text-[14.5px] leading-relaxed", dunkel ? "text-white/75" : "text-ink-600")}>{gross ? tool.text : tool.kurz}</p>
-      <div className={cn("mt-6 flex flex-1 flex-col justify-end rounded-2xl bg-white p-4", !dunkel && "ring-1 ring-ink-200/60")}>{children}</div>
+      <div className="mt-6 flex flex-1 flex-col">
+        <div className={cn("flex min-h-[150px] flex-1 flex-col justify-center rounded-2xl bg-white p-4", dunkel ? "shadow-e3" : "shadow-e1 ring-1 ring-ink-200/60")}>{children}</div>
+      </div>
       <span className={cn("mt-5 inline-flex items-center gap-1.5 text-[14.5px] font-semibold", dunkel ? "text-ov-300" : "text-ov-700")}>
         Öffnen
         <ArrowUpRight aria-hidden="true" className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
@@ -321,7 +382,7 @@ function ToolZeile({ tool }) {
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="font-display text-[17px] font-bold leading-snug text-ink-900">{tool.titel}</span>
-          {tool.tag && <span className="rounded-full bg-ink-900 px-2 py-0.5 text-[11px] font-semibold text-white">{tool.tag}</span>}
+          {tool.tag && <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", TAG_TON[tool.tag] || "bg-ink-100 text-ink-700")}>{tool.tag}</span>}
         </span>
         <span className="mt-1 block text-[14px] leading-relaxed text-ink-600">{tool.kurz}</span>
       </span>

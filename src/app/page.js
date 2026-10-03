@@ -14,8 +14,11 @@ import Reveal from "@/components/ui/Reveal";
 import CountUp from "@/components/ui/CountUp";
 import Steps from "@/components/ui/Steps";
 import Faq from "@/components/ui/Faq";
-import CtaBand from "@/components/ui/CtaBand";
+import RollenCtaBand from "@/components/Home/RollenCtaBand";
+import { PfadZeichnen, TextEnthuellung, Zaehler } from "@/components/motion";
+import s from "@/components/Home/startseite.module.css";
 import ZielgruppenWahl from "@/components/Home/ZielgruppenWahl";
+import WerkzeugFinder from "@/components/Home/WerkzeugFinder";
 import Werttreppe from "@/components/Home/Werttreppe";
 import Kreislauf from "@/components/Home/Kreislauf";
 import HomeBoerse from "@/components/Home/HomeBoerse";
@@ -28,11 +31,12 @@ import { TOOLS } from "@/components/Rechner/tools";
 import { KENNZAHLEN, SITE, abs, sprachAlternates } from "@/data/site";
 import { FREIFLAECHE, PACHT, PROVISION, STROM } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import JsonLd from "@/components/JsonLd";
 
 const META = {
   title: "Solarpark, Agri-PV & Projektbörse im DACH-Raum | ÖkoInvest",
   description:
-    "Fläche verpachten, Agri-PV umsetzen, PV-Projekte kaufen oder verkaufen, Reststrom im Pool günstiger beziehen: ÖkoInvest entwickelt Solarkraftwerke in DE, AT und CH.",
+    "Fläche verpachten, Agri-PV umsetzen, PV-Projekte kaufen oder verkaufen: ÖkoInvest entwickelt Solarparks in DE, AT und CH. Jetzt Fläche kostenlos prüfen.",
 };
 
 export const metadata = {
@@ -110,12 +114,14 @@ export default function HomePage() {
 
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <JsonLd daten={schema} />
 
       {/* ================= HERO ================= */}
       <section className="relative isolate overflow-hidden bg-navy-950 text-white">
         <Image src="/img/solarpark-reihen.jpg" alt="Reihen eines großen Solarparks" fill priority sizes="100vw" className="-z-30 object-cover" />
-        <div aria-hidden="true" className="absolute inset-0 -z-20 bg-gradient-to-r from-navy-950 via-navy-950/88 to-navy-950/40" />
+        <div aria-hidden="true" className="absolute inset-0 -z-20 bg-gradient-to-r from-navy-950 via-navy-950/85 to-navy-950/30" />
+        <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-20 opacity-40" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-ov-300/40 to-transparent" />
         <div aria-hidden="true" className="absolute inset-0 -z-20 bg-gradient-to-t from-navy-950 via-transparent to-navy-950/40" />
         <HeroTiefe />
 
@@ -127,22 +133,27 @@ export default function HomePage() {
                 Projektentwicklung der ÖKOVOLT Gruppe<span className="hidden sm:inline"> · DE · AT · CH</span>
               </span>
             </div>
-            <h1 className="ov-display ov-hero-in mt-7" style={{ "--ov-delay": "100ms" }}>
-              Aus Flächen
-              <br />
-              werden <span className="ov-text-gradient-light">Kraftwerke.</span>
+            {/* Wort für Wort, reines CSS: erstes Wort nach ~100 ms sichtbar (LCP-sicher, ohne JS vollständig) */}
+            <h1 className="ov-display mt-7">
+              <TextEnthuellung className="block" verzoegerung={60} schritt={70}>Aus Flächen</TextEnthuellung>
+              {" "}
+              <TextEnthuellung className="block" verzoegerung={200} schritt={110}>
+                werden <span className="ov-text-gradient-light">Kraftwerke.</span>
+              </TextEnthuellung>
             </h1>
             <p className="ov-lead ov-hero-in mt-7 max-w-xl text-white/75" style={{ "--ov-delay": "180ms" }}>
               Wir entwickeln Solarparks, Agri-PV und Solarcarports – und bringen auf einer Plattform zusammen, was dafür nötig ist: Flächen, Projekte, Kapital und Abnehmer für den Strom.
             </p>
             <div className="ov-hero-in mt-9 flex flex-col gap-3 sm:flex-row" style={{ "--ov-delay": "260ms" }}>
-              <Button href="/flaechencheck" size="lg" pfeil>Fläche kostenlos prüfen</Button>
+              <Button href="/flaechencheck" size="lg" pfeil magnetisch>Fläche kostenlos prüfen</Button>
               <Button href="/projektboerse" size="lg" variant="outlineLight">Zur Projektbörse</Button>
             </div>
-            <ul className="ov-hero-in mt-10 flex flex-wrap gap-x-6 gap-y-3 text-[14px] text-white/75" style={{ "--ov-delay": "340ms" }}>
+            <ul className="ov-hero-in mt-10 flex max-w-2xl flex-col gap-x-7 gap-y-3 border-t border-white/10 pt-7 text-[14px] leading-snug text-white/85 sm:flex-row sm:flex-wrap" style={{ "--ov-delay": "340ms" }}>
               {["Entwicklung, Bau & Betrieb aus einer Gruppe", "Für Eigentümer & Investoren kostenfrei", "Status jederzeit im Portal"].map((t) => (
-                <li key={t} className="flex items-center gap-2">
-                  <Check aria-hidden="true" className="h-4 w-4 text-ov-300" strokeWidth={3} />
+                <li key={t} className="flex items-start gap-2.5">
+                  <span aria-hidden="true" className="mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-ov-400/15 ring-1 ring-inset ring-ov-300/40">
+                    <Check className="h-2.5 w-2.5 text-ov-300" strokeWidth={3.5} />
+                  </span>
                   {t}
                 </li>
               ))}
@@ -179,7 +190,7 @@ export default function HomePage() {
 
       {/* ================= KREISLAUF ================= */}
       <Section tone="white" space="lg">
-        <div className="grid items-center gap-12 lg:grid-cols-[1fr_1fr] lg:gap-20">
+        <div className={`${s.block} grid items-center gap-12 lg:grid-cols-[1fr_1fr] lg:gap-20`}>
           <div>
             <SectionHeading
               eyebrow="Eine Plattform, vier Seiten"
@@ -188,18 +199,19 @@ export default function HomePage() {
             />
             <Stagger as="ul" className="mt-10 grid gap-3 sm:grid-cols-2">
               {[
-                { icon: MapPinned, t: "Flächeneigentümer & Landwirte", x: "Pacht, Agri-PV oder Beteiligung", href: "/flaeche-verpachten" },
-                { icon: Search, t: "Projektentwickler", x: "Projekte vermarkten über die Börse", href: "/projektboerse/anbieten" },
-                { icon: LineChart, t: "Investoren", x: "Geprüfte Projekte in jeder Phase", href: "/investoren" },
-                { icon: Users, t: "Unternehmen & Bürger", x: "Strom aus dem Pool, Genossenschaft", href: "/reststrom" },
-              ].map((z) => (
+                { id: "flaeche", icon: MapPinned, k: "Fläche", t: "Flächeneigentümer & Landwirte", x: "Pacht, Agri-PV oder Beteiligung", href: "/flaeche-verpachten" },
+                { id: "projekt", icon: Search, k: "Projekt", t: "Projektentwickler", x: "Projekte vermarkten über die Börse", href: "/projektboerse/anbieten" },
+                { id: "kapital", icon: LineChart, k: "Kapital", t: "Investoren", x: "Vorgeprüfte Projekte in jeder Phase", href: "/investoren" },
+                { id: "strom", icon: Users, k: "Strom", t: "Unternehmen & Bürger", x: "Strom aus dem Pool, Genossenschaft", href: "/reststrom" },
+              ].map((z, i) => (
                 <li key={z.t}>
-                  <Link href={z.href} className="group ov-lift ov-press flex h-full items-start gap-4 rounded-3xl bg-sand-50 p-5 ring-1 ring-ink-200/60 transition-colors hover:bg-white hover:ring-ov-200">
+                  <Link href={z.href} data-kl={z.id} className="group ov-lift ov-press flex h-full items-start gap-4 rounded-3xl bg-sand-50 p-5 ring-1 ring-ink-200/60 transition-colors hover:bg-white hover:ring-ov-200">
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-ov-600 ring-1 ring-ink-100 transition-colors group-hover:bg-ov-500 group-hover:text-white">
                       <z.icon aria-hidden="true" className="h-5 w-5" />
                     </span>
                     <span>
-                      <span className="block font-display text-[16.5px] font-bold text-ink-900">{z.t}</span>
+                      <span className="ov-num block text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ov-700">0{i + 1} · {z.k}</span>
+                      <span className="mt-1 block font-display text-[16.5px] font-bold leading-snug text-ink-900">{z.t}</span>
                       <span className="mt-0.5 block text-[14px] text-ink-500">{z.x}</span>
                     </span>
                     <ArrowUpRight aria-hidden="true" className="ml-auto h-4 w-4 shrink-0 text-ink-400 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ov-600" />
@@ -208,8 +220,15 @@ export default function HomePage() {
               ))}
             </Stagger>
           </div>
-          <Reveal dir="scale" className="mx-auto w-full max-w-[520px]">
-            <Kreislauf />
+          <Reveal dir="scale" className="relative mx-auto w-full max-w-[560px]">
+            <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-b from-ov-50 to-sand-50 p-6 ring-1 ring-ov-100 sm:p-10">
+              <div aria-hidden="true" className="ov-grid-bg-light absolute inset-0 opacity-70" />
+              <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-3/4 w-3/4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/80 blur-3xl" />
+              <div className="relative">
+                <Kreislauf />
+              </div>
+              <p className="relative mt-4 text-center text-[13px] leading-snug text-ink-500">Pacht, Rendite und günstiger Strom fließen an die zurück, die etwas einbringen.</p>
+            </div>
           </Reveal>
         </div>
       </Section>
@@ -232,13 +251,16 @@ export default function HomePage() {
             <div key={p.href} className={p.gross ? "col-span-2 row-span-2" : ""}>
               <Link
                 href={p.href}
-                className={`group relative flex h-full flex-col justify-end overflow-hidden rounded-3xl p-4 text-white sm:p-6 md:rounded-[2rem] md:p-8 ${
+                data-ton="dunkel"
+                className={`ov-spotlight group relative flex h-full flex-col justify-end overflow-hidden rounded-3xl p-4 text-white sm:p-6 md:rounded-[2rem] md:p-8 ${
                   p.ton === "gruen" ? "bg-gradient-to-br from-ov-600 to-ov-800" : "bg-navy-950"
                 }`}
               >
+                {/* Lichtkegel folgt der Maus (MotionInteraktion, nur Zeigegeräte, nicht bei reduzierter Bewegung) */}
+                <span aria-hidden="true" className="ov-spot-licht" />
                 {p.bild ? (
                   <>
-                    <Image src={p.bild} alt="" fill sizes={p.gross ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 50vw, 25vw"} className="object-cover opacity-90 transition-transform duration-[1200ms] ease-out group-hover:scale-105" />
+                    <Image src={p.bild} alt="" fill sizes={p.gross ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 50vw, 25vw"} className={`object-cover opacity-90 transition-transform duration-[1200ms] ease-out group-hover:scale-105 motion-reduce:transition-none`} />
                     <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-navy-950/95 via-navy-950/35 to-transparent" />
                   </>
                 ) : (
@@ -278,28 +300,26 @@ export default function HomePage() {
 
       {/* ================= PROJEKTBÖRSE ================= */}
       <Section id="boerse" tone="white" space="lg" className="scroll-mt-32 md:scroll-mt-28">
-        <div className="grid items-center gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:gap-20">
+        <div className="grid items-start gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:gap-16 xl:gap-20">
           <div>
             <SectionHeading
               eyebrow="Projektbörse"
               title={<>Der Marktplatz für PV-Projekte <span className="ov-text-gradient">im DACH-Raum.</span></>}
               lead="Projektrechte, baureife Projekte und Bestandsanlagen – geprüft, vertraulich und mit klarem Ablauf von der ersten Anfrage bis zum Closing."
             />
-            <Stagger as="ol" className="mt-9 space-y-3">
+            <Stagger as="ul" className="mt-10 grid gap-x-8 gap-y-7 border-t border-ink-100 pt-8 sm:grid-cols-2">
               {[
                 { icon: ClipboardCheck, t: "Geprüft veröffentlicht", x: "Jedes Projekt durchläuft vor der Freigabe eine Plausibilitätsprüfung." },
                 { icon: ShieldCheck, t: "Vertraulich bis zur NDA", x: "Genaue Lage und Unterlagen sehen nur freigegebene Investoren." },
                 { icon: FileSignature, t: "Vom Datenraum zum LOI", x: "Anfragen, Dokumente und Absichtserklärungen digital im Portal." },
                 { icon: Handshake, t: "Faire Provision", x: `Für Käufer kostenfrei. Verkäufer zahlen ${PROVISION.verkaeufer.text}.` },
               ].map((s) => (
-                <li key={s.t} className="flex gap-4 rounded-3xl bg-sand-50 p-5 ring-1 ring-ink-200/60">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-ov-500 text-white">
+                <li key={s.t}>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-ov-50 text-ov-700 ring-1 ring-inset ring-ov-100">
                     <s.icon aria-hidden="true" className="h-5 w-5" />
                   </span>
-                  <div>
-                    <p className="font-display text-[16.5px] font-bold text-ink-900">{s.t}</p>
-                    <p className="mt-0.5 text-[14.5px] leading-relaxed text-ink-600">{s.x}</p>
-                  </div>
+                  <p className="mt-4 font-display text-[16.5px] font-bold text-ink-900">{s.t}</p>
+                  <p className="mt-1 text-[14.5px] leading-relaxed text-ink-600">{s.x}</p>
                 </li>
               ))}
             </Stagger>
@@ -308,7 +328,7 @@ export default function HomePage() {
               <Button href="/projektboerse/anbieten" variant="secondary">Projekt anbieten</Button>
             </Reveal>
           </div>
-          <Reveal dir="right">
+          <Reveal dir="right" className="lg:sticky lg:top-28">
             <Werttreppe />
           </Reveal>
         </div>
@@ -354,7 +374,7 @@ export default function HomePage() {
               <div>
                 <p className="text-[13px] text-white/60">Potenzial je kWh, je nach Profil</p>
                 <p className="ov-num whitespace-nowrap font-display text-[34px] font-extrabold leading-none tracking-tight">
-                  {fmt(poolMin, 1)}–{fmt(poolMax, 1)} <span className="text-[18px] text-white/70">ct</span>
+                  <Zaehler wert={poolMin} nachkomma={1} dauer={1100} />–<Zaehler wert={poolMax} nachkomma={1} dauer={1300} /> <span className="text-[18px] text-white/70">ct</span>
                 </p>
               </div>
               <p className="text-[12px] leading-snug text-white/50 sm:max-w-[12rem] sm:text-right">Netzentgelte, Umlagen und Steuern bleiben unverändert.</p>
@@ -365,30 +385,29 @@ export default function HomePage() {
 
       {/* ================= TOOLS ================= */}
       <Section id="tools" tone="white" space="lg" className="scroll-mt-32 md:scroll-mt-28">
-        <SectionHeading
-          align="center"
-          eyebrow="Rechner & Tools"
-          title={<>Erst rechnen. <span className="ov-text-gradient">Dann entscheiden.</span></>}
-          lead="Kostenlose Werkzeuge für Eigentümer, Landwirte, Investoren, Unternehmen und Gemeinden – mit offengelegten Annahmen."
-          className="mb-14"
-        />
-        <Stagger as="ul" schritt={45} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {TOOLS.map((t) => (
-            <li key={t.href} className="flex">
-              <Link href={t.href} className="group ov-lift ov-press flex w-full flex-col rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60 transition-colors hover:bg-white hover:ring-ov-200">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-ov-600 shadow-sm ring-1 ring-ink-100 transition-colors duration-300 group-hover:bg-ov-500 group-hover:text-white group-hover:ring-ov-500">
-                    <t.icon aria-hidden="true" className="h-6 w-6" strokeWidth={1.8} />
-                  </span>
-                  <span className="truncate rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-ink-500 ring-1 ring-ink-200/70">{t.zielgruppe}</span>
-                </div>
-                <h3 className="mt-6 font-display text-[18px] font-bold text-ink-900">{t.titel}</h3>
-                <p className="mb-5 mt-1 text-[14.5px] text-ink-500">{t.kurz}</p>
-                <ArrowRight aria-hidden="true" className="mt-auto h-5 w-5 text-ink-400 transition-[transform,color] duration-300 group-hover:translate-x-1 group-hover:text-ov-600" />
-              </Link>
-            </li>
-          ))}
-        </Stagger>
+        <div className="mb-12 flex flex-col justify-between gap-6 md:mb-14 lg:flex-row lg:items-end">
+          <SectionHeading
+            eyebrow="Rechner & Tools"
+            title={<>Erst rechnen. <span className="ov-text-gradient">Dann entscheiden.</span></>}
+            lead={`${TOOLS.length} kostenlose Werkzeuge für Eigentümer, Landwirte, Investoren, Unternehmen und Gemeinden – mit offengelegten Annahmen.`}
+          />
+          <Reveal delay={100} className="shrink-0">
+            <Link
+              href="/flaechencheck"
+              className="group ov-lift flex items-center gap-4 rounded-2xl bg-navy-950 p-4 pr-5 text-white shadow-e3 ring-1 ring-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ov-500"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ov-600 text-white">
+                <MapPinned aria-hidden="true" className="h-5 w-5" />
+              </span>
+              <span>
+                <span className="block text-[11.5px] font-semibold uppercase tracking-[0.14em] text-sun-300">Guter Einstieg</span>
+                <span className="mt-0.5 block font-display text-[16.5px] font-bold">Flächencheck in wenigen Minuten</span>
+              </span>
+              <ArrowRight aria-hidden="true" className="ml-2 h-5 w-5 shrink-0 text-ov-300 transition-transform group-hover:translate-x-1 motion-reduce:transition-none" />
+            </Link>
+          </Reveal>
+        </div>
+        <WerkzeugFinder />
       </Section>
 
       {/* ================= PROZESS ================= */}
@@ -401,47 +420,65 @@ export default function HomePage() {
           />
           <Reveal delay={100}><Button href="/prozess" pfeil>Prozess im Detail</Button></Reveal>
         </div>
-        <Steps
+        <div className="relative">
+          {/* Energielinie: zeichnet sich durch die vier Schritte, während diese nacheinander erscheinen (nur ab lg, wo die Schritte in einer Reihe stehen) */}
+          <PfadZeichnen dauer={1300} verzoegerung={80} className="pointer-events-none absolute inset-x-0 top-7 z-0 hidden -translate-y-px lg:block">
+            <svg aria-hidden="true" viewBox="0 0 100 2" preserveAspectRatio="none" className="block h-[2px] w-full overflow-visible">
+              <line x1="0" y1="1" x2="100" y2="1" pathLength="1" stroke="var(--color-ov-500)" strokeWidth="2" />
+            </svg>
+          </PfadZeichnen>
+          <Steps
           items={[
             { icon: Search, title: "Prüfen", text: "Flächencheck, Netzanfrage, Restriktionen – in wenigen Wochen wissen Sie, ob und wie es geht." },
             { icon: FileSignature, title: "Sichern", text: "Pacht- oder Kooperationsvertrag mit Dienstbarkeit, Rückbausicherheit und klaren Fristen." },
             { icon: ClipboardCheck, title: "Entwickeln", text: "Bauleitplanung mit der Gemeinde, Gutachten, Netzanschluss, Ausschreibung oder PPA." },
             { icon: HardHat, title: "Bauen & Betreiben", text: "Errichtung mit der ÖKOVOLT Gruppe, danach Betrieb, Direktvermarktung und Monitoring." },
           ]}
-        />
+          />
+        </div>
       </Section>
 
       {/* ================= GRUPPE ================= */}
       <Section tone="white" space="lg">
-        <div className="grid gap-12 lg:grid-cols-2 lg:gap-20">
-          <Reveal dir="left" className="relative">
-            <div className="relative aspect-[4/5] rounded-[2rem] shadow-2xl sm:aspect-[5/4] lg:aspect-[4/5]">
-              <Image src="/img/firmensitz.jpg" alt="Firmensitz der ÖKOVOLT Gruppe mit Servicefahrzeugen" fill sizes="(max-width: 1024px) 100vw, 50vw" className="rounded-[2rem] object-cover" />
-              <div className="absolute -bottom-6 right-4 max-w-[270px] rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-ink-100 md:-right-6">
-                <p className="font-display text-[34px] font-extrabold leading-none tracking-tight text-ov-600">seit 2012</p>
-                <p className="mt-2 text-[14px] leading-snug text-ink-600">betreibt die Gruppe eigene Solarparks – wir wissen, wie sich Anlagen über Jahrzehnte verhalten.</p>
-              </div>
+        <div className="grid items-center gap-14 lg:grid-cols-[1fr_1.05fr] lg:gap-20">
+          <Reveal dir="left" className="relative pb-10 sm:pb-6 lg:pb-0">
+            <div aria-hidden="true" className="absolute -left-6 -top-6 h-40 w-40 rounded-full bg-ov-100 blur-3xl" />
+            <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem] shadow-e4 ring-1 ring-ink-200/60 lg:aspect-[5/6]">
+              <Image src="/img/firmensitz.jpg" alt="Firmensitz der ÖKOVOLT Gruppe mit Servicefahrzeugen" fill sizes="(max-width: 1024px) 100vw, 45vw" className="object-cover" />
+              <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-navy-950/50 to-transparent" />
             </div>
+            {/* Zeitleiste aus belegten Daten (Gründung, eigene Parks) */}
+            <ol className="absolute -bottom-2 left-4 right-4 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-ink-200/70 shadow-e4 ring-1 ring-ink-200/70 sm:left-auto sm:right-6 sm:w-[340px] lg:-right-8">
+              {[
+                { j: KENNZAHLEN.erfahrungSeit, t: "Planung und Bau von Photovoltaik in DE und AT" },
+                { j: 2012, t: "betreibt die Gruppe eigene Solarparks" },
+              ].map((z) => (
+                <li key={z.j} className="bg-white p-4">
+                  <p className="ov-num font-display text-[26px] font-extrabold leading-none tracking-tight text-ov-600">seit {z.j}</p>
+                  <p className="mt-2 text-[12.5px] leading-snug text-ink-600">{z.t}</p>
+                </li>
+              ))}
+            </ol>
           </Reveal>
-          <div className="flex flex-col justify-center">
+          <div>
             <SectionHeading
               eyebrow="ÖKOVOLT Gruppe"
               title="Wir entwickeln, was wir selbst bauen und betreiben würden."
               lead="ÖkoInvest ist die Projektgesellschaft der ÖKOVOLT Gruppe. Seit 2010 plant und baut die Gruppe Photovoltaik in Deutschland und Österreich, seit 2012 auch eigene Solarparks – mit eigener Montage und eigener Rammtechnik für die Fundamente."
             />
-            <Stagger as="ul" schritt={90} className="mt-10 space-y-4">
+            <Stagger as="ul" schritt={90} className="mt-10 divide-y divide-ink-100 border-y border-ink-100">
               {[
                 { icon: Sun, t: "Entwicklung aus Betreibersicht", x: "Wir planen Parks so, wie wir sie selbst 30 Jahre betreiben wollen – Ertrag, Wartung, Rückbau inklusive." },
                 { icon: HardHat, t: "Bau in der Gruppe", x: "Planung, Montage und Rammtechnik kommen aus einem Verbund – weniger Schnittstellen, mehr Verlässlichkeit." },
                 { icon: ShieldCheck, t: "Digital und transparent", x: "Vorgänge, Dokumente und Status laufen über die Plattform – für alle Beteiligten nachvollziehbar." },
               ].map((k) => (
-                <li key={k.t} className="flex gap-5 rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-ov-500 text-white">
-                    <k.icon aria-hidden="true" className="h-6 w-6" />
+                <li key={k.t} className="flex gap-5 py-6">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ov-50 text-ov-700 ring-1 ring-inset ring-ov-100">
+                    <k.icon aria-hidden="true" className="h-5 w-5" />
                   </span>
                   <div>
-                    <h3 className="font-display text-[18px] font-bold text-ink-900">{k.t}</h3>
-                    <p className="mt-1.5 text-[15px] leading-relaxed text-ink-600">{k.x}</p>
+                    <h3 className="font-display text-[17.5px] font-bold text-ink-900">{k.t}</h3>
+                    <p className="mt-1 text-[15px] leading-relaxed text-ink-600">{k.x}</p>
                   </div>
                 </li>
               ))}
@@ -467,7 +504,7 @@ export default function HomePage() {
         </div>
       </Section>
 
-      <CtaBand />
+      <RollenCtaBand />
     </div>
   );
 }

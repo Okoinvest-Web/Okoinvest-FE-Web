@@ -41,7 +41,12 @@ export function kennzahlen(region, meta) {
   const spanne = pachtSpanne(region?.pacht?.tendenz);
   const mittel = (spanne.min + spanne.max) / 2;
   const index = pachtRechnung({ ha: BEISPIEL_HA, regionId: meta.markt, modell: "index", proHa: mittel });
+  // QM Welle 1 – Länder-Sperre (Masterplan Abschnitt 3, S1): €-Pacht nur für Deutschland, bis die
+  // Rechenlogik für Österreich und die Schweiz steht (wie Paket E in den Rechnern).
+  const land = region?.land || meta?.land || "DE";
   return {
+    land,
+    pachtGesperrt: land !== "DE",
     ertrag,
     mwp,
     gwh,

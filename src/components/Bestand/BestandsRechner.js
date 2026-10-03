@@ -1,5 +1,6 @@
 "use client";
 
+import { SperrEingaben } from "@/components/Rechner/LaenderSperre";
 import { useMemo, useState } from "react";
 import { Activity, AlertTriangle, BadgePercent, CalendarClock, Gauge, Handshake, Landmark, Percent, ScrollText, Wrench } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -78,6 +79,19 @@ export default function BestandsRechner() {
   const band = PHASE_BESTAND.preisProKwp;
   const minderertrag = r.performance != null && r.performance < BESTAND.minderertragWarnung;
 
+  // Länder-Sperre (Paket E): für AT/CH nur die Regionswahl und der Hinweis aus markt.js
+  const sperre = r.sperre;
+  const regionWahl = (
+    <Auswahl
+      legende="Region (für den Prognosevergleich)"
+      wert={regionId}
+      onChange={setRegionId}
+      spalten={3}
+      klein
+      optionen={REGIONEN.map((x) => ({ id: x.id, label: REGION_KURZ[x.id] || x.label }))}
+    />
+  );
+
   return (
     <RechnerRahmen
       mitlaufend
@@ -111,7 +125,10 @@ export default function BestandsRechner() {
           </div>
         </div>
       }
-      eingaben={
+      sperre={sperre}
+      eingaben={sperre ? (
+        <SperrEingaben>{regionWahl}</SperrEingaben>
+      ) : (
         <>
           <MobilKurz
             werte={[
@@ -133,14 +150,7 @@ export default function BestandsRechner() {
                 ]}
               />
               <Regler label="Inbetriebnahme" wert={ibnJahr} min={2005} max={2025} step={1} format={(v) => String(v)} onChange={setIbn} hinweis={`Heute ${r.alter} Jahre in Betrieb · Nutzung bis ${r.technischEnde}`} />
-              <Auswahl
-                legende="Region (für den Prognosevergleich)"
-                wert={regionId}
-                onChange={setRegionId}
-                spalten={3}
-                klein
-                optionen={REGIONEN.map((x) => ({ id: x.id, label: REGION_KURZ[x.id] || x.label }))}
-              />
+              {regionWahl}
               <Regler
                 label="Ø Ertrag der letzten Jahre"
                 wert={ertragKwhKwp}
@@ -219,7 +229,7 @@ export default function BestandsRechner() {
             </Gruppe>
           </div>
         </>
-      }
+      )}
       ergebnis={
         <>
           <p className="sr-only" aria-live="polite">

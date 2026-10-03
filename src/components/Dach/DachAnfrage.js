@@ -85,7 +85,7 @@ export default function DachAnfrage() {
                 <label
                   key={o.id}
                   className={cn(
-                    "inline-flex min-h-10 cursor-pointer items-center rounded-full px-4 text-[13.5px] font-semibold ring-1 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ov-500",
+                    "ov-press inline-flex min-h-10 cursor-pointer items-center rounded-full px-4 text-[13.5px] font-semibold ring-1 transition-[color,background-color,box-shadow,transform] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ov-500",
                     aktiv ? "bg-ov-600 text-white ring-ov-600" : "bg-white text-ink-700 ring-ink-200 hover:ring-ink-300"
                   )}
                 >
@@ -103,7 +103,7 @@ export default function DachAnfrage() {
           daten={{ art: "dach", quelle: "dachflaeche-verpachten", ...werte }}
           felder={["firma", "telefon", "plz", "ort", "land", "nachricht"]}
           button="Dach vorstellen"
-          erfolgText="Danke! Ihr Dach ist bei uns eingegangen. Wir melden uns in der Regel innerhalb von zwei Werktagen – registrieren Sie sich mit derselben E-Mail, dann sehen Sie den Stand im Portal."
+          erfolgText="Danke! Ihr Dach ist bei uns eingegangen. Wir melden uns persönlich – registrieren Sie sich mit derselben E-Mail, dann sehen Sie den Stand im Portal."
         />
       </div>
     </div>

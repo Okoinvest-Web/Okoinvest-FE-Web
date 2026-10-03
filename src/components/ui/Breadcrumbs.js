@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { cn } from "./cn";
 
 import { SITE } from "@/data/site";
+import JsonLd from "@/components/JsonLd";
 
 const BASE = SITE.url;
 
@@ -26,7 +27,7 @@ export default function Breadcrumbs({ items = [], dark = false, className, schem
   return (
     <nav aria-label="Brotkrumen" className={cn("text-[13px]", className)}>
       {schema && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <JsonLd daten={jsonLd} />
       )}
       <ol className="flex flex-wrap items-center gap-1.5">
         {alle.map((it, i) => {

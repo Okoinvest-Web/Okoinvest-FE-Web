@@ -7,6 +7,7 @@ import { cn } from "@/components/ui/cn";
 import { Auswahl, Belege, Gruppe, Hauptzahl, Kennzahl, Regler, Schalter, Tooltip, Zahl, useBreite } from "@/components/Rechner/bausteine";
 import { useTeilbarerZustand } from "@/components/Rechner/kontext";
 import { ErgebnisKopf, Hinweis, Legende, MobilKurz, RechnerRahmen } from "@/components/Rechner/InvestTeile";
+import { SperrEingaben } from "@/components/Rechner/LaenderSperre";
 import { DACH, REGIONEN } from "@/lib/invest/markt";
 import { STANDARD, NETZSTROM_CT, rechneDach } from "@/lib/rechner/dachpacht";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
@@ -49,7 +50,19 @@ export default function DachpachtRechner() {
     }
   );
 
-  const eingaben = (
+  // Länder-Sperre (Paket E): für AT/CH nur die Regionswahl und der Hinweis aus markt.js
+  const sperre = r.sperre;
+  const regionWahl = (
+    <Auswahl
+      legende="Region"
+      wert={regionId}
+      onChange={setRegionId}
+      spalten={3}
+      klein
+      optionen={REGIONEN.map((x) => ({ id: x.id, label: REGION_KURZ[x.id] || x.label, sub: `${fmt(x.ertrag)} kWh/kWp` }))}
+    />
+  );
+  const eingabenVoll = (
     <>
       <MobilKurz
         werte={
@@ -105,14 +118,7 @@ export default function DachpachtRechner() {
               Flachdächer belegen wir in der Regel mit flacher Ost/West-Aufständerung – mehr Leistung je m², gleichmäßigere Erzeugung über den Tag, die Dachrichtung spielt kaum eine Rolle.
             </p>
           ) : null}
-          <Auswahl
-            legende="Region"
-            wert={regionId}
-            onChange={setRegionId}
-            spalten={3}
-            klein
-            optionen={REGIONEN.map((x) => ({ id: x.id, label: REGION_KURZ[x.id] || x.label, sub: `${fmt(x.ertrag)} kWh/kWp` }))}
-          />
+          {regionWahl}
           <Schalter icon={Hammer} label="Dach ist sanierungsbedürftig" beschreibung="Neueindeckung vor der Belegung nötig" an={sanierung} onChange={setSanierung} />
         </Gruppe>
 
@@ -178,11 +184,13 @@ export default function DachpachtRechner() {
       </div>
     </>
   );
+  const eingaben = sperre ? <SperrEingaben>{regionWahl}</SperrEingaben> : eingabenVoll;
 
   if (!r.belegbar) {
     return (
       <RechnerRahmen
         mitlaufend
+        sperre={sperre}
         eingaben={eingaben}
         ergebnis={
           <>
@@ -229,6 +237,7 @@ export default function DachpachtRechner() {
   return (
     <RechnerRahmen
       mitlaufend
+      sperre={sperre}
       eingaben={eingaben}
       unten={
         <div className="rounded-3xl ring-1 ring-ink-200/70">

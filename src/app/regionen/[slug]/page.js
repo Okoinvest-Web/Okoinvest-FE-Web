@@ -9,7 +9,7 @@ import {
   AlertTriangle, ArrowRight, Building2, CheckCircle2, Compass, Landmark, LayoutDashboard, MapPinned, Mountain, PlugZap, Sprout, XCircle,
 } from "lucide-react";
 
-import PageHero from "@/components/ui/PageHero";
+import Hero from "@/components/Boerse/Seite/Hero";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
@@ -19,6 +19,7 @@ import Querverweise from "@/components/Reusable/Querverweise";
 import AnfrageFormular from "@/components/Plattform/AnfrageFormular";
 import RegionKarte from "@/components/Region/RegionKarte";
 import RegionKennzahlen from "@/components/Region/RegionKennzahlen";
+import RegionBuehne from "@/components/Region/RegionBuehne";
 import RegionSchritte from "@/components/Region/RegionSchritte";
 import QuelleLink from "@/components/Region/QuelleLink";
 import Fett, { ohneFett } from "@/components/Region/Fett";
@@ -26,8 +27,10 @@ import { LAND } from "@/components/Region/laender";
 import { BEISPIEL_HA, kennzahlen } from "@/components/Region/rechnung";
 import { REGIONEN, nachbarnVon, regionFuer } from "@/data/regionen";
 import { abs } from "@/data/site";
-import { STAND } from "@/lib/invest/markt";
+import { PACHT, STAND } from "@/lib/invest/markt";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
+import { grundstueck } from "@/lib/anfrage/laender";
+import JsonLd from "@/components/JsonLd";
 
 export const dynamicParams = false;
 
@@ -79,67 +82,56 @@ export default async function RegionSeite({ params }) {
 
   return (
     <div>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Service",
-            name: titelZeile,
-            serviceType: "Projektentwicklung und Flächenpacht für Freiflächen-Photovoltaik und Agri-PV",
-            provider: { "@id": `${abs("/")}/#organization` },
-            areaServed,
-            audience: { "@type": "Audience", audienceType: "Flächeneigentümer und Landwirte" },
-            url,
-            description: r.beschreibung,
-          }),
+      <JsonLd
+        daten={{
+          "@context": "https://schema.org",
+          "@type": "Service",
+          name: titelZeile,
+          serviceType: "Projektentwicklung und Flächenpacht für Freiflächen-Photovoltaik und Agri-PV",
+          provider: { "@id": `${abs("/")}/#organization` },
+          areaServed,
+          audience: { "@type": "Audience", audienceType: "Flächeneigentümer und Landwirte" },
+          url,
+          description: r.beschreibung,
         }}
       />
 
-      <PageHero
+      <Hero
         breadcrumbs={[{ name: "Regionen", href: "/regionen" }, { name: r.name }]}
-        eyebrow={r.land === "CH" ? "Schweiz · Bund und Kantone" : `${land.name} · ${r.name}`}
-        title={
+        pill={{ marke: r.land === "CH" ? "CH" : r.land, text: r.land === "CH" ? "Schweiz · Bund und Kantone" : `${land.name} · ${r.name} · Stand ${STAND}`, href: "#ausgangslage" }}
+        titel={
           <>
             Solarpark & <span className="whitespace-nowrap">Agri-PV</span> {r.inName}
             {/^(mit|zwischen|vom|nur|im|in)\b/.test(r.akzent || "") ? " " : ": "}
-            <span className="ov-text-gradient">{r.akzent}</span>
+            <span className="ov-text-gradient-light">{r.akzent}</span>
           </>
         }
         lead={r.lead}
-        image={{ src: r.bild, alt: `Freiflächen-Photovoltaik – Symbolbild für ${r.name}` }}
-        actions={[
+        aktionen={[
           { label: "Fläche prüfen lassen", href: "#anfrage" },
           { label: "Pacht berechnen", href: "/rechner/pacht" },
         ]}
-        points={[
+        hinweis="Prüfung und Vertrag kostenfrei · persönliche Rückmeldung"
+        versprechen={[
           `Ertrag rund ${fmt(k.ertrag)} kWh/kWp`,
           r.netz?.uenb?.length ? `Übertragungsnetz: ${r.netz.uenb.join(", ")}` : `${land.name}`,
           "Prüfung & Vertrag kostenfrei",
           "Status jederzeit im Portal",
         ]}
-        badge={
-          <div>
-            <p className="text-[12.5px] font-medium text-ink-500">Beispiel {BEISPIEL_HA} ha {r.inName}</p>
-            <p className="ov-num mt-1 font-display text-[24px] font-extrabold leading-tight tracking-tight text-ink-900">
-              {fmtEur(k.pachtJahr.min)}–{fmtEur(k.pachtJahr.max)}
-              <span className="text-[14px] font-bold text-ink-500"> / Jahr</span>
-            </p>
-            <p className="mt-2 text-[13px] leading-snug text-ink-600">
-              Pachtspanne für rund <strong className="text-ov-700">{fmt(k.mwp, 1)} MWp</strong> Solarpark
-            </p>
-          </div>
-        }
+        buehne={<RegionBuehne region={r} k={k} />}
+        bildunterschrift={`Orientierungswerte: PVGIS und Marktannahmen, Stand ${STAND}`}
       />
 
       {/* Kennzahlen */}
-      <Section tone="white" space="md">
-        <h2 className="sr-only">Kennzahlen {r.inName}</h2>
-        <RegionKennzahlen region={r} k={k} />
-      </Section>
+      <section aria-label={`Kennzahlen ${r.inName}`} className="relative z-10 -mt-12 bg-transparent md:-mt-16">
+        <div className="ov-container">
+          <h2 className="sr-only">Kennzahlen {r.inName}</h2>
+          <RegionKennzahlen region={r} k={k} />
+        </div>
+      </section>
 
       {/* Ausgangslage */}
-      <Section tone="white" space="md" className="pt-0 md:pt-0">
+      <Section tone="white" space="md" id="ausgangslage" className="scroll-mt-20">
         <div className="grid gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:gap-16">
           <div>
             <SectionHeading eyebrow="Ausgangslage" title={`Freiflächen-PV ${r.inName}`} />
@@ -283,7 +275,7 @@ export default async function RegionSeite({ params }) {
               </Reveal>
             ))}
             <p className="text-[13px] leading-relaxed text-ink-500">
-              Agri-PV-Pacht liegt meist niedriger als bei Freiflächen-PV, dafür bleibt die Bewirtschaftung beim Landwirt: bei {BEISPIEL_HA} ha etwa {fmtEur(k.agriPacht.min)}–{fmtEur(k.agriPacht.max)} im Jahr (Orientierung).
+              Agri-PV-Pacht liegt meist niedriger als bei Freiflächen-PV, dafür bleibt die Bewirtschaftung beim Landwirt{k.pachtGesperrt ? "." : <>: bei {BEISPIEL_HA} ha etwa {fmtEur(k.agriPacht.min)}–{fmtEur(k.agriPacht.max)} im Jahr (Orientierung).</>}
             </p>
           </div>
         </div>
@@ -344,9 +336,27 @@ export default async function RegionSeite({ params }) {
                 <Compass aria-hidden="true" className="h-5 w-5 shrink-0 text-ov-600" />
                 Pacht {r.inName}
               </p>
+              {k.pachtGesperrt ? (
+                <p className="mt-2 text-[15px] font-semibold text-ov-700">Pachtwerte: Rechenlogik für {k.land === "CH" ? "die Schweiz" : "Österreich"} in Vorbereitung</p>
+              ) : (
+              <>
               <p className="ov-num mt-2 font-display text-[20px] font-extrabold text-ov-700">
                 {fmt(k.spanne.min)}–{fmt(k.spanne.max)} €/ha·a
               </p>
+              <div className="mt-3" role="img" aria-label={`Spanne ${fmt(k.spanne.min)} bis ${fmt(k.spanne.max)} Euro innerhalb der DACH-Spanne ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} Euro`}>
+                <div className="relative h-2 rounded-full bg-ink-100">
+                  <span
+                    className="absolute inset-y-0 rounded-full bg-ov-500"
+                    style={{
+                      left: `${((k.spanne.min - PACHT.freiflaecheProHa.min) / (PACHT.freiflaecheProHa.max - PACHT.freiflaecheProHa.min)) * 100}%`,
+                      width: `${((k.spanne.max - k.spanne.min) / (PACHT.freiflaecheProHa.max - PACHT.freiflaecheProHa.min)) * 100}%`,
+                    }}
+                  />
+                </div>
+                <div aria-hidden="true" className="ov-num mt-1 flex justify-between text-[11px] text-ink-500"><span>{fmt(PACHT.freiflaecheProHa.min)} €</span><span>DACH-Spanne</span><span>{fmt(PACHT.freiflaecheProHa.max)} €</span></div>
+              </div>
+              </>
+              )}
               <p className="mt-2 text-[15px] leading-relaxed text-ink-600">
                 <Fett>{r.pacht.begruendung}</Fett>
               </p>
@@ -389,7 +399,7 @@ export default async function RegionSeite({ params }) {
             <SectionHeading
               eyebrow="Kostenlos & unverbindlich"
               title={`Fläche ${r.inName} melden`}
-              lead={`Nennen Sie uns Gemeinde, Größe und – wenn zur Hand – die Flurstücke. Wir prüfen Planungsrecht, Netz und Einstrahlung Ihrer Fläche ${r.inName} am Kartentisch und melden uns in der Regel innerhalb von zwei Werktagen.`}
+              lead={`Nennen Sie uns Gemeinde, Größe und – wenn zur Hand – die ${grundstueck(r.land).mehrzahl}. Wir prüfen Planungsrecht, Netz und Einstrahlung Ihrer Fläche ${r.inName} am Kartentisch und melden uns persönlich.`}
             />
             <Reveal className="ov-noise relative mt-8 overflow-hidden rounded-3xl bg-navy-950 p-6 text-white md:p-8">
               <div aria-hidden="true" className="ov-grid-bg absolute inset-0" />

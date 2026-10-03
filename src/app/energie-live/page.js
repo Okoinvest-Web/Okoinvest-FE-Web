@@ -1,7 +1,7 @@
 // energie-live/page.js – Strommarkt Deutschland live
 
 import { Activity, AlertTriangle, BatteryCharging, Clock, Database, ExternalLink, Scale, Sun } from "lucide-react";
-import PageHero from "@/components/ui/PageHero";
+import Hero from "@/components/EnergieLive/Seite/Hero";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Faq from "@/components/ui/Faq";
@@ -17,6 +17,7 @@ import CaptureRate from "@/components/EnergieLive/CaptureRate";
 import { abs } from "@/data/site";
 import { getEnergySnapshot } from "@/lib/energy";
 import { preisTage, zeitfenster, ct, gw, uhr, spanne, tagLang } from "@/components/EnergieLive/berechnung";
+import JsonLd from "@/components/JsonLd";
 
 export const revalidate = 900;
 
@@ -172,22 +173,12 @@ export default async function EnergieLivePage() {
 
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(datasetSchema) }} />
+      <JsonLd daten={webPageSchema} />
+      <JsonLd daten={datasetSchema} />
 
-      <PageHero
-        variant="dark"
-        breadcrumbs={[{ name: "Wissen", href: "/ratgeber" }, { name: "Strommarkt live" }]}
-        eyebrow="Energie live · Deutschland"
-        title={
-          <>
-            Strommarkt Deutschland <span className="ov-text-gradient-light">live</span>
-          </>
-        }
-        lead="Börsenstrompreis, Strommix und Solar-Capture-Rate – viertelstündlich aus offenen Daten des Fraunhofer ISE. Eingeordnet für Unternehmen, die Strom beschaffen, und Investoren, die Solarparks und Speicher bewerten."
-      >
+      <Hero>
         <LiveKennzahlen initial={kompakt} />
-      </PageHero>
+      </Hero>
 
       {/* Preisverlauf */}
       <Section tone="white" space="lg" id="preisverlauf" className="scroll-mt-24">
@@ -207,7 +198,7 @@ export default async function EnergieLivePage() {
       </Section>
 
       {/* Was bedeutet das für Sie? */}
-      <Section tone="sand" space="lg">
+      <Section tone="sand" space="lg" id="entscheidungen" className="scroll-mt-24">
         <SectionHeading
           eyebrow="Was bedeutet das für Sie?"
           title="Aus Börsendaten werden Entscheidungen"
@@ -222,7 +213,7 @@ export default async function EnergieLivePage() {
       </Section>
 
       {/* Strommix */}
-      <Section tone="white" space="lg">
+      <Section tone="white" space="lg" id="strommix" className="scroll-mt-24">
         <SectionHeading
           eyebrow="Stromerzeugung nach Quelle"
           title={
@@ -258,7 +249,7 @@ export default async function EnergieLivePage() {
       </Section>
 
       {/* Merit-Order & negative Preise */}
-      <Section tone="navy" space="lg" className="overflow-hidden">
+      <Section tone="navy" space="lg" id="hintergrund" className="scroll-mt-24 overflow-hidden">
         <div aria-hidden="true" className="ov-grid-bg absolute inset-0" />
         <div aria-hidden="true" className="absolute -left-40 top-20 h-[460px] w-[460px] rounded-full bg-ov-500/20 blur-[130px]" />
         <div className="relative grid items-center gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-16">

@@ -41,7 +41,8 @@ export const metadata = {
   title: TITEL,
   description: BESCHREIBUNG,
   alternates: { canonical: PAGE_URL },
-  robots: { index: true, follow: true },
+  // QM Welle 1: Rechtstext im ENTWURF (Strang R) – bis zur schriftlichen Freigabe noindex (Masterplan Abschnitt 11)
+  robots: { index: false, follow: true },
   openGraph: {
     type: "website",
     locale: "de_AT",
@@ -70,6 +71,7 @@ export default function NutzungsbedingungenPage() {
     <LegalShell
       titel="Nutzungsbedingungen"
       pfad="/nutzungsbedingungen"
+      stand={STAND}
       lead="Regeln für die Nutzung von Website, Portal und Projektbörse der ÖkoInvest GmbH – für Flächeneigentümer, Landwirte, Investoren, Projektanbieter, Unternehmen, Kommunen und eingeladene Partner."
     >
       {ENTWURF && (

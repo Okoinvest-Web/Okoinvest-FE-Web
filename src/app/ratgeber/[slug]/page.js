@@ -3,13 +3,13 @@
 // Rendert alle inhaltsgetriebenen Ratgeber-Artikel aus src/content/ratgeber.
 
 import { notFound } from "next/navigation";
-import { BookOpen } from "lucide-react";
 
 import ArtikelLayout from "@/components/Ratgeber/ArtikelLayout";
 import ArtikelInhalt from "@/components/Ratgeber/ArtikelInhalt";
 import { klartext } from "@/components/Ratgeber/InlineText";
 import { INHALTS_ARTIKEL, artikelPfad } from "@/lib/ratgeber";
 import { SITE, abs } from "@/data/site";
+import JsonLd from "@/components/JsonLd";
 
 const BASE_URL = SITE.url;
 
@@ -71,7 +71,7 @@ export default async function RatgeberArtikelPage({ params }) {
       inLanguage: "de-DE",
       datePublished: a.veroeffentlicht,
       dateModified: a.aktualisiert,
-      author: { "@type": "Organization", name: "Projektteam ÖkoInvest", "@id": `${BASE_URL}/#organization` },
+      author: { "@type": "Organization", "@id": `${BASE_URL}/#organization`, name: "ÖkoInvest", url: BASE_URL },
       publisher: { "@id": `${BASE_URL}/#organization` },
       mainEntityOfPage: { "@type": "WebPage", "@id": url },
       image: [abs(a.bild)],
@@ -96,23 +96,11 @@ export default async function RatgeberArtikelPage({ params }) {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": graph }).replace(/</g, "\\u003c") }} />
+      <JsonLd daten={{ "@context": "https://schema.org", "@graph": graph }} />
       <ArtikelLayout
         artikel={a}
         toc={toc}
-        badge={
-          a.badge && (
-            <div className="flex items-center gap-4">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-ov-500 text-white">
-                <BookOpen aria-hidden="true" className="h-6 w-6" />
-              </span>
-              <div>
-                <p className="ov-num font-display text-[22px] font-extrabold leading-none text-ink-900">{a.badge.wert}</p>
-                <p className="mt-1 text-[12.5px] leading-snug text-ink-500">{a.badge.text}</p>
-              </div>
-            </div>
-          )
-        }
+        kennzahl={a.badge}
         seitenCta={a.seitenCta}
         cta={a.cta}
       >

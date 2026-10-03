@@ -18,7 +18,7 @@ import { rateLimit } from "../server/rateLimit";
 import { ANWENDUNGSFAELLE, kiAktiv, RATE_IP, RATE_KONTO, rateFaktor } from "./konfig";
 import { erstellen, streamen, KiFehler } from "./client";
 import * as P from "./prompts";
-import { kontextExpose, kontextFlaeche, kontextFrage, kontextNachricht, kontextTriage } from "./kontext";
+import { kiTriageFreigegeben, kontextExpose, kontextFlaeche, kontextFrage, kontextNachricht, kontextTriage } from "./kontext";
 import { regelExpose, regelFlaeche, regelFrage, regelNachricht, regelTriage } from "./regeln";
 import { kontingent, kontingentPruefen, protokollieren } from "./nutzung";
 import { suchen, wissensBlock } from "./wissen";
@@ -27,6 +27,7 @@ export { kiAktiv } from "./konfig";
 export { kontingent } from "./nutzung";
 
 const HINWEIS_REGEL = "Regelbasierter Vorschlag – der KI-Assistent ist auf dieser Plattform nicht aktiviert.";
+const HINWEIS_TRIAGE_AUS = "Regelbasierter Vorschlag – die KI-Triage ist abgeschaltet, bis der Datenschutz beim KI-Dienst geklärt ist.";
 const HINWEIS_AUSFALL = "Der KI-Dienst ist gerade nicht erreichbar – hier ein regelbasierter Vorschlag.";
 
 /** Darf dieser Nutzer den Anwendungsfall nutzen? (Admin darf alles) */
@@ -68,8 +69,8 @@ const FAELLE = {
     regel: (k) => regelExpose(k),
   },
   triage: {
-    async kontext(b, n, body) {
-      return kontextTriage(b, n, { vorgangId: body.vorgangId });
+    async kontext(b, n, body, opt) {
+      return kontextTriage(b, n, { vorgangId: body.vorgangId }, opt);
     },
     json: true,
     ki: (k) => ({ system: [P.BASIS, P.TRIAGE], nachricht: P.nachrichtTriage(k.daten), schema: P.TRIAGE_SCHEMA, effort: "low", maxTokens: 4000 }),
@@ -135,7 +136,9 @@ export async function ausfuehren({ fall, nutzer: n, body = {}, backend: b, ip = 
   const eingaben = def.eingaben ? def.eingaben(body) : {};
 
   // Rechteprüfung passiert hier – bei fremden Objekten wird ein 403/404 geworfen, bevor Kontext entsteht
-  const k = await def.kontext(b, n, body);
+  // KI-Triage-Schalter (Paket B, Standard aus): bei aktivem KI-Dienst ohne KI_TRIAGE=an nur Regelvorschlag
+  const triageAus = fall === "triage" && kiAktiv() && !kiTriageFreigegeben();
+  const k = await def.kontext(b, n, body, { nurRegel: triageAus });
   const kont = await kontingentPruefen(n);
   const quellen = def.quellen ? def.quellen(k, eingaben) : [];
   const basis = { ok: true, fall, quellen, kontingent: { limit: kont.limit, rest: Math.max(0, kont.rest - 1) } };
@@ -147,6 +150,7 @@ export async function ausfuehren({ fall, nutzer: n, body = {}, backend: b, ip = 
   };
 
   if (!kiAktiv()) return regelAntwort(HINWEIS_REGEL);
+  if (triageAus) return regelAntwort(HINWEIS_TRIAGE_AUS, "ki-triage-aus");
 
   const anfrage = def.ki(k, eingaben);
 

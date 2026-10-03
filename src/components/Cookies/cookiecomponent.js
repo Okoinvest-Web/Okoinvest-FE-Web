@@ -1,95 +1,58 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { setCookie, getCookie } from "cookies-next";
+import { setCookie } from "cookies-next";
 import CookieDetails from "./coookieItem";
 import Link from "next/link";
 import { Circle } from "lucide-react";
 import useFokusFalle from "@/components/ui/useFokusFalle";
+import {
+  EINWILLIGUNG_COOKIE,
+  EINWILLIGUNG_EREIGNIS,
+  EINWILLIGUNG_LAUFZEIT_S,
+  OHNE_EINWILLIGUNG,
+  einwilligungErstellen,
+  einwilligungLesen,
+} from "@/lib/ereignis/einwilligung";
 
-
-// cookieData.js
+// TEXTE: Entwurf (Paket B, Welle 1) – Freigabe durch Strang R (Rechtstexte) steht aus.
+// Fassung der Texte: EINWILLIGUNG_VERSION in src/lib/ereignis/einwilligung.js – bei jeder inhaltlichen Änderung
+// hochzählen, dann werden alle Besucher neu gefragt.
+//
+// Es gibt nur zwei Kategorien: „Essenziell“ (ohne Einwilligung) und „Statistik“ (Google Analytics, nur mit
+// Einwilligung). Funktionale Drittdienste (z. B. eingebettete Karten) nutzt die Website nicht – die frühere
+// Kategorie „Google Maps“ ist entfernt.
 export const cookieServices = {
-  functional: {
-    googleMaps: {
-      title: "Google Maps",
-      description: "Ermöglicht das Einbetten interaktiver Karten auf unserer Website.",
-      purpose:
-        "Google Maps ermöglicht das Einbetten von Karten direkt in Websites zur Verbesserung der Website. Dies erfordert die Verarbeitung der IP-Adresse und Metadaten des Nutzers. Cookies oder cookie-ähnliche Technologien können gespeichert und gelesen werden. Diese können personenbezogene Daten und technische Daten wie Benutzer-ID, Zustimmung, Einstellungen des Kartenbetrachters und Sicherheitstokens enthalten. Diese Daten können verwendet werden, um besuchte Websites zu erfassen, detaillierte Statistiken über das Nutzerverhalten zu erstellen und die Dienste von Google zu verbessern. Diese Daten können von Google mit den Daten von Nutzern verknüpft werden, die auf den Websites von Google eingeloggt sind (z.B. google.com und youtube.com). Google gibt personenbezogene Informationen an verbundene Unternehmen und andere vertrauenswürdige Unternehmen oder Personen weiter, um diese für sie zu verarbeiten, basierend auf den Anweisungen von Google und in Übereinstimmung mit der Datenschutzrichtlinie von Google.",
-      provider: "Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland",
-      contact: {
-        phone: "+1 650 253 0000",
-        email: "dpo-google@google.com",
-        privacy: "https://policies.google.com/privacy",
-      },
-      cookies: [
-        { name: "NID", type: "HTTP Cookie", duration: "6 Monate" },
-        { name: "__Secure-3PSIDCC", type: "HTTP Cookie", duration: "1 Jahr" },
-        { name: "__Secure-1PSIDCC", type: "HTTP Cookie", duration: "1 Jahr" },
-        { name: "SIDCC", type: "HTTP Cookie", duration: "1 Jahr" },
-        { name: "__Secure-3PAPISID", type: "HTTP Cookie", duration: "13 Monate" },
-        { name: "SSID", type: "HTTP Cookie", duration: "13 Monate" },
-        { name: "__Secure-1PAPISID", type: "HTTP Cookie", duration: "13 Monate" },
-        { name: "__Secure-3PSID", type: "HTTP Cookie", duration: "13 Monate" },
-        { name: "__Secure-1PSID", type: "HTTP Cookie", duration: "13 Monate" },
-        { name: "SID", type: "HTTP Cookie", duration: "13 Monate" },
-        { name: "SAPISID", type: "HTTP Cookie", duration: "13 Monate" },
-        { name: "APISID", type: "HTTP Cookie", duration: "13 Monate" },
-        { name: "CONSENT", type: "HTTP Cookie", duration: "13 Monate" },
-        { name: "__Secure-ENID", type: "HTTP Cookie", duration: "13 Monate" },
-        { name: "_c;;i", type: "Local Storage", duration: "Kein Ablauf" },
-        { name: "LH;;s-*", type: "Local Storage", duration: "Kein Ablauf" },
-        { name: "sb_wiz.zpc.gws-wiz.", type: "Local Storage", duration: "Kein Ablauf" },
-        { name: "sb_wiz.ueh", type: "Local Storage", duration: "Kein Ablauf" },
-      ],
-      dataProcessing: {
-        countries: [
-          { name: "Vereinigte Staaten", sub: "A" },
-          { name: "Australien" },
-          { name: "Brasilien" },
-          { name: "KanadaA", sub: "A" },
-          { name: "Chile" },
-          { name: "Hong Kong" },
-          { name: "Indien" },
-          { name: "Indonesien" },
-          { name: "Israel", sub: "A" },
-          { name: "Japan", sub: "A" },
-          { name: "Korea", sub: "A" },
-          { name: "Katar" },
-          { name: "Singapur" },
-          { name: "Schweiz", sub: "A" },
-          { name: "Taiwan" },
-          { name: "Vereinigtes Königreich", sub: "A" },
-        ],
-        mechanisms: [{ name: "Angemessenheitsbeschluss", sub: "A" }],
-      },
-    },
-  },
   statistics: {
     googleAnalytics: {
       title: "Google Analytics",
-      description: "Erstellt Statistiken darüber, wie unsere Website genutzt wird.",
+      description: "Erstellt Statistiken darüber, wie unsere öffentlichen Seiten genutzt werden.",
+      // Quelle zur IP-Verarbeitung: https://support.google.com/analytics/answer/12017362 (abgerufen 03.10.2026)
       purpose:
-        "Google Analytics 4 erfasst, welche Seiten aufgerufen werden, wie lange Besucher bleiben, über welche Quelle (z. B. Suchmaschine oder Kampagne) sie kommen sowie Gerät, Browser und ungefähren Standort (Land/Region). Außerdem zählen wir Aktionen wie gesendete Formulare. Wir nutzen die Daten ausschließlich, um unsere Website zu verbessern – ohne Werbefunktionen, ohne Google Signals und ohne Personalisierung. Google speichert keine IP-Adressen in Analytics.",
+        "Google Analytics 4 erfasst, welche öffentlichen Seiten aufgerufen werden, über welche Quelle (z. B. Suchmaschine oder Kampagne) Besucher kommen sowie Gerät, Browser und ungefähren Standort (Land/Region). Zusätzlich können einzelne Aktionen ohne Inhalte gezählt werden, etwa dass eine Anfrage abgeschickt wurde – nie Namen, E-Mail-Adressen, Telefonnummern oder Formularinhalte. Nicht gemessen werden das Kundenportal, persönliche Einladungs- und Anmeldelinks sowie Angebotslinks mit Code. Wir nutzen die Daten nur, um die Website zu verbessern – ohne Werbefunktionen, ohne Google Signals und ohne Personalisierung. Ihre IP-Adresse wird technisch an Google übermittelt; nach Angaben von Google wird sie bei Zugriffen aus der EU und der Schweiz nur zur groben Standortbestimmung verwendet und danach verworfen.",
       provider: "Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland",
       contact: {
-        phone: "+353 1 543 1000",
-        email: "dpo-google@google.com",
         privacy: "https://policies.google.com/privacy",
       },
+      // Laufzeiten laut https://support.google.com/analytics/answer/11397207 (abgerufen 03.10.2026)
       cookies: [
-        { name: "_ga", type: "HTTP Cookie", duration: "2 Jahre" },
-        { name: "_ga_*", type: "HTTP Cookie", duration: "2 Jahre" },
+        { name: "_ga", type: "HTTP-Cookie", duration: "2 Jahre" },
+        { name: "_ga_<ID>", type: "HTTP-Cookie", duration: "2 Jahre" },
       ],
+      // ZU PRÜFEN vor Livegang (Strang R): aktive DPF-Zertifizierung von Google LLC auf dataprivacyframework.gov
       dataProcessing: {
-        countries: [{ name: "Vereinigte Staaten", sub: "A" }],
-        mechanisms: [{ name: "Angemessenheitsbeschluss (EU-US Data Privacy Framework)", sub: "A" }],
+        countries: [{ name: "Vereinigte Staaten" }],
+        mechanisms: [{ name: "Angemessenheitsbeschluss der EU-Kommission (EU-US Data Privacy Framework, Art. 45 DSGVO)" }],
       },
     },
   },
 };
 
-const OHNE = { essential: true, functional: false, googleMaps: false, statistics: false, googleAnalytics: false };
+function zeitText(iso) {
+  const d = iso ? new Date(iso) : null;
+  if (!d || Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+}
 
 export default function CookieBanner({ forceShow = false, onClose }) {
   const router = useRouter();
@@ -97,102 +60,63 @@ export default function CookieBanner({ forceShow = false, onClose }) {
   const [isCompact, setIsCompact] = useState(true);
 
   const [showBanner, setShowBanner] = useState(forceShow);
-  const [expandedSections, setExpandedSections] = useState({
-    functional: false,
-    statistics: false,
-  });
+  const [expandedSections, setExpandedSections] = useState({ statistics: false });
   const [expandedServices, setExpandedServices] = useState({});
-  const [consent, setConsent] = useState(OHNE);
+  const [consent, setConsent] = useState(OHNE_EINWILLIGUNG);
+  const [gespeichert, setGespeichert] = useState(null);
 
   useEffect(() => {
-    const gespeichert = getCookie("cookieConsent");
-    if (!gespeichert) {
+    const vorhanden = einwilligungLesen();
+    if (!vorhanden) {
+      // Kein Cookie, ungültig oder alte Fassung: neu fragen, bis dahin gilt „keine Einwilligung“
       setShowBanner(true);
       return;
     }
     // Beim erneuten Öffnen die bisherige Auswahl anzeigen
-    try {
-      setConsent({ ...OHNE, ...JSON.parse(gespeichert), essential: true });
-    } catch {
-      /* ungültig -> Standard */
-    }
+    setConsent({ essential: true, statistics: vorhanden.statistics, googleAnalytics: vorhanden.googleAnalytics });
+    setGespeichert(vorhanden);
   }, []);
 
-  useEffect(() => {
-    setConsent((prev) => ({ ...prev, functional: prev.googleMaps, statistics: prev.googleAnalytics }));
-  }, [consent.googleMaps, consent.googleAnalytics]);
-
-  const handleAcceptAll = () => {
-    const newConsent = { essential: true, functional: true, googleMaps: true, statistics: true, googleAnalytics: true };
-    setConsent(newConsent);
-    saveConsent(newConsent);
-    router.refresh();
-  };
-
-  const handleAcceptSelected = () => {
-    saveConsent(consent);
-    router.refresh();
-  };
-
-  const handleRejectAll = () => {
-    const newConsent = OHNE;
-    setConsent(newConsent);
-    saveConsent(newConsent);
-    router.refresh();
-  };
-
-  const handleClose = () => {
-    setShowBanner(false);
-    if (onClose) onClose();
-  };
-
-  const saveConsent = (consentState) => {
-    setCookie("cookieConsent", JSON.stringify(consentState), {
-      maxAge: 60 * 60 * 24 * 365,
+  const saveConsent = (auswahl) => {
+    const wert = einwilligungErstellen(auswahl);
+    setCookie(EINWILLIGUNG_COOKIE, JSON.stringify(wert), {
+      maxAge: EINWILLIGUNG_LAUFZEIT_S,
       path: "/",
       sameSite: "lax",
+      secure: typeof location !== "undefined" && location.protocol === "https:",
     });
+    setGespeichert(wert);
     // Google Analytics sofort (ohne Neuladen) starten bzw. stoppen
-    window.dispatchEvent(new CustomEvent("ov-consent", { detail: consentState }));
-
-    // Close banner last
+    window.dispatchEvent(new CustomEvent(EINWILLIGUNG_EREIGNIS, { detail: wert }));
     setShowBanner(false);
     if (onClose) onClose();
+    router.refresh();
   };
 
-  const toggleConsent = (category) => {
+  const handleAcceptAll = () => {
+    const alle = { essential: true, statistics: true, googleAnalytics: true };
+    setConsent(alle);
+    saveConsent(alle);
+  };
+
+  /** Nur die ausdrücklich angehakten Kategorien */
+  const handleAcceptSelected = () => saveConsent(consent);
+
+  /** „Nur notwendige“ und „Weiter ohne Einwilligung“: lehnt alles Optionale ab – unabhängig von Häkchen */
+  const handleRejectAll = () => {
+    setConsent(OHNE_EINWILLIGUNG);
+    saveConsent(OHNE_EINWILLIGUNG);
+  };
+
+  const toggleStatistik = () => {
     setConsent((prev) => {
-      const newConsent = { ...prev };
-
-      if (category === "functional") {
-        const newValue = !prev.functional;
-        newConsent.functional = newValue;
-        newConsent.googleMaps = newValue;
-      } else if (category === "statistics") {
-        const newValue = !prev.statistics;
-        newConsent.statistics = newValue;
-        newConsent.googleAnalytics = newValue;
-      } else {
-        newConsent[category] = !prev[category];
-      }
-
-      return newConsent;
+      const neu = !prev.statistics;
+      return { ...prev, statistics: neu, googleAnalytics: neu };
     });
   };
 
-  const toggleCategoryDetails = (category) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [category]: !prev[category],
-    }));
-  };
-
-  const toggleServiceDetails = (service) => {
-    setExpandedServices((prev) => ({
-      ...prev,
-      [service]: !prev[service],
-    }));
-  };
+  const toggleCategoryDetails = (category) => setExpandedSections((prev) => ({ ...prev, [category]: !prev[category] }));
+  const toggleServiceDetails = (service) => setExpandedServices((prev) => ({ ...prev, [service]: !prev[service] }));
 
   const toggleCompact = () => {
     setIsCompact(!isCompact);
@@ -230,21 +154,22 @@ export default function CookieBanner({ forceShow = false, onClose }) {
             <div>
               <h2 ref={kompaktTitel} tabIndex={-1} className="font-display text-[16.5px] font-bold text-ink-900 focus:outline-none">Ihre Privatsphäre zählt</h2>
               <p className="mt-1 text-[13.5px] leading-relaxed text-ink-600">
-                Mit Ihrer Zustimmung nutzen wir Google Analytics für Besucherstatistiken.
-                Ohne Zustimmung werden keine Daten an Google übertragen.
+                Mit Ihrer Zustimmung nutzen wir Google Analytics für Besucherstatistiken auf unseren öffentlichen Seiten.
+                Ohne Zustimmung wird Google Analytics nicht geladen und es werden keine Daten an Google übertragen.
+                Sie können Ihre Wahl jederzeit unter „Privatsphäre-Einstellungen“ im Fußbereich ändern.
               </p>
             </div>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-2">
             <button
               onClick={handleRejectAll}
-              className="h-11 rounded-full px-3 text-[14px] font-semibold text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors hover:bg-ink-50 cursor-pointer"
+              className="h-11 cursor-pointer rounded-full bg-ink-900 px-3 text-[14px] font-semibold text-white transition-colors hover:bg-ink-800"
             >
               Nur notwendige
             </button>
             <button
               onClick={handleAcceptAll}
-              className="h-11 rounded-full bg-ov-600 px-3 text-[14px] font-semibold text-white transition-colors hover:bg-ov-700 cursor-pointer"
+              className="h-11 cursor-pointer rounded-full bg-ov-600 px-3 text-[14px] font-semibold text-white transition-colors hover:bg-ov-700"
             >
               Alle akzeptieren
             </button>
@@ -253,10 +178,14 @@ export default function CookieBanner({ forceShow = false, onClose }) {
             ref={individuellKnopf}
             onClick={toggleCompact}
             aria-haspopup="dialog"
-            className="mt-3 w-full text-center text-[13px] font-medium text-ink-500 underline-offset-2 transition-colors hover:text-ink-800 hover:underline cursor-pointer"
+            className="mt-3 w-full cursor-pointer text-center text-[13px] font-medium text-ink-600 underline-offset-2 transition-colors hover:text-ink-800 hover:underline"
           >
             Individuelle Einstellungen
           </button>
+          <p className="mt-2 flex justify-center gap-3 text-[12.5px] text-ink-600">
+            <Link href="/datenschutz" className="underline underline-offset-2 hover:text-ink-800">Datenschutzerklärung</Link>
+            <Link href="/impressum" className="underline underline-offset-2 hover:text-ink-800">Impressum</Link>
+          </p>
         </div>
       </div>
     );
@@ -280,20 +209,22 @@ export default function CookieBanner({ forceShow = false, onClose }) {
           <div className="p-6 border-b border-gray-200 flex justify-between flex-col-reverse items-start md:flex-row relative">
             <div className="w-[100%] flex-1 md:w-[60%]">
               <p className="text-gray-600 text-sm">
-                Wir verwenden Cookies und ähnliche Technologien auf unserer Website und verarbeiten personenbezogene
-                Daten über Sie, wie Ihre IP-Adresse. Nur mit Ihrer Einwilligung wird Google Analytics geladen. Die Datenverarbeitung kann
-                mit Ihrer Einwilligung oder auf der Grundlage eines berechtigten Interesses erfolgen, dem Sie
-                widersprechen können. Sie haben das Recht, nur in essenzielle Services einzuwilligen und Ihre
-                Einwilligung zu einem späteren Zeitpunkt in der Datenschutzerklärung zu ändern oder zu widerrufen.
-                Nachfolgend finden Sie eine Übersicht über alle Services, die von dieser Website genutzt werden. Sie
-                können detaillierte Informationen zu jedem Service einsehen und diesen einzeln zustimmen oder von Ihrem
-                Widerspruchsrecht Gebrauch machen.
+                Technisch notwendige Cookies setzen wir ohne Einwilligung ein – etwa für die Anmeldung im Portal und um
+                diese Auswahl zu speichern. Google Analytics laden wir nur, wenn Sie der Kategorie „Statistik“ zustimmen.
+                Ihre Einwilligung ist freiwillig und für die Nutzung der Website nicht erforderlich. Sie können sie jederzeit
+                über „Privatsphäre-Einstellungen“ im Fußbereich jeder Seite widerrufen; der Widerruf wirkt für die Zukunft.
               </p>
+              {gespeichert && (
+                <p className="mt-3 text-xs text-gray-600">
+                  Ihre aktuelle Auswahl: Statistik {gespeichert.statistics ? "erlaubt" : "abgelehnt"}
+                  {zeitText(gespeichert.zeit) ? `, gespeichert am ${zeitText(gespeichert.zeit)}` : ""} (Fassung {gespeichert.v}).
+                </p>
+              )}
             </div>
             <div className={`flex flex-col space-y-3 w-[100%] md:w-[40%] md:ml-4 transition-all duration-200 mb-4`}>
               <button
                 onClick={handleAcceptAll}
-                className="px-4 py-2 text-white bg-[#4d7a1a] rounded-lg hover:bg-[#4d7a1a] transition-colors text-sm whitespace-nowrap cursor-pointer"
+                className="px-4 py-2 text-white bg-[#4d7a1a] rounded-lg hover:bg-[#3f6515] transition-colors text-sm whitespace-nowrap cursor-pointer"
               >
                 Alle akzeptieren
               </button>
@@ -301,22 +232,20 @@ export default function CookieBanner({ forceShow = false, onClose }) {
                 onClick={handleAcceptSelected}
                 className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm whitespace-nowrap cursor-pointer"
               >
-                Weiter ohne Einwilligung
+                Auswahl speichern
               </button>
               <button
                 onClick={handleRejectAll}
                 className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm whitespace-nowrap cursor-pointer"
               >
-                Alle ablehnen
+                Weiter ohne Einwilligung
               </button>
             </div>
           </div>
           <p className="text-gray-600 mt-1 p-6 pb-2 text-xs">
-            Google Analytics kann personenbezogene Daten in Drittländern (u. a. USA) verarbeiten. Indem Sie in die Nutzung
-            dieser Services einwilligen, erklären Sie sich auch mit der Verarbeitung Ihrer Daten in diesen unsicheren
-            Drittländern gemäß Art. 49 Abs. 1 lit. a DSGVO einverstanden. Dies birgt das Risiko, dass Ihre Daten von
-            Behörden zu Kontroll- und Überwachungszwecken verarbeitet werden, möglicherweise ohne die Möglichkeit eines
-            Rechtsbehelfs.
+            Google Analytics wird von Google Ireland Limited betrieben. Dabei können Daten auch an Google LLC in den USA
+            übermittelt werden. Die Übermittlung stützt sich auf den Angemessenheitsbeschluss der EU-Kommission zum
+            EU-US Data Privacy Framework (Art. 45 DSGVO), unter dem Google LLC zertifiziert ist.
           </p>
           <div className="mt-3">
             <button
@@ -347,12 +276,10 @@ export default function CookieBanner({ forceShow = false, onClose }) {
                 </div>
               </div>
               <p className="text-sm text-gray-500 ml-8">
-                Essenzielle Dienste sind für die grundlegende Funktionalität der Website erforderlich. Sie enthalten nur
-                technisch notwendige Services. Diese Dienste können nicht abgelehnt werden.
+                Essenzielle Cookies sind für die grundlegende Funktion der Website erforderlich (z. B. Anmeldung im Portal,
+                Speichern dieser Auswahl im Cookie „cookieConsent“ für 12 Monate). Sie können nicht abgelehnt werden.
               </p>
             </div>
-
-            {/* Funktionale Dienste von Drittanbietern (z. B. Karten) nutzt ÖkoInvest nicht – Kategorie entfällt */}
 
             {/* Statistik */}
             <div className="space-y-4 border border-[var(--secondary)]/20 p-6">
@@ -362,7 +289,7 @@ export default function CookieBanner({ forceShow = false, onClose }) {
                     type="checkbox"
                     id="statistics-cookies"
                     checked={consent.statistics}
-                    onChange={() => toggleConsent("statistics")}
+                    onChange={toggleStatistik}
                     className="h-5 w-5 rounded border-gray-300 text-navy-700 focus:ring-ov-500 cursor-pointer"
                   />
                   <span className="font-medium text-gray-900">Statistik (1)</span>
@@ -391,7 +318,7 @@ export default function CookieBanner({ forceShow = false, onClose }) {
                       type="checkbox"
                       id="google-analytics"
                       checked={consent.googleAnalytics}
-                      onChange={() => toggleConsent("googleAnalytics")}
+                      onChange={toggleStatistik}
                       className="h-5 w-5 rounded border-gray-300 text-navy-700 focus:ring-ov-500 cursor-pointer"
                     />
                     <span className="font-medium text-black">{cookieServices.statistics.googleAnalytics.title}</span>

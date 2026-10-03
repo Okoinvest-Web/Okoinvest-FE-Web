@@ -7,6 +7,16 @@
 // gelangen. Zusätzlich gilt je Fall eine Positivliste der Felder (Datensparsamkeit: z. B. keine
 // E-Mail, Telefonnummer oder IP-Adresse im Prompt).
 //
+// PII-Schwärzung (Paket B, Welle 1): Alle Freitexte (Beschreibungen, Angaben, Nachrichtenverläufe, Kommentare)
+// laufen vor dem Prompt durch schwaerzen(): E-Mail-Adressen, Telefonnummern und IBANs werden ersetzt.
+// Grenze: Namen in Freitexten werden NICHT erkannt; Telefonnummern ohne führende 0/+ und ohne Stichwort
+// („Tel.“, „Mobil“ …) ebenfalls nicht. Der Schalter unten ist deshalb Standard AUS.
+//
+// KI-Triage-Schalter: Die Triage verarbeitet Anfragen Dritter (Name, Ort, Freitexte). Bis Drittland-Übermittlung
+// und Datenschutzerklärung zum KI-Dienst geklärt sind (Strang R), ist sie im KI-Modus gesperrt.
+// Freischalten nur mit KI_TRIAGE=an (Umgebungsvariable). Ohne aktiven KI-Dienst (kein Schlüssel, KI_AUS=1)
+// bleibt der regelbasierte Vorschlag wie bisher nutzbar – dabei verlässt nichts den Server.
+//
 // Rückgabe: { objektArt, objektId, daten: {…}, quellen: [{ id, titel, text }], meta: {…} }
 
 import { PlattformFehler } from "../fehler";
@@ -17,6 +27,7 @@ import { checklisteFlaeche } from "../checkliste";
 import { datum, feldLabel, preisText, wertText } from "../format";
 import { phaseById } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import { kiAktiv } from "./konfig";
 
 const KENNUNG = /^[A-Za-z0-9][A-Za-z0-9_-]{2,60}$/;
 
@@ -26,8 +37,35 @@ export function kennungPruefen(id, was = "Objekt") {
   return s;
 }
 
+// ------------------------------------------------------------------ PII-Schwärzung
+
+const E_MAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*\.\p{L}{2,}/gu;
+const IBAN = /\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}\b/gi;
+// Telefon: beginnt mit +, 00 oder 0 und hat danach mindestens 7 Ziffern (Trenner: Leerzeichen / - . ( ))
+const TELEFON = /(?<![\p{L}\p{N}])(?:\+|00|0)(?:[\s/.()-]*\d){7,}/gu;
+// Telefon nach Stichwort, auch ohne führende 0 („Tel. 664 1234567“, „erreichbar unter 1234 5678“)
+const TELEFON_STICHWORT = /((?:tel(?:efon)?|phone|mobil|handy|fax|whats ?app|erreichbar unter|rufnummer)\.?:?\s*)\+?\d(?:[\s/.()-]*\d){5,}/giu;
+const DATUM = /^\d{1,2}\.\d{1,2}\.\d{2,4}$/;
+
+/** E-Mail-Adressen, Telefonnummern und IBANs in einem Freitext ersetzen (exportiert für Tests). */
+export function schwaerzen(text) {
+  return String(text ?? "")
+    .replace(E_MAIL, "[E-Mail entfernt]")
+    .replace(IBAN, (m) => (/\d{8,}/.test(m.replace(/\s/g, "")) ? "[IBAN entfernt]" : m))
+    .replace(TELEFON_STICHWORT, (_, vor) => `${vor}[Telefon entfernt]`)
+    .replace(TELEFON, (m) => (DATUM.test(m.trim()) ? m : "[Telefon entfernt]"));
+}
+
+/** Darf die Triage im KI-Modus laufen? Nur mit KI_TRIAGE=an (Standard: aus). */
+export function kiTriageFreigegeben() {
+  return String(process.env.KI_TRIAGE || "").trim().toLowerCase() === "an";
+}
+
+/** Feldnamen, deren Inhalt grundsätzlich nicht in einen Prompt gehört */
+const PII_FELD = /mail|telefon|phone|^tel$|mobil|handy|fax|iban|bic|^ip$|ipadresse|geburt|ausweis|steuer.?id|passwort|token/i;
+
 const kurzText = (s, max) => {
-  const t = String(s ?? "").replace(/\r/g, "").trim();
+  const t = schwaerzen(String(s ?? "").replace(/\r/g, "")).trim();
   return t.length > max ? `${t.slice(0, max)} …` : t;
 };
 
@@ -62,7 +100,7 @@ export async function kontextExpose(b, n, { projektId }) {
       inbetriebnahmeGeplant: p.codGeplant,
       preisindikation: preisText(p),
       bisherigeBeschreibung: kurzText(p.beschreibung, 4000),
-      bisherigeHighlights: p.highlights,
+      bisherigeHighlights: (p.highlights || []).map((h) => kurzText(h, 300)),
       einordnungIntern: nichtLeer(Object.fromEntries(EXPOSE_VERTRAULICH_EINORDNUNG.map((k) => [VERTRAULICH_FELDER[k], vt[k]]))),
       unterlagenVorhanden: erfuellt,
       unterlagenFehlend: offen,
@@ -75,13 +113,21 @@ export async function kontextExpose(b, n, { projektId }) {
 
 // ------------------------------------------------------------------ Triage (Backoffice)
 
-export async function kontextTriage(b, n, { vorgangId }) {
+// nurRegel: Aufruf aus ki/index.js im Regelmodus (Schalter aus) – der Kontext geht dann nicht an den KI-Dienst.
+export async function kontextTriage(b, n, { vorgangId }, { nurRegel = false } = {}) {
+  if (!nurRegel && kiAktiv() && !kiTriageFreigegeben()) {
+    throw new PlattformFehler(
+      403,
+      "Die KI-Triage ist abgeschaltet, bis der Datenschutz beim KI-Dienst geklärt ist. Bitte die Anfrage manuell sichten.",
+      "ki_triage_aus"
+    );
+  }
   const id = kennungPruefen(vorgangId, "Vorgang");
   const v = await b.vorgang(n, id);
   const thread = await b.nachrichten(n, "vorgang", id, { markieren: false });
   const k = v.kontakt || {};
   const zusatz = Object.entries(v.daten || {})
-    .filter(([, x]) => x !== "" && x !== null && x !== undefined)
+    .filter(([key, x]) => x !== "" && x !== null && x !== undefined && !PII_FELD.test(key))
     .map(([key, x]) => [feldLabel(key), kurzText(wertText(x), 1500)]);
   const nachrichten = (thread?.nachrichten || [])
     .filter((m) => !m.system)
@@ -199,7 +245,7 @@ export async function kontextFlaeche(b, n, { flaecheId }) {
     objektArt: "flaeche",
     objektId: f.id,
     daten: nichtLeer({
-      bezeichnung: f.bezeichnung,
+      bezeichnung: kurzText(f.bezeichnung, 200),
       land: LAENDER[f.land],
       bundeslandOderKanton: f.bundesland,
       groesseHa: f.ha,
@@ -207,7 +253,7 @@ export async function kontextFlaeche(b, n, { flaecheId }) {
       agriPvGewuenscht: f.agri ? "ja" : "nein",
       statusAktuell: s.label,
       statusErklaerung: s.text,
-      ablehnungsgrund: f.status === "abgelehnt" ? f.ablehnGrund : "",
+      ablehnungsgrund: f.status === "abgelehnt" ? kurzText(f.ablehnGrund, 1000) : "",
       schrittImAblauf: PROZESSE.flaeche.pipeline.includes(f.status) ? `${PROZESSE.flaeche.pipeline.indexOf(f.status) + 1} von ${PROZESSE.flaeche.pipeline.length}` : "",
       wieEsWeitergeht: naechsteSchritteFlaeche(f),
       pachtangebot: pa ? nichtLeer({ euroProHaUndJahr: pa.euroProHaJahr, laufzeitJahre: pa.laufzeitJahre, verlaengerung: pa.verlaengerung, erlaeuterung: kurzText(pa.text, 1500), vom: datum(pa.am) }) : null,
@@ -235,7 +281,7 @@ export async function kontextNachricht(b, n, { bezugArt, bezugId }) {
     objektArt: bezugArt,
     objektId: id,
     daten: nichtLeer({
-      thema: t.titel || BEZUG_LABEL[bezugArt],
+      thema: kurzText(t.titel, 200) || BEZUG_LABEL[bezugArt],
       bezugsart: BEZUG_LABEL[bezugArt],
       ichSchreibeAls: alsBackoffice ? "ÖkoInvest Backoffice" : "Kundin/Kunde der Plattform an das ÖkoInvest-Backoffice",
       meinName: [n.vorname, n.nachname].filter(Boolean).join(" "),

@@ -1,0 +1,11 @@
+# security.txt nach RFC 9116 (https://www.rfc-editor.org/rfc/rfc9116)
+#
+# ENTWURF - TODO(Inhaber, W0-3): Kontakt ist NOCH NICHT FREIGEGEBEN.
+# Die Pflichtzeile "Contact:" fehlt deshalb bewusst. Vor dem Livegang ergaenzen, z. B. ein
+# Funktionspostfach als "Contact: mailto:<freigegebene Adresse>" und/oder ein Formular als
+# "Contact: https://www.oekoinvest.com/<freigegebener Pfad>". Keine personenbezogene Adresse.
+# Expires spaetestens alle 12 Monate erneuern (RFC 9116, Abschnitt 2.5.5).
+
+Expires: 2027-04-01T00:00:00.000Z
+Preferred-Languages: de, en
+Canonical: https://www.oekoinvest.com/.well-known/security.txt

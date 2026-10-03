@@ -33,6 +33,7 @@ import * as demo from "./demo";
 import * as frappe from "./frappe";
 import { PlattformFehler } from "../fehler";
 import { BACKOFFICE_OPERATIONEN } from "./frappe/backoffice";
+import { demoPruefung } from "../demoGuard";
 
 export const OPERATIONEN = [
   "anmelden", "nutzerFuerSitzung", "registrieren", "emailBestaetigen", "passwortVergessen", "passwortSetzen", "passwortAendern",
@@ -55,9 +56,19 @@ if (process.env.NODE_ENV !== "production") {
 export const KONFIG_FEHLER =
   "Das Plattform-Backend ist nicht konfiguriert. Für den Betrieb PLATTFORM_BACKEND=frappe setzen (siehe docs/PLATTFORM.md) – oder PLATTFORM_DEMO=1 für eine reine Vorführung.";
 
+let demoSperreGemeldet = false;
+
 export function backendName() {
   if (process.env.PLATTFORM_BACKEND === "frappe") return "frappe";
-  if (process.env.NODE_ENV === "production" && process.env.PLATTFORM_DEMO !== "1") return null;
+  // Demo-Guard (Paket A): im Produktions-Build nie auf der Produktionsdomain, nie ohne Basis-URL
+  const pruefung = demoPruefung();
+  if (!pruefung.erlaubt) {
+    if (process.env.PLATTFORM_DEMO === "1" && !demoSperreGemeldet) {
+      demoSperreGemeldet = true;
+      console.error(`[plattform] Demo-Backend gesperrt: ${pruefung.grund}`);
+    }
+    return null;
+  }
   return "demo";
 }
 

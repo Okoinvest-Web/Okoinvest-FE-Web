@@ -20,13 +20,35 @@ export const TARIF_ANNAHMEN = {
   festpreisCt: 36, // durchschnittlicher Haushalts-Festpreis in ct/kWh brutto (Orientierung)
 };
 
+// Abrufschutz (Masterplan S0 Nr. 8): Ein hängender Drittanbieter darf Render-/ISR-Worker von
+// Startseite, /energie-live und /api/energie/live nicht blockieren. Je Versuch höchstens
+// TIMEOUT_MS, insgesamt VERSUCHE Versuche mit wachsender Pause; 4xx wird nicht wiederholt.
+// Schlimmster Fall je Quelle: 2 × 6 s + 0,4 s ≈ 12,4 s, danach greift der Fallback des Aufrufers.
+const TIMEOUT_MS = 6000;
+const VERSUCHE = 2;
+const PAUSE_MS = 400;
+
+const warte = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function holeJson(url, revalidate) {
-  const res = await fetch(url, {
-    next: { revalidate },
-    headers: { Accept: "application/json", "User-Agent": "oekoinvest energy widget" },
-  });
-  if (!res.ok) throw new Error(`${url} -> ${res.status}`);
-  return res.json();
+  let letzterFehler;
+  for (let versuch = 1; versuch <= VERSUCHE; versuch++) {
+    try {
+      const res = await fetch(url, {
+        next: { revalidate },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+        headers: { Accept: "application/json", "User-Agent": "oekoinvest energy widget" },
+      });
+      if (res.ok) return await res.json();
+      letzterFehler = new Error(`${url} -> ${res.status}`);
+      // Client-Fehler (außer 408/429) ändern sich durch Wiederholen nicht
+      if (res.status < 500 && res.status !== 408 && res.status !== 429) break;
+    } catch (e) {
+      letzterFehler = e?.name === "TimeoutError" ? new Error(`${url} -> Timeout nach ${TIMEOUT_MS} ms`) : e;
+    }
+    if (versuch < VERSUCHE) await warte(PAUSE_MS * versuch);
+  }
+  throw letzterFehler;
 }
 
 /** Tagesbeginn (lokal Europe/Berlin) als ISO-Datum YYYY-MM-DD */

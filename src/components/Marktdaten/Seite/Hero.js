@@ -4,6 +4,7 @@ import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import Button from "@/components/ui/Button";
 import { AUSSCHREIBUNGEN, LETZTE_AUSSCHREIBUNG, MAX_ZUSCHLAG, MIN_ZUSCHLAG } from "@/data/marktdaten";
 import { fmt } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 const MONATE = ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."];
 const kurz = (iso) => `${MONATE[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
@@ -16,7 +17,7 @@ export default function Hero({ standText }) {
       <div aria-hidden="true" className="pointer-events-none absolute -left-40 -top-40 -z-10 h-[520px] w-[520px] rounded-full bg-ov-500/20 blur-[120px]" />
 
       <div className="ov-container pb-24 pt-6 sm:pt-8 md:pb-32 md:pt-10">
-        <Breadcrumbs items={[{ name: "Wissen", href: "/ratgeber" }, { name: "Marktdaten" }]} dark className="ov-hero-in mb-8 md:mb-12" />
+        <Breadcrumbs items={[{ name: "Wissen", href: "/wissen/ratgeber" }, { name: "Marktdaten" }]} dark className="ov-hero-in mb-8 md:mb-12" />
         <div className="grid items-center gap-y-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-x-14 xl:gap-x-20">
           <div className="max-w-[36rem]">
             <p className="ov-hero-in inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-3.5 py-1.5 text-[12.5px] font-semibold uppercase tracking-[0.14em] text-ov-300 ring-1 ring-inset ring-white/15" style={{ "--ov-delay": "40ms" }}>
@@ -31,7 +32,7 @@ export default function Hero({ standText }) {
             </p>
             <div className="ov-hero-in mt-8 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-10" style={{ "--ov-delay": "260ms" }}>
               <Button href="#ausschreibungen" size="lg" icon={ArrowDown} className="w-full sm:w-auto">Zu den Zuschlägen</Button>
-              <Button href="/rechner/solarpark" size="lg" variant="outlineLight" className="w-full sm:w-auto">Rendite rechnen</Button>
+              <Button href={pfad("/rechner/solarpark")} size="lg" variant="outlineLight" className="w-full sm:w-auto">Rendite rechnen</Button>
             </div>
             <p className="ov-hero-in mt-4 text-[13px] text-white/70" style={{ "--ov-delay": "300ms" }}>Datenstand {standText} · Börsenpreis live weiter unten</p>
           </div>

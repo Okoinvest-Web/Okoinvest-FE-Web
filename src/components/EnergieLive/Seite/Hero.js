@@ -19,7 +19,7 @@ export default function Hero({ children }) {
       <div aria-hidden="true" className="pointer-events-none absolute -right-40 top-40 -z-10 h-[460px] w-[460px] rounded-full bg-sun-400/10 blur-[120px]" />
 
       <div className="ov-container pb-14 pt-6 sm:pt-8 md:pb-20 md:pt-10">
-        <Breadcrumbs items={[{ name: "Wissen", href: "/ratgeber" }, { name: "Strommarkt live" }]} dark className="ov-hero-in mb-8 md:mb-10" />
+        <Breadcrumbs items={[{ name: "Wissen", href: "/wissen/ratgeber" }, { name: "Strommarkt live" }]} dark className="ov-hero-in mb-8 md:mb-10" />
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-end lg:gap-16">
           <div>

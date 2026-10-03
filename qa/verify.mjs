@@ -6,7 +6,11 @@
 //   2. selbsttest() aller Rechner                       – Gate
 //   3. Claim-Lint                                       – Bericht (Welle 1), Gate mit --streng
 //   4. axe auf 10 Kernseiten (Ratsche gegen Baseline)   – Gate, braucht Dev-Server
-//   5. Funnel-E2E mit abgefangenen POSTs                – Gate, braucht Dev-Server
+//   5. E2E (Glob qa/e2e/*.e2e.mjs, POSTs abgefangen)   – Gate, braucht Dev-Server
+//   6. Faktenregister-Check (qa/fakten-check.mjs)       – Gate (läuft vor 4/5): 0 Fakten ohne
+//      Quelle/Abruf, kein abgelaufener Klasse-A-Wert; zu_pruefen und abgelaufene B/C = Warnung
+//   7. Länderlinks (scripts/codemod-links.mjs --pruefen) – Gate (läuft vor 4/5): 0 harte Links auf Pfade,
+//      die mit dem Länderrouting (Welle 2) nach /de, /at, /ch bzw. /wissen/ratgeber umgezogen sind
 //
 // Optionen:
 //   --ohne-browser   Schritte 4–5 auslassen (Ergebnis dann ausdrücklich „unvollständig“)
@@ -36,17 +40,21 @@ const OHNE_WARNUNG = ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "--impor
 const stempel = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 const claimJson = join(OUT, `claims-${stempel}.json`);
 const axeJson = join(OUT, `axe-${stempel}.json`);
+const faktenJson = join(OUT, `fakten-${stempel}.json`);
 
 const SCHRITTE = [
   {
     nr: 1,
     name: "Unit- und Charakterisierungstests (node:test)",
-    befehl: [...OHNE_WARNUNG, "--test", "--test-concurrency=1", "test/charakterisierung/*.test.mjs", "test/rechner/eigenschaften.test.mjs", "test/qa/*.test.mjs", "src/**/*.test.mjs"],
+    befehl: [...OHNE_WARNUNG, "--test", "--test-concurrency=1", "test/charakterisierung/*.test.mjs", "test/rechner/eigenschaften.test.mjs", "test/rechner/laender.test.mjs", "test/qa/*.test.mjs", "src/**/*.test.mjs"],
   },
   { nr: 2, name: "selbsttest() aller Rechner", befehl: [...OHNE_WARNUNG, "--test", "test/rechner/selbsttest.test.mjs"] },
   { nr: 3, name: "Claim-Lint", befehl: ["qa/claim-lint.mjs", "--json", claimJson, ...(streng ? ["--streng"] : [])], bericht: !streng },
+  // Nr. 6 läuft bewusst vor den Browser-Schritten (schnell, ohne Dev-Server); die Nummern 4/5 bleiben stabil.
+  { nr: 6, name: "Faktenregister-Check (Quelle, Stand, Klasse A)", befehl: ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "qa/fakten-check.mjs", "--json", faktenJson] },
+  { nr: 7, name: "Länderlinks: keine harten Links auf alte Pfade", befehl: ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "scripts/codemod-links.mjs", "--pruefen"] },
   { nr: 4, name: "axe – 10 Kernseiten", befehl: ["qa/axe.mjs", "--json", axeJson], browser: true },
-  { nr: 5, name: "Funnel-E2E (POSTs abgefangen)", befehl: [...OHNE_WARNUNG, "--test", "--test-concurrency=1", "qa/e2e/funnel.e2e.mjs"], browser: true },
+  { nr: 5, name: "E2E qa/e2e/*.e2e.mjs (POSTs abgefangen)", befehl: [...OHNE_WARNUNG, "--test", "--test-concurrency=1", "qa/e2e/*.e2e.mjs"], browser: true },
 ];
 
 function laufe(befehl) {
@@ -91,6 +99,14 @@ for (const s of SCHRITTE) {
 }
 
 const gesamt = Math.round((Date.now() - start) / 1000);
+let fakten = null;
+if (existsSync(faktenJson)) {
+  try {
+    fakten = JSON.parse(readFileSync(faktenJson, "utf8")).zusammenfassung;
+  } catch {
+    /* Bericht unlesbar – nur Zusammenfassung fehlt */
+  }
+}
 let claims = null;
 if (existsSync(claimJson)) {
   try {
@@ -103,7 +119,14 @@ if (existsSync(claimJson)) {
 console.log(`\n${"═".repeat(78)}\nverify – Zusammenfassung`);
 for (const e of ergebnis) {
   const zeichen = { ok: "✓", fehler: "✗", bericht: "•", übersprungen: "–" }[e.status];
-  const extra = e.nr === 3 && claims ? ` (${claims.fehler} Fehler, ${claims.hinweise} Hinweise – Bericht)` : e.grund ? ` (${e.grund})` : "";
+  const extra =
+    e.nr === 3 && claims
+      ? ` (${claims.fehler} Fehler, ${claims.hinweise} Hinweise – Bericht)`
+      : e.nr === 6 && fakten
+        ? ` (${fakten.fakten} Fakten, A abgelaufen ${fakten.abgelaufenKlasseA}, zu prüfen ${fakten.zuPruefen})`
+        : e.grund
+          ? ` (${e.grund})`
+          : "";
   console.log(`  ${zeichen} ${e.nr} ${e.name.padEnd(46)} ${String(e.sekunden).padStart(4)} s${extra}`);
 }
 const fehlgeschlagen = ergebnis.filter((e) => e.status === "fehler");
@@ -123,7 +146,8 @@ const protokoll = {
   sekunden: gesamt,
   schritte: ergebnis.map(({ nr, name, status, code, sekunden, grund }) => ({ nr, name, status, code, sekunden, grund })),
   claims,
-  berichte: { claims: existsSync(claimJson) ? claimJson : null, axe: existsSync(axeJson) ? axeJson : null },
+  fakten,
+  berichte: { claims: existsSync(claimJson) ? claimJson : null, axe: existsSync(axeJson) ? axeJson : null, fakten: existsSync(faktenJson) ? faktenJson : null },
 };
 const datei = join(OUT, `verify-${stempel}.json`);
 writeFileSync(datei, JSON.stringify(protokoll, null, 1), "utf8");

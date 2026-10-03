@@ -57,7 +57,9 @@ export const REGELN = [
 export const CH_DATEIEN = [
   "src/data/regionen/schweiz.js",
   "src/content/ratgeber/freiflaechen-pv-schweiz.js",
-  "src/app/ch/**", // ab Welle 2 (Länderpfade)
+  // Welle 2: /ch-Seiten liegen in der gemeinsamen Länderroute; CH-Texte stehen in Komponenten/Daten mit land: "CH"
+  "src/app/(laender)/[land]/marktzugang-check/**",
+  "src/app/(laender)/[land]/parzellen-vorpruefung/**",
   "src/content/ch/**",
 ];
 export const CH_ZEILE = /\bland\s*:\s*["'](CH|ch)["']/;
@@ -68,11 +70,11 @@ export const CH_REGEL = { id: "ch-eszett", art: "ch-eszett", stufe: "fehler", te
 // (Testdaten dort sind gewollt; Logins sind keine Werbung).
 export const STANDARD_UMFANG = ["src/app/**", "src/components/**", "src/data/**", "src/content/**", "public/llms.txt"];
 export const AUSGENOMMEN = [
-  "src/app/portal/**",
+  "src/app/(stamm)/portal/**",
   "src/app/api/**",
   "src/components/Portal/**",
-  "src/app/design/**", // interner Styleguide
-  "src/app/login/page.js", // Demo-Konten nur bei istDemo() – Nachweis „ohne Demo keine Testdaten“ gehört in die E2E (Paket D)
+  "src/app/(stamm)/design/**", // interner Styleguide
+  "src/app/(stamm)/login/page.js", // Demo-Konten nur bei istDemo() – Nachweis „ohne Demo keine Testdaten“ gehört in die E2E (Paket D)
   "**/*.test.*",
   "**/*.css",
   "src/content/ratgeber/README.md",
@@ -82,19 +84,19 @@ export const AUSGENOMMEN = [
 // Damit jedes Paket seine eigenen Dateien prüfen kann: --paket D
 export const PAKETE = {
   D: [
-    "src/app/freiflaeche/**",
-    "src/app/landwirte/**",
-    "src/app/investoren/**",
-    "src/app/en/**",
-    "src/app/projektboerse/page.js",
-    "src/app/projektboerse/[slug]/**",
+    "src/app/(laender)/[land]/freiflaeche/**",
+    "src/app/(laender)/[land]/landwirte/**",
+    "src/app/(stamm)/investoren/**",
+    "src/app/(en)/en/**",
+    "src/app/(stamm)/projektboerse/page.js",
+    "src/app/(stamm)/projektboerse/[slug]/**",
     "src/components/Home/**",
     "src/components/Reststrom/Seite/**",
     "src/data/unternehmen.js",
     "src/data/referenzen.js",
-    "src/app/impressum/**",
-    "src/app/barrierefreiheit/**",
-    "src/app/genossenschaft/**",
+    "src/app/(stamm)/impressum/**",
+    "src/app/(stamm)/barrierefreiheit/**",
+    "src/app/(laender)/[land]/genossenschaft/**",
   ],
   E: ["src/lib/invest/markt.js", "src/lib/rechner/**", "src/components/Rechner/**"],
   G: [
@@ -102,8 +104,8 @@ export const PAKETE = {
     "src/data/lexikon.js",
     "src/data/faq.js",
     "src/data/regionen/**",
-    "src/app/kommunen/**",
-    "src/app/rechner/kommune/page.js",
+    "src/app/(laender)/[land]/kommunen/**",
+    "src/app/(laender)/[land]/rechner/kommune/page.js",
   ],
-  I: ["src/app/robots.js", "src/app/sitemap.js", "src/app/layout.js", "src/data/site.js"],
+  I: ["src/app/robots.js", "src/app/sitemap.js", "src/components/Wurzel/Wurzel.js", "src/data/site.js"],
 };

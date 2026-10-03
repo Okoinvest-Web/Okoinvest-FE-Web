@@ -7,6 +7,7 @@
 
 import { PACHT, FREIFLAECHE, STAND } from "@/lib/invest/markt";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag zur Übernahme */
 // GNotKG § 52 Abs. 2: Bei befristeten Nutzungsrechten zählt der auf die Dauer entfallende Wert,
@@ -72,7 +73,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Für den Eigentümer ist die Dienstbarkeit zunächst eine Belastung: Sie steht in Abteilung II des Grundbuchs, mindert den Beleihungsspielraum und überdauert jeden Eigentümerwechsel. Umgekehrt ist sie die Voraussetzung dafür, dass ein Projekt von rund ${fmt(MWP, 0)} MWp auf ${fmt(HA)} ha überhaupt gebaut wird und die vereinbarte Pacht über ${PACHT.laufzeit} Jahre fließt. Die Grundzüge des Pachtvertrags erklärt der Ratgeber [Pachtvertrag für Solarparks](/ratgeber/pachtvertrag-solarpark); dieser Beitrag geht in die Tiefe des Grundbuchrechts.`,
+          text: `Für den Eigentümer ist die Dienstbarkeit zunächst eine Belastung: Sie steht in Abteilung II des Grundbuchs, mindert den Beleihungsspielraum und überdauert jeden Eigentümerwechsel. Umgekehrt ist sie die Voraussetzung dafür, dass ein Projekt von rund ${fmt(MWP, 0)} MWp auf ${fmt(HA)} ha überhaupt gebaut wird und die vereinbarte Pacht über ${PACHT.laufzeit} Jahre fließt. Die Grundzüge des Pachtvertrags erklärt der Ratgeber [Pachtvertrag für Solarparks](/wissen/ratgeber/pachtvertrag-solarpark); dieser Beitrag geht in die Tiefe des Grundbuchrechts.`,
         },
         {
           typ: "kasten",
@@ -145,7 +146,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Für Eigentümer bedeutet die Übertragbarkeit: Die Dienstbarkeit kann ohne Ihre Zustimmung auf eine andere Gesellschaft übergehen. Der Pachtvertrag geht aber nicht automatisch mit. Achten Sie deshalb darauf, dass der Vertrag die Übertragung der Dienstbarkeit nur zusammen mit dem Pachtvertrag erlaubt, dass Sie informiert werden und dass der Erwerber alle Pflichten übernimmt – insbesondere Pacht, Haftung und [Rückbau](/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).",
+          text: "Für Eigentümer bedeutet die Übertragbarkeit: Die Dienstbarkeit kann ohne Ihre Zustimmung auf eine andere Gesellschaft übergehen. Der Pachtvertrag geht aber nicht automatisch mit. Achten Sie deshalb darauf, dass der Vertrag die Übertragung der Dienstbarkeit nur zusammen mit dem Pachtvertrag erlaubt, dass Sie informiert werden und dass der Erwerber alle Pflichten übernimmt – insbesondere Pacht, Haftung und [Rückbau](/wissen/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).",
         },
       ],
     },
@@ -230,7 +231,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Für Eigentümer von Trassengrundstücken ist die Dienstbarkeit meist weniger belastend als für die Parkfläche: Das Kabel liegt im Boden, die Fläche bleibt bewirtschaftbar. Regeln sollten Sie dennoch Verlegetiefe, Breite des Schutzstreifens, Entschädigung für Flurschäden und die Wiederherstellung von Drainagen. Üblich ist eine Einmalzahlung je laufendem Meter oder ein jährliches Entgelt. Wer mehrere Flächen besitzt, sollte die Trasse gesondert verhandeln, statt sie im Pachtvertrag der Parkfläche „mitlaufen“ zu lassen. Mehr zum technischen Hintergrund im Ratgeber [Netzanschluss für Solarparks](/ratgeber/netzanschluss-solarpark).",
+          text: "Für Eigentümer von Trassengrundstücken ist die Dienstbarkeit meist weniger belastend als für die Parkfläche: Das Kabel liegt im Boden, die Fläche bleibt bewirtschaftbar. Regeln sollten Sie dennoch Verlegetiefe, Breite des Schutzstreifens, Entschädigung für Flurschäden und die Wiederherstellung von Drainagen. Üblich ist eine Einmalzahlung je laufendem Meter oder ein jährliches Entgelt. Wer mehrere Flächen besitzt, sollte die Trasse gesondert verhandeln, statt sie im Pachtvertrag der Parkfläche „mitlaufen“ zu lassen. Mehr zum technischen Hintergrund im Ratgeber [Netzanschluss für Solarparks](/wissen/ratgeber/netzanschluss-solarpark).",
         },
         {
           typ: "kasten",
@@ -251,7 +252,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Für Eigentümer ist wichtig, dass die Vormerkung wieder verschwindet, wenn das Projekt scheitert. Lange Reservierungen mit Vormerkung, aber ohne Entgelt, binden die Fläche ohne Gegenleistung. Faire Verträge sehen ein Reservierungsentgelt von etwa " + fmt(PACHT.reservierungProHa.min) + " bis " + fmt(PACHT.reservierungProHa.max) + " € je Hektar vor und verpflichten den Entwickler, die Löschung der Vormerkung zu bewilligen, sobald er vom Vertrag zurücktritt oder eine Frist verstreicht. Wie der Weg bis zur Baureife abläuft, zeigt der [Projektablauf](/prozess).",
+          text: "Für Eigentümer ist wichtig, dass die Vormerkung wieder verschwindet, wenn das Projekt scheitert. Lange Reservierungen mit Vormerkung, aber ohne Entgelt, binden die Fläche ohne Gegenleistung. Faire Verträge sehen ein Reservierungsentgelt von etwa " + fmt(PACHT.reservierungProHa.min) + " bis " + fmt(PACHT.reservierungProHa.max) + " € je Hektar vor und verpflichten den Entwickler, die Löschung der Vormerkung zu bewilligen, sobald er vom Vertrag zurücktritt oder eine Frist verstreicht. Wie der Weg bis zur Baureife abläuft, zeigt der [Projektablauf](/de/prozess).",
         },
       ],
     },
@@ -301,7 +302,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Kosten des Rückbaus selbst sind mit rund ${fmt(FREIFLAECHE.rueckbauProKwp)} € je kWp überschaubar, entscheidend ist die Absicherung gegen den Ausfall des Betreibers. Worauf es bei der Bürgschaft ankommt, erklärt der Ratgeber [Rückbau und Rückbaubürgschaft](/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).`,
+          text: `Die Kosten des Rückbaus selbst sind mit rund ${fmt(FREIFLAECHE.rueckbauProKwp)} € je kWp überschaubar, entscheidend ist die Absicherung gegen den Ausfall des Betreibers. Worauf es bei der Bürgschaft ankommt, erklärt der Ratgeber [Rückbau und Rückbaubürgschaft](/wissen/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).`,
         },
       ],
     },
@@ -312,11 +313,11 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: "**In Österreich wird das Nutzungsrecht als Dienstbarkeit (Servitut) nach §§ 472 ff. ABGB vereinbart; bei verbücherten Grundstücken entsteht es erst mit der Eintragung im Grundbuch (§ 481 ABGB).** Die Last steht im Lastenblatt (C-Blatt), der Rang richtet sich nach dem Eingang beim Grundbuchgericht. Auch hier verlangen Banken den Vorrang vor bestehenden Pfandrechten. Die Landwirtschaftskammern empfehlen, dass der Betreiber Verbücherung und spätere Löschung bezahlt. Als Alternative zur Servitut kommt ein Baurecht nach dem Baurechtsgesetz in Betracht, das in der Praxis bei Freiflächenanlagen seltener genutzt wird. Zur Widmung und zum Förderrahmen siehe [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich).",
+          text: "**In Österreich wird das Nutzungsrecht als Dienstbarkeit (Servitut) nach §§ 472 ff. ABGB vereinbart; bei verbücherten Grundstücken entsteht es erst mit der Eintragung im Grundbuch (§ 481 ABGB).** Die Last steht im Lastenblatt (C-Blatt), der Rang richtet sich nach dem Eingang beim Grundbuchgericht. Auch hier verlangen Banken den Vorrang vor bestehenden Pfandrechten. Die Landwirtschaftskammern empfehlen, dass der Betreiber Verbücherung und spätere Löschung bezahlt. Als Alternative zur Servitut kommt ein Baurecht nach dem Baurechtsgesetz in Betracht, das in der Praxis bei Freiflächenanlagen seltener genutzt wird. Zur Widmung und zum Förderrahmen siehe [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich).",
         },
         {
           typ: "p",
-          text: `**In der Schweiz werden Nutzungsrechte je nach Gestaltung als Dienstbarkeit (Art. 730 ff. bzw. Art. 781 ZGB) oder als Baurecht (Art. 779 ff. ZGB) im Grundbuch gesichert.** Ein Baurecht, das für mindestens ${CH_BAURECHT_DAUERND_JAHRE} Jahre eingeräumt wird, kann als selbständiges und dauerndes Recht ein eigenes Grundbuchblatt erhalten; die Höchstdauer beträgt ${CH_BAURECHT_MAX_JAHRE} Jahre. Für die Begründung ist nach aktuellem Stand in der Regel eine öffentliche Beurkundung erforderlich. Weil Freiflächenanlagen in der Schweiz raumplanerisch stark eingeschränkt sind, betrifft das vor allem alpine Anlagen und Sonderstandorte – Einordnung unter [Freiflächen-PV in der Schweiz](/ratgeber/freiflaechen-pv-schweiz).`,
+          text: `**In der Schweiz werden Nutzungsrechte je nach Gestaltung als Dienstbarkeit (Art. 730 ff. bzw. Art. 781 ZGB) oder als Baurecht (Art. 779 ff. ZGB) im Grundbuch gesichert.** Ein Baurecht, das für mindestens ${CH_BAURECHT_DAUERND_JAHRE} Jahre eingeräumt wird, kann als selbständiges und dauerndes Recht ein eigenes Grundbuchblatt erhalten; die Höchstdauer beträgt ${CH_BAURECHT_MAX_JAHRE} Jahre. Für die Begründung ist nach aktuellem Stand in der Regel eine öffentliche Beurkundung erforderlich. Weil Freiflächenanlagen in der Schweiz raumplanerisch stark eingeschränkt sind, betrifft das vor allem alpine Anlagen und Sonderstandorte – Einordnung unter [Freiflächen-PV in der Schweiz](/wissen/ratgeber/freiflaechen-pv-schweiz).`,
         },
       ],
     },
@@ -328,17 +329,17 @@ const artikel = {
         {
           typ: "ablauf",
           schritte: [
-            ["Grundbuchauszug und Flurkarte besorgen", "Aktuellen Auszug anfordern, eingetragene Rechte und Miteigentümer prüfen. Erste Einschätzung der Fläche im [Flächencheck](/flaechencheck)."],
-            ["Pacht und Dienstbarkeit zusammen verhandeln", "Umfang, Ausübungsbereich, Befristung und Löschungspflicht gehören in denselben Verhandlungsschritt wie die Pachthöhe. Größenordnung der Pacht im [Pachtrechner](/rechner/pacht)."],
+            ["Grundbuchauszug und Flurkarte besorgen", "Aktuellen Auszug anfordern, eingetragene Rechte und Miteigentümer prüfen. Erste Einschätzung der Fläche im [Flächencheck](/de/flaechencheck)."],
+            ["Pacht und Dienstbarkeit zusammen verhandeln", "Umfang, Ausübungsbereich, Befristung und Löschungspflicht gehören in denselben Verhandlungsschritt wie die Pachthöhe. Größenordnung der Pacht im [Pachtrechner](/de/rechner/pacht)."],
             ["Hausbank informieren", "Rangrücktritt früh anfragen und Kosten dem Betreiber zuweisen."],
             ["Trassen und Zufahrt klären", "Welche Nachbarflächen betroffen sind und wer sie sichert, sollte vor Baubeginn feststehen."],
-            ["Steuerliche Folgen prüfen lassen", "Die Verpachtung kann Erbschaft- und Grundsteuer verändern – siehe [Erbschaft- und Grundsteuer bei PV-Pacht](/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer) und [Steuern für Landwirte mit PV](/ratgeber/photovoltaik-landwirt-steuern)."],
+            ["Steuerliche Folgen prüfen lassen", "Die Verpachtung kann Erbschaft- und Grundsteuer verändern – siehe [Erbschaft- und Grundsteuer bei PV-Pacht](/wissen/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer) und [Steuern für Landwirte mit PV](/wissen/ratgeber/photovoltaik-landwirt-steuern)."],
             ["Beurkunden oder beglaubigen", "Bewilligung beim Notar unterzeichnen, Vollzug durch den Notar überwachen lassen, Eintragungsnachricht aufbewahren."],
           ],
         },
         {
           typ: "tool",
-          href: "/flaeche-verpachten",
+          href: pfad("/flaeche-verpachten"),
           titel: "Fläche für einen Solarpark verpachten",
           text: "Ablauf, Voraussetzungen und worauf Eigentümer bei Vertrag und Grundbuch achten sollten.",
           label: "Zum Überblick für Eigentümer",
@@ -358,7 +359,7 @@ const artikel = {
     },
     {
       q: "Was passiert mit der Dienstbarkeit, wenn ich das Grundstück verkaufe oder vererbe?",
-      a: "Sie bleibt bestehen und belastet den neuen Eigentümer. Der Pachtvertrag geht bei einem Verkauf in der Regel mit über, beim Erbfall sowieso. Steuerlich kann die Vererbung verpachteter PV-Flächen teuer werden – siehe [Erbschaft- und Grundsteuer bei PV-Pacht](/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer).",
+      a: "Sie bleibt bestehen und belastet den neuen Eigentümer. Der Pachtvertrag geht bei einem Verkauf in der Regel mit über, beim Erbfall sowieso. Steuerlich kann die Vererbung verpachteter PV-Flächen teuer werden – siehe [Erbschaft- und Grundsteuer bei PV-Pacht](/wissen/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer).",
     },
     {
       q: "Muss meine Bank einem Rangrücktritt zustimmen?",
@@ -370,7 +371,7 @@ const artikel = {
     },
     {
       q: "Wie werde ich die Dienstbarkeit nach dem Rückbau wieder los?",
-      a: "Mit einer Löschungsbewilligung des Berechtigten in beglaubigter Form. Sichern Sie das vorab ab: Löschungspflicht im Vertrag, Befristung der Dienstbarkeit und am besten eine beim Notar hinterlegte Löschungsbewilligung. Mehr unter [Rückbau und Rückbaubürgschaft](/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).",
+      a: "Mit einer Löschungsbewilligung des Berechtigten in beglaubigter Form. Sichern Sie das vorab ab: Löschungspflicht im Vertrag, Befristung der Dienstbarkeit und am besten eine beim Notar hinterlegte Löschungsbewilligung. Mehr unter [Rückbau und Rückbaubürgschaft](/wissen/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).",
     },
     {
       q: "Brauche ich für die Kabeltrasse auf dem Nachbargrundstück auch eine Dienstbarkeit?",
@@ -379,10 +380,10 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Laufzeit, Rücktrittsrechte, Haftung und Checkliste." },
-    { href: "/ratgeber/solarpark-rueckbau-rueckbaubuergschaft", titel: "Rückbau und Rückbaubürgschaft", text: "Wie Eigentümer das Vertragsende absichern." },
-    { href: "/ratgeber/solarpark-pacht-pro-hektar", titel: "Pacht pro Hektar", text: "Spannen, Einflussfaktoren und Rechnung über 30 Jahre." },
-    { href: "/flaeche-verpachten", titel: "Fläche verpachten", text: "Ablauf und Voraussetzungen für Eigentümer." },
+    { href: "/wissen/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Laufzeit, Rücktrittsrechte, Haftung und Checkliste." },
+    { href: "/wissen/ratgeber/solarpark-rueckbau-rueckbaubuergschaft", titel: "Rückbau und Rückbaubürgschaft", text: "Wie Eigentümer das Vertragsende absichern." },
+    { href: "/wissen/ratgeber/solarpark-pacht-pro-hektar", titel: "Pacht pro Hektar", text: "Spannen, Einflussfaktoren und Rechnung über 30 Jahre." },
+    { href: pfad("/flaeche-verpachten"), titel: "Fläche verpachten", text: "Ablauf und Voraussetzungen für Eigentümer." },
   ],
 
   quellen: [
@@ -399,14 +400,14 @@ const artikel = {
   seitenCta: {
     titel: "Was bringt Ihre Fläche?",
     text: "Pacht über die gesamte Laufzeit berechnen – Grundlage für die Verhandlung.",
-    href: "/rechner/pacht",
+    href: pfad("/rechner/pacht"),
     label: "Zum Pachtrechner",
   },
   cta: {
     title: "Lassen Sie Ihre Fläche kostenfrei einschätzen.",
     text: "Im Flächencheck prüfen wir Lage, Netzanschluss und Planungsrecht Ihrer Fläche. Für Flächeneigentümer ist die Plattform von ÖkoInvest kostenfrei.",
-    primary: { label: "Zum Flächencheck", href: "/flaechencheck" },
-    secondary: { label: "Pacht berechnen", href: "/rechner/pacht" },
+    primary: { label: "Zum Flächencheck", href: pfad("/flaechencheck") },
+    secondary: { label: "Pacht berechnen", href: pfad("/rechner/pacht") },
   },
 };
 

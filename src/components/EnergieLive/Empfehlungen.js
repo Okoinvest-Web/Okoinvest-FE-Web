@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, BatteryCharging, Factory, LineChart, Timer } from "lucide-react";
 import useLiveDaten from "./useLiveDaten";
 import { preisTage, zeitfenster, ct, zahl, uhr, berlinTag, stundenmittel, STUNDE } from "./berechnung";
+import { pfad } from "@/lib/land";
 
 /**
  * „Was bedeutet das für Sie?" – aus den veröffentlichten Börsenpreisen abgeleitete
@@ -55,8 +56,8 @@ export default function Empfehlungen({ initial }) {
         titel={guenstig3h ? `Günstigste 3 h heute: ${ct(guenstig3h.guenstig.avg)} ct/kWh netto` : "Börsenpreis gezielt nutzen"}
         text={`${heute ? `Das Tagesmittel liegt bei ${ct(heute.avg)} ct/kWh. ` : ""}Ein Festpreisvertrag gibt Ihnen davon nichts weiter. Im Reststrom-Pool wird gebündelt und in Tranchen beschafft, Solarstrom aus den Parks deckt Tagesstunden – und wer Last verschieben kann, profitiert zusätzlich von günstigen Viertelstunden.`}
         links={[
-          { href: "/rechner/reststrom", label: "Ersparnis berechnen", primaer: true },
-          { href: "/reststrom", label: "Zum Reststrom-Pool" },
+          { href: pfad("/rechner/reststrom"), label: "Ersparnis berechnen", primaer: true },
+          { href: pfad("/reststrom"), label: "Zum Reststrom-Pool" },
         ]}
       />
       <LinkKarte
@@ -66,7 +67,7 @@ export default function Empfehlungen({ initial }) {
         titel={heute ? `Preisspanne heute: ${ct(heute.max.eurMwh - heute.min.eurMwh)} ct/kWh` : "Flexibilität wird zum Erlös"}
         text="Mittags drückt Solarstrom den Preis, abends ist Strom knapp. Genau diese Spanne verdienen Großspeicher – und sie entscheidet, ob ein ungeförderter Solarpark mit Speicher oder PPA wirtschaftlicher ist als ohne."
         links={[
-          { href: "/grossspeicher", label: "Großspeicher", primaer: true },
+          { href: pfad("/grossspeicher"), label: "Großspeicher", primaer: true },
           { href: "/investoren", label: "Für Investoren" },
         ]}
       />

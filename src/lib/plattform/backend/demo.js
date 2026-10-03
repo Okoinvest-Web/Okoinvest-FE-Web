@@ -37,6 +37,7 @@ import { kommuneDaten } from "../kommune"; // Fachprüfung Kommunen: strukturier
 import { gebietFuer } from "../akquise"; // Paket C: Routing je Land/Gebiet bei neuer Anfrage
 import { NUTZUNG_ALIAS, anfrageLand } from "@/lib/anfrage/laender"; // Paket C: Land aus Kontext, Nutzung aus dem Flächencheck
 import { zaehlerSchluessel } from "@/lib/anfrage/zaehler"; // Paket C: Server-Zähler ohne Kennung
+import { leadAnlegenDb } from "./demo/leadkette"; // Welle 2, Paket B3: Routing/Score/SLA, getrennte Personendaten, Einwilligungsprotokoll
 import { datenblattBereinigen, ddIndex } from "../fach/datenblatt"; // Fachprüfung Kapitalseite: Projektdatenblatt, DD-Index
 import { loiBereinigen } from "../fach/loi"; // Fachprüfung Kapitalseite: strukturierte LOI
 import { suchprofilErweiterung } from "../fach/suchprofil"; // Fachprüfung Kapitalseite: Suchprofil (Investorentyp, ESG …)
@@ -560,8 +561,6 @@ export async function anfrageAnlegen({ typ, kontakt, daten, herkunft, ip, einwil
     const laenderListe = BUNDESLAENDER[k.land] || [];
     const bundesland = v.auswahl(d.bundesland, laenderListe, "") || v.auswahl(d.regionName, laenderListe, ""); // Regionsseiten senden regionName
     const gebiet = k.land ? gebietFuer(db.bo?.gebiete || [], { land: k.land, bundesland, plz: k.plz }) : null;
-    const zustaendig = gebiet ? nutzerById(db, gebiet.gebiet.mitarbeiterId) : null;
-    const zustaendigId = zustaendig?.aktiv && zustaendig.rollen.includes("admin") ? zustaendig.id : null;
     const vg = {
       id: neueId("V"),
       typ: t,
@@ -572,10 +571,10 @@ export async function anfrageAnlegen({ typ, kontakt, daten, herkunft, ip, einwil
       kontakt: k,
       daten: d,
       herkunft: h,
-      ip: ip || "",
+      ip: "", // Welle 2, Paket B3: IP nur gekürzt und getrennt (db.leadPersonen), Löschung nach 30 Tagen
       einwilligung: {
         am: jetzt(),
-        ip: ip || "",
+        ip: "",
         text: v.text(einwilligungText, 400),
         art: "hinweis", // Paket C: Hinweis nach Art. 6 Abs. 1 lit. b statt Pflicht-Einwilligung
         rechtsgrundlage: v.text(hw.rechtsgrundlage, 60),
@@ -583,11 +582,29 @@ export async function anfrageAnlegen({ typ, kontakt, daten, herkunft, ip, einwil
         textHash: v.text(hw.textHash, 64),
         optional,
       },
-      zustaendigId,
+      zustaendigId: null,
       flaecheId: null,
       erstelltAm: jetzt(),
       geaendertAm: jetzt(),
     };
+    // Welle 2, Paket B3: Land (Pflicht, sonst „unbekannt“), Routing Land × Typ × Größe (Desk → Gebiet → ohne
+    // Zuständigkeit), Score, SLA-Klasse; Personendaten getrennt; Protokoll nur mit Pseudonym (demo/leadkette.js)
+    const lead = leadAnlegenDb(db, {
+      vg,
+      kontakt: k,
+      daten: d,
+      ip,
+      hinweis: hw,
+      einwilligungText,
+      optional,
+      gebiet: gebiet ? { mitarbeiterId: gebiet.gebiet.mitarbeiterId, name: gebiet.gebiet.name, grund: gebiet.grund } : null,
+      rueckruf: d.rueckrufGewuenscht === true,
+      kanal: u ? "portal" : "web_formular",
+    });
+    const { zustaendigId } = lead; // bleibt auch in der Meta (Routing-Ergebnis; spätere Umverteilung = „manuell“)
+    vg.zustaendigId = zustaendigId;
+    vg.land = lead.land;
+    vg.herkunft = { ...vg.herkunft, lead }; // Lead-Meta unter herkunft: dem Anfragenden nicht sichtbar (siehe demo/leadkette.js)
     if (t === "flaeche" || t === "agri") {
       // Paket C: Flächencheck sendet ha/nutzung flach UND unter daten.eingaben – beides lesen
       const haWert = v.zahl(d.ha ?? d.hektar ?? d.flaeche ?? d.flaecheHa ?? ein.flaecheHa, { min: 0, max: 100000, stellen: 2 });
@@ -621,8 +638,10 @@ export async function anfrageAnlegen({ typ, kontakt, daten, herkunft, ip, einwil
       vg.flaecheId = f.id;
     }
     db.vorgaenge.push(vg);
-    protokoll(db, u, "anfrage", "vorgang", vg.id, `Anfrage ${VORGANG_TYPEN[t]} von ${k.email}`, ip);
-    if (zustaendigId) protokoll(db, null, "zuweisen", "vorgang", vg.id, `Zuständig: ${nameVon(db, zustaendigId)} (Gebiet „${gebiet.gebiet.name}“, ${gebiet.grund})`);
+    // Keine Personendaten und keine IP im (unveränderlichen) Aktivitätsprotokoll – Welle 2, Paket B3
+    protokoll(db, u, "anfrage", "vorgang", vg.id, `Anfrage ${VORGANG_TYPEN[t]} (${lead.land}) · Score ${lead.score.klasse} · SLA ${lead.slaKlasse}`);
+    if (zustaendigId) protokoll(db, null, "zuweisen", "vorgang", vg.id, `Zuständig: ${nameVon(db, zustaendigId)} (${lead.routingGruende[0] || lead.desk.label})`);
+    else protokoll(db, null, "zuweisen", "vorgang", vg.id, `Ohne Zuständigkeit (${lead.desk.label})`);
     anfrageZaehlerBuchen(db, { typ: t, land: k.land, kanal: h.kanal });
     backofficeEreignis(db, { typ: "vorgang_neu", art: "vorgang", objekt: vg }); // CRM-Lead + Automationen
     const meldung = { art: "anfrage", titel: `Neue Anfrage: ${VORGANG_TYPEN[t]}${k.land ? ` (${k.land})` : ""}`, text: `${k.vorname} ${k.nachname}${k.firma ? ` · ${k.firma}` : ""} · ${vg.id}`, link: `/portal/admin/vorgaenge/${vg.id}`, objektArt: "vorgang", objektId: vg.id };

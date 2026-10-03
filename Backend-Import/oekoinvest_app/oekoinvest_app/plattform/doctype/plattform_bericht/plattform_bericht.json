@@ -1,0 +1,208 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-03 12:00:00.000000",
+ "description": "Bericht-Baustein (Welle 2, Paket B4): angeforderte Rechner-Berichte mit Double-Opt-in. Nur Token-Hash, keine Personendaten (Verweis auf Plattform Lead Person). Pflege nur über plattform/api/bericht.py.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "token_hash",
+  "rechner",
+  "land",
+  "cb_kopf",
+  "status",
+  "pruef_id",
+  "stand_rechenlogik",
+  "sec_frist",
+  "ablauf",
+  "beginn_am",
+  "cb_frist",
+  "bestaetigt_am",
+  "sec_bezug",
+  "lead_person",
+  "vorgang",
+  "cb_bezug",
+  "kanal",
+  "sec_daten",
+  "eingaben_json",
+  "ergebnis_json",
+  "einwilligungen_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "token_hash",
+   "fieldtype": "Data",
+   "label": "Token-Hash (SHA-256)",
+   "read_only": 1,
+   "unique": 1,
+   "description": "Nur der Hash – der Klartext steht ausschließlich im Link der E-Mail."
+  },
+  {
+   "fieldname": "rechner",
+   "fieldtype": "Select",
+   "label": "Rechner",
+   "read_only": 1,
+   "options": "pacht\npachtangebot\nflaechencheck\nkommune",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "label": "Land",
+   "read_only": 1,
+   "options": "DE\nAT\nCH",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb_kopf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "read_only": 1,
+   "options": "offen\nin_bestaetigung\nbestaetigt\nabgelaufen",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "pruef_id",
+   "fieldtype": "Data",
+   "label": "Prüf-ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stand_rechenlogik",
+   "fieldtype": "Data",
+   "label": "Stand der Rechenlogik",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_frist",
+   "fieldtype": "Section Break",
+   "label": "Fristen"
+  },
+  {
+   "fieldname": "ablauf",
+   "fieldtype": "Datetime",
+   "label": "Ablauf",
+   "read_only": 1,
+   "description": "Bis zur Bestätigung 48 h ab Anforderung, danach 30 Tage ab Bestätigung (TODO Datenschutz/Rechtsabteilung)."
+  },
+  {
+   "fieldname": "beginn_am",
+   "fieldtype": "Datetime",
+   "label": "Bestätigung begonnen",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_frist",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bestaetigt_am",
+   "fieldtype": "Datetime",
+   "label": "Bestätigt am (Double-Opt-in)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_bezug",
+   "fieldtype": "Section Break",
+   "label": "Bezüge (keine Personendaten)"
+  },
+  {
+   "fieldname": "lead_person",
+   "fieldtype": "Link",
+   "label": "Lead-Person",
+   "read_only": 1,
+   "options": "Plattform Lead Person"
+  },
+  {
+   "fieldname": "vorgang",
+   "fieldtype": "Link",
+   "label": "Vorgang",
+   "read_only": 1,
+   "options": "Plattform Vorgang"
+  },
+  {
+   "fieldname": "cb_bezug",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "kanal",
+   "fieldtype": "Data",
+   "label": "Kanal",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_daten",
+   "fieldtype": "Section Break",
+   "label": "Rechnerdaten"
+  },
+  {
+   "fieldname": "eingaben_json",
+   "fieldtype": "Code",
+   "label": "Eingaben (JSON)",
+   "read_only": 1,
+   "options": "JSON"
+  },
+  {
+   "fieldname": "ergebnis_json",
+   "fieldtype": "Code",
+   "label": "Ergebnis (JSON, serverseitig gerechnet)",
+   "read_only": 1,
+   "options": "JSON"
+  },
+  {
+   "fieldname": "einwilligungen_json",
+   "fieldtype": "Code",
+   "label": "Freiwillige Häkchen (JSON, ohne Personendaten)",
+   "read_only": 1,
+   "options": "JSON"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-03 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Bericht",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 0,
+   "delete": 1,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "search_fields": "rechner,land,status",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "pruef_id",
+ "track_changes": 0
+}

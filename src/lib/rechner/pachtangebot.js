@@ -7,10 +7,47 @@
 //
 //   node src/lib/rechner/pachtangebot.js      → Selbsttest
 //
-// Marktwerte aus src/lib/invest/markt.js (PACHT, ERLOESE, FREIFLAECHE, BAUART).
+// Länderfähig (Welle 2, Paket B1): PACHT, ERLOESE und FREIFLAECHE je Land aus dem
+// Faktenregister über rechenbasisFuer({ land, regionId }); gesperrte Länder (AT/CH) rechnen
+// wie bisher mit der deutschen Basis und melden `sperre`. BAUART über die Fassade markt.js.
 // Die Klauselbewertung ist eine fachliche Orientierung, keine Rechtsberatung.
 
-import { BAUART, ERLOESE, FREIFLAECHE, PACHT, regionById, laenderSperre, eegErloesCt } from "../invest/markt.js";
+import { BAUART, regionById, eegErloesCt } from "../invest/markt.js";
+import { rechenbasisFuer, marktFuer, standardRegion, annahmenbuch } from "../invest/laender/marktFuer.js";
+
+/** Deutsche Basis für STANDARD und Selbsttest (Rechnungen nutzen die Rechenbasis der Eingabe) */
+const { PACHT, ERLOESE, FREIFLAECHE } = marktFuer("DE");
+
+/** Fakten, auf denen pruefePachtangebot beruht (Annahmenbuch für Bericht B4) */
+export const PACHTANGEBOT_FAKTEN = [
+  "pacht.freiflaecheProHa",
+  "pacht.agriProHa",
+  "pacht.umsatzbeteiligung",
+  "pacht.laufzeit",
+  "pacht.verlaengerung",
+  "pacht.indexierung",
+  "pacht.reservierungProHa",
+  "pacht.diskontEigentuemer",
+  "pacht.reservierungJahre",
+  "pacht.festlaufzeitMax",
+  "pacht.verlaengerungMax",
+  "pacht.anwaltskosten",
+  "freiflaeche.haProMwp",
+  "freiflaeche.degradation",
+  "freiflaeche.inflation",
+  "freiflaeche.rueckbauProKwp",
+  "erloese.eegFreiflaecheCt",
+  "erloese.merchantCt",
+  "erloese.merchantSteigerung",
+  "erloese.negativAnteilSolar",
+  "recht.eeg.foerderdauerJahre",
+];
+
+/** Annahmenbuch (Wert, Quelle, Stand, Status je Fakt) zu einer Eingabe von pruefePachtangebot */
+export const annahmenPachtangebot = (eingabe = {}) => annahmenbuch(PACHTANGEBOT_FAKTEN, { land: eingabe.land, regionId: eingabe.regionId ?? standardRegion(eingabe.land) });
+
+/** Rechenbasis (Markt des Landes bzw. DE bei Sperre) zu einer Eingabe */
+const basisVon = (e) => rechenbasisFuer({ land: e.land, regionId: e.regionId ?? standardRegion(e.land) });
 
 /* ------------------------------------------------------------------ */
 /* Auswahllisten                                                       */
@@ -112,14 +149,14 @@ export const STANDARD = {
 const fmtDe = (n, s = 0) => (Number.isFinite(n) ? n.toLocaleString("de-DE", { minimumFractionDigits: s, maximumFractionDigits: s }) : "–");
 const PUNKTE = { gut: 2, pruefen: 1, kritisch: 0 };
 
-/** Marktspanne €/ha·a je Flächenart */
-export function marktSpanne(flaechenart) {
-  return flaechenart === "agri" ? PACHT.agriProHa : PACHT.freiflaecheProHa;
+/** Marktspanne €/ha·a je Flächenart (markt: Rechenbasis, Standard Deutschland) */
+export function marktSpanne(flaechenart, markt = marktFuer("DE")) {
+  return flaechenart === "agri" ? markt.PACHT.agriProHa : markt.PACHT.freiflaecheProHa;
 }
 
 /** Leistung und Jahresertrag auf der Fläche */
-export function parkLeistung(ha, regionId, flaechenart) {
-  const haProMwp = flaechenart === "agri" ? BAUART.agriHoch.haProMwp : FREIFLAECHE.haProMwp;
+export function parkLeistung(ha, regionId, flaechenart, markt = rechenbasisFuer({ regionId }).markt) {
+  const haProMwp = flaechenart === "agri" ? BAUART.agriHoch.haProMwp : markt.FREIFLAECHE.haProMwp;
   const faktor = flaechenart === "agri" ? BAUART.agriHoch.faktor : 1;
   const kwp = (ha / haProMwp) * 1000;
   const region = regionById(regionId);
@@ -127,17 +164,18 @@ export function parkLeistung(ha, regionId, flaechenart) {
 }
 
 /**
- * Durchschnittlicher Erlös (ct je erzeugbarer kWh) im Betriebsjahr t (0-basiert): EEG-Wert 20 Jahre mit § 51 EEG
- * (negative Zeiträume ohne Marktprämie, markt.js eegErloesCt), danach Marktwert.
+ * Durchschnittlicher Erlös (ct je erzeugbarer kWh) im Betriebsjahr t (0-basiert): EEG-Wert über die Förderdauer
+ * (Erlösmodell, DE 20 Jahre) mit § 51 EEG (negative Zeiträume ohne Marktprämie, markt.js eegErloesCt), danach Marktwert.
  */
-const preisCt = (t) => {
-  const markt = ERLOESE.merchantCt * Math.pow(1 + ERLOESE.merchantSteigerung, t);
-  return t < 20 ? eegErloesCt(ERLOESE.eegFreiflaecheCt, markt) : markt;
+const preisCt = (t, m) => {
+  const markt = m.ERLOESE.merchantCt * Math.pow(1 + m.ERLOESE.merchantSteigerung, t);
+  return t < m.erloesmodell.werte.foerderJahre ? eegErloesCt(m.ERLOESE.eegFreiflaecheCt, markt, m.ERLOESE.paragraph51.anteilNegativ) : markt;
 };
 
-/** Zahlungsreihe (Vorlauf + Betrieb) für ein Angebot */
-export function zahlungsreihe(e) {
-  const { kwh } = parkLeistung(e.ha, e.regionId, e.flaechenart);
+/** Zahlungsreihe (Vorlauf + Betrieb) für ein Angebot (markt: Rechenbasis, Standard aus Land/Region der Eingabe) */
+export function zahlungsreihe(e, markt = basisVon(e).markt) {
+  const { PACHT, FREIFLAECHE } = markt;
+  const { kwh } = parkLeistung(e.ha, e.regionId, e.flaechenart, markt);
   const jahre = [];
   const index = e.indexArt === "vpi" ? PACHT.indexierung : e.indexArt === "fest" ? e.indexSatz : 0;
   for (let j = 1; j <= e.vorlaufJahre + e.laufzeit; j++) {
@@ -148,7 +186,7 @@ export function zahlungsreihe(e) {
     if (!betrieb) betrag = e.ha * e.reservierungProHa;
     else if (e.modell === "fest") betrag = e.ha * e.proHa * Math.pow(1 + index, t);
     else {
-      umsatz = kwh * Math.pow(1 - FREIFLAECHE.degradation, t) * (preisCt(t) / 100) * e.umsatzAnteil;
+      umsatz = kwh * Math.pow(1 - FREIFLAECHE.degradation, t) * (preisCt(t, markt) / 100) * e.umsatzAnteil;
       const mindest = e.modell === "kombi" ? e.ha * e.mindestProHa * Math.pow(1 + index, t) : 0;
       betrag = Math.max(umsatz, mindest);
     }
@@ -163,8 +201,9 @@ const barwert = (reihe, d) => reihe.reduce((s, x) => s + x.betrag / Math.pow(1 +
 /* Klauselbewertung                                                    */
 /* ------------------------------------------------------------------ */
 
-function klauseln(e, r) {
-  const spanne = marktSpanne(e.flaechenart);
+function klauseln(e, r, markt) {
+  const { PACHT, FREIFLAECHE } = markt;
+  const spanne = marktSpanne(e.flaechenart, markt);
   const k = [];
   const opt = (liste, id) => OPTIONEN[liste].find((o) => o.id === id);
 
@@ -411,9 +450,12 @@ export const STANDARDFRAGEN = [
 /* ------------------------------------------------------------------ */
 
 export function pruefePachtangebot(eingabe = {}) {
-  const e = { ...STANDARD, ...eingabe };
-  const { kwp, kwh, region } = parkLeistung(e.ha, e.regionId, e.flaechenart);
-  const jahre = zahlungsreihe(e);
+  const basis = basisVon(eingabe);
+  const { PACHT, FREIFLAECHE } = basis.markt;
+  const landStandard = eingabe.land ? { regionId: standardRegion(basis.land), diskont: PACHT.diskontEigentuemer } : {};
+  const e = { ...STANDARD, ...landStandard, ...eingabe };
+  const { kwp, kwh, region } = parkLeistung(e.ha, e.regionId, e.flaechenart, basis.markt);
+  const jahre = zahlungsreihe(e, basis.markt);
   const summe = jahre.reduce((s, x) => s + x.betrag, 0);
   const summeVorlauf = jahre.filter((x) => !x.betrieb).reduce((s, x) => s + x.betrag, 0);
   const bw = barwert(jahre, e.diskont);
@@ -421,16 +463,16 @@ export function pruefePachtangebot(eingabe = {}) {
   const proHaErstesJahr = erstes ? erstes.betrag / e.ha : 0;
 
   // Vergleich: marktübliches Angebot (untere / mittlere / obere Pacht, VPI, übliche Prämie) bei gleichem Vorlauf
-  const spanne = marktSpanne(e.flaechenart);
+  const spanne = marktSpanne(e.flaechenart, basis.markt);
   const markt = (proHa, resProHa) =>
-    barwert(zahlungsreihe({ ...e, modell: "fest", indexArt: "vpi", proHa, reservierungProHa: resProHa }), e.diskont);
+    barwert(zahlungsreihe({ ...e, modell: "fest", indexArt: "vpi", proHa, reservierungProHa: resProHa }, basis.markt), e.diskont);
   const resMitte = (PACHT.reservierungProHa.min + PACHT.reservierungProHa.max) / 2;
   const marktBw = { min: markt(spanne.min, PACHT.reservierungProHa.min), mittel: markt(spanne.mittel, resMitte), max: markt(spanne.max, PACHT.reservierungProHa.max) };
   const imMarkt = (bw - marktBw.min) / (marktBw.max - marktBw.min);
 
   const rueckbauKosten = kwp * FREIFLAECHE.rueckbauProKwp;
   const r = { kwp, kwh, region, jahre, summe, summeVorlauf, barwert: bw, proHaErstesJahr, rueckbauKosten };
-  const liste = klauseln(e, r);
+  const liste = klauseln(e, r, basis.markt);
   const zaehler = { gut: 0, pruefen: 0, kritisch: 0 };
   liste.forEach((k) => (zaehler[k.ampel] += 1));
   const punkte = liste.reduce((s, k) => s + PUNKTE[k.ampel], 0) / (liste.length * 2);
@@ -446,8 +488,8 @@ export function pruefePachtangebot(eingabe = {}) {
 
   return {
     eingabe: e,
-    /** Länder-Sperre AT/CH: €-Spannen und EEG-Umsatzmodell gelten nur für DE (markt.js LAENDER_SPERRE) */
-    sperre: laenderSperre(region.land),
+    /** Länder-Sperre AT/CH: €-Spannen und EEG-Umsatzmodell gelten nur für DE (laender/sperre.js) */
+    sperre: basis.sperre,
     ...r,
     durchschnittProHa: summe / jahre.length / e.ha,
     marktBw,

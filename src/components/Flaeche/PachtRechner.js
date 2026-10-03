@@ -10,6 +10,8 @@ import { ErgebnisKopf, MobilKurz, RechnerRahmen } from "@/components/Rechner/Inv
 import { PACHT, REGIONEN } from "@/lib/invest/markt";
 import { PACHTMODELLE, REGION_KURZ, pachtRechnung } from "@/lib/rechner/pacht";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
+import { landVonRegion } from "@/lib/invest/markt";
+import BerichtAnfordern from "@/components/Bericht/BerichtAnfordern";
 
 const FARBE = { solar: "#669933", db: "#f5a70f", acker: "#97a0b0", raster: "#eef0f4" };
 const tsd = (v) => `${fmt(v / 1000, v >= 1e6 ? 0 : v >= 1e5 ? 0 : 1)} Tsd. €`;
@@ -28,23 +30,24 @@ export default function PachtRechner({ start = {} } = {}) {
   const [vorlauf, setVorlauf] = useState(false);
   const [vorlaufJahre, setVorlaufJahre] = useState(2);
 
-  const r = useMemo(
-    () =>
-      pachtRechnung({
-        ha,
-        regionId,
-        modell,
-        proHa,
-        umsatzAnteil: umsatzPct / 100,
-        mindestProHa,
-        laufzeit,
-        ackerProHa,
-        dbProHa,
-        vorlaufJahre: vorlauf ? vorlaufJahre : 0,
-        reservierungProHa: (PACHT.reservierungProHa.min + PACHT.reservierungProHa.max) / 2,
-      }),
+  // Eingaben der Rechnung – dieselben gehen an den Bericht (Paket B4: der Server rechnet damit neu)
+  const eingaben = useMemo(
+    () => ({
+      ha,
+      regionId,
+      modell,
+      proHa,
+      umsatzAnteil: umsatzPct / 100,
+      mindestProHa,
+      laufzeit,
+      ackerProHa,
+      dbProHa,
+      vorlaufJahre: vorlauf ? vorlaufJahre : 0,
+      reservierungProHa: (PACHT.reservierungProHa.min + PACHT.reservierungProHa.max) / 2,
+    }),
     [ha, regionId, modell, proHa, umsatzPct, mindestProHa, laufzeit, ackerProHa, dbProHa, vorlauf, vorlaufJahre]
   );
+  const r = useMemo(() => pachtRechnung(eingaben), [eingaben]);
 
   // Teilen-Link: Eingaben in der Adresszeile (nur Abweichungen vom Standard bzw. von der Vorbelegung)
   const SETZER = {
@@ -179,6 +182,7 @@ export default function PachtRechner({ start = {} } = {}) {
             <p className="mt-4 text-[13px] leading-relaxed text-ink-500">
               Nominal und vor Steuern – eine Orientierung, kein Angebot. Das konkrete Pachtangebot hängt von Netzanschluss, Kulisse und Baurecht ab.
             </p>
+            {!sperre && <BerichtAnfordern rechner="pacht" land={landVonRegion(regionId)} eingaben={eingaben} />}
           </div>
         </>
       }

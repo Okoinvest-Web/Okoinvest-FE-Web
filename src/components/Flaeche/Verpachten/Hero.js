@@ -8,6 +8,7 @@ import { Flurkarte, HeroBuehne, HeroPille, Haken } from "@/components/Flaeche/Se
 import { PACHT } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import { pachtRechnung, REGION_KURZ } from "@/lib/rechner/pacht";
+import { pfad } from "@/lib/land";
 
 export const BEISPIEL_HA = 10;
 
@@ -156,7 +157,7 @@ export default function Hero() {
 
           <div className="ov-hero-in mt-8 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-10" style={{ "--ov-delay": "260ms" }}>
             <Button href="#anfrage" size="lg" pfeil magnetisch className="w-full sm:w-auto">Fläche prüfen lassen</Button>
-            <Button href="/rechner/pacht" size="lg" variant="outlineLight" className="w-full sm:w-auto">Pacht berechnen</Button>
+            <Button href={pfad("/rechner/pacht")} size="lg" variant="outlineLight" className="w-full sm:w-auto">Pacht berechnen</Button>
           </div>
           <p className="ov-hero-in mt-4 text-[13px] leading-relaxed text-white/70" style={{ "--ov-delay": "300ms" }}>
             Kostenfrei · unverbindlich · persönliche Rückmeldung
@@ -175,7 +176,7 @@ export default function Hero() {
               <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0 text-sun-300" />
               <span>
                 Lieber erst selbst einschätzen?{" "}
-                <a href="/flaechencheck" className="rounded font-semibold text-white underline decoration-sun-300/70 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
+                <a href={pfad("/flaechencheck")} className="rounded font-semibold text-white underline decoration-sun-300/70 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
                   Flächencheck in zwei Minuten
                 </a>
               </span>

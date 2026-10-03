@@ -2,11 +2,13 @@
 
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ArrowRight, CalendarDays, Clock, LockKeyhole, Send } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { herkunft } from "@/lib/herkunft";
 import { useEreignis } from "@/lib/ereignis";
 import { landAusDaten, landNormal } from "@/lib/anfrage/laender";
+import { landAusPfad } from "@/lib/land";
 import { HINWEIS, RUECKRUF, einwilligungenFuer } from "@/lib/anfrage/hinweise";
 import Textfeld from "@/components/formular/Textfeld";
 import useFormular, { regel } from "@/components/formular/useFormular";
@@ -45,6 +47,9 @@ const NAECHSTE = [
  *  land       Land aus dem Kontext der Seite (DE | AT | CH). Ohne Angabe gilt daten.land bzw. daten.eingaben.land.
  *             Ist ein Land bekannt, prüft die PLZ nach diesem Land (DE 5, AT/CH 4 Ziffern) und das Land geht als
  *             kontakt.land mit. Ist keines bekannt, das Formular hat aber ein PLZ-Feld, erscheint die Länderwahl.
+ *             Welle 2 (Länderrouting): Das Land der Route (/de, /at, /ch) belegt die Länderwahl vor und geht als
+ *             daten.land mit, wenn die Seite selbst keins setzt. Besucher können das Land weiter wählen – die
+ *             PLZ-Regel gilt für das gewählte Land (wichtig für AT/CH-Besucher auf Seiten, die nur für DE gelten).
  *  titel/text/button/erfolgText  Beschriftungen
  *  dunkel     für Navy-Flächen
  *
@@ -96,6 +101,7 @@ export default function AnfrageFormular({
   const id = useId();
   const melden = useEreignis();
   const kontextLand = landNormal(landProp) || landAusDaten(daten);
+  const routenLand = landAusPfad(usePathname() || "/").land;
   // Länderwahl zeigen, wenn bestellt – oder wenn eine PLZ abgefragt wird, das Land aber unbekannt ist
   const landFeld = felder.includes("land") || (felder.includes("plz") && !kontextLand);
   const mitTelefon = felder.includes("telefon");
@@ -103,7 +109,7 @@ export default function AnfrageFormular({
   const optionenLeer = Object.fromEntries(optionen.map((o) => [o.id, false]));
   const schema = schemaFuer(felder, { landFeld, kontextLand });
   const form = useFormular(
-    { vorname: "", nachname: "", firma: "", email: "", telefon: "", plz: "", ort: "", land: kontextLand || "DE", nachricht: "", rueckruf: false, ...optionenLeer, website: "" },
+    { vorname: "", nachname: "", firma: "", email: "", telefon: "", plz: "", ort: "", land: kontextLand || routenLand || "DE", nachricht: "", rueckruf: false, ...optionenLeer, website: "" },
     schema
   );
   const a = useAbsenden({ uebersetzen: fehlerUebersetzen });
@@ -149,7 +155,7 @@ export default function AnfrageFormular({
           body: JSON.stringify({
             typ,
             kontakt,
-            daten: { ...daten, ...(nachricht ? { nachricht: String(nachricht) } : {}) },
+            daten: { ...(routenLand && !landAusDaten(daten) ? { land: routenLand } : {}), ...daten, ...(nachricht ? { nachricht: String(nachricht) } : {}) },
             rueckruf,
             einwilligungen,
             herkunft: safeHerkunft(),

@@ -6,6 +6,7 @@ import { cn } from "@/components/ui/cn";
 import { STAND } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import { BEISPIEL_HA, TENDENZ_TEXT } from "./rechnung";
+import { pfad } from "@/lib/land";
 
 const tsd = (v) => `${fmt(Math.round(v / 1000))} Tsd. €`;
 
@@ -72,7 +73,7 @@ export default function RegionKennzahlen({ region, k }) {
         <p className="max-w-3xl">
           Ertrag: PVGIS (EU JRC), fest aufgeständert, optimal geneigt, 14 % Systemverluste. Leistung, Pacht und Haushalte aus unseren zentralen Marktannahmen, Stand {STAND} – Orientierungswerte, keine Angebote.
         </p>
-        <Link href="/rechner/pacht" className="inline-flex shrink-0 items-center gap-1.5 text-[14px] font-semibold text-ov-700 hover:text-ov-800">
+        <Link href={pfad("/rechner/pacht")} className="inline-flex shrink-0 items-center gap-1.5 text-[14px] font-semibold text-ov-700 hover:text-ov-800">
           Mit eigenen Werten rechnen <ArrowRight aria-hidden="true" className="h-4 w-4" />
         </Link>
       </div>

@@ -15,6 +15,7 @@ import { AGRI, ERLOESE, PACHT, REGIONEN } from "@/lib/invest/markt";
 import { SYSTEME, agriVergleich, kulturById, systemPasst } from "@/lib/rechner/agriPv";
 import { REGION_KURZ } from "@/lib/rechner/pacht";
 import { fmt, fmtEur, fmtPct } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 const betrag = (v) => {
   const a = Math.abs(v);
@@ -274,7 +275,7 @@ export default function AgriPvRechner() {
                 <ZumFlaechencheck ha={ha} regionId={regionId} size="lg" data-ov-cta>
                   Fläche prüfen
                 </ZumFlaechencheck>
-                <Button href="/landwirte#anfrage" size="lg" variant="secondary">
+                <Button href={pfad("/landwirte#anfrage")} size="lg" variant="secondary">
                   Mit uns durchrechnen
                 </Button>
               </div>

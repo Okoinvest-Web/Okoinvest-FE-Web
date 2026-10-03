@@ -4,7 +4,7 @@
 //   node qa/axe.mjs                       prüfen gegen qa/axe-baseline.json (Gate)
 //   node qa/axe.mjs --baseline-schreiben  heutigen Stand als Baseline festhalten
 //   node qa/axe.mjs --breiten 1440,390    zusätzlich mobil (Standard: 1440)
-//   node qa/axe.mjs --seiten /,/kontakt   nur diese Seiten
+//   node qa/axe.mjs --seiten /,/kontakt   nur diese Seiten (Länderzonen mit Präfix, z. B. /de/reststrom)
 //   node qa/axe.mjs --json qa/out/axe.json
 //
 // Regeln: WCAG 2.0/2.1/2.2 A+AA (axe-Tags). Gate-Logik (Ratsche, damit Welle 1 nicht an
@@ -23,7 +23,8 @@ const HIER = dirname(fileURLToPath(import.meta.url));
 const BASELINE = join(HIER, "axe-baseline.json");
 
 // 10 Kernseiten: Einstiege je Zielgruppe, Funnel, Rechner, Börse, Kontakt
-export const KERNSEITEN = ["/", "/flaechencheck", "/freiflaeche", "/landwirte", "/investoren", "/kommunen", "/reststrom", "/rechner/pacht", "/projektboerse", "/kontakt"];
+// Welle 2 (Länderrouting): Länderzonen-Seiten unter /de
+export const KERNSEITEN = ["/", "/de/flaechencheck", "/de/freiflaeche", "/de/landwirte", "/investoren", "/de/kommunen", "/de/reststrom", "/de/rechner/pacht", "/projektboerse", "/kontakt"];
 const BANNER_SEITE = "/ (Cookie-Banner offen)";
 const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const SCHWER = new Set(["serious", "critical"]);
@@ -45,7 +46,13 @@ async function pruefeSeite(browser, axeQuelle, pfad, breite, { consent = true } 
   const ctx = await neuerKontext(browser, { breite, consent });
   const page = await ctx.newPage();
   try {
-    const status = await lade(page, pfad, { warten: 1500 });
+    let status = await lade(page, pfad, { warten: 1500 });
+    // Kernseiten existieren immer: ein 404/5xx kommt im Dev-Modus vor, wenn der Server gerade neu kompiliert oder
+    // vom Wächter neu gestartet wird (QM Welle 2: /de/flaechencheck einmal 404, direkt danach 200) → einmal wiederholen.
+    if (status !== 200) {
+      await page.waitForTimeout(10000);
+      status = await lade(page, pfad, { warten: 1500 });
+    }
     if (status !== 200) return { status, fehler: `HTTP ${status}` };
     await page.addScriptTag({ content: axeQuelle });
     const erg = await page.evaluate(async (tags) => {

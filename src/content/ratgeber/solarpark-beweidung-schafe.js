@@ -6,6 +6,7 @@
 
 import { AGRI, PACHT, FREIFLAECHE, STAND } from "@/lib/invest/markt";
 import { fmt, fmtEur, fmtPct } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag zur Übernahme */
 // LfL Bayern / LELF Brandenburg / LWK Niedersachsen (2019): Mindesthöhe Modulunterkante bei Wirtschaftsrassen.
@@ -77,7 +78,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `In Deutschland ist die Doppelnutzung von Freiflächenanlagen mit Schafen nach Einschätzung des Fraunhofer ISE gängige Praxis. Die Anlagen sind dabei allerdings meist rein auf den Stromertrag optimiert – die landwirtschaftliche Wertschöpfung je Hektar ist gering. Im [Agri-PV-Rechner](/rechner/agri-pv) setzen wir für Weidenutzung einen Deckungsbeitrag von rund ${fmtEur(AGRI.kulturen.find((k) => k.id === "weide").db)} je Hektar an, zum Vergleich: Die Pacht für einen Solarpark liegt bei ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar. Die Beweidung ist also eine Ergänzung, kein Ersatz für die Pacht.`,
+          text: `In Deutschland ist die Doppelnutzung von Freiflächenanlagen mit Schafen nach Einschätzung des Fraunhofer ISE gängige Praxis. Die Anlagen sind dabei allerdings meist rein auf den Stromertrag optimiert – die landwirtschaftliche Wertschöpfung je Hektar ist gering. Im [Agri-PV-Rechner](/de/rechner/agri-pv) setzen wir für Weidenutzung einen Deckungsbeitrag von rund ${fmtEur(AGRI.kulturen.find((k) => k.id === "weide").db)} je Hektar an, zum Vergleich: Die Pacht für einen Solarpark liegt bei ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar. Die Beweidung ist also eine Ergänzung, kein Ersatz für die Pacht.`,
         },
         {
           typ: "kennzahl",
@@ -98,7 +99,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Schafe dagegen schaffen mit ihren Klauen offene Bodenstellen, in denen konkurrenzschwache Pflanzen keimen und Wildbienen nisten können. Sie verbreiten Samen über Fell, Klauen und Kot, und das Blütenangebot bleibt länger erhalten, weil nie die ganze Fläche auf einmal abgeräumt wird. Weil die Tiere unter den Modulen ruhen und zwischen den Reihen fressen, entsteht eine abwechslungsreiche Grasnarbe. Wie Solarparks gezielt für Artenschutz geplant werden, lesen Sie im Ratgeber [Artenschutz und Biodiversität im Solarpark](/ratgeber/solarpark-artenschutz-biodiversitaet).",
+          text: "Schafe dagegen schaffen mit ihren Klauen offene Bodenstellen, in denen konkurrenzschwache Pflanzen keimen und Wildbienen nisten können. Sie verbreiten Samen über Fell, Klauen und Kot, und das Blütenangebot bleibt länger erhalten, weil nie die ganze Fläche auf einmal abgeräumt wird. Weil die Tiere unter den Modulen ruhen und zwischen den Reihen fressen, entsteht eine abwechslungsreiche Grasnarbe. Wie Solarparks gezielt für Artenschutz geplant werden, lesen Sie im Ratgeber [Artenschutz und Biodiversität im Solarpark](/wissen/ratgeber/solarpark-artenschutz-biodiversitaet).",
         },
         {
           typ: "kasten",
@@ -108,7 +109,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Die untere Naturschutzbehörde kann Beweidung als Maßnahme zur Minderung des Eingriffs anstelle der Mahd empfehlen. Wer das Pflegekonzept schon im Bebauungsplan festschreibt, sollte den Schäfer frühzeitig einbeziehen – etwa bei der Wahl der Ansaatmischung. Wie das Genehmigungsverfahren abläuft, beschreibt der Ratgeber [Solarpark-Genehmigung und Bebauungsplan](/ratgeber/solarpark-genehmigung-bebauungsplan).",
+          text: "Die untere Naturschutzbehörde kann Beweidung als Maßnahme zur Minderung des Eingriffs anstelle der Mahd empfehlen. Wer das Pflegekonzept schon im Bebauungsplan festschreibt, sollte den Schäfer frühzeitig einbeziehen – etwa bei der Wahl der Ansaatmischung. Wie das Genehmigungsverfahren abläuft, beschreibt der Ratgeber [Solarpark-Genehmigung und Bebauungsplan](/wissen/ratgeber/solarpark-genehmigung-bebauungsplan).",
         },
       ],
     },
@@ -233,7 +234,7 @@ const artikel = {
           typ: "kasten",
           variant: "info",
           titel: "Steuern: Beweidung als Dienstleistung",
-          text: "Das Pflegeentgelt ist in der Regel Entgelt für eine Dienstleistung und umsatzsteuerlich wie ertragsteuerlich gesondert zu beurteilen – bei pauschalierenden Landwirten greift die Durchschnittssatzbesteuerung dafür nach verbreiteter Auffassung nicht. Ob die Tätigkeit noch zur Landwirtschaft zählt, hängt von den Grenzen der Einkommensteuer-Richtlinien ab. Details im Ratgeber [Steuern für Landwirte mit Photovoltaik](/ratgeber/photovoltaik-landwirt-steuern).",
+          text: "Das Pflegeentgelt ist in der Regel Entgelt für eine Dienstleistung und umsatzsteuerlich wie ertragsteuerlich gesondert zu beurteilen – bei pauschalierenden Landwirten greift die Durchschnittssatzbesteuerung dafür nach verbreiteter Auffassung nicht. Ob die Tätigkeit noch zur Landwirtschaft zählt, hängt von den Grenzen der Einkommensteuer-Richtlinien ab. Details im Ratgeber [Steuern für Landwirte mit Photovoltaik](/wissen/ratgeber/photovoltaik-landwirt-steuern).",
         },
       ],
     },
@@ -248,7 +249,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Für den Schäfer heißt das: Auf der Anlagenfläche entfallen Einkommensgrundstützung und Umverteilungsprämie, die wir grob mit ${fmtEur(AGRI.direktzahlungProHa)} je Hektar ansetzen, und in der Regel auch Agrarumweltzahlungen. Anders kann es bei Ausgleichsflächen außerhalb des Zauns aussehen, die er mitpflegt – ob diese förderfähig sind, hängt von ihrer Nutzung und den Auflagen ab und sollte mit der Landwirtschaftsbehörde geklärt werden. Genauer erklärt der Ratgeber [Agri-PV Förderung und GAP](/ratgeber/agri-pv-foerderung-gap) die Regeln.`,
+          text: `Für den Schäfer heißt das: Auf der Anlagenfläche entfallen Einkommensgrundstützung und Umverteilungsprämie, die wir grob mit ${fmtEur(AGRI.direktzahlungProHa)} je Hektar ansetzen, und in der Regel auch Agrarumweltzahlungen. Anders kann es bei Ausgleichsflächen außerhalb des Zauns aussehen, die er mitpflegt – ob diese förderfähig sind, hängt von ihrer Nutzung und den Auflagen ab und sollte mit der Landwirtschaftsbehörde geklärt werden. Genauer erklärt der Ratgeber [Agri-PV Förderung und GAP](/wissen/ratgeber/agri-pv-foerderung-gap) die Regeln.`,
         },
       ],
     },
@@ -279,7 +280,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Welche Anforderungen die Normen im Detail stellen und wie der Nachweis gegenüber Netzbetreiber und Landwirtschaftsbehörde funktioniert, erklärt der Ratgeber [DIN SPEC 91434](/ratgeber/agri-pv-din-spec-91434). Einen Überblick über Systeme und Modelle bietet die Seite [Agri-PV](/agri-pv); was sich für Landwirte rechnet, zeigt der Beitrag [Agri-PV Wirtschaftlichkeit](/ratgeber/agri-pv-wirtschaftlichkeit). Den Begriff fasst das Lexikon unter [Solarbeweidung](/wissen/lexikon#solarbeweidung) zusammen.",
+          text: "Welche Anforderungen die Normen im Detail stellen und wie der Nachweis gegenüber Netzbetreiber und Landwirtschaftsbehörde funktioniert, erklärt der Ratgeber [DIN SPEC 91434](/wissen/ratgeber/agri-pv-din-spec-91434). Einen Überblick über Systeme und Modelle bietet die Seite [Agri-PV](/de/agri-pv); was sich für Landwirte rechnet, zeigt der Beitrag [Agri-PV Wirtschaftlichkeit](/wissen/ratgeber/agri-pv-wirtschaftlichkeit). Den Begriff fasst das Lexikon unter [Solarbeweidung](/wissen/lexikon#solarbeweidung) zusammen.",
         },
       ],
     },
@@ -309,20 +310,20 @@ const artikel = {
             ["Beweidung in die Planung aufnehmen", "Modulhöhe, Kabelführung, Zaun und Wasser vor der Ausschreibung des Baus festlegen – nachträglich wird es teuer."],
             ["Schäfer früh einbinden", "Anlage gemeinsam besichtigen, Ansaatmischung und Pflegeziel abstimmen. Ansprechpartner sind Landesschafzuchtverbände und Landwirtschaftskammern."],
             ["Pflegevertrag schließen", "Messbares Pflegeziel, Pauschale je Hektar, Nachmahd, Haftung, Versicherung und Laufzeit regeln."],
-            ["Im Pachtvertrag verankern", "Wer verpachtet und selbst Schafe hält, kann sich im [Pachtvertrag](/ratgeber/pachtvertrag-solarpark) ein Vorrecht auf den Pflegeauftrag sichern."],
+            ["Im Pachtvertrag verankern", "Wer verpachtet und selbst Schafe hält, kann sich im [Pachtvertrag](/wissen/ratgeber/pachtvertrag-solarpark) ein Vorrecht auf den Pflegeauftrag sichern."],
             ["Erfolg jährlich prüfen", "Bestand nach der Saison begutachten und Besatz, Termine und Nachpflege anpassen."],
           ],
         },
         {
           typ: "tool",
-          href: "/rechner/agri-pv",
+          href: pfad("/rechner/agri-pv"),
           titel: "Agri-PV oder Solarpark mit Beweidung?",
           text: "Vergleichen Sie Pacht, Eigeninvestition und Beteiligung für Ihre Fläche – auch mit Weidenutzung.",
           label: "Zum Agri-PV-Rechner",
         },
         {
           typ: "p",
-          text: `Für Landwirte, die eine Fläche einbringen und zugleich die Pflege übernehmen möchten, bietet die Seite [Landwirte](/landwirte) einen Überblick über die Wege Verpachten, Selbstinvestieren und Beteiligen. Die Grünpflege ist Teil der Betriebskosten des Parks, die wir insgesamt mit rund ${fmt(FREIFLAECHE.opexProKwp)} € je kWp und Jahr ansetzen.`,
+          text: `Für Landwirte, die eine Fläche einbringen und zugleich die Pflege übernehmen möchten, bietet die Seite [Landwirte](/de/landwirte) einen Überblick über die Wege Verpachten, Selbstinvestieren und Beteiligen. Die Grünpflege ist Teil der Betriebskosten des Parks, die wir insgesamt mit rund ${fmt(FREIFLAECHE.opexProKwp)} € je kWp und Jahr ansetzen.`,
         },
       ],
     },
@@ -343,7 +344,7 @@ const artikel = {
     },
     {
       q: "Gibt es für beweidete Solarparks Agrarförderung?",
-      a: "In Deutschland in der Regel nicht. Flächen mit Solaranlagen gelten nach § 12 GAPDZV als nichtlandwirtschaftlich, es sei denn, es handelt sich um eine nachgewiesene Agri-PV-Anlage. Mehr unter [Agri-PV Förderung und GAP](/ratgeber/agri-pv-foerderung-gap).",
+      a: "In Deutschland in der Regel nicht. Flächen mit Solaranlagen gelten nach § 12 GAPDZV als nichtlandwirtschaftlich, es sei denn, es handelt sich um eine nachgewiesene Agri-PV-Anlage. Mehr unter [Agri-PV Förderung und GAP](/wissen/ratgeber/agri-pv-foerderung-gap).",
     },
     {
       q: "Dürfen Ziegen in einem Solarpark weiden?",
@@ -355,15 +356,15 @@ const artikel = {
     },
     {
       q: "Ist ein beweideter Solarpark schon Agri-PV?",
-      a: "Nein. Agri-PV setzt voraus, dass die landwirtschaftliche Nutzung Hauptnutzung bleibt und die DIN SPEC 91434 bzw. 91492 erfüllt ist. Ein normaler Solarpark mit Schafen bleibt eine Freiflächenanlage – siehe [DIN SPEC 91434](/ratgeber/agri-pv-din-spec-91434).",
+      a: "Nein. Agri-PV setzt voraus, dass die landwirtschaftliche Nutzung Hauptnutzung bleibt und die DIN SPEC 91434 bzw. 91492 erfüllt ist. Ein normaler Solarpark mit Schafen bleibt eine Freiflächenanlage – siehe [DIN SPEC 91434](/wissen/ratgeber/agri-pv-din-spec-91434).",
     },
   ],
 
   passend: [
-    { href: "/ratgeber/solarpark-artenschutz-biodiversitaet", titel: "Artenschutz im Solarpark", text: "Wie Solarparks zur Biodiversität beitragen." },
-    { href: "/ratgeber/agri-pv-din-spec-91434", titel: "DIN SPEC 91434 erklärt", text: "Kategorien, Flächenverlust und Nachweise." },
-    { href: "/ratgeber/agri-pv-foerderung-gap", titel: "Agri-PV Förderung & GAP", text: "Direktzahlungen, EEG und Baurecht." },
-    { href: "/landwirte", titel: "Für Landwirte", text: "Verpachten, selbst investieren oder beteiligen." },
+    { href: "/wissen/ratgeber/solarpark-artenschutz-biodiversitaet", titel: "Artenschutz im Solarpark", text: "Wie Solarparks zur Biodiversität beitragen." },
+    { href: "/wissen/ratgeber/agri-pv-din-spec-91434", titel: "DIN SPEC 91434 erklärt", text: "Kategorien, Flächenverlust und Nachweise." },
+    { href: "/wissen/ratgeber/agri-pv-foerderung-gap", titel: "Agri-PV Förderung & GAP", text: "Direktzahlungen, EEG und Baurecht." },
+    { href: pfad("/landwirte"), titel: "Für Landwirte", text: "Verpachten, selbst investieren oder beteiligen." },
   ],
 
   quellen: [
@@ -378,14 +379,14 @@ const artikel = {
   seitenCta: {
     titel: "Agri-PV auf Ihrer Weide?",
     text: "Pacht, Eigeninvestition und Beteiligung im Vergleich.",
-    href: "/rechner/agri-pv",
+    href: pfad("/rechner/agri-pv"),
     label: "Zum Agri-PV-Rechner",
   },
   cta: {
     title: "Passt Ihre Fläche zu Solarpark oder Agri-PV?",
     text: "Im Flächencheck prüfen wir Lage, Netzanschluss und Planungsrecht – für Flächeneigentümer und Landwirte kostenfrei.",
-    primary: { label: "Zum Flächencheck", href: "/flaechencheck" },
-    secondary: { label: "Agri-PV entdecken", href: "/agri-pv" },
+    primary: { label: "Zum Flächencheck", href: pfad("/flaechencheck") },
+    secondary: { label: "Agri-PV entdecken", href: pfad("/agri-pv") },
   },
 };
 

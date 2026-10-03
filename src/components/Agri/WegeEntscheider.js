@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, RotateCcw, Sparkles } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { WEGE } from "./wege";
+import { pfad } from "@/lib/land";
 
 /**
  * „Welcher Weg passt?“ – fünf Fragen, Punkte je Weg, Empfehlung mit Begründung.
@@ -198,7 +199,7 @@ function Empfehlung({ liste, onNeu, onZurueck }) {
               Mehr zu Weg {erster.buchstabe}
               <ArrowRight aria-hidden="true" className="ov-pfeil h-4 w-4" />
             </Link>
-            <Link href="/rechner/agri-pv" className="inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 text-[15px] font-semibold text-white ring-1 ring-inset ring-white/35 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
+            <Link href={pfad("/rechner/agri-pv")} className="inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 text-[15px] font-semibold text-white ring-1 ring-inset ring-white/35 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
               Wege durchrechnen
             </Link>
           </div>

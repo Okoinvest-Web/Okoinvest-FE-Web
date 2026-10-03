@@ -5,10 +5,11 @@ import Link from "next/link";
 import { ArrowUpRight, Globe2, Landmark } from "lucide-react";
 import Reveal from "@/components/ui/Reveal";
 import { Eyebrow } from "@/components/ui/SectionHeading";
+import { pfad } from "@/lib/land";
 
 const QUERVERWEISE = [
-  { href: "/energiegemeinschaften", icon: Globe2, titel: "Energiegemeinschaften im Überblick", text: "Regeln in Deutschland, Österreich und der Schweiz im Vergleich." },
-  { href: "/kommunen", icon: Landmark, titel: "Für Gemeinden", text: "Wertschöpfung, Beteiligung und eigene Anlagen vor Ort." },
+  { href: pfad("/energiegemeinschaften"), icon: Globe2, titel: "Energiegemeinschaften im Überblick", text: "Regeln in Deutschland, Österreich und der Schweiz im Vergleich." },
+  { href: pfad("/kommunen"), icon: Landmark, titel: "Für Gemeinden", text: "Wertschöpfung, Beteiligung und eigene Anlagen vor Ort." },
 ];
 
 export default function Abschluss() {

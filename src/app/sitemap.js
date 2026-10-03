@@ -1,100 +1,27 @@
 // src/app/sitemap.js
 //
-// Sitemap der ÖkoInvest-Website: alle öffentlichen Routen der Seitenlandkarte
-// (docs/BRIEFING.md), alle Ratgeber-Artikel aus dem Register und – sofern das
-// Plattform-Backend verfügbar ist – die öffentlichen Exposés der Projektbörse.
+// Sitemaps der ÖkoInvest-Website (Welle 2, Länderrouting): eine je Länderzone und eine für den
+// neutralen Stamm – /sitemap/stamm.xml, /sitemap/de.xml, /sitemap/at.xml, /sitemap/ch.xml.
+// robots.txt verweist auf alle vier (src/app/robots.js).
 //
-// lastModified bewusst mit festen Daten statt `new Date()`: sonst meldet jeder
-// Build Google, sämtliche Seiten hätten sich geändert. Datum nur anfassen,
-// wenn sich der INHALT der Seite wirklich ändert.
+//  - Länderzonen: nur freigegebene, indexierbare Seiten mit Inhalt (src/lib/land/stufen.js),
+//    je Eintrag mit hreflang-Cluster (src/lib/land/sitemaps.js).
+//  - Stamm: Startseite, Projektbörse, Investoren, Unternehmen, Wissen (Ratgeber, Lexikon), EN,
+//    Kontakt, Rechtstexte – ohne Entwürfe (ENTWURFSSEITEN in src/lib/indexsteuerung.js) – sowie
+//    alle Ratgeber-Artikel und, sofern das Plattform-Backend verfügbar ist, die öffentlichen
+//    Exposés der Projektbörse.
 //
-// Portal, Login/Registrierung, /angebot, /einladung, /termin/verwalten und die
-// Entwürfe unter /bedingungen (noindex) gehören nicht in die Sitemap bzw. sind
-// über robots.txt gesperrt. /projektboerse/anbieten ist eine indexierbare
-// Landingpage (mit EN-Gegenstück) und bleibt drin.
-//
-// Entwurfsseiten (ENTWURFSSEITEN in src/lib/indexsteuerung.js, z. B.
-// /nutzungsbedingungen und /datenschutz bis zur Freigabe durch Strang R)
-// werden herausgefiltert – sie stehen weiter in SEITEN, damit sie nach der
-// Freigabe nur aus der Entwurfsliste ausgetragen werden müssen.
+// Portal, Login/Registrierung, /angebot, /einladung, /termin/verwalten, /bericht, /p und die
+// Entwürfe unter /bedingungen gehören nicht in die Sitemap bzw. sind über robots.txt gesperrt.
+// Seiten „in Vorbereitung“ und noindex-Seiten (z. B. /de/marktdaten/fristen) bleiben draußen.
 
 import { alleArtikel, artikelPfad } from "@/lib/ratgeber";
 import { LEXIKON_STAND } from "@/data/lexikon";
 import { abs } from "@/data/site";
-import { META as REGIONEN_META } from "@/data/regionen/meta";
 import { sichtbareProjekte } from "@/lib/boerse/sichtbarkeit";
 import { ohneEntwuerfe } from "@/lib/indexsteuerung";
-
-const START = new Date("2026-09-29"); // Relaunch ÖkoInvest
-const RECHT = new Date("2026-09-29"); // letzte Überarbeitung der Rechtstexte
-
-const SEITEN = [
-  // Startseite & Leistungen
-  { pfad: "/", prio: 1.0, freq: "weekly" },
-  { pfad: "/freiflaeche", prio: 0.9, freq: "monthly" },
-  { pfad: "/agri-pv", prio: 0.9, freq: "monthly" },
-  { pfad: "/solarcarport", prio: 0.8, freq: "monthly" },
-  { pfad: "/grossspeicher", prio: 0.8, freq: "monthly" },
-  { pfad: "/prozess", prio: 0.7, freq: "monthly" },
-  // Zielgruppen
-  { pfad: "/flaeche-verpachten", prio: 0.9, freq: "monthly" },
-  { pfad: "/landwirte", prio: 0.8, freq: "monthly" },
-  { pfad: "/investoren", prio: 0.9, freq: "monthly" },
-  { pfad: "/kommunen", prio: 0.8, freq: "monthly" },
-  // Projektbörse
-  { pfad: "/projektboerse", prio: 0.9, freq: "daily" },
-  { pfad: "/projektboerse/anbieten", prio: 0.7, freq: "monthly" },
-  { pfad: "/projektboerse/karte", prio: 0.7, freq: "daily" },
-  // Strom & Gemeinschaft
-  { pfad: "/virtuelles-kraftwerk", prio: 0.8, freq: "monthly" },
-  { pfad: "/reststrom", prio: 0.8, freq: "monthly" },
-  { pfad: "/energiegemeinschaften", prio: 0.8, freq: "monthly" },
-  { pfad: "/energiegemeinschaften/software", prio: 0.8, freq: "monthly" },
-  { pfad: "/energiegemeinschaften/rechner", prio: 0.7, freq: "monthly" },
-  { pfad: "/genossenschaft", prio: 0.7, freq: "monthly" },
-  { pfad: "/energie-live", prio: 0.7, freq: "hourly" },
-  // Rechner & Werkzeuge
-  { pfad: "/rechner", prio: 0.8, freq: "monthly" },
-  { pfad: "/flaechencheck", prio: 0.9, freq: "monthly" },
-  { pfad: "/rechner/pacht", prio: 0.8, freq: "monthly" },
-  { pfad: "/rechner/agri-pv", prio: 0.8, freq: "monthly" },
-  { pfad: "/rechner/solarpark", prio: 0.8, freq: "monthly" },
-  { pfad: "/rechner/projektbewertung", prio: 0.8, freq: "monthly" },
-  { pfad: "/rechner/reststrom", prio: 0.7, freq: "monthly" },
-  { pfad: "/rechner/solarcarport", prio: 0.7, freq: "monthly" },
-  { pfad: "/rechner/kommune", prio: 0.7, freq: "monthly" },
-  { pfad: "/rechner/pachtangebot-check", prio: 0.8, freq: "monthly" },
-  { pfad: "/rechner/netzanschluss", prio: 0.7, freq: "monthly" },
-  { pfad: "/rechner/ppa", prio: 0.7, freq: "monthly" },
-  { pfad: "/rechner/grossspeicher", prio: 0.7, freq: "monthly" },
-  { pfad: "/rechner/beteiligung", prio: 0.6, freq: "monthly" },
-  { pfad: "/rechner/energy-sharing", prio: 0.6, freq: "monthly" },
-  { pfad: "/marktdaten", prio: 0.8, freq: "weekly" },
-  { pfad: "/dachflaeche-verpachten", prio: 0.9, freq: "monthly" },
-  { pfad: "/bestandsanlagen", prio: 0.8, freq: "monthly" },
-  { pfad: "/warum-oekoinvest", prio: 0.6, freq: "monthly" },
-  { pfad: "/rechner/dachpacht", prio: 0.8, freq: "monthly" },
-  { pfad: "/rechner/bestandsanlage", prio: 0.8, freq: "monthly" },
-  { pfad: "/referenzen", prio: 0.6, freq: "monthly" },
-  { pfad: "/en", prio: 0.6, freq: "monthly" },
-  { pfad: "/en/investors", prio: 0.6, freq: "monthly" },
-  { pfad: "/en/project-exchange", prio: 0.6, freq: "monthly" },
-  { pfad: "/en/sell-your-project", prio: 0.6, freq: "monthly" },
-  { pfad: "/en/contact", prio: 0.4, freq: "yearly" },
-  // Wissen
-  { pfad: "/ratgeber", prio: 0.8, freq: "weekly" },
-  { pfad: "/wissen/lexikon", prio: 0.7, freq: "monthly", datum: new Date(LEXIKON_STAND) },
-  { pfad: "/faq", prio: 0.6, freq: "monthly" },
-  // Unternehmen & Kontakt
-  { pfad: "/unternehmen", prio: 0.6, freq: "monthly" },
-  { pfad: "/kontakt", prio: 0.6, freq: "yearly" },
-  { pfad: "/termin", prio: 0.6, freq: "monthly" },
-  // Rechtstexte
-  { pfad: "/impressum", prio: 0.2, freq: "yearly", datum: RECHT },
-  { pfad: "/datenschutz", prio: 0.2, freq: "yearly", datum: RECHT },
-  { pfad: "/nutzungsbedingungen", prio: 0.3, freq: "yearly", datum: RECHT },
-  { pfad: "/barrierefreiheit", prio: 0.2, freq: "yearly", datum: RECHT },
-];
+import { landAusPraefix } from "@/lib/land";
+import { SITEMAP_IDS, START, STAMM_SEITEN, landEintraege } from "@/lib/land/sitemaps";
 
 /**
  * Öffentliche Exposés der Projektbörse aus dem Plattform-Backend
@@ -131,27 +58,29 @@ async function projektEintraege() {
   }
 }
 
-export default async function sitemap() {
-  const seiten = ohneEntwuerfe(SEITEN).map(({ pfad, prio, freq, datum }) => ({
+async function stammEintraege() {
+  const seiten = ohneEntwuerfe(STAMM_SEITEN).map(({ pfad, prio, freq, datum, lexikon }) => ({
     url: abs(pfad),
-    lastModified: datum || START,
+    lastModified: lexikon ? new Date(LEXIKON_STAND) : datum || START,
     changeFrequency: freq,
     priority: prio,
   }));
-
   const ratgeber = alleArtikel().map((a) => ({
     url: abs(artikelPfad(a.slug)),
     lastModified: new Date(a.aktualisiert),
     changeFrequency: "monthly",
     priority: 0.7,
   }));
+  return [...seiten, ...ratgeber, ...(await projektEintraege())];
+}
 
-  const projekte = await projektEintraege();
+export async function generateSitemaps() {
+  return SITEMAP_IDS.map((id) => ({ id }));
+}
 
-  const regionen = [
-    { url: abs("/regionen"), lastModified: START, changeFrequency: "monthly", priority: 0.8 },
-    ...REGIONEN_META.map((r) => ({ url: abs(`/regionen/${r.slug}`), lastModified: START, changeFrequency: "monthly", priority: 0.8 })),
-  ];
-
-  return [...seiten, ...regionen, ...ratgeber, ...projekte];
+export default async function sitemap(props) {
+  const id = String(await props?.id);
+  if (id === "stamm") return stammEintraege();
+  const land = landAusPraefix(id);
+  return land ? landEintraege(land) : [];
 }

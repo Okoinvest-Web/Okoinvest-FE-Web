@@ -6,14 +6,15 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import { cn } from "@/components/ui/cn";
 import { PHASEN, PROVISION } from "@/lib/invest/markt";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 const rtb = PHASEN.find((p) => p.id === "rtb");
 const BEISPIEL = { mwp: 20, preis: Math.round((rtb.preisProKwp.min + rtb.preisProKwp.max) / 2) };
 const kaufpreis = BEISPIEL.mwp * 1000 * BEISPIEL.preis;
 
 const WERKZEUGE = [
-  { href: "/rechner/solarpark", icon: LineChart, titel: "Solarpark-Renditerechner", text: "Projekt- und EK-IRR, LCOE, DSCR und Cashflow über 30 Jahre – mit Sensitivitätsmatrix." },
-  { href: "/rechner/projektbewertung", icon: Scale, titel: "Projektbewertung", text: "Kaufpreisspanne je kWp nach Phase, Netzanschluss, Größe und Vermarktung." },
+  { href: pfad("/rechner/solarpark"), icon: LineChart, titel: "Solarpark-Renditerechner", text: "Projekt- und EK-IRR, LCOE, DSCR und Cashflow über 30 Jahre – mit Sensitivitätsmatrix." },
+  { href: pfad("/rechner/projektbewertung"), icon: Scale, titel: "Projektbewertung", text: "Kaufpreisspanne je kWp nach Phase, Netzanschluss, Größe und Vermarktung." },
 ];
 
 export default function Provision() {

@@ -11,6 +11,7 @@ import { BalkenJahre, DiagrammKarte, FARBEN, Linien } from "./ToolTeile";
 import { DAUERN, EBENEN, ERLOESNIVEAUS, STANDARD, STANDORTE, erloesAufteilung, rechneSpeicher, vergleichStandorte } from "@/lib/rechner/grossspeicher";
 import { SPEICHER } from "@/lib/invest/markt";
 import { fmt, fmtEur, fmtMio } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 const pct = (v, s = 1) => (v == null || !Number.isFinite(v) ? "–" : `${fmt(v * 100, s)} %`);
 const tsd = (v) => `${fmt(v / 1000)} T€`;
@@ -216,7 +217,7 @@ export default function GrossspeicherRechner() {
             satz={r.projektIrr == null ? "Standort und Anschluss gemeinsam prüfen" : "Projekt-IRR – Standort und Anschluss gemeinsam prüfen"}
             signal={`${r.projektIrr}|${inv.summe}`}
             nachricht={`Aus dem Großspeicher-Rechner: ${fmt(e.mw)} MW / ${fmt(r.mwh)} MWh, ${STANDORTE.find((x) => x.id === e.standort)?.label || e.standort}, ${EBENEN.find((x) => x.id === e.ebene)?.label || e.ebene}, ${e.lebensdauer} Jahre. Ergebnis (Modellrechnung): Projekt-IRR ${pct(r.projektIrr)}, Investition ${fmtMio(inv.summe)}. Bitte Standort und Netzanschluss mit mir prüfen.`}
-            sekundaer={[{ href: "/grossspeicher", label: "Großspeicher planen" }]}
+            sekundaer={[{ href: pfad("/grossspeicher"), label: "Großspeicher planen" }]}
             hinweis="Modellrechnung vor Steuern und Finanzierung, ohne Gewähr. Erlöse sind stark marktabhängig – für Banken zählen Tolling- oder Floor-Verträge."
           />
         </>

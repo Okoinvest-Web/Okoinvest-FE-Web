@@ -10,6 +10,7 @@ import { KOMMUNE, GEMEINSCHAFTEN, STAND } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import EinnahmenBalken, { EinnahmenTabelle, Legende } from "./EinnahmenBalken";
 import { BEISPIEL, tsd } from "./daten";
+import { pfad } from "@/lib/land";
 
 const DIREKT = [
   {
@@ -36,8 +37,8 @@ const DIREKT = [
 ];
 
 const REGION = [
-  { icon: Users, title: "Bürgerbeteiligung", text: "Über die Genossenschaft beteiligen sich Bürger und Landwirte mit kleinen Anteilen – die Rendite bleibt in der Region.", href: "/genossenschaft" },
-  { icon: Share2, title: "Energy Sharing", text: GEMEINSCHAFTEN.de.text, href: "/energiegemeinschaften" },
+  { icon: Users, title: "Bürgerbeteiligung", text: "Über die Genossenschaft beteiligen sich Bürger und Landwirte mit kleinen Anteilen – die Rendite bleibt in der Region.", href: pfad("/genossenschaft") },
+  { icon: Share2, title: "Energy Sharing", text: GEMEINSCHAFTEN.de.text, href: pfad("/energiegemeinschaften") },
   { icon: Factory, title: "Regionale Wertschöpfung", text: "Aufträge für Tiefbau, Zaun, Pflege und Schafhaltung, Pacht für örtliche Eigentümer – und Einkommensteueranteile daraus." },
 ];
 
@@ -92,7 +93,7 @@ export default function Wertschoepfung() {
               ))}
             </dl>
             <Link
-              href="/rechner/kommune"
+              href={pfad("/rechner/kommune")}
               className="group mt-7 inline-flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-ov-600 px-5 text-[15px] font-semibold text-white shadow-[0_8px_24px_-8px_rgba(102,153,51,0.65)] transition-colors hover:bg-ov-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2 lg:mt-auto"
             >
               Mit Ihrem Hebesatz rechnen

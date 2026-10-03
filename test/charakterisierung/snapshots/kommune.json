@@ -2393,6 +2393,309 @@
     "text": "Für die Schweiz zeigen wir hier noch keine Euro-, Förder- oder Pachtwerte: Die Rechner nutzen bisher deutsche Annahmen (EEG, Pacht, GAP, Strompreis). Die Länderlogik wird gerade fachlich geprüft. Gern rechnen wir Ihr Vorhaben persönlich durch.",
     "titel": "Rechenlogik für die Schweiz in Vorbereitung"
    }
+  },
+  "land_at_explizit": {
+   "L": 30,
+   "N": 20,
+   "eingabe": {
+    "anteilGemeinde": 1,
+    "bauart": "sued",
+    "gemeindeflaeche": false,
+    "hebesatz": 4.09,
+    "land": "AT",
+    "mwp": 20,
+    "pachtHa": 2800,
+    "paragraph6": true,
+    "preisCt": 4.8,
+    "regionId": "at",
+    "sitzInGemeinde": false
+   },
+   "ersteGewSt": 21,
+   "ertragJahr1": 22400000,
+   "flaecheHa": 22,
+   "gesamt": {
+    "gewSt": 0,
+    "p6": 660870.664332,
+    "pacht": 0,
+    "summe": 660870.664332
+   },
+   "gesamtLaufzeit": {
+    "gewSt": 818441.256382,
+    "p6": 660870.664332,
+    "pacht": 0,
+    "summe": 1479311.92071
+   },
+   "gewStNachAfa": 81844.1256382,
+   "investition": 11020000,
+   "jahre": [
+    {
+     "erzeugung": 22400000,
+     "gewSt": 0,
+     "jahr": 1,
+     "p6": 34316.8,
+     "pacht": 0,
+     "summe": 34316.8
+    },
+    {
+     "erzeugung": 22310400,
+     "gewSt": 0,
+     "jahr": 2,
+     "p6": 34179.5328,
+     "pacht": 0,
+     "summe": 34179.5328
+    },
+    {
+     "erzeugung": 22221158.4,
+     "gewSt": 0,
+     "jahr": 3,
+     "p6": 34042.8146688,
+     "pacht": 0,
+     "summe": 34042.8146688
+    },
+    {
+     "erzeugung": 22132273.7664,
+     "gewSt": 0,
+     "jahr": 4,
+     "p6": 33906.6434101,
+     "pacht": 0,
+     "summe": 33906.6434101
+    },
+    {
+     "erzeugung": 22043744.6713,
+     "gewSt": 0,
+     "jahr": 5,
+     "p6": 33771.0168365,
+     "pacht": 0,
+     "summe": 33771.0168365
+    },
+    {
+     "erzeugung": 21955569.6926,
+     "gewSt": 0,
+     "jahr": 6,
+     "p6": 33635.9327691,
+     "pacht": 0,
+     "summe": 33635.9327691
+    },
+    {
+     "erzeugung": 21867747.4139,
+     "gewSt": 0,
+     "jahr": 7,
+     "p6": 33501.3890381,
+     "pacht": 0,
+     "summe": 33501.3890381
+    },
+    {
+     "erzeugung": 21780276.4242,
+     "gewSt": 0,
+     "jahr": 8,
+     "p6": 33367.3834819,
+     "pacht": 0,
+     "summe": 33367.3834819
+    },
+    {
+     "erzeugung": 21693155.3185,
+     "gewSt": 0,
+     "jahr": 9,
+     "p6": 33233.913948,
+     "pacht": 0,
+     "summe": 33233.913948
+    },
+    {
+     "erzeugung": 21606382.6973,
+     "gewSt": 0,
+     "jahr": 10,
+     "p6": 33100.9782922,
+     "pacht": 0,
+     "summe": 33100.9782922
+    },
+    {
+     "erzeugung": 21519957.1665,
+     "gewSt": 0,
+     "jahr": 11,
+     "p6": 32968.574379,
+     "pacht": 0,
+     "summe": 32968.574379
+    },
+    {
+     "erzeugung": 21433877.3378,
+     "gewSt": 0,
+     "jahr": 12,
+     "p6": 32836.7000815,
+     "pacht": 0,
+     "summe": 32836.7000815
+    },
+    {
+     "erzeugung": 21348141.8284,
+     "gewSt": 0,
+     "jahr": 13,
+     "p6": 32705.3532812,
+     "pacht": 0,
+     "summe": 32705.3532812
+    },
+    {
+     "erzeugung": 21262749.2611,
+     "gewSt": 0,
+     "jahr": 14,
+     "p6": 32574.5318681,
+     "pacht": 0,
+     "summe": 32574.5318681
+    },
+    {
+     "erzeugung": 21177698.2641,
+     "gewSt": 0,
+     "jahr": 15,
+     "p6": 32444.2337406,
+     "pacht": 0,
+     "summe": 32444.2337406
+    },
+    {
+     "erzeugung": 21092987.471,
+     "gewSt": 0,
+     "jahr": 16,
+     "p6": 32314.4568056,
+     "pacht": 0,
+     "summe": 32314.4568056
+    },
+    {
+     "erzeugung": 21008615.5211,
+     "gewSt": 0,
+     "jahr": 17,
+     "p6": 32185.1989784,
+     "pacht": 0,
+     "summe": 32185.1989784
+    },
+    {
+     "erzeugung": 20924581.0591,
+     "gewSt": 0,
+     "jahr": 18,
+     "p6": 32056.4581825,
+     "pacht": 0,
+     "summe": 32056.4581825
+    },
+    {
+     "erzeugung": 20840882.7348,
+     "gewSt": 0,
+     "jahr": 19,
+     "p6": 31928.2323498,
+     "pacht": 0,
+     "summe": 31928.2323498
+    },
+    {
+     "erzeugung": 20757519.2039,
+     "gewSt": 0,
+     "jahr": 20,
+     "p6": 31800.5194204,
+     "pacht": 0,
+     "summe": 31800.5194204
+    },
+    {
+     "erzeugung": 20674489.1271,
+     "gewSt": 78880.1843957,
+     "jahr": 21,
+     "p6": 0,
+     "pacht": 0,
+     "summe": 78880.1843957
+    },
+    {
+     "erzeugung": 20591791.1706,
+     "gewSt": 82633.3425439,
+     "jahr": 22,
+     "p6": 0,
+     "pacht": 0,
+     "summe": 82633.3425439
+    },
+    {
+     "erzeugung": 20509424.0059,
+     "gewSt": 82547.0687102,
+     "jahr": 23,
+     "p6": 0,
+     "pacht": 0,
+     "summe": 82547.0687102
+    },
+    {
+     "erzeugung": 20427386.3099,
+     "gewSt": 82448.9397493,
+     "jahr": 24,
+     "p6": 0,
+     "pacht": 0,
+     "summe": 82448.9397493
+    },
+    {
+     "erzeugung": 20345676.7646,
+     "gewSt": 82338.6655416,
+     "jahr": 25,
+     "p6": 0,
+     "pacht": 0,
+     "summe": 82338.6655416
+    },
+    {
+     "erzeugung": 20264294.0576,
+     "gewSt": 82215.9499597,
+     "jahr": 26,
+     "p6": 0,
+     "pacht": 0,
+     "summe": 82215.9499597
+    },
+    {
+     "erzeugung": 20183236.8813,
+     "gewSt": 82080.4907484,
+     "jahr": 27,
+     "p6": 0,
+     "pacht": 0,
+     "summe": 82080.4907484
+    },
+    {
+     "erzeugung": 20102503.9338,
+     "gewSt": 81931.9794025,
+     "jahr": 28,
+     "p6": 0,
+     "pacht": 0,
+     "summe": 81931.9794025
+    },
+    {
+     "erzeugung": 20022093.9181,
+     "gewSt": 81770.1010426,
+     "jahr": 29,
+     "p6": 0,
+     "pacht": 0,
+     "summe": 81770.1010426
+    },
+    {
+     "erzeugung": 19942005.5424,
+     "gewSt": 81594.5342879,
+     "jahr": 30,
+     "p6": 0,
+     "pacht": 0,
+     "summe": 81594.5342879
+    }
+   ],
+   "jahre1": {
+    "erzeugung": 22400000,
+    "gewSt": 0,
+    "jahr": 1,
+    "p6": 34316.8,
+    "pacht": 0,
+    "summe": 34316.8
+   },
+   "landesregeln": {
+    "gerechnet": false,
+    "laender": [
+     "MV",
+     "BB",
+     "NI",
+     "SL",
+     "SN",
+     "ST",
+     "BY"
+    ],
+    "stand": "17.07.2026"
+   },
+   "proJahr": 33043.5332166,
+   "sperre": {
+    "land": "AT",
+    "text": "Für Österreich zeigen wir hier noch keine Euro-, Förder- oder Pachtwerte: Die Rechner nutzen bisher deutsche Annahmen (EEG, Pacht, GAP, Strompreis). Die Länderlogik wird gerade fachlich geprüft. Gern rechnen wir Ihr Vorhaben persönlich durch.",
+    "titel": "Rechenlogik für Österreich in Vorbereitung"
+   }
   }
  }
 }

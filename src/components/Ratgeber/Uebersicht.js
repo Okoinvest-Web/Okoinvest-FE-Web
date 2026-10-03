@@ -7,6 +7,7 @@ import Reveal from "@/components/ui/Reveal";
 import { Eyebrow } from "@/components/ui/SectionHeading";
 import { artikelPfad } from "@/lib/ratgeber";
 import { TON, thema, themaAnker } from "./themen";
+import { pfad } from "@/lib/land";
 
 /* ------------------------------------------------------------------ */
 /* Themenbereiche als Bento-Raster                                     */
@@ -101,7 +102,7 @@ const ROLLEN = [
     rolle: "Flächeneigentümer",
     frage: "Was ist meine Fläche wert – und was steht im Vertrag?",
     slugs: ["solarpark-pacht-pro-hektar", "pachtvertrag-solarpark", "dienstbarkeit-grundbuch-pv-pacht", "pv-pacht-erbschaftsteuer-grundsteuer"],
-    weiter: { href: "/flaeche-verpachten", label: "Fläche verpachten" },
+    weiter: { href: pfad("/flaeche-verpachten"), label: "Fläche verpachten" },
     ton: "gruen",
   },
   {
@@ -109,7 +110,7 @@ const ROLLEN = [
     rolle: "Landwirte",
     frage: "Wie passen Ernte, Förderung und Solarstrom zusammen?",
     slugs: ["agri-pv-wirtschaftlichkeit", "agri-pv-din-spec-91434", "agri-pv-foerderung-gap", "photovoltaik-landwirt-steuern"],
-    weiter: { href: "/landwirte", label: "Für Landwirte" },
+    weiter: { href: pfad("/landwirte"), label: "Für Landwirte" },
     ton: "sonne",
   },
   {
@@ -125,7 +126,7 @@ const ROLLEN = [
     rolle: "Gemeinden & Unternehmen",
     frage: "Wie profitieren Standort, Bürger und Strombezug?",
     slugs: ["kommunale-beteiligung-6-eeg", "solarpark-genehmigung-bebauungsplan", "ppa-fuer-unternehmen", "energy-sharing-energiegemeinschaften"],
-    weiter: { href: "/kommunen", label: "Für Kommunen" },
+    weiter: { href: pfad("/kommunen"), label: "Für Kommunen" },
     ton: "sand",
   },
 ];
@@ -273,8 +274,8 @@ function Ring({ anteil }) {
 export function WeiterWissen({ begriffe, eyebrow = "Mehr Wissen", titel = "Kurz nachschlagen oder selbst rechnen.", hinweis, wege: eigeneWege }) {
   const wege = eigeneWege || [
     { href: "/wissen/lexikon", icon: BookOpen, titel: "Lexikon", text: `${begriffe} Fachbegriffe von Aufstellungsbeschluss bis Zuschlagswert – jeweils mit Definition in einem Satz.` },
-    { href: "/rechner", icon: Calculator, titel: "Rechner", text: "Pacht, Agri-PV, Solarpark, Projektbewertung und Reststrom – mit denselben Marktannahmen wie in den Artikeln." },
-    { href: "/faq", icon: HelpCircle, titel: "Häufige Fragen", text: "Kurze Antworten zu Flächencheck, Projektbörse, Portal, Provision und Ablauf." },
+    { href: pfad("/rechner"), icon: Calculator, titel: "Rechner", text: "Pacht, Agri-PV, Solarpark, Projektbewertung und Reststrom – mit denselben Marktannahmen wie in den Artikeln." },
+    { href: pfad("/faq"), icon: HelpCircle, titel: "Häufige Fragen", text: "Kurze Antworten zu Flächencheck, Projektbörse, Portal, Provision und Ablauf." },
   ];
   return (
     <section aria-labelledby="weiter-titel" className="bg-white pt-16 md:pt-24">

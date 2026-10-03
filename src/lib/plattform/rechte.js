@@ -248,6 +248,8 @@ const SEITEN_BEREICH = {
   "": "cockpit",
   aufgaben: "aufgaben",
   vorgaenge: "vorgaenge",
+  leads: "vorgaenge", // Welle 2, Paket B3: Lead-Desk (wie /api/admin/leads)
+  kanaele: "berichte", // Welle 2, Paket GRP: Kanal-Auswertung (wie /api/admin/kanaele)
   flaechen: "flaechen",
   akquise: "akquise",
   projekte: "projekte",

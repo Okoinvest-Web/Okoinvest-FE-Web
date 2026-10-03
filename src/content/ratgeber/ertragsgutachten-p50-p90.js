@@ -6,6 +6,7 @@
 import { REGIONEN, FINANZIERUNG, BAUART, ERLOESE, annuitaet, STAND } from "@/lib/invest/markt";
 import { rechneSolarpark, STANDARD } from "@/lib/rechner/solarpark";
 import { fmt, fmtEur, fmtMio, fmtPct, fmtCt } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag zur Übernahme */
 // z-Werte der Standardnormalverteilung für die Überschreitungswahrscheinlichkeiten (einseitig)
@@ -144,7 +145,7 @@ const artikel = {
         },
         {
           typ: "tool",
-          href: "/rechner/solarpark",
+          href: pfad("/rechner/solarpark"),
           titel: "Ertrag und Rendite überschlagen",
           text: "Region, Bauart und Leistung wählen – der Solarpark-Rechner zeigt Ertrag, Cashflow und DSCR über die Laufzeit.",
           label: "Zum Solarpark-Rechner",
@@ -274,13 +275,13 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Das Beispiel zeigt die Hebelwirkung: Ein paar Prozent weniger P90 kosten schnell mehrere Hunderttausend Euro Kredit, die als Eigenkapital nachgeschossen werden müssen – und senken so die Eigenkapitalrendite. Tritt später tatsächlich der P50 ein, liegt der DSCR im ersten Jahr bei rund ${fmt(DSCR_BEI_P50, 2)}; der Überschuss fließt an die Eigentümer. Ein Gutachten mit gut begründeter, niedriger Unsicherheit ist deshalb bares Geld wert. Wie Rendite und Hebel zusammenhängen, erklärt der Ratgeber [Solarpark als Investment](/ratgeber/solarpark-investment-rendite); einen ausführlichen Blick auf Vermarktungsrisiken gibt der Ratgeber [Direktvermarktung](/ratgeber/direktvermarktung-solarpark).`,
+          text: `Das Beispiel zeigt die Hebelwirkung: Ein paar Prozent weniger P90 kosten schnell mehrere Hunderttausend Euro Kredit, die als Eigenkapital nachgeschossen werden müssen – und senken so die Eigenkapitalrendite. Tritt später tatsächlich der P50 ein, liegt der DSCR im ersten Jahr bei rund ${fmt(DSCR_BEI_P50, 2)}; der Überschuss fließt an die Eigentümer. Ein Gutachten mit gut begründeter, niedriger Unsicherheit ist deshalb bares Geld wert. Wie Rendite und Hebel zusammenhängen, erklärt der Ratgeber [Solarpark als Investment](/wissen/ratgeber/solarpark-investment-rendite); einen ausführlichen Blick auf Vermarktungsrisiken gibt der Ratgeber [Direktvermarktung](/wissen/ratgeber/direktvermarktung-solarpark).`,
         },
         {
           typ: "kasten",
           variant: "wichtig",
           titel: "Was das Gutachten nicht abdeckt",
-          text: "Ein Ertragsgutachten prognostiziert Energie, nicht Erlöse. Abregelung bei [negativen Strompreisen](/ratgeber/negative-strompreise-solarspitzengesetz), Netzengpässe und sinkende Marktwerte müssen im Finanzmodell separat abgebildet werden. Auch Versicherungsschäden und längere Ausfälle sind nicht enthalten – dazu der Ratgeber [Solarpark-Versicherung](/ratgeber/solarpark-versicherung).",
+          text: "Ein Ertragsgutachten prognostiziert Energie, nicht Erlöse. Abregelung bei [negativen Strompreisen](/wissen/ratgeber/negative-strompreise-solarspitzengesetz), Netzengpässe und sinkende Marktwerte müssen im Finanzmodell separat abgebildet werden. Auch Versicherungsschäden und längere Ausfälle sind nicht enthalten – dazu der Ratgeber [Solarpark-Versicherung](/wissen/ratgeber/solarpark-versicherung).",
         },
       ],
     },
@@ -306,7 +307,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Beim Kauf eines Parks ersetzt der gemessene Ertrag nach und nach die Prognose. Wie Monitoringdaten, Degradation und Thermografie in den Kaufpreis eingehen, zeigt der Ratgeber [Wert einer Bestandsanlage](/ratgeber/solarpark-bestandsanlage-wert). Für Projekte vor dem Bau gehört das Gutachten in den [Datenraum](/wissen/lexikon#datenraum) und in die [Due Diligence](/ratgeber/projektrechte-kaufen-due-diligence). Passende Projekte finden Investoren in der [Projektbörse](/projektboerse).",
+          text: "Beim Kauf eines Parks ersetzt der gemessene Ertrag nach und nach die Prognose. Wie Monitoringdaten, Degradation und Thermografie in den Kaufpreis eingehen, zeigt der Ratgeber [Wert einer Bestandsanlage](/wissen/ratgeber/solarpark-bestandsanlage-wert). Für Projekte vor dem Bau gehört das Gutachten in den [Datenraum](/wissen/lexikon#datenraum) und in die [Due Diligence](/wissen/ratgeber/projektrechte-kaufen-due-diligence). Passende Projekte finden Investoren in der [Projektbörse](/projektboerse).",
         },
       ],
     },
@@ -340,9 +341,9 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/ratgeber/solarpark-investment-rendite", titel: "Solarpark als Investment", text: "Rendite, Hebel und Sensitivitäten im 10-MWp-Beispiel." },
-    { href: "/ratgeber/solarpark-bestandsanlage-wert", titel: "Wert einer Bestandsanlage", text: "DCF, Multiplikatoren und technische Due Diligence." },
-    { href: "/rechner/solarpark", titel: "Solarpark-Rechner", text: "Ertrag, Cashflow und DSCR mit eigenen Werten." },
+    { href: "/wissen/ratgeber/solarpark-investment-rendite", titel: "Solarpark als Investment", text: "Rendite, Hebel und Sensitivitäten im 10-MWp-Beispiel." },
+    { href: "/wissen/ratgeber/solarpark-bestandsanlage-wert", titel: "Wert einer Bestandsanlage", text: "DCF, Multiplikatoren und technische Due Diligence." },
+    { href: pfad("/rechner/solarpark"), titel: "Solarpark-Rechner", text: "Ertrag, Cashflow und DSCR mit eigenen Werten." },
     { href: "/investoren", titel: "Für Investoren", text: "Suchprofil anlegen und passende Projekte finden." },
   ],
 
@@ -355,7 +356,7 @@ const artikel = {
     { titel: "IEA PVPS Task 13 – Bifacial Photovoltaic Modules and Systems (T13-14:2021, Executive Summary)", url: "https://iea-pvps.org/wp-content/uploads/2021/04/IEA-PVPS-T13-14_2021-Bifacial-Photovoltaic-Modules-and-Systems-executive-summary.pdf", stand: "09/2026" },
   ],
 
-  seitenCta: { titel: "Ertrag und DSCR rechnen", text: "Cashflow, Kredithöhe und Rendite mit eigenen Annahmen.", href: "/rechner/solarpark", label: "Zum Solarpark-Rechner" },
+  seitenCta: { titel: "Ertrag und DSCR rechnen", text: "Cashflow, Kredithöhe und Rendite mit eigenen Annahmen.", href: pfad("/rechner/solarpark"), label: "Zum Solarpark-Rechner" },
   cta: {
     title: "Projekte mit geprüften Unterlagen finden.",
     text: "In der Projektbörse erhalten Investoren nach NDA Zugang zu Datenraum und Gutachten. Für Käufer ist die Plattform kostenfrei.",

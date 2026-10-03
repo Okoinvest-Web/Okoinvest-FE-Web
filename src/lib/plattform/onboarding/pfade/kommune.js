@@ -1,6 +1,7 @@
 // src/lib/plattform/onboarding/pfade/kommune.js – Kommune / Gemeinde (eigene Rolle `kommune`)
 
 import { benachrichtigungenSchritt, profilSchritt, terminSchritt } from "./gemeinsam";
+import { pfad } from "../../../land/index.js";
 
 export const kommune = {
   id: "kommune",
@@ -12,7 +13,7 @@ export const kommune = {
     {
       id: "gemeinde", titel: "Gemeindedaten erfassen", kurz: "Gemeindedaten", art: "aktion",
       text: "Gemeinde, amtlicher Gemeindeschlüssel (DE AGS, AT Gemeindekennziffer, CH BFS-Nummer), gemeindeeigene Flächen, Planungsstand und Themen – strukturiert in einem Formular.",
-      links: [{ href: "/kommunen#anfrage", label: "Gemeindedaten erfassen", primaer: true }],
+      links: [{ href: pfad("/kommunen#anfrage"), label: "Gemeindedaten erfassen", primaer: true }],
       pflicht: true, kriterium: { fakt: "kommuneAnliegen" },
     },
     {
@@ -23,7 +24,7 @@ export const kommune = {
         "Ein Kriterienkatalog (Bodengüte, Abstand zur Wohnbebauung, Sichtachsen, Größe je Ortsteil) schafft Gleichbehandlung aller Anfragen.",
         "Kosten der Bauleitplanung übernimmt üblicherweise der Projektträger über einen städtebaulichen Vertrag.",
       ],
-      links: [{ href: "/kommunen", label: "Leitfaden für Kommunen" }],
+      links: [{ href: pfad("/kommunen"), label: "Leitfaden für Kommunen" }],
       pflicht: false, kriterium: { merker: true }, bestaetigbar: true, bestaetigenText: "Verstanden",
     },
     {
@@ -34,7 +35,7 @@ export const kommune = {
         "AT: Beteiligung über Erneuerbare-Energie-Gemeinschaften (lokal/regional) oder Bürgerenergiegemeinschaften; CH: ZEV bzw. lokale Elektrizitätsgemeinschaft (LEG, seit 2026).",
         "Die Schätzung für Ihr Gebiet zeigt die Gemeinde-Sicht, sobald Projekte in der Planung sind.",
       ],
-      links: [{ href: "/rechner/kommune", label: "Kommunal-Rechner" }, { href: "/genossenschaft", label: "Genossenschaft" }],
+      links: [{ href: pfad("/rechner/kommune"), label: "Kommunal-Rechner" }, { href: pfad("/genossenschaft"), label: "Genossenschaft" }],
       pflicht: false, kriterium: { merker: true }, bestaetigbar: true, bestaetigenText: "Verstanden",
     },
     {

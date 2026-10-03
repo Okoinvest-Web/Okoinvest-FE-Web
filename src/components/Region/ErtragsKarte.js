@@ -5,6 +5,7 @@ import { META } from "@/data/regionen/meta";
 import { REGIONEN } from "@/data/regionen";
 import { fmt } from "@/lib/rechner/annahmen";
 import s from "./region.module.css";
+import { pfad, regionSchluessel } from "@/lib/land";
 
 const ZELLE = 72;
 const LUECKE = 6;
@@ -51,7 +52,7 @@ export default function ErtragsKarte({ dunkel = true, einlauf = false, className
           const stufe = ertragStufe(v) ?? 0;
           const f = ERTRAG_STUFEN[stufe];
           return (
-            <a key={m.slug} href={`/regionen/${m.slug}`} aria-label={`${m.name} (${LAND_NAME[m.land]})${v ? `: ${fmt(v)} kWh/kWp` : ""}`} className={cn("group outline-none", s.kachel)} style={{ "--stufe": stufe, "--i": i % 6 }}>
+            <a key={m.slug} href={pfad(regionSchluessel(m.slug))} aria-label={`${m.name} (${LAND_NAME[m.land]})${v ? `: ${fmt(v)} kWh/kWp` : ""}`} className={cn("group outline-none", s.kachel)} style={{ "--stufe": stufe, "--i": i % 6 }}>
               <title>{`${m.name}${v ? ` · ${fmt(v)} kWh/kWp` : ""}`}</title>
               <rect x={x} y={y} width={bw} height={bh} rx={14} fill={f.fill} className="transition-opacity duration-200 group-hover:opacity-85" />
               <rect x={x} y={y} width={bw} height={bh} rx={14} fill="none" strokeWidth={3} className="stroke-transparent group-hover:stroke-white/70 group-focus-visible:stroke-white" />

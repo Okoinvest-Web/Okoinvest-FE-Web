@@ -12,8 +12,8 @@
 import { landNormal } from "./laender.js";
 
 export const ZAEHLER_EREIGNISSE = Object.freeze(["versuch", "angelegt", "abgelehnt", "honeypot"]);
-// Kanäle wie in src/lib/herkunft.js (kanal())
-const KANAELE = new Set(["Direkt", "Suchmaschine", "KI-Assistent", "Anzeige", "Social Media", "E-Mail", "Offline/QR", "Kampagne", "Verweis"]);
+// Kanäle wie in src/lib/herkunft.js (kanal()); Welle 2: „Gruppe“ und „Partner“ (src/lib/gruppe/kanal.js, Paket GRP)
+const KANAELE = new Set(["Direkt", "Suchmaschine", "KI-Assistent", "Gruppe", "Partner", "Anzeige", "Social Media", "E-Mail", "Offline/QR", "Kampagne", "Verweis"]);
 const TYP_MUSTER = /^[a-z_]{2,30}$/;
 
 const summen = new Map();

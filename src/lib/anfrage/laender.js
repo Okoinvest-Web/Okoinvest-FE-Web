@@ -56,3 +56,6 @@ export const grundstueck = (land) => GRUNDSTUECK[landNormal(land)] || { einzahl:
 
 /** Wizard-Nutzung → Nutzungsschlüssel der Fläche im Backend (konstanten.js FLAECHE_NUTZUNG) */
 export const NUTZUNG_ALIAS = Object.freeze({ parkplatz: "gewerbe", deponie: "sonstige" });
+
+/** Welle 2, Paket B3: Land eines Leads ist Pflicht – DE | AT | CH oder ausdrücklich "unbekannt" (nie leer, nie still DE) */
+export const leadLand = (wert) => landNormal(wert) || "unbekannt";

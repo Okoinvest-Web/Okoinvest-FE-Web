@@ -6,6 +6,7 @@ import { ArrowUpRight, Clock3 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { msSeitEingabe } from "./bausteine";
+import BerichtAnfordern from "@/components/Bericht/BerichtAnfordern";
 
 /* ------------------------------------------------------------------
    Ergebnis → passende Anfrage. Steht am Ende jedes Rechner-Ergebnisses:
@@ -42,6 +43,8 @@ const bewegungReduziert = () => typeof window !== "undefined" && window.matchMed
  * nachricht  Text für die vorbelegte Anfrage (beginnt mit „Aus dem …“)
  * signal     Wert, dessen Änderung nach einer Eingabe die Karte kurz aufleuchten lässt
  * sekundaer  [{ href, label }] – leise Textlinks, kein zweiter lauter Knopf
+ * bericht    optional { rechner, land, eingaben } – ruhiger Zusatz „Ergebnis als Bericht“ (Welle 2, Paket B4,
+ *            src/components/Bericht/BerichtAnfordern.js); das Ergebnis bleibt immer frei sichtbar
  */
 export default function ErgebnisAnfrage({
   typ,
@@ -55,6 +58,7 @@ export default function ErgebnisAnfrage({
   signal,
   sekundaer = [],
   hinweis,
+  bericht,
   className,
 }) {
   const leuchten = useRef(null);
@@ -129,6 +133,7 @@ export default function ErgebnisAnfrage({
         )}
       </div>
       {hinweis && <p className="mt-4 text-[13px] leading-relaxed text-ink-500">{hinweis}</p>}
+      {bericht?.rechner && <BerichtAnfordern rechner={bericht.rechner} land={bericht.land} eingaben={bericht.eingaben} />}
     </div>
   );
 }

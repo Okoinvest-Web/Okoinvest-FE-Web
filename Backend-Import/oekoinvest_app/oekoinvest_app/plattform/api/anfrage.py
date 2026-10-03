@@ -8,6 +8,13 @@
 #  - Hinweis (Art. 6 Abs. 1 lit. b) statt Pflicht-Einwilligung; optionale Einwilligungen mit Version und Text-Hash
 #  - Zuständig nach Gebiet (backoffice.gebiet_fuer), Team-Postfach je Land (site_config anfrage_postfach_de/_at/_ch)
 #  - Server-Zähler ohne Kennung: Logger „oekoinvest_anfrage_zaehler“ (Tag × Typ × Land × Kanal)
+#
+# Welle 2, Paket B3 – gleiche Logik wie anfrageAnlegen + demo/leadkette.js (Logik: plattform/api/einwilligung.py):
+#  - Land ist Pflicht am Lead (DE | AT | CH | „unbekannt“), Routing Land × Typ × Größe: Desk-Person → Gebiet → „ohne Zuständigkeit“
+#  - Score A/B/C mit Begründung, SLA-Klasse und Frist; Lead-Meta unter herkunft.lead (für den Anfragenden nicht sichtbar)
+#  - Personendaten getrennt (Plattform Lead Person, gekürzte IP, Löschung nach 30 Tagen); am Vorgang keine IP mehr
+#  - Einwilligungsprotokoll (Plattform Einwilligung Protokoll): Hinweis + nur ausdrücklich erteilte Einwilligungen, Pseudonym
+#  - Aktivitätsprotokoll ohne E-Mail und ohne IP
 
 import json
 import re
@@ -19,10 +26,11 @@ from oekoinvest_app.plattform import validierung as v
 from oekoinvest_app.plattform.kern import als_json, jetzt_iso, nutzer, protokoll, verlauf
 from oekoinvest_app.plattform.konstanten import BUNDESLAENDER, FLAECHE_NUTZUNG, LAENDER, VORGANG_TYPEN
 from oekoinvest_app.plattform.flaeche_fach import fach_aus_anfrage  # Fachprüfung Flächen
+from oekoinvest_app.plattform.api import einwilligung as lead_kette  # Welle 2, Paket B3
 
 VERBOTENE_SCHLUESSEL = {"__proto__", "constructor", "prototype"}
 NUTZUNG_ALIAS = {"parkplatz": "gewerbe"}  # Flächencheck-IDs → FLAECHE_NUTZUNG (deponie gibt es hier schon)
-KANAELE = {"Direkt", "Suchmaschine", "KI-Assistent", "Anzeige", "Social Media", "E-Mail", "Offline/QR", "Kampagne", "Verweis"}
+KANAELE = {"Direkt", "Suchmaschine", "KI-Assistent", "Gruppe", "Partner", "Anzeige", "Social Media", "E-Mail", "Offline/QR", "Kampagne", "Verweis"}  # Welle 2: Gruppe/Partner (GRP)
 
 
 def daten_bereinigen(d, tiefe=0):
@@ -91,7 +99,7 @@ def _einwilligung(einwilligung_text, ip_, hinweis, einwilligungen):
 		optional.append(eintrag)
 	return {
 		"am": jetzt_iso(),
-		"ip": ip_,
+		"ip": "",  # B3: IP nur gekürzt und getrennt (Plattform Lead Person), Löschung nach 30 Tagen
 		"text": v.text(einwilligung_text, 400),
 		"art": "hinweis",  # Hinweis nach Art. 6 Abs. 1 lit. b statt Pflicht-Einwilligung
 		"rechtsgrundlage": v.text(hw.get("rechtsgrundlage"), 60),
@@ -101,16 +109,17 @@ def _einwilligung(einwilligung_text, ip_, hinweis, einwilligungen):
 	}
 
 
-def _zustaendig_nach_gebiet(land, bundesland, plz):
-	"""Gebiet → zuständiges, aktives Backoffice-Konto (oder None, Grund)."""
+def _gebiet(land, bundesland, plz):
+	"""Gebietstreffer für das Routing (B3: Fallback hinter dem Lead-Desk) → {mitarbeiterId, name, grund} oder None.
+	Ob das Konto aktiv ist, prüft einwilligung.routen()."""
 	if not land:
-		return None, ""
+		return None
 	from oekoinvest_app.plattform import backoffice
 
 	g = backoffice.gebiet_fuer(land, bundesland, plz)
-	if not g or not backoffice._aktive_backoffice(g["gebiet"].mitarbeiter_id):
-		return None, ""
-	return g["gebiet"].mitarbeiter_id, f"Gebiet „{g['gebiet'].bezeichnung}“ ({g['grund']})"
+	if not g:
+		return None
+	return {"mitarbeiterId": g["gebiet"].mitarbeiter_id, "name": g["gebiet"].bezeichnung, "grund": g["grund"]}
 
 
 def _team_postfach(vg, land):
@@ -181,7 +190,11 @@ def anlegen(typ=None, kontakt=None, daten=None, herkunft=None, ip=None, einwilli
 	ein = d.get("eingaben") if isinstance(d.get("eingaben"), dict) else {}
 	bl_liste = BUNDESLAENDER.get(k["land"], [])
 	bundesland = v.auswahl(d.get("bundesland"), bl_liste, "") or v.auswahl(d.get("regionName"), bl_liste, "")  # Regionsseiten senden regionName
-	zustaendig_id, zustaendig_grund = _zustaendig_nach_gebiet(k["land"], bundesland, k["plz"])
+	# B3: Routing, Score, SLA (einwilligung.py) – Land „unbekannt“ statt leer, Zuständigkeit Desk → Gebiet → ohne
+	eingang = jetzt_iso()
+	lead = lead_kette.lead_vorbereiten(t, d, k, d.get("rueckrufGewuenscht") is True, _gebiet(k["land"], bundesland, k["plz"]), eingang)
+	zustaendig_id = lead.get("zustaendigId")  # bleibt in der Meta (Routing-Ergebnis; Abweichung später = „manuell“)
+	h = {**h, "lead": lead}
 
 	vg = frappe.get_doc(
 		{
@@ -193,7 +206,7 @@ def anlegen(typ=None, kontakt=None, daten=None, herkunft=None, ip=None, einwilli
 			"kontakt": als_json(k),
 			"daten": als_json(d),
 			"herkunft": als_json(h),
-			"ip": ip_,
+			"ip": "",
 			"einwilligung": als_json(_einwilligung(einwilligungText, ip_, hinweis, einwilligungen)),
 			"zustaendig_id": zustaendig_id,
 		}
@@ -231,9 +244,15 @@ def anlegen(typ=None, kontakt=None, daten=None, herkunft=None, ip=None, einwilli
 		frappe.db.set_value("Plattform Vorgang", vg.name, "flaeche_id", f.name, update_modified=False)
 		vg.flaeche_id = f.name
 
-	protokoll(u, "anfrage", "vorgang", vg.name, f"Anfrage {VORGANG_TYPEN[t]} von {k['email']}", ip_)
+	# B3: getrennte Personenzeile + Einwilligungsprotokoll (nur Pseudonym)
+	ein_liste = _einwilligung(einwilligungText, ip_, hinweis, einwilligungen)["optional"]
+	lead_kette.lead_anlegen(vg.name, lead, eingang, k, ip_, hinweis, einwilligungText, ein_liste, "portal" if u else "web_formular")
+	# Keine Personendaten und keine IP im (unveränderlichen) Aktivitätsprotokoll
+	protokoll(u, "anfrage", "vorgang", vg.name, f"Anfrage {VORGANG_TYPEN[t]} ({lead['land']}) · Score {lead['score']['klasse']} · SLA {lead['slaKlasse']}")
 	if zustaendig_id:
-		protokoll(None, "zuweisen", "vorgang", vg.name, f"Zuständig: {zustaendig_id} ({zustaendig_grund})")
+		protokoll(None, "zuweisen", "vorgang", vg.name, f"Zuständig: {zustaendig_id} ({(lead.get('routingGruende') or [lead['desk']['label']])[0]})")
+	else:
+		protokoll(None, "zuweisen", "vorgang", vg.name, f"Ohne Zuständigkeit ({lead['desk']['label']})")
 	_zaehlen(t, k["land"], h.get("kanal"))
 	benachrichtigung.neue_anfrage(vg, k)
 	_team_postfach(vg, k["land"])

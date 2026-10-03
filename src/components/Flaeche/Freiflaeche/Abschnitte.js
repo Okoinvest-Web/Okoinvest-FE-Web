@@ -6,6 +6,7 @@ import Reveal from "@/components/ui/Reveal";
 import { cn } from "@/components/ui/cn";
 import { FREIFLAECHE } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 const mwpBei = (ha) => ha / FREIFLAECHE.haProMwp;
 
@@ -94,7 +95,7 @@ export function Kriterien() {
             lead="Keine Fläche ist perfekt. Entscheidend ist das Zusammenspiel aus Größe, Netz, Lage und Restriktionen – das prüfen wir kostenfrei, bevor wir über Verträge sprechen."
           />
           <Reveal>
-            <a href="/flaechencheck" className="group inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[14.5px] font-semibold text-ov-800 shadow-e1 ring-1 ring-ov-200 transition-colors hover:bg-ov-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
+            <a href={pfad("/flaechencheck")} className="group inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[14.5px] font-semibold text-ov-800 shadow-e1 ring-1 ring-ov-200 transition-colors hover:bg-ov-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
               Eigene Fläche in zwei Minuten prüfen
               <svg aria-hidden="true" viewBox="0 0 12 12" className="h-3 w-3 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"><path d="M4 2 L8 6 L4 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </a>

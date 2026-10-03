@@ -6,6 +6,7 @@
 import { FREIFLAECHE, FINANZIERUNG, ERLOESE, STAND } from "@/lib/invest/markt";
 import { rechneSolarpark, STANDARD } from "@/lib/rechner/solarpark";
 import { fmt, fmtEur, fmtMio, fmtPct, fmtCt } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag zur Übernahme */
 // Jahresprämie Sach-/Allgefahren- inkl. Ertragsausfallversicherung für Freiflächenparks als Anteil der
@@ -140,7 +141,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Fällt nach einem Brand in einer Trafostation die Hälfte des Parks für ${fmt(AUSFALL_TAGE)} Tage aus, entgehen im Jahresmittel rund ${fmtEur(Math.round(BU_SCHADEN / 1000) * 1000)} – im Sommer deutlich mehr, im Winter weniger, weil ein Großteil des Jahresertrags zwischen April und September entsteht. Gute Policen rechnen den Ausfall deshalb nicht pauschal, sondern mit der Einstrahlung im Ausfallzeitraum und den Monitoringdaten vergleichbarer Parkteile. Grundlage ist oft das [Ertragsgutachten mit P50/P90](/ratgeber/ertragsgutachten-p50-p90).`,
+          text: `Fällt nach einem Brand in einer Trafostation die Hälfte des Parks für ${fmt(AUSFALL_TAGE)} Tage aus, entgehen im Jahresmittel rund ${fmtEur(Math.round(BU_SCHADEN / 1000) * 1000)} – im Sommer deutlich mehr, im Winter weniger, weil ein Großteil des Jahresertrags zwischen April und September entsteht. Gute Policen rechnen den Ausfall deshalb nicht pauschal, sondern mit der Einstrahlung im Ausfallzeitraum und den Monitoringdaten vergleichbarer Parkteile. Grundlage ist oft das [Ertragsgutachten mit P50/P90](/wissen/ratgeber/ertragsgutachten-p50-p90).`,
         },
         {
           typ: "checkliste",
@@ -156,7 +157,7 @@ const artikel = {
           typ: "kasten",
           variant: "info",
           titel: "Abregelung ist kein Versicherungsfall",
-          text: "Wenn der Netzbetreiber die Einspeisung wegen Netzengpässen reduziert, handelt es sich nicht um einen Sachschaden. Die Entschädigung ist im Energierecht geregelt, nicht in der Versicherung. Ähnliches gilt für Zeiten mit [negativen Strompreisen](/ratgeber/negative-strompreise-solarspitzengesetz). Wie Anschluss und Kapazität zustande kommen, erklärt der Ratgeber [Netzanschluss für Solarparks](/ratgeber/netzanschluss-solarpark).",
+          text: "Wenn der Netzbetreiber die Einspeisung wegen Netzengpässen reduziert, handelt es sich nicht um einen Sachschaden. Die Entschädigung ist im Energierecht geregelt, nicht in der Versicherung. Ähnliches gilt für Zeiten mit [negativen Strompreisen](/wissen/ratgeber/negative-strompreise-solarspitzengesetz). Wie Anschluss und Kapazität zustande kommen, erklärt der Ratgeber [Netzanschluss für Solarparks](/wissen/ratgeber/netzanschluss-solarpark).",
         },
       ],
     },
@@ -187,7 +188,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Für den Betrieb empfiehlt die VdS 3145 eine jährliche Sichtprüfung durch einen Fachbetrieb und mindestens alle ${fmt(PRUEF_JAHRE)} Jahre eine wiederkehrende Prüfung nach DIN EN 62446-1; ergänzend kann eine Thermografie durch zertifizierte Fachleute Wärmequellen an Zellen und Verbindungen sichtbar machen. Viele Versicherer machen solche Prüfungen zur Obliegenheit – sie gehören deshalb in den [O&M-Vertrag](/wissen/lexikon#o-und-m). Wer seinen Park beweiden lässt, sollte Kabelführung und Tierart früh abstimmen; Details im Ratgeber [Beweidung mit Schafen](/ratgeber/solarpark-beweidung-schafe).`,
+          text: `Für den Betrieb empfiehlt die VdS 3145 eine jährliche Sichtprüfung durch einen Fachbetrieb und mindestens alle ${fmt(PRUEF_JAHRE)} Jahre eine wiederkehrende Prüfung nach DIN EN 62446-1; ergänzend kann eine Thermografie durch zertifizierte Fachleute Wärmequellen an Zellen und Verbindungen sichtbar machen. Viele Versicherer machen solche Prüfungen zur Obliegenheit – sie gehören deshalb in den [O&M-Vertrag](/wissen/lexikon#o-und-m). Wer seinen Park beweiden lässt, sollte Kabelführung und Tierart früh abstimmen; Details im Ratgeber [Beweidung mit Schafen](/wissen/ratgeber/solarpark-beweidung-schafe).`,
         },
       ],
     },
@@ -211,7 +212,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Wichtig ist, dass das Konzept mit Planung und Genehmigung zusammenpasst: Zaunhöhe, Durchlässe für Kleintiere und Beleuchtung sind oft auch Thema im Bebauungsplan und beim Artenschutz – dazu der Ratgeber [Artenschutz und Biodiversität](/ratgeber/solarpark-artenschutz-biodiversitaet). Kameras müssen datenschutzkonform ausgerichtet sein, insbesondere an öffentlichen Wegen. Die laufenden Kosten für Überwachung und Sicherheitsdienst sind in den Betriebskosten der Website-Rechner (rund " + fmt(FREIFLAECHE.opexProKwp) + " €/kWp und Jahr ohne Pacht) enthalten; bei hohem Risiko können sie darüber liegen.",
+          text: "Wichtig ist, dass das Konzept mit Planung und Genehmigung zusammenpasst: Zaunhöhe, Durchlässe für Kleintiere und Beleuchtung sind oft auch Thema im Bebauungsplan und beim Artenschutz – dazu der Ratgeber [Artenschutz und Biodiversität](/wissen/ratgeber/solarpark-artenschutz-biodiversitaet). Kameras müssen datenschutzkonform ausgerichtet sein, insbesondere an öffentlichen Wegen. Die laufenden Kosten für Überwachung und Sicherheitsdienst sind in den Betriebskosten der Website-Rechner (rund " + fmt(FREIFLAECHE.opexProKwp) + " €/kWp und Jahr ohne Pacht) enthalten; bei hohem Risiko können sie darüber liegen.",
         },
       ],
     },
@@ -242,7 +243,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Die Prämie selbst entscheidet selten über die Wirtschaftlichkeit eines Parks – der Selbstbehalt und die Frage, ob Diebstahl überhaupt gedeckt ist, oft schon. Nach mehreren Diebstahlserien haben Versicherer die Bedingungen für Freiflächenanlagen verschärft: höhere Selbstbehalte, Sublimits für Diebstahl und strengere Sicherheitsauflagen. Rechnen Sie im [Solarpark-Rechner](/rechner/solarpark) durch, was höhere Betriebskosten für Rendite und DSCR bedeuten.",
+          text: "Die Prämie selbst entscheidet selten über die Wirtschaftlichkeit eines Parks – der Selbstbehalt und die Frage, ob Diebstahl überhaupt gedeckt ist, oft schon. Nach mehreren Diebstahlserien haben Versicherer die Bedingungen für Freiflächenanlagen verschärft: höhere Selbstbehalte, Sublimits für Diebstahl und strengere Sicherheitsauflagen. Rechnen Sie im [Solarpark-Rechner](/de/rechner/solarpark) durch, was höhere Betriebskosten für Rendite und DSCR bedeuten.",
         },
       ],
     },
@@ -267,7 +268,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Beim Kauf eines Bestandsparks gehören Policen, Schadenhistorie der letzten Jahre und laufende Schadenfälle in den Datenraum. Eine hohe Schadenquote kann die Prämie nach dem Eigentümerwechsel deutlich erhöhen – ein Punkt, der in die Bewertung einfließt. Mehr dazu im Ratgeber [Wert einer Bestandsanlage](/ratgeber/solarpark-bestandsanlage-wert) und in der Checkliste zum [Projektkauf](/ratgeber/projektrechte-kaufen-due-diligence).",
+          text: "Beim Kauf eines Bestandsparks gehören Policen, Schadenhistorie der letzten Jahre und laufende Schadenfälle in den Datenraum. Eine hohe Schadenquote kann die Prämie nach dem Eigentümerwechsel deutlich erhöhen – ein Punkt, der in die Bewertung einfließt. Mehr dazu im Ratgeber [Wert einer Bestandsanlage](/wissen/ratgeber/solarpark-bestandsanlage-wert) und in der Checkliste zum [Projektkauf](/wissen/ratgeber/projektrechte-kaufen-due-diligence).",
         },
       ],
     },
@@ -278,11 +279,11 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: "**Der Betreiber haftet für Schäden, die vom Park ausgehen – gegenüber Nachbarn, Besuchern, Dienstleistern und dem Verpächter.** Der Pachtvertrag verlangt deshalb in der Regel eine Betreiberhaftpflicht und eine Freistellung des Eigentümers; die typischen Klauseln erklärt der Ratgeber [Pachtvertrag für Solarparks](/ratgeber/pachtvertrag-solarpark).",
+          text: "**Der Betreiber haftet für Schäden, die vom Park ausgehen – gegenüber Nachbarn, Besuchern, Dienstleistern und dem Verpächter.** Der Pachtvertrag verlangt deshalb in der Regel eine Betreiberhaftpflicht und eine Freistellung des Eigentümers; die typischen Klauseln erklärt der Ratgeber [Pachtvertrag für Solarparks](/wissen/ratgeber/pachtvertrag-solarpark).",
         },
         {
           typ: "p",
-          text: "Eigene Aufmerksamkeit verdienen Umweltschäden. Nach dem Umweltschadensgesetz müssen Verantwortliche Schäden an Boden, Gewässern und geschützten Arten auf eigene Kosten vermeiden und sanieren – unabhängig davon, ob ein Dritter Ansprüche stellt. Relevant sind etwa auslaufendes Transformatoröl oder belastetes Löschwasser nach einem Brand. Eine Umweltschadensversicherung deckt diese öffentlich-rechtlichen Pflichten ab, die klassische Haftpflicht oft nicht. Auch die Pflichten zum Rückbau am Ende der Laufzeit sind nicht versicherbar, sondern werden über Bürgschaften abgesichert – siehe [Rückbau und Rückbaubürgschaft](/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).",
+          text: "Eigene Aufmerksamkeit verdienen Umweltschäden. Nach dem Umweltschadensgesetz müssen Verantwortliche Schäden an Boden, Gewässern und geschützten Arten auf eigene Kosten vermeiden und sanieren – unabhängig davon, ob ein Dritter Ansprüche stellt. Relevant sind etwa auslaufendes Transformatoröl oder belastetes Löschwasser nach einem Brand. Eine Umweltschadensversicherung deckt diese öffentlich-rechtlichen Pflichten ab, die klassische Haftpflicht oft nicht. Auch die Pflichten zum Rückbau am Ende der Laufzeit sind nicht versicherbar, sondern werden über Bürgschaften abgesichert – siehe [Rückbau und Rückbaubürgschaft](/wissen/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).",
         },
       ],
     },
@@ -341,10 +342,10 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/ratgeber/ertragsgutachten-p50-p90", titel: "Ertragsgutachten P50/P90", text: "Grundlage für Finanzierung und Ertragsausfalldeckung." },
-    { href: "/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Haftung, Freistellung und Versicherungspflichten im Vertrag." },
-    { href: "/ratgeber/solarpark-investment-rendite", titel: "Solarpark als Investment", text: "Wie Betriebskosten auf Rendite und Finanzierung wirken." },
-    { href: "/rechner/solarpark", titel: "Solarpark-Rechner", text: "Betriebskosten, DSCR und Rendite mit eigenen Werten." },
+    { href: "/wissen/ratgeber/ertragsgutachten-p50-p90", titel: "Ertragsgutachten P50/P90", text: "Grundlage für Finanzierung und Ertragsausfalldeckung." },
+    { href: "/wissen/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Haftung, Freistellung und Versicherungspflichten im Vertrag." },
+    { href: "/wissen/ratgeber/solarpark-investment-rendite", titel: "Solarpark als Investment", text: "Wie Betriebskosten auf Rendite und Finanzierung wirken." },
+    { href: pfad("/rechner/solarpark"), titel: "Solarpark-Rechner", text: "Betriebskosten, DSCR und Rendite mit eigenen Werten." },
   ],
 
   quellen: [
@@ -358,7 +359,7 @@ const artikel = {
     { titel: "Hagelregister (VKF/Schweiz) – Hagelwiderstand von Bauteilen", url: "https://www.hagelregister.ch/", stand: "09/2026" },
   ],
 
-  seitenCta: { titel: "Betriebskosten durchrechnen", text: "Was Versicherung und Sicherheit für Rendite und DSCR bedeuten.", href: "/rechner/solarpark", label: "Zum Solarpark-Rechner" },
+  seitenCta: { titel: "Betriebskosten durchrechnen", text: "Was Versicherung und Sicherheit für Rendite und DSCR bedeuten.", href: pfad("/rechner/solarpark"), label: "Zum Solarpark-Rechner" },
   cta: {
     title: "Solarparks mit vollständigen Unterlagen finden.",
     text: "In der Projektbörse sehen Investoren nach NDA Policen, Gutachten und Betriebsdaten im Datenraum. Für Käufer ist die Plattform kostenfrei.",

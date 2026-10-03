@@ -24,6 +24,7 @@
 
 import { PACHT, AGRI, CARPORT, PHASEN, PROVISION, KOMMUNE, ERLOESE, FREIFLAECHE, STROM, FINANZIERUNG } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import { pfad } from "../lib/land/index.js";
 
 const phase = (id) => PHASEN.find((p) => p.id === id);
 const pct = (x, stellen = 0) => `${fmt(x * 100, stellen)} %`;
@@ -51,7 +52,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Agrivoltaik", "Agrophotovoltaik", "APV"],
     verwandt: ["din-spec-91434", "gap-direktzahlungen", "besondere-solaranlagen", "privilegierung-aussenbereich"],
-    link: { href: "/agri-pv", label: "Agri-PV mit ÖkoInvest" },
+    link: { href: pfad("/agri-pv"), label: "Agri-PV mit ÖkoInvest" },
   },
   {
     id: "anlagenzertifikat",
@@ -61,7 +62,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["VDE-AR-N 4110", "Einheitenzertifikat", "Konformitätserklärung"],
     verwandt: ["netzverknuepfungspunkt", "cod", "umspannwerk"],
-    link: { href: "/prozess", label: "Projektablauf" },
+    link: { href: pfad("/prozess"), label: "Projektablauf" },
   },
   {
     id: "anzulegender-wert",
@@ -70,7 +71,7 @@ export const BEGRIFFE = [
     text: `Bei ausschreibungspflichtigen Anlagen entspricht er dem eigenen Zuschlagswert; bei kleineren Anlagen ist er gesetzlich festgelegt. Die Marktprämie ergibt sich aus der Differenz zwischen anzulegendem Wert und Marktwert Solar und wird in der Regel 20 Jahre gezahlt. Zur Orientierung: Im ersten Segment lagen die durchschnittlichen Zuschlagswerte zuletzt bei rund ${fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh.`,
     kategorie: "markt",
     verwandt: ["marktpraemie", "zuschlagswert", "marktwert-solar", "ausschreibung-eeg"],
-    link: { href: "/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung erklärt" },
+    link: { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung erklärt" },
   },
   {
     id: "arbitrage",
@@ -80,7 +81,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Energiearbitrage", "Spread-Handel", "Intraday-Handel"],
     verwandt: ["grossspeicher", "regelenergie", "negative-strompreise", "virtuelles-kraftwerk"],
-    link: { href: "/ratgeber/grossspeicher-erloese", label: "Erlöse von Großspeichern" },
+    link: { href: "/wissen/ratgeber/grossspeicher-erloese", label: "Erlöse von Großspeichern" },
   },
   {
     id: "asset-deal",
@@ -89,7 +90,7 @@ export const BEGRIFFE = [
     text: "Der Käufer kann gezielt auswählen, welche Rechte und Pflichten er übernimmt, und vermeidet so unbekannte Altlasten der Gesellschaft. Dafür muss jeder Vertrag einzeln übertragen werden, was Zustimmungen von Verpächtern, Netzbetreiber oder Behörden erfordern kann. In der Projektentwicklung ist deshalb häufiger der Share Deal üblich.",
     kategorie: "invest",
     verwandt: ["share-deal", "spa", "projektrechte", "due-diligence"],
-    link: { href: "/ratgeber/projektrechte-kaufen-due-diligence", label: "Projektrechte kaufen" },
+    link: { href: "/wissen/ratgeber/projektrechte-kaufen-due-diligence", label: "Projektrechte kaufen" },
   },
   {
     id: "aufstellungsbeschluss",
@@ -98,7 +99,7 @@ export const BEGRIFFE = [
     text: `Mit ihm bekundet die Gemeinde ihren Planungswillen; ein Anspruch auf Baurecht entsteht dadurch noch nicht. Für Solarparks ist er ein wichtiger Meilenstein, weil er zeigt, dass die Kommune das Vorhaben grundsätzlich mitträgt – Projekte in dieser Phase werden zur Orientierung mit etwa ${spanne(phase("aufstellung"))} gehandelt. Häufig wird parallel ein städtebaulicher Vertrag über die Übernahme der Planungskosten geschlossen.`,
     kategorie: "planung",
     verwandt: ["bebauungsplan", "fruehzeitige-beteiligung", "satzungsbeschluss", "flaechennutzungsplan"],
-    link: { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", label: "B-Plan-Verfahren" },
+    link: { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", label: "B-Plan-Verfahren" },
   },
   {
     id: "ausgleichsflaechen",
@@ -108,7 +109,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["Kompensationsflächen", "Eingriffsregelung", "Ausgleichsmaßnahmen"],
     verwandt: ["umweltbericht", "bebauungsplan", "uvp"],
-    link: { href: "/freiflaeche", label: "Freiflächen-PV" },
+    link: { href: pfad("/freiflaeche"), label: "Freiflächen-PV" },
   },
   {
     id: "ausschreibung-eeg",
@@ -118,7 +119,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Solarausschreibung", "erstes Segment", "Bundesnetzagentur"],
     verwandt: ["gebotstermin", "zuschlagswert", "flaechenkulisse", "besondere-solaranlagen"],
-    link: { href: "/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung Freifläche" },
+    link: { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung Freifläche" },
   },
 
   // ---------------------------------------------------------------- B
@@ -130,7 +131,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["BKZ", "Netzkostenbeitrag"],
     verwandt: ["grossspeicher", "netzanschlusszusage", "netzverknuepfungspunkt"],
-    link: { href: "/grossspeicher", label: "Großspeicher" },
+    link: { href: pfad("/grossspeicher"), label: "Großspeicher" },
   },
   {
     id: "bebauungsplan",
@@ -140,7 +141,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["B-Plan", "vorhabenbezogener Bebauungsplan", "Sondergebiet Photovoltaik", "Bauleitplanung"],
     verwandt: ["aufstellungsbeschluss", "satzungsbeschluss", "flaechennutzungsplan", "umweltbericht"],
-    link: { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Genehmigung eines Solarparks" },
+    link: { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Genehmigung eines Solarparks" },
   },
   {
     id: "benachteiligte-gebiete",
@@ -150,7 +151,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Länderöffnungsklausel", "benachteiligtes Gebiet"],
     verwandt: ["flaechenkulisse", "ausschreibung-eeg", "randstreifen"],
-    link: { href: "/flaechencheck", label: "Fläche prüfen" },
+    link: { href: pfad("/flaechencheck"), label: "Fläche prüfen" },
   },
   {
     id: "besondere-solaranlagen",
@@ -160,7 +161,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Floating-PV", "Moor-PV", "Parkplatz-PV", "Agri-PV-Segment"],
     verwandt: ["agri-pv", "ausschreibung-eeg", "din-spec-91434", "flaechenkulisse"],
-    link: { href: "/ratgeber/agri-pv-wirtschaftlichkeit", label: "Wirtschaftlichkeit Agri-PV" },
+    link: { href: "/wissen/ratgeber/agri-pv-wirtschaftlichkeit", label: "Wirtschaftlichkeit Agri-PV" },
   },
   {
     id: "bifazial",
@@ -170,7 +171,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["Bifazialität", "Glas-Glas-Module", "vertikale Agri-PV"],
     verwandt: ["agri-pv", "tracker", "spezifischer-ertrag", "capture-rate"],
-    link: { href: "/rechner/agri-pv", label: "Agri-PV-Rechner" },
+    link: { href: pfad("/rechner/agri-pv"), label: "Agri-PV-Rechner" },
   },
   {
     id: "buergerenergiegemeinschaft",
@@ -180,7 +181,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["BEG", "Energiegemeinschaft Österreich"],
     verwandt: ["eeg-gemeinschaft", "eag", "energy-sharing"],
-    link: { href: "/energiegemeinschaften", label: "Energiegemeinschaften" },
+    link: { href: pfad("/energiegemeinschaften"), label: "Energiegemeinschaften" },
   },
 
   // ---------------------------------------------------------------- C
@@ -192,7 +193,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Capture Price", "Kannibalisierungseffekt", "Wertigkeit Solarstrom"],
     verwandt: ["marktwert-solar", "ppa", "negative-strompreise", "grossspeicher"],
-    link: { href: "/energie-live", label: "Strommarkt live" },
+    link: { href: pfad("/energie-live"), label: "Strommarkt live" },
   },
   {
     id: "cod",
@@ -202,7 +203,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Inbetriebnahme", "kommerzielle Inbetriebnahme", "Bestandsanlage"],
     verwandt: ["rtb", "epc", "o-und-m", "anlagenzertifikat"],
-    link: { href: "/rechner/projektbewertung", label: "Projekt bewerten" },
+    link: { href: pfad("/rechner/projektbewertung"), label: "Projekt bewerten" },
   },
 
   // ---------------------------------------------------------------- D
@@ -224,7 +225,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Schuldendienstdeckungsgrad", "Kapitaldienstdeckungsgrad"],
     verwandt: ["p50-p90", "irr", "kapitalwert", "ppa"],
-    link: { href: "/ratgeber/solarpark-investment-rendite", label: "Rendite von Solarparks" },
+    link: { href: "/wissen/ratgeber/solarpark-investment-rendite", label: "Rendite von Solarparks" },
   },
   {
     id: "degradation",
@@ -234,7 +235,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["Leistungsverlust", "Moduldegradation"],
     verwandt: ["spezifischer-ertrag", "performance-ratio", "p50-p90"],
-    link: { href: "/rechner/solarpark", label: "Solarpark-Rechner" },
+    link: { href: pfad("/rechner/solarpark"), label: "Solarpark-Rechner" },
   },
   {
     id: "dienstbarkeit",
@@ -244,7 +245,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Grunddienstbarkeit", "Servitut", "Leitungsrecht", "Grundbuch"],
     verwandt: ["projektrechte", "rueckbauverpflichtung", "netzverknuepfungspunkt"],
-    link: { href: "/ratgeber/pachtvertrag-solarpark", label: "Pachtvertrag Solarpark" },
+    link: { href: "/wissen/ratgeber/pachtvertrag-solarpark", label: "Pachtvertrag Solarpark" },
   },
   {
     id: "din-spec-91434",
@@ -254,7 +255,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["DIN SPEC Agri-PV", "Kategorie I", "Kategorie II", "DIN SPEC 91492"],
     verwandt: ["agri-pv", "gap-direktzahlungen", "besondere-solaranlagen"],
-    link: { href: "/ratgeber/agri-pv-din-spec-91434", label: "DIN SPEC 91434 im Detail" },
+    link: { href: "/wissen/ratgeber/agri-pv-din-spec-91434", label: "DIN SPEC 91434 im Detail" },
   },
   {
     id: "direktvermarktung",
@@ -264,7 +265,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Direktvermarkter", "geförderte Direktvermarktung", "sonstige Direktvermarktung"],
     verwandt: ["marktpraemie", "marktwert-solar", "ppa", "virtuelles-kraftwerk"],
-    link: { href: "/virtuelles-kraftwerk", label: "Virtuelles Kraftwerk" },
+    link: { href: pfad("/virtuelles-kraftwerk"), label: "Virtuelles Kraftwerk" },
   },
   {
     id: "due-diligence",
@@ -274,7 +275,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["DD", "Legal Due Diligence", "Technical Due Diligence"],
     verwandt: ["datenraum", "spa", "projektrechte", "loi"],
-    link: { href: "/ratgeber/projektrechte-kaufen-due-diligence", label: "Due Diligence bei Projektrechten" },
+    link: { href: "/wissen/ratgeber/projektrechte-kaufen-due-diligence", label: "Due Diligence bei Projektrechten" },
   },
 
   // ---------------------------------------------------------------- E
@@ -286,7 +287,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["Erneuerbaren-Ausbau-Gesetz", "OeMAG", "Investitionszuschuss Österreich"],
     verwandt: ["marktpraemie", "eeg-gemeinschaft", "gruenland-photovoltaik"],
-    link: { href: "/ratgeber/freiflaechen-pv-oesterreich", label: "Freiflächen-PV in Österreich" },
+    link: { href: "/wissen/ratgeber/freiflaechen-pv-oesterreich", label: "Freiflächen-PV in Österreich" },
   },
   {
     id: "eeg-gemeinschaft",
@@ -296,7 +297,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["Erneuerbare-Energie-Gemeinschaft", "EEG Österreich", "lokale EEG", "regionale EEG"],
     verwandt: ["buergerenergiegemeinschaft", "eag", "energy-sharing", "leg"],
-    link: { href: "/ratgeber/energy-sharing-energiegemeinschaften", label: "Energiegemeinschaften im Vergleich" },
+    link: { href: "/wissen/ratgeber/energy-sharing-energiegemeinschaften", label: "Energiegemeinschaften im Vergleich" },
   },
   {
     id: "eeg-2023",
@@ -306,7 +307,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Erneuerbare-Energien-Gesetz", "EEG", "Solarpaket I"],
     verwandt: ["ausschreibung-eeg", "flaechenkulisse", "kommunalbeteiligung", "negative-strompreise"],
-    link: { href: "/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung" },
+    link: { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung" },
   },
   {
     id: "einmalverguetung",
@@ -316,7 +317,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["EIV", "KLEIV", "GREIV", "HEIV", "Pronovo"],
     verwandt: ["solarexpress", "zev", "leg"],
-    link: { href: "/ratgeber/freiflaechen-pv-schweiz", label: "Freiflächen-PV in der Schweiz" },
+    link: { href: "/wissen/ratgeber/freiflaechen-pv-schweiz", label: "Freiflächen-PV in der Schweiz" },
   },
   {
     id: "energiegenossenschaft",
@@ -326,7 +327,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["Bürgerenergie", "Bürgerbeteiligung", "eG", "Genossenschaft"],
     verwandt: ["eeg-gemeinschaft", "kommunalbeteiligung", "agri-pv", "energy-sharing"],
-    link: { href: "/genossenschaft", label: "Zur Genossenschaft" },
+    link: { href: pfad("/genossenschaft"), label: "Zur Genossenschaft" },
   },
   {
     id: "energy-sharing",
@@ -336,7 +337,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["gemeinsame Nutzung", "Energiegemeinschaft Deutschland", "§ 42c EnWG"],
     verwandt: ["eeg-gemeinschaft", "leg", "reststrom", "buergerenergiegemeinschaft"],
-    link: { href: "/ratgeber/energy-sharing-energiegemeinschaften", label: "Energy Sharing erklärt" },
+    link: { href: "/wissen/ratgeber/energy-sharing-energiegemeinschaften", label: "Energy Sharing erklärt" },
   },
   {
     id: "epc",
@@ -346,7 +347,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Generalunternehmer", "schlüsselfertige Errichtung", "EPC-Vertrag"],
     verwandt: ["o-und-m", "cod", "rtb", "lcoe"],
-    link: { href: "/rechner/solarpark", label: "Solarpark kalkulieren" },
+    link: { href: pfad("/rechner/solarpark"), label: "Solarpark kalkulieren" },
   },
 
   // ---------------------------------------------------------------- F
@@ -358,7 +359,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["EEG-Flächenkulisse", "förderfähige Flächen", "Konversionsfläche"],
     verwandt: ["randstreifen", "benachteiligte-gebiete", "ausschreibung-eeg", "besondere-solaranlagen"],
-    link: { href: "/flaechencheck", label: "Flächencheck starten" },
+    link: { href: pfad("/flaechencheck"), label: "Flächencheck starten" },
   },
   {
     id: "flaechennutzungsplan",
@@ -368,7 +369,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["FNP", "vorbereitender Bauleitplan", "Parallelverfahren"],
     verwandt: ["bebauungsplan", "aufstellungsbeschluss", "satzungsbeschluss"],
-    link: { href: "/kommunen", label: "Für Kommunen" },
+    link: { href: pfad("/kommunen"), label: "Für Kommunen" },
   },
   {
     id: "flaechenpacht",
@@ -378,7 +379,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Solarpacht", "Pacht pro Hektar", "Pachtvertrag Solarpark", "Nutzungsentgelt"],
     verwandt: ["dienstbarkeit", "rueckbauverpflichtung", "landwirtschaftliches-vermoegen", "agri-pv"],
-    link: { href: "/rechner/pacht", label: "Pacht berechnen" },
+    link: { href: pfad("/rechner/pacht"), label: "Pacht berechnen" },
   },
   {
     id: "fruehzeitige-beteiligung",
@@ -388,7 +389,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["Öffentlichkeitsbeteiligung", "Scoping", "Behördenbeteiligung"],
     verwandt: ["aufstellungsbeschluss", "bebauungsplan", "umweltbericht"],
-    link: { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Ablauf des B-Plan-Verfahrens" },
+    link: { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Ablauf des B-Plan-Verfahrens" },
   },
 
   // ---------------------------------------------------------------- G
@@ -400,7 +401,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Direktzahlungen", "Einkommensgrundstützung", "GAP", "Betriebsprämie"],
     verwandt: ["agri-pv", "din-spec-91434", "landwirtschaftliches-vermoegen"],
-    link: { href: "/ratgeber/agri-pv-foerderung-gap", label: "Agri-PV und GAP-Förderung" },
+    link: { href: "/wissen/ratgeber/agri-pv-foerderung-gap", label: "Agri-PV und GAP-Förderung" },
   },
   {
     id: "gebotstermin",
@@ -410,7 +411,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Ausschreibungstermin", "Gebotsfrist", "Höchstwert"],
     verwandt: ["ausschreibung-eeg", "zuschlagswert", "anzulegender-wert"],
-    link: { href: "/ratgeber/eeg-ausschreibung-freiflaeche", label: "Gebotstermine und Ablauf" },
+    link: { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", label: "Gebotstermine und Ablauf" },
   },
   {
     id: "grossspeicher",
@@ -420,7 +421,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["BESS", "Batteriespeicher", "Stand-alone-Speicher", "Co-Location"],
     verwandt: ["arbitrage", "regelenergie", "baukostenzuschuss", "virtuelles-kraftwerk"],
-    link: { href: "/grossspeicher", label: "Großspeicher entwickeln" },
+    link: { href: pfad("/grossspeicher"), label: "Großspeicher entwickeln" },
   },
   {
     id: "gruenland-photovoltaik",
@@ -430,7 +431,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["Widmung Photovoltaik", "Flächenwidmung Österreich", "Sonderwidmung PV"],
     verwandt: ["eag", "uvp", "flaechennutzungsplan"],
-    link: { href: "/ratgeber/freiflaechen-pv-oesterreich", label: "Widmung in Österreich" },
+    link: { href: "/wissen/ratgeber/freiflaechen-pv-oesterreich", label: "Widmung in Österreich" },
   },
 
   // ---------------------------------------------------------------- H
@@ -442,7 +443,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["HKN", "Guarantee of Origin", "GoO", "Grünstromzertifikat"],
     verwandt: ["ppa", "direktvermarktung", "reststrom"],
-    link: { href: "/ratgeber/ppa-fuer-unternehmen", label: "PPA für Unternehmen" },
+    link: { href: "/wissen/ratgeber/ppa-fuer-unternehmen", label: "PPA für Unternehmen" },
   },
 
   // ---------------------------------------------------------------- I
@@ -454,7 +455,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["IRR", "Internal Rate of Return", "Eigenkapitalrendite", "Projektrendite"],
     verwandt: ["kapitalwert", "dscr", "lcoe"],
-    link: { href: "/rechner/projektbewertung", label: "Rendite berechnen" },
+    link: { href: pfad("/rechner/projektbewertung"), label: "Rendite berechnen" },
   },
 
   // ---------------------------------------------------------------- K
@@ -466,7 +467,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["NPV", "Net Present Value", "Barwert"],
     verwandt: ["irr", "dscr", "projektrechte"],
-    link: { href: "/rechner/projektbewertung", label: "Projektbewertung" },
+    link: { href: pfad("/rechner/projektbewertung"), label: "Projektbewertung" },
   },
   {
     id: "kommunalbeteiligung",
@@ -476,7 +477,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["§ 6 EEG", "Gemeindebeteiligung", "Akzeptanzabgabe"],
     verwandt: ["eeg-2023", "bebauungsplan", "aufstellungsbeschluss"],
-    link: { href: "/rechner/kommune", label: "Kommunal-Rechner" },
+    link: { href: pfad("/rechner/kommune"), label: "Kommunal-Rechner" },
   },
 
   // ---------------------------------------------------------------- L
@@ -488,7 +489,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Erbschaftsteuer Solarpark", "Grundsteuer PV-Fläche", "JStG 2024", "Bewertungsgesetz"],
     verwandt: ["dienstbarkeit", "gap-direktzahlungen", "agri-pv"],
-    link: { href: "/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer", label: "Pacht, Erbschaft- und Grundsteuer" },
+    link: { href: "/wissen/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer", label: "Pacht, Erbschaft- und Grundsteuer" },
   },
   {
     id: "lcoe",
@@ -498,7 +499,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Stromgestehungskosten", "Levelized Cost of Electricity", "Erzeugungskosten"],
     verwandt: ["irr", "epc", "spezifischer-ertrag", "ppa"],
-    link: { href: "/rechner/solarpark", label: "Solarpark-Rechner" },
+    link: { href: pfad("/rechner/solarpark"), label: "Solarpark-Rechner" },
   },
   {
     id: "loi",
@@ -518,7 +519,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["LEG", "Elektrizitätsgemeinschaft", "Mantelerlass"],
     verwandt: ["zev", "energy-sharing", "eeg-gemeinschaft", "einmalverguetung"],
-    link: { href: "/energiegemeinschaften", label: "Energiegemeinschaften DACH" },
+    link: { href: pfad("/energiegemeinschaften"), label: "Energiegemeinschaften DACH" },
   },
 
   // ---------------------------------------------------------------- M
@@ -530,7 +531,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["gleitende Marktprämie", "Marktprämienmodell"],
     verwandt: ["anzulegender-wert", "marktwert-solar", "direktvermarktung", "eag"],
-    link: { href: "/ratgeber/eeg-ausschreibung-freiflaeche", label: "Förderung über Ausschreibung" },
+    link: { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", label: "Förderung über Ausschreibung" },
   },
   {
     id: "marktstammdatenregister",
@@ -540,7 +541,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["MaStR", "Anlagenregister"],
     verwandt: ["cod", "eeg-2023", "direktvermarktung"],
-    link: { href: "/bestandsanlagen", label: "PV-Bestandsanlagen kaufen und verkaufen" },
+    link: { href: pfad("/bestandsanlagen"), label: "PV-Bestandsanlagen kaufen und verkaufen" },
   },
   {
     id: "marktwert-solar",
@@ -550,7 +551,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["MW Solar", "Monatsmarktwert", "Jahresmarktwert", "Merchant-Erlös"],
     verwandt: ["capture-rate", "marktpraemie", "anzulegender-wert", "negative-strompreise"],
-    link: { href: "/energie-live", label: "Strompreise live" },
+    link: { href: pfad("/energie-live"), label: "Strompreise live" },
   },
 
   // ---------------------------------------------------------------- N
@@ -572,7 +573,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["§ 51 EEG", "Solarspitzen", "negative Preise", "Solarspitzengesetz"],
     verwandt: ["marktwert-solar", "capture-rate", "grossspeicher", "arbitrage"],
-    link: { href: "/energie-live", label: "Energie live" },
+    link: { href: pfad("/energie-live"), label: "Energie live" },
   },
   {
     id: "netzanschlusszusage",
@@ -582,7 +583,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["Netzzusage", "Einspeisezusage", "Reservierungszusage", "Netzanfrage"],
     verwandt: ["netzverknuepfungspunkt", "umspannwerk", "projektrechte", "baukostenzuschuss"],
-    link: { href: "/rechner/projektbewertung", label: "Projektwert nach Phase" },
+    link: { href: pfad("/rechner/projektbewertung"), label: "Projektwert nach Phase" },
   },
   {
     id: "netzverknuepfungspunkt",
@@ -592,7 +593,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["NVP", "Netzanschlusspunkt", "Einspeisepunkt"],
     verwandt: ["netzanschlusszusage", "umspannwerk", "anlagenzertifikat"],
-    link: { href: "/rechner/solarpark", label: "Netzanschluss einrechnen" },
+    link: { href: pfad("/rechner/solarpark"), label: "Netzanschluss einrechnen" },
   },
 
   // ---------------------------------------------------------------- O
@@ -616,7 +617,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Ertragsgutachten", "P75", "P99", "Ertragsprognose"],
     verwandt: ["dscr", "spezifischer-ertrag", "performance-ratio", "degradation"],
-    link: { href: "/ratgeber/solarpark-investment-rendite", label: "Rendite und Risiken" },
+    link: { href: "/wissen/ratgeber/solarpark-investment-rendite", label: "Rendite und Risiken" },
   },
   {
     id: "parkplatz-solarpflicht",
@@ -626,7 +627,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["Solarpflicht Parkplatz", "Solarcarport-Pflicht", "Solarcarport"],
     verwandt: ["solarcarport", "besondere-solaranlagen", "ppa", "reststrom"],
-    link: { href: "/ratgeber/parkplatz-solarpflicht-bundeslaender", label: "Solarpflicht je Bundesland" },
+    link: { href: "/wissen/ratgeber/parkplatz-solarpflicht-bundeslaender", label: "Solarpflicht je Bundesland" },
   },
   {
     id: "performance-ratio",
@@ -636,7 +637,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["PR", "Anlagennutzungsgrad", "Qualitätsfaktor"],
     verwandt: ["spezifischer-ertrag", "o-und-m", "degradation", "p50-p90"],
-    link: { href: "/rechner/solarpark", label: "Ertrag berechnen" },
+    link: { href: pfad("/rechner/solarpark"), label: "Ertrag berechnen" },
   },
   {
     id: "ppa",
@@ -646,7 +647,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Stromabnahmevertrag", "Corporate PPA", "Solar-PPA", "Direktliefervertrag"],
     verwandt: ["herkunftsnachweis", "capture-rate", "reststrom", "direktvermarktung"],
-    link: { href: "/ratgeber/ppa-fuer-unternehmen", label: "PPA für Unternehmen" },
+    link: { href: "/wissen/ratgeber/ppa-fuer-unternehmen", label: "PPA für Unternehmen" },
   },
   {
     id: "privilegierung-aussenbereich",
@@ -656,7 +657,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["§ 35 BauGB", "Außenbereichsprivilegierung", "200-m-Korridor"],
     verwandt: ["randstreifen", "agri-pv", "bebauungsplan", "rueckbauverpflichtung"],
-    link: { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Genehmigungswege" },
+    link: { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Genehmigungswege" },
   },
   {
     id: "projektrechte",
@@ -678,7 +679,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["500-m-Korridor", "Seitenrandstreifen", "Autobahnrandstreifen", "§ 48 EEG"],
     verwandt: ["flaechenkulisse", "privilegierung-aussenbereich", "benachteiligte-gebiete"],
-    link: { href: "/flaechencheck", label: "Liegt Ihre Fläche im Korridor?" },
+    link: { href: pfad("/flaechencheck"), label: "Liegt Ihre Fläche im Korridor?" },
   },
   {
     id: "rtb",
@@ -688,7 +689,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["RTB", "Baureife", "baureifes Projekt"],
     verwandt: ["projektrechte", "cod", "satzungsbeschluss", "epc"],
-    link: { href: "/rechner/projektbewertung", label: "RTB-Projekt bewerten" },
+    link: { href: pfad("/rechner/projektbewertung"), label: "RTB-Projekt bewerten" },
   },
   {
     id: "redispatch",
@@ -698,7 +699,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["Redispatch", "Einspeisemanagement", "Abregelung", "Engpassmanagement"],
     verwandt: ["direktvermarktung", "virtuelles-kraftwerk", "netzverknuepfungspunkt"],
-    link: { href: "/virtuelles-kraftwerk", label: "Steuerung im virtuellen Kraftwerk" },
+    link: { href: pfad("/virtuelles-kraftwerk"), label: "Steuerung im virtuellen Kraftwerk" },
   },
   {
     id: "regelenergie",
@@ -708,7 +709,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["FCR", "aFRR", "mFRR", "Primärregelleistung", "Systemdienstleistungen"],
     verwandt: ["grossspeicher", "arbitrage", "virtuelles-kraftwerk"],
-    link: { href: "/ratgeber/grossspeicher-erloese", label: "Speichererlöse" },
+    link: { href: "/wissen/ratgeber/grossspeicher-erloese", label: "Speichererlöse" },
   },
   {
     id: "reststrom",
@@ -718,7 +719,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Reststrombezug", "Restbedarf", "Reststrom-Pool", "Strombündelung"],
     verwandt: ["virtuelles-kraftwerk", "ppa", "stromsteuer", "energy-sharing"],
-    link: { href: "/reststrom", label: "Reststrom-Pool" },
+    link: { href: pfad("/reststrom"), label: "Reststrom-Pool" },
   },
   {
     id: "rueckbauverpflichtung",
@@ -728,7 +729,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Rückbaubürgschaft", "Rückbausicherheit"],
     verwandt: ["dienstbarkeit", "privilegierung-aussenbereich", "bebauungsplan"],
-    link: { href: "/ratgeber/pachtvertrag-solarpark", label: "Was in den Pachtvertrag gehört" },
+    link: { href: "/wissen/ratgeber/pachtvertrag-solarpark", label: "Was in den Pachtvertrag gehört" },
   },
 
   // ---------------------------------------------------------------- S
@@ -740,7 +741,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["Baurecht", "Inkrafttreten B-Plan"],
     verwandt: ["bebauungsplan", "aufstellungsbeschluss", "rtb"],
-    link: { href: "/prozess", label: "Vom Acker zum Baurecht" },
+    link: { href: pfad("/prozess"), label: "Vom Acker zum Baurecht" },
   },
   {
     id: "share-deal",
@@ -750,7 +751,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Anteilskauf", "SPV-Verkauf", "Projektgesellschaft"],
     verwandt: ["asset-deal", "spa", "due-diligence", "projektrechte"],
-    link: { href: "/ratgeber/projektrechte-kaufen-due-diligence", label: "Projektkauf strukturieren" },
+    link: { href: "/wissen/ratgeber/projektrechte-kaufen-due-diligence", label: "Projektkauf strukturieren" },
   },
   {
     id: "spa",
@@ -770,7 +771,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["Parkplatz-PV", "Solar-Carport", "PV-Überdachung", "Parkplatzüberdachung"],
     verwandt: ["parkplatz-solarpflicht", "besondere-solaranlagen", "ppa", "reststrom"],
-    link: { href: "/solarcarport", label: "Solarcarports" },
+    link: { href: pfad("/solarcarport"), label: "Solarcarports" },
   },
   {
     id: "solarexpress",
@@ -780,7 +781,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["alpine Solaranlagen", "Winterstrom", "alpine PV"],
     verwandt: ["einmalverguetung", "uvp", "leg"],
-    link: { href: "/ratgeber/freiflaechen-pv-schweiz", label: "Freiflächen-PV in der Schweiz" },
+    link: { href: "/wissen/ratgeber/freiflaechen-pv-schweiz", label: "Freiflächen-PV in der Schweiz" },
   },
   {
     id: "spezifischer-ertrag",
@@ -790,7 +791,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["Jahresertrag", "Volllaststunden", "kWh/kWp"],
     verwandt: ["performance-ratio", "p50-p90", "degradation", "tracker"],
-    link: { href: "/rechner/solarpark", label: "Ertrag je Region" },
+    link: { href: pfad("/rechner/solarpark"), label: "Ertrag je Region" },
   },
   {
     id: "stromsteuer",
@@ -800,7 +801,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["StromStG", "Stromsteuerentlastung", "Stromsteuerbefreiung"],
     verwandt: ["reststrom", "ppa", "energy-sharing"],
-    link: { href: "/rechner/reststrom", label: "Reststrom-Rechner" },
+    link: { href: pfad("/rechner/reststrom"), label: "Reststrom-Rechner" },
   },
 
   // ---------------------------------------------------------------- T
@@ -812,7 +813,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["Nachführung", "Single-Axis-Tracker", "einachsige Nachführung"],
     verwandt: ["bifazial", "spezifischer-ertrag", "agri-pv"],
-    link: { href: "/freiflaeche", label: "Freiflächen-PV" },
+    link: { href: pfad("/freiflaeche"), label: "Freiflächen-PV" },
   },
 
   // ---------------------------------------------------------------- U
@@ -824,7 +825,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["UW", "Übergabestation", "Trafostation", "Kundenumspannwerk"],
     verwandt: ["netzverknuepfungspunkt", "netzanschlusszusage", "grossspeicher"],
-    link: { href: "/grossspeicher", label: "Speicher am Umspannwerk" },
+    link: { href: pfad("/grossspeicher"), label: "Speicher am Umspannwerk" },
   },
   {
     id: "umweltbericht",
@@ -834,7 +835,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["Umweltprüfung", "Artenschutzprüfung", "saP", "Blendgutachten"],
     verwandt: ["ausgleichsflaechen", "uvp", "bebauungsplan", "fruehzeitige-beteiligung"],
-    link: { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Gutachten im Verfahren" },
+    link: { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Gutachten im Verfahren" },
   },
   {
     id: "uvp",
@@ -844,7 +845,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["UVP", "UVPG", "UVP-G", "Vorprüfung"],
     verwandt: ["umweltbericht", "gruenland-photovoltaik", "solarexpress", "ausgleichsflaechen"],
-    link: { href: "/freiflaeche", label: "Genehmigung von Freiflächen-PV" },
+    link: { href: pfad("/freiflaeche"), label: "Genehmigung von Freiflächen-PV" },
   },
 
   // ---------------------------------------------------------------- V
@@ -856,7 +857,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["VPP", "Virtual Power Plant", "Aggregator"],
     verwandt: ["reststrom", "regelenergie", "direktvermarktung", "grossspeicher"],
-    link: { href: "/ratgeber/virtuelles-kraftwerk", label: "Virtuelles Kraftwerk erklärt" },
+    link: { href: "/wissen/ratgeber/virtuelles-kraftwerk", label: "Virtuelles Kraftwerk erklärt" },
   },
 
   // ---------------------------------------------------------------- Z
@@ -868,7 +869,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["ZEV", "vZEV", "virtueller ZEV", "Eigenverbrauchsgemeinschaft"],
     verwandt: ["leg", "einmalverguetung", "energy-sharing"],
-    link: { href: "/energiegemeinschaften", label: "Energiegemeinschaften" },
+    link: { href: pfad("/energiegemeinschaften"), label: "Energiegemeinschaften" },
   },
   {
     id: "zuschlagswert",
@@ -878,7 +879,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Gebotswert", "Zuschlag"],
     verwandt: ["ausschreibung-eeg", "anzulegender-wert", "gebotstermin"],
-    link: { href: "/ratgeber/eeg-ausschreibung-freiflaeche", label: "Ausschreibungsergebnisse" },
+    link: { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", label: "Ausschreibungsergebnisse" },
   },
   /* Ausbaustufe 2 (09/2026): Begriffe zu den neuen Ratgebern */
   {
@@ -889,7 +890,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["Anbauverbot", "Anbaubeschränkung", "§ 9 FStrG", "40-m-Zone"],
     verwandt: ["privilegierung-aussenbereich", "randstreifen", "blendgutachten"],
-    link: { href: "/ratgeber/solarpark-autobahn-bahn-privilegierung", label: "Solarpark an Autobahn und Bahn" },
+    link: { href: "/wissen/ratgeber/solarpark-autobahn-bahn-privilegierung", label: "Solarpark an Autobahn und Bahn" },
   },
   {
     id: "baulast",
@@ -899,7 +900,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["Baulastenverzeichnis", "Rückbaubaulast"],
     verwandt: ["rueckbauverpflichtung", "privilegierung-aussenbereich", "dienstbarkeit"],
-    link: { href: "/ratgeber/solarpark-rueckbau-rueckbaubuergschaft", label: "Rückbau und Rückbaubürgschaft" },
+    link: { href: "/wissen/ratgeber/solarpark-rueckbau-rueckbaubuergschaft", label: "Rückbau und Rückbaubürgschaft" },
   },
   {
     id: "blendgutachten",
@@ -909,7 +910,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["Blendwirkung", "Reflexionsgutachten", "LAI-Lichtleitlinie", "Lichtimmissionen"],
     verwandt: ["umweltbericht", "bebauungsplan", "anbauverbotszone"],
-    link: { href: "/ratgeber/solarpark-abstand-wohnbebauung-blendgutachten", label: "Abstand und Blendgutachten" },
+    link: { href: "/wissen/ratgeber/solarpark-abstand-wohnbebauung-blendgutachten", label: "Abstand und Blendgutachten" },
   },
   {
     id: "cef-massnahme",
@@ -919,7 +920,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["vorgezogene Ausgleichsmaßnahme", "continuous ecological functionality", "Artenschutzausgleich"],
     verwandt: ["ausgleichsflaechen", "umweltbericht", "bebauungsplan"],
-    link: { href: "/ratgeber/solarpark-artenschutz-biodiversitaet", label: "Artenschutz und Biodiversität" },
+    link: { href: "/wissen/ratgeber/solarpark-artenschutz-biodiversitaet", label: "Artenschutz und Biodiversität" },
   },
   {
     id: "cable-pooling",
@@ -929,7 +930,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["gemeinsamer Netzanschluss", "Netzanschluss teilen", "Co-Location"],
     verwandt: ["netzverknuepfungspunkt", "flexible-netzanschlussvereinbarung", "netzanschlusszusage", "umspannwerk"],
-    link: { href: "/ratgeber/netzanschluss-solarpark", label: "Netzanschluss für Solarparks" },
+    link: { href: "/wissen/ratgeber/netzanschluss-solarpark", label: "Netzanschluss für Solarparks" },
   },
   {
     id: "flexible-netzanschlussvereinbarung",
@@ -939,7 +940,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["Überbauung Netzanschluss", "FCA", "Flexible Connection Agreement", "§ 8a EEG"],
     verwandt: ["cable-pooling", "netzanschlusszusage", "netzverknuepfungspunkt", "grossspeicher", "redispatch"],
-    link: { href: "/ratgeber/netzanschluss-solarpark", label: "Netzanschluss für Solarparks" },
+    link: { href: "/wissen/ratgeber/netzanschluss-solarpark", label: "Netzanschluss für Solarparks" },
   },
   {
     id: "moor-pv",
@@ -949,7 +950,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Moor-Photovoltaik", "Photovoltaik auf Moorböden", "Solarpark im Moor"],
     verwandt: ["besondere-solaranlagen", "ausschreibung-eeg", "floating-pv", "flaechenkulisse"],
-    link: { href: "/ratgeber/moor-pv", label: "Ratgeber Moor-PV" },
+    link: { href: "/wissen/ratgeber/moor-pv", label: "Ratgeber Moor-PV" },
   },
   {
     id: "floating-pv",
@@ -959,7 +960,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["schwimmende Photovoltaik", "schwimmende PV", "FPV", "Floating Solar"],
     verwandt: ["besondere-solaranlagen", "moor-pv", "ausschreibung-eeg", "uvp"],
-    link: { href: "/ratgeber/floating-pv", label: "Ratgeber Floating-PV" },
+    link: { href: "/wissen/ratgeber/floating-pv", label: "Ratgeber Floating-PV" },
   },
   {
     id: "bilanzkreis",
@@ -969,7 +970,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Bilanzkreisverantwortlicher", "BKV", "Unterbilanzkreis", "Ausgleichsenergie"],
     verwandt: ["direktvermarktung", "marktpraemie", "direktvermarktungsentgelt", "virtuelles-kraftwerk"],
-    link: { href: "/ratgeber/direktvermarktung-solarpark", label: "Direktvermarktung für Solarparks" },
+    link: { href: "/wissen/ratgeber/direktvermarktung-solarpark", label: "Direktvermarktung für Solarparks" },
   },
   {
     id: "buergerenergiegesellschaft",
@@ -979,7 +980,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["Bürgerenergie", "Bürgersolarpark", "§ 22b EEG", "BEG (Deutschland)"],
     verwandt: ["energiegenossenschaft", "buergerenergiegemeinschaft", "ausschreibung-eeg", "kommunalbeteiligung"],
-    link: { href: "/ratgeber/buergerenergie-solarpark-akzeptanz", label: "Bürgerenergie und Akzeptanz" },
+    link: { href: "/wissen/ratgeber/buergerenergie-solarpark-akzeptanz", label: "Bürgerenergie und Akzeptanz" },
   },
   {
     id: "direktvermarktungsentgelt",
@@ -989,7 +990,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Vermarktungsentgelt", "Direktvermarktungsgebühr", "Managementprämie", "DV-Entgelt"],
     verwandt: ["direktvermarktung", "bilanzkreis", "marktwert-solar", "capture-rate"],
-    link: { href: "/ratgeber/direktvermarktung-solarpark", label: "Direktvermarktung für Solarparks" },
+    link: { href: "/wissen/ratgeber/direktvermarktung-solarpark", label: "Direktvermarktung für Solarparks" },
   },
   {
     id: "fernsteuerbarkeit",
@@ -999,7 +1000,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["§ 10b EEG", "Steuerbox", "Fernwirktechnik", "Fernsteuerung"],
     verwandt: ["direktvermarktung", "redispatch", "virtuelles-kraftwerk", "negative-strompreise"],
-    link: { href: "/ratgeber/virtuelles-kraftwerk", label: "Virtuelles Kraftwerk erklärt" },
+    link: { href: "/wissen/ratgeber/virtuelles-kraftwerk", label: "Virtuelles Kraftwerk erklärt" },
   },
   {
     id: "betriebsunterbrechungsversicherung",
@@ -1009,7 +1010,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Ertragsausfallversicherung", "BU-Versicherung", "Loss of Profit"],
     verwandt: ["dscr", "p50-p90", "o-und-m"],
-    link: { href: "/ratgeber/solarpark-versicherung", label: "Solarpark-Versicherung" },
+    link: { href: "/wissen/ratgeber/solarpark-versicherung", label: "Solarpark-Versicherung" },
   },
   {
     id: "discounted-cash-flow",
@@ -1019,7 +1020,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["DCF", "DCF-Verfahren", "Barwertmethode", "Ertragswert"],
     verwandt: ["kapitalwert", "irr", "cod", "due-diligence"],
-    link: { href: "/ratgeber/solarpark-bestandsanlage-wert", label: "Wert einer Bestandsanlage" },
+    link: { href: "/wissen/ratgeber/solarpark-bestandsanlage-wert", label: "Wert einer Bestandsanlage" },
   },
   {
     id: "ertragsgutachten",
@@ -1029,7 +1030,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["Energy Yield Assessment", "Ertragsprognose", "Energieertragsgutachten"],
     verwandt: ["p50-p90", "performance-ratio", "spezifischer-ertrag", "dscr"],
-    link: { href: "/ratgeber/ertragsgutachten-p50-p90", label: "Ertragsgutachten P50/P90" },
+    link: { href: "/wissen/ratgeber/ertragsgutachten-p50-p90", label: "Ertragsgutachten P50/P90" },
   },
   {
     id: "repowering",
@@ -1039,7 +1040,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["Revamping", "Modultausch", "Ersatz von Solaranlagen"],
     verwandt: ["eeg-2023", "netzverknuepfungspunkt", "degradation", "marktstammdatenregister"],
-    link: { href: "/ratgeber/repowering-solarpark", label: "Repowering alter Solarparks" },
+    link: { href: "/wissen/ratgeber/repowering-solarpark", label: "Repowering alter Solarparks" },
   },
   {
     id: "grunddienstbarkeit",
@@ -1049,7 +1050,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Leitungsrecht", "Wegerecht", "§ 1018 BGB"],
     verwandt: ["dienstbarkeit", "rangruecktritt", "flaechenpacht"],
-    link: { href: "/ratgeber/dienstbarkeit-grundbuch-pv-pacht", label: "Dienstbarkeit und Grundbuch bei PV-Pacht" },
+    link: { href: "/wissen/ratgeber/dienstbarkeit-grundbuch-pv-pacht", label: "Dienstbarkeit und Grundbuch bei PV-Pacht" },
   },
   {
     id: "rangruecktritt",
@@ -1059,7 +1060,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Rangänderung", "Rangvorbehalt", "erste Rangstelle"],
     verwandt: ["dienstbarkeit", "grunddienstbarkeit", "flaechenpacht"],
-    link: { href: "/ratgeber/dienstbarkeit-grundbuch-pv-pacht", label: "Rang und Rangrücktritt erklärt" },
+    link: { href: "/wissen/ratgeber/dienstbarkeit-grundbuch-pv-pacht", label: "Rang und Rangrücktritt erklärt" },
   },
   {
     id: "solarbeweidung",
@@ -1069,7 +1070,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Schafbeweidung Solarpark", "Solar Grazing", "Beweidung PV-Anlage"],
     verwandt: ["agri-pv", "din-spec-91434", "gap-direktzahlungen"],
-    link: { href: "/ratgeber/solarpark-beweidung-schafe", label: "Beweidung im Solarpark" },
+    link: { href: "/wissen/ratgeber/solarpark-beweidung-schafe", label: "Beweidung im Solarpark" },
   },
   {
     id: "nebenbetrieb-landwirtschaft",
@@ -1079,7 +1080,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Nebenbetrieb", "R 15.5 EStR", "Abgrenzung Landwirtschaft Gewerbe"],
     verwandt: ["landwirtschaftliches-vermoegen", "agri-pv", "flaechenpacht"],
-    link: { href: "/ratgeber/photovoltaik-landwirt-steuern", label: "Steuern für Landwirte mit Photovoltaik" },
+    link: { href: "/wissen/ratgeber/photovoltaik-landwirt-steuern", label: "Steuern für Landwirte mit Photovoltaik" },
   },
   // ---------------------------------------------------------------- Fachprüfung Flächen (Team A): Kataster, Grundbuch, Boden, Bindungen, Kommune, Dach
   {
@@ -1090,7 +1091,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Flurstücksnummer", "Gemarkung", "Flur", "Liegenschaftskataster", "Zähler Nenner"],
     verwandt: ["grundbuch-abteilungen", "katastralgemeinde", "egrid"],
-    link: { href: "/flaechencheck", label: "Fläche im Flächencheck prüfen" },
+    link: { href: pfad("/flaechencheck"), label: "Fläche im Flächencheck prüfen" },
   },
   {
     id: "katastralgemeinde",
@@ -1118,7 +1119,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Abteilung II", "Abteilung III", "Grundbuchauszug", "Lasten und Beschränkungen", "Grundschuld"],
     verwandt: ["dienstbarkeit", "rangruecktritt", "niessbrauch"],
-    link: { href: "/ratgeber/dienstbarkeit-grundbuch-pv-pacht", label: "Dienstbarkeit im Grundbuch" },
+    link: { href: "/wissen/ratgeber/dienstbarkeit-grundbuch-pv-pacht", label: "Dienstbarkeit im Grundbuch" },
   },
   {
     id: "niessbrauch",
@@ -1128,7 +1129,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Fruchtgenussrecht", "Nießbrauchsrecht", "Altenteil"],
     verwandt: ["grundbuch-abteilungen", "rangruecktritt", "dienstbarkeit"],
-    link: { href: "/flaeche-verpachten", label: "Fläche verpachten: Ablauf und Vertrag" },
+    link: { href: pfad("/flaeche-verpachten"), label: "Fläche verpachten: Ablauf und Vertrag" },
   },
   {
     id: "bodenschaetzung",
@@ -1138,7 +1139,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Ackerzahl", "Grünlandzahl", "Bodenpunkte", "Bodenklimazahl", "Ertragsmesszahl", "EMZ"],
     verwandt: ["benachteiligte-gebiete", "agri-pv", "kriterienkatalog"],
-    link: { href: "/flaechencheck", label: "Eignung Ihrer Fläche prüfen" },
+    link: { href: pfad("/flaechencheck"), label: "Eignung Ihrer Fläche prüfen" },
   },
   {
     id: "agrarumweltmassnahmen",
@@ -1148,7 +1149,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["AUKM", "ÖPUL", "Agrarumweltprogramm", "Rückforderung", "Biodiversitätsförderfläche"],
     verwandt: ["gap-direktzahlungen", "flaechenpacht", "landpachtvertrag"],
-    link: { href: "/ratgeber/agri-pv-foerderung-gap", label: "Agri-PV und GAP-Förderung" },
+    link: { href: "/wissen/ratgeber/agri-pv-foerderung-gap", label: "Agri-PV und GAP-Förderung" },
   },
   {
     id: "referenzertrag",
@@ -1167,7 +1168,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["FFH-Gebiet", "Vogelschutzgebiet", "Verträglichkeitsprüfung"],
     verwandt: ["umweltbericht", "benachteiligte-gebiete", "cef-massnahme"],
-    link: { href: "/flaechencheck", label: "Restriktionen Ihrer Fläche prüfen" },
+    link: { href: pfad("/flaechencheck"), label: "Restriktionen Ihrer Fläche prüfen" },
   },
   {
     id: "wasserschutzgebiet",
@@ -1177,7 +1178,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["WSG", "Schutzzone III", "Trinkwasserschutz"],
     verwandt: ["natura-2000", "umweltbericht"],
-    link: { href: "/flaechencheck", label: "Restriktionen Ihrer Fläche prüfen" },
+    link: { href: pfad("/flaechencheck"), label: "Restriktionen Ihrer Fläche prüfen" },
   },
   {
     id: "reservierungspraemie",
@@ -1187,7 +1188,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Bereitstellungsentgelt", "Optionsprämie", "Vorhaltepacht"],
     verwandt: ["flaechenpacht", "wertsicherung"],
-    link: { href: "/rechner/pachtangebot-check", label: "Pachtangebot prüfen" },
+    link: { href: pfad("/rechner/pachtangebot-check"), label: "Pachtangebot prüfen" },
   },
   {
     id: "wertsicherung",
@@ -1197,7 +1198,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Indexierung", "Indexklausel", "VPI", "Preisgleitklausel"],
     verwandt: ["flaechenpacht", "reservierungspraemie"],
-    link: { href: "/rechner/pacht", label: "Indexierte Pacht berechnen" },
+    link: { href: pfad("/rechner/pacht"), label: "Indexierte Pacht berechnen" },
   },
   {
     id: "landpachtvertrag",
@@ -1207,7 +1208,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Landpacht", "Pachtende", "Kündigung Landpacht", "§ 594a BGB"],
     verwandt: ["flaechenpacht", "agrarumweltmassnahmen"],
-    link: { href: "/flaeche-verpachten", label: "Fläche für einen Solarpark verpachten" },
+    link: { href: pfad("/flaeche-verpachten"), label: "Fläche für einen Solarpark verpachten" },
   },
   {
     id: "kriterienkatalog",
@@ -1217,7 +1218,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["Standortkonzept", "Kriterienkatalog Solar", "Leitlinien Freiflächen-PV"],
     verwandt: ["aufstellungsbeschluss", "kommunalbeteiligung", "bebauungsplan"],
-    link: { href: "/kommunen", label: "Solarparks für Kommunen" },
+    link: { href: pfad("/kommunen"), label: "Solarparks für Kommunen" },
   },
   {
     id: "dachstatik",
@@ -1227,7 +1228,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["Tragfähigkeit Dach", "Dachlast", "kN/m²", "Tragwerksplanung"],
     verwandt: ["ppa"],
-    link: { href: "/dachflaeche-verpachten", label: "Dachfläche verpachten" },
+    link: { href: pfad("/dachflaeche-verpachten"), label: "Dachfläche verpachten" },
   },
   // ---- Fachprüfung Kapitalseite (Investor, Anbieter, Unternehmen, Mitglied) ----
   {
@@ -1256,7 +1257,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["Zählpunkt", "Zählpunktnummer AT", "Messpunkt CH"],
     verwandt: ["eeg-gemeinschaft", "marktlokation"],
-    link: { href: "/energiegemeinschaften/software", label: "Software für Energiegemeinschaften" },
+    link: { href: pfad("/energiegemeinschaften/software"), label: "Software für Energiegemeinschaften" },
   },
   {
     id: "rlm",
@@ -1266,7 +1267,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["RLM", "Lastgangmessung", "RLM-Zähler"],
     verwandt: ["slp", "lastgang", "leistungspreis"],
-    link: { href: "/rechner/reststrom", label: "Reststrom-Rechner mit Lastprofil" },
+    link: { href: pfad("/rechner/reststrom"), label: "Reststrom-Rechner mit Lastprofil" },
   },
   {
     id: "slp",
@@ -1304,7 +1305,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Leistungsentgelt", "Leistungspreis Netz"],
     verwandt: ["rlm", "benutzungsstunden", "grossspeicher"],
-    link: { href: "/reststrom", label: "Reststrom-Pool für den Mittelstand" },
+    link: { href: pfad("/reststrom"), label: "Reststrom-Pool für den Mittelstand" },
   },
   {
     id: "individuelles-netzentgelt",
@@ -1315,7 +1316,7 @@ export const BEGRIFFE = [
     synonyme: ["§ 19 StromNEV", "atypische Netznutzung", "Bandlastprivileg"],
     buchstabe: "I",
     verwandt: ["benutzungsstunden", "leistungspreis"],
-    link: { href: "/reststrom", label: "Reststrom-Pool für den Mittelstand" },
+    link: { href: pfad("/reststrom"), label: "Reststrom-Pool für den Mittelstand" },
   },
   {
     id: "dc-ac-verhaeltnis",
@@ -1325,7 +1326,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["DC/AC-Ratio", "Überbauung Wechselrichter", "ILR"],
     verwandt: ["netzverknuepfungspunkt", "ertragsgutachten"],
-    link: { href: "/rechner/netzanschluss", label: "Netzanschluss und Überbauung rechnen" },
+    link: { href: pfad("/rechner/netzanschluss"), label: "Netzanschluss und Überbauung rechnen" },
   },
   {
     id: "spv",
@@ -1355,7 +1356,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["EV", "Unternehmenswert", "Equity Value"],
     verwandt: ["share-deal", "loi", "discounted-cash-flow"],
-    link: { href: "/rechner/bestandsanlage", label: "Bestandsanlage bewerten" },
+    link: { href: pfad("/rechner/bestandsanlage"), label: "Bestandsanlage bewerten" },
   },
   {
     id: "co-development",
@@ -1384,7 +1385,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["EEG-Realisierungsfrist", "Pönale EEG"],
     verwandt: ["ausschreibung-eeg", "zuschlagswert", "gebotstermin"],
-    link: { href: "/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung Freifläche" },
+    link: { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung Freifläche" },
   },
   {
     id: "verfuegbarkeit",
@@ -1403,7 +1404,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Take-or-Pay", "Mindestmenge", "Abnahmeverpflichtung"],
     verwandt: ["energie-contracting", "ppa"],
-    link: { href: "/rechner/ppa", label: "PPA-Rechner für Unternehmen" },
+    link: { href: pfad("/rechner/ppa"), label: "PPA-Rechner für Unternehmen" },
   },
   {
     id: "energie-contracting",
@@ -1413,7 +1414,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Contracting", "Solar-Contracting", "On-Site-PPA", "Anlagen-Contracting"],
     verwandt: ["mindestabnahme", "endschaftsregelung", "dienstbarkeit", "ppa"],
-    link: { href: "/solarcarport", label: "Solarcarport im Contracting" },
+    link: { href: pfad("/solarcarport"), label: "Solarcarport im Contracting" },
   },
   {
     id: "endschaftsregelung",
@@ -1423,7 +1424,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Endschaft", "Kaufoption Vertragsende", "Heimfall"],
     verwandt: ["energie-contracting", "rueckbauverpflichtung"],
-    link: { href: "/ratgeber/pachtvertrag-solarpark", label: "Pachtvertrag Solarpark" },
+    link: { href: "/wissen/ratgeber/pachtvertrag-solarpark", label: "Pachtvertrag Solarpark" },
   },
   {
     id: "nachschusspflicht",
@@ -1433,7 +1434,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["Nachschuss", "Haftsumme", "Haftung Genossenschaft"],
     verwandt: ["energiegenossenschaft"],
-    link: { href: "/genossenschaft", label: "Energiegenossenschaft für Solarparks" },
+    link: { href: pfad("/genossenschaft"), label: "Energiegenossenschaft für Solarparks" },
   },
 ];
 

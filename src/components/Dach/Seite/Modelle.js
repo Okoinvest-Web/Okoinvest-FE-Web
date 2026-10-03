@@ -4,6 +4,7 @@ import { ArrowRight, BadgePercent, Banknote, Hammer, Lock, Zap } from "lucide-re
 import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 const tsd = (v) => `${fmt(Math.round(v / 1000))} Tsd. €`;
 
@@ -107,7 +108,7 @@ export default function Modelle({ bsp, dach, m2, stand }) {
           <p className="max-w-4xl text-[13px] leading-relaxed text-ink-500">
             Nominal und vor Steuern. Einmalzahlung abgezinst mit {fmt(dach.einmalDiskont * 100, 1)} %; Stromerlöse bei Volleinspeisung mit {fmt(dach.eegDachCt, 1)} ct/kWh (Durchschnitt der Dach-Ausschreibungen 2025). Modelle lassen sich kombinieren, etwa Mindestpacht plus Umsatzbeteiligung oder Sanierung plus reduzierte Pacht. Stand {stand}.
           </p>
-          <Link href="/rechner/dachpacht" className="group inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-5 py-3 text-[14.5px] font-semibold text-ov-700 shadow-e1 ring-1 ring-ov-200 transition-colors hover:bg-ov-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
+          <Link href={pfad("/rechner/dachpacht")} className="group inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-5 py-3 text-[14.5px] font-semibold text-ov-700 shadow-e1 ring-1 ring-ov-200 transition-colors hover:bg-ov-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
             Mit eigenen Werten rechnen
             <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
           </Link>

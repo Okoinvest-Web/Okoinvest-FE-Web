@@ -5,6 +5,7 @@
 
 import { FREIFLAECHE, ERLOESE, PACHT, FINANZIERUNG, REGIONEN, npv, irr, STAND } from "@/lib/invest/markt";
 import { fmt, fmtEur, fmtMio, fmtPct, fmtCt } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag zur Übernahme */
 // SFV, EEG 2009 inkl. Änderungen: Vergütung Freiflächenanlagen („sonstige Freiflächen“) nach Inbetriebnahme, ct/kWh
@@ -162,7 +163,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Nach dem Förderende gibt es für Solarparks keine Anschlussförderung. Die Auffangregelungen für ausgeförderte Anlagen betreffen nach aktuellem Stand nur kleinere Anlagen; ein Park im Megawattbereich muss seinen Strom danach selbst vermarkten – über einen Direktvermarkter oder einen Stromliefervertrag. Wie das funktioniert, erklären die Ratgeber [Direktvermarktung](/ratgeber/direktvermarktung-solarpark) und [PPA für Unternehmen](/ratgeber/ppa-fuer-unternehmen).",
+          text: "Nach dem Förderende gibt es für Solarparks keine Anschlussförderung. Die Auffangregelungen für ausgeförderte Anlagen betreffen nach aktuellem Stand nur kleinere Anlagen; ein Park im Megawattbereich muss seinen Strom danach selbst vermarkten – über einen Direktvermarkter oder einen Stromliefervertrag. Wie das funktioniert, erklären die Ratgeber [Direktvermarktung](/wissen/ratgeber/direktvermarktung-solarpark) und [PPA für Unternehmen](/wissen/ratgeber/ppa-fuer-unternehmen).",
         },
       ],
     },
@@ -222,7 +223,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Der Netzanschluss ist der Engpass: Viele Netzgebiete sind ausgelastet, und eine Erhöhung der Einspeiseleistung braucht in der Regel eine neue Prüfung durch den Netzbetreiber. Umgekehrt ist ein bestehender Anschluss mit gesicherter Kapazität heute sehr wertvoll. Eine Alternative zur Leistungserhöhung kann ein Batteriespeicher am selben Netzanschluss sein, der Strom aus der Mittagsspitze in teurere Stunden verschiebt – mehr unter [Großspeicher](/grossspeicher) und im Ratgeber [Netzanschluss für Solarparks](/ratgeber/netzanschluss-solarpark).",
+          text: "Der Netzanschluss ist der Engpass: Viele Netzgebiete sind ausgelastet, und eine Erhöhung der Einspeiseleistung braucht in der Regel eine neue Prüfung durch den Netzbetreiber. Umgekehrt ist ein bestehender Anschluss mit gesicherter Kapazität heute sehr wertvoll. Eine Alternative zur Leistungserhöhung kann ein Batteriespeicher am selben Netzanschluss sein, der Strom aus der Mittagsspitze in teurere Stunden verschiebt – mehr unter [Großspeicher](/de/grossspeicher) und im Ratgeber [Netzanschluss für Solarparks](/wissen/ratgeber/netzanschluss-solarpark).",
         },
       ],
     },
@@ -261,7 +262,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Rechnung zeigt drei Dinge. Erstens: Der 1:1-Tausch verdient sein Geld in den ${fmt(EEG_REST)} restlichen Förderjahren, weil jede zusätzliche Kilowattstunde mit ${fmtCt(TARIF_CT, 2)} vergütet wird – und danach durch 20 statt 10 Betriebsjahre. Die interne Verzinsung der Zusatzinvestition liegt im Beispiel bei ${pct(IRR_D2)}, beim schwachen Altpark bei ${pct(IRR_D2_SCHWACH)}. Zweitens: Die Mehrleistung beim Revamping trägt keine Altvergütung; bei einem Marktwert von ${fmtCt(ERLOESE.merchantCt)} ist sie mit heutigen Baukosten kaum wirtschaftlich – das deckt sich mit den Ergebnissen des Ratgebers [Solarpark als Investment](/ratgeber/solarpark-investment-rendite). Drittens: Je früher getauscht wird, desto mehr Förderjahre profitieren. Eigene Szenarien rechnen Sie im [Solarpark-Rechner](/rechner/solarpark).`,
+          text: `Die Rechnung zeigt drei Dinge. Erstens: Der 1:1-Tausch verdient sein Geld in den ${fmt(EEG_REST)} restlichen Förderjahren, weil jede zusätzliche Kilowattstunde mit ${fmtCt(TARIF_CT, 2)} vergütet wird – und danach durch 20 statt 10 Betriebsjahre. Die interne Verzinsung der Zusatzinvestition liegt im Beispiel bei ${pct(IRR_D2)}, beim schwachen Altpark bei ${pct(IRR_D2_SCHWACH)}. Zweitens: Die Mehrleistung beim Revamping trägt keine Altvergütung; bei einem Marktwert von ${fmtCt(ERLOESE.merchantCt)} ist sie mit heutigen Baukosten kaum wirtschaftlich – das deckt sich mit den Ergebnissen des Ratgebers [Solarpark als Investment](/wissen/ratgeber/solarpark-investment-rendite). Drittens: Je früher getauscht wird, desto mehr Förderjahre profitieren. Eigene Szenarien rechnen Sie im [Solarpark-Rechner](/de/rechner/solarpark).`,
         },
       ],
     },
@@ -286,7 +287,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Oft entscheidet der Pachtvertrag: Alte Verträge laufen häufig 20 bis 25 Jahre mit Verlängerungsoptionen. Für ein Repowering mit 20 weiteren Betriebsjahren braucht es eine Verlängerung – und damit das Einverständnis der Eigentümer. Worauf es dabei ankommt, erklären die Ratgeber [Pachtvertrag für Solarparks](/ratgeber/pachtvertrag-solarpark) und [Dienstbarkeit im Grundbuch](/ratgeber/dienstbarkeit-grundbuch-pv-pacht). Wer verkaufen möchte, findet im Ratgeber [Wert einer Bestandsanlage](/ratgeber/solarpark-bestandsanlage-wert) die Bewertungslogik.",
+          text: "Oft entscheidet der Pachtvertrag: Alte Verträge laufen häufig 20 bis 25 Jahre mit Verlängerungsoptionen. Für ein Repowering mit 20 weiteren Betriebsjahren braucht es eine Verlängerung – und damit das Einverständnis der Eigentümer. Worauf es dabei ankommt, erklären die Ratgeber [Pachtvertrag für Solarparks](/wissen/ratgeber/pachtvertrag-solarpark) und [Dienstbarkeit im Grundbuch](/wissen/ratgeber/dienstbarkeit-grundbuch-pv-pacht). Wer verkaufen möchte, findet im Ratgeber [Wert einer Bestandsanlage](/wissen/ratgeber/solarpark-bestandsanlage-wert) die Bewertungslogik.",
         },
       ],
     },
@@ -304,7 +305,7 @@ const artikel = {
           punkte: [
             "**Zweitnutzung prüfen:** Funktionsfähige Altmodule können nach Prüfung (z. B. Kennlinienmessung, Elektrolumineszenz) als Gebrauchtmodule verkauft werden – ohne die alte Vergütung.",
             "**Entsorgungsnachweise sichern:** Die fachgerechte Entsorgung sollte lückenlos belegt sein – auch für spätere Käufer und Behörden.",
-            "**Rückbaupflichten beachten:** Bebauungsplan, städtebaulicher Vertrag und Pachtvertrag regeln, was am Ende zu entfernen ist; Details im Ratgeber [Rückbau und Rückbaubürgschaft](/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).",
+            "**Rückbaupflichten beachten:** Bebauungsplan, städtebaulicher Vertrag und Pachtvertrag regeln, was am Ende zu entfernen ist; Details im Ratgeber [Rückbau und Rückbaubürgschaft](/wissen/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).",
             "**Bewuchs und Artenschutz:** Arbeiten außerhalb der Brutzeit planen und mit der Naturschutzbehörde abstimmen.",
           ],
         },
@@ -344,12 +345,12 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/ratgeber/solarpark-bestandsanlage-wert", titel: "Wert einer Bestandsanlage", text: "DCF, Restlaufzeit und technische Due Diligence." },
-    { href: "/ratgeber/direktvermarktung-solarpark", titel: "Direktvermarktung", text: "Wie Solarparks ihren Strom nach dem EEG vermarkten." },
-    { href: "/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Laufzeit, Verlängerung und Rückbau im Vertrag." },
-    { href: "/rechner/solarpark", titel: "Solarpark-Rechner", text: "Erlöse, Kosten und Rendite mit eigenen Werten." },
-    { href: "/bestandsanlagen", titel: "Bestandsanlage verkaufen", text: "Laufende Parks vertraulich über den Zweitmarkt anbieten." },
-    { href: "/rechner/bestandsanlage", titel: "Bestandsanlage bewerten", text: "Ertragswert mit EEG-Restlaufzeit berechnen." },
+    { href: "/wissen/ratgeber/solarpark-bestandsanlage-wert", titel: "Wert einer Bestandsanlage", text: "DCF, Restlaufzeit und technische Due Diligence." },
+    { href: "/wissen/ratgeber/direktvermarktung-solarpark", titel: "Direktvermarktung", text: "Wie Solarparks ihren Strom nach dem EEG vermarkten." },
+    { href: "/wissen/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Laufzeit, Verlängerung und Rückbau im Vertrag." },
+    { href: pfad("/rechner/solarpark"), titel: "Solarpark-Rechner", text: "Erlöse, Kosten und Rendite mit eigenen Werten." },
+    { href: pfad("/bestandsanlagen"), titel: "Bestandsanlage verkaufen", text: "Laufende Parks vertraulich über den Zweitmarkt anbieten." },
+    { href: pfad("/rechner/bestandsanlage"), titel: "Bestandsanlage bewerten", text: "Ertragswert mit EEG-Restlaufzeit berechnen." },
   ],
 
   quellen: [
@@ -362,7 +363,7 @@ const artikel = {
     { titel: "Elektro- und Elektronikgerätegesetz (ElektroG), Anlage 1 – Gerätekategorien", url: "https://www.gesetze-im-internet.de/elektrog_2015/anlage_1.html", stand: "09/2026" },
   ],
 
-  seitenCta: { titel: "Szenario selbst rechnen", text: "Erlöse, Betriebskosten und Rendite eines Parks durchspielen.", href: "/rechner/solarpark", label: "Zum Solarpark-Rechner" },
+  seitenCta: { titel: "Szenario selbst rechnen", text: "Erlöse, Betriebskosten und Rendite eines Parks durchspielen.", href: pfad("/rechner/solarpark"), label: "Zum Solarpark-Rechner" },
   cta: {
     title: "Alten Solarpark verkaufen oder weiterentwickeln?",
     text: "Stellen Sie Ihren Bestandspark in die Projektbörse – Investoren sehen Eckdaten, Details erst nach NDA. Eine Provision fällt nur bei erfolgreichem Abschluss an.",

@@ -10,6 +10,7 @@ import { PROZESSE, statusInfo } from "@/lib/plattform/prozesse";
 import { VORGANG_TYPEN } from "@/lib/plattform/konstanten";
 import { datum, relativ } from "@/lib/plattform/format";
 import LeerZustand from "../LeerZustand";
+import { pfad } from "@/lib/land";
 
 const GESCHLOSSEN = ["abgeschlossen", "abgelehnt", "zurueckgezogen"];
 
@@ -49,7 +50,7 @@ export default function AnfragenListe({ vorgaenge, jetzt }) {
           art="anfrage"
           titel="Noch keine Anfragen"
           text="Sobald Sie über die Website eine Anfrage stellen, sehen Sie hier den Status – Schritt für Schritt."
-          aktion={<Button href="/flaechencheck" size="sm" pfeil>Fläche prüfen lassen</Button>}
+          aktion={<Button href={pfad("/flaechencheck")} size="sm" pfeil>Fläche prüfen lassen</Button>}
           zweite={<Button href="/portal/nachrichten" size="sm" variant="secondary">Frage an das Backoffice</Button>}
         />
       }

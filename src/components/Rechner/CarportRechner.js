@@ -12,6 +12,7 @@ import { useTeilbarerZustand } from "./kontext";
 import { STANDARD, rechneCarport } from "@/lib/rechner/carport";
 import { CARPORT, REGIONEN } from "@/lib/invest/markt";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
+import { pfad as seitenPfad } from "@/lib/land";
 
 const FARBE = { kauf: "#669933", contracting: "#1f5aa1", raster: "#eef0f4" };
 const tsd = (v) => (Math.abs(v) >= 1e6 ? `${fmt(v / 1e6, 2)} Mio. €` : `${fmt(Math.round(v / 1000))} T€`);
@@ -188,7 +189,7 @@ export default function CarportRechner() {
 
           <div className="mt-7 flex flex-col gap-3 border-t border-ink-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <p className="max-w-md text-[13px] leading-relaxed text-ink-500">Orientierung ohne Förderung und Steuern – wir rechnen gern mit Ihrem Lastgang und Lageplan.</p>
-            <Button href="/solarcarport#anfrage" size="lg" pfeil className="shrink-0">
+            <Button href={seitenPfad("/solarcarport#anfrage")} size="lg" pfeil className="shrink-0">
               Carport anfragen
             </Button>
           </div>

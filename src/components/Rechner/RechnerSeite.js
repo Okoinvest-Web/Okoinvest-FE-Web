@@ -13,6 +13,7 @@ import JsonLd from "@/components/JsonLd";
 import "./rechner.css";
 
 import { SITE } from "@/data/site";
+import { pfad as seitenPfad } from "@/lib/land";
 
 const BASE = SITE.url;
 
@@ -278,7 +279,7 @@ export function WeitereRechner({ ohne, titel = "Weitere Rechner & Tools", verwei
             <h2 id="weitere-rechner" className="ov-h3 text-ink-900 md:text-[28px]">{titel}</h2>
           </div>
           <Link
-            href="/rechner"
+            href={seitenPfad("/rechner")}
             className="group inline-flex min-h-11 items-center gap-1.5 rounded-full px-1 text-[15px] font-semibold text-ov-700 hover:text-ov-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500"
           >
             Alle {TOOLS.length} Tools

@@ -1,5 +1,6 @@
 // Die vier Wege für Landwirte – eine Quelle für Vergleich, Entscheider und Rechner.
 import { HandCoins, Handshake, Tractor, Users } from "lucide-react";
+import { pfad } from "@/lib/land";
 
 export const WEGE = [
   {
@@ -15,7 +16,7 @@ export const WEGE = [
     bewirtschaftung: "nur Pflege/Beweidung",
     aufwand: "sehr gering",
     fuer: "Flächen, die Sie ohnehin abgeben oder extensivieren möchten",
-    href: "/flaeche-verpachten",
+    href: pfad("/flaeche-verpachten"),
   },
   {
     id: "eigen",
@@ -30,7 +31,7 @@ export const WEGE = [
     bewirtschaftung: "voll, auf rund 85–90 % der Fläche",
     aufwand: "mittel – Entscheidungen, Finanzierung",
     fuer: "Betriebe mit Eigenkapital, die Wertschöpfung auf dem Hof halten wollen",
-    href: "/rechner/agri-pv",
+    href: pfad("/rechner/agri-pv"),
   },
   {
     id: "investor",
@@ -45,7 +46,7 @@ export const WEGE = [
     bewirtschaftung: "voll, auf rund 85–90 % der Fläche",
     aufwand: "gering – Abstimmung der Bewirtschaftung",
     fuer: "Betriebe, die weiter wirtschaften und ohne Kapital ein Standbein aufbauen wollen",
-    href: "/agri-pv",
+    href: pfad("/agri-pv"),
   },
   {
     id: "genossenschaft",
@@ -60,7 +61,7 @@ export const WEGE = [
     bewirtschaftung: "voll, auf rund 85–90 % der Fläche",
     aufwand: "gering – Mitgliedschaft",
     fuer: "Betriebe, die mitverdienen wollen, ohne alles allein zu stemmen",
-    href: "/genossenschaft",
+    href: pfad("/genossenschaft"),
   },
 ];
 

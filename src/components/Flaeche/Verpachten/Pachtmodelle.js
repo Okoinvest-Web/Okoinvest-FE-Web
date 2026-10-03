@@ -10,6 +10,7 @@ import { BEISPIEL_HA } from "@/components/Flaeche/Verpachten/Hero";
 import { PACHT, STAND } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import { pachtRechnung } from "@/lib/rechner/pacht";
+import { pfad } from "@/lib/land";
 
 const tsd = (v) => `${fmt(Math.round(v / 1000))} Tsd. €`;
 
@@ -56,7 +57,7 @@ export default function Pachtmodelle() {
           lead={`Beispielrechnung für ${BEISPIEL_HA} Hektar in Süddeutschland über ${PACHT.laufzeit} Jahre. Jede Säule ist ein Jahr – Ihre eigenen Werte rechnen Sie im Pachtrechner.`}
         />
         <Reveal>
-          <Link href="/rechner/pacht" className="group inline-flex items-center gap-2 rounded-full bg-ov-50 px-4 py-2.5 text-[14.5px] font-semibold text-ov-800 ring-1 ring-ov-200 transition-colors hover:bg-ov-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
+          <Link href={pfad("/rechner/pacht")} className="group inline-flex items-center gap-2 rounded-full bg-ov-50 px-4 py-2.5 text-[14.5px] font-semibold text-ov-800 ring-1 ring-ov-200 transition-colors hover:bg-ov-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
             Mit eigenen Werten rechnen
             <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
           </Link>

@@ -1,0 +1,81 @@
+/* src/components/Bericht/bericht-druck.css – Druckansicht der Berichtsseite (Welle 2, Paket B4)
+   A4, nur der Bericht (#ov-bericht) – ohne Navigation, Fuß, Cookie-Banner und Bedienelemente;
+   Links werden ausgeschrieben; Abschnitte und Karten brechen nicht mitten im Inhalt um. */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm 15mm 18mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  #ov-bericht,
+  #ov-bericht * {
+    visibility: visible !important;
+  }
+
+  #ov-bericht {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    color: #000;
+    font-size: 10.5pt;
+  }
+
+  #ov-bericht .print\:hidden {
+    display: none !important;
+  }
+
+  #ov-bericht h1 {
+    font-size: 20pt;
+  }
+
+  #ov-bericht h2 {
+    font-size: 13.5pt;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  #ov-bericht .ov-bericht-karte,
+  #ov-bericht .ov-bericht-zeile,
+  #ov-bericht li,
+  #ov-bericht tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #ov-bericht .ov-bericht-abschnitt {
+    margin-top: 7mm !important;
+  }
+
+  /* Links ausschreiben */
+  #ov-bericht a.ov-bericht-link[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 8.5pt;
+    word-break: break-all;
+    color: #333;
+  }
+
+  /* Tabelle: nicht abschneiden */
+  #ov-bericht [role="region"] {
+    overflow: visible !important;
+  }
+
+  #ov-bericht table {
+    min-width: 0 !important;
+  }
+
+  /* Farbflächen sparsam drucken, Rahmen bleiben */
+  #ov-bericht * {
+    box-shadow: none !important;
+  }
+}

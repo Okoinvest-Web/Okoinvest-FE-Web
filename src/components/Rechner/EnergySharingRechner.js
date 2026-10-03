@@ -10,6 +10,7 @@ import { DiagrammKarte, FARBEN, Linien } from "./ToolTeile";
 import { KUNDENTYPEN, LAENDER, MIXE, land as landDaten, rechneEnergySharing, regionenFuer, standardFuer } from "@/lib/rechner/energySharing";
 import { GEMEINSCHAFTEN } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 export default function EnergySharingRechner() {
   const [e, setE] = useState(() => standardFuer("at"));
@@ -169,7 +170,7 @@ export default function EnergySharingRechner() {
 
           <div className="mt-7 flex flex-col gap-3 border-t border-ink-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <p className="max-w-md text-[13px] leading-relaxed text-ink-500">Näherung für eine erste Einschätzung, netto. Maßgeblich sind die Messwerte je Viertelstunde und die Regeln Ihres Netzbetreibers.</p>
-            <Button href="/energiegemeinschaften" size="lg" pfeil className="shrink-0">
+            <Button href={pfad("/energiegemeinschaften")} size="lg" pfeil className="shrink-0">
               Gemeinschaft gründen
             </Button>
           </div>

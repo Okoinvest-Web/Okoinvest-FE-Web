@@ -13,6 +13,7 @@ import { STANDARD, rechneBeteiligung } from "@/lib/rechner/beteiligung";
 import { REGION_KURZ } from "@/lib/rechner/pacht";
 import { GEMEINSCHAFTEN, REGIONEN } from "@/lib/invest/markt";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 const B = GEMEINSCHAFTEN.beteiligung;
 const pct = (v, s = 1) => (v == null || !Number.isFinite(v) ? "–" : `${v < 0 ? "−" : ""}${fmt(Math.abs(v) * 100, s)} %`);
@@ -160,7 +161,7 @@ export default function BeteiligungRechner() {
           {/* Bewusst ohne Renditezahl neben dem Knopf: Interessenbekundung, kein Renditeversprechen */}
           <ErgebnisAnfrage
             typ="genossenschaft"
-            href="/genossenschaft#interesse"
+            href={pfad("/genossenschaft#interesse")}
             eyebrow="Genossenschaft im Aufbau"
             satz="Interesse unverbindlich vormerken – Unterlagen erhalten Sie vor jeder Entscheidung."
             label="Interesse vormerken"

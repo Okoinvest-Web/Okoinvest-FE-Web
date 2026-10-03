@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { LiveDot } from "@/components/ui/LiveTicker";
 import useLiveDaten from "./useLiveDaten";
 import { preisTage, zeitfenster, ct, uhr, spanne } from "./berechnung";
+import { pfad } from "@/lib/land";
 
 /**
  * Einbettbares Live-Widget: Börsenstrompreis jetzt, Tagesverlauf, günstigste 3 Stunden.
@@ -19,7 +20,7 @@ import { preisTage, zeitfenster, ct, uhr, spanne } from "./berechnung";
  *  initial  optional: Ergebnis von getEnergySnapshot() für Server-HTML ohne Platzhalter
  *  href     Ziel des Links (Standard /energie-live)
  */
-export default function LivePreisKarte({ tone = "light", initial = null, href = "/energie-live", className = "" }) {
+export default function LivePreisKarte({ tone = "light", initial = null, href = pfad("/energie-live"), className = "" }) {
   const { daten, jetzt } = useLiveDaten(initial);
   const tage = useMemo(() => preisTage(daten.preis, jetzt), [daten.preis, jetzt]);
   const heute = tage.heute;

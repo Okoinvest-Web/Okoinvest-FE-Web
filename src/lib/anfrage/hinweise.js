@@ -57,6 +57,7 @@ export const RUECKRUF = Object.freeze({
 export const EINWILLIGUNGEN = Object.freeze([
   Object.freeze({
     id: "werbeanruf",
+    zweck: "werbeanruf", // Einwilligungsprotokoll (src/lib/anfrage/protokoll.js)
     version: HINWEIS_VERSION,
     nurMitTelefon: true,
     aktiv: true,
@@ -65,6 +66,7 @@ export const EINWILLIGUNGEN = Object.freeze([
   }),
   Object.freeze({
     id: "newsletter",
+    zweck: "newsletter", // gilt erst nach Double-Opt-in (Eintrag art "doi", Paket B4)
     version: HINWEIS_VERSION,
     nurMitTelefon: false,
     aktiv: true,
@@ -74,6 +76,7 @@ export const EINWILLIGUNGEN = Object.freeze([
   }),
   Object.freeze({
     id: "partner",
+    zweck: "weitergabe_partner",
     version: HINWEIS_VERSION,
     nurMitTelefon: false,
     aktiv: false, // TODO Strang R: Partner namentlich benennen, erst dann einschalten
@@ -83,6 +86,12 @@ export const EINWILLIGUNGEN = Object.freeze([
 ]);
 
 export const EINWILLIGUNG_IDS = Object.freeze(EINWILLIGUNGEN.filter((e) => e.aktiv).map((e) => e.id));
+
+/**
+ * Welle 2, Paket B3: Häkchen-ID → Zweck im Einwilligungsprotokoll (werbeanruf | newsletter | weitergabe_partner).
+ * Es gibt KEINE mutmaßliche Einwilligung (auch nicht B2B): Nur ein ausdrücklich gesetztes Häkchen erzeugt einen Eintrag.
+ */
+export const zweckFuer = (id) => EINWILLIGUNGEN.find((e) => e.id === id)?.zweck || "";
 
 /** Wortlaut je Sprache (Standard Deutsch) */
 export const einwilligungText = (e, sprache) => (sprache === "en" && e.textEn ? e.textEn : e.text);

@@ -1,3 +1,4 @@
+import { pfad as seitenPfad } from "../../land/index.js";
 // src/lib/plattform/eg/navigation.js
 //
 // Seiten und Reiter des Moduls Energiegemeinschaften – EINE Liste für Menü (PortalRahmen.js), Reiterleiste je Gemeinschaft
@@ -34,7 +35,7 @@ export const EG_SEITEN = {
   adminSimulation: { href: "/portal/admin/eg/simulation", label: "Simulation", wp: "WP3" },
   portal: { href: "/portal/eg", label: "Energiegemeinschaft", wp: "WP6" },
   portalGruendung: { href: "/portal/eg/gruendung", label: "Gemeinschaft gründen", wp: "WP5" },
-  oeffentlichRechner: { href: "/energiegemeinschaften/rechner", label: "Rechner Energiegemeinschaft", wp: "WP6" },
+  oeffentlichRechner: { href: seitenPfad("/energiegemeinschaften/rechner"), label: "Rechner Energiegemeinschaft", wp: "WP6" },
 };
 
 /** Brotkrumen-Bezeichnungen (Pfadteile) – PortalRahmen.js übernimmt sie in LABELS */

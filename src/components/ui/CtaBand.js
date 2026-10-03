@@ -7,17 +7,18 @@ import Reveal from "./Reveal";
 import Stagger from "./Stagger";
 import Spotlight from "@/components/motion/Spotlight";
 import TextEnthuellung from "@/components/motion/TextEnthuellung";
+import { pfad } from "@/lib/land";
 
 /**
  * Ziele je Zielgruppe (Conversion-Plan): Seiten übergeben `zielgruppe`, eigene `primary`/`secondary` haben Vorrang.
  * Ohne Angabe bleibt alles wie bisher (Fläche prüfen + Projektbörse).
  */
 const ZIELE = {
-  flaeche: { primary: { label: "Fläche prüfen lassen", href: "/flaechencheck" }, secondary: { label: "Pacht berechnen", href: "/rechner/pacht" } },
+  flaeche: { primary: { label: "Fläche prüfen lassen", href: pfad("/flaechencheck") }, secondary: { label: "Pacht berechnen", href: pfad("/rechner/pacht") } },
   investor: { primary: { label: "Suchprofil anlegen", href: "/registrieren?rolle=investor" }, secondary: { label: "Zur Projektbörse", href: "/projektboerse" } },
-  reststrom: { primary: { label: "Ersparnis berechnen", href: "/rechner/reststrom" }, secondary: { label: "Anfrage stellen", href: "/kontakt?anliegen=reststrom" } },
-  energiegemeinschaft: { primary: { label: "Anfrage Energiegemeinschaft", href: "/energiegemeinschaften#anfrage" }, secondary: { label: "Software ansehen", href: "/energiegemeinschaften/software" } },
-  kommune: { primary: { label: "Gespräch anfragen", href: "/kontakt?anliegen=kommune" }, secondary: { label: "Für Kommunen", href: "/kommunen" } },
+  reststrom: { primary: { label: "Ersparnis berechnen", href: pfad("/rechner/reststrom") }, secondary: { label: "Anfrage stellen", href: "/kontakt?anliegen=reststrom" } },
+  energiegemeinschaft: { primary: { label: "Anfrage Energiegemeinschaft", href: pfad("/energiegemeinschaften#anfrage") }, secondary: { label: "Software ansehen", href: pfad("/energiegemeinschaften/software") } },
+  kommune: { primary: { label: "Gespräch anfragen", href: "/kontakt?anliegen=kommune" }, secondary: { label: "Für Kommunen", href: pfad("/kommunen") } },
 };
 
 /**
@@ -35,7 +36,7 @@ export default function CtaBand({
   className,
 }) {
   const ziel = ZIELE[zielgruppe];
-  const primary = primaryProp || ziel?.primary || { label: "Fläche prüfen lassen", href: "/flaechencheck" };
+  const primary = primaryProp || ziel?.primary || { label: "Fläche prüfen lassen", href: pfad("/flaechencheck") };
   // secondary={null} blendet den zweiten Weg weiterhin aus
   const secondary = secondaryProp !== undefined ? secondaryProp : ziel?.secondary || { label: "Zur Projektbörse", href: "/projektboerse" };
   return (
@@ -83,10 +84,10 @@ export default function CtaBand({
                 <p className="text-[13px] font-medium text-white/60">Direkt zum passenden Weg</p>
                 <Stagger as="ul" schritt={70} delay={250} className="mt-3 grid gap-2">
                   {[
-                    { label: "Ich habe eine Fläche", href: "/flaeche-verpachten" },
-                    { label: "Ich bin Landwirt", href: "/landwirte" },
+                    { label: "Ich habe eine Fläche", href: pfad("/flaeche-verpachten") },
+                    { label: "Ich bin Landwirt", href: pfad("/landwirte") },
                     { label: "Ich möchte investieren", href: "/investoren" },
-                    { label: "Ich brauche günstigen Strom", href: "/reststrom" },
+                    { label: "Ich brauche günstigen Strom", href: pfad("/reststrom") },
                   ].map((w) => (
                     <li key={w.href}>
                       <Link href={w.href} className="group flex items-center justify-between gap-3 rounded-2xl bg-white/[0.06] px-4 py-3 text-[15px] font-semibold ring-1 ring-white/10 transition-colors hover:bg-white/[0.12]">

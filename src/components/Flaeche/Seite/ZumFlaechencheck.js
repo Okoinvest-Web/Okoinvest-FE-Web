@@ -2,6 +2,7 @@
 
 import Button from "@/components/ui/Button";
 import { REGIONEN } from "@/lib/invest/markt";
+import { pfad } from "@/lib/land";
 
 const SCHLUESSEL = "ov-flaechencheck"; // Zwischenstand des FlaechenWizard (sessionStorage)
 
@@ -35,7 +36,7 @@ export function flaechencheckVorbelegen({ ha, regionId } = {}) {
  */
 export default function ZumFlaechencheck({ ha, regionId, children = "Fläche prüfen lassen", ...rest }) {
   return (
-    <Button href="/flaechencheck#check" pfeil onClick={() => flaechencheckVorbelegen({ ha, regionId })} {...rest}>
+    <Button href={pfad("/flaechencheck#check")} pfeil onClick={() => flaechencheckVorbelegen({ ha, regionId })} {...rest}>
       {children}
     </Button>
   );

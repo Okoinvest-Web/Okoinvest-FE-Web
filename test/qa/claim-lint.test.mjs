@@ -65,6 +65,6 @@ test("Glob und Paket-Listen", () => {
   assert.ok(!globZuRegex("src/app/projektboerse/page.js").test("src/app/projektboerse/karte/page.js"));
   assert.ok(globZuRegex("src/components/Home/**").test("src/components/Home/Hero/Bild.js"));
   const d = sammleDateien(PAKETE.D);
-  assert.ok(d.includes("src/data/unternehmen.js") && d.includes("src/app/impressum/page.js"), "Paket D unvollständig");
-  assert.ok(d.every((p) => !p.startsWith("src/app/portal/")));
+  assert.ok(d.includes("src/data/unternehmen.js") && d.includes("src/app/(stamm)/impressum/page.js"), "Paket D unvollständig");
+  assert.ok(d.every((p) => !p.startsWith("src/app/portal/") && !p.startsWith("src/app/(stamm)/portal/")));
 });

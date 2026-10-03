@@ -86,7 +86,7 @@ export default function Verfahren() {
           <p className="font-display text-[18px] font-bold text-ink-900">Ausnahmen ohne Bebauungsplan</p>
           <p className="mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-600">
             Entlang von Autobahnen und zweigleisigen Schienenwegen sind Freiflächenanlagen in einem 200-Meter-Streifen nach § 35 Abs. 1 Nr. 8 b BauGB privilegiert, ebenso kleine Agri-PV-Anlagen bis 2,5 ha mit Hofbezug. Die Gemeinde bleibt über ihr Einvernehmen beteiligt. Mehr im{" "}
-            <Link href="/ratgeber/solarpark-genehmigung-bebauungsplan" className="rounded font-semibold text-ov-700 underline decoration-ov-300 underline-offset-2 hover:decoration-ov-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
+            <Link href="/wissen/ratgeber/solarpark-genehmigung-bebauungsplan" className="rounded font-semibold text-ov-700 underline decoration-ov-300 underline-offset-2 hover:decoration-ov-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
               Ratgeber Genehmigung
             </Link>
             .

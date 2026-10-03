@@ -11,6 +11,7 @@ import { Ansicht, ErgebnisKopf, Hinweis, Legende, MobilKurz, RechnerRahmen } fro
 import { BESTAND, ERLOESE, PROVISION, REGIONEN } from "@/lib/invest/markt";
 import { PHASE_BESTAND, STANDARD, rechneBestand, sensitivitaet, tornado, verguetungRichtwert } from "@/lib/rechner/bestandsanlage";
 import { fmt, fmtEur, fmtMio } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 const FARBE = { foerder: "#669933", markt: "#ffc53d", kosten: "#c4cad5", raster: "#eef0f4", minus: "#1f5aa1" };
 const pct = (v, s = 1) => (v == null || !Number.isFinite(v) ? "–" : `${fmt(v * 100, s)} %`);
@@ -281,7 +282,7 @@ export default function BestandsRechner() {
               Ertragswert vor Steuern und ohne Fremdkapital – eine Orientierung, kein Gutachten. Grundlage einer Transaktion sind Datenraum, technische und rechtliche Due Diligence.
             </p>
             <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-              <Button href="/bestandsanlagen#anfrage" size="lg" pfeil>
+              <Button href={pfad("/bestandsanlagen#anfrage")} size="lg" pfeil>
                 Anlage bewerten lassen
               </Button>
             </div>

@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { TextEnthuellung } from "@/components/motion";
 import DachBuehne from "./DachBuehne";
+import { pfad } from "@/lib/land";
 
 const PUNKTE = ["Prüfung & Angebot kostenfrei", "Pacht, Dachstrom oder Sanierung", "Statik und Brandschutz geprüft", "Status jederzeit im Portal"];
 
@@ -36,7 +37,7 @@ export default function Hero({ bsp, m2, laufzeit }) {
 
             <div className="ov-hero-in mt-8 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-10" style={{ "--ov-delay": "260ms" }}>
               <Button href="#anfrage" size="lg" pfeil magnetisch className="w-full sm:w-auto">Dach prüfen lassen</Button>
-              <Button href="/rechner/dachpacht" size="lg" variant="outlineLight" className="w-full sm:w-auto">Dachpacht berechnen</Button>
+              <Button href={pfad("/rechner/dachpacht")} size="lg" variant="outlineLight" className="w-full sm:w-auto">Dachpacht berechnen</Button>
             </div>
 
             <div className="ov-hero-in mt-9 border-t border-white/10 pt-7 md:mt-10" style={{ "--ov-delay": "340ms" }}>

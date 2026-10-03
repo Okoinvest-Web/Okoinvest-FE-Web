@@ -10,6 +10,7 @@
 import { KOMMUNE, ERLOESE, STAND } from "@/lib/invest/markt";
 import { rechneKommune } from "@/lib/rechner/kommune";
 import { fmt, fmtEur, fmtPct, fmtCt } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* ------------------------------------------------------------------ */
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag zur Übernahme */
@@ -85,7 +86,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die [Kommunalbeteiligung](/wissen/lexikon#kommunalbeteiligung) ist keine Pacht und keine Steuer, sondern eine **einseitige Zuwendung ohne Gegenleistung**. Seit dem EEG 2023 darf sie auch für Bestandsanlagen und für Anlagen ohne EEG-Förderung gezahlt werden. Wie viel Pacht ein Flächeneigentümer daneben erhält, steht im Ratgeber [Solarpark-Pacht pro Hektar](/ratgeber/solarpark-pacht-pro-hektar); die Zahlung nach § 6 fließt immer an die Gemeinde, nie an Verpächter.`,
+          text: `Die [Kommunalbeteiligung](/wissen/lexikon#kommunalbeteiligung) ist keine Pacht und keine Steuer, sondern eine **einseitige Zuwendung ohne Gegenleistung**. Seit dem EEG 2023 darf sie auch für Bestandsanlagen und für Anlagen ohne EEG-Förderung gezahlt werden. Wie viel Pacht ein Flächeneigentümer daneben erhält, steht im Ratgeber [Solarpark-Pacht pro Hektar](/wissen/ratgeber/solarpark-pacht-pro-hektar); die Zahlung nach § 6 fließt immer an die Gemeinde, nie an Verpächter.`,
         },
         {
           typ: "kennzahl",
@@ -95,7 +96,7 @@ const artikel = {
         },
         {
           typ: "tool",
-          href: "/rechner/kommune",
+          href: pfad("/rechner/kommune"),
           titel: "Was bringt ein Solarpark Ihrer Gemeinde?",
           text: "Leistung, Region, Hebesatz und Gemeindeflächen eingeben – der Kommunal-Rechner zeigt § 6-Zahlung, Gewerbesteuer und Pacht über die Laufzeit.",
           label: "Zum Kommunal-Rechner",
@@ -129,7 +130,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Für die Gemeinde folgt daraus eine praktische Frage: Bietet der Betreiber die Zahlung für **alle** eingespeisten Mengen an oder nur für die erstattungsfähigen? Laut der Kommunalbefragung der FA Wind und Solar (zur Windenergie) werden Zahlungen häufig nur für die erstattungsfähigen Mengen angeboten. Bei Solarparks mit PPA oder vielen Stunden ohne Prämie macht das einen spürbaren Unterschied. Wie Marktprämie und PPA zusammenspielen, erklärt der Ratgeber [Direktvermarktung für Solarparks](/ratgeber/direktvermarktung-solarpark); zu den Zeiträumen ohne Förderung siehe [negative Strompreise](/ratgeber/negative-strompreise-solarspitzengesetz).",
+          text: "Für die Gemeinde folgt daraus eine praktische Frage: Bietet der Betreiber die Zahlung für **alle** eingespeisten Mengen an oder nur für die erstattungsfähigen? Laut der Kommunalbefragung der FA Wind und Solar (zur Windenergie) werden Zahlungen häufig nur für die erstattungsfähigen Mengen angeboten. Bei Solarparks mit PPA oder vielen Stunden ohne Prämie macht das einen spürbaren Unterschied. Wie Marktprämie und PPA zusammenspielen, erklärt der Ratgeber [Direktvermarktung für Solarparks](/wissen/ratgeber/direktvermarktung-solarpark); zu den Zeiträumen ohne Förderung siehe [negative Strompreise](/wissen/ratgeber/negative-strompreise-solarspitzengesetz).",
         },
       ],
     },
@@ -144,7 +145,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Das ist wichtig, weil die Gemeinde zugleich über den [Bebauungsplan](/wissen/lexikon#bebauungsplan) entscheidet. Die Zahlung darf trotzdem nicht an ein bestimmtes Abstimmungsverhalten geknüpft sein. Bei Freiflächenanlagen darf die Vereinbarung zusätzlich Anforderungen an die naturverträgliche Gestaltung enthalten. Die FA Wind und Solar stellt ihren Mustervertrag nur für Windenergie bereit; für Freiflächen-PV verweist sie auf einen kostenlosen **Mustervertrag des Bundesverbands Neue Energiewirtschaft (bne)**. Wie das Planverfahren abläuft, zeigt der Ratgeber [Genehmigung und Bebauungsplan](/ratgeber/solarpark-genehmigung-bebauungsplan).`,
+          text: `Das ist wichtig, weil die Gemeinde zugleich über den [Bebauungsplan](/wissen/lexikon#bebauungsplan) entscheidet. Die Zahlung darf trotzdem nicht an ein bestimmtes Abstimmungsverhalten geknüpft sein. Bei Freiflächenanlagen darf die Vereinbarung zusätzlich Anforderungen an die naturverträgliche Gestaltung enthalten. Die FA Wind und Solar stellt ihren Mustervertrag nur für Windenergie bereit; für Freiflächen-PV verweist sie auf einen kostenlosen **Mustervertrag des Bundesverbands Neue Energiewirtschaft (bne)**. Wie das Planverfahren abläuft, zeigt der Ratgeber [Genehmigung und Bebauungsplan](/wissen/ratgeber/solarpark-genehmigung-bebauungsplan).`,
         },
         {
           typ: "checkliste",
@@ -249,7 +250,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Die Rechnung macht deutlich, warum § 6 für Gemeinden so wichtig ist: Er bringt ab dem ersten Betriebsjahr planbares Geld, während die Gewerbesteuer oft erst in der zweiten Hälfte der Laufzeit relevant wird. Liegen Flächen der Gemeinde im Park, kommt Pacht hinzu. Eine Übersicht aller Hebel finden Sie auf der Seite für [Kommunen](/kommunen).",
+          text: "Die Rechnung macht deutlich, warum § 6 für Gemeinden so wichtig ist: Er bringt ab dem ersten Betriebsjahr planbares Geld, während die Gewerbesteuer oft erst in der zweiten Hälfte der Laufzeit relevant wird. Liegen Flächen der Gemeinde im Park, kommt Pacht hinzu. Eine Übersicht aller Hebel finden Sie auf der Seite für [Kommunen](/de/kommunen).",
         },
       ],
     },
@@ -264,7 +265,7 @@ const artikel = {
             ["Beteiligung früh ansprechen", "Schon beim [Aufstellungsbeschluss](/wissen/lexikon#aufstellungsbeschluss) offen klären, ob der Projektierer eine Vereinbarung nach § 6 EEG anbieten wird – und für welche Strommengen. Unterschrieben wird sie erst nach dem Beschluss des Bebauungsplans, und sie darf nie an das Abstimmungsverhalten geknüpft sein."],
             ["Landesrecht prüfen", "Gibt es eine Pflichtabgabe oder ein Beteiligungsgesetz? Welche Fristen gelten, und wird § 6 angerechnet?"],
             ["Vertrag prüfen lassen", "Mustervertrag als Grundlage nehmen, Laufzeit, Rechtsnachfolge und Abrechnung sichern; Befangenheiten im Gemeinderat klären."],
-            ["Bürger mitdenken", "Neben der Gemeinde können Einwohner über Genossenschaft, Nachrangdarlehen oder Stromtarif profitieren – mehr im Ratgeber [Bürgerenergie und Akzeptanz](/ratgeber/buergerenergie-solarpark-akzeptanz) und unter [Genossenschaft](/genossenschaft)."],
+            ["Bürger mitdenken", "Neben der Gemeinde können Einwohner über Genossenschaft, Nachrangdarlehen oder Stromtarif profitieren – mehr im Ratgeber [Bürgerenergie und Akzeptanz](/wissen/ratgeber/buergerenergie-solarpark-akzeptanz) und unter [Genossenschaft](/de/genossenschaft)."],
             ["Bestandsparks nachverhandeln", "Auch bestehende Anlagen dürfen seit 2023 zahlen. Fragen Sie Betreiber auf Ihrem Gemeindegebiet aktiv an."],
           ],
         },
@@ -279,7 +280,7 @@ const artikel = {
     },
     {
       q: "Wie viel bekommt eine Gemeinde für einen Solarpark nach § 6 EEG?",
-      a: `Bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je eingespeister Kilowattstunde. Für ${MWP} MWp in Süddeutschland sind das rund ${fmtEur(P6_JAHR)} pro Jahr. Eigene Werte berechnet der [Kommunal-Rechner](/rechner/kommune).`,
+      a: `Bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je eingespeister Kilowattstunde. Für ${MWP} MWp in Süddeutschland sind das rund ${fmtEur(P6_JAHR)} pro Jahr. Eigene Werte berechnet der [Kommunal-Rechner](/de/rechner/kommune).`,
     },
     {
       q: "Wer zahlt die 0,2 Cent am Ende?",
@@ -300,10 +301,10 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/kommunen", titel: "Für Kommunen", text: "Wie Gemeinden von Solarparks profitieren." },
-    { href: "/rechner/kommune", titel: "Kommunal-Rechner", text: "§ 6-Zahlung, Gewerbesteuer und Pacht berechnen." },
-    { href: "/ratgeber/buergerenergie-solarpark-akzeptanz", titel: "Bürgerenergie und Akzeptanz", text: "Beteiligungsmodelle für Bürgerinnen und Bürger." },
-    { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Genehmigung und Bebauungsplan", text: "Das Verfahren Schritt für Schritt." },
+    { href: pfad("/kommunen"), titel: "Für Kommunen", text: "Wie Gemeinden von Solarparks profitieren." },
+    { href: pfad("/rechner/kommune"), titel: "Kommunal-Rechner", text: "§ 6-Zahlung, Gewerbesteuer und Pacht berechnen." },
+    { href: "/wissen/ratgeber/buergerenergie-solarpark-akzeptanz", titel: "Bürgerenergie und Akzeptanz", text: "Beteiligungsmodelle für Bürgerinnen und Bürger." },
+    { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Genehmigung und Bebauungsplan", text: "Das Verfahren Schritt für Schritt." },
   ],
 
   quellen: [
@@ -320,14 +321,14 @@ const artikel = {
   seitenCta: {
     titel: "Was bringt der Park Ihrer Gemeinde?",
     text: "§ 6-Zahlung, Gewerbesteuer und Pacht über die Laufzeit.",
-    href: "/rechner/kommune",
+    href: pfad("/rechner/kommune"),
     label: "Zum Kommunal-Rechner",
   },
   cta: {
     title: "Solarpark in Ihrer Gemeinde?",
     text: "Wir zeigen Gemeinden, wie Planung, Beteiligung und Einnahmen zusammenpassen – von der ersten Flächenprüfung bis zum Bebauungsplan.",
-    primary: { label: "Für Kommunen", href: "/kommunen" },
-    secondary: { label: "Kommunal-Rechner", href: "/rechner/kommune" },
+    primary: { label: "Für Kommunen", href: pfad("/kommunen") },
+    secondary: { label: "Kommunal-Rechner", href: pfad("/rechner/kommune") },
   },
 };
 

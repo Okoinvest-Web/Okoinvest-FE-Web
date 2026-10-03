@@ -165,7 +165,7 @@ function Karte({ a }) {
       </div>
       <div className="flex flex-1 flex-col p-6">
         <h3 className="font-display text-[18.5px] font-extrabold leading-snug tracking-tight text-ink-900 transition-colors group-hover:text-ov-700">
-          <Link href={`/ratgeber/${a.slug}`} className="outline-none after:absolute after:inset-0 after:content-['']">
+          <Link href={`/wissen/ratgeber/${a.slug}`} className="outline-none after:absolute after:inset-0 after:content-['']">
             {a.title}
           </Link>
         </h3>

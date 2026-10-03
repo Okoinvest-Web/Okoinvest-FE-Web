@@ -1,50 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Building2, Clock, Mail, MapPin, Phone } from "lucide-react";
 
 import CookieBanner from "../Cookies/cookiecomponent";
-import { NAVIGATION } from "@/data/navigation";
 import { GESELLSCHAFT, KONTAKT, SITE } from "@/data/site";
 import LiveTicker from "@/components/ui/LiveTicker";
 import Logo from "@/components/ui/Logo";
 import Stagger from "@/components/ui/Stagger";
+import { pfad } from "@/lib/land";
+import { navLink, navigationFuer } from "@/lib/land/navigation";
+import useLand from "@/components/Land/useLand";
+import Laenderwahl from "@/components/Land/Laenderwahl";
 
-// Spalten aus der zentralen Navigation ableiten
-const spalte = (titel, neu) => {
-  const n = NAVIGATION.find((x) => x.title === titel);
-  return n ? { titel: neu || n.title, links: n.groups.flatMap((g) => g.items).map(({ name, href }) => ({ name, href })) } : null;
+// Spalten aus der zentralen Navigation ableiten – Links je Land (src/lib/land, Welle 2)
+const spalte = (nav, titel, neu) => {
+  const n = nav.find((x) => x.title === titel);
+  return n ? { titel: neu || n.title, links: n.groups.flatMap((g) => g.items).map(({ name, href, giltFuer }) => ({ name, href, giltFuer })) } : null;
 };
 
-const SPALTEN = [
-  spalte("Lösungen"),
-  spalte("Für Sie", "Zielgruppen"),
-  spalte("Energie"),
-  {
-    titel: "Plattform & Wissen",
-    links: [
-      { name: "Projektbörse", href: "/projektboerse" },
-      { name: "Projekt anbieten", href: "/projektboerse/anbieten" },
-      { name: "Bestandsanlagen", href: "/bestandsanlagen" },
-      { name: "Marktdaten", href: "/marktdaten" },
-      { name: "Regionen DACH", href: "/regionen" },
-      { name: "Alle Rechner", href: "/rechner" },
-      { name: "Ratgeber", href: "/ratgeber" },
-      { name: "Lexikon", href: "/wissen/lexikon" },
-      { name: "FAQ", href: "/faq" },
-      { name: "Über ÖkoInvest", href: "/unternehmen" },
-      { name: "Referenzen", href: "/referenzen" },
-      { name: "Warum ÖkoInvest", href: "/warum-oekoinvest" },
-      { name: "English", href: "/en" },
-      { name: "Kontakt", href: "/kontakt" },
-      { name: "Portal-Login", href: "/login" },
-    ],
-  },
-].filter(Boolean);
+const spaltenFuer = (land) => {
+  const nav = navigationFuer(land);
+  const landLink = (schluessel, name) => ({ name, ...navLink(schluessel, land) });
+  return [
+    spalte(nav, "Lösungen"),
+    spalte(nav, "Für Sie", "Zielgruppen"),
+    spalte(nav, "Energie"),
+    {
+      titel: "Plattform & Wissen",
+      links: [
+        { name: "Projektbörse", href: "/projektboerse" },
+        { name: "Projekt anbieten", href: "/projektboerse/anbieten" },
+        landLink("/bestandsanlagen", "Bestandsanlagen"),
+        landLink("/marktdaten", "Marktdaten"),
+        landLink("/regionen", "Regionen"),
+        landLink("/rechner", "Alle Rechner"),
+        { name: "Ratgeber", href: "/wissen/ratgeber" },
+        { name: "Lexikon", href: "/wissen/lexikon" },
+        landLink("/faq", "FAQ"),
+        { name: "Über ÖkoInvest", href: "/unternehmen" },
+        { name: "Referenzen", href: "/referenzen" },
+        landLink("/warum-oekoinvest", "Warum ÖkoInvest"),
+        { name: "English", href: "/en" },
+        { name: "Kontakt", href: "/kontakt" },
+        { name: "Portal-Login", href: "/login" },
+      ],
+    },
+  ].filter(Boolean);
+};
 
 export default function Footer() {
   const [popup, setPopup] = useState(false);
+  const { land } = useLand();
+  const SPALTEN = useMemo(() => spaltenFuer(land), [land]);
   const jahr = new Date().getFullYear();
 
   return (
@@ -65,7 +74,7 @@ export default function Footer() {
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link href="/flaechencheck" className="ov-press group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold shadow-gruen transition-[background-color,transform] hover:bg-ov-700">
+            <Link href={pfad("/flaechencheck", land)} className="ov-press group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold shadow-gruen transition-[background-color,transform] hover:bg-ov-700">
               Fläche prüfen
               <ArrowUpRight aria-hidden="true" className="h-4 w-4 transition-transform duration-300 ease-ov-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-focus-visible:-translate-y-0.5 group-focus-visible:translate-x-0.5" />
             </Link>
@@ -133,6 +142,7 @@ export default function Footer() {
                     >
                       {l.name}
                     </Link>
+                    {l.giltFuer && <span className="mt-0.5 block text-[12px] text-white/60">(gilt {l.giltFuer})</span>}
                   </li>
                 ))}
               </ul>
@@ -148,7 +158,10 @@ export default function Footer() {
 
         {/* Rechtliches */}
         <div className="flex flex-col gap-4 py-8 text-[13.5px] text-white/50 md:flex-row md:items-center md:justify-between">
-          <p suppressHydrationWarning>© {jahr} {GESELLSCHAFT.name} · Alle Rechte vorbehalten</p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+            <p suppressHydrationWarning>© {jahr} {GESELLSCHAFT.name} · Alle Rechte vorbehalten</p>
+            <Laenderwahl variante="dunkel" label="Land wählen (Fußbereich)" />
+          </div>
           <nav aria-label="Rechtliche Links">
             <ul className="flex flex-wrap gap-x-6 gap-y-2">
               <li><button type="button" onClick={() => setPopup(true)} className="transition-colors hover:text-white">Privatsphäre-Einstellungen</button></li>

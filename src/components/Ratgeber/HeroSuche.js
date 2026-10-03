@@ -28,7 +28,7 @@ export default function HeroSuche() {
     <div>
       <form
         role="search"
-        action="/ratgeber#alle-artikel"
+        action="/wissen/ratgeber#alle-artikel"
         method="get"
         onSubmit={(e) => {
           e.preventDefault();

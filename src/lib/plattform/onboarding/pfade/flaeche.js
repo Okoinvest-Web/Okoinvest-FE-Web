@@ -1,6 +1,7 @@
 // src/lib/plattform/onboarding/pfade/flaeche.js – Flächeneigentümer, Landwirt (Agri-PV) und Dacheigentümer
 
 import { benachrichtigungenSchritt, kycSchritt, profilSchritt, terminSchritt, untertypSchritt } from "./gemeinsam";
+import { pfad } from "../../../land/index.js";
 
 export const flaeche = {
   id: "flaeche",
@@ -18,7 +19,7 @@ export const flaeche = {
     {
       id: "flaechencheck", titel: "Flächencheck-Ergebnis übernehmen", kurz: "Flächencheck", art: "aktion",
       text: "Sie haben den kostenlosen Flächencheck schon genutzt? Dann liegt das Ergebnis als Anfrage in Ihrem Konto (zugeordnet über Ihre bestätigte E-Mail-Adresse) – im nächsten Schritt übernehmen Sie Größe, Region und Nutzung per Klick, statt sie neu einzugeben. Noch nicht? Der Check dauert zwei Minuten.",
-      links: [{ href: "/flaechencheck", label: "Flächencheck starten" }, { href: "/portal/anfragen", label: "Meine Anfragen" }],
+      links: [{ href: pfad("/flaechencheck"), label: "Flächencheck starten" }, { href: "/portal/anfragen", label: "Meine Anfragen" }],
       pflicht: false, kriterium: { eines: [{ fakt: "flaechencheck" }, { merker: true }] }, bestaetigbar: true, bestaetigenText: "Nicht nötig",
       nurFuer: ["eigentuemer", "landwirt"],
     },

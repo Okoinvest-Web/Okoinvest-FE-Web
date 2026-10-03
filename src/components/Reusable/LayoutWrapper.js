@@ -9,9 +9,11 @@ import RevealObserver from "@/components/ui/RevealObserver";
 import MobileCta from "@/components/Reusable/MobileCta";
 import MotionInteraktion from "@/components/motion/MotionInteraktion";
 import ScrollFortschritt from "@/components/motion/ScrollFortschritt";
+import Offenlegung from "@/components/Gruppe/Offenlegung";
+import useLand from "@/components/Land/useLand";
 
 // Lange Leseseiten: dünner Lesefortschritt oben (ScrollFortschritt)
-const LESESEITEN = [/^\/ratgeber\/[^/]+/, /^\/wissen\//, /^\/faq$/, /^\/datenschutz$/, /^\/impressum$/, /^\/nutzungsbedingungen$/, /^\/bedingungen\//];
+const LESESEITEN = [/^\/wissen\//, /^\/(de|at|ch)\/faq$/, /^\/datenschutz$/, /^\/impressum$/, /^\/nutzungsbedingungen$/, /^\/bedingungen\//];
 
 // const GoogleTagManager = dynamic(
 //   (entfernt)
@@ -20,6 +22,8 @@ const LESESEITEN = [/^\/ratgeber\/[^/]+/, /^\/wissen\//, /^\/faq$/, /^\/datensch
 
 const CookieComponentLazy = dynamic(() => import("@/components/Cookies/cookiecomponent"), { ssr: false });
 const ToTopButtonLazy = dynamic(() => import("@/components/Home/BackToTop"), { ssr: false });
+// Länderhinweis (Welle 2): Vorschlag aus /api/land, schließbar, Cookie erst nach aktiver Wahl
+const LaenderHinweisLazy = dynamic(() => import("@/components/Land/LaenderHinweis"), { ssr: false });
 
 export default function LayoutWrapper({ children }) {
   // Kampagnen-Zuordnung beim ersten Laden im Arbeitsspeicher festhalten (keine Cookies)
@@ -27,6 +31,7 @@ export default function LayoutWrapper({ children }) {
 
   // Info-Bildschirm (SCADA/TV): nur der Inhalt, ohne Kopf, Fuß, Banner und Widgets
   const pfad = usePathname() || "";
+  const { land } = useLand();
   const hauptRef = useRef(null);
   const ersterAufruf = useRef(true);
 
@@ -60,7 +65,10 @@ export default function LayoutWrapper({ children }) {
       {LESESEITEN.some((r) => r.test(pfad)) && <ScrollFortschritt key={pfad} />}
       {/* Cookie-Banner vor dem Seitenkopf: in der Tab-Reihenfolge direkt nach dem Sprunglink erreichbar (fixiert positioniert) */}
       <CookieComponentLazy />
+      <LaenderHinweisLazy />
       <Navbar />
+      {/* GRP: Offenlegung „Teil der ÖKOVOLT Gruppe“ – erscheint nur nach Gruppen-/Partnerverweis */}
+      <Offenlegung land={land} />
       <main id="main-content" ref={hauptRef}>{children}</main>
       <Footer />
       <aside aria-label="Schnellzugriff">

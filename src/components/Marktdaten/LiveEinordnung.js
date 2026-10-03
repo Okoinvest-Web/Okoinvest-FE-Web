@@ -6,6 +6,7 @@ import useEnergyLive, { fmtCt } from "@/components/ui/useEnergyLive";
 import { LiveDot } from "@/components/ui/LiveTicker";
 import { fmt } from "@/lib/rechner/annahmen";
 import Reveal from "@/components/ui/Reveal";
+import { pfad } from "@/lib/land";
 
 /**
  * Live-Börsenpreis (Day-Ahead DE-LU) im Vergleich zu den historischen
@@ -76,7 +77,7 @@ export default function LiveEinordnung({ zuschlagCt, zuschlagText, solarCt, sola
       </Reveal>
 
       <Link
-        href="/energie-live"
+        href={pfad("/energie-live")}
         className="mt-7 inline-flex items-center gap-2 text-[14px] font-semibold text-ov-300 underline-offset-4 hover:text-white hover:underline"
       >
         Zum Live-Dashboard Strommarkt

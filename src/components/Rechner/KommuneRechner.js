@@ -10,6 +10,8 @@ import { useTeilbarerZustand } from "./kontext";
 import { STANDARD, rechneKommune } from "@/lib/rechner/kommune";
 import { KOMMUNE, PACHT, REGIONEN, ERLOESE, ALLGEMEIN } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import BerichtAnfordern from "@/components/Bericht/BerichtAnfordern";
+import { pfad } from "@/lib/land";
 
 const QUELLEN = [
   { id: "p6", label: "§ 6 EEG-Beteiligung", farbe: "#669933" },
@@ -37,10 +39,12 @@ export default function KommuneRechner() {
     { optionen: { regionId: REGIONEN.filter((x) => x.land === "DE").map((x) => x.id) }, grenzen: { anteilGemeinde: [0, 1] }, pruefen: rechneKommune }
   );
 
-  const r = useMemo(
-    () => rechneKommune({ mwp, regionId, hebesatz, paragraph6, gemeindeflaeche, anteilGemeinde, pachtHa, sitzInGemeinde, preisCt }),
+  // Eingaben der Rechnung – dieselben gehen an den Bericht (Paket B4: der Server rechnet damit neu)
+  const eingaben = useMemo(
+    () => ({ mwp, regionId, hebesatz, paragraph6, gemeindeflaeche, anteilGemeinde, pachtHa, sitzInGemeinde, preisCt }),
     [mwp, regionId, hebesatz, paragraph6, gemeindeflaeche, anteilGemeinde, pachtHa, sitzInGemeinde, preisCt]
   );
+  const r = useMemo(() => rechneKommune(eingaben), [eingaben]);
   const maxQuelle = Math.max(...QUELLEN.map((q) => r.gesamtLaufzeit[q.id]), 1);
   const haushalte = r.ertragJahr1 / ALLGEMEIN.haushaltKwh;
 
@@ -184,10 +188,12 @@ export default function KommuneRechner() {
             <p className="max-w-md text-[13px] leading-relaxed text-ink-500">
               Vereinfachte Modellrechnung für Deutschland, keine Steuerberatung. Wir rechnen gern mit Ihrem Hebesatz und konkreten Flächen.
             </p>
-            <Button href="/kommunen#anfrage" size="lg" pfeil className="shrink-0">
+            <Button href={pfad("/kommunen#anfrage")} size="lg" pfeil className="shrink-0">
               Gespräch anfragen
             </Button>
           </div>
+          {/* Kommunalrechner: § 6 EEG und Gewerbesteuer sind deutsches Recht – nur DE-Regionen wählbar */}
+          {!r.sperre && <BerichtAnfordern rechner="kommune" land="DE" eingaben={eingaben} />}
         </>
       }
     />

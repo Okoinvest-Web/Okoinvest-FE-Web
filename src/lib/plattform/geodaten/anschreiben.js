@@ -11,6 +11,7 @@
 
 import { GESELLSCHAFT, SITE, abs } from "@/data/site";
 import { briefFuer } from "./serienbrief";
+import { pfad } from "../../land/index.js";
 
 const ha = (x) => `${(Math.round(Number(x) * 10) / 10).toLocaleString("de-DE")} ha`;
 
@@ -49,7 +50,7 @@ export function anschreiben(k, { datum = new Date() } = {}) {
     "",
     "Ob sich eine Fläche tatsächlich eignet, hängt von Widmung, Netzanschluss und Naturschutz ab – das prüfen wir für Sie kostenfrei und unverbindlich. Möglich sind eine langfristige Verpachtung (in der Regel 25 bis 30 Jahre, wertgesichert) oder Agri-PV, bei der die landwirtschaftliche Nutzung weiterläuft.",
     "",
-    `Wenn Sie Interesse an einem Gespräch haben, antworten Sie uns bitte formlos per Brief oder über ${abs("/flaeche-verpachten")}. Haben Sie kein Interesse, müssen Sie nichts tun – wir schreiben Sie zu dieser Fläche nicht erneut an.`,
+    `Wenn Sie Interesse an einem Gespräch haben, antworten Sie uns bitte formlos per Brief oder über ${abs(pfad("/flaeche-verpachten"))}. Haben Sie kein Interesse, müssen Sie nichts tun – wir schreiben Sie zu dieser Fläche nicht erneut an.`,
     "",
     "Mit freundlichen Grüßen",
     "",

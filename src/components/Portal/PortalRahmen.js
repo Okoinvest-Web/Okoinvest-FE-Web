@@ -47,6 +47,7 @@ import TourHinweis from "./Bedienung/Onboarding/TourHinweis"; // Onboarding B1: 
 import { avatarKlasse } from "@/lib/plattform/organisation";
 import { useCallback, useLayoutEffect } from "react"; // T3: Seitenleiste, Indikator, Seitenübergang
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react"; // T3: Seitenleiste einklappen
+import { Share2 } from "lucide-react"; // Welle 2: Lead-Desk (B3), Kanäle Gruppe/Partner (GRP)
 import RevealObserver from "@/components/ui/RevealObserver"; // T3: Stagger/Reveal/Sparkline auch im Portal
 import { bewegungReduziert } from "@/components/ui/motion"; // T3: Seitenübergang
 import { EREIGNIS_SEITENLEISTE, speicherLesen, speicherSchreiben } from "./Bedienung/speicher"; // T3: Kürzel „[“, Vorlieben
@@ -103,6 +104,7 @@ function navigation(rollen, nutzer = { rollen }) {
         { href: "/portal/admin", label: "Cockpit", icon: Gauge, exakt: true },
         { href: "/portal/admin/aufgaben", label: "Aufgaben", icon: ListTodo, zaehler: "aufgaben" },
         { href: "/portal/admin/vorgaenge", label: "Vorgänge", icon: ClipboardList },
+        { href: "/portal/admin/leads", label: "Lead-Desk", icon: Inbox }, // Welle 2, Paket B3
         { href: "/portal/admin/flaechen", label: "Flächen-Pipeline", icon: LandPlot },
         { href: "/portal/admin/projekte", label: "Projekt-Freigabe", icon: ShieldCheck },
         { href: "/portal/admin/interessen", label: "NDA & LOI", icon: Handshake },
@@ -155,6 +157,7 @@ function navigation(rollen, nutzer = { rollen }) {
         { href: "/portal/admin/automationen", label: "Automationen", icon: Workflow },
         { href: "/portal/admin/vorlagen", label: "Vorlagen", icon: LayoutTemplate },
         { href: "/portal/admin/berichte", label: "Berichte", icon: BarChart3 },
+        { href: "/portal/admin/kanaele", label: "Kanäle Gruppe & Partner", icon: Share2 }, // Welle 2, Paket GRP
         { href: "/portal/admin/protokoll", label: "Revisionsprotokoll", icon: Link2 },
         { href: "/portal/admin/rechte", label: "Rechte", icon: KeyRound },
         { href: "/portal/admin/team", label: "Team & Zeiten", icon: Timer }, // HR
@@ -210,6 +213,7 @@ const LABELS = {
   kommune: "Gemeinde", einarbeitung: "Einarbeitung", // Onboarding B1
   genossenschaft: "Genossenschaft", energiegemeinschaft: "Energiegemeinschaft", energiegemeinschaften: "Energiegemeinschaften", versammlung: "Generalversammlung", // Team 5
   leitung: "Leitungs-Cockpit", handbuch: "Handbuch", // Querschnitt
+  leads: "Lead-Desk", kanaele: "Kanäle", // Welle 2
   crm: "CRM", akquise: "Akquise", automationen: "Automationen", vorlagen: "Vorlagen", berichte: "Berichte", protokoll: "Revisionsprotokoll", rechte: "Rechte", dubletten: "Dubletten", organisation: "Organisation", // Backoffice-Ausbau
   ausschreibungen: "Ausschreibungen", beschaffung: "Beschaffung", kunden: "Kunden", lieferanten: "Lieferanten", // Energiebeschaffung
 };

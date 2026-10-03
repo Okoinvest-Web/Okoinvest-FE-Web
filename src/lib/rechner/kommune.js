@@ -12,9 +12,40 @@
 // über 200.000 €, Verlustvortrag ohne Mindestbesteuerung. Typisch ist, dass in
 // den ersten Jahren durch Abschreibung und Zinsen kaum Gewerbesteuer anfällt.
 
-import { KOMMUNE, BAUART, PACHT, ERLOESE, FREIFLAECHE, laenderSperre } from "../invest/markt.js";
+//
+// Länderfähig (Welle 2, Paket B1): KOMMUNE, PACHT, ERLOESE und FREIFLAECHE je Land aus dem
+// Faktenregister über rechenbasisFuer({ land, regionId }). Gesperrte Länder (AT/CH: § 6 EEG
+// und Gewerbesteuer sind deutsches Recht) rechnen wie bisher mit der deutschen Basis und
+// melden `sperre`. Die Parkrechnung (solarpark.js) läuft noch über die Fassade markt.js.
+
+import { BAUART } from "../invest/markt.js";
+import { rechenbasisFuer, marktFuer, standardRegion, annahmenbuch } from "../invest/laender/marktFuer.js";
 import { rechneSolarpark } from "./solarpark.js";
 
+/** Fakten, auf denen rechneKommune unmittelbar beruht (Annahmenbuch für Bericht B4; Parkrechnung siehe solarpark.js) */
+export const KOMMUNE_FAKTEN = [
+  "kommune.beteiligungCt",
+  "kommune.gewerbesteuerStandort",
+  "kommune.hebesatz",
+  "kommune.messzahl",
+  "kommune.betrachtungJahre",
+  "kommune.afaJahre",
+  "kommune.hinzurechnungZinsen",
+  "kommune.hinzurechnungFreibetrag",
+  "kommune.laenderMitBeteiligungsgesetz",
+  "pacht.freiflaecheProHa",
+  "pacht.indexierung",
+  "erloese.eegFreiflaecheCt",
+  "erloese.negativAnteilSolar",
+  "freiflaeche.laufzeit",
+];
+
+/** Annahmenbuch (Wert, Quelle, Stand, Status je Fakt) zu einer Eingabe von rechneKommune */
+export const annahmenKommune = (eingabe = {}) => annahmenbuch(KOMMUNE_FAKTEN, { land: eingabe.land, regionId: eingabe.regionId ?? standardRegion(eingabe.land) });
+
+const { KOMMUNE, PACHT, ERLOESE } = marktFuer("DE");
+
+/** Standardeingaben (deutsche Werte; für ein anderes Land füllt rechneKommune fehlende Eingaben aus dessen Rechenbasis) */
 export const STANDARD = {
   mwp: 20,
   regionId: "de-sued",
@@ -30,7 +61,10 @@ export const STANDARD = {
 };
 
 export function rechneKommune(eingabe = {}) {
-  const e = { ...STANDARD, ...eingabe };
+  const basis = rechenbasisFuer({ land: eingabe.land, regionId: eingabe.regionId ?? standardRegion(eingabe.land) });
+  const { KOMMUNE, PACHT, ERLOESE, FREIFLAECHE } = basis.markt;
+  const landStandard = { regionId: standardRegion(basis.land), hebesatz: KOMMUNE.hebesatz, pachtHa: PACHT.freiflaecheProHa.mittel, preisCt: ERLOESE.eegFreiflaecheCt };
+  const e = { ...STANDARD, ...landStandard, ...eingabe };
   const N = KOMMUNE.betrachtungJahre;
   const L = FREIFLAECHE.laufzeit; // gesamte Laufzeit – nach Ende der AfA steigt die Gewerbesteuer
   const park = rechneSolarpark({ mwp: e.mwp, regionId: e.regionId, bauart: e.bauart, pachtHa: e.pachtHa, preisCt: e.preisCt, modell: "eeg", laufzeit: L });
@@ -76,8 +110,8 @@ export function rechneKommune(eingabe = {}) {
 
   return {
     eingabe: e,
-    /** Länder-Sperre AT/CH: § 6 EEG und Gewerbesteuer sind deutsches Recht (markt.js LAENDER_SPERRE) */
-    sperre: laenderSperre(e.regionId),
+    /** Länder-Sperre AT/CH: § 6 EEG und Gewerbesteuer sind deutsches Recht (laender/sperre.js) */
+    sperre: basis.sperre,
     /** Hinweis: Landesgesetze zur Beteiligung (KOMMUNE.laenderMitBeteiligungsgesetz) sind nicht gerechnet */
     landesregeln: { laender: KOMMUNE.laenderMitBeteiligungsgesetz, stand: KOMMUNE.laenderGesetzeStand, gerechnet: false },
     jahre,

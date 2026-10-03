@@ -1,4 +1,5 @@
 import { istIndexierbar } from "./src/lib/indexsteuerung.js";
+import { UMZUG } from "./src/lib/land/umzug.js";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -8,6 +9,16 @@ const nextConfig = {
   trailingSlash: false,
   compress: true,
   poweredByHeader: false,
+
+  // Länderrouting (Welle 2): alte Pfade → /de, /at, /ch bzw. /wissen/ratgeber, 308 ohne Ketten
+  // (Tabelle und Tests: src/lib/land/umzug.js). Keine IP-/Geo-Weiterleitung.
+  async redirects() {
+    return UMZUG.map(({ source, destination, permanent }) => ({ source, destination, permanent }));
+  },
+
+  // Mehrere Root-Layouts (Routengruppen je Zone, <html lang> je Land): globale 404-Seite
+  // für Pfade außerhalb aller Layouts (src/app/global-not-found.js).
+  experimental: { globalNotFound: true },
 
   // Sicherheits-Kopfzeilen (Paket A, Masterplan S0 Nr. 8). Die Middleware setzt für Portal/Login/
   // Einladung/Auth-APIs zusätzlich strengere Werte (frame-ancestors 'none', DENY); Browser wenden bei

@@ -10,6 +10,7 @@ import TextEnthuellung from "@/components/motion/TextEnthuellung";
 import Zaehler from "@/components/motion/Zaehler";
 import EinnahmenBalken, { Legende } from "./EinnahmenBalken";
 import { BEISPIEL, tsd } from "./daten";
+import { pfad } from "@/lib/land";
 
 const PUNKTE = ["§ 6 EEG: 0,2 ct/kWh", "90 % Gewerbesteuer am Standort", "Planungskosten trägt der Entwickler", "Bürgerbeteiligung"];
 
@@ -91,7 +92,7 @@ export default function Hero() {
 
             <div className="ov-hero-in mt-8 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-10" style={{ "--ov-delay": "260ms" }}>
               <Button href="#anfrage" size="lg" pfeil magnetisch className="w-full sm:w-auto">Gespräch anfragen</Button>
-              <Button href="/rechner/kommune" size="lg" variant="outlineLight" icon={Calculator} className="w-full sm:w-auto">
+              <Button href={pfad("/rechner/kommune")} size="lg" variant="outlineLight" icon={Calculator} className="w-full sm:w-auto">
                 Kommunal-Rechner
               </Button>
             </div>

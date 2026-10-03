@@ -11,6 +11,7 @@ import { ErgebnisKopf, MobilKurz, RechnerRahmen } from "./InvestTeile";
 import { AmpelMarke, FARBEN } from "./ToolTeile";
 import { EBENEN, KAPAZITAETEN, LAENDER, STANDARD, rechneNetzanschluss } from "@/lib/rechner/netzanschluss";
 import { fmt, fmtEur, fmtMio } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 const geld = (v) => (v >= 1e6 ? fmtMio(v, 2) : `${fmt(Math.round(v / 1000))} Tsd. €`);
 const EBENE_LABEL = { msLeitung: "Mittelspannungsleitung (20 kV)", uwMs: "Umspannwerk, MS-Sammelschiene", hs: "Hochspannung 110 kV" };
@@ -145,7 +146,7 @@ export default function NetzanschlussRechner() {
 
           <div className="mt-7 flex flex-col gap-3 border-t border-ink-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <p className="max-w-md text-[13px] leading-relaxed text-ink-500">Grobe Orientierung ohne Gewähr. Verbindlich sind nur Netzverträglichkeitsprüfung und Kostenvoranschlag des Netzbetreibers.</p>
-            <Button href="/flaechencheck" size="lg" pfeil className="shrink-0">
+            <Button href={pfad("/flaechencheck")} size="lg" pfeil className="shrink-0">
               Fläche prüfen lassen
             </Button>
           </div>

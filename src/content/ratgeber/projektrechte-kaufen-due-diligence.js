@@ -4,6 +4,7 @@
 
 import { PHASEN, PROVISION, FREIFLAECHE, phaseById } from "@/lib/invest/markt";
 import { fmt, fmtEur, fmtPct } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 // Beispielprojekt für die Rechenbeispiele im Text
 const MWP = 20;
@@ -109,11 +110,11 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Auffällig ist der Sprung zwischen [Aufstellungsbeschluss](/wissen/lexikon#aufstellungsbeschluss) (${spanne(AUFSTELLUNG)}) und [Satzungsbeschluss](/wissen/lexikon#satzungsbeschluss) (${spanne(SATZUNG)}): Erst mit dem beschlossenen Bebauungsplan steht fest, dass auf der Fläche tatsächlich gebaut werden darf. Wie das Verfahren abläuft, erklärt der Ratgeber zu [Genehmigung und Bebauungsplan](/ratgeber/solarpark-genehmigung-bebauungsplan). Einen ersten Wert für ein konkretes Projekt liefert der [Projektbewertungsrechner](/rechner/projektbewertung).`,
+          text: `Auffällig ist der Sprung zwischen [Aufstellungsbeschluss](/wissen/lexikon#aufstellungsbeschluss) (${spanne(AUFSTELLUNG)}) und [Satzungsbeschluss](/wissen/lexikon#satzungsbeschluss) (${spanne(SATZUNG)}): Erst mit dem beschlossenen Bebauungsplan steht fest, dass auf der Fläche tatsächlich gebaut werden darf. Wie das Verfahren abläuft, erklärt der Ratgeber zu [Genehmigung und Bebauungsplan](/wissen/ratgeber/solarpark-genehmigung-bebauungsplan). Einen ersten Wert für ein konkretes Projekt liefert der [Projektbewertungsrechner](/de/rechner/projektbewertung).`,
         },
         {
           typ: "tool",
-          href: "/rechner/projektbewertung",
+          href: pfad("/rechner/projektbewertung"),
           titel: "Was ist Ihr Projekt wert?",
           text: "Phase, Leistung, Netzsituation und Vergütungsweg eingeben – der Rechner zeigt eine Preisspanne je kWp und den Weg bis zur Baureife.",
           label: "Zur Projektbewertung",
@@ -171,7 +172,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Wichtig sind klare, objektiv prüfbare Bedingungen („Satzungsbeschluss öffentlich bekannt gemacht“ statt „B-Plan weitgehend gesichert“) und eine Regel, was passiert, wenn ein Meilenstein ausbleibt: Rückübertragung der Anteile, Preisanpassung oder Weiterentwicklung auf Kosten einer Seite. Ein **Earn-out** knüpft einen Teil des Preises an den späteren Erfolg, etwa an einen Zuschlag in der [EEG-Ausschreibung](/ratgeber/eeg-ausschreibung-freiflaeche) oder an einen PPA-Preis oberhalb einer Schwelle.",
+          text: "Wichtig sind klare, objektiv prüfbare Bedingungen („Satzungsbeschluss öffentlich bekannt gemacht“ statt „B-Plan weitgehend gesichert“) und eine Regel, was passiert, wenn ein Meilenstein ausbleibt: Rückübertragung der Anteile, Preisanpassung oder Weiterentwicklung auf Kosten einer Seite. Ein **Earn-out** knüpft einen Teil des Preises an den späteren Erfolg, etwa an einen Zuschlag in der [EEG-Ausschreibung](/wissen/ratgeber/eeg-ausschreibung-freiflaeche) oder an einen PPA-Preis oberhalb einer Schwelle.",
         },
       ],
     },
@@ -188,7 +189,7 @@ const artikel = {
         {
           typ: "checkliste",
           punkte: [
-            "**Flächensicherung vollständig:** Nutzungsverträge für alle Flurstücke des Parks, der Kabeltrasse und der Zuwegung – mit Laufzeit, Verlängerungsoptionen, Pachthöhe und Kündigungsrechten. Details im Ratgeber [Pachtvertrag Solarpark](/ratgeber/pachtvertrag-solarpark).",
+            "**Flächensicherung vollständig:** Nutzungsverträge für alle Flurstücke des Parks, der Kabeltrasse und der Zuwegung – mit Laufzeit, Verlängerungsoptionen, Pachthöhe und Kündigungsrechten. Details im Ratgeber [Pachtvertrag Solarpark](/wissen/ratgeber/pachtvertrag-solarpark).",
             "**Dienstbarkeiten bewilligt oder eingetragen:** Beschränkte persönliche [Dienstbarkeiten](/wissen/lexikon#dienstbarkeit) (§ 1090 BGB) für Park und Trasse, möglichst mit Eintrittsrecht für finanzierende Bank und Käufer. Nach § 1092 Abs. 3 BGB sind sie für juristische Personen bei Erneuerbare-Energien-Anlagen übertragbar.",
             "**Rangverhältnisse im Grundbuch:** Vorrangige Grundschulden oder Zwangsversteigerungsrisiken; gegebenenfalls Rangrücktritte der Banken.",
             "**Planungsrecht:** Aufstellungsbeschluss, Stand der Beteiligung, Umweltbericht, Artenschutz, Satzungsbeschluss und Bekanntmachung; bei Privilegierung nach § 35 BauGB die Voraussetzungen (etwa 200-m-Korridor).",
@@ -268,7 +269,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die ÖkoInvest GmbH mit Sitz in Ostermiething ist Teil der ÖKOVOLT Gruppe, die seit 2012 eigene Solarparks betreibt. Wer als Investor ein Suchprofil hinterlegt, bekommt passende Projekte angezeigt; wer ein Projekt verkaufen möchte, kann es über [Projekt anbieten](/projektboerse/anbieten) einstellen. Einen Überblick über Angebot und Ablauf finden Sie unter [Investoren](/investoren) und im [Entwicklungsprozess](/prozess). Wie sich der Kauf am Ende rechnet, zeigt der Ratgeber [Solarpark-Investment und Rendite](/ratgeber/solarpark-investment-rendite).`,
+          text: `Die ÖkoInvest GmbH mit Sitz in Ostermiething ist Teil der ÖKOVOLT Gruppe, die seit 2012 eigene Solarparks betreibt. Wer als Investor ein Suchprofil hinterlegt, bekommt passende Projekte angezeigt; wer ein Projekt verkaufen möchte, kann es über [Projekt anbieten](/projektboerse/anbieten) einstellen. Einen Überblick über Angebot und Ablauf finden Sie unter [Investoren](/investoren) und im [Entwicklungsprozess](/de/prozess). Wie sich der Kauf am Ende rechnet, zeigt der Ratgeber [Solarpark-Investment und Rendite](/wissen/ratgeber/solarpark-investment-rendite).`,
         },
       ],
     },
@@ -283,7 +284,7 @@ const artikel = {
             ["Suchprofil festlegen", "Phase, Größe, Region, Vergütungsweg und maximale Zeit bis RTB definieren. Frühe Phasen bieten mehr Marge, binden aber länger Kapital und Personal."],
             ["Vorprüfung am Teaser", "Lage, Netzsituation und Planungsstand grob plausibilisieren; bei Zweifeln früh absagen spart Beraterkosten."],
             ["NDA und Datenraum", "Unterlagen anfordern, Fragenliste strukturieren und Red Flags zuerst klären."],
-            ["Bewertung", "Preis je kWp aus Phase, Risiko und Businessplan ableiten – etwa mit dem [Projektbewertungsrechner](/rechner/projektbewertung) als erstem Anker."],
+            ["Bewertung", "Preis je kWp aus Phase, Risiko und Businessplan ableiten – etwa mit dem [Projektbewertungsrechner](/de/rechner/projektbewertung) als erstem Anker."],
             ["LOI und Exklusivität", "Preisrahmen, Meilensteine und Zeitplan festhalten; Exklusivität auf den Prüfzeitraum begrenzen."],
             ["SPA und Closing", "Garantien, Bedingungen und Long-Stop-Dates verhandeln, beurkunden, vollziehen."],
           ],
@@ -320,12 +321,12 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/ratgeber/solarpark-investment-rendite", titel: "Solarpark-Investment und Rendite", text: "Wie sich Kaufpreis, Capex und Erlöse zu einer Rendite verdichten." },
-    { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Genehmigung und Bebauungsplan", text: "Vom Aufstellungs- zum Satzungsbeschluss." },
-    { href: "/rechner/projektbewertung", titel: "Projektbewertung", text: "Preisspanne je kWp für Ihr Projekt." },
+    { href: "/wissen/ratgeber/solarpark-investment-rendite", titel: "Solarpark-Investment und Rendite", text: "Wie sich Kaufpreis, Capex und Erlöse zu einer Rendite verdichten." },
+    { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Genehmigung und Bebauungsplan", text: "Vom Aufstellungs- zum Satzungsbeschluss." },
+    { href: pfad("/rechner/projektbewertung"), titel: "Projektbewertung", text: "Preisspanne je kWp für Ihr Projekt." },
     { href: "/projektboerse", titel: "Projektbörse", text: "Aktuelle Projekte ansehen oder Suchprofil anlegen." },
     { href: "/investoren", titel: "Solarprojekte kaufen", text: "Phasenmodell, Preise und Datenraum für Investoren." },
-    { href: "/bestandsanlagen", titel: "Bestandsanlagen kaufen", text: "Laufende Solarparks auf dem Zweitmarkt." },
+    { href: pfad("/bestandsanlagen"), titel: "Bestandsanlagen kaufen", text: "Laufende Solarparks auf dem Zweitmarkt." },
   ],
 
   quellen: [
@@ -338,12 +339,12 @@ const artikel = {
     { titel: "Bundesnetzagentur – Ausschreibungen Solaranlagen erstes Segment", url: "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/Ausschreibungen/Solaranlagen1/start.html", stand: "09/2026" },
   ],
 
-  seitenCta: { titel: "Was ist Ihr Projekt wert?", text: "Preisspanne je kWp nach Phase und Netzsituation.", href: "/rechner/projektbewertung", label: "Zur Projektbewertung" },
+  seitenCta: { titel: "Was ist Ihr Projekt wert?", text: "Preisspanne je kWp nach Phase und Netzsituation.", href: pfad("/rechner/projektbewertung"), label: "Zur Projektbewertung" },
   cta: {
     title: "Projekte finden, die zu Ihrem Suchprofil passen.",
     text: "In der Projektbörse sehen Sie Solar-, Agri-PV- und Speicherprojekte nach Phase und Region – für Investoren kostenfrei, mit NDA und Datenraum.",
     primary: { label: "Zur Projektbörse", href: "/projektboerse" },
-    secondary: { label: "Projekt bewerten", href: "/rechner/projektbewertung" },
+    secondary: { label: "Projekt bewerten", href: pfad("/rechner/projektbewertung") },
   },
 };
 

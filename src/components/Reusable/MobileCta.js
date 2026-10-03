@@ -5,9 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRight, ArrowUp, LineChart } from "lucide-react";
 import useFreieUnterkante from "@/components/motion/useFreieUnterkante";
+import { pfad as seitenPfad } from "@/lib/land";
 
 // Auf diesen Seiten ist die Leiste überflüssig oder stört den Ablauf.
-const AUSGENOMMEN = ["/flaechencheck", "/kontakt", "/impressum", "/datenschutz", "/nutzungsbedingungen", "/login", "/registrieren", "/portal", "/en"];
+const AUSGENOMMEN = [seitenPfad("/flaechencheck"), "/kontakt", "/impressum", "/datenschutz", "/nutzungsbedingungen", "/login", "/registrieren", "/portal", "/en"];
 
 // Ziel der Hauptaktion je Thema (Conversion-Plan): erster passender Präfix gewinnt, sonst „Fläche prüfen“.
 // Nur bestehende Ziele/Anker; Texte kurz genug für 390 px neben „Börse“.
@@ -15,22 +16,22 @@ const ZIEL_JE_PFAD = [
   ["/investoren", { href: "/registrieren?rolle=investor", label: "Suchprofil anlegen" }],
   ["/projektboerse/anbieten", { href: "/registrieren?rolle=anbieter", label: "Projekt anbieten" }],
   ["/projektboerse", { href: "/registrieren?rolle=investor", label: "Suchprofil anlegen" }],
-  ["/marktdaten", { href: "/registrieren?rolle=investor", label: "Suchprofil anlegen" }],
-  ["/rechner/reststrom", { href: "/kontakt?anliegen=reststrom", label: "Anfrage stellen" }],
-  ["/rechner/ppa", { href: "/kontakt?anliegen=reststrom", label: "PPA anfragen" }],
-  ["/reststrom", { href: "/rechner/reststrom", label: "Ersparnis berechnen" }],
-  ["/energie-live", { href: "/rechner/reststrom", label: "Ersparnis berechnen" }],
-  ["/rechner/grossspeicher", { href: "/kontakt?anliegen=speicher", label: "Speicher anfragen" }],
-  ["/grossspeicher", { href: "#anfrage", label: "Speicher anfragen" }],
-  ["/rechner/solarcarport", { href: "/kontakt?anliegen=carport", label: "Carport anfragen" }],
-  ["/solarcarport", { href: "#anfrage", label: "Carport anfragen" }],
-  ["/virtuelles-kraftwerk", { href: "#anfrage", label: "Verbund anfragen" }],
-  ["/energiegemeinschaften/rechner", { href: "#interesse", label: "Interesse vormerken" }],
-  ["/energiegemeinschaften/software", { href: "#anfrage", label: "Software anfragen" }],
-  ["/energiegemeinschaften", { href: "#anfrage", label: "Gemeinschaft anfragen" }],
-  ["/genossenschaft", { href: "#interesse", label: "Interesse vormerken" }],
-  ["/kommunen", { href: "#anfrage", label: "Gespräch anfragen" }],
-  ["/rechner/kommune", { href: "/kontakt?anliegen=kommune", label: "Gespräch anfragen" }],
+  [seitenPfad("/marktdaten"), { href: "/registrieren?rolle=investor", label: "Suchprofil anlegen" }],
+  [seitenPfad("/rechner/reststrom"), { href: "/kontakt?anliegen=reststrom", label: "Anfrage stellen" }],
+  [seitenPfad("/rechner/ppa"), { href: "/kontakt?anliegen=reststrom", label: "PPA anfragen" }],
+  [seitenPfad("/reststrom"), { href: seitenPfad("/rechner/reststrom"), label: "Ersparnis berechnen" }],
+  [seitenPfad("/energie-live"), { href: seitenPfad("/rechner/reststrom"), label: "Ersparnis berechnen" }],
+  [seitenPfad("/rechner/grossspeicher"), { href: "/kontakt?anliegen=speicher", label: "Speicher anfragen" }],
+  [seitenPfad("/grossspeicher"), { href: "#anfrage", label: "Speicher anfragen" }],
+  [seitenPfad("/rechner/solarcarport"), { href: "/kontakt?anliegen=carport", label: "Carport anfragen" }],
+  [seitenPfad("/solarcarport"), { href: "#anfrage", label: "Carport anfragen" }],
+  [seitenPfad("/virtuelles-kraftwerk"), { href: "#anfrage", label: "Verbund anfragen" }],
+  [seitenPfad("/energiegemeinschaften/rechner"), { href: "#interesse", label: "Interesse vormerken" }],
+  [seitenPfad("/energiegemeinschaften/software"), { href: "#anfrage", label: "Software anfragen" }],
+  [seitenPfad("/energiegemeinschaften"), { href: "#anfrage", label: "Gemeinschaft anfragen" }],
+  [seitenPfad("/genossenschaft"), { href: "#interesse", label: "Interesse vormerken" }],
+  [seitenPfad("/kommunen"), { href: "#anfrage", label: "Gespräch anfragen" }],
+  [seitenPfad("/rechner/kommune"), { href: "/kontakt?anliegen=kommune", label: "Gespräch anfragen" }],
 ];
 const zielFuer = (pfad) => ZIEL_JE_PFAD.find(([p]) => pfad === p || pfad.startsWith(p + "/"))?.[1];
 
@@ -47,7 +48,7 @@ const zielFuer = (pfad) => ZIEL_JE_PFAD.find(([p]) => pfad === p || pfad.startsW
  * schwebendes Objekt liegt. Mit `ov-cta-sichtbar` hält globals.css außerdem
  * scroll-padding-bottom frei, damit Fokus-/Sprungziele nicht darunter landen.
  */
-export default function MobileCta({ href: hrefStandard = "/flaechencheck", label: labelStandard = "Fläche prüfen" }) {
+export default function MobileCta({ href: hrefStandard = seitenPfad("/flaechencheck"), label: labelStandard = "Fläche prüfen" }) {
   const pfad = usePathname();
   const { href, label } = zielFuer(pfad) || { href: hrefStandard, label: labelStandard };
   const [imBereich, setImBereich] = useState(false);

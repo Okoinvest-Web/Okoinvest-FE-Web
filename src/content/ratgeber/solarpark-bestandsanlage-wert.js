@@ -6,6 +6,7 @@
 import { FREIFLAECHE, ERLOESE, PACHT, FINANZIERUNG, PROVISION, npv, irr, phaseById, STAND } from "@/lib/invest/markt";
 import { rechneSolarpark, STANDARD } from "@/lib/rechner/solarpark";
 import { fmt, fmtEur, fmtMio, fmtPct, fmtCt } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag zur Übernahme */
 // Diskontsätze für die Bewertungsspanne (vor Steuern, unverschuldet) – eigene Setzung um FINANZIERUNG.diskont
@@ -118,7 +119,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Anders als bei Projektrechten, deren Preis eine Entwicklungsprämie ist (siehe [Projektrechte kaufen](/ratgeber/projektrechte-kaufen-due-diligence)), kauft man beim Bestand eine laufende Zahlungsreihe. Deshalb zählt nicht, was der Park einmal gekostet hat, sondern was er künftig verdient. Für die Rechnung werden vier Dinge gebraucht: der Ertrag (am besten aus Betriebsdaten statt Prognose), die Erlöse (Tarif, PPA, Marktwert), die Kosten und die Restlaufzeit. Einen ersten Anhaltspunkt liefert der [Projektbewertungsrechner](/rechner/projektbewertung) in der Phase „In Betrieb“.`,
+          text: `Anders als bei Projektrechten, deren Preis eine Entwicklungsprämie ist (siehe [Projektrechte kaufen](/wissen/ratgeber/projektrechte-kaufen-due-diligence)), kauft man beim Bestand eine laufende Zahlungsreihe. Deshalb zählt nicht, was der Park einmal gekostet hat, sondern was er künftig verdient. Für die Rechnung werden vier Dinge gebraucht: der Ertrag (am besten aus Betriebsdaten statt Prognose), die Erlöse (Tarif, PPA, Marktwert), die Kosten und die Restlaufzeit. Einen ersten Anhaltspunkt liefert der [Projektbewertungsrechner](/de/rechner/projektbewertung) in der Phase „In Betrieb“.`,
         },
         {
           typ: "kennzahl",
@@ -140,7 +141,7 @@ const artikel = {
         {
           typ: "ablauf",
           schritte: [
-            ["Ertrag festlegen", "Aus Monitoringdaten mehrerer Jahre, bereinigt um Einstrahlung und Ausfälle; fortgeschrieben mit Degradation. Wie P50 und P90 zustande kommen, erklärt der Ratgeber [Ertragsgutachten P50/P90](/ratgeber/ertragsgutachten-p50-p90)."],
+            ["Ertrag festlegen", "Aus Monitoringdaten mehrerer Jahre, bereinigt um Einstrahlung und Ausfälle; fortgeschrieben mit Degradation. Wie P50 und P90 zustande kommen, erklärt der Ratgeber [Ertragsgutachten P50/P90](/wissen/ratgeber/ertragsgutachten-p50-p90)."],
             ["Erlöse je Jahr", `EEG-Anspruch mit Restlaufzeit, ggf. PPA-Preis, danach Marktwert (hier vorsichtig ${fmtCt(ERLOESE.merchantCt)}, +${fmtPct(ERLOESE.merchantSteigerung, 0)} p. a.). Zeiten negativer Preise mindern bei neueren Anlagen den Anspruch.`],
             ["Kosten je Jahr", `Betriebsführung, Wartung, Versicherung, Direktvermarktung (${fmt(FREIFLAECHE.opexProKwp)} €/kWp, +${fmtPct(FREIFLAECHE.inflation, 0)} p. a.), Pacht, Rücklage für Rückbau und geplante Ersatzinvestitionen wie Wechselrichter.`],
             ["Restlaufzeit begrenzen", "Das Ende bestimmt die kürzeste Frist aus technischer Lebensdauer, Pachtvertrag, Dienstbarkeit und Baurecht."],
@@ -159,7 +160,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Tabelle zeigt, warum Käufer so genau auf Diskontsatz und Ertrag schauen: Anderthalb Prozentpunkte mehr oder weniger Renditeerwartung verschieben den Wert um ${fmtPct(1 - W_NIEDRIG / W_MITTE, 0)} bis ${fmtPct(W_HOCH / W_MITTE - 1, 0)}. Bemerkenswert ist auch, dass ein Park mit einem Zuschlag von ${fmtCt(ERLOESE.eegFreiflaecheCt)} selbst bei ${fmtPct(DISKONT.niedrig, 0)} unter dem unteren Ende des Marktkorridors bleibt. Der Korridor bildet einen Mix ab – viele gehandelte Bestandsparks haben höhere Alttarife oder gut bepreiste PPA. Wie Erlöse, Kosten und Finanzierung zusammenspielen, erläutert der Ratgeber [Solarpark als Investment](/ratgeber/solarpark-investment-rendite).`,
+          text: `Die Tabelle zeigt, warum Käufer so genau auf Diskontsatz und Ertrag schauen: Anderthalb Prozentpunkte mehr oder weniger Renditeerwartung verschieben den Wert um ${fmtPct(1 - W_NIEDRIG / W_MITTE, 0)} bis ${fmtPct(W_HOCH / W_MITTE - 1, 0)}. Bemerkenswert ist auch, dass ein Park mit einem Zuschlag von ${fmtCt(ERLOESE.eegFreiflaecheCt)} selbst bei ${fmtPct(DISKONT.niedrig, 0)} unter dem unteren Ende des Marktkorridors bleibt. Der Korridor bildet einen Mix ab – viele gehandelte Bestandsparks haben höhere Alttarife oder gut bepreiste PPA. Wie Erlöse, Kosten und Finanzierung zusammenspielen, erläutert der Ratgeber [Solarpark als Investment](/wissen/ratgeber/solarpark-investment-rendite).`,
         },
       ],
     },
@@ -199,7 +200,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Für Käufer solcher Parks sind drei Fragen entscheidend. Erstens: Läuft die Anlage bis zum Förderende zuverlässig, oder stehen größere Reparaturen an? Zweitens: Wie lange reichen Pachtvertrag und [Dienstbarkeit](/ratgeber/dienstbarkeit-grundbuch-pv-pacht) – und lassen sie sich verlängern? Drittens: Lässt sich der Wert durch einen Modultausch steigern, der die Vergütung nach § 38b EEG erhält? Die Rechnung dazu zeigt der Ratgeber [Repowering](/ratgeber/repowering-solarpark).",
+          text: "Für Käufer solcher Parks sind drei Fragen entscheidend. Erstens: Läuft die Anlage bis zum Förderende zuverlässig, oder stehen größere Reparaturen an? Zweitens: Wie lange reichen Pachtvertrag und [Dienstbarkeit](/wissen/ratgeber/dienstbarkeit-grundbuch-pv-pacht) – und lassen sie sich verlängern? Drittens: Lässt sich der Wert durch einen Modultausch steigern, der die Vergütung nach § 38b EEG erhält? Die Rechnung dazu zeigt der Ratgeber [Repowering](/wissen/ratgeber/repowering-solarpark).",
         },
         {
           typ: "kasten",
@@ -226,7 +227,7 @@ const artikel = {
             "**Thermografie und Elektrolumineszenz:** Drohnenthermografie des gesamten Feldes, Stichproben per Elektrolumineszenz – findet Hotspots, defekte Bypassdioden, Zellbrüche und potenzialinduzierte Degradation.",
             "**Wechselrichter und Trafo:** Alter, Fehlerhistorie, Ersatzteilverfügbarkeit, Ölproben beim Transformator, Zustand der Mittelspannungsschaltanlage.",
             "**Unterkonstruktion und Gelände:** Korrosion, Setzungen, Kabelführung, Zaun, Zufahrt, Grünpflege, Ausgleichsflächen.",
-            "**Verträge und Versicherung:** Betriebsführung, Direktvermarktung, Policen und Schadenhistorie – siehe [Solarpark-Versicherung](/ratgeber/solarpark-versicherung).",
+            "**Verträge und Versicherung:** Betriebsführung, Direktvermarktung, Policen und Schadenhistorie – siehe [Solarpark-Versicherung](/wissen/ratgeber/solarpark-versicherung).",
           ],
         },
         {
@@ -251,7 +252,7 @@ const artikel = {
             "**Kurze Restlaufzeit von Pacht oder Dienstbarkeit:** Ohne gesicherte Verlängerung endet der Barwert mit dem Vertrag, auch wenn die Technik länger hält.",
             "**Anstehende Ersatzinvestitionen:** Wechselrichter am Ende ihrer Lebensdauer, Trafo mit auffälligen Ölwerten oder großflächige Moduldefekte werden als Abzug angesetzt.",
             "**Unklare EEG-Dokumentation:** fehlende Nachweise zu Inbetriebnahme, Meldungen oder Modultausch führen zu Einbehalten oder Garantien im Kaufvertrag.",
-            "**Rückbaupflichten ohne Rücklage:** Offene Bürgschaften oder fehlende Rückstellungen mindern den Preis, siehe [Rückbau und Rückbaubürgschaft](/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).",
+            "**Rückbaupflichten ohne Rücklage:** Offene Bürgschaften oder fehlende Rückstellungen mindern den Preis, siehe [Rückbau und Rückbaubürgschaft](/wissen/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).",
             "**Hohe Schadenquote:** Häufige Diebstahl- oder Hagelschäden verteuern die Versicherung nach dem Eigentümerwechsel.",
           ],
         },
@@ -268,7 +269,7 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: `**Bestandsparks werden überwiegend als Share Deal verkauft – der Käufer übernimmt die Projektgesellschaft mit allen Verträgen, Zusagen und dem EEG-Anspruch.** Vor- und Nachteile gegenüber dem Asset Deal, Beurkundung und Grunderwerbsteuer erklärt der Ratgeber [Projektrechte kaufen](/ratgeber/projektrechte-kaufen-due-diligence); die Begriffe stehen im Lexikon unter [Share Deal](/wissen/lexikon#share-deal) und [Asset Deal](/wissen/lexikon#asset-deal).`,
+          text: `**Bestandsparks werden überwiegend als Share Deal verkauft – der Käufer übernimmt die Projektgesellschaft mit allen Verträgen, Zusagen und dem EEG-Anspruch.** Vor- und Nachteile gegenüber dem Asset Deal, Beurkundung und Grunderwerbsteuer erklärt der Ratgeber [Projektrechte kaufen](/wissen/ratgeber/projektrechte-kaufen-due-diligence); die Begriffe stehen im Lexikon unter [Share Deal](/wissen/lexikon#share-deal) und [Asset Deal](/wissen/lexikon#asset-deal).`,
         },
         {
           typ: "p",
@@ -276,7 +277,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Wer verkauft, erreicht über die [Projektbörse](/projektboerse) gezielt Investoren mit passendem Suchprofil. Käufer zahlen keine Provision; Verkäufer zahlen ${fmtPct(PROVISION.verkaeufer.min, 1)} bis ${fmtPct(PROVISION.verkaeufer.max, 0)} des Kaufpreises, und zwar nur bei erfolgreichem Abschluss – beim Basiswert des Beispiels ${fmtEur(Math.round(PROV_MIN / 1000) * 1000)} bis ${fmtEur(Math.round(PROV_MAX / 1000) * 1000)}. Angebote stellen Sie über [Projekt anbieten](/projektboerse/anbieten) ein; aktuelle Marktzahlen finden Sie unter [Marktdaten](/marktdaten).`,
+          text: `Wer verkauft, erreicht über die [Projektbörse](/projektboerse) gezielt Investoren mit passendem Suchprofil. Käufer zahlen keine Provision; Verkäufer zahlen ${fmtPct(PROVISION.verkaeufer.min, 1)} bis ${fmtPct(PROVISION.verkaeufer.max, 0)} des Kaufpreises, und zwar nur bei erfolgreichem Abschluss – beim Basiswert des Beispiels ${fmtEur(Math.round(PROV_MIN / 1000) * 1000)} bis ${fmtEur(Math.round(PROV_MAX / 1000) * 1000)}. Angebote stellen Sie über [Projekt anbieten](/projektboerse/anbieten) ein; aktuelle Marktzahlen finden Sie unter [Marktdaten](/de/marktdaten).`,
         },
       ],
     },
@@ -310,12 +311,12 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/ratgeber/projektrechte-kaufen-due-diligence", titel: "Projektrechte kaufen", text: "Share Deal, Asset Deal und Due-Diligence-Checkliste." },
-    { href: "/ratgeber/repowering-solarpark", titel: "Repowering alter Solarparks", text: "Modultausch, EEG-Regeln und Wirtschaftlichkeit." },
-    { href: "/rechner/projektbewertung", titel: "Projektbewertung", text: "Preisspanne je kWp für Projekte und Bestand." },
+    { href: "/wissen/ratgeber/projektrechte-kaufen-due-diligence", titel: "Projektrechte kaufen", text: "Share Deal, Asset Deal und Due-Diligence-Checkliste." },
+    { href: "/wissen/ratgeber/repowering-solarpark", titel: "Repowering alter Solarparks", text: "Modultausch, EEG-Regeln und Wirtschaftlichkeit." },
+    { href: pfad("/rechner/projektbewertung"), titel: "Projektbewertung", text: "Preisspanne je kWp für Projekte und Bestand." },
     { href: "/projektboerse/anbieten", titel: "Projekt anbieten", text: "Bestandspark in die Projektbörse einstellen." },
-    { href: "/bestandsanlagen", titel: "PV-Bestandsanlagen kaufen und verkaufen", text: "Zweitmarkt für laufende Anlagen – vertraulich, mit Datenraum." },
-    { href: "/rechner/bestandsanlage", titel: "Bestandsanlage bewerten", text: "Ertragswert Ihrer laufenden PV-Anlage berechnen." },
+    { href: pfad("/bestandsanlagen"), titel: "PV-Bestandsanlagen kaufen und verkaufen", text: "Zweitmarkt für laufende Anlagen – vertraulich, mit Datenraum." },
+    { href: pfad("/rechner/bestandsanlage"), titel: "Bestandsanlage bewerten", text: "Ertragswert Ihrer laufenden PV-Anlage berechnen." },
   ],
 
   quellen: [
@@ -328,7 +329,7 @@ const artikel = {
     { titel: "Grunderwerbsteuergesetz, § 1 – Erwerbsvorgänge (Share Deal)", url: "https://www.gesetze-im-internet.de/grestg_1983/__1.html", stand: "09/2026" },
   ],
 
-  seitenCta: { titel: "Park grob bewerten", text: "Preisspanne je kWp mit Phase „In Betrieb“ einordnen.", href: "/rechner/projektbewertung", label: "Zur Projektbewertung" },
+  seitenCta: { titel: "Park grob bewerten", text: "Preisspanne je kWp mit Phase „In Betrieb“ einordnen.", href: pfad("/rechner/projektbewertung"), label: "Zur Projektbewertung" },
   cta: {
     title: "Solarpark verkaufen oder Bestand kaufen?",
     text: "Die Projektbörse verbindet Verkäufer mit Investoren. Käufer nutzen sie kostenfrei, Verkäufer zahlen eine Provision nur bei erfolgreichem Abschluss.",

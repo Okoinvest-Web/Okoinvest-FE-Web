@@ -14,6 +14,10 @@
 //   folgt) und nach Aufnahme in die Datenschutzerklärung weitergegeben werden.
 // - KI-Assistenten werden vor Suchmaschinen erkannt (gemini.google.com ist keine Google-Suche; ChatGPT hängt
 //   utm_source=chatgpt.com an).
+// - Gruppe und Partner (Welle 2, Paket GRP): Verweise von Websites der ÖKOVOLT-Gruppe (oekovolt.de, oekovolt.com)
+//   oder utm_medium=gruppe → „Gruppe“; utm_medium=partner → „Partner“. Reihenfolge in kanal(): KI-Assistent →
+//   Gruppe/Partner → Anzeige → Kampagne … (Test: src/lib/gruppe/herkunft.test.mjs). Die Kennung (utm_source) prüft
+//   erst der Server gegen das Register (src/lib/gruppe/kanal.js → herkunftBereinigen); unbekannte Kennungen verwirft er.
 
 import { pfadBereinigen } from "@/lib/ereignis/pfade";
 
@@ -68,6 +72,7 @@ export function herkunftErfassen(umgebung) {
 }
 
 const KI = /(^|\.)(chatgpt\.com|openai\.com|perplexity\.ai|claude\.ai|gemini\.google\.com|bard\.google\.com|copilot\.microsoft\.com|copilot\.cloud\.microsoft|you\.com|chat\.mistral\.ai|chat\.deepseek\.com|meta\.ai|grok\.com|phind\.com|poe\.com)$/i;
+const GRUPPE = /(^|\.)oekovolt\.(de|com)$/i;
 const SUCHE = /(^|\.)(google\.[a-z.]+|bing\.com|duckduckgo\.com|ecosia\.org|yahoo\.[a-z.]+|qwant\.com|startpage\.com|search\.brave\.com|yandex\.[a-z.]+)$/i;
 
 /** Kanal grob klassifizieren (für Auswertungen). Exportiert für Tests. */
@@ -77,7 +82,10 @@ export function kanal(h) {
   const r = (h.referrer || "").toLowerCase();
   // 1. KI-Assistenten zuerst – vor Kampagne und Suchmaschine
   if (KI.test(quelle) || /^(chatgpt|perplexity|claude|gemini|copilot)$/.test(quelle) || KI.test(r)) return "KI-Assistent";
-  // 2. Anzeigen: bezahltes Medium oder Klick-ID eines Werbenetzwerks
+  // 2. Gruppe und Partner (offengelegte Verweise): ausdrückliches Medium vor Gruppen-Verweis
+  if (medium === "partner") return "Partner";
+  if (medium === "gruppe" || GRUPPE.test(r) || (!medium && GRUPPE.test(quelle))) return "Gruppe";
+  // 3. Anzeigen: bezahltes Medium oder Klick-ID eines Werbenetzwerks
   if (/cpc|ppc|paid|ads?$/.test(medium) || h.klick_id_typ) return "Anzeige";
   if (h.utm_source || h.utm_medium) {
     if (/social/.test(medium)) return "Social Media";

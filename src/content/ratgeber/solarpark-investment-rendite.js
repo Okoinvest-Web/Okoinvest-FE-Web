@@ -7,6 +7,7 @@
 import { FREIFLAECHE, ERLOESE, FINANZIERUNG, PACHT, PHASEN, PROVISION, annuitaet, irr, npv, phaseById } from "@/lib/invest/markt";
 import { rechneSolarpark, STANDARD } from "@/lib/rechner/solarpark";
 import { fmt, fmtEur, fmtMio, fmtPct, fmtCt } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag für markt.js siehe Bericht */
 // Jahresmarktwert Solar 2025 und Jahresmarktwert Strom (Spot) 2025, ct/kWh (netztransparenz.de, ausgewertet von DGS)
@@ -103,7 +104,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Zwei Kennzahlen muss man auseinanderhalten: Die **Projekt-IRR** ([interner Zinsfuß](/wissen/lexikon#irr)) beschreibt die Rendite der gesamten Investition, unabhängig davon, wie sie finanziert ist. Die **Eigenkapital-IRR** zeigt, was beim Investor ankommt, nachdem die Bank Zinsen und Tilgung erhalten hat. Beide Werte liefert auch unser [Solarpark-Rechner](/rechner/solarpark), der mit denselben Annahmen arbeitet wie dieser Artikel. Wer bereits konkrete Projekte vergleicht, findet Angebote in der [Projektbörse](/projektboerse).`,
+          text: `Zwei Kennzahlen muss man auseinanderhalten: Die **Projekt-IRR** ([interner Zinsfuß](/wissen/lexikon#irr)) beschreibt die Rendite der gesamten Investition, unabhängig davon, wie sie finanziert ist. Die **Eigenkapital-IRR** zeigt, was beim Investor ankommt, nachdem die Bank Zinsen und Tilgung erhalten hat. Beide Werte liefert auch unser [Solarpark-Rechner](/de/rechner/solarpark), der mit denselben Annahmen arbeitet wie dieser Artikel. Wer bereits konkrete Projekte vergleicht, findet Angebote in der [Projektbörse](/projektboerse).`,
         },
         {
           typ: "kasten",
@@ -126,8 +127,8 @@ const artikel = {
           typ: "karten",
           cols: 3,
           items: [
-            { titel: "EEG-Zuschlag", text: `Wer in der [EEG-Ausschreibung](/ratgeber/eeg-ausschreibung-freiflaeche) einen Zuschlag erhält, bekommt 20 Jahre lang mindestens den [anzulegenden Wert](/wissen/lexikon#anzulegender-wert) – zuletzt rund ${fmtCt(ERLOESE.eegFreiflaecheCt)} im ersten Segment. Liegt der Marktwert darüber, bleibt der Marktwert.` },
-            { titel: "PPA", text: `Ein [Power Purchase Agreement](/ratgeber/ppa-fuer-unternehmen) mit einem Unternehmen oder Versorger sichert einen festen Preis, aktuell etwa ${fmt(ERLOESE.ppaCt.min, 1)}–${fmtCt(ERLOESE.ppaCt.max)} für 10 Jahre. Das Risiko liegt dann bei der Bonität des Abnehmers.` },
+            { titel: "EEG-Zuschlag", text: `Wer in der [EEG-Ausschreibung](/wissen/ratgeber/eeg-ausschreibung-freiflaeche) einen Zuschlag erhält, bekommt 20 Jahre lang mindestens den [anzulegenden Wert](/wissen/lexikon#anzulegender-wert) – zuletzt rund ${fmtCt(ERLOESE.eegFreiflaecheCt)} im ersten Segment. Liegt der Marktwert darüber, bleibt der Marktwert.` },
+            { titel: "PPA", text: `Ein [Power Purchase Agreement](/wissen/ratgeber/ppa-fuer-unternehmen) mit einem Unternehmen oder Versorger sichert einen festen Preis, aktuell etwa ${fmt(ERLOESE.ppaCt.min, 1)}–${fmtCt(ERLOESE.ppaCt.max)} für 10 Jahre. Das Risiko liegt dann bei der Bonität des Abnehmers.` },
             { titel: "Merchant", text: `Ohne Vertrag erlöst der Park den Marktwert Solar. Wir rechnen konservativ mit ${fmtCt(ERLOESE.merchantCt)}, leicht steigend. Merchant-Erlöse schwanken stark und sind kaum finanzierbar.` },
           ],
         },
@@ -137,7 +138,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Solarstrom wird vor allem mittags erzeugt – dann, wenn alle Solaranlagen gleichzeitig einspeisen. Der erzielte Preis liegt deshalb unter dem Durchschnittspreis. Diese Quote heißt [Capture Rate](/wissen/lexikon#capture-rate): 2025 lag der Jahresmarktwert Solar laut Übertragungsnetzbetreibern bei ${fmtCt(MW_SOLAR_2025_CT, 2)}, der durchschnittliche Spotpreis bei ${fmtCt(MW_STROM_2025_CT, 2)} – eine Capture Rate von rund ${fmtPct(CAPTURE_2025, 0)}. Hinzu kommen Stunden mit [negativen Strompreisen](/wissen/lexikon#negative-strompreise): Neue Anlagen erhalten seit dem Solarspitzengesetz (Februar 2025) in diesen Zeiten keine Marktprämie; die ausgefallenen Zeiträume werden nach aktuellem Stand an das Ende des Förderzeitraums angehängt. Ein Batteriespeicher am Park kann Strom in teurere Stunden verschieben – mehr dazu im Ratgeber [Großspeicher-Erlöse](/ratgeber/grossspeicher-erloese).`,
+          text: `Solarstrom wird vor allem mittags erzeugt – dann, wenn alle Solaranlagen gleichzeitig einspeisen. Der erzielte Preis liegt deshalb unter dem Durchschnittspreis. Diese Quote heißt [Capture Rate](/wissen/lexikon#capture-rate): 2025 lag der Jahresmarktwert Solar laut Übertragungsnetzbetreibern bei ${fmtCt(MW_SOLAR_2025_CT, 2)}, der durchschnittliche Spotpreis bei ${fmtCt(MW_STROM_2025_CT, 2)} – eine Capture Rate von rund ${fmtPct(CAPTURE_2025, 0)}. Hinzu kommen Stunden mit [negativen Strompreisen](/wissen/lexikon#negative-strompreise): Neue Anlagen erhalten seit dem Solarspitzengesetz (Februar 2025) in diesen Zeiten keine Marktprämie; die ausgefallenen Zeiträume werden nach aktuellem Stand an das Ende des Förderzeitraums angehängt. Ein Batteriespeicher am Park kann Strom in teurere Stunden verschieben – mehr dazu im Ratgeber [Großspeicher-Erlöse](/wissen/ratgeber/grossspeicher-erloese).`,
         },
         {
           typ: "tabelle",
@@ -148,7 +149,7 @@ const artikel = {
             ["Netzanschluss", `${fmtEur(FREIFLAECHE.netzanschlussFixProMwp)} je MWp + ${fmt(FREIFLAECHE.kabelProMeter)} €/m Kabeltrasse`, "stark abhängig von Entfernung und Spannungsebene"],
             ["Entwicklung bis Baureife", `${fmt(FREIFLAECHE.entwicklungProKwp.min)}–${fmt(FREIFLAECHE.entwicklungProKwp.max)} €/kWp`, `beim Kauf baureifer Projekte stattdessen ${fmt(RTB.preisProKwp.min)}–${fmt(RTB.preisProKwp.max)} €/kWp Entwicklungsprämie`],
             ["Betrieb (Opex, ohne Pacht)", `${fmt(FREIFLAECHE.opexProKwp)} €/kWp und Jahr`, `Wartung, Versicherung, Direktvermarktung, Verwaltung; +${fmtPct(FREIFLAECHE.inflation, 0)} p. a.`],
-            ["Pacht", `${fmtEur(PACHT.freiflaecheProHa.min)}–${fmtEur(PACHT.freiflaecheProHa.max)} je ha und Jahr`, `rund ${fmt(FREIFLAECHE.haProMwp, 1)} ha je MWp; Details im Ratgeber [Pacht pro Hektar](/ratgeber/solarpark-pacht-pro-hektar)`],
+            ["Pacht", `${fmtEur(PACHT.freiflaecheProHa.min)}–${fmtEur(PACHT.freiflaecheProHa.max)} je ha und Jahr`, `rund ${fmt(FREIFLAECHE.haProMwp, 1)} ha je MWp; Details im Ratgeber [Pacht pro Hektar](/wissen/ratgeber/solarpark-pacht-pro-hektar)`],
             ["Rückbau", `${fmt(FREIFLAECHE.rueckbauProKwp)} €/kWp`, "als Rücklage über die Laufzeit angespart"],
           ],
           minBreite: 720,
@@ -198,7 +199,7 @@ const artikel = {
         },
         {
           typ: "tool",
-          href: "/rechner/solarpark",
+          href: pfad("/rechner/solarpark"),
           titel: "Rechnen Sie Ihr eigenes Szenario",
           text: "Region, Baukosten, Erlösmodell, Pacht und Finanzierung anpassen – mit Cashflow je Jahr, DSCR und Sensitivitätsmatrix.",
           label: "Zum Solarpark-Rechner",
@@ -270,7 +271,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Wer kleinere Beträge investieren möchte, kann sich über eine Bürgerenergie-[Genossenschaft](/genossenschaft) oder eine Beteiligungsgesellschaft beteiligen. Das Risiko ist dann gestreut, dafür haben Sie weniger Einfluss und oft eingeschränkte Handelbarkeit der Anteile. Wie Kaufverträge für Projekte aufgebaut sind, erklärt der Ratgeber [Projektrechte kaufen](/ratgeber/projektrechte-kaufen-due-diligence). In der ÖkoInvest-Projektbörse zahlen Investoren keine Provision; der Verkäufer trägt ${PROVISION.verkaeufer.text}.`,
+          text: `Wer kleinere Beträge investieren möchte, kann sich über eine Bürgerenergie-[Genossenschaft](/de/genossenschaft) oder eine Beteiligungsgesellschaft beteiligen. Das Risiko ist dann gestreut, dafür haben Sie weniger Einfluss und oft eingeschränkte Handelbarkeit der Anteile. Wie Kaufverträge für Projekte aufgebaut sind, erklärt der Ratgeber [Projektrechte kaufen](/wissen/ratgeber/projektrechte-kaufen-due-diligence). In der ÖkoInvest-Projektbörse zahlen Investoren keine Provision; der Verkäufer trägt ${PROVISION.verkaeufer.text}.`,
         },
       ],
     },
@@ -295,7 +296,7 @@ const artikel = {
           typ: "ablauf",
           schritte: [
             ["Suchprofil festlegen", "Phase, Größe, Region, Erlösmodell und Renditeziel definieren – etwa über die Seite [Investoren](/investoren)."],
-            ["Projekt vorprüfen", "Teaser und Eckdaten mit dem [Projektbewertungs-Rechner](/rechner/projektbewertung) grob einordnen."],
+            ["Projekt vorprüfen", "Teaser und Eckdaten mit dem [Projektbewertungs-Rechner](/de/rechner/projektbewertung) grob einordnen."],
             ["NDA und Datenraum", "Nach Vertraulichkeitsvereinbarung vollständige Unterlagen im [Datenraum](/wissen/lexikon#datenraum) sichten."],
             ["Due Diligence", "Technische, rechtliche, steuerliche und kaufmännische Prüfung durch Fachleute."],
             ["Finanzierung und Kauf", "Bankgespräche, Zinssicherung, Kaufvertrag mit Meilensteinzahlungen, Closing."],
@@ -328,17 +329,17 @@ const artikel = {
     },
     {
       q: "Kann ich mich mit kleineren Beträgen an einem Solarpark beteiligen?",
-      a: "Ja, zum Beispiel über eine Energiegenossenschaft oder eine Beteiligungsgesellschaft. Achten Sie auf Prospekt- oder Informationsblattpflichten, Kosten, Laufzeit, Kündigungsmöglichkeiten und die Frage, ob es sich um Eigenkapital oder ein Nachrangdarlehen handelt. Mehr auf der Seite [Genossenschaft](/genossenschaft).",
+      a: "Ja, zum Beispiel über eine Energiegenossenschaft oder eine Beteiligungsgesellschaft. Achten Sie auf Prospekt- oder Informationsblattpflichten, Kosten, Laufzeit, Kündigungsmöglichkeiten und die Frage, ob es sich um Eigenkapital oder ein Nachrangdarlehen handelt. Mehr auf der Seite [Genossenschaft](/de/genossenschaft).",
     },
   ],
 
   passend: [
-    { href: "/ratgeber/projektrechte-kaufen-due-diligence", titel: "Projektrechte kaufen", text: "Preise, Vertragsstruktur und Due Diligence." },
-    { href: "/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Wie Gebote, Zuschläge und Fristen funktionieren." },
-    { href: "/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Stromlieferverträge als Erlös- und Absicherungsweg." },
+    { href: "/wissen/ratgeber/projektrechte-kaufen-due-diligence", titel: "Projektrechte kaufen", text: "Preise, Vertragsstruktur und Due Diligence." },
+    { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Wie Gebote, Zuschläge und Fristen funktionieren." },
+    { href: "/wissen/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Stromlieferverträge als Erlös- und Absicherungsweg." },
     { href: "/investoren", titel: "Für Investoren", text: "Suchprofil anlegen und passende Projekte finden." },
-    { href: "/bestandsanlagen", titel: "Bestandsanlagen kaufen", text: "Laufende Solarparks auf dem Zweitmarkt." },
-    { href: "/rechner/solarpark", titel: "Solarpark-Renditerechner", text: "IRR, LCOE und DSCR mit eigenen Werten." },
+    { href: pfad("/bestandsanlagen"), titel: "Bestandsanlagen kaufen", text: "Laufende Solarparks auf dem Zweitmarkt." },
+    { href: pfad("/rechner/solarpark"), titel: "Solarpark-Renditerechner", text: "IRR, LCOE und DSCR mit eigenen Werten." },
   ],
 
   quellen: [
@@ -348,12 +349,12 @@ const artikel = {
     { titel: "Fraunhofer ISE – Stromgestehungskosten erneuerbare Energien (Juli 2024)", url: "https://www.ise.fraunhofer.de/de/veroeffentlichungen/studien/studie-stromgestehungskosten-erneuerbare-energien.html", stand: "09/2026" },
   ],
 
-  seitenCta: { titel: "Eigenes Szenario rechnen", text: "Projekt- und EK-IRR, DSCR und Cashflow über 30 Jahre.", href: "/rechner/solarpark", label: "Zum Solarpark-Rechner" },
+  seitenCta: { titel: "Eigenes Szenario rechnen", text: "Projekt- und EK-IRR, DSCR und Cashflow über 30 Jahre.", href: pfad("/rechner/solarpark"), label: "Zum Solarpark-Rechner" },
   cta: {
     title: "Passende Projekte finden – für Investoren kostenfrei.",
     text: "Legen Sie ein Suchprofil an: Phase, Größe, Region und Erlösmodell. Angebote aus der Projektbörse erhalten Sie nach NDA mit vollständigen Unterlagen.",
     primary: { label: "Zur Projektbörse", href: "/projektboerse" },
-    secondary: { label: "Solarpark rechnen", href: "/rechner/solarpark" },
+    secondary: { label: "Solarpark rechnen", href: pfad("/rechner/solarpark") },
   },
 };
 

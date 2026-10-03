@@ -14,6 +14,7 @@ import { STROM } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import { FARBEN } from "@/components/Reststrom/PreisBalken";
 import s from "@/components/Reststrom/reststrom.module.css";
+import { pfad } from "@/lib/land";
 
 const PUNKTE = ["Bündelung statt Einzelvertrag", "Wir vermitteln – Vergütung offengelegt", "Solar-PPA als Option, wo verfügbar", "Offen auch ohne ÖKOVOLT-Anlage"];
 const HEBEL_ICONS = { buendelung: Handshake, ppa: Sun, flex: BatteryCharging };
@@ -45,7 +46,7 @@ export default function Hero() {
               <strong className="font-semibold text-white">Unsere Rolle:</strong> Wir vermitteln, Ihr Liefervertrag läuft direkt mit dem Lieferanten. Was wir dafür erhalten&nbsp;– von Ihnen oder vom Lieferanten&nbsp;–, legen wir vor Vertragsschluss offen.
             </p>
             <div className="ov-hero-in mt-8 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-10" style={{ "--ov-delay": "260ms" }}>
-              <Button href="/rechner/reststrom" size="lg" pfeil className="w-full sm:w-auto">Ersparnis berechnen</Button>
+              <Button href={pfad("/rechner/reststrom")} size="lg" pfeil className="w-full sm:w-auto">Ersparnis berechnen</Button>
               <Button href="#anfrage" size="lg" variant="outlineLight" className="w-full sm:w-auto">Angebot anfragen</Button>
             </div>
             <ul className="ov-hero-in mt-9 grid gap-x-6 gap-y-3 border-t border-white/10 pt-7 sm:grid-cols-2 md:mt-10" style={{ "--ov-delay": "340ms" }}>

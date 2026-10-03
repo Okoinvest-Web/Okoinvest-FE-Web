@@ -5,6 +5,7 @@
 
 import { PACHT, PROVISION, AGRI } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 export const ZIELGRUPPEN = [
   {
@@ -13,7 +14,7 @@ export const ZIELGRUPPEN = [
     icon: "MapPinned",
     gesamt: "2–4 Jahre bis zum Betrieb",
     intro: "Sie stellen eine Fläche zur Verfügung, wir entwickeln, bauen und betreiben den Solarpark. Für Sie entstehen keine Kosten.",
-    cta: { label: "Flächencheck starten", href: "/flaechencheck" },
+    cta: { label: "Flächencheck starten", href: pfad("/flaechencheck") },
     schritte: [
       {
         titel: "Flächencheck & Anfrage",
@@ -75,7 +76,7 @@ export const ZIELGRUPPEN = [
     icon: "Tractor",
     gesamt: "1,5–3 Jahre bis zum Betrieb",
     intro: "Agri-PV: Die Fläche bleibt landwirtschaftlich genutzt. Sie wählen, ob Sie verpachten, selbst investieren oder sich beteiligen.",
-    cta: { label: "Agri-PV-Rechner", href: "/rechner/agri-pv" },
+    cta: { label: "Agri-PV-Rechner", href: pfad("/rechner/agri-pv") },
     schritte: [
       {
         titel: "Anfrage & Agri-Check",
@@ -249,7 +250,7 @@ export const ZIELGRUPPEN = [
     icon: "Factory",
     gesamt: "4–12 Wochen bis zum Angebot, Lieferbeginn nach Vertragsende",
     intro: "Reststrom-Pool, Solarcarport oder Speicher: Sie schicken uns Verbrauchsdaten, wir rechnen und liefern ein transparentes Angebot.",
-    cta: { label: "Reststrom-Rechner", href: "/rechner/reststrom" },
+    cta: { label: "Reststrom-Rechner", href: pfad("/rechner/reststrom") },
     schritte: [
       {
         titel: "Anfrage mit Verbrauchsdaten",

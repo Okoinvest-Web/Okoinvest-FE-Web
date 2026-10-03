@@ -6,6 +6,7 @@ import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import Button from "@/components/ui/Button";
 import TextEnthuellung from "@/components/motion/TextEnthuellung";
 import NetzSchema from "./NetzSchema";
+import { pfad } from "@/lib/land";
 
 const PUNKTE = ["Energy Sharing seit Juni 2026", "EEG und BEG in Österreich", "LEG in der Schweiz seit 2026", "Parkstrom für die Gemeinschaft"];
 const MODELLE = [
@@ -28,7 +29,7 @@ export default function Hero() {
         <div className="grid items-center gap-y-14 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-x-12 xl:gap-x-16">
           <div className="max-w-[36rem]">
             <Link
-              href="/energiegemeinschaften/software"
+              href={pfad("/energiegemeinschaften/software")}
               className="ov-hero-in group inline-flex max-w-full items-center gap-2.5 rounded-full bg-white/[0.06] py-1 pl-1 pr-3.5 text-[13px] text-white/85 ring-1 ring-inset ring-white/15 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300"
               style={{ "--ov-delay": "40ms" }}
             >
@@ -70,7 +71,7 @@ export default function Hero() {
                 <Calculator aria-hidden="true" className="h-4 w-4 shrink-0 text-sun-300" />
                 <span>
                   In Österreich?{" "}
-                  <Link href="/energiegemeinschaften/rechner" className="rounded font-semibold text-white underline decoration-sun-300/70 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
+                  <Link href={pfad("/energiegemeinschaften/rechner")} className="rounded font-semibold text-white underline decoration-sun-300/70 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
                     Ersparnis rechnen
                   </Link>
                 </span>

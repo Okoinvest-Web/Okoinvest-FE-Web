@@ -9,6 +9,13 @@
 //    Ältere Clients mit body.einwilligung = true funktionieren weiter.
 //  - Rückruf ausdrücklich gewählt (body.rueckruf = true) → Telefon ist Pflicht (serverseitig geprüft).
 //  - Server-Zähler ohne Kennung (src/lib/anfrage/zaehler.js): versuch / angelegt / abgelehnt / honeypot.
+//
+// Welle 2:
+//  - Paket GRP: Der Kanal wird serverseitig neu berechnet (herkunftBereinigen, src/lib/gruppe/kanal.js); eine
+//    Partner-/Gruppenkennung wird nur übernommen, wenn sie im Register wirksam ist.
+//  - Paket B3: Land (Pflicht, sonst „unbekannt“), Routing, Score, SLA-Klasse, getrennte Personendaten und das
+//    Einwilligungsprotokoll entstehen im Backend (anfrageAnlegen → demo/leadkette.js bzw. Frappe einwilligung.py).
+//    Personendaten stehen nie in Logs oder Fehlermeldungen dieser Route.
 
 import { createHash } from "node:crypto";
 import { route } from "@/lib/plattform/server/route";
@@ -16,6 +23,7 @@ import { PlattformFehler } from "@/lib/plattform/fehler";
 import { HINWEIS, einwilligungenAufbereiten, hinweisText } from "@/lib/anfrage/hinweise";
 import { anfrageLand } from "@/lib/anfrage/laender";
 import { anfrageZaehlen } from "@/lib/anfrage/zaehler";
+import { herkunftBereinigen } from "@/lib/gruppe/kanal";
 
 const sha256 = (s) => createHash("sha256").update(String(s)).digest("hex");
 const objekt = (x) => (x && typeof x === "object" && !Array.isArray(x) ? x : {});
@@ -23,8 +31,10 @@ const objekt = (x) => (x && typeof x === "object" && !Array.isArray(x) ? x : {})
 export const POST = route({ auth: "optional", limit: "anfrage", maxBytes: 48 * 1024 }, async ({ body, backend, ip, nutzer }) => {
   const kontakt = objekt(body.kontakt);
   const daten = objekt(body.daten);
-  const herkunft = objekt(body.herkunft);
-  const merkmale = { typ: body.typ, land: anfrageLand(kontakt, daten), kanal: herkunft.kanal };
+  const herkunftRoh = objekt(body.herkunft);
+  const { kanal, partnerKennung } = herkunftBereinigen(herkunftRoh); // GRP: Kanal nie vom Browser übernehmen
+  const herkunft = { ...herkunftRoh, kanal, partnerKennung };
+  const merkmale = { typ: body.typ, land: anfrageLand(kontakt, daten), kanal };
 
   if (body.website) {
     anfrageZaehlen({ ...merkmale, ereignis: "honeypot" });

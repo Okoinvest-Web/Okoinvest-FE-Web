@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { HeroKomposition } from "@/components/Portal/EG/Produkt/Mockups";
 import TextEnthuellung from "@/components/motion/TextEnthuellung";
+import { pfad } from "@/lib/land";
 
 /** Kurzversprechen – mobil die ersten zwei, ab sm alle vier */
 const HERO_CHIPS = [
@@ -25,7 +26,7 @@ export default function Hero() {
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-b from-transparent to-navy-950/50" />
 
       <div className="ov-container pb-24 pt-6 sm:pt-8 md:pb-32 md:pt-10">
-        <Breadcrumbs items={[{ name: "Energiegemeinschaften", href: "/energiegemeinschaften" }, { name: "Software" }]} dark className="ov-hero-in mb-8 md:mb-12" />
+        <Breadcrumbs items={[{ name: "Energiegemeinschaften", href: pfad("/energiegemeinschaften") }, { name: "Software" }]} dark className="ov-hero-in mb-8 md:mb-12" />
 
         <div className="grid items-center gap-y-16 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:gap-x-12 xl:gap-x-16">
           {/* Text */}

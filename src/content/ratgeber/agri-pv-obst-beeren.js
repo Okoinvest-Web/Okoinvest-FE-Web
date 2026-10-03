@@ -7,6 +7,7 @@
 import { AGRI, BAUART, ERLOESE, PACHT, STAND } from "@/lib/invest/markt";
 import { fmt, fmtEur, fmtPct, fmtCt } from "@/lib/rechner/annahmen";
 import { agriVergleich } from "@/lib/rechner/agriPv";
+import { pfad } from "../../lib/land/index.js";
 
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag zur Übernahme */
 // DIN SPEC 91434: lichte Höhe ab 2,10 m für Kategorie I (vgl. agri-pv-din-spec-91434.js).
@@ -86,7 +87,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Einschränkend gilt: Die meisten deutschen Anlagen sind Forschungs- oder Pilotanlagen, die seit 2020 bis 2024 in Betrieb gegangen sind. Obstbäume brauchen Jahre bis zum Vollertrag, und Ergebnisse aus einzelnen Jahren lassen sich nicht verallgemeinern. Wer heute plant, sollte sich an belegten Teilergebnissen orientieren und die Anlage so auslegen, dass sie auch ohne optimistische Ertragsannahmen funktioniert. Die Grundlagen der Agri-PV erklärt die Seite [Agri-PV](/agri-pv).",
+          text: "Einschränkend gilt: Die meisten deutschen Anlagen sind Forschungs- oder Pilotanlagen, die seit 2020 bis 2024 in Betrieb gegangen sind. Obstbäume brauchen Jahre bis zum Vollertrag, und Ergebnisse aus einzelnen Jahren lassen sich nicht verallgemeinern. Wer heute plant, sollte sich an belegten Teilergebnissen orientieren und die Anlage so auslegen, dass sie auch ohne optimistische Ertragsannahmen funktioniert. Die Grundlagen der Agri-PV erklärt die Seite [Agri-PV](/de/agri-pv).",
         },
         {
           typ: "kennzahl",
@@ -149,7 +150,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Im Lichtmanagement liegt der Kern der Planung: Zu viel Schatten mindert Farbe, Zuckergehalt und Ertrag, zu wenig verschenkt Schutzwirkung und Strom. Als Faustregel nennt das Fraunhofer ISE für Agri-PV insgesamt, dass Ertragseinbußen ${fmtPct(ERTRAGSVERLUST_EMPFEHLUNG, 0)} nicht übersteigen sollten. Die DIN SPEC 91434 verlangt mindestens ${fmtPct(AGRI.mindestErtrag, 0)} des Referenzertrags und höchstens ${fmtPct(AGRI.flaechenverlustMaxKat1, 0)} Flächenverlust in Kategorie I. Die Details der Norm erklärt der Ratgeber [DIN SPEC 91434](/ratgeber/agri-pv-din-spec-91434).`,
+          text: `Im Lichtmanagement liegt der Kern der Planung: Zu viel Schatten mindert Farbe, Zuckergehalt und Ertrag, zu wenig verschenkt Schutzwirkung und Strom. Als Faustregel nennt das Fraunhofer ISE für Agri-PV insgesamt, dass Ertragseinbußen ${fmtPct(ERTRAGSVERLUST_EMPFEHLUNG, 0)} nicht übersteigen sollten. Die DIN SPEC 91434 verlangt mindestens ${fmtPct(AGRI.mindestErtrag, 0)} des Referenzertrags und höchstens ${fmtPct(AGRI.flaechenverlustMaxKat1, 0)} Flächenverlust in Kategorie I. Die Details der Norm erklärt der Ratgeber [DIN SPEC 91434](/wissen/ratgeber/agri-pv-din-spec-91434).`,
         },
       ],
     },
@@ -213,13 +214,13 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Im EEG gelten Agri-PV-Anlagen auf Dauerkulturflächen als [besondere Solaranlagen](/wissen/lexikon#besondere-solaranlagen). Hoch aufgeständerte Anlagen ab ${fmt(LICHTE_HOEHE_M, 2)} m lichter Höhe erhalten nach aktuellem Stand in den Jahren 2026 bis 2028 einen Aufschlag von ${fmtCt(BONUS_HOCH_CT)} auf den Zuschlagswert; unsere Rechner setzen für besondere Solaranlagen ${fmtCt(ERLOESE.eegBesondereCt)} an. Bei den GAP-Direktzahlungen bleiben nach § 12 GAPDZV ${fmtPct(AGRI.gapFoerderfaehig, 0)} der Fläche förderfähig, wenn die Anlage die Bewirtschaftung nicht ausschließt und höchstens 15 % Fläche kostet. Alle Förderwege im Detail: [Agri-PV Förderung und GAP](/ratgeber/agri-pv-foerderung-gap).`,
+          text: `Im EEG gelten Agri-PV-Anlagen auf Dauerkulturflächen als [besondere Solaranlagen](/wissen/lexikon#besondere-solaranlagen). Hoch aufgeständerte Anlagen ab ${fmt(LICHTE_HOEHE_M, 2)} m lichter Höhe erhalten nach aktuellem Stand in den Jahren 2026 bis 2028 einen Aufschlag von ${fmtCt(BONUS_HOCH_CT)} auf den Zuschlagswert; unsere Rechner setzen für besondere Solaranlagen ${fmtCt(ERLOESE.eegBesondereCt)} an. Bei den GAP-Direktzahlungen bleiben nach § 12 GAPDZV ${fmtPct(AGRI.gapFoerderfaehig, 0)} der Fläche förderfähig, wenn die Anlage die Bewirtschaftung nicht ausschließt und höchstens 15 % Fläche kostet. Alle Förderwege im Detail: [Agri-PV Förderung und GAP](/wissen/ratgeber/agri-pv-foerderung-gap).`,
         },
         {
           typ: "kasten",
           variant: "info",
           titel: "Kleine Fläche, eigener Strom",
-          text: "Obstbaubetriebe haben oft einen hohen Strombedarf für Kühlung, Sortierung und Bewässerung. Eine privilegierte Hofanlage kann einen Teil davon direkt decken – das verbessert die Wirtschaftlichkeit deutlich gegenüber reiner Einspeisung. Wie Eigenverbrauch und Einspeisung zusammenspielen, zeigt der Ratgeber [Direktvermarktung für Solarparks](/ratgeber/direktvermarktung-solarpark).",
+          text: "Obstbaubetriebe haben oft einen hohen Strombedarf für Kühlung, Sortierung und Bewässerung. Eine privilegierte Hofanlage kann einen Teil davon direkt decken – das verbessert die Wirtschaftlichkeit deutlich gegenüber reiner Einspeisung. Wie Eigenverbrauch und Einspeisung zusammenspielen, zeigt der Ratgeber [Direktvermarktung für Solarparks](/wissen/ratgeber/direktvermarktung-solarpark).",
         },
       ],
     },
@@ -252,11 +253,11 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Das Ergebnis ist ernüchternd und ehrlich: Mit Einspeisung allein trägt sich die teure Konstruktion auf kleiner Fläche kaum. Die Rechnung dreht sich, wenn die Anlage ein ohnehin nötiges Schutzsystem ersetzt, wenn ein großer Teil des Stroms auf dem Hof verbraucht wird und wenn die Kosten am unteren Ende der Spanne liegen. Für viele Betriebe ist deshalb das Modell interessant, bei dem ein Investor baut, der Betrieb Pacht erhält und das Schutzdach kostenlos mitnutzt – oder sich über eine [Genossenschaft](/genossenschaft) beteiligt. Die allgemeine Einordnung liefert der Ratgeber [Agri-PV Wirtschaftlichkeit](/ratgeber/agri-pv-wirtschaftlichkeit).",
+          text: "Das Ergebnis ist ernüchternd und ehrlich: Mit Einspeisung allein trägt sich die teure Konstruktion auf kleiner Fläche kaum. Die Rechnung dreht sich, wenn die Anlage ein ohnehin nötiges Schutzsystem ersetzt, wenn ein großer Teil des Stroms auf dem Hof verbraucht wird und wenn die Kosten am unteren Ende der Spanne liegen. Für viele Betriebe ist deshalb das Modell interessant, bei dem ein Investor baut, der Betrieb Pacht erhält und das Schutzdach kostenlos mitnutzt – oder sich über eine [Genossenschaft](/de/genossenschaft) beteiligt. Die allgemeine Einordnung liefert der Ratgeber [Agri-PV Wirtschaftlichkeit](/wissen/ratgeber/agri-pv-wirtschaftlichkeit).",
         },
         {
           typ: "tool",
-          href: "/rechner/agri-pv",
+          href: pfad("/rechner/agri-pv"),
           titel: "Agri-PV für Ihre Obst- oder Beerenfläche rechnen",
           text: "Kultur „Obst & Beeren“ wählen, Fläche und Region eingeben und Pacht, Eigeninvestition und Beteiligung vergleichen.",
           label: "Zum Agri-PV-Rechner",
@@ -275,13 +276,13 @@ const artikel = {
             ["Schutzziel definieren", "Soll die Anlage Hagelnetz, Foliendach oder beides ersetzen? Daraus folgen Überdeckungsgrad, Abtropfkanten und Seitennetze."],
             ["Nutzungskonzept nach DIN SPEC 91434", "Landwirtschaftliches Konzept, Flächenbilanz und Referenzertrag festhalten – Grundlage für GAP, EEG und Pachtvertrag."],
             ["Baurecht klären", `Bis ${fmt(AGRI.privilegierungHa, 1)} ha mit Hofbezug privilegiert; darüber Bebauungsplan der Gemeinde. Eine Bauvoranfrage schafft Klarheit.`],
-            ["Modell wählen", "Verpachten, selbst investieren oder beteiligen. Überblick für Betriebe auf der Seite [Landwirte](/landwirte)."],
-            ["Fläche prüfen lassen", "Netzanschluss und Planungsrecht früh klären – mit dem [Flächencheck](/flaechencheck)."],
+            ["Modell wählen", "Verpachten, selbst investieren oder beteiligen. Überblick für Betriebe auf der Seite [Landwirte](/de/landwirte)."],
+            ["Fläche prüfen lassen", "Netzanschluss und Planungsrecht früh klären – mit dem [Flächencheck](/de/flaechencheck)."],
           ],
         },
         {
           typ: "p",
-          text: "Wer lieber verpachtet als selbst baut, sollte im Pachtvertrag festhalten, dass die Bewirtschaftung beim Betrieb bleibt und die Schutzfunktion der Anlage über die gesamte Laufzeit gewährleistet ist – einschließlich Reparaturen nach Sturm oder Hagel. Mehr dazu im Ratgeber [Pachtvertrag Solarpark](/ratgeber/pachtvertrag-solarpark).",
+          text: "Wer lieber verpachtet als selbst baut, sollte im Pachtvertrag festhalten, dass die Bewirtschaftung beim Betrieb bleibt und die Schutzfunktion der Anlage über die gesamte Laufzeit gewährleistet ist – einschließlich Reparaturen nach Sturm oder Hagel. Mehr dazu im Ratgeber [Pachtvertrag Solarpark](/wissen/ratgeber/pachtvertrag-solarpark).",
         },
       ],
     },
@@ -310,15 +311,15 @@ const artikel = {
     },
     {
       q: "Bekomme ich für die Obstfläche weiter GAP-Direktzahlungen?",
-      a: `Ja, wenn die Anlage als Agri-PV-Anlage nach § 12 GAPDZV anerkannt wird: Dann bleiben ${fmtPct(AGRI.gapFoerderfaehig, 0)} der Fläche förderfähig. Mehr unter [Agri-PV Förderung und GAP](/ratgeber/agri-pv-foerderung-gap).`,
+      a: `Ja, wenn die Anlage als Agri-PV-Anlage nach § 12 GAPDZV anerkannt wird: Dann bleiben ${fmtPct(AGRI.gapFoerderfaehig, 0)} der Fläche förderfähig. Mehr unter [Agri-PV Förderung und GAP](/wissen/ratgeber/agri-pv-foerderung-gap).`,
     },
   ],
 
   passend: [
-    { href: "/ratgeber/agri-pv-din-spec-91434", titel: "DIN SPEC 91434 erklärt", text: "Kategorien, Flächenverlust und 66-%-Regel." },
-    { href: "/ratgeber/agri-pv-wirtschaftlichkeit", titel: "Agri-PV Wirtschaftlichkeit", text: "Kosten, Erlöse und Rendite im Vergleich." },
-    { href: "/rechner/agri-pv", titel: "Agri-PV-Rechner", text: "Drei Wege für Ihre Fläche im Vergleich." },
-    { href: "/agri-pv", titel: "Agri-PV mit ÖkoInvest", text: "Systeme, Kulturen und Beteiligungsmodelle." },
+    { href: "/wissen/ratgeber/agri-pv-din-spec-91434", titel: "DIN SPEC 91434 erklärt", text: "Kategorien, Flächenverlust und 66-%-Regel." },
+    { href: "/wissen/ratgeber/agri-pv-wirtschaftlichkeit", titel: "Agri-PV Wirtschaftlichkeit", text: "Kosten, Erlöse und Rendite im Vergleich." },
+    { href: pfad("/rechner/agri-pv"), titel: "Agri-PV-Rechner", text: "Drei Wege für Ihre Fläche im Vergleich." },
+    { href: pfad("/agri-pv"), titel: "Agri-PV mit ÖkoInvest", text: "Systeme, Kulturen und Beteiligungsmodelle." },
   ],
 
   quellen: [
@@ -334,14 +335,14 @@ const artikel = {
   seitenCta: {
     titel: "Rechnet sich Ihr Schutzdach?",
     text: "Obst & Beeren im Agri-PV-Rechner durchspielen.",
-    href: "/rechner/agri-pv",
+    href: pfad("/rechner/agri-pv"),
     label: "Zum Agri-PV-Rechner",
   },
   cta: {
     title: "Agri-PV für Ihren Obst- oder Beerenbetrieb prüfen.",
     text: "Im Flächencheck prüfen wir Lage, Netzanschluss und Planungsrecht Ihrer Fläche – für Landwirte kostenfrei.",
-    primary: { label: "Zum Flächencheck", href: "/flaechencheck" },
-    secondary: { label: "Agri-PV entdecken", href: "/agri-pv" },
+    primary: { label: "Zum Flächencheck", href: pfad("/flaechencheck") },
+    secondary: { label: "Agri-PV entdecken", href: pfad("/agri-pv") },
   },
 };
 

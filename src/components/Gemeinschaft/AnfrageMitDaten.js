@@ -10,14 +10,15 @@ import { auswahlKlasse, feldKlasse, labelKlasse } from "@/components/formular/st
  * Fachliche Zusatzfelder + einheitliches Anfrageformular.
  * Die Zusatzfelder landen als `daten` in der Anfrage.
  *
- * zusatz: [{ name, label, art: "select" | "text" | "zahl" | "chips", optionen?: [{ id, label }], platzhalter?, breit? }]
+ * zusatz: [{ name, label, art: "select" | "text" | "zahl" | "chips", optionen?: [{ id, label }], platzhalter?, breit?, wert? }]
+ * wert: Vorbelegung (z. B. das Land aus der Route); ohne Angabe die erste Option.
  * legende: Überschrift des Zusatzblocks
  * formular: Props für AnfrageFormular (typ, felder, button, erfolgText …)
  */
 export default function AnfrageMitDaten({ zusatz = [], legende = "Ihr Vorhaben", formular = {}, festeDaten = {} }) {
   const id = useId();
   const [werte, setWerte] = useState(() =>
-    Object.fromEntries(zusatz.map((f) => [f.name, f.art === "select" || f.art === "chips" ? f.optionen?.[0]?.id ?? "" : ""]))
+    Object.fromEntries(zusatz.map((f) => [f.name, f.art === "select" || f.art === "chips" ? f.wert ?? f.optionen?.[0]?.id ?? "" : f.wert ?? ""]))
   );
   const setze = (name, wert) => setWerte((w) => ({ ...w, [name]: wert }));
 

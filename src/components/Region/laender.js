@@ -13,8 +13,8 @@ export const LAND = {
     name: "Deutschland",
     code: "DE",
     ratgeber: [
-      { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Ratgeber Genehmigung", text: "Bebauungsplan, Privilegierung und Verfahrensschritte in Deutschland." },
-      { href: "/ratgeber/eeg-ausschreibung-freiflaeche", titel: "Ratgeber EEG-Ausschreibung", text: "Flächenkulisse, benachteiligte Gebiete und Zuschlagswerte." },
+      { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Ratgeber Genehmigung", text: "Bebauungsplan, Privilegierung und Verfahrensschritte in Deutschland." },
+      { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", titel: "Ratgeber EEG-Ausschreibung", text: "Flächenkulisse, benachteiligte Gebiete und Zuschlagswerte." },
     ],
     schritte: [
       { icon: ClipboardCheck, title: "Fläche & Netz prüfen", text: "Flächenkulisse, Schutzgebiete, Regionalplan und Netzverknüpfungspunkt klären; Netzanschlussanfrage beim Verteilnetzbetreiber." },
@@ -34,7 +34,7 @@ export const LAND = {
     name: "Österreich",
     code: "AT",
     ratgeber: [
-      { href: "/ratgeber/freiflaechen-pv-oesterreich", titel: "Ratgeber Österreich", text: "Widmung je Bundesland, Bewilligungen, EAG-Marktprämie und Abschlag." },
+      { href: "/wissen/ratgeber/freiflaechen-pv-oesterreich", titel: "Ratgeber Österreich", text: "Widmung je Bundesland, Bewilligungen, EAG-Marktprämie und Abschlag." },
     ],
     schritte: [
       { icon: ClipboardCheck, title: "Zonen & Netz prüfen", text: "Überörtliche PV-Zonen oder Kriterienkatalog des Landes, Bodengüte, Schutzgebiete; Netzzugangsanfrage beim Verteilernetzbetreiber." },
@@ -54,7 +54,7 @@ export const LAND = {
     name: "Schweiz",
     code: "CH",
     ratgeber: [
-      { href: "/ratgeber/freiflaechen-pv-schweiz", titel: "Ratgeber Schweiz", text: "Raumplanung, Solarexpress, Einmalvergütung und Auktionen." },
+      { href: "/wissen/ratgeber/freiflaechen-pv-schweiz", titel: "Ratgeber Schweiz", text: "Raumplanung, Solarexpress, Einmalvergütung und Auktionen." },
     ],
     schritte: [
       { icon: ClipboardCheck, title: "Vorabklärung", text: "Kantonaler Richtplan (Teil Energie), Schutzinventare, Fruchtfolgeflächen und Netzanschluss mit Gemeinde und kantonaler Fachstelle klären." },

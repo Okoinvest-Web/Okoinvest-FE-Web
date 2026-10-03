@@ -156,7 +156,7 @@ test("Kontakt: leeres Absenden sendet nichts", ZEIT, async () => {
 test("Kommunen: Anfrage mit deutscher PLZ", ZEIT, async () => {
   const { ctx, page, posts } = await sitzung();
   try {
-    await ladeOk(page, "/kommunen");
+    await ladeOk(page, "/de/kommunen");
     // Kontaktfelder sind gesperrt, bis die Gemeinde angegeben ist
     const gemeinde = page.getByRole("textbox", { name: /^Gemeinde/ }).first();
     await hydriert(gemeinde);
@@ -174,7 +174,7 @@ test("Kommunen: Anfrage mit deutscher PLZ", ZEIT, async () => {
 test("Reststrom: Anfrage aus Deutschland", ZEIT, async () => {
   const { ctx, page, posts } = await sitzung();
   try {
-    await ladeOk(page, "/reststrom");
+    await ladeOk(page, "/de/reststrom");
     await fuelleUndSende(anfrageForm(page), { land: "DE", plz: "80331" });
     const post = await warteAufPost(posts);
     pruefeGrunddaten(post);
@@ -189,7 +189,7 @@ for (const [land, plz] of [["AT", "5020"], ["CH", "8001"]]) {
   test(`Reststrom: PLZ ${plz} (${land}) wird angenommen, Land bleibt ${land}`, ZEIT, async () => {
     const { ctx, page, posts } = await sitzung();
     try {
-      await ladeOk(page, "/reststrom");
+      await ladeOk(page, "/de/reststrom");
       await fuelleUndSende(anfrageForm(page), { land, plz });
       const post = await warteAufPost(posts, "/api/anfrage", 8_000);
       assert.ok(post, `Formular hat PLZ ${plz} (${land}) nicht abgeschickt`);
@@ -204,7 +204,7 @@ for (const [land, plz] of [["AT", "5020"], ["CH", "8001"]]) {
 test("Flächencheck: Assistent bis zum Ergebnis, Anfrage enthält die Eingaben (12 ha)", ZEIT, async () => {
   const { ctx, page, posts, fehler } = await sitzung();
   try {
-    await ladeOk(page, "/flaechencheck");
+    await ladeOk(page, "/de/flaechencheck");
     const check = page.locator("#check");
     await check.waitFor({ state: "visible", timeout: 120_000 });
     await hydriert(check);

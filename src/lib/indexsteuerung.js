@@ -84,7 +84,7 @@ export const GESPERRT_FUER_ALLE = ["/api/", "/portal", "/einladung/", "/angebot/
  * Bewusst NICHT enthalten: /energie-live (Datenlizenzen SMARD/aWATTar ungeklärt,
  * Masterplan S2), Rechner, Projektbörse, Formulare.
  */
-export const WISSENSSEITEN = ["/ratgeber", "/wissen/", "/regionen", "/faq", "/marktdaten", "/llms.txt"];
+export const WISSENSSEITEN = ["/wissen/", "/de/regionen", "/at/regionen", "/de/faq", "/de/marktdaten", "/llms.txt"];
 
 /** Trainingscrawler mit Wissensseiten-Freigabe (E5, Antwort 2 „Ja“). */
 export const TRAINING_WISSEN = ["GPTBot", "Google-Extended"];
@@ -109,9 +109,11 @@ export const GESPERRT = ["CCBot", "Bytespider", "Meta-ExternalAgent", "cohere-ai
  * von Staging ist Basic-Auth auf Hosting-Ebene (W0-4); zusätzlich trägt jede
  * Seite noindex (src/app/layout.js).
  *
- * @param {{ indexierbar: boolean, siteUrl: string }} e
+ * @param {{ indexierbar: boolean, siteUrl: string, sitemaps?: string[] }} e
+ *   sitemaps: absolute URLs der Sitemaps (Welle 2: je Land und Stamm, src/lib/land/sitemaps.js);
+ *   ohne Angabe die eine Sitemap unter /sitemap.xml
  */
-export function robotsRegeln({ indexierbar, siteUrl }) {
+export function robotsRegeln({ indexierbar, siteUrl, sitemaps }) {
   if (!indexierbar) {
     return { rules: [{ userAgent: "*", disallow: "/" }] };
   }
@@ -121,7 +123,7 @@ export function robotsRegeln({ indexierbar, siteUrl }) {
       { userAgent: TRAINING_WISSEN, allow: WISSENSSEITEN, disallow: "/" },
       { userAgent: GESPERRT, disallow: "/" },
     ],
-    sitemap: `${siteUrl}/sitemap.xml`,
+    sitemap: Array.isArray(sitemaps) && sitemaps.length ? sitemaps : `${siteUrl}/sitemap.xml`,
   };
 }
 
@@ -145,9 +147,14 @@ export function ohneEntwuerfe(eintraege) {
 }
 
 /**
- * Sprache der Seite nach Pfad (für <html lang>): /en und /en/… → "en", sonst "de".
- * Länder-Locales (de-DE/de-AT/de-CH) kommen erst mit dem Länder-Routing in Welle 2.
+ * Sprache der Seite nach Pfad (wie <html lang> der Root-Layouts, Welle 2):
+ * /en… → "en", /de… → "de-DE", /at… → "de-AT", /ch… → "de-CH", sonst (Stamm) "de".
+ * Die Root-Layouts setzen lang serverseitig (src/components/Wurzel/Wurzel.js); diese Funktion
+ * spiegelt das für Prüfskripte und Tests.
  */
 export function spracheFuerPfad(pfad) {
-  return typeof pfad === "string" && /^\/en(\/|$)/.test(pfad) ? "en" : "de";
+  if (typeof pfad !== "string") return "de";
+  if (/^\/en(\/|$)/.test(pfad)) return "en";
+  const land = /^\/(de|at|ch)(\/|$)/.exec(pfad);
+  return land ? `de-${land[1].toUpperCase()}` : "de";
 }

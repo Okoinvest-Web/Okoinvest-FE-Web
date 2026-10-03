@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Sun, Wind, Leaf, Zap } from "lucide-react";
 import useEnergyLive, { fmtCt, fmtGw } from "./useEnergyLive";
 import { cn } from "./cn";
+import { pfad } from "@/lib/land";
 
 /** Pulsierender Live-Punkt */
 export function LiveDot({ className }) {
@@ -22,7 +23,7 @@ export default function LiveTicker({ className }) {
 
   return (
     <Link
-      href="/energie-live"
+      href={pfad("/energie-live")}
       className={cn("group flex min-w-0 items-center gap-4 text-[12.5px] text-white/75 transition-colors hover:text-white", className)}
     >
       <span className="sr-only">Zum Live-Dashboard: </span>

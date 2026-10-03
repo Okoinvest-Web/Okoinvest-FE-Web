@@ -5,6 +5,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
 import Aufbau, { aufbau } from "@/components/Flaeche/Seite/Aufbau";
 import { fmt, fmtMio } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 /** Wert je kWp der Beispiele auf einer Skala, übliche Spanne als Band */
 function SpannenGrafik({ beispiele, band }) {
@@ -119,7 +120,7 @@ export default function Bewertung({ beispiele, band, bestand, merchantCt, stand 
               <p className="mt-4 text-[12.5px] leading-relaxed text-ink-500">
                 Vergütungen sind grobe Richtwerte je Baujahr, keine Anlagendaten. Übliche Spanne für Bestandsanlagen {fmt(band.min)}–{fmt(band.max)} €/kWp. Vor Steuern und Fremdkapital. Stand {stand}.
               </p>
-              <Link href="/rechner/bestandsanlage" className="group mt-5 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[14.5px] font-semibold text-ov-700 shadow-e1 ring-1 ring-ov-200 transition-colors hover:bg-ov-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
+              <Link href={pfad("/rechner/bestandsanlage")} className="group mt-5 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[14.5px] font-semibold text-ov-700 shadow-e1 ring-1 ring-ov-200 transition-colors hover:bg-ov-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
                 Mit eigenen Werten rechnen <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
               </Link>
             </div>

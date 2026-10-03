@@ -19,6 +19,7 @@ import { KOMMUNE } from "../../../invest/markt";
 import { intern } from "../demo";
 import { aendern, lesen } from "./speicher";
 import { jetzt, neueId, sha256 } from "./hilfen";
+import { pfad } from "../../../land/index.js";
 
 const SCHEMA = 1;
 const BEREICH = "kommunen";
@@ -107,13 +108,13 @@ function angeboteFuer(db, g) {
   const out = [];
   for (const geno of db.mitglied?.genos || []) {
     if (geno.land !== g.land) continue;
-    out.push({ art: "genossenschaft", titel: geno.name, status: GENO_REGISTER[geno.registerStatus]?.label || geno.registerStatus, link: "/genossenschaft", text: geno.registerStatus === "eingetragen" ? "Beitritt und Zeichnung von Geschäftsanteilen über das Portal." : "Unverbindliche Vormerkung möglich." });
+    out.push({ art: "genossenschaft", titel: geno.name, status: GENO_REGISTER[geno.registerStatus]?.label || geno.registerStatus, link: pfad("/genossenschaft"), text: geno.registerStatus === "eingetragen" ? "Beitritt und Zeichnung von Geschäftsanteilen über das Portal." : "Unverbindliche Vormerkung möglich." });
   }
   for (const eg of db.mitglied?.gemeinschaften || []) {
     if (eg.land !== g.land || eg.status === "geschlossen") continue;
-    out.push({ art: "energiegemeinschaft", titel: eg.name, status: eg.status === "aktiv" ? "aktiv" : "in Gründung", link: "/energiegemeinschaften", text: `${eg.gebiet || eg.netzbetreiber} – Strom aus der Region teilen.` });
+    out.push({ art: "energiegemeinschaft", titel: eg.name, status: eg.status === "aktiv" ? "aktiv" : "in Gründung", link: pfad("/energiegemeinschaften"), text: `${eg.gebiet || eg.netzbetreiber} – Strom aus der Region teilen.` });
   }
-  if (g.land === "DE") out.push({ art: "par6", titel: "Kommunalbeteiligung nach § 6 EEG", status: "gesetzlich möglich", link: "/kommunen", text: `Bis ${String(KOMMUNE.beteiligungCt).replace(".", ",")} ct/kWh an die Gemeinde – vertraglich, ab Inbetriebnahme.` });
+  if (g.land === "DE") out.push({ art: "par6", titel: "Kommunalbeteiligung nach § 6 EEG", status: "gesetzlich möglich", link: pfad("/kommunen"), text: `Bis ${String(KOMMUNE.beteiligungCt).replace(".", ",")} ct/kWh an die Gemeinde – vertraglich, ab Inbetriebnahme.` });
   return out;
 }
 

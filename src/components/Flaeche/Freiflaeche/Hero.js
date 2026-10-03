@@ -7,6 +7,7 @@ import Aufbau, { aufbau } from "@/components/Flaeche/Seite/Aufbau";
 import { TextEnthuellung, Zaehler } from "@/components/motion";
 import { FREIFLAECHE, REGIONEN } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 const BEISPIEL_HA = 20;
 
@@ -151,8 +152,8 @@ export default function Hero() {
             Wir entwickeln Freiflächenanlagen ab rund 3 Hektar: von der Flächensicherung über Netzanschluss und Bebauungsplan bis zum Bau und Betrieb – als Teil einer Gruppe, die seit 2012 eigene Solarparks betreibt.
           </p>
           <div className="ov-hero-in mt-8 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-10" style={{ "--ov-delay": "260ms" }}>
-            <Button href="/flaechencheck" size="lg" pfeil magnetisch className="w-full sm:w-auto">Fläche prüfen</Button>
-            <Button href="/rechner/pacht" size="lg" variant="outlineLight" className="w-full sm:w-auto">Pacht berechnen</Button>
+            <Button href={pfad("/flaechencheck")} size="lg" pfeil magnetisch className="w-full sm:w-auto">Fläche prüfen</Button>
+            <Button href={pfad("/rechner/pacht")} size="lg" variant="outlineLight" className="w-full sm:w-auto">Pacht berechnen</Button>
           </div>
           <p className="ov-hero-in mt-4 text-[13px] leading-relaxed text-white/70" style={{ "--ov-delay": "300ms" }}>
             Flächencheck kostenlos und ohne Anmeldung · Ergebnis sofort
@@ -170,7 +171,7 @@ export default function Hero() {
               <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0 text-sun-300" />
               <span>
                 Eigentümer einer Fläche?{" "}
-                <a href="/flaeche-verpachten" className="rounded font-semibold text-white underline decoration-sun-300/70 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
+                <a href={pfad("/flaeche-verpachten")} className="rounded font-semibold text-white underline decoration-sun-300/70 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
                   So funktioniert die Verpachtung
                 </a>
               </span>

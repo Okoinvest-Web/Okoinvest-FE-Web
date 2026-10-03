@@ -11,6 +11,7 @@ import { BalkenJahre, DiagrammKarte, FARBEN, Linien } from "./ToolTeile";
 import { LASTPROFILE, STANDARD, STRUKTUREN, SZENARIEN, rechnePpa } from "@/lib/rechner/ppa";
 import { STAND, STROM } from "@/lib/invest/markt";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 const P = STROM.ppa;
 const tsd = (v) => `${v < 0 ? "−" : ""}${fmt(Math.abs(v) / 1000, Math.abs(v) >= 1e5 ? 0 : 1)} Tsd. €`;
@@ -193,7 +194,7 @@ export default function PpaRechner() {
             satz={r.ersparnisJahr1 > 0 ? "Ersparnis im ersten Jahr – mit echten Angeboten gegenrechnen" : "Absicherung und Angebote mit Ihren Lastdaten gegenrechnen"}
             signal={`${Math.round(r.ersparnisJahr1)}|${Math.round(r.szenarien[1].summe)}`}
             nachricht={`Aus dem PPA-Rechner: Jahresverbrauch ${e.verbrauchMwh >= 1000 ? `${fmt(e.verbrauchMwh / 1000, 1)} GWh` : `${fmt(e.verbrauchMwh)} MWh`}, Lastprofil ${LASTPROFILE.find((x) => x.id === e.profil)?.label || e.profil}, heutiger Energiepreis ${fmt(e.preisCt, 1)} ct/kWh, PPA-Laufzeit ${e.laufzeit} Jahre. Ergebnis (Modellrechnung): Ersparnis Jahr 1 ${tsd(r.ersparnisJahr1)}, über ${e.laufzeit} Jahre (Markt seitwärts) ${tsd(r.szenarien[1].summe)}. Bitte mit mir über PPA und Reststrom-Pool sprechen.`}
-            sekundaer={[{ href: "/reststrom", label: "Reststrom-Pool" }]}
+            sekundaer={[{ href: pfad("/reststrom"), label: "Reststrom-Pool" }]}
             hinweis="Modellrechnung ohne Gewähr, netto. Netzentgelte, Umlagen und Steuern sind in beiden Fällen gleich und daher nicht enthalten."
           />
         </>

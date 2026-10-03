@@ -4,6 +4,7 @@
 
 import { PACHT, FREIFLAECHE, ERLOESE, REGIONEN, KOMMUNE, AGRI, STAND } from "@/lib/invest/markt";
 import { fmt, fmtEur, fmtPct } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag zur Übernahme */
 // Destatis, Pressemitteilung Nr. 153 vom 24.04.2024 (Agrarstrukturerhebung 2023):
@@ -116,7 +117,7 @@ const artikel = {
         },
         {
           typ: "tool",
-          href: "/rechner/pacht",
+          href: pfad("/rechner/pacht"),
           titel: "Pacht für Ihre Fläche abschätzen",
           text: "Fläche, Region und Pachtmodell eingeben – der Pachtrechner zeigt Jahres- und Gesamtpacht über die Laufzeit.",
           label: "Zum Pachtrechner",
@@ -149,7 +150,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "In **Österreich** ist neben dem Netzanschluss die Flächenwidmung der Engpass: Eine Freiflächenanlage braucht je nach Bundesland eine Widmung als Grünland-Photovoltaik oder liegt in einer ausgewiesenen Vorrangzone. Mehr dazu im Ratgeber [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich). In der **Schweiz** sind Solaranlagen außerhalb der Bauzonen raumplanerisch stark eingeschränkt; ein Pachtmarkt für Ackerflächen wie in Deutschland existiert praktisch nicht. Einordnung im Ratgeber [Freiflächen-PV in der Schweiz](/ratgeber/freiflaechen-pv-schweiz).",
+          text: "In **Österreich** ist neben dem Netzanschluss die Flächenwidmung der Engpass: Eine Freiflächenanlage braucht je nach Bundesland eine Widmung als Grünland-Photovoltaik oder liegt in einer ausgewiesenen Vorrangzone. Mehr dazu im Ratgeber [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich). In der **Schweiz** sind Solaranlagen außerhalb der Bauzonen raumplanerisch stark eingeschränkt; ein Pachtmarkt für Ackerflächen wie in Deutschland existiert praktisch nicht. Einordnung im Ratgeber [Freiflächen-PV in der Schweiz](/wissen/ratgeber/freiflaechen-pv-schweiz).",
         },
       ],
     },
@@ -164,7 +165,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Wer die Fläche bisher selbst bewirtschaftet, sollte nicht mit der Ackerpacht vergleichen, sondern mit dem **Deckungsbeitrag**: Im Ackerbau liegt er grob zwischen ${fmt(PACHT.deckungsbeitragAcker.min)} und ${fmt(PACHT.deckungsbeitragAcker.max)} € je Hektar und Jahr, stark abhängig von Kultur, Standort und Preisen. Hinzu kommen Direktzahlungen der GAP von grob ${eurHa(AGRI.direktzahlungProHa)}, die für Flächen unter einer klassischen Freiflächenanlage in der Regel entfallen – anders als bei [Agri-PV](/agri-pv), wo nach aktuellem Stand ${fmtPct(AGRI.gapFoerderfaehig, 0)} der Fläche förderfähig bleiben.`,
+          text: `Wer die Fläche bisher selbst bewirtschaftet, sollte nicht mit der Ackerpacht vergleichen, sondern mit dem **Deckungsbeitrag**: Im Ackerbau liegt er grob zwischen ${fmt(PACHT.deckungsbeitragAcker.min)} und ${fmt(PACHT.deckungsbeitragAcker.max)} € je Hektar und Jahr, stark abhängig von Kultur, Standort und Preisen. Hinzu kommen Direktzahlungen der GAP von grob ${eurHa(AGRI.direktzahlungProHa)}, die für Flächen unter einer klassischen Freiflächenanlage in der Regel entfallen – anders als bei [Agri-PV](/de/agri-pv), wo nach aktuellem Stand ${fmtPct(AGRI.gapFoerderfaehig, 0)} der Fläche förderfähig bleiben.`,
         },
         {
           typ: "kasten",
@@ -200,7 +201,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Die Netzfrage lässt sich überschlagen: Kostet die Anbindung eines 10-MW-Parks wegen einer 5 km langen Trasse mehrere Hunderttausend Euro mehr als bei einer Fläche direkt am [Netzverknüpfungspunkt](/wissen/lexikon#netzverknuepfungspunkt), fehlt dieses Geld über die Laufzeit in der Projektrechnung – und damit auch für die Pacht. Wie der Ausschreibungspreis zustande kommt, erklärt der Ratgeber [EEG-Ausschreibung für Freiflächen](/ratgeber/eeg-ausschreibung-freiflaeche).",
+          text: "Die Netzfrage lässt sich überschlagen: Kostet die Anbindung eines 10-MW-Parks wegen einer 5 km langen Trasse mehrere Hunderttausend Euro mehr als bei einer Fläche direkt am [Netzverknüpfungspunkt](/wissen/lexikon#netzverknuepfungspunkt), fehlt dieses Geld über die Laufzeit in der Projektrechnung – und damit auch für die Pacht. Wie der Ausschreibungspreis zustande kommt, erklärt der Ratgeber [EEG-Ausschreibung für Freiflächen](/wissen/ratgeber/eeg-ausschreibung-freiflaeche).",
         },
       ],
     },
@@ -263,13 +264,13 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Rechnung zeigt zweierlei: Eine Umsatzpacht von ${fmtPct(PACHT.umsatzbeteiligung.min, 0)} bis ${fmtPct(PACHT.umsatzbeteiligung.max, 0)} landet in derselben Größenordnung wie die Festpacht – sie ist also kein Geschenk, sondern eine andere Risikoverteilung. Und nach Ende der Förderung sinkt der Umsatzanteil, wenn die Marktpreise niedriger liegen. Wer die Umsatzvariante wählt, sollte deshalb auf einer Mindestpacht bestehen. Mit eigenen Werten rechnen Sie im [Pachtrechner](/rechner/pacht).`,
+          text: `Die Rechnung zeigt zweierlei: Eine Umsatzpacht von ${fmtPct(PACHT.umsatzbeteiligung.min, 0)} bis ${fmtPct(PACHT.umsatzbeteiligung.max, 0)} landet in derselben Größenordnung wie die Festpacht – sie ist also kein Geschenk, sondern eine andere Risikoverteilung. Und nach Ende der Förderung sinkt der Umsatzanteil, wenn die Marktpreise niedriger liegen. Wer die Umsatzvariante wählt, sollte deshalb auf einer Mindestpacht bestehen. Mit eigenen Werten rechnen Sie im [Pachtrechner](/de/rechner/pacht).`,
         },
         {
           typ: "kasten",
           variant: "wichtig",
           titel: "Steuern nicht vergessen",
-          text: "Die Pacht ist steuerpflichtiges Einkommen. Wichtiger ist in Deutschland oft die Frage, ob die Fläche ihren Status als land- und forstwirtschaftliches Vermögen verliert – mit Folgen für Erbschaft-, Schenkung- und Grundsteuer. Die Details erklärt der Ratgeber [Erbschaft- und Grundsteuer bei PV-Pacht](/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer). Lassen Sie das vor Vertragsunterzeichnung steuerlich prüfen.",
+          text: "Die Pacht ist steuerpflichtiges Einkommen. Wichtiger ist in Deutschland oft die Frage, ob die Fläche ihren Status als land- und forstwirtschaftliches Vermögen verliert – mit Folgen für Erbschaft-, Schenkung- und Grundsteuer. Die Details erklärt der Ratgeber [Erbschaft- und Grundsteuer bei PV-Pacht](/wissen/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer). Lassen Sie das vor Vertragsunterzeichnung steuerlich prüfen.",
         },
       ],
     },
@@ -290,7 +291,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Für Eigentümer ist die Kommunalbeteiligung trotzdem relevant: Sie erhöht die Akzeptanz in Gemeinderat und Nachbarschaft, und ohne Gemeinderat gibt es keinen Bebauungsplan. Wie Kommunen profitieren und was sie zusätzlich an Gewerbesteuer erhalten, zeigt die Seite für [Kommunen](/kommunen).",
+          text: "Für Eigentümer ist die Kommunalbeteiligung trotzdem relevant: Sie erhöht die Akzeptanz in Gemeinderat und Nachbarschaft, und ohne Gemeinderat gibt es keinen Bebauungsplan. Wie Kommunen profitieren und was sie zusätzlich an Gewerbesteuer erhalten, zeigt die Seite für [Kommunen](/de/kommunen).",
         },
       ],
     },
@@ -317,7 +318,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Worauf es in den einzelnen Klauseln ankommt, erklärt der Ratgeber [Pachtvertrag für Solarparks](/ratgeber/pachtvertrag-solarpark). Hintergrund zum Vorgehen aus Eigentümersicht finden Sie unter [Fläche verpachten](/flaeche-verpachten) und für landwirtschaftliche Betriebe unter [Landwirte](/landwirte).",
+          text: "Worauf es in den einzelnen Klauseln ankommt, erklärt der Ratgeber [Pachtvertrag für Solarparks](/wissen/ratgeber/pachtvertrag-solarpark). Hintergrund zum Vorgehen aus Eigentümersicht finden Sie unter [Fläche verpachten](/de/flaeche-verpachten) und für landwirtschaftliche Betriebe unter [Landwirte](/de/landwirte).",
         },
       ],
     },
@@ -329,8 +330,8 @@ const artikel = {
         {
           typ: "ablauf",
           schritte: [
-            ["Fläche einordnen", "Größe, Zuschnitt, Lage zu Autobahn oder Bahn, Entfernung zum nächsten Umspannwerk und Schutzgebiete notieren. Der [Flächencheck](/flaechencheck) hilft bei der ersten Einschätzung."],
-            ["Größenordnung rechnen", "Mit dem [Pachtrechner](/rechner/pacht) Fest- und Umsatzpacht über die Laufzeit vergleichen."],
+            ["Fläche einordnen", "Größe, Zuschnitt, Lage zu Autobahn oder Bahn, Entfernung zum nächsten Umspannwerk und Schutzgebiete notieren. Der [Flächencheck](/de/flaechencheck) hilft bei der ersten Einschätzung."],
+            ["Größenordnung rechnen", "Mit dem [Pachtrechner](/de/rechner/pacht) Fest- und Umsatzpacht über die Laufzeit vergleichen."],
             ["Mehrere Angebote einholen", "Nicht nur die Zahl je Hektar vergleichen, sondern Reservierungsentgelt, Rücktrittsrechte, Rückbausicherheit und Indexierung."],
             ["Steuer und Recht prüfen lassen", "Vertrag von Anwalt oder Notar, steuerliche Folgen von Steuerberatung prüfen lassen – vor der Unterschrift."],
             ["Gemeinde früh einbinden", "Ohne Bebauungsplan kein Solarpark. Ein frühes Gespräch mit Bürgermeister und Gemeinderat spart Zeit."],
@@ -343,7 +344,7 @@ const artikel = {
   faq: [
     {
       q: "Wie viel Pacht bekomme ich für 1 Hektar Solarpark?",
-      a: `Nach aktuellem Stand meist zwischen ${fmt(PACHT.freiflaecheProHa.min)} und ${fmt(PACHT.freiflaecheProHa.max)} € je Jahr, im Mittel um ${eurHa(PACHT.freiflaecheProHa.mittel)}. Die Höhe hängt vor allem vom Netzanschluss, der Förderkulisse und der Flächengröße ab. Eine erste Schätzung liefert der [Pachtrechner](/rechner/pacht).`,
+      a: `Nach aktuellem Stand meist zwischen ${fmt(PACHT.freiflaecheProHa.min)} und ${fmt(PACHT.freiflaecheProHa.max)} € je Jahr, im Mittel um ${eurHa(PACHT.freiflaecheProHa.mittel)}. Die Höhe hängt vor allem vom Netzanschluss, der Förderkulisse und der Flächengröße ab. Eine erste Schätzung liefert der [Pachtrechner](/de/rechner/pacht).`,
     },
     {
       q: "Ist eine Umsatzpacht besser als eine Festpacht?",
@@ -363,15 +364,15 @@ const artikel = {
     },
     {
       q: "Zahlen Solarparks in Österreich mehr Pacht als in Deutschland?",
-      a: `Die von Energieversorgern angebotenen Pachten lagen laut Landwirtschaftskammer Steiermark im Schnitt bei ${fmt(AT_PV_PACHT_ANGEBOTE.min)} bis ${fmt(AT_PV_PACHT_ANGEBOTE.max)} € je Hektar – also im oberen Bereich der deutschen Spanne. Der Engpass ist in Österreich oft die Widmung. Mehr dazu unter [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich).`,
+      a: `Die von Energieversorgern angebotenen Pachten lagen laut Landwirtschaftskammer Steiermark im Schnitt bei ${fmt(AT_PV_PACHT_ANGEBOTE.min)} bis ${fmt(AT_PV_PACHT_ANGEBOTE.max)} € je Hektar – also im oberen Bereich der deutschen Spanne. Der Engpass ist in Österreich oft die Widmung. Mehr dazu unter [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich).`,
     },
   ],
 
   passend: [
-    { href: "/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Die wichtigsten Klauseln und eine Checkliste für Eigentümer." },
-    { href: "/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer", titel: "Erbschaft- und Grundsteuer bei PV-Pacht", text: "Was die Verpachtung steuerlich auslösen kann." },
-    { href: "/rechner/pacht", titel: "Pachtrechner", text: "Fest- und Umsatzpacht über die Laufzeit berechnen." },
-    { href: "/flaeche-verpachten", titel: "Fläche verpachten", text: "Ablauf und Voraussetzungen für Flächeneigentümer." },
+    { href: "/wissen/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Die wichtigsten Klauseln und eine Checkliste für Eigentümer." },
+    { href: "/wissen/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer", titel: "Erbschaft- und Grundsteuer bei PV-Pacht", text: "Was die Verpachtung steuerlich auslösen kann." },
+    { href: pfad("/rechner/pacht"), titel: "Pachtrechner", text: "Fest- und Umsatzpacht über die Laufzeit berechnen." },
+    { href: pfad("/flaeche-verpachten"), titel: "Fläche verpachten", text: "Ablauf und Voraussetzungen für Flächeneigentümer." },
   ],
 
   quellen: [
@@ -387,14 +388,14 @@ const artikel = {
   seitenCta: {
     titel: "Was ist Ihre Fläche wert?",
     text: "Jahres- und Gesamtpacht mit Ihren Werten berechnen.",
-    href: "/rechner/pacht",
+    href: pfad("/rechner/pacht"),
     label: "Zum Pachtrechner",
   },
   cta: {
     title: "Lassen Sie Ihre Fläche kostenfrei einschätzen.",
     text: "Im Flächencheck prüfen wir Lage, Netzanschluss und Planungsrecht Ihrer Fläche. Für Flächeneigentümer ist die Plattform von ÖkoInvest kostenfrei.",
-    primary: { label: "Zum Flächencheck", href: "/flaechencheck" },
-    secondary: { label: "Pacht selbst berechnen", href: "/rechner/pacht" },
+    primary: { label: "Zum Flächencheck", href: pfad("/flaechencheck") },
+    secondary: { label: "Pacht selbst berechnen", href: pfad("/rechner/pacht") },
   },
 };
 

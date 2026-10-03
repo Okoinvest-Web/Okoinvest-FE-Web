@@ -1,6 +1,7 @@
 // Serverseitige Prüfung der Kampagnen-Zuordnung (siehe src/lib/herkunft.js).
+// Kanalliste zentral aus gruppe/kanal.js (Welle 2: inkl. „Gruppe“ und „Partner“), damit sie nicht auseinanderläuft.
 
-const KANAELE = ["Anzeige", "Social Media", "E-Mail", "Offline/QR", "Kampagne", "Suchmaschine", "KI-Assistent", "Verweis", "Direkt"];
+import { KANAELE } from "./gruppe/kanal.js";
 const VERBOTEN = new Set(["<", ">", '"', "'", "`"]);
 
 /** Steuerzeichen und HTML-relevante Zeichen entfernen, kürzen. */

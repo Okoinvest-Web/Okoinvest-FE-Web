@@ -8,6 +8,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
 import { TOOLS } from "@/components/Rechner/tools";
 import { cn } from "@/components/ui/cn";
+import { pfad } from "@/lib/land";
 
 const REIHENFOLGE = ["Eigentümer", "Landwirte", "Investoren", "Unternehmen", "Kommunen", "Bürger"];
 const MOBIL_START = 6;
@@ -71,7 +72,7 @@ export default function WerkzeugFinder() {
           })}
         </ul>
         <Link
-          href="/rechner"
+          href={pfad("/rechner")}
           className="group mt-6 hidden items-center gap-2 rounded-full text-[14.5px] font-semibold text-ov-700 hover:text-ov-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ov-500 lg:inline-flex"
         >
           Alle Rechner im Überblick
@@ -124,7 +125,7 @@ export default function WerkzeugFinder() {
           </button>
         )}
         <Link
-          href="/rechner"
+          href={pfad("/rechner")}
           className="group mt-5 inline-flex items-center gap-2 text-[15px] font-semibold text-ov-700 hover:text-ov-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ov-500 lg:hidden"
         >
           Alle Rechner im Überblick

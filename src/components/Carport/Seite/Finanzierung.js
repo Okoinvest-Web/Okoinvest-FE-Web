@@ -5,6 +5,7 @@ import Section from "@/components/ui/Section";
 import Reveal from "@/components/ui/Reveal";
 import Kopf from "@/components/Energie/Seite/Kopf";
 import { cn } from "@/components/ui/cn";
+import { pfad } from "@/lib/land";
 
 /** amortisation, invest, preisCt: formatierte Werte aus rechneCarport; jahre: Contracting-Laufzeit */
 export default function Finanzierung({ amortisation, invest, preisCt, jahre }) {
@@ -88,7 +89,7 @@ export default function Finanzierung({ amortisation, invest, preisCt, jahre }) {
       <Reveal className="mt-8 flex flex-col items-center gap-3 text-center">
         <p className="text-[13px] text-ink-500">Beispiel: 100 Stellplätze, 75 % Eigenverbrauch, 10 AC- und 2 DC-Ladepunkte</p>
         <Link
-          href="/rechner/solarcarport"
+          href={pfad("/rechner/solarcarport")}
           className="group inline-flex min-h-12 items-center gap-2 rounded-full bg-ov-50 px-5 py-3 text-[15px] font-semibold text-ov-800 ring-1 ring-ov-200 transition-colors hover:bg-ov-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500"
         >
           <Calculator aria-hidden="true" className="h-4 w-4" /> Mit Ihren Zahlen rechnen

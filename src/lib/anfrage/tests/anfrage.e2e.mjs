@@ -14,6 +14,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { WURZEL, lade, ladePlaywright, neuerKontext, serverErreichbar } from "../../../../qa/browser.mjs";
+import { pfad } from "../../land/index.js";
 
 const ZEIT = { timeout: 360_000 };
 const KONTAKT = { vorname: "Erika", nachname: "Paket-C-Test", email: "paketc.e2e@example.com" };
@@ -108,10 +109,10 @@ const demoDb = () => JSON.parse(readFileSync(path.join(WURZEL, ".data", "plattfo
 // ------------------------------------------------------------------------------------------- abgefangen
 
 for (const [land, plz] of [["AT", "5020"], ["CH", "8001"]]) {
-  test(`ABGEFANGEN /reststrom: PLZ ${plz} (${land}) wird angenommen, kontakt.land = ${land}`, ZEIT, async () => {
+  test(`ABGEFANGEN /de/reststrom: PLZ ${plz} (${land}) wird angenommen, kontakt.land = ${land}`, ZEIT, async () => {
     const { ctx, page, posts, fehler } = await sitzung();
     try {
-      await lade(page, "/reststrom");
+      await lade(page, pfad("/reststrom"));
       const form = anfrageForm(page);
       await ausfuellen(form, { land, plz });
       await absenden(form);
@@ -127,10 +128,10 @@ for (const [land, plz] of [["AT", "5020"], ["CH", "8001"]]) {
   });
 }
 
-test("ABGEFANGEN /kommunen: Länder-Chip Österreich → PLZ 4-stellig erlaubt, kontakt.land = AT, Rolle kommune", ZEIT, async () => {
+test("ABGEFANGEN /de/kommunen: Länder-Chip Österreich → PLZ 4-stellig erlaubt, kontakt.land = AT, Rolle kommune", ZEIT, async () => {
   const { ctx, page, posts } = await sitzung();
   try {
-    await lade(page, "/kommunen");
+    await lade(page, pfad("/kommunen"));
     const gemeinde = page.getByRole("textbox", { name: /^Gemeinde/ }).first();
     await hydriert(gemeinde);
     await page.locator("label", { hasText: /^Österreich$/ }).first().click();
@@ -183,10 +184,10 @@ test("ABGEFANGEN: kein vorbelegtes Häkchen; Telefon ohne Rückruf optional, mit
 
 // ------------------------------------------------------------------------------------------- Demo-POSTs
 
-test("DEMO-POST /regionen/salzburg: PLZ 5020 angenommen, Land AT und Bundesland Salzburg bleiben im Backend", ZEIT, async () => {
+test("DEMO-POST /at/regionen/salzburg: PLZ 5020 angenommen, Land AT und Bundesland Salzburg bleiben im Backend", ZEIT, async () => {
   const { ctx, page, posts, fehler } = await sitzung({ abfangen: false });
   try {
-    await lade(page, "/regionen/salzburg");
+    await lade(page, pfad("/regionen/salzburg"));
     const form = anfrageForm(page);
     assert.equal(await form.locator('select[name="land"]').count(), 0, "Land kommt aus dem Kontext – keine Auswahl nötig");
     await ausfuellen(form, { plz: "5020", telefon: "+43 662 000000", rueckruf: true });
@@ -211,10 +212,10 @@ test("DEMO-POST /regionen/salzburg: PLZ 5020 angenommen, Land AT und Bundesland 
   }
 });
 
-test("DEMO-POST /flaechencheck Schweiz, 12 ha: ha = 12, Land CH, plausibler Score, Begriff „Parzelle“", ZEIT, async () => {
+test("DEMO-POST /de/flaechencheck Schweiz, 12 ha: ha = 12, Land CH, plausibler Score, Begriff „Parzelle“", ZEIT, async () => {
   const { ctx, page, fehler } = await sitzung({ abfangen: false });
   try {
-    await lade(page, "/flaechencheck");
+    await lade(page, pfad("/flaechencheck"));
     const check = page.locator("#check");
     await hydriert(check);
     await check.locator('input[name="land"][value="CH"]').check({ force: true });

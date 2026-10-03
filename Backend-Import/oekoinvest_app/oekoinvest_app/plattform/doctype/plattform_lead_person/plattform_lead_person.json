@@ -1,0 +1,161 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-10-03 09:00:00.000000",
+ "description": "Personendaten einer Anfrage, getrennt vom Einwilligungsprotokoll (Welle 2, Paket B3). Löschbar nach Art. 17 (das Pseudonym bleibt im Protokoll). Gekürzte IP wird nach 30 Tagen gelöscht. Pflege nur über plattform/api/einwilligung.py.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "pseudonym",
+  "vorgang_id",
+  "land",
+  "cb_lead",
+  "ip_gekuerzt",
+  "ip_loeschen_ab",
+  "sec_person",
+  "vorname",
+  "nachname",
+  "firma",
+  "cb_person",
+  "email",
+  "telefon"
+ ],
+ "fields": [
+  {
+   "fieldname": "pseudonym",
+   "fieldtype": "Data",
+   "label": "Pseudonym",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "vorgang_id",
+   "fieldtype": "Link",
+   "label": "Vorgang",
+   "options": "Plattform Vorgang",
+   "read_only": 1,
+   "search_index": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "land",
+   "fieldtype": "Select",
+   "label": "Land",
+   "options": "DE\nAT\nCH\nunbekannt",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb_lead",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ip_gekuerzt",
+   "fieldtype": "Data",
+   "label": "IP (gekürzt)",
+   "read_only": 1,
+   "description": "IPv4 /24, IPv6 /48 – wird nach 30 Tagen gelöscht (Scheduler einwilligung.ip_aufraeumen_taeglich)."
+  },
+  {
+   "fieldname": "ip_loeschen_ab",
+   "fieldtype": "Datetime",
+   "label": "IP löschen ab",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_person",
+   "fieldtype": "Section Break",
+   "label": "Personendaten (Art. 17: löschbar)"
+  },
+  {
+   "fieldname": "vorname",
+   "fieldtype": "Data",
+   "label": "Vorname",
+   "read_only": 1
+  },
+  {
+   "fieldname": "nachname",
+   "fieldtype": "Data",
+   "label": "Nachname",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "firma",
+   "fieldtype": "Data",
+   "label": "Firma",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_person",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "E-Mail",
+   "read_only": 1
+  },
+  {
+   "fieldname": "telefon",
+   "fieldtype": "Data",
+   "label": "Telefon",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "issingle": 0,
+ "links": [],
+ "modified": "2026-10-03 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Lead Person",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 0,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Compliance",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "title_field": "nachname",
+ "search_fields": "vorgang_id"
+}

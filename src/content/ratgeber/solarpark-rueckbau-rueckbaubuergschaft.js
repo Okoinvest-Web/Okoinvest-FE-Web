@@ -6,6 +6,7 @@
 
 import { FREIFLAECHE, PACHT, STAND } from "@/lib/invest/markt";
 import { fmt, fmtEur, fmtPct } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag zur Übernahme */
 // ElektroG § 22 Abs. 1 Nr. 1 (Kategorie 4, Großgeräte – dazu zählen PV-Module):
@@ -76,7 +77,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Pflicht allein nützt wenig, wenn beim Betreiber nach ${JAHRE} Jahren kein Geld mehr da ist. Entscheidend ist deshalb die **Sicherheit**: eine Bürgschaft oder ein vergleichbares Instrument, auf das Behörde, Gemeinde oder Eigentümer notfalls zugreifen können. Die Grundzüge der Rückbauklausel im Pachtvertrag erklärt der Ratgeber [Pachtvertrag für Solarparks](/ratgeber/pachtvertrag-solarpark). Hier geht es um die Details: Höhe, Form, Anpassung, Insolvenz, Kosten und Recycling.`,
+          text: `Die Pflicht allein nützt wenig, wenn beim Betreiber nach ${JAHRE} Jahren kein Geld mehr da ist. Entscheidend ist deshalb die **Sicherheit**: eine Bürgschaft oder ein vergleichbares Instrument, auf das Behörde, Gemeinde oder Eigentümer notfalls zugreifen können. Die Grundzüge der Rückbauklausel im Pachtvertrag erklärt der Ratgeber [Pachtvertrag für Solarparks](/wissen/ratgeber/pachtvertrag-solarpark). Hier geht es um die Details: Höhe, Form, Anpassung, Insolvenz, Kosten und Recycling.`,
         },
         {
           typ: "kennzahl",
@@ -135,7 +136,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Für Vorhaben nach § 35 Abs. 1 Nr. 8 b und Nr. 9 BauGB ist eine Verpflichtungserklärung abzugeben, das Vorhaben nach dauerhafter Aufgabe der Nutzung zurückzubauen und Bodenversiegelungen zu beseitigen. Die Baugenehmigungsbehörde soll die Einhaltung durch eine nach Landesrecht vorgesehene [Baulast](/wissen/lexikon#baulast) oder in anderer Weise sicherstellen. In der Praxis verlangen viele Behörden dafür eine Bürgschaft; Bayern etwa kennt keine Baulast, dort ist die Bürgschaft der übliche Weg. Mehr zur [Privilegierung im Außenbereich](/wissen/lexikon#privilegierung-aussenbereich) und zum Korridor an Verkehrswegen im Ratgeber [Solarpark an Autobahn und Bahn](/ratgeber/solarpark-autobahn-bahn-privilegierung).",
+          text: "Für Vorhaben nach § 35 Abs. 1 Nr. 8 b und Nr. 9 BauGB ist eine Verpflichtungserklärung abzugeben, das Vorhaben nach dauerhafter Aufgabe der Nutzung zurückzubauen und Bodenversiegelungen zu beseitigen. Die Baugenehmigungsbehörde soll die Einhaltung durch eine nach Landesrecht vorgesehene [Baulast](/wissen/lexikon#baulast) oder in anderer Weise sicherstellen. In der Praxis verlangen viele Behörden dafür eine Bürgschaft; Bayern etwa kennt keine Baulast, dort ist die Bürgschaft der übliche Weg. Mehr zur [Privilegierung im Außenbereich](/wissen/lexikon#privilegierung-aussenbereich) und zum Korridor an Verkehrswegen im Ratgeber [Solarpark an Autobahn und Bahn](/wissen/ratgeber/solarpark-autobahn-bahn-privilegierung).",
         },
         {
           typ: "h3",
@@ -143,7 +144,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Beim [Bebauungsplan](/wissen/lexikon#bebauungsplan) gilt § 35 Abs. 5 BauGB nicht unmittelbar. Gemeinden sichern den Rückbau deshalb im städtebaulichen Vertrag ab, oft kombiniert mit einer befristeten Festsetzung und der Folgenutzung Landwirtschaft. Die Arbeitshilfe der niedersächsischen Kommunalverbände empfiehlt ausdrücklich, dass kommunale Kriterienkataloge auch Anforderungen an den Rückbau einschließlich der Stellung einer Rückbausicherheit enthalten. Wie das Verfahren insgesamt abläuft, zeigt der Ratgeber [Genehmigung und Bebauungsplan](/ratgeber/solarpark-genehmigung-bebauungsplan).",
+          text: "Beim [Bebauungsplan](/wissen/lexikon#bebauungsplan) gilt § 35 Abs. 5 BauGB nicht unmittelbar. Gemeinden sichern den Rückbau deshalb im städtebaulichen Vertrag ab, oft kombiniert mit einer befristeten Festsetzung und der Folgenutzung Landwirtschaft. Die Arbeitshilfe der niedersächsischen Kommunalverbände empfiehlt ausdrücklich, dass kommunale Kriterienkataloge auch Anforderungen an den Rückbau einschließlich der Stellung einer Rückbausicherheit enthalten. Wie das Verfahren insgesamt abläuft, zeigt der Ratgeber [Genehmigung und Bebauungsplan](/wissen/ratgeber/solarpark-genehmigung-bebauungsplan).",
         },
       ],
     },
@@ -180,11 +181,11 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Tabelle zeigt das Kernproblem: Eine feste Bürgschaft über ${fmtEur(RUECKBAU_HEUTE)} deckt nach ${JAHRE} Jahren nur noch gut die Hälfte des Bedarfs. Üblich sind deshalb zwei Wege: eine **Indexierung** am Baupreisindex des Statistischen Bundesamts oder eine **Neubewertung** etwa alle ${ANPASSUNG_JAHRE} Jahre durch ein Gutachten, verbunden mit der Pflicht, die Bürgschaft aufzustocken. Welche Rückbaukosten in die Wirtschaftlichkeit eines Parks einfließen, sehen Sie im [Solarpark-Rechner](/rechner/solarpark).`,
+          text: `Die Tabelle zeigt das Kernproblem: Eine feste Bürgschaft über ${fmtEur(RUECKBAU_HEUTE)} deckt nach ${JAHRE} Jahren nur noch gut die Hälfte des Bedarfs. Üblich sind deshalb zwei Wege: eine **Indexierung** am Baupreisindex des Statistischen Bundesamts oder eine **Neubewertung** etwa alle ${ANPASSUNG_JAHRE} Jahre durch ein Gutachten, verbunden mit der Pflicht, die Bürgschaft aufzustocken. Welche Rückbaukosten in die Wirtschaftlichkeit eines Parks einfließen, sehen Sie im [Solarpark-Rechner](/de/rechner/solarpark).`,
         },
         {
           typ: "tool",
-          href: "/rechner/solarpark",
+          href: pfad("/rechner/solarpark"),
           titel: "Rückbau in der Projektrechnung",
           text: "Der Solarpark-Rechner berücksichtigt Errichtung, Betrieb, Pacht und Rückbau-Rücklage über die Laufzeit.",
           label: "Zum Solarpark-Rechner",
@@ -228,7 +229,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Beim Kauf von Bestandsanlagen gehört die Rückbausicherheit in jede Prüfung: Wer eine Projektgesellschaft übernimmt, übernimmt auch die Rückbaupflicht. Worauf Käufer achten, erklären die Ratgeber [Projektrechte kaufen](/ratgeber/projektrechte-kaufen-due-diligence) und [Wert einer Bestandsanlage](/ratgeber/solarpark-bestandsanlage-wert).",
+          text: "Beim Kauf von Bestandsanlagen gehört die Rückbausicherheit in jede Prüfung: Wer eine Projektgesellschaft übernimmt, übernimmt auch die Rückbaupflicht. Worauf Käufer achten, erklären die Ratgeber [Projektrechte kaufen](/wissen/ratgeber/projektrechte-kaufen-due-diligence) und [Wert einer Bestandsanlage](/wissen/ratgeber/solarpark-bestandsanlage-wert).",
         },
       ],
     },
@@ -253,7 +254,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Absichern lässt sich zusätzlich über das Grundbuch: Die [Dienstbarkeit](/wissen/lexikon#dienstbarkeit) für den Betreiber sollte eine Löschungspflicht nach Rückbau vorsehen, und die Rückbaupflicht sollte gegenüber Rechtsnachfolgern fortgelten. Details im Ratgeber [Dienstbarkeit im Grundbuch](/ratgeber/dienstbarkeit-grundbuch-pv-pacht).",
+          text: "Absichern lässt sich zusätzlich über das Grundbuch: Die [Dienstbarkeit](/wissen/lexikon#dienstbarkeit) für den Betreiber sollte eine Löschungspflicht nach Rückbau vorsehen, und die Rückbaupflicht sollte gegenüber Rechtsnachfolgern fortgelten. Details im Ratgeber [Dienstbarkeit im Grundbuch](/wissen/ratgeber/dienstbarkeit-grundbuch-pv-pacht).",
         },
       ],
     },
@@ -288,7 +289,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Nicht jeder Rückbau ist ein Ende: Häufig wird ein Park nach 25 bis 30 Jahren mit neuen Modulen weiterbetrieben. Dann entfällt der Rückbau zunächst, die Rückbaupflicht wandert mit. Mehr dazu im Ratgeber [Repowering von Solarparks](/ratgeber/repowering-solarpark).",
+          text: "Nicht jeder Rückbau ist ein Ende: Häufig wird ein Park nach 25 bis 30 Jahren mit neuen Modulen weiterbetrieben. Dann entfällt der Rückbau zunächst, die Rückbaupflicht wandert mit. Mehr dazu im Ratgeber [Repowering von Solarparks](/wissen/ratgeber/repowering-solarpark).",
         },
       ],
     },
@@ -318,7 +319,7 @@ const artikel = {
           typ: "kasten",
           variant: "info",
           titel: "Bruch und Hagelschaden",
-          text: "Beschädigte Module sollten nicht unter freiem Himmel gelagert werden, weil aus Bruchstellen Stoffe ausgewaschen werden können. Sammeln, abdecken und zeitnah an ein zertifiziertes Rücknahmesystem übergeben. Wie Schäden während der Laufzeit abgesichert werden, erklärt der Ratgeber [Solarpark-Versicherung](/ratgeber/solarpark-versicherung).",
+          text: "Beschädigte Module sollten nicht unter freiem Himmel gelagert werden, weil aus Bruchstellen Stoffe ausgewaschen werden können. Sammeln, abdecken und zeitnah an ein zertifiziertes Rücknahmesystem übergeben. Wie Schäden während der Laufzeit abgesichert werden, erklärt der Ratgeber [Solarpark-Versicherung](/wissen/ratgeber/solarpark-versicherung).",
         },
       ],
     },
@@ -337,11 +338,11 @@ const artikel = {
           items: [
             {
               titel: "Österreich",
-              text: "Freiflächenanlagen brauchen je nach Bundesland eine Widmung als Grünland-Photovoltaik oder eine Vorrangzone. Rückbau- und Wiederherstellungspflichten ergeben sich aus Raumordnungs-, Bau- und Elektrizitätsrecht der Länder sowie aus dem Pachtvertrag; teils verlangen Behörden Sicherheitsleistungen. Module fallen unter die Elektroaltgeräteverordnung. Einstieg im Ratgeber [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich).",
+              text: "Freiflächenanlagen brauchen je nach Bundesland eine Widmung als Grünland-Photovoltaik oder eine Vorrangzone. Rückbau- und Wiederherstellungspflichten ergeben sich aus Raumordnungs-, Bau- und Elektrizitätsrecht der Länder sowie aus dem Pachtvertrag; teils verlangen Behörden Sicherheitsleistungen. Module fallen unter die Elektroaltgeräteverordnung. Einstieg im Ratgeber [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich).",
             },
             {
               titel: "Schweiz",
-              text: "Für Photovoltaik-Großanlagen nach Art. 71a EnG (Solarexpress) schreibt das Gesetz vor, dass die Anlagen bei endgültiger Ausserbetriebnahme vollständig zurückzubauen sind und die Ausgangslage wiederherzustellen ist. Im Übrigen regeln Kantone und Bewilligungen die Details. Mehr im Ratgeber [Freiflächen-PV in der Schweiz](/ratgeber/freiflaechen-pv-schweiz).",
+              text: "Für Photovoltaik-Großanlagen nach Art. 71a EnG (Solarexpress) schreibt das Gesetz vor, dass die Anlagen bei endgültiger Ausserbetriebnahme vollständig zurückzubauen sind und die Ausgangslage wiederherzustellen ist. Im Übrigen regeln Kantone und Bewilligungen die Details. Mehr im Ratgeber [Freiflächen-PV in der Schweiz](/wissen/ratgeber/freiflaechen-pv-schweiz).",
             },
           ],
         },
@@ -369,7 +370,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Pacht läuft in der Regel ${PACHT.laufzeit} Jahre plus Verlängerungsoptionen (${PACHT.verlaengerung}); die Sicherheit muss diesen gesamten Zeitraum und die Rückbauphase abdecken. Hintergrund zum Vorgehen als Eigentümer finden Sie unter [Fläche verpachten](/flaeche-verpachten), für Gemeinden unter [Kommunen](/kommunen).`,
+          text: `Die Pacht läuft in der Regel ${PACHT.laufzeit} Jahre plus Verlängerungsoptionen (${PACHT.verlaengerung}); die Sicherheit muss diesen gesamten Zeitraum und die Rückbauphase abdecken. Hintergrund zum Vorgehen als Eigentümer finden Sie unter [Fläche verpachten](/de/flaeche-verpachten), für Gemeinden unter [Kommunen](/de/kommunen).`,
         },
       ],
     },
@@ -398,15 +399,15 @@ const artikel = {
     },
     {
       q: "Gilt die Rückbaupflicht auch für Anlagen mit Bebauungsplan?",
-      a: "§ 35 Abs. 5 BauGB gilt nur für privilegierte Vorhaben im Außenbereich. Bei Bebauungsplänen regeln Gemeinden den Rückbau in der Regel im städtebaulichen Vertrag, oft mit Bürgschaft. Unabhängig davon brauchen Eigentümer eine eigene Regel im [Pachtvertrag](/ratgeber/pachtvertrag-solarpark).",
+      a: "§ 35 Abs. 5 BauGB gilt nur für privilegierte Vorhaben im Außenbereich. Bei Bebauungsplänen regeln Gemeinden den Rückbau in der Regel im städtebaulichen Vertrag, oft mit Bürgschaft. Unabhängig davon brauchen Eigentümer eine eigene Regel im [Pachtvertrag](/wissen/ratgeber/pachtvertrag-solarpark).",
     },
   ],
 
   passend: [
-    { href: "/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Alle wichtigen Klauseln und eine Checkliste für Eigentümer." },
-    { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Genehmigung und Bebauungsplan", text: "Vom Aufstellungsbeschluss zum städtebaulichen Vertrag." },
-    { href: "/ratgeber/repowering-solarpark", titel: "Repowering von Solarparks", text: "Weiterbetrieb mit neuen Modulen statt Rückbau." },
-    { href: "/flaeche-verpachten", titel: "Fläche verpachten", text: "Ablauf und Voraussetzungen für Flächeneigentümer." },
+    { href: "/wissen/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Alle wichtigen Klauseln und eine Checkliste für Eigentümer." },
+    { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Genehmigung und Bebauungsplan", text: "Vom Aufstellungsbeschluss zum städtebaulichen Vertrag." },
+    { href: "/wissen/ratgeber/repowering-solarpark", titel: "Repowering von Solarparks", text: "Weiterbetrieb mit neuen Modulen statt Rückbau." },
+    { href: pfad("/flaeche-verpachten"), titel: "Fläche verpachten", text: "Ablauf und Voraussetzungen für Flächeneigentümer." },
   ],
 
   quellen: [
@@ -422,14 +423,14 @@ const artikel = {
   seitenCta: {
     titel: "Rückbau in der Projektrechnung",
     text: "Errichtung, Betrieb, Pacht und Rückbau über die Laufzeit rechnen.",
-    href: "/rechner/solarpark",
+    href: pfad("/rechner/solarpark"),
     label: "Zum Solarpark-Rechner",
   },
   cta: {
     title: "Lassen Sie Ihre Fläche und Ihr Vertragsangebot einordnen.",
     text: "Im Flächencheck prüfen wir Lage, Netzanschluss und Planungsrecht Ihrer Fläche. Für Flächeneigentümer ist die Plattform von ÖkoInvest kostenfrei.",
-    primary: { label: "Zum Flächencheck", href: "/flaechencheck" },
-    secondary: { label: "Pachtvertrag verstehen", href: "/ratgeber/pachtvertrag-solarpark" },
+    primary: { label: "Zum Flächencheck", href: pfad("/flaechencheck") },
+    secondary: { label: "Pachtvertrag verstehen", href: "/wissen/ratgeber/pachtvertrag-solarpark" },
   },
 };
 

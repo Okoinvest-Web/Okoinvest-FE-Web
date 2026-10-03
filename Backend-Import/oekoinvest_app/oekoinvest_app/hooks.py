@@ -215,6 +215,8 @@ scheduler_events = {
 		"oekoinvest_app.plattform.api.akquise_kampagne.nachfassen_taeglich",  # Akquise A1b: Nachfassstufen der Kampagnen (Aufgaben)
 		"oekoinvest_app.plattform.api.querschnitt.digest_taeglich",  # Querschnitt: Tages-Digest der Benachrichtigungen (E-Mail ohne Inhalte)
 		"oekoinvest_app.plattform.api.frist_erinnerung.erinnerungen_taeglich",
+		"oekoinvest_app.plattform.api.einwilligung.ip_aufraeumen_taeglich",  # Welle 2, Paket B3: gekürzte IPs der Lead-Personen nach 30 Tagen löschen
+		"oekoinvest_app.plattform.api.bericht.aufraeumen_taeglich",  # Welle 2, Paket B4: unbestätigte Berichtsanforderungen (48 h) und abgelaufene Berichtslinks aufräumen
 		"oekoinvest_app.plattform.eg_eda_jobs.taeglich",  # Energiegemeinschaften WP2: EDA-Fristen (30 Tage Zustimmung), Erinnerungen  # Integration: Fristerinnerungen Pachtakte, Genossenschaft (Einzahlung), Gemeinde (Stellungnahme)
 	],
 	# Deal-Room: Erinnerung 48 h vor Ende einer Angebotsfrist

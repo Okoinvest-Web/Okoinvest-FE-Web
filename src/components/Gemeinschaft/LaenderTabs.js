@@ -6,8 +6,9 @@ import { cn } from "@/components/ui/cn";
 import { LAENDER } from "./laender";
 
 /** Länder-Tabs mit Details: So funktioniert es, Grenzen, Rolle von ÖkoInvest. */
-export default function LaenderTabs() {
-  const [aktiv, setAktiv] = useState("de");
+/** start: zuerst geöffnetes Land ("de" | "at" | "ch") – auf /at/energiegemeinschaften Österreich (Welle 2). */
+export default function LaenderTabs({ start = "de" }) {
+  const [aktiv, setAktiv] = useState(start);
   const basis = useId();
   const refs = useRef({});
   const land = LAENDER.find((l) => l.id === aktiv);
@@ -48,7 +49,7 @@ export default function LaenderTabs() {
                 an ? "bg-navy-950 text-white shadow-e2" : "text-ink-600 hover:bg-white hover:text-ink-900"
               )}
             >
-              <span className={cn("text-[12px] font-bold", an ? "text-ov-300" : "text-ink-400")}>{l.kurz}</span>
+              <span className={cn("text-[12px] font-bold", an ? "text-ov-300" : "text-ink-500")}>{l.kurz}</span>
               <span className="hidden sm:inline">{l.name}</span>
             </button>
           );

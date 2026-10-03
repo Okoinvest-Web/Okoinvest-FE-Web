@@ -9,7 +9,7 @@
 
 import { INHALTE } from "@/content/ratgeber";
 
-export const RATGEBER_BASE = "/ratgeber";
+export const RATGEBER_BASE = "/wissen/ratgeber";
 
 // Feste Themenbereiche – für Filter auf der Übersicht und thematische Cluster.
 export const KATEGORIEN = [

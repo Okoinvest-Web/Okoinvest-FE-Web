@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Calculator, FileCheck2, Handshake, LayoutDashboard, Receipt, Sun } from "lucide-react";
 import { Eyebrow } from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
+import { pfad } from "@/lib/land";
 
 const WEGE = [
   { icon: Sun, title: "Mit Parkstrom versorgen", text: "Wir bringen Strom aus Solarparks der Gruppe im zulässigen Nahebereich in bestehende oder neue Gemeinschaften ein – mit fairem, planbarem Preis." },
@@ -12,8 +13,8 @@ const WEGE = [
 ];
 
 const WERKZEUGE = [
-  { href: "/energiegemeinschaften/rechner", icon: Calculator, eyebrow: "Österreich · Rechner", titel: "Was bringt mir eine Energiegemeinschaft?", text: "Ersparnis aus Energiepreis, reduziertem Netzentgelt und Abgabe – für EEG, BEG und GEA, mit den Regeln 2026 und ab 2027." },
-  { href: "/energiegemeinschaften/software", icon: LayoutDashboard, eyebrow: "Österreich · Plattform & Betrieb", titel: "Gemeinschaften gründen, führen und betreiben", text: "Mitgliederportal mit geführter Zustimmung beim Netzbetreiber, Mehrfachteilnahme, Abrechnung und Betriebsführung." },
+  { href: pfad("/energiegemeinschaften/rechner"), icon: Calculator, eyebrow: "Österreich · Rechner", titel: "Was bringt mir eine Energiegemeinschaft?", text: "Ersparnis aus Energiepreis, reduziertem Netzentgelt und Abgabe – für EEG, BEG und GEA, mit den Regeln 2026 und ab 2027." },
+  { href: pfad("/energiegemeinschaften/software"), icon: LayoutDashboard, eyebrow: "Österreich · Plattform & Betrieb", titel: "Gemeinschaften gründen, führen und betreiben", text: "Mitgliederportal mit geführter Zustimmung beim Netzbetreiber, Mehrfachteilnahme, Abrechnung und Betriebsführung." },
 ];
 
 export default function Rolle() {
@@ -54,7 +55,7 @@ export default function Rolle() {
           </span>
           <p className="text-[15.5px] leading-relaxed text-white/75">
             <strong className="text-white">Gemeinschaft plus Genossenschaft:</strong> Gerade in Deutschland setzt Energy Sharing voraus, dass die Anlage den Teilnehmenden zugeordnet ist. Eine Beteiligung über die geplante{" "}
-            <Link href="/genossenschaft" className="rounded font-semibold text-white underline decoration-ov-300/70 underline-offset-4 hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">Energiegenossenschaft</Link> kann das ermöglichen – Mitglieder werden Miteigentümer und nutzen den Strom gemeinsam.
+            <Link href={pfad("/genossenschaft")} className="rounded font-semibold text-white underline decoration-ov-300/70 underline-offset-4 hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">Energiegenossenschaft</Link> kann das ermöglichen – Mitglieder werden Miteigentümer und nutzen den Strom gemeinsam.
           </p>
         </Reveal>
 

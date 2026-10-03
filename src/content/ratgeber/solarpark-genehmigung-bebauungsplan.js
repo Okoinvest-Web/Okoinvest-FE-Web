@@ -4,6 +4,7 @@
 
 import { PHASEN, phaseById, FREIFLAECHE, KOMMUNE, AGRI, BAUART, regionById } from "@/lib/invest/markt";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 // Gesetzliche Eckwerte (BauGB, Stand 09/2026 geprüft)
 const PRIV_KORRIDOR_M = 200; // § 35 Abs. 1 Nr. 8 b BauGB
@@ -72,7 +73,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Für Flächeneigentümer heißt das: Ein [Pachtvertrag](/ratgeber/pachtvertrag-solarpark) sichert die Fläche, aber noch kein Baurecht. Erst mit dem Satzungsbeschluss steigt der Wert eines Projekts deutlich – das zeigt sich auch in den Preisen, die auf der [Projektbörse](/projektboerse) je Entwicklungsphase gezahlt werden.`,
+          text: `Für Flächeneigentümer heißt das: Ein [Pachtvertrag](/wissen/ratgeber/pachtvertrag-solarpark) sichert die Fläche, aber noch kein Baurecht. Erst mit dem Satzungsbeschluss steigt der Wert eines Projekts deutlich – das zeigt sich auch in den Preisen, die auf der [Projektbörse](/projektboerse) je Entwicklungsphase gezahlt werden.`,
         },
         {
           typ: "kennzahl",
@@ -113,7 +114,7 @@ const artikel = {
         { typ: "h3", text: "Aufstellungsbeschluss: der erste formale Meilenstein" },
         {
           typ: "p",
-          text: "Mit dem [Aufstellungsbeschluss](/wissen/lexikon#aufstellungsbeschluss) signalisiert die Gemeinde, dass sie das Projekt grundsätzlich planen will. Er ist auch für die Förderung wichtig: Ein Gebot in der [EEG-Ausschreibung](/ratgeber/eeg-ausschreibung-freiflaeche) für Freiflächenanlagen setzt nach Angaben der Bundesnetzagentur mindestens einen Aufstellungsbeschluss voraus. Liegt bereits ein beschlossener B-Plan vor, halbiert sich zudem die zu hinterlegende Sicherheit.",
+          text: "Mit dem [Aufstellungsbeschluss](/wissen/lexikon#aufstellungsbeschluss) signalisiert die Gemeinde, dass sie das Projekt grundsätzlich planen will. Er ist auch für die Förderung wichtig: Ein Gebot in der [EEG-Ausschreibung](/wissen/ratgeber/eeg-ausschreibung-freiflaeche) für Freiflächenanlagen setzt nach Angaben der Bundesnetzagentur mindestens einen Aufstellungsbeschluss voraus. Liegt bereits ein beschlossener B-Plan vor, halbiert sich zudem die zu hinterlegende Sicherheit.",
         },
         { typ: "h3", text: "Frühzeitige Beteiligung und Umweltbericht" },
         {
@@ -178,7 +179,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Auch im Korridor wählen viele Gemeinden und Projektierer bewusst einen Bebauungsplan: Er schafft Rechtssicherheit gegenüber Nachbarn, regelt Ausgleich und Eingrünung verbindlich und erleichtert die Finanzierung. Für hofnahe [Agri-PV](/agri-pv) nach DIN SPEC 91434 ist die Privilegierung dagegen oft der schnellere Weg – mehr dazu im Ratgeber [DIN SPEC 91434](/ratgeber/agri-pv-din-spec-91434).",
+          text: "Auch im Korridor wählen viele Gemeinden und Projektierer bewusst einen Bebauungsplan: Er schafft Rechtssicherheit gegenüber Nachbarn, regelt Ausgleich und Eingrünung verbindlich und erleichtert die Finanzierung. Für hofnahe [Agri-PV](/de/agri-pv) nach DIN SPEC 91434 ist die Privilegierung dagegen oft der schnellere Weg – mehr dazu im Ratgeber [DIN SPEC 91434](/wissen/ratgeber/agri-pv-din-spec-91434).",
         },
       ],
     },
@@ -206,7 +207,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Davon zu trennen ist die **Kommunalbeteiligung nach § 6 EEG**: Betreiber dürfen der Gemeinde bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je eingespeister Kilowattstunde zahlen. Bei einem 10-MWp-Park in Süddeutschland mit rund ${fmt(REGION.ertrag)} kWh/kWp wären das etwa **${fmtEur(KOMMUNAL_EUR)} pro Jahr**. Hinzu kommt die Gewerbesteuer, die bei Solaranlagen zu ${fmt(KOMMUNE.gewerbesteuerStandort * 100)} % der Standortgemeinde zusteht. Wie Gemeinden profitieren, zeigt die Seite für [Kommunen](/kommunen) und der [Kommunal-Rechner](/rechner/kommune).`,
+          text: `Davon zu trennen ist die **Kommunalbeteiligung nach § 6 EEG**: Betreiber dürfen der Gemeinde bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je eingespeister Kilowattstunde zahlen. Bei einem 10-MWp-Park in Süddeutschland mit rund ${fmt(REGION.ertrag)} kWh/kWp wären das etwa **${fmtEur(KOMMUNAL_EUR)} pro Jahr**. Hinzu kommt die Gewerbesteuer, die bei Solaranlagen zu ${fmt(KOMMUNE.gewerbesteuerStandort * 100)} % der Standortgemeinde zusteht. Wie Gemeinden profitieren, zeigt die Seite für [Kommunen](/de/kommunen) und der [Kommunal-Rechner](/de/rechner/kommune).`,
         },
       ],
     },
@@ -235,11 +236,11 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Die Tabelle zeigt, warum der Satzungsbeschluss ein so wichtiger Meilenstein ist: Mit Baurecht sinkt das Risiko deutlich, und der Wert der [Projektrechte](/wissen/lexikon#projektrechte) steigt. Wer ein Projekt vor der Baureife verkaufen oder zukaufen will, sollte die Verfahrensakte genau prüfen – worauf es ankommt, beschreibt der Ratgeber [Projektrechte kaufen: Due Diligence](/ratgeber/projektrechte-kaufen-due-diligence).",
+          text: "Die Tabelle zeigt, warum der Satzungsbeschluss ein so wichtiger Meilenstein ist: Mit Baurecht sinkt das Risiko deutlich, und der Wert der [Projektrechte](/wissen/lexikon#projektrechte) steigt. Wer ein Projekt vor der Baureife verkaufen oder zukaufen will, sollte die Verfahrensakte genau prüfen – worauf es ankommt, beschreibt der Ratgeber [Projektrechte kaufen: Due Diligence](/wissen/ratgeber/projektrechte-kaufen-due-diligence).",
         },
         {
           typ: "tool",
-          href: "/rechner/projektbewertung",
+          href: pfad("/rechner/projektbewertung"),
           titel: "Was ist Ihr Projekt in der jeweiligen Phase wert?",
           text: "Leistung, Entwicklungsstand und Netzsituation eingeben – der Rechner zeigt eine Wertspanne je kWp.",
           label: "Zur Projektbewertung",
@@ -268,7 +269,7 @@ const artikel = {
           typ: "kasten",
           variant: "info",
           titel: "Österreich und Schweiz funktionieren anders",
-          text: "In Österreich entscheidet die Flächenwidmung „Grünland-Photovoltaik“ nach Landesraumordnungsrecht, dazu kommen je nach Größe elektrizitäts- und naturschutzrechtliche Bewilligungen; einen eigenen UVP-Tatbestand für Photovoltaik kennt das UVP-G nicht – siehe [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich). In der Schweiz sind Freiflächenanlagen außerhalb der Bauzonen nur eng begrenzt möglich; mehr unter [Freiflächen-PV in der Schweiz](/ratgeber/freiflaechen-pv-schweiz).",
+          text: "In Österreich entscheidet die Flächenwidmung „Grünland-Photovoltaik“ nach Landesraumordnungsrecht, dazu kommen je nach Größe elektrizitäts- und naturschutzrechtliche Bewilligungen; einen eigenen UVP-Tatbestand für Photovoltaik kennt das UVP-G nicht – siehe [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich). In der Schweiz sind Freiflächenanlagen außerhalb der Bauzonen nur eng begrenzt möglich; mehr unter [Freiflächen-PV in der Schweiz](/wissen/ratgeber/freiflaechen-pv-schweiz).",
         },
       ],
     },
@@ -280,7 +281,7 @@ const artikel = {
         {
           typ: "ablauf",
           schritte: [
-            ["Fläche vorprüfen", "Größe, Zuschnitt, Bodengüte, Schutzgebiete, Abstand zu Autobahn/Bahn und Netz. Eine erste Einschätzung liefert der [Flächencheck](/flaechencheck)."],
+            ["Fläche vorprüfen", "Größe, Zuschnitt, Bodengüte, Schutzgebiete, Abstand zu Autobahn/Bahn und Netz. Eine erste Einschätzung liefert der [Flächencheck](/de/flaechencheck)."],
             ["Netz und Raumordnung klären", "Netzanfrage beim Netzbetreiber stellen und den Regionalplan auf Vorrang- oder Ausschlussgebiete prüfen."],
             ["Gemeinde früh einbinden", "Projekt im Rathaus vorstellen, Beteiligungsmodell und Kommunalbeteiligung skizzieren, städtebaulichen Vertrag vorbereiten."],
             ["Aufstellungsbeschluss und Kartierung", "Aufstellungsbeschluss erwirken und die Artenschutzkartierung saisonal passend starten."],
@@ -290,7 +291,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Wie ÖkoInvest Projekte entlang dieser Schritte entwickelt und wann Flächeneigentümer welche Entscheidungen treffen, zeigt die Seite zum [Projektablauf](/prozess). Wer seine Fläche lieber verpachtet, findet unter [Fläche verpachten](/flaeche-verpachten) den Einstieg.",
+          text: "Wie ÖkoInvest Projekte entlang dieser Schritte entwickelt und wann Flächeneigentümer welche Entscheidungen treffen, zeigt die Seite zum [Projektablauf](/de/prozess). Wer seine Fläche lieber verpachtet, findet unter [Fläche verpachten](/de/flaeche-verpachten) den Einstieg.",
         },
       ],
     },
@@ -324,12 +325,12 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Gebotstermine, Zuschlagswerte und Sicherheiten." },
-    { href: "/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Welche Klauseln Flächeneigentümer kennen sollten." },
-    { href: "/ratgeber/projektrechte-kaufen-due-diligence", titel: "Projektrechte kaufen", text: "Due Diligence vor dem Erwerb eines Projekts." },
-    { href: "/flaechencheck", titel: "Flächencheck", text: "Eignet sich Ihre Fläche für einen Solarpark?" },
-    { href: "/kommunen", titel: "Solarparks für Kommunen", text: "Planungshoheit, Kriterienkatalog und Einnahmen der Gemeinde." },
-    { href: "/freiflaeche", titel: "Freiflächen-PV entwickeln", text: "Flächenkriterien, Genehmigung und Zeitplan." },
+    { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Gebotstermine, Zuschlagswerte und Sicherheiten." },
+    { href: "/wissen/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Welche Klauseln Flächeneigentümer kennen sollten." },
+    { href: "/wissen/ratgeber/projektrechte-kaufen-due-diligence", titel: "Projektrechte kaufen", text: "Due Diligence vor dem Erwerb eines Projekts." },
+    { href: pfad("/flaechencheck"), titel: "Flächencheck", text: "Eignet sich Ihre Fläche für einen Solarpark?" },
+    { href: pfad("/kommunen"), titel: "Solarparks für Kommunen", text: "Planungshoheit, Kriterienkatalog und Einnahmen der Gemeinde." },
+    { href: pfad("/freiflaeche"), titel: "Freiflächen-PV entwickeln", text: "Flächenkriterien, Genehmigung und Zeitplan." },
   ],
 
   quellen: [
@@ -343,12 +344,12 @@ const artikel = {
     { titel: "Bundesnetzagentur – Ausschreibungsverfahren Solaranlagen erstes Segment", url: "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/Ausschreibungen/Solaranlagen1/Ausschreibungsverfahren/start.html", stand: "09/2026" },
   ],
 
-  seitenCta: { titel: "Eignet sich Ihre Fläche?", text: "Größe, Lage, Netz und Planungsrecht in wenigen Minuten vorprüfen.", href: "/flaechencheck", label: "Zum Flächencheck" },
+  seitenCta: { titel: "Eignet sich Ihre Fläche?", text: "Größe, Lage, Netz und Planungsrecht in wenigen Minuten vorprüfen.", href: pfad("/flaechencheck"), label: "Zum Flächencheck" },
   cta: {
     title: "Ihre Fläche, unser Planungsweg.",
     text: "Wir prüfen Planungsrecht, Netz und Raumordnung Ihrer Fläche und sagen offen, ob und wann ein Solarpark realistisch ist.",
-    primary: { label: "Fläche prüfen lassen", href: "/flaechencheck" },
-    secondary: { label: "Projektablauf ansehen", href: "/prozess" },
+    primary: { label: "Fläche prüfen lassen", href: pfad("/flaechencheck") },
+    secondary: { label: "Projektablauf ansehen", href: pfad("/prozess") },
   },
 };
 

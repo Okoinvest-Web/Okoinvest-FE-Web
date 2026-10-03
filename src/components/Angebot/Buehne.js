@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FileText, KeyRound, MapPin, Calculator, Sun, Leaf, ShieldCheck, EyeOff } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import Aufbau, { aufbau } from "@/components/Flaeche/Seite/Aufbau";
+import { pfad } from "@/lib/land";
 
 /** Stilisiertes Anschreiben: Code-Feld rechts oben und QR-Code sind hervorgehoben (rein dekorativ) */
 export function Briefbild({ className }) {
@@ -89,7 +90,7 @@ export function AngebotHinweis({ titel, text, erneut = true }) {
           <p className="mt-3 text-[15.5px] leading-relaxed text-ink-600">{text}</p>
           <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
             {erneut && <Link href="/angebot" className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-[15px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">Code erneut eingeben</Link>}
-            <Link href="/flaeche-verpachten" className="inline-flex h-12 items-center justify-center rounded-full bg-ov-600 px-6 text-[15px] font-semibold text-white hover:bg-ov-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2">Mehr zur Flächenverpachtung</Link>
+            <Link href={pfad("/flaeche-verpachten")} className="inline-flex h-12 items-center justify-center rounded-full bg-ov-600 px-6 text-[15px] font-semibold text-white hover:bg-ov-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2">Mehr zur Flächenverpachtung</Link>
           </div>
         </div>
       </div>

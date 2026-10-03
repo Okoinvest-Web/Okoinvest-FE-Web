@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { TextEnthuellung, Zaehler } from "@/components/motion";
 import { fmt } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 /** Cashflow-Säulen je Jahr – Farben wie im Bewertungsrechner: Förderphase grün, Marktphase gelb, Tausch/Rückbau navy */
 function CashflowSaeulen({ jahre, foerderEnde }) {
@@ -132,7 +133,7 @@ export default function Hero({ bsp, ct, jahr, provision, boerse }) {
               Solarparks und Dachanlagen mit Ertragshistorie im DACH-Raum: Bewertung nach Ertragswert, geprüfte Unterlagen, Datenraum nach NDA – <span className="text-white">und eine Provision, die Sie vorher kennen.</span>
             </p>
             <div className="ov-hero-in mt-8 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-10" style={{ "--ov-delay": "260ms" }}>
-              <Button href="/rechner/bestandsanlage" size="lg" pfeil magnetisch className="w-full sm:w-auto">Anlage bewerten</Button>
+              <Button href={pfad("/rechner/bestandsanlage")} size="lg" pfeil magnetisch className="w-full sm:w-auto">Anlage bewerten</Button>
               <Button href={boerse} size="lg" variant="outlineLight" className="w-full sm:w-auto">Bestand in der Börse</Button>
             </div>
             <div className="ov-hero-in mt-9 border-t border-white/10 pt-7 md:mt-10" style={{ "--ov-delay": "340ms" }}>

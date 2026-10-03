@@ -11,6 +11,7 @@ import { SperrEingaben } from "@/components/Rechner/LaenderSperre";
 import { DACH, REGIONEN } from "@/lib/invest/markt";
 import { STANDARD, NETZSTROM_CT, rechneDach } from "@/lib/rechner/dachpacht";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
+import { pfad as seitenPfad } from "@/lib/land";
 
 const FARBE = { pacht: "#97a0b0", ppa: "#1f5aa1", eigen: "#669933", raster: "#eef0f4" };
 const tsd = (v) => `${v < 0 ? "−" : ""}${fmt(Math.abs(v) / 1000)} Tsd. €`;
@@ -221,7 +222,7 @@ export default function DachpachtRechner() {
               </p>
             </div>
             <div className="mt-7 flex justify-end border-t border-ink-100 pt-6">
-              <Button href="/dachflaeche-verpachten#anfrage" size="lg" pfeil>
+              <Button href={seitenPfad("/dachflaeche-verpachten#anfrage")} size="lg" pfeil>
                 Dach vorstellen
               </Button>
             </div>
@@ -323,7 +324,7 @@ export default function DachpachtRechner() {
             <p className="max-w-md text-[13px] leading-relaxed text-ink-500">
               Orientierung vor Steuern, kein Angebot. Statik, Restnutzungsdauer des Dachs, Brandschutz und Netzanschluss entscheiden über das konkrete Angebot.
             </p>
-            <Button href="/dachflaeche-verpachten#anfrage" size="lg" pfeil className="shrink-0">
+            <Button href={seitenPfad("/dachflaeche-verpachten#anfrage")} size="lg" pfeil className="shrink-0">
               Dach prüfen lassen
             </Button>
           </div>

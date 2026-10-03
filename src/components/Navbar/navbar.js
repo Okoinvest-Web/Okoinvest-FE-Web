@@ -1,17 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Logo from "@/components/ui/Logo";
 import { usePathname } from "next/navigation";
 import { ArrowRight, ChevronDown, Menu, Phone, X, Mail, Sparkles, UserRound } from "lucide-react";
 
-import { NAVIGATION, KONTAKT } from "@/data/navigation";
+import { KONTAKT } from "@/data/navigation";
+import { navigationFuer } from "@/lib/land/navigation";
+import useLand from "@/components/Land/useLand";
+import Laenderwahl from "@/components/Land/Laenderwahl";
 import { iconFor } from "@/components/ui/icons";
 import LiveTicker, { LiveDot } from "@/components/ui/LiveTicker";
 import useEnergyLive, { fmtCt } from "@/components/ui/useEnergyLive";
 import useFokusFalle from "@/components/ui/useFokusFalle";
 import Sprachwahl from "@/components/En/Sprachwahl";
+import { pfad as seitenPfad } from "@/lib/land";
 
 /**
  * Seitenkopf 2026
@@ -40,6 +44,9 @@ function useAngemeldet(pfad) {
 
 export default function Navbar() {
   const pfad = usePathname();
+  // Länderrouting (Welle 2): Links je Land der Route bzw. der aktiven Länderwahl (src/lib/land)
+  const { land } = useLand();
+  const NAVIGATION = useMemo(() => navigationFuer(land), [land]);
   const angemeldet = useAngemeldet(pfad);
   const konto = angemeldet ? { href: "/portal", label: "Portal" } : { href: "/login", label: "Login" };
   const [offen, setOffen] = useState(null); // Titel des offenen Mega-Menüs
@@ -166,6 +173,7 @@ export default function Navbar() {
                 {KONTAKT.telefon}
               </a>
             )}
+            <Laenderwahl variante="dunkel" kompakt />
             <Sprachwahl variante="dunkel" kompakt />
             <Link href={konto.href} className="flex items-center gap-1.5 font-medium text-white transition-colors hover:text-ov-300">
               <UserRound aria-hidden="true" className="h-3.5 w-3.5" />
@@ -234,7 +242,7 @@ export default function Navbar() {
               <UserRound aria-hidden="true" className="h-[18px] w-[18px]" />
             </Link>
             <Link
-              href="/flaechencheck"
+              href={seitenPfad("/flaechencheck", land)}
               className="group hidden h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-ov-600 pl-5 pr-4 text-[14.5px] font-semibold text-white shadow-gruen transition-colors hover:bg-ov-700 sm:flex"
             >
               Fläche prüfen
@@ -289,6 +297,8 @@ export default function Navbar() {
         pfad={pfad}
         rueckgabeRef={menueKnopf}
         konto={konto}
+        navigation={NAVIGATION}
+        flaechencheck={seitenPfad("/flaechencheck", land)}
       />
     </header>
   );
@@ -328,6 +338,7 @@ function MegaPanel({ item, pfad, onNavigate }) {
                         </span>
                         <span>
                           <span className="block text-[14.5px] font-semibold text-ink-900">{s.name}</span>
+                          {s.giltFuer && <span className="block text-[12px] font-medium text-ink-500">(gilt {s.giltFuer})</span>}
                           <span className={`mt-0.5 block text-[13px] leading-snug ${aktiv ? "text-ink-600" : "text-ink-500"}`}>{s.text}</span>
                         </span>
                       </Link>
@@ -350,7 +361,7 @@ function MegaPanel({ item, pfad, onNavigate }) {
 const STANDARD_FEATURE = {
   title: "Fläche in 3 Minuten prüfen",
   text: "Lage, Größe, Netz – und Sie erhalten sofort eine Ersteinschätzung mit Pachtspanne.",
-  href: "/flaechencheck",
+  href: seitenPfad("/flaechencheck"),
   cta: "Flächencheck starten",
 };
 
@@ -386,7 +397,7 @@ function LivePreis() {
   );
 }
 
-function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, konto }) {
+function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, konto, navigation: NAVIGATION, flaechencheck }) {
   const dialog = useRef(null);
   const schliessKnopf = useRef(null);
   useFokusFalle(offen, dialog, { beiEscape: schliessen, startRef: schliessKnopf, rueckgabeRef });
@@ -417,7 +428,8 @@ function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, 
         <div className="mb-3 rounded-2xl bg-navy-950 px-4 py-3">
           <LiveTicker />
         </div>
-        <div className="mb-2 flex justify-end">
+        <div className="mb-2 flex flex-wrap items-center justify-end gap-3">
+          <Laenderwahl label="Land wählen (Menü)" />
           <Sprachwahl />
         </div>
         <ul>
@@ -454,6 +466,7 @@ function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, 
                               </span>
                               <span>
                                 <span className="block text-[15px] font-semibold text-ink-900">{s.name}</span>
+                                {s.giltFuer && <span className="block text-[12px] font-medium text-ink-500">(gilt {s.giltFuer})</span>}
                                 <span className={`block text-[12.5px] ${pfad === s.href ? "text-ink-600" : "text-ink-500"}`}>{s.text}</span>
                               </span>
                             </Link>
@@ -474,7 +487,7 @@ function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, 
           <UserRound aria-hidden="true" className="h-4 w-4" />
           {konto.label}
         </Link>
-        <Link href="/flaechencheck" onClick={schliessen} className="ov-press flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 text-[15px] font-semibold text-white shadow-gruen">
+        <Link href={flaechencheck} onClick={schliessen} className="ov-press flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 text-[15px] font-semibold text-white shadow-gruen">
           Fläche prüfen
           <ArrowRight aria-hidden="true" className="h-4 w-4" />
         </Link>

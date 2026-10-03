@@ -5,6 +5,7 @@
 
 import { PACHT, FREIFLAECHE, PHASEN, STAND } from "@/lib/invest/markt";
 import { fmt, fmtEur, fmtPct } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 const HA = 10;
 const MWP = HA / FREIFLAECHE.haProMwp;
@@ -58,7 +59,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Vertragsbezeichnungen variieren: Nutzungsvertrag, Gestattungsvertrag, Pachtvertrag. Rechtlich handelt es sich in Deutschland meist um einen Pacht- oder Mietvertrag nach BGB, in der Regel aber **nicht um einen Landpachtvertrag**, weil die Fläche nicht mehr landwirtschaftlich genutzt wird. Welche Pacht marktüblich ist, zeigt der Ratgeber [Pacht pro Hektar für Solarparks](/ratgeber/solarpark-pacht-pro-hektar); die übliche Spanne liegt derzeit bei ${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr.`,
+          text: `Die Vertragsbezeichnungen variieren: Nutzungsvertrag, Gestattungsvertrag, Pachtvertrag. Rechtlich handelt es sich in Deutschland meist um einen Pacht- oder Mietvertrag nach BGB, in der Regel aber **nicht um einen Landpachtvertrag**, weil die Fläche nicht mehr landwirtschaftlich genutzt wird. Welche Pacht marktüblich ist, zeigt der Ratgeber [Pacht pro Hektar für Solarparks](/wissen/ratgeber/solarpark-pacht-pro-hektar); die übliche Spanne liegt derzeit bei ${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr.`,
         },
         {
           typ: "kasten",
@@ -123,7 +124,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Auch die **Übertragbarkeit** gehört hierher: Solarprojekte wechseln häufig den Eigentümer, etwa vom Entwickler zum Investor – über die [Projektbörse](/projektboerse) oder direkt. Das ist normal. Sinnvoll ist aber, dass der Vertrag auf eine Projektgesellschaft übergehen darf, die den Vertrag vollständig übernimmt, und dass Sie über jeden Wechsel informiert werden. Wie Käufer solche Verträge prüfen, zeigt der Ratgeber [Projektrechte kaufen: Due Diligence](/ratgeber/projektrechte-kaufen-due-diligence).",
+          text: "Auch die **Übertragbarkeit** gehört hierher: Solarprojekte wechseln häufig den Eigentümer, etwa vom Entwickler zum Investor – über die [Projektbörse](/projektboerse) oder direkt. Das ist normal. Sinnvoll ist aber, dass der Vertrag auf eine Projektgesellschaft übergehen darf, die den Vertrag vollständig übernimmt, und dass Sie über jeden Wechsel informiert werden. Wie Käufer solche Verträge prüfen, zeigt der Ratgeber [Projektrechte kaufen: Due Diligence](/wissen/ratgeber/projektrechte-kaufen-due-diligence).",
         },
       ],
     },
@@ -223,11 +224,11 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: "**Die Verpachtung für einen Solarpark kann in Deutschland dazu führen, dass die Fläche ihren Status als land- und forstwirtschaftliches Vermögen verliert** – mit möglichen Folgen für Erbschaft-, Schenkung- und Grundsteuer und bei Betriebsvermögen auch für die Einkommensteuer. Das gilt nach Verwaltungsauffassung nicht für Agri-PV nach DIN SPEC 91434, für klassische Freiflächenanlagen aber in der Regel schon. Alle Details im Ratgeber [Erbschaft- und Grundsteuer bei PV-Pacht](/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer).",
+          text: "**Die Verpachtung für einen Solarpark kann in Deutschland dazu führen, dass die Fläche ihren Status als land- und forstwirtschaftliches Vermögen verliert** – mit möglichen Folgen für Erbschaft-, Schenkung- und Grundsteuer und bei Betriebsvermögen auch für die Einkommensteuer. Das gilt nach Verwaltungsauffassung nicht für Agri-PV nach DIN SPEC 91434, für klassische Freiflächenanlagen aber in der Regel schon. Alle Details im Ratgeber [Erbschaft- und Grundsteuer bei PV-Pacht](/wissen/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer).",
         },
         {
           typ: "p",
-          text: "Einige Verträge enthalten eine Klausel, nach der der Betreiber steuerliche Mehrbelastungen ganz oder teilweise ausgleicht. Ob und wie das sinnvoll ist, sollte Ihre Steuerberatung beurteilen. Wer seine Fläche lieber weiter bewirtschaften möchte, findet unter [Agri-PV](/agri-pv) eine Alternative.",
+          text: "Einige Verträge enthalten eine Klausel, nach der der Betreiber steuerliche Mehrbelastungen ganz oder teilweise ausgleicht. Ob und wie das sinnvoll ist, sollte Ihre Steuerberatung beurteilen. Wer seine Fläche lieber weiter bewirtschaften möchte, findet unter [Agri-PV](/de/agri-pv) eine Alternative.",
         },
       ],
     },
@@ -255,7 +256,7 @@ const artikel = {
         },
         {
           typ: "tool",
-          href: "/flaechencheck",
+          href: pfad("/flaechencheck"),
           titel: "Eignet sich Ihre Fläche überhaupt?",
           text: "Bevor Sie über Klauseln verhandeln: Der Flächencheck klärt Lage, Netzanschluss und Planungsrecht.",
           label: "Zum Flächencheck",
@@ -270,7 +271,7 @@ const artikel = {
         {
           typ: "ablauf",
           schritte: [
-            ["Fläche einschätzen", "Lage, Netzanschluss und Planungsrecht mit dem [Flächencheck](/flaechencheck) prüfen, Pachtgröße mit dem [Pachtrechner](/rechner/pacht) überschlagen."],
+            ["Fläche einschätzen", "Lage, Netzanschluss und Planungsrecht mit dem [Flächencheck](/de/flaechencheck) prüfen, Pachtgröße mit dem [Pachtrechner](/de/rechner/pacht) überschlagen."],
             ["Angebote vergleichen", "Nicht nur die Pacht je Hektar, sondern Reservierung, Rücktrittsrechte, Sicherheiten und Übertragbarkeit nebeneinanderlegen."],
             ["Absichtserklärung statt Vorvertrag", "Eine unverbindliche Absichtserklärung genügt oft für den Start; eine lange Exklusivbindung ohne Entgelt vermeiden."],
             ["Prüfen lassen", "Vertragsentwurf von Anwalt oder Notar, steuerliche Folgen von Steuerberatung, Rangrücktritt mit der eigenen Bank klären."],
@@ -279,7 +280,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Wie ein Projekt nach der Unterschrift weiterläuft, von der Planung bis zum Bau, beschreibt die Seite [Prozess](/prozess). Grundsätzliches für Eigentümer finden Sie unter [Fläche verpachten](/flaeche-verpachten).",
+          text: "Wie ein Projekt nach der Unterschrift weiterläuft, von der Planung bis zum Bau, beschreibt die Seite [Prozess](/de/prozess). Grundsätzliches für Eigentümer finden Sie unter [Fläche verpachten](/de/flaeche-verpachten).",
         },
       ],
     },
@@ -300,7 +301,7 @@ const artikel = {
     },
     {
       q: "Kann ich die Fläche während der Laufzeit verkaufen oder vererben?",
-      a: "Ja. Die Dienstbarkeit und der Pachtvertrag gehen auf den Käufer oder Erben über, der dann die Pacht erhält. Steuerlich kann die Vererbung verpachteter PV-Flächen aber teuer werden – siehe [Erbschaft- und Grundsteuer bei PV-Pacht](/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer).",
+      a: "Ja. Die Dienstbarkeit und der Pachtvertrag gehen auf den Käufer oder Erben über, der dann die Pacht erhält. Steuerlich kann die Vererbung verpachteter PV-Flächen aber teuer werden – siehe [Erbschaft- und Grundsteuer bei PV-Pacht](/wissen/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer).",
     },
     {
       q: "Wie hoch sollte die Rückbaubürgschaft sein?",
@@ -313,10 +314,10 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/ratgeber/solarpark-pacht-pro-hektar", titel: "Pacht pro Hektar für Solarparks", text: "Spannen, Einflussfaktoren und Rechnung über 30 Jahre." },
-    { href: "/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer", titel: "Erbschaft- und Grundsteuer bei PV-Pacht", text: "Steuerliche Folgen der Verpachtung." },
-    { href: "/flaeche-verpachten", titel: "Fläche verpachten", text: "Ablauf und Voraussetzungen für Eigentümer." },
-    { href: "/rechner/pacht", titel: "Pachtrechner", text: "Jahres- und Gesamtpacht berechnen." },
+    { href: "/wissen/ratgeber/solarpark-pacht-pro-hektar", titel: "Pacht pro Hektar für Solarparks", text: "Spannen, Einflussfaktoren und Rechnung über 30 Jahre." },
+    { href: "/wissen/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer", titel: "Erbschaft- und Grundsteuer bei PV-Pacht", text: "Steuerliche Folgen der Verpachtung." },
+    { href: pfad("/flaeche-verpachten"), titel: "Fläche verpachten", text: "Ablauf und Voraussetzungen für Eigentümer." },
+    { href: pfad("/rechner/pacht"), titel: "Pachtrechner", text: "Jahres- und Gesamtpacht berechnen." },
   ],
 
   quellen: [
@@ -332,14 +333,14 @@ const artikel = {
   seitenCta: {
     titel: "Erst die Fläche, dann der Vertrag",
     text: "Prüfen Sie kostenfrei, ob Ihre Fläche für einen Solarpark infrage kommt.",
-    href: "/flaechencheck",
+    href: pfad("/flaechencheck"),
     label: "Zum Flächencheck",
   },
   cta: {
     title: "Ihre Fläche, fair verpachtet.",
     text: "Stellen Sie Ihre Fläche kostenfrei vor. Wir prüfen Lage, Netzanschluss und Planungsrecht und besprechen mit Ihnen, welches Modell passt.",
-    primary: { label: "Zum Flächencheck", href: "/flaechencheck" },
-    secondary: { label: "Pacht berechnen", href: "/rechner/pacht" },
+    primary: { label: "Zum Flächencheck", href: pfad("/flaechencheck") },
+    secondary: { label: "Pacht berechnen", href: pfad("/rechner/pacht") },
   },
 };
 

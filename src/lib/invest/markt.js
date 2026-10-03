@@ -4,16 +4,29 @@
 // an EINER Stelle. Texte und Rechner importieren diese Werte, statt Zahlen
 // abzutippen. Wer hier ändert, ändert die ganze Website.
 //
+// FASSADE (Welle 2, Paket B1, Strangler-Muster): FREIFLAECHE, ZUSCHLAEGE, ERLOESE, PACHT,
+// KOMMUNE, DACH (Dach-PV), QUELLEN und REGIONEN.ertrag stehen jetzt im Faktenregister
+// src/lib/fakten (je Wert Quelle, Stand, Gültigkeit, Status, Prüfer, Klasse) und kommen
+// hier unverändert über marktFuer("DE") heraus. Werte dort ändern, nicht hier.
+// Länderfähig rechnen: marktFuer(land) / rechenbasisFuer() aus src/lib/invest/laender/marktFuer.js.
+// Die übrigen Konstanten (FINANZIERUNG, AGRI, CARPORT, SPEICHER, STROM, …) folgen später.
+//
 // Recherchestand: September 2026. Alles ORIENTIERUNGSWERTE für eine erste
 // Einschätzung (Spannen, keine Angebote). Die konkrete Projektrechnung
 // erfolgt im Einzelfall.
 //
-// Quellen (Auswahl, siehe QUELLEN unten): Bundesnetzagentur (Ausschreibungs-
+// Quellen (Auswahl, siehe QUELLEN): Bundesnetzagentur (Ausschreibungs-
 // ergebnisse Solar), Fraunhofer ISE (Stromgestehungskosten, Agri-PV-Leitfaden),
 // PVGIS (Einstrahlung), Destatis (Pachtpreise), BDEW-Strompreisanalyse,
 // EEG 2023, EnWG, DIN SPEC 91434, E-Control (AT), BFE (CH).
 //
 // Konvention: Geld in €, Energie in kWh, Leistung in kWp, Fläche in ha.
+
+import { marktFuer, regionenAlle } from "./laender/marktFuer.js";
+import { faktWert } from "../fakten/index.js";
+
+/** Deutsche Marktannahmen aus dem Faktenregister (Quelle aller Fassaden-Konstanten unten) */
+const DE = marktFuer("DE");
 
 export const STAND = "September 2026";
 
@@ -26,17 +39,11 @@ export const STAND = "September 2026";
 export const STAND_RECHENLOGIK = "2026-10-03";
 
 /**
- * Länder-Sperre (Masterplan S1, „Länder-Sperre bis B1“): Für Österreich und die
- * Schweiz rechnen die öffentlichen Rechner noch mit deutscher Förder-, Pacht-,
- * GAP- und Strompreislogik. Bis die Länderlogik fachlich geprüft ist, zeigen die
- * Rechner für diese Länder keine €-Pacht-, EEG-, GAP- oder DE-Strompreiswerte,
- * sondern den Hinweis unten. Erträge (kWh) bleiben sichtbar.
+ * Länder-Sperre (Masterplan S1, „Länder-Sperre bis B1“) – Definition jetzt in
+ * src/lib/invest/laender/sperre.js (unverändert), hier weiter exportiert.
  */
-export const LAENDER_SPERRE = {
-  gesperrt: ["AT", "CH"],
-  name: { AT: "Österreich", CH: "die Schweiz" },
-  titel: { AT: "Rechenlogik für Österreich in Vorbereitung", CH: "Rechenlogik für die Schweiz in Vorbereitung" },
-};
+export { LAENDER_SPERRE, landVonRegion, laenderSperre } from "./laender/sperre.js";
+import { laenderSperre } from "./laender/sperre.js";
 
 /* ------------------------------------------------------------------ */
 /* Regionen und spezifischer Ertrag                                    */
@@ -57,32 +64,8 @@ export const LAENDER_SPERRE = {
  * (1.230); korrigiert auf PVGIS-Mittel × mittleren Abschlag der übrigen Regionen
  * (Ø 0,935) = 1.132 → 1.130. Für CH sind Geldwerte ohnehin gesperrt (LAENDER_SPERRE).
  */
-export const REGIONEN = [
-  { id: "de-nord", land: "DE", label: "Norddeutschland", sub: "SH, HH, NI, HB, MV", ertrag: 960 },
-  { id: "de-ost", land: "DE", label: "Ostdeutschland", sub: "BB, BE, SN, ST, TH", ertrag: 1020 },
-  { id: "de-west", land: "DE", label: "West- & Mitteldeutschland", sub: "NW, HE, RP, SL", ertrag: 1000 },
-  { id: "de-sued", land: "DE", label: "Süddeutschland", sub: "BY, BW", ertrag: 1100 },
-  { id: "at", land: "AT", label: "Österreich", sub: "Flach- und Hügelland", ertrag: 1120 },
-  { id: "ch", land: "CH", label: "Schweiz", sub: "Mittelland", ertrag: 1130 },
-];
-
-/** Land (DE/AT/CH) zu einer Regions-ID; unbekannte IDs zählen wie regionById als Süddeutschland */
-export const landVonRegion = (id) => (REGIONEN.find((r) => r.id === id) || REGIONEN[3]).land;
-
-/**
- * Sperrhinweis für ein Land (siehe LAENDER_SPERRE) oder null, wenn gerechnet werden darf.
- * Akzeptiert "AT"/"at" ebenso wie Regions-IDs ("at", "ch", "de-sued").
- */
-export function laenderSperre(landOderRegion) {
-  const roh = String(landOderRegion || "DE");
-  const land = ["DE", "AT", "CH"].includes(roh.toUpperCase()) ? roh.toUpperCase() : landVonRegion(roh);
-  if (!LAENDER_SPERRE.gesperrt.includes(land)) return null;
-  return {
-    land,
-    titel: LAENDER_SPERRE.titel[land],
-    text: `Für ${LAENDER_SPERRE.name[land]} zeigen wir hier noch keine Euro-, Förder- oder Pachtwerte: Die Rechner nutzen bisher deutsche Annahmen (EEG, Pacht, GAP, Strompreis). Die Länderlogik wird gerade fachlich geprüft. Gern rechnen wir Ihr Vorhaben persönlich durch.`,
-  };
-}
+/** Ertragsregionen DE/AT/CH; ertrag aus dem Faktenregister (region.<id>.ertrag) */
+export const REGIONEN = regionenAlle();
 
 export const regionById = (id) => REGIONEN.find((r) => r.id === id) || REGIONEN[3];
 
@@ -110,118 +93,29 @@ export const BAUART = {
 /* Freiflächen-PV                                                      */
 /* ------------------------------------------------------------------ */
 
-export const FREIFLAECHE = {
-  /** Fläche je MWp (Süd, fest, moderne Module ~ 580–620 Wp) */
-  haProMwp: 1.1,
-  /** Sinnvolle Mindestgröße einer Fläche in ha (darunter selten wirtschaftlich) */
-  mindestHa: 3,
-  /**
-   * Schlüsselfertige Errichtung (EPC) ohne Netzanschluss, €/kWp – Spanne.
-   * Große Parks (> 10 MWp) liegen 2025/26 bei stark gefallenen Modulpreisen
-   * eher am unteren Ende, kleine und schwierige Standorte am oberen.
-   */
-  capexProKwp: { min: 400, mittel: 470, max: 600 },
-  /** Netzanschluss: Kabeltrasse Mittelspannung je Meter (inkl. Tiefbau) */
-  kabelProMeter: 120,
-  /** Übergabestation / Trafo je MWp */
-  netzanschlussFixProMwp: 35000,
-  /** Entwicklungskosten bis Baureife (Planung, Gutachten, B-Plan) €/kWp */
-  entwicklungProKwp: { min: 40, max: 90 },
-  /**
-   * Betriebskosten ohne Pacht, €/kWp und Jahr: technische und kaufmännische
-   * Betriebsführung, Wartung/Grünpflege, Versicherung, Direktvermarktung,
-   * Überwachung/Sicherheit. Größere Parks eher 7–9, kleine 10–12.
-   */
-  opexProKwp: 9,
-  /** Rückbau-Rücklage €/kWp einmalig (bis Laufzeitende angespart) */
-  rueckbauProKwp: 25,
-  /** Jährliche Degradation */
-  degradation: 0.004,
-  /** Kostensteigerung Opex pro Jahr */
-  inflation: 0.02,
-  /** Laufzeit Betrachtung (Jahre) */
-  laufzeit: 30,
-  /**
-   * Netzanschluss-Check (/rechner/netzanschluss) – grobe Kostenbausteine,
-   * eigene Einschätzung aus Projektpraxis und öffentlichen Angaben von
-   * Netzbetreibern; Einzelfall kann deutlich abweichen.
-   *  msSystemMw         übertragbare Leistung je 20-kV-Kabelsystem über typische Trassenlängen
-   *  zusatzSystemFaktor jedes weitere System in derselben Trasse (Tiefbau geteilt), Anteil der Kosten je Meter
-   *  uwFeld             Schaltfeld an der MS-Sammelschiene eines Umspannwerks, €
-   *  einschleifen       Einschleifen in eine bestehende MS-Leitung (Schaltanlage, Schutz), €
-   *  hsKabelProKm       110-kV-Kabeltrasse inkl. Tiefbau, €/km
-   *  kundenUwFix/ProMva eigenes Umspannwerk 110/20 kV (Kundenumspannwerk): Grundkosten + je MVA
-   *  grenzeMsMw         bis zu dieser Anschlussleistung ist ein Anschluss an eine MS-Leitung in der Regel möglich
-   *  grenzeUwMw         bis hierhin meist Anschluss an der MS-Sammelschiene eines Umspannwerks, darüber 110 kV
-   *  abregelung         Energieverlust bei Anschlussleistung/Modulleistung (Süd, fest, DE) – Näherung
-   */
-  netz: {
-    msSystemMw: 12,
-    zusatzSystemFaktor: 0.6,
-    uwFeld: { min: 150000, mittel: 250000, max: 400000 },
-    einschleifen: 80000,
-    hsKabelProKm: { min: 900000, mittel: 1300000, max: 2000000 },
-    kundenUwFix: 2000000,
-    kundenUwProMva: 40000,
-    grenzeMsMw: 12,
-    grenzeUwMw: 35,
-    abregelung: [
-      [1.0, 0],
-      [0.9, 0.005],
-      [0.8, 0.015],
-      [0.7, 0.04],
-      [0.6, 0.08],
-      [0.5, 0.15],
-    ],
-    /** § 8 Abs. 6 EEG: Netzverträglichkeitsprüfung mit Kostenvoranschlag spätestens nach acht Wochen */
-    pruefWochen: 8,
-  },
-};
+/**
+ * Freiflächen-PV (Fläche je MWp, EPC-Kosten, Netzanschluss-Bausteine, Opex, Degradation, Laufzeit).
+ * Werte, Einheiten und Herleitung: src/lib/fakten/daten/de.js (freiflaeche.*), überwiegend eigene
+ * Einschätzung (Klasse C, Prüfung ausstehend); netz.pruefWochen = § 8 Abs. 6 EEG.
+ */
+export const FREIFLAECHE = DE.FREIFLAECHE;
 
 /* ------------------------------------------------------------------ */
 /* Erlöse                                                              */
 /* ------------------------------------------------------------------ */
 
 /**
- * EEG-Ausschreibungen Solar – EINE Quelle für alle Rechner, Texte und Ratgeber
- * (ersetzt die getrennten Listen ERLOESE.zuschlagsHistorie / DACH.zuschlagsHistorie).
- * ct = mengengewichteter durchschnittlicher Zuschlagswert, hoechstwertCt = zulässiger
- * Höchstwert des Termins, ct/kWh. Quelle: Bundesnetzagentur, Beendete Ausschreibungen
- * Solaranlagen erstes Segment (…/Solaranlagen1/BeendeteAusschreibungen/start.html) und
- * zweites Segment (…/Solaranlagen2/BeendeteAusschreibungen/start.html), abgerufen
- * 03.10.2026 (Paket E). Neue Termine hier anhängen (chronologisch).
+ * EEG-Ausschreibungen Solar – EINE Quelle für alle Rechner, Texte und Ratgeber.
+ * ct = mengengewichteter durchschnittlicher Zuschlagswert, hoechstwertCt = zulässiger Höchstwert
+ * des Termins, ct/kWh (Bundesnetzagentur, beendete Ausschreibungen erstes/zweites Segment,
+ * abgerufen 03.10.2026). Neue Termine als Fakt zuschlag.<segment>.<datum> in
+ * src/lib/fakten/daten/de.js anlegen – die Liste hier ordnet sie chronologisch.
  */
-export const ZUSCHLAEGE = {
-  freiflaeche: [
-    { datum: "2025-03-01", termin: "1. März 2025", ct: 4.66, hoechstwertCt: 6.8 },
-    { datum: "2025-07-01", termin: "1. Juli 2025", ct: 4.84, hoechstwertCt: 6.8 },
-    { datum: "2025-12-01", termin: "1. Dezember 2025", ct: 5.0, hoechstwertCt: 6.8 },
-    { datum: "2026-03-01", termin: "1. März 2026", ct: 4.94, hoechstwertCt: 5.79 },
-    { datum: "2026-07-01", termin: "1. Juli 2026", ct: 4.79, hoechstwertCt: 5.9 },
-  ],
-  dach: [
-    { datum: "2025-02-01", termin: "1. Februar 2025", ct: 9.1, hoechstwertCt: 10.4 },
-    { datum: "2025-06-01", termin: "1. Juni 2025", ct: 9.22, hoechstwertCt: 10.4 },
-    { datum: "2025-10-01", termin: "1. Oktober 2025", ct: 9.66, hoechstwertCt: 10.4 },
-    { datum: "2026-02-01", termin: "1. Februar 2026", ct: 9.56, hoechstwertCt: 10.0 },
-    { datum: "2026-06-01", termin: "1. Juni 2026", ct: 9.72, hoechstwertCt: 10.0 },
-  ],
-  quelle: "Bundesnetzagentur, Ergebnisse der Ausschreibungen Solaranlagen (erstes und zweites Segment)",
-};
+export const ZUSCHLAEGE = DE.ZUSCHLAEGE;
 
 /** Die letzten `n` Termine einer Liste aus ZUSCHLAEGE */
 export const letzteZuschlaege = (liste, n = 3) => liste.slice(-n);
-/** Termine eines Kalenderjahres aus einer Liste von ZUSCHLAEGE */
-const zuschlaegeJahr = (liste, jahr) => liste.filter((z) => z.datum.startsWith(String(jahr))).map(({ termin, ct }) => ({ termin, ct }));
 
-/**
- * Anteil der Solarerzeugung in Stunden mit negativen Preisen 2025: 23,4 % (2024: 14,5 %), Bayerische
- * Landesanstalt für Landwirtschaft (LfL), „Solar/Photovoltaik – Strommarkt in den Jahren 2025, 2024, 2023“,
- * Erzeugung nach SMARD (lfl.bayern.de/iba/energie/372343, abgerufen 03.10.2026). Gleicher Wert wie im Ratgeber
- * negative-strompreise-solarspitzengesetz.js. Grundlage des § 51-Abschlags (ERLOESE.paragraph51). Andere Auswertungen liegen darunter (pv magazine,
- * 26.01.2026, ENTSO-E-Viertelstunden: 15,97 %) – der Wert ist eine Spanne, kein Naturgesetz.
- */
-const NEGATIV_ANTEIL_SOLAR_2025 = 0.234;
 /**
  * Bisheriger Wert 24,1 % mit Zuschreibung „dena/Pexapark“ – bleibt vorerst nur für STROM.ppa, weil
  * src/app/rechner/ppa/page.js und PpaRechner.js ihn ausdrücklich dena/Pexapark zuschreiben. Am Original
@@ -229,65 +123,13 @@ const NEGATIV_ANTEIL_SOLAR_2025 = 0.234;
  */
 const NEGATIV_ANTEIL_SOLAR_2025_DENA = 0.241;
 
-export const ERLOESE = {
-  /**
-   * EEG-Ausschreibung Freifläche (erstes Segment): mengengewichtete
-   * durchschnittliche Zuschlagswerte der letzten fünf Termine 4,66–5,00 ct/kWh
-   * (Bundesnetzagentur, siehe ZUSCHLAEGE.freiflaeche; zuletzt 01.07.2026: 4,79).
-   * Rechenwert 4,8 ct bleibt (Mittel der letzten drei Termine 4,91 – bewusst
-   * leicht darunter). Anzulegender Wert gilt 20 Jahre; in Viertelstunden mit
-   * negativem Spotpreis entfällt er (§ 51 EEG, siehe paragraph51 unten).
-   */
-  eegFreiflaecheCt: 4.8,
-  /**
-   * Agri-PV in der Ausschreibung: Ein eigenes Untersegment mit höherem Höchstwert
-   * ist im EEG vorgesehen, war aber zum Stand noch nicht beihilferechtlich
-   * freigegeben. Agri-PV bietet daher im ersten Segment mit, hoch aufgeständerte
-   * Anlagen erhalten einen Bonus von 0,5 ct/kWh → Zuschlag Freifläche + Bonus.
-   */
-  eegBesondereCt: 5.3,
-  /**
-   * PPA Solar pay-as-produced, 10 Jahre, DE – Spanne. Reine Erzeuger-PPA
-   * notieren wegen Kannibalisierung eher bei 3,5–4,5 ct (dena/Pexapark),
-   * Liefer-PPA an Unternehmen mit Strukturierung darüber.
-   */
-  ppaCt: { min: 3.8, mittel: 4.5, max: 5.5 },
-  /** Durchschnittlicher Marktwert Solar (Capture Price) nach Förderende, konservativ */
-  merchantCt: 4.0,
-  /**
-   * Jährliche Steigerung des Solar-Marktwerts (nominal) für Merchant-Phasen.
-   * Eigene vorsichtige Annahme: unter der allgemeinen Inflation, weil mit
-   * wachsendem PV-Zubau die Mittagspreise sinken (Kannibalisierung).
-   */
-  merchantSteigerung: 0.01,
-  /**
-   * § 51 EEG (Fassung seit Solarspitzengesetz, gesetze-im-internet.de/eeg_2014/__51.html,
-   * abgerufen 03.10.2026): „Für Zeiträume, in denen der Spotmarktpreis negativ ist,
-   * verringert sich der anzulegende Wert auf null.“ § 51a EEG verlängert den
-   * Vergütungszeitraum um diese Viertelstunden (bei Solar mit Faktor 0,5,
-   * monatliche Kontingente) – das ist hier NICHT gerechnet (vorsichtig).
-   *  anteilNegativ  Anteil der Jahreserzeugung in Zeiträumen mit negativem Preis,
-   *                 für die im EEG-Modell keine Vergütung angesetzt wird. Standard =
-   *                 Anteil 2025 (23,4 %, LfL Bayern, siehe NEGATIV_ANTEIL_SOLAR_2025), im Rechner änderbar.
-   *                 Vereinfachung: In diesen Zeiträumen wird nichts erlöst (Abregelung).
-   */
-  paragraph51: { anteilNegativ: NEGATIV_ANTEIL_SOLAR_2025 },
-  /*
-   * Wirkung (Herleitung Paket E, siehe eegErloesCt): Die Marktprämie ist anzulegender Wert (AW) minus
-   * Marktwert Solar (MW, über ALLE Solarstunden inkl. der negativen). Wer in negativen Zeiträumen abregelt,
-   * erlöst in den übrigen Stunden den Börsenpreis (im Schnitt über MW) plus Prämie. Erlös je erzeugbarer kWh
-   * ≈ AW − Anteil × (AW − MW), solange AW > MW; liegt MW über AW, ändert § 51 nichts. Verloren geht also nur
-   * die Prämie auf den negativen Anteil, nicht der ganze AW.
-   */
-  /**
-   * @deprecated Termine 2025, abgeleitet aus ZUSCHLAEGE.freiflaeche – nur noch für Texte,
-   * die ausdrücklich „Gebotstermine 2025“ nennen (investoren/page.js, en/investors/page.js,
-   * rechner/solarpark/page.js). Neue Stellen nutzen ZUSCHLAEGE.freiflaeche.
-   */
-  zuschlagsHistorie: zuschlaegeJahr(ZUSCHLAEGE.freiflaeche, 2025),
-  /** Fraunhofer ISE, Studie Stromgestehungskosten (Juli 2024): neue PV-Freiflächenanlagen in DE, ct/kWh */
-  lcoeIseCt: { min: 4.1, max: 6.9 },
-};
+/**
+ * Erlöse Freiflächen-PV: Rechenwert EEG-Zuschlag (4,8 ct), Agri-PV-Bonus, PPA-Spanne, Merchant,
+ * § 51 EEG (paragraph51.anteilNegativ = Anteil der Solarerzeugung in negativen Stunden 2025, 23,4 %,
+ * LfL Bayern), zuschlagsHistorie (@deprecated, Termine 2025 aus ZUSCHLAEGE), Stromgestehungskosten ISE.
+ * Wirkung von § 51 siehe eegErloesCt. Werte und Quellen: src/lib/fakten/daten/de.js (erloese.*).
+ */
+export const ERLOESE = DE.ERLOESE;
 
 /* ------------------------------------------------------------------ */
 /* Finanzierung                                                        */
@@ -356,53 +198,12 @@ export const FINANZIERUNG = {
 /* Pacht                                                               */
 /* ------------------------------------------------------------------ */
 
-export const PACHT = {
-  /**
-   * Übliche Pacht für Freiflächen-PV in €/ha und Jahr, Deutschland 2025/26 (eigene Markteinschätzung,
-   * keine Einzelquelle). Galt bisher für „DACH“ – für AT/CH gesperrt (LAENDER_SPERRE): Für Österreich
-   * nennt der Ratgeber solarpark-pacht-pro-hektar.js 3.000–5.000 €/ha (LK Steiermark 05/2022, historische
-   * Angebotsspanne), für die Schweiz gibt es keinen belegten CHF-Wert.
-   */
-  freiflaecheProHa: { min: 1500, mittel: 2800, max: 4500 },
-  /** Agri-PV: höhere Nutzung bleibt beim Landwirt, Pacht meist niedriger */
-  /** Agri-PV: Bewirtschaftung bleibt beim Landwirt, Projekte sind knapp kalkuliert → Pacht deutlich unter Freifläche */
-  agriProHa: { min: 600, mittel: 1200, max: 2000 },
-  /** Alternativ: Umsatzbeteiligung in % der Stromerlöse */
-  umsatzbeteiligung: { min: 0.04, max: 0.08 },
-  /**
-   * Durchschnittliches Pachtentgelt Ackerland DE 2023: 407 €/ha (Dauergrünland 212 €/ha, alle
-   * Pachtflächen 357 €/ha). Quelle: Statistisches Bundesamt, Agrarstrukturerhebung 2023, wiedergegeben
-   * vom Bundesinformationszentrum Landwirtschaft (praxis-agrar.de/service/infografiken/pachtpreise,
-   * abgerufen 03.10.2026); Gesamtwert 357 €/ha bestätigt in Destatis-PM Nr. 153 vom 12.04.2024.
-   * Paket E: von 380 auf 407 korrigiert (380 war als Destatis-Wert ausgewiesen, aber nicht belegt).
-   */
-  ackerProHa: 407,
-  /** Dauergrünland DE 2023, €/ha (Quelle wie ackerProHa) */
-  gruenlandProHa: 212,
-  /** Deckungsbeitrag Ackerbau €/ha und Jahr (Getreide, stark schwankend) */
-  deckungsbeitragAcker: { min: 200, mittel: 450, max: 800 },
-  /** Übliche Laufzeit in Jahren + Verlängerungsoptionen */
-  laufzeit: 30,
-  verlaengerung: "2 × 5 Jahre Option",
-  /** Jährliche Indexierung (Verbraucherpreisindex, vereinfacht) */
-  indexierung: 0.015,
-  /** Einmalige Bereitstellungs-/Reservierungsprämie je ha (bis Baubeginn) */
-  reservierungProHa: { min: 100, max: 300 },
-  /**
-   * Pachtangebot-Check (/rechner/pachtangebot-check) – eigene Einschätzung
-   * marktüblicher Vertragspunkte (DACH, 2025/26), keine Rechtsberatung:
-   *  diskontEigentuemer   Kalkulationszins für den Barwert aus Sicht des Eigentümers
-   *  reservierungJahre    übliche Dauer der Reservierungs-/Optionsphase bis Baubeginn (Jahre)
-   *  festlaufzeitMax      Festlaufzeit, ab der eine Bindung unüblich lang wird (Jahre)
-   *  verlaengerungMax     übliche Summe der Verlängerungsoptionen des Pächters (Jahre)
-   *  anwaltskosten        übliche Kostenübernahme für die anwaltliche Prüfung des Vertrags, €
-   */
-  diskontEigentuemer: 0.03,
-  reservierungJahre: { ueblich: 3, max: 5 },
-  festlaufzeitMax: 30,
-  verlaengerungMax: 10,
-  anwaltskosten: { min: 1000, max: 3000 },
-};
+/**
+ * Pacht Freiflächen- und Agri-PV in DEUTSCHLAND (€/ha·a, Umsatzbeteiligung, Ackerpacht Destatis 2023,
+ * Vertragsrichtwerte für den Pachtangebot-Check). Für AT/CH gelten eigene Fakten (marktFuer(land));
+ * bis zur Freigabe Länder-Sperre. Werte und Quellen: src/lib/fakten/daten/de.js (pacht.*).
+ */
+export const PACHT = DE.PACHT;
 
 /* ------------------------------------------------------------------ */
 /* Agri-PV                                                             */
@@ -448,7 +249,7 @@ export const AGRI = {
    * Agri-PV, bei der die landwirtschaftliche Hauptnutzung erhalten bleibt
    * (RIS, EAG § 33, Stand 09/2026; genutzt auf den Regionalseiten /regionen).
    */
-  eagAbschlagAt: 0.25,
+  eagAbschlagAt: faktWert("recht.eag.abschlagLandwirtschaft", "AT"),
 };
 
 /* ------------------------------------------------------------------ */
@@ -603,35 +404,12 @@ export const STROM = {
 /* Kommunen                                                            */
 /* ------------------------------------------------------------------ */
 
-export const KOMMUNE = {
-  /** § 6 EEG: freiwillige Zahlung bis 0,2 ct/kWh an betroffene Gemeinden */
-  beteiligungCt: 0.2,
-  /** § 29 Abs. 1 Nr. 2 GewStG: 90 % des Gewerbesteuermessbetrags an Standortgemeinde (Solar) */
-  gewerbesteuerStandort: 0.9,
-  /**
-   * Hebesatz Durchschnitt DE: 409 % im Jahr 2024 („durchschnittlicher Hebesatz aller Gemeinden“,
-   * Destatis-PM Nr. 309 vom 21.08.2025, abgerufen 03.10.2026). Paket E: von 400 % auf 409 % korrigiert.
-   * Ländliche Standortgemeinden liegen oft darunter – im Rechner änderbar.
-   */
-  hebesatz: 4.09,
-  /**
-   * § 6 EEG gilt bundesweit freiwillig. Mehrere Länder schreiben Zahlungen bzw. Angebote inzwischen vor
-   * (laut Übersicht FA Wind und Solar, Stand 17.07.2026: MV, BB, NI, SL, SN, ST, BY). Der Rechner bildet
-   * diese Landesregeln noch NICHT ab (Werte je Land vor Übernahme am Gesetzestext prüfen) und weist darauf hin.
-   */
-  laenderMitBeteiligungsgesetz: ["MV", "BB", "NI", "SL", "SN", "ST", "BY"],
-  laenderGesetzeStand: "17.07.2026",
-  messzahl: 0.035,
-  /** Betrachtungszeitraum für Kommunen (Jahre, entspricht der EEG-Förderdauer) */
-  betrachtungJahre: 20,
-  /** Nutzungsdauer PV nach AfA-Tabelle (lineare Abschreibung) */
-  afaJahre: 20,
-  /** § 8 Nr. 1 GewStG: 25 % der Entgelte für Schulden werden hinzugerechnet, soweit die Summe 200.000 € übersteigt */
-  hinzurechnungZinsen: 0.25,
-  hinzurechnungFreibetrag: 200000,
-  /** Reglerspanne Hebesatz (gesetzliches Minimum 200 %, § 16 Abs. 4 GewStG) */
-  hebesatzSpanne: { min: 2.0, max: 6.0 },
-};
+/**
+ * Einnahmen der Standortgemeinde: § 6 EEG (0,2 ct/kWh), Gewerbesteuer (§ 29 GewStG 90 %, Hebesatz Ø 409 %
+ * Destatis 2024, Messzahl, Hinzurechnung § 8 Nr. 1), Länder mit Beteiligungsgesetz (Übersicht FA Wind und
+ * Solar, laenderGesetzeStand = Abrufdatum). Werte und Quellen: src/lib/fakten/daten/de.js (kommune.*).
+ */
+export const KOMMUNE = DE.KOMMUNE;
 
 /* ------------------------------------------------------------------ */
 /* Projektbörse: Bewertung von Projektrechten nach Phase               */
@@ -784,16 +562,8 @@ export const ALLGEMEIN = {
 /** CO₂-Faktor (kg/kWh) für ein Land bzw. eine Regions-ID – nur DE belegt, sonst null (ausblenden) */
 export const co2KgProKwhFuer = (landOderRegion = "DE") => (laenderSperre(landOderRegion) ? null : ALLGEMEIN.co2KgProKwh);
 
-export const QUELLEN = [
-  { titel: "Bundesnetzagentur – Ausschreibungen Solaranlagen erstes Segment", url: "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/Ausschreibungen/Solaranlagen1/start.html" },
-  { titel: "Fraunhofer ISE – Stromgestehungskosten erneuerbarer Energien", url: "https://www.ise.fraunhofer.de/de/veroeffentlichungen/studien/studie-stromgestehungskosten-erneuerbare-energien.html" },
-  { titel: "Fraunhofer ISE – Agri-Photovoltaik: Chance für Landwirtschaft und Energiewende (Leitfaden)", url: "https://www.ise.fraunhofer.de/de/veroeffentlichungen/studien/agri-photovoltaik-chance-fuer-landwirtschaft-und-energiewende.html" },
-  { titel: "EU JRC – PVGIS Photovoltaic Geographical Information System", url: "https://re.jrc.ec.europa.eu/pvg_tools/de/" },
-  { titel: "BDEW – Strompreisanalyse", url: "https://www.bdew.de/service/daten-und-grafiken/bdew-strompreisanalyse/" },
-  { titel: "Umweltbundesamt – Emissionsbilanz erneuerbarer Energieträger", url: "https://www.umweltbundesamt.de/publikationen" },
-  { titel: "Gesetz für den Ausbau erneuerbarer Energien (EEG 2023), § 6", url: "https://www.gesetze-im-internet.de/eeg_2014/__6.html" },
-  { titel: "Baugesetzbuch § 35 (Bauen im Außenbereich)", url: "https://www.gesetze-im-internet.de/bbaug/__35.html" },
-];
+/** Quellenverzeichnis (Auswahl) – src/lib/fakten/daten/de.js, quellen.allgemein */
+export const QUELLEN = DE.QUELLEN;
 
 /* ------------------------------------------------------------------ */
 /* Hilfsfunktionen für alle Rechner                                    */
@@ -846,92 +616,13 @@ export function annuitaet(betrag, zins, jahre) {
 /* ------------------------------------------------------------------ */
 
 /**
- * Orientierungswerte für die Verpachtung großer Dachflächen (ab ca. 1.000 m²)
- * an einen PV-Betreiber. Stand September 2026, DE-Schwerpunkt.
- *
- * Quellen/Herleitung:
- *  - Pachtspannen: Marktübersichten von Dachvermittlern und Ratgebern nennen
- *    meist 2–5 €/m² bzw. 20–30 €/kWp pro Jahr (Werbewerte, oft für ideale
- *    Dächer). Wir setzen die Spanne bewusst vorsichtiger an, weil die Pacht
- *    bei heutigen Zuschlagswerten rund 5–10 % der Stromerlöse nicht dauerhaft
- *    übersteigen kann (eigene Plausibilisierung über Ertrag × Zuschlag).
- *  - Zuschläge Dach (Ausschreibung zweites Segment, Gebäude/Lärmschutz):
- *    Bundesnetzagentur, Gebotstermine 1.2./1.6./1.10.2025.
- *  - Stromgestehungskosten: Fraunhofer ISE, Studie Stromgestehungskosten (Juli 2024).
- *  - Investition, Betriebskosten, Dachsanierung: eigene Marktbeobachtung der
- *    ÖKOVOLT Gruppe (baut Gewerbedächer), Spannen ohne Netzausbau.
+ * Orientierungswerte für die Verpachtung großer Dachflächen (ab ca. 1.000 m²) an einen PV-Betreiber,
+ * DE-Schwerpunkt: Dacharten, Ausrichtung, Pachtspannen, Investition, Rechenwert Volleinspeisung
+ * (eegDachCt 9,3 = Mittel der Zuschläge 2025), zuschlagsHistorie (@deprecated, Termine 2025 aus
+ * ZUSCHLAEGE.dach), Stromgestehungskosten ISE, quellen. Werte und Herleitung:
+ * src/lib/fakten/daten/de.js (dach.*).
  */
-export const DACH = {
-  /** Sinnvolle Mindestgröße für Dachpacht (darunter lohnt sich ein Fremdbetrieb selten) */
-  mindestM2: 1000,
-  /**
-   * Dacharten: Dachfläche brutto je kWp (inkl. Randabstände, Brandschutz-
-   * streifen, Dachaufbauten), Ertragsfaktor relativ zur optimalen
-   * Freiflächenanlage (REGIONEN) bei Süd bzw. Ost/West-Aufständerung.
-   */
-  dacharten: [
-    { id: "trapez", label: "Trapezblech", sub: "geneigt, Aufdach", m2ProKwp: 6, ertragFaktor: 0.95, belegbar: true, lastKgM2: "ca. 12–15 kg/m²" },
-    { id: "sandwich", label: "Sandwichpaneel", sub: "Halle, gedämmt", m2ProKwp: 6, ertragFaktor: 0.95, belegbar: true, lastKgM2: "ca. 12–15 kg/m²" },
-    { id: "flach", label: "Flachdach", sub: "Folie/Bitumen, Ost/West", m2ProKwp: 7, ertragFaktor: 0.9, belegbar: true, lastKgM2: "ca. 15–25 kg/m² mit Ballast" },
-    { id: "faserzement", label: "Faserzement", sub: "Wellplatten", m2ProKwp: null, ertragFaktor: null, belegbar: false, lastKgM2: "–" },
-  ],
-  /** Ausrichtung geneigter Dächer (Flachdächer werden Ost/West aufgeständert) */
-  ausrichtung: [
-    { id: "sued", label: "Süd", faktor: 1.0 },
-    { id: "suedOstWest", label: "Südost/-west", faktor: 0.97 },
-    { id: "ostWest", label: "Ost/West", faktor: 0.9 },
-    { id: "nord", label: "Nord, flach geneigt", faktor: 0.78 },
-  ],
-  /** Dachpacht fest in € je m² Dachfläche und Jahr */
-  pachtProM2: { min: 1.0, mittel: 1.5, max: 3.0 },
-  /** Dachpacht in € je installiertem kWp und Jahr */
-  pachtProKwp: { min: 6, mittel: 10, max: 18 },
-  /** Umsatzbeteiligung in % der Stromerlöse */
-  umsatzbeteiligung: { min: 0.04, max: 0.08 },
-  /** Übliche Laufzeit Dachnutzungsvertrag (Jahre) und Option */
-  laufzeit: 20,
-  verlaengerung: "1–2 × 5 Jahre Option",
-  /** Diskontsatz, mit dem Betreiber eine Einmalzahlung aus der Jahrespacht ableiten (eigene Annahme) */
-  einmalDiskont: 0.05,
-  /** Investition Gewerbedach 300 kWp – 2 MWp schlüsselfertig ohne Dachsanierung, €/kWp */
-  capexProKwp: { min: 600, mittel: 750, max: 950 },
-  /** Betriebskosten ohne Pacht €/kWp·a (Wartung, Versicherung, Monitoring, Rücklage Wechselrichter) */
-  opexProKwp: 14,
-  /**
-   * @deprecated Zuschläge Ausschreibung Dach 2025 (zweites Segment, Pflicht in der Regel ab 1 MWp), ct/kWh –
-   * abgeleitet aus ZUSCHLAEGE.dach. Die Termine 2026 (9,56 / 9,72) stehen dort; Texte, die „2025“ nennen,
-   * nutzen weiter diese Liste.
-   */
-  zuschlagsHistorie: zuschlaegeJahr(ZUSCHLAEGE.dach, 2025),
-  /**
-   * Rechenwert Volleinspeisung Dach (Mittel der Zuschläge 2025 = 9,33, gerundet). Paket E: unverändert,
-   * weil Texte ihn als „Ø 2025“ ausweisen; Mittel der letzten drei Termine (10/2025–06/2026) wäre 9,65 –
-   * Umstellung zusammen mit den Texten (Dach/Seite/Modelle.js, DachpachtRechner.js) vorschlagen.
-   */
-  eegDachCt: 9.3,
-  /**
-   * Erlös für Überschuss bei Eigenverbrauch (anzulegender Wert Teileinspeisung
-   * bzw. Marktwert) – grobe eigene Annahme, sinkt mit der EEG-Degression.
-   */
-  ueberschussCt: 6.5,
-  /** Preis Stromlieferung vom Dach an Nutzer/Eigentümer (On-Site-PPA), ct/kWh netto – eigene Marktbeobachtung */
-  ppaVorOrtCt: { min: 10, mittel: 13, max: 16 },
-  /** Anteil der Pacht, der bei zusätzlicher Stromlieferung (PPA) üblich bleibt – eigene Annahme */
-  ppaPachtAnteil: 0.5,
-  /** Eigenverbrauchsanteil Gewerbe (Tageslast, ohne Speicher) */
-  eigenverbrauch: { min: 0.3, standard: 0.4, max: 0.8 },
-  /** Mindest-Restnutzungsdauer des Dachs vor Belegung (Jahre) */
-  restnutzungMinJahre: 25,
-  /** Dachsanierung (Neueindeckung Trapez/Sandwich inkl. Rückbau) €/m² – grobe Spanne */
-  sanierungProM2: { min: 45, mittel: 65, max: 95 },
-  /** Stromgestehungskosten große Dachanlagen DE, Fraunhofer ISE (Juli 2024), ct/kWh */
-  lcoeIseCt: { min: 5.0, max: 10.4 },
-  quellen: [
-    { titel: "Bundesnetzagentur – Ausschreibungen Solaranlagen zweites Segment", url: "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/Ausschreibungen/Solaranlagen2/artikel.html" },
-    { titel: "Fraunhofer ISE – Stromgestehungskosten erneuerbarer Energien", url: "https://www.ise.fraunhofer.de/de/veroeffentlichungen/studien/studie-stromgestehungskosten-erneuerbare-energien.html" },
-    { titel: "Bund der Steuerzahler – Gewerbliche Infizierung bei Photovoltaikanlagen", url: "https://steuerzahler.de/aktuelles/detail/gewerbliche-infizierung-von-vermietungseinkuenften-beim-betreiben-von-photovoltaikanlagen/" },
-  ],
-};
+export const DACH = DE.DACH;
 
 /* ------------------------------------------------------------------ */
 /* Bestandsanlagen (Zweitmarkt)                                        */

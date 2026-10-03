@@ -115,11 +115,11 @@ function logik() {
   pruefe(dts.every((d) => fs.existsSync(path.join(PY, "doctype", `plattform_eg_${d}`, `plattform_eg_${d}.json`))), "10 DocTypes plattform_eg_*");
   const eigene = [];
   const sammeln = (d) => { for (const x of fs.readdirSync(path.join(WURZEL, d), { withFileTypes: true })) { const q = path.join(d, x.name); if (x.isDirectory()) sammeln(q); else if (/\.(js|mjs)$/.test(x.name)) eigene.push(q); } };
-  for (const d of ["src/components/Portal/EG/Gruendung", "src/lib/plattform/eg/vorlagen", "src/app/portal/eg/gruendung", "src/app/portal/admin/eg/gruendung", "src/app/api/portal/eg/gruendung"]) sammeln(d);
+  for (const d of ["src/components/Portal/EG/Gruendung", "src/lib/plattform/eg/vorlagen", "src/app/(stamm)/portal/eg/gruendung", "src/app/(stamm)/portal/admin/eg/gruendung", "src/app/api/portal/eg/gruendung"]) sammeln(d);
   eigene.push(...["src/lib/plattform/eg/gruendung.js", "src/lib/plattform/eg/wechsel.js", "src/lib/plattform/eg/verein.js", "src/lib/plattform/eg/statuten.js", "src/lib/plattform/eg/vertraege.js", "src/lib/plattform/eg/foerder.js", "src/lib/plattform/eg/lieferantenpflichten.js", "src/lib/plattform/server/eg-gruendung-pdf.js", "src/lib/plattform/backend/demo/eg-gruendung.js", "src/lib/plattform/backend/demo/eg-gruendung-seed.js", "src/lib/plattform/backend/frappe/eg-gruendung.js"]);
   const falle = eigene.filter((f) => /\[[A-Za-zÄÖÜäöüß]+( [A-Za-zÄÖÜäöüß]+)+\]|\[[a-z-]+:[^\]\s,]+\]/.test(lesen(f)));
   pruefe(eigene.length >= 30 && !falle.length, `Tailwind-Falle: keine eckigen Klammern mit Text in ${eigene.length} eigenen Dateien`, falle);
-  const seiten = ["src/app/portal/eg/gruendung/page.js", "src/app/portal/eg/gruendung/neu/page.js", "src/app/portal/eg/gruendung/[id]/page.js", "src/app/portal/eg/gruendung/foerdercheck/page.js", "src/app/portal/admin/eg/gruendung/page.js", "src/app/portal/admin/eg/gruendung/[id]/page.js", "src/app/portal/eg/[id]/verein/page.js"];
+  const seiten = ["src/app/(stamm)/portal/eg/gruendung/page.js", "src/app/(stamm)/portal/eg/gruendung/neu/page.js", "src/app/(stamm)/portal/eg/gruendung/[id]/page.js", "src/app/(stamm)/portal/eg/gruendung/foerdercheck/page.js", "src/app/(stamm)/portal/admin/eg/gruendung/page.js", "src/app/(stamm)/portal/admin/eg/gruendung/[id]/page.js", "src/app/(stamm)/portal/eg/[id]/verein/page.js"];
   pruefe(seiten.every((x) => fs.existsSync(path.join(WURZEL, x))), "Seiten Portal und Backoffice vorhanden");
 }
 

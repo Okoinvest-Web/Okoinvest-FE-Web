@@ -1,5 +1,6 @@
 import { cn } from "@/components/ui/cn";
 import { META } from "@/data/regionen/meta";
+import { pfad, regionSchluessel } from "@/lib/land";
 
 const ZELLE = 72;
 const LUECKE = 6;
@@ -45,7 +46,7 @@ export default function RegionKarte({ aktiv, nachbarn = [], titel = "Karte der R
           return (
             <a
               key={m.slug}
-              href={`/regionen/${m.slug}`}
+              href={pfad(regionSchluessel(m.slug))}
               aria-label={`Solarpark und Agri-PV in ${m.name} (${LAND_NAME[m.land]})`}
               aria-current={istAktiv ? "page" : undefined}
               className="group outline-none"

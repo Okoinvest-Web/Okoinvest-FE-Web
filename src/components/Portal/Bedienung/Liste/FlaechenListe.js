@@ -11,6 +11,7 @@ import { PROZESSE, statusInfo } from "@/lib/plattform/prozesse";
 import { FLAECHE_NUTZUNG, LAENDER } from "@/lib/plattform/konstanten";
 import { ha, relativ } from "@/lib/plattform/format";
 import LeerZustand from "../LeerZustand";
+import { pfad } from "@/lib/land";
 
 export default function FlaechenListe({ flaechen, jetzt }) {
   // fester Zeitpunkt vom Server – gleiche relative Zeitangaben bei Server-Rendering und Hydration
@@ -48,7 +49,7 @@ export default function FlaechenListe({ flaechen, jetzt }) {
           titel="Noch keine Fläche hinterlegt"
           text="Lage, Größe und – wenn zur Hand – die Flurstücke genügen. Wir melden uns mit einer ehrlichen Ersteinschätzung."
           aktion={<Button href="/portal/flaechen/neu" pfeil>Erste Fläche hinzufügen</Button>}
-          zweite={<Button href="/rechner/pacht" variant="secondary">Pacht vorab berechnen</Button>}
+          zweite={<Button href={pfad("/rechner/pacht")} variant="secondary">Pacht vorab berechnen</Button>}
         />
       }
     />

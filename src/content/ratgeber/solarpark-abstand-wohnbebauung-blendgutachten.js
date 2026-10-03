@@ -5,6 +5,7 @@
 
 import { FREIFLAECHE, STAND } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag zur Übernahme */
 // LAI, Hinweise zur Messung, Beurteilung und Minderung von Lichtimmissionen, Anhang 2 (Stand 03.11.2015):
@@ -115,7 +116,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Für Flächeneigentümer heißt das: Den Kriterienkatalog der Gemeinde vor Vertragsunterzeichnung anzusehen, spart Enttäuschungen. Eine erste Einschätzung zur Lage liefert der [Flächencheck](/flaechencheck); wie das Planverfahren abläuft, erklärt der Ratgeber [Genehmigung und Bebauungsplan](/ratgeber/solarpark-genehmigung-bebauungsplan). Gemeinden finden Hinweise zur Steuerung auf der Seite für [Kommunen](/kommunen).",
+          text: "Für Flächeneigentümer heißt das: Den Kriterienkatalog der Gemeinde vor Vertragsunterzeichnung anzusehen, spart Enttäuschungen. Eine erste Einschätzung zur Lage liefert der [Flächencheck](/de/flaechencheck); wie das Planverfahren abläuft, erklärt der Ratgeber [Genehmigung und Bebauungsplan](/wissen/ratgeber/solarpark-genehmigung-bebauungsplan). Gemeinden finden Hinweise zur Steuerung auf der Seite für [Kommunen](/de/kommunen).",
         },
       ],
     },
@@ -161,7 +162,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Für Verkehrsteilnehmer gibt es keine vergleichbar festen Minutenwerte. Gutachter prüfen, ob Reflexionen im relevanten Blickfeld von Autofahrern, Triebfahrzeugführern oder Piloten liegen und ob Signale überstrahlt werden können. Straßenbaubehörden und Bahn verlangen in ihren Stellungnahmen regelmäßig, dass Blendung ausgeschlossen oder nachträglich durch Sichtschutz beseitigt wird. In der Nähe von Flugplätzen wird die Luftfahrtbehörde beteiligt. Die Besonderheiten entlang von Autobahnen und Schienen beschreibt der Ratgeber [Solarpark an Autobahn und Bahn](/ratgeber/solarpark-autobahn-bahn-privilegierung).",
+          text: "Für Verkehrsteilnehmer gibt es keine vergleichbar festen Minutenwerte. Gutachter prüfen, ob Reflexionen im relevanten Blickfeld von Autofahrern, Triebfahrzeugführern oder Piloten liegen und ob Signale überstrahlt werden können. Straßenbaubehörden und Bahn verlangen in ihren Stellungnahmen regelmäßig, dass Blendung ausgeschlossen oder nachträglich durch Sichtschutz beseitigt wird. In der Nähe von Flugplätzen wird die Luftfahrtbehörde beteiligt. Die Besonderheiten entlang von Autobahnen und Schienen beschreibt der Ratgeber [Solarpark an Autobahn und Bahn](/wissen/ratgeber/solarpark-autobahn-bahn-privilegierung).",
         },
         {
           typ: "kasten",
@@ -215,7 +216,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Kritisch ist meist nicht der Tag, sondern die Nacht: Trafostationen können auch ohne Einspeisung ein leises Brummen erzeugen, und Speicher mit Klimatisierung laufen rund um die Uhr. Bei einem Park mit Batteriespeicher gehört deshalb eine Schallprognose zu den Unterlagen. Die einfachste Lösung ist Abstand: Stationen auf die dem Wohnhaus abgewandte Seite legen und nicht direkt an die Grundstücksgrenze setzen. Zum Thema Speicher siehe [Großspeicher](/grossspeicher).",
+          text: "Kritisch ist meist nicht der Tag, sondern die Nacht: Trafostationen können auch ohne Einspeisung ein leises Brummen erzeugen, und Speicher mit Klimatisierung laufen rund um die Uhr. Bei einem Park mit Batteriespeicher gehört deshalb eine Schallprognose zu den Unterlagen. Die einfachste Lösung ist Abstand: Stationen auf die dem Wohnhaus abgewandte Seite legen und nicht direkt an die Grundstücksgrenze setzen. Zum Thema Speicher siehe [Großspeicher](/de/grossspeicher).",
         },
         {
           typ: "kasten",
@@ -240,7 +241,7 @@ const artikel = {
             "**Süd, fest aufgeständert:** Reflexionen treten vor allem morgens und abends in flachem Winkel auf. Kritisch sind deshalb die Seiten im Westen und Osten, wie die LAI-Hinweise beschreiben.",
             "**Ost-West:** Die Module sind flacher geneigt und zeigen zu beiden Seiten. Das kann Blendzeiten verschieben; Immissionsorte im Norden verdienen bei flachen Neigungen mehr Aufmerksamkeit.",
             "**Nachgeführte Anlagen (Tracker):** Die Neigung ändert sich im Tagesverlauf. Gutachter müssen die Steuerung, einschließlich der Parkposition bei Wind oder am Abend, modellieren.",
-            "**Vertikale Agri-PV:** Senkrechte Module wirken wie eine Fassade. Nach den LAI-Hinweisen sind dann auch Immissionsorte im Süden zu prüfen. Mehr zur Bauweise unter [Agri-PV](/agri-pv).",
+            "**Vertikale Agri-PV:** Senkrechte Module wirken wie eine Fassade. Nach den LAI-Hinweisen sind dann auch Immissionsorte im Süden zu prüfen. Mehr zur Bauweise unter [Agri-PV](/de/agri-pv).",
           ],
         },
         {
@@ -264,7 +265,7 @@ const artikel = {
             "**Höhe:** Die Hecke sollte mindestens die Moduloberkante erreichen, sonst bleibt die Blendwirkung.",
             "**Arten:** Heimische, standortgerechte Sträucher; keine Arten, die später die Module verschatten.",
             "**Lage:** Eingrünung auf der Seite der Wohnbebauung und der Verkehrswege zuerst, mit ausreichend Abstand zu den ersten Modulreihen.",
-            "**Offenlandarten beachten:** In weiten Feldfluren können hohe Gehölze Bodenbrüter wie die Feldlerche vertreiben. Mehr dazu im Ratgeber [Artenschutz und Biodiversität](/ratgeber/solarpark-artenschutz-biodiversitaet).",
+            "**Offenlandarten beachten:** In weiten Feldfluren können hohe Gehölze Bodenbrüter wie die Feldlerche vertreiben. Mehr dazu im Ratgeber [Artenschutz und Biodiversität](/wissen/ratgeber/solarpark-artenschutz-biodiversitaet).",
             "**Pflege sichern:** Anwachspflege, Nachpflanzung und Rückschnitt im städtebaulichen Vertrag regeln.",
             "**Rückbau mitdenken:** Ob die Hecke nach Betriebsende bleibt oder entfernt wird, sollte früh mit Eigentümer und Naturschutzbehörde geklärt werden.",
           ],
@@ -292,7 +293,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Finanzielle Teilhabe kann die Akzeptanz zusätzlich stärken, etwa über die [Kommunalbeteiligung nach § 6 EEG](/ratgeber/kommunale-beteiligung-6-eeg) oder Bürgerbeteiligungsmodelle, die der Ratgeber [Bürgerenergie und Akzeptanz](/ratgeber/buergerenergie-solarpark-akzeptanz) vorstellt. Was eine Gemeinde konkret erhält, zeigt der [Kommunal-Rechner](/rechner/kommune).",
+          text: "Finanzielle Teilhabe kann die Akzeptanz zusätzlich stärken, etwa über die [Kommunalbeteiligung nach § 6 EEG](/wissen/ratgeber/kommunale-beteiligung-6-eeg) oder Bürgerbeteiligungsmodelle, die der Ratgeber [Bürgerenergie und Akzeptanz](/wissen/ratgeber/buergerenergie-solarpark-akzeptanz) vorstellt. Was eine Gemeinde konkret erhält, zeigt der [Kommunal-Rechner](/de/rechner/kommune).",
         },
       ],
     },
@@ -326,12 +327,12 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Genehmigung und Bebauungsplan", text: "Alle Schritte des Verfahrens und die nötigen Gutachten." },
-    { href: "/ratgeber/solarpark-autobahn-bahn-privilegierung", titel: "Solarpark an Autobahn und Bahn", text: "Privilegierung, Förderkorridor und Anbauzonen." },
-    { href: "/ratgeber/buergerenergie-solarpark-akzeptanz", titel: "Bürgerenergie und Akzeptanz", text: "Wie Beteiligung Konflikte entschärft." },
-    { href: "/flaechencheck", titel: "Flächencheck", text: "Lage, Netz und Planungsrecht Ihrer Fläche prüfen." },
-    { href: "/freiflaeche", titel: "Freiflächen-PV entwickeln", text: "Flächenkriterien, Genehmigung und Zeitplan." },
-    { href: "/kommunen", titel: "Solarparks für Kommunen", text: "Wie Gemeinden Kriterien festlegen und mitverdienen." },
+    { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Genehmigung und Bebauungsplan", text: "Alle Schritte des Verfahrens und die nötigen Gutachten." },
+    { href: "/wissen/ratgeber/solarpark-autobahn-bahn-privilegierung", titel: "Solarpark an Autobahn und Bahn", text: "Privilegierung, Förderkorridor und Anbauzonen." },
+    { href: "/wissen/ratgeber/buergerenergie-solarpark-akzeptanz", titel: "Bürgerenergie und Akzeptanz", text: "Wie Beteiligung Konflikte entschärft." },
+    { href: pfad("/flaechencheck"), titel: "Flächencheck", text: "Lage, Netz und Planungsrecht Ihrer Fläche prüfen." },
+    { href: pfad("/freiflaeche"), titel: "Freiflächen-PV entwickeln", text: "Flächenkriterien, Genehmigung und Zeitplan." },
+    { href: pfad("/kommunen"), titel: "Solarparks für Kommunen", text: "Wie Gemeinden Kriterien festlegen und mitverdienen." },
   ],
 
   quellen: [
@@ -346,14 +347,14 @@ const artikel = {
   seitenCta: {
     titel: "Passt Ihre Fläche?",
     text: "Lage, Abstände, Netz und Planungsrecht vorab prüfen.",
-    href: "/flaechencheck",
+    href: pfad("/flaechencheck"),
     label: "Zum Flächencheck",
   },
   cta: {
     title: "Konflikte erkennen, bevor sie das Projekt kosten.",
     text: "Im Flächencheck schätzen wir Lage, Umfeld, Netzanschluss und Planungsrecht Ihrer Fläche ein. Für Flächeneigentümer ist die Plattform von ÖkoInvest kostenfrei.",
-    primary: { label: "Zum Flächencheck", href: "/flaechencheck" },
-    secondary: { label: "Ablauf der Entwicklung", href: "/prozess" },
+    primary: { label: "Zum Flächencheck", href: pfad("/flaechencheck") },
+    secondary: { label: "Ablauf der Entwicklung", href: pfad("/prozess") },
   },
 };
 

@@ -6,6 +6,7 @@
 
 import { FREIFLAECHE, STAND } from "@/lib/invest/markt";
 import { fmt, fmtPct } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag zur Übernahme */
 // EEG 2023 § 37 Abs. 1a: mind. 3 von 5 Kriterien; Modulgrundfläche höchstens 60 %,
@@ -73,7 +74,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Diese Prüfungen sind kein Selbstzweck: Intensiv genutzte Äcker sind oft artenarm, und ein extensiv gepflegter Solarpark kann sie ökologisch aufwerten. Gleichzeitig können Offenlandarten wie Feldlerche oder Kiebitz Lebensraum verlieren. Die Kunst liegt darin, beides zu erkennen und das Layout danach auszurichten. Wie die Gutachten in das Planverfahren eingebettet sind, zeigt der Ratgeber [Genehmigung und Bebauungsplan](/ratgeber/solarpark-genehmigung-bebauungsplan).",
+          text: "Diese Prüfungen sind kein Selbstzweck: Intensiv genutzte Äcker sind oft artenarm, und ein extensiv gepflegter Solarpark kann sie ökologisch aufwerten. Gleichzeitig können Offenlandarten wie Feldlerche oder Kiebitz Lebensraum verlieren. Die Kunst liegt darin, beides zu erkennen und das Layout danach auszurichten. Wie die Gutachten in das Planverfahren eingebettet sind, zeigt der Ratgeber [Genehmigung und Bebauungsplan](/wissen/ratgeber/solarpark-genehmigung-bebauungsplan).",
         },
         {
           typ: "tabelle",
@@ -155,7 +156,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Der Zielkonflikt mit dem Sichtschutz ist real: Die Hecke, die Anwohner vor Blendung schützt, kann Feldlerchen vergrämen. Wie man beides abwägt, zeigt der Ratgeber [Abstand zur Wohnbebauung und Blendgutachten](/ratgeber/solarpark-abstand-wohnbebauung-blendgutachten).",
+          text: "Der Zielkonflikt mit dem Sichtschutz ist real: Die Hecke, die Anwohner vor Blendung schützt, kann Feldlerchen vergrämen. Wie man beides abwägt, zeigt der Ratgeber [Abstand zur Wohnbebauung und Blendgutachten](/wissen/ratgeber/solarpark-abstand-wohnbebauung-blendgutachten).",
         },
       ],
     },
@@ -185,7 +186,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Der Begriff **Biodiversitäts-PV** wird in der Praxis für Parks verwendet, die deutlich über diese Mindestkriterien hinausgehen – etwa mit großen Biotopflächen, Kleingewässern und einem langfristigen Monitoring. Für die Wirtschaftlichkeit ist vor allem Kriterium 1 relevant: Bei einer üblichen Belegung von rund ${fmt(FREIFLAECHE.haProMwp, 1)} ha je MWp bleibt meist Spielraum, bei sehr dichter Ost-West-Belegung kann es eng werden. Wie die Ausschreibung insgesamt funktioniert, erklärt der Ratgeber [EEG-Ausschreibung für Freiflächen](/ratgeber/eeg-ausschreibung-freiflaeche); welche Flächen überhaupt bieten dürfen, regelt die [Flächenkulisse](/wissen/lexikon#flaechenkulisse).`,
+          text: `Der Begriff **Biodiversitäts-PV** wird in der Praxis für Parks verwendet, die deutlich über diese Mindestkriterien hinausgehen – etwa mit großen Biotopflächen, Kleingewässern und einem langfristigen Monitoring. Für die Wirtschaftlichkeit ist vor allem Kriterium 1 relevant: Bei einer üblichen Belegung von rund ${fmt(FREIFLAECHE.haProMwp, 1)} ha je MWp bleibt meist Spielraum, bei sehr dichter Ost-West-Belegung kann es eng werden. Wie die Ausschreibung insgesamt funktioniert, erklärt der Ratgeber [EEG-Ausschreibung für Freiflächen](/wissen/ratgeber/eeg-ausschreibung-freiflaeche); welche Flächen überhaupt bieten dürfen, regelt die [Flächenkulisse](/wissen/lexikon#flaechenkulisse).`,
         },
       ],
     },
@@ -200,11 +201,11 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Typische Maßnahmen sind die Einsaat mit regionalem Saatgut, Blühstreifen, Hecken am Rand und Kleinstrukturen für Reptilien. Reicht das nicht, kommen externe [Ausgleichsflächen](/wissen/lexikon#ausgleichsflaechen) hinzu, die für die Laufzeit gesichert werden müssen – oft über eine Dienstbarkeit. Für Flächeneigentümer ist wichtig: Werden Ausgleichsflächen auf Ihrem Grund festgelegt, sollte der Pachtvertrag regeln, wie lange sie nach dem Rückbau bestehen bleiben. Mehr dazu im Ratgeber [Rückbau und Rückbaubürgschaft](/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).",
+          text: "Typische Maßnahmen sind die Einsaat mit regionalem Saatgut, Blühstreifen, Hecken am Rand und Kleinstrukturen für Reptilien. Reicht das nicht, kommen externe [Ausgleichsflächen](/wissen/lexikon#ausgleichsflaechen) hinzu, die für die Laufzeit gesichert werden müssen – oft über eine Dienstbarkeit. Für Flächeneigentümer ist wichtig: Werden Ausgleichsflächen auf Ihrem Grund festgelegt, sollte der Pachtvertrag regeln, wie lange sie nach dem Rückbau bestehen bleiben. Mehr dazu im Ratgeber [Rückbau und Rückbaubürgschaft](/wissen/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).",
         },
         {
           typ: "p",
-          text: "Die Pflege entscheidet über den Erfolg. Neben der Mahd ist die Beweidung mit Schafen verbreitet; Hinweise zu Besatz, Zaun und Verträgen gibt der Ratgeber [Beweidung mit Schafen](/ratgeber/solarpark-beweidung-schafe). Auf entwässerten Moorböden gelten im EEG eigene Regeln – dazu der Ratgeber [Moor-PV](/ratgeber/moor-pv).",
+          text: "Die Pflege entscheidet über den Erfolg. Neben der Mahd ist die Beweidung mit Schafen verbreitet; Hinweise zu Besatz, Zaun und Verträgen gibt der Ratgeber [Beweidung mit Schafen](/wissen/ratgeber/solarpark-beweidung-schafe). Auf entwässerten Moorböden gelten im EEG eigene Regeln – dazu der Ratgeber [Moor-PV](/wissen/ratgeber/moor-pv).",
         },
       ],
     },
@@ -272,7 +273,7 @@ const artikel = {
         {
           typ: "ablauf",
           schritte: [
-            ["Vorprüfung", "Schutzgebiete, Biotope, bekannte Artvorkommen und Wildkorridore abfragen. Eine erste Einschätzung zur Fläche liefert der [Flächencheck](/flaechencheck)."],
+            ["Vorprüfung", "Schutzgebiete, Biotope, bekannte Artvorkommen und Wildkorridore abfragen. Eine erste Einschätzung zur Fläche liefert der [Flächencheck](/de/flaechencheck)."],
             ["Kartierung terminieren", "Brutvogel- und Reptilienkartierung so beauftragen, dass die Saison nicht verpasst wird."],
             ["Layout anpassen", "Reihenabstände, Grünfenster, Korridore und Zaun nach den Ergebnissen planen; EEG-Kriterien auswählen."],
             ["Ausgleich sichern", "CEF- und Ausgleichsmaßnahmen festlegen, Flächen vertraglich sichern, vor Baubeginn umsetzen."],
@@ -281,7 +282,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Mehr zur technischen Seite von Solarparks finden Sie unter [Freiflächen-PV](/freiflaeche), für landwirtschaftliche Betriebe unter [Landwirte](/landwirte). Wer die Fläche weiter landwirtschaftlich nutzen möchte, findet mit [Agri-PV nach DIN SPEC 91434](/ratgeber/agri-pv-din-spec-91434) eine Alternative.",
+          text: "Mehr zur technischen Seite von Solarparks finden Sie unter [Freiflächen-PV](/de/freiflaeche), für landwirtschaftliche Betriebe unter [Landwirte](/de/landwirte). Wer die Fläche weiter landwirtschaftlich nutzen möchte, findet mit [Agri-PV nach DIN SPEC 91434](/wissen/ratgeber/agri-pv-din-spec-91434) eine Alternative.",
         },
       ],
     },
@@ -315,10 +316,10 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Genehmigung und Bebauungsplan", text: "Wo Umweltbericht und Kartierung im Verfahren stehen." },
-    { href: "/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Flächenkulisse, Höchstwerte und Zuschläge." },
-    { href: "/ratgeber/solarpark-beweidung-schafe", titel: "Beweidung mit Schafen", text: "Pflegekonzept mit Tieren statt Mähwerk." },
-    { href: "/freiflaeche", titel: "Freiflächen-PV", text: "Wie Solarparks geplant und gebaut werden." },
+    { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Genehmigung und Bebauungsplan", text: "Wo Umweltbericht und Kartierung im Verfahren stehen." },
+    { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Flächenkulisse, Höchstwerte und Zuschläge." },
+    { href: "/wissen/ratgeber/solarpark-beweidung-schafe", titel: "Beweidung mit Schafen", text: "Pflegekonzept mit Tieren statt Mähwerk." },
+    { href: pfad("/freiflaeche"), titel: "Freiflächen-PV", text: "Wie Solarparks geplant und gebaut werden." },
   ],
 
   quellen: [
@@ -334,14 +335,14 @@ const artikel = {
   seitenCta: {
     titel: "Schutzgebiete und Lage prüfen",
     text: "Erste Einschätzung zu Fläche, Netz und Planungsrecht.",
-    href: "/flaechencheck",
+    href: pfad("/flaechencheck"),
     label: "Zum Flächencheck",
   },
   cta: {
     title: "Naturschutz früh klären, Zeit im Verfahren sparen.",
     text: "Im Flächencheck schätzen wir Lage, Schutzgebiete, Netzanschluss und Planungsrecht Ihrer Fläche ein. Für Flächeneigentümer ist die Plattform von ÖkoInvest kostenfrei.",
-    primary: { label: "Zum Flächencheck", href: "/flaechencheck" },
-    secondary: { label: "Freiflächen-PV verstehen", href: "/freiflaeche" },
+    primary: { label: "Zum Flächencheck", href: pfad("/flaechencheck") },
+    secondary: { label: "Freiflächen-PV verstehen", href: pfad("/freiflaeche") },
   },
 };
 

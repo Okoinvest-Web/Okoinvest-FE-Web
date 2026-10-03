@@ -6,6 +6,7 @@
 
 import { FREIFLAECHE, FINANZIERUNG, REGIONEN, PHASEN, STAND, annuitaet } from "@/lib/invest/markt";
 import { fmt, fmtEur, fmtCt } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag zur Übernahme */
 // § 8 Abs. 6 EEG: Frist des Netzbetreibers für Zeitplan, Netzverträglichkeitsprüfung und Kostenvoranschlag
@@ -145,7 +146,7 @@ const artikel = {
           typ: "kasten",
           variant: "wichtig",
           titel: "Die 24-Monats-Frist nach dem Zuschlag",
-          text: "Wer einen EEG-Zuschlag erhält, muss den Park innerhalb einer gesetzlichen Frist in Betrieb nehmen; sonst drohen Abschläge und Pönalen. Die Frist läuft ab Zuschlag, nicht ab Netzzusage. Ein Gebot ohne belastbaren Netzanschlusstermin ist deshalb riskant. Mehr im Ratgeber [EEG-Ausschreibung für Freiflächen](/ratgeber/eeg-ausschreibung-freiflaeche).",
+          text: "Wer einen EEG-Zuschlag erhält, muss den Park innerhalb einer gesetzlichen Frist in Betrieb nehmen; sonst drohen Abschläge und Pönalen. Die Frist läuft ab Zuschlag, nicht ab Netzzusage. Ein Gebot ohne belastbaren Netzanschlusstermin ist deshalb riskant. Mehr im Ratgeber [EEG-Ausschreibung für Freiflächen](/wissen/ratgeber/eeg-ausschreibung-freiflaeche).",
         },
       ],
     },
@@ -173,7 +174,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Ein eigenes Umspannwerk kostet in der Regel einen siebenstelligen Betrag und hat lange Lieferzeiten für den Transformator. Es lohnt sich meist nur, wenn viel Leistung zusammenkommt – etwa mehrere Parks einer Region, ein Solarpark mit [Großspeicher](/grossspeicher) oder die Kombination mit Wind. Dafür ist man dann weniger abhängig von der Auslastung der Mittelspannung.",
+          text: "Ein eigenes Umspannwerk kostet in der Regel einen siebenstelligen Betrag und hat lange Lieferzeiten für den Transformator. Es lohnt sich meist nur, wenn viel Leistung zusammenkommt – etwa mehrere Parks einer Region, ein Solarpark mit [Großspeicher](/de/grossspeicher) oder die Kombination mit Wind. Dafür ist man dann weniger abhängig von der Auslastung der Mittelspannung.",
         },
       ],
     },
@@ -204,7 +205,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Rechnung zeigt, warum Pachtangebote je nach Entfernung zum Umspannwerk so stark schwanken: Zwischen ${fmt(V2.km)} und ${fmt(V10.km)} km Trasse liegen im Beispiel rund ${fmtEur(V10.kosten - V2.kosten)} – bei Zuschlagswerten um 5 ct/kWh ein spürbarer Teil der Marge. Wie sich das auf den Projektwert auswirkt, können Sie im [Solarpark-Rechner](/rechner/solarpark) und in der [Projektbewertung](/rechner/projektbewertung) durchspielen.`,
+          text: `Die Rechnung zeigt, warum Pachtangebote je nach Entfernung zum Umspannwerk so stark schwanken: Zwischen ${fmt(V2.km)} und ${fmt(V10.km)} km Trasse liegen im Beispiel rund ${fmtEur(V10.kosten - V2.kosten)} – bei Zuschlagswerten um 5 ct/kWh ein spürbarer Teil der Marge. Wie sich das auf den Projektwert auswirkt, können Sie im [Solarpark-Rechner](/de/rechner/solarpark) und in der [Projektbewertung](/de/rechner/projektbewertung) durchspielen.`,
         },
         {
           typ: "h3",
@@ -237,7 +238,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Für Flächeneigentümer heißt das: Eine Netzanfrage ohne gesicherte Fläche und ohne Planungsschritte wird künftig eher weniger wert sein. Entwickler werden Pachtverträge, Aufstellungsbeschluss und Netzantrag enger takten. Für Investoren wird die Frage „Anschluss mit oder ohne Redispatchvorbehalt?“ Teil der [Due Diligence](/ratgeber/projektrechte-kaufen-due-diligence).",
+          text: "Für Flächeneigentümer heißt das: Eine Netzanfrage ohne gesicherte Fläche und ohne Planungsschritte wird künftig eher weniger wert sein. Entwickler werden Pachtverträge, Aufstellungsbeschluss und Netzantrag enger takten. Für Investoren wird die Frage „Anschluss mit oder ohne Redispatchvorbehalt?“ Teil der [Due Diligence](/wissen/ratgeber/projektrechte-kaufen-due-diligence).",
         },
       ],
     },
@@ -269,7 +270,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Wirtschaftlich rechnet sich die Überbauung, wenn die abgeregelte Energie klein ist im Verhältnis zur zusätzlich installierten Leistung. Mit einem Speicher lässt sich ein Teil der Spitze in die Abendstunden verschieben – die Erlösseite erklärt der Ratgeber [Großspeicher-Erlöse](/ratgeber/grossspeicher-erloese). Zusammen mit den Regeln zu negativen Preisen verändert das die Auslegung neuer Parks spürbar; mehr dazu im Ratgeber [Negative Strompreise und Solarspitzengesetz](/ratgeber/negative-strompreise-solarspitzengesetz).",
+          text: "Wirtschaftlich rechnet sich die Überbauung, wenn die abgeregelte Energie klein ist im Verhältnis zur zusätzlich installierten Leistung. Mit einem Speicher lässt sich ein Teil der Spitze in die Abendstunden verschieben – die Erlösseite erklärt der Ratgeber [Großspeicher-Erlöse](/wissen/ratgeber/grossspeicher-erloese). Zusammen mit den Regeln zu negativen Preisen verändert das die Auslegung neuer Parks spürbar; mehr dazu im Ratgeber [Negative Strompreise und Solarspitzengesetz](/wissen/ratgeber/negative-strompreise-solarspitzengesetz).",
         },
       ],
     },
@@ -280,11 +281,11 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: "**In Österreich beantragen Sie den Netzzugang beim Verteilernetzbetreiber; die Netzbetreiber müssen verfügbare und gebuchte Kapazitäten je Umspannwerk mindestens vierteljährlich veröffentlichen.** Die Regulierungsbehörde E-Control bündelt die Links und hat mit ihrem Aktionsplan Netzanschluss Verfahren und Transparenz verbessert. Mit dem neuen Elektrizitätswirtschaftsgesetz (ElWG) werden Netzzutritts- und Netzbereitstellungsentgelt zu einem leistungsbezogenen Netzanschlussentgelt zusammengefasst; Details im Ratgeber [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich).",
+          text: "**In Österreich beantragen Sie den Netzzugang beim Verteilernetzbetreiber; die Netzbetreiber müssen verfügbare und gebuchte Kapazitäten je Umspannwerk mindestens vierteljährlich veröffentlichen.** Die Regulierungsbehörde E-Control bündelt die Links und hat mit ihrem Aktionsplan Netzanschluss Verfahren und Transparenz verbessert. Mit dem neuen Elektrizitätswirtschaftsgesetz (ElWG) werden Netzzutritts- und Netzbereitstellungsentgelt zu einem leistungsbezogenen Netzanschlussentgelt zusammengefasst; Details im Ratgeber [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich).",
         },
         {
           typ: "p",
-          text: "In der **Schweiz** ist der Verteilnetzbetreiber verpflichtet, Elektrizität aus erneuerbaren Anlagen abzunehmen; die Anschlusskosten und die Frage, ob eine Netzverstärkung über die Netznutzung finanziert wird, klärt der Netzbetreiber im Einzelfall. Bei alpinen Anlagen treiben Leitungen und Erschließung die Kosten besonders. Einordnung im Ratgeber [Freiflächen-PV in der Schweiz](/ratgeber/freiflaechen-pv-schweiz).",
+          text: "In der **Schweiz** ist der Verteilnetzbetreiber verpflichtet, Elektrizität aus erneuerbaren Anlagen abzunehmen; die Anschlusskosten und die Frage, ob eine Netzverstärkung über die Netznutzung finanziert wird, klärt der Netzbetreiber im Einzelfall. Bei alpinen Anlagen treiben Leitungen und Erschließung die Kosten besonders. Einordnung im Ratgeber [Freiflächen-PV in der Schweiz](/wissen/ratgeber/freiflaechen-pv-schweiz).",
         },
       ],
     },
@@ -307,7 +308,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Wer als Eigentümer eine Fläche anbietet, kann die Netzfrage nicht selbst lösen, sollte sie aber kennen: Die Entfernung zum nächsten Umspannwerk ist eine der ersten Fragen im [Flächencheck](/flaechencheck). Investoren finden Projekte mit gesicherter Netzzusage in der [Projektbörse](/projektboerse).",
+          text: "Wer als Eigentümer eine Fläche anbietet, kann die Netzfrage nicht selbst lösen, sollte sie aber kennen: Die Entfernung zum nächsten Umspannwerk ist eine der ersten Fragen im [Flächencheck](/de/flaechencheck). Investoren finden Projekte mit gesicherter Netzzusage in der [Projektbörse](/projektboerse).",
         },
       ],
     },
@@ -341,12 +342,12 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/ratgeber/projektrechte-kaufen-due-diligence", titel: "Projektrechte kaufen", text: "Netzzusage und weitere Punkte der Due Diligence." },
-    { href: "/ratgeber/negative-strompreise-solarspitzengesetz", titel: "Negative Strompreise", text: "Solarspitzengesetz und was es für Parks bedeutet." },
-    { href: "/rechner/projektbewertung", titel: "Projektbewertung", text: "Was ein Projekt mit Netzzusage wert ist." },
-    { href: "/grossspeicher", titel: "Großspeicher", text: "Speicher am Netzverknüpfungspunkt des Solarparks." },
-    { href: "/rechner/netzanschluss", titel: "Netzanschluss-Rechner", text: "Grobe Kosten für Trasse, Übergabestation und Umspannwerk." },
-    { href: "/freiflaeche", titel: "Freiflächen-PV entwickeln", text: "Vom Netzanschluss bis zum Betrieb eines Solarparks." },
+    { href: "/wissen/ratgeber/projektrechte-kaufen-due-diligence", titel: "Projektrechte kaufen", text: "Netzzusage und weitere Punkte der Due Diligence." },
+    { href: "/wissen/ratgeber/negative-strompreise-solarspitzengesetz", titel: "Negative Strompreise", text: "Solarspitzengesetz und was es für Parks bedeutet." },
+    { href: pfad("/rechner/projektbewertung"), titel: "Projektbewertung", text: "Was ein Projekt mit Netzzusage wert ist." },
+    { href: pfad("/grossspeicher"), titel: "Großspeicher", text: "Speicher am Netzverknüpfungspunkt des Solarparks." },
+    { href: pfad("/rechner/netzanschluss"), titel: "Netzanschluss-Rechner", text: "Grobe Kosten für Trasse, Übergabestation und Umspannwerk." },
+    { href: pfad("/freiflaeche"), titel: "Freiflächen-PV entwickeln", text: "Vom Netzanschluss bis zum Betrieb eines Solarparks." },
   ],
 
   quellen: [
@@ -362,13 +363,13 @@ const artikel = {
   seitenCta: {
     titel: "Was kostet Ihr Anschluss?",
     text: "Netzkosten, Ertrag und Rendite überschlägig rechnen.",
-    href: "/rechner/solarpark",
+    href: pfad("/rechner/solarpark"),
     label: "Zum Solarpark-Rechner",
   },
   cta: {
     title: "Fläche mit Netzperspektive?",
     text: "Im Flächencheck schauen wir auf Entfernung zum Umspannwerk, Kulisse und Planungsrecht. Für Flächeneigentümer ist die Plattform von ÖkoInvest kostenfrei.",
-    primary: { label: "Zum Flächencheck", href: "/flaechencheck" },
+    primary: { label: "Zum Flächencheck", href: pfad("/flaechencheck") },
     secondary: { label: "Projekte in der Börse", href: "/projektboerse" },
   },
 };

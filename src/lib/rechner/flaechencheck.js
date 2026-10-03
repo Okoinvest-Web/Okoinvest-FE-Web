@@ -1,10 +1,29 @@
 // src/lib/rechner/flaechencheck.js
 //
 // Flächencheck: erste Eignungseinschätzung einer Fläche für Freiflächen-PV.
-// Reine Funktion ohne React – testbar mit Node. Marktwerte aus markt.js,
-// die Punktelogik ist eine bewusst einfache, transparente Heuristik.
+// Reine Funktion ohne React – testbar mit Node. Die Punktelogik ist eine bewusst
+// einfache, transparente Heuristik. Länderfähig (Welle 2, Paket B1): Pacht- und
+// Freiflächenwerte je Land aus dem Faktenregister über rechenbasisFuer({ land });
+// gesperrte Länder (AT/CH) rechnen wie bisher mit der deutschen Basis und melden `sperre`.
+// AGRI, BAUART und REGIONEN kommen (noch) über die Fassade markt.js.
 
-import { AGRI, BAUART, FREIFLAECHE, PACHT, REGIONEN, regionById, laenderSperre } from "../invest/markt.js";
+import { AGRI, BAUART, REGIONEN, regionById } from "../invest/markt.js";
+import { rechenbasisFuer, annahmenbuch } from "../invest/laender/marktFuer.js";
+
+/** Fakten, auf denen flaechencheck beruht (Annahmenbuch für Bericht B4) */
+export const FLAECHENCHECK_FAKTEN = [
+  "freiflaeche.mindestHa",
+  "freiflaeche.haProMwp",
+  "freiflaeche.kabelProMeter",
+  "freiflaeche.netzanschlussFixProMwp",
+  "pacht.freiflaecheProHa",
+  "pacht.agriProHa",
+  "pacht.laufzeit",
+  "pacht.indexierung",
+];
+
+/** Annahmenbuch (Wert, Quelle, Stand, Status je Fakt) zu einer Eingabe von flaechencheck */
+export const annahmenFlaechencheck = ({ land = "DE" } = {}) => annahmenbuch(FLAECHENCHECK_FAKTEN, { land });
 
 export const LAENDER = [
   { id: "DE", label: "Deutschland" },
@@ -55,6 +74,8 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
  * eingaben: { land, regionId, ha, nutzung, besonderheiten: [], netz, eigentum }
  */
 export function flaechencheck({ land = "DE", regionId, ha = 10, nutzung = "acker", besonderheiten = [], netz = "unbekannt", eigentum = "allein" } = {}) {
+  const basis = rechenbasisFuer({ land });
+  const { FREIFLAECHE, PACHT } = basis.markt;
   const region = regionById(regionId || regionenFuer(land)[0]?.id);
   const hat = (id) => besonderheiten.includes(id);
   const gruende = []; // { punkte, text, art: plus|minus|info }
@@ -155,8 +176,8 @@ export function flaechencheck({ land = "DE", regionId, ha = 10, nutzung = "acker
   const agriMoeglich = ["acker", "gruenland"].includes(nutzung);
   const agriKwp = (ha / BAUART.agriVertikal.haProMwp) * 1000; // vertikal-bifazial, konservativ
 
-  // Länder-Sperre (markt.js LAENDER_SPERRE): €-Pacht und GAP nur für DE, €-Netzkosten nicht für CH
-  const sperre = laenderSperre(land);
+  // Länder-Sperre (laender/sperre.js): €-Pacht und GAP nur für DE, €-Netzkosten nicht für CH
+  const sperre = basis.sperre;
   return {
     sperre,
     score,

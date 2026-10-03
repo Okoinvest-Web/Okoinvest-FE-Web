@@ -1,46 +1,51 @@
 // src/data/regionen/fristen.js
 //
 // Befristete Hinweise (Fristenkästen, Welle 0 / W0-2) für die Regionalseiten.
-// Rein informativ, nur Text, ohne Angebot. Jeder Eintrag ist am Original geprüft
-// und trägt sein Ablaufdatum: Nach Ablauf liefert die Funktion nichts mehr
-// (bei statisch erzeugten Seiten greift das mit dem nächsten Build).
-// Abgelaufene Einträge bei der nächsten Pflege löschen.
+// Rein informativ, nur Text, ohne Angebot.
+//
+// Seit Welle 2 (Paket FRI) eine FASSADE über das Faktenregister: Titel, Text, Quelle und
+// Ablauf stehen als Termin-Fakten (Klasse A, mit Abrufdatum und Prüfstatus) in
+// src/lib/fakten/daten/termine-2026.js. Exporte und Verhalten sind unverändert:
+// Nach Ablauf liefert die Funktion nichts mehr (bei statisch erzeugten Seiten greift das
+// mit dem nächsten Build). Abgelaufene Einträge bei der nächsten Pflege im Register löschen –
+// fehlt ein Eintrag im Register, verhält sich die Fassade wie nach Ablauf.
+//
+// Relativer Import mit Endung, damit die Datei auch ohne Next-Auflösung (node --test) lädt.
+
+import { fakt } from "../../lib/fakten/index.js";
+
+/** Termin-Fakt → { ende, eintrag } im bisherigen Format (eintrag wie `recht[]`) */
+function fristAusRegister(id, land) {
+  const f = fakt(id, land);
+  const w = f?.wert;
+  if (!w || !w.endeZeitpunkt) return { ende: 0, eintrag: null };
+  return {
+    ende: Date.parse(w.endeZeitpunkt),
+    eintrag: { titel: w.titel, text: w.text, quelle: { titel: f.quelle.titel, url: f.quelle.url } },
+  };
+}
 
 /**
  * 3. EAG-Fördercall 2026, Investitionszuschuss PV (Österreich).
- * Geprüft am 03.10.2026: EAG-Abwicklungsstelle, Meldung vom 18.09.2026 –
- * Ticketziehung 08.10.2026 ab 17:00, Einreichung 09.10.2026 ab 08:00 bis 22.10.2026,
- * Portal-Wartung 07.10. 17:00 bis 09.10. 08:00, Ticket allein ist kein Förderantrag.
+ * Register: termin.eag.investitionszuschussCall3 (AT) – Ticketziehung 08.10.2026 ab 17:00,
+ * Einreichung bis 22.10.2026; erscheint bis 22.10.2026 einschließlich.
  */
-export const EAG_CALL_AT = {
-  ende: Date.parse("2026-10-23T00:00:00+02:00"),
-  eintrag: {
-    titel: "Frist: 3. EAG-Fördercall 2026 (8. bis 22. Oktober)",
-    text: "Der 3. Fördercall 2026 für Investitionszuschüsse zu PV-Anlagen startet am **8. Oktober 2026 um 17 Uhr** mit der Ticketziehung; eingereicht wird vom 9. Oktober (8 Uhr) bis **22. Oktober 2026**. Ein Ticket allein ist noch kein Förderantrag. Das EAG-Portal ist vom 7. Oktober (17 Uhr) bis 9. Oktober (8 Uhr) wegen Wartung nicht erreichbar.",
-    quelle: {
-      titel: "EAG-Abwicklungsstelle – 3. Fördercall für Photovoltaikanlagen läuft von 8. bis 22. Oktober 2026 (18.09.2026)",
-      url: "https://www.eag-abwicklungsstelle.at/artikel/3-foerdercall-fuer-photovoltaikanlagen-laeuft-von-8-bis-22-oktober-2026/",
-    },
-  },
-};
+export const EAG_CALL_AT = fristAusRegister("termin.eag.investitionszuschussCall3", "AT");
 
 /**
  * Pronovo PV-Auktionsrunde 4/2026 (Schweiz).
- * Geprüft am 03.10.2026: pronovo.ch/de/foerderung/photovoltaik/auktionen/ –
- * Gebote „ab 18. Oktober bis und mit 1. November 2026“, HEIV 50 MW, Höchstwert 620 Fr./kW,
- * GMP 10 MW, Höchstwert 10 Rp./kWh, Teilnahmegebühr CHF 300, Vorerfassung im Kundenportal jederzeit.
- * Hinweis: Der Masterplan nannte „bis 17.10.“ – laut Pronovo beginnt die Runde erst am 18.10.
+ * Register: termin.pronovo.auktionRunde4 (CH) – Gebote 18.10. bis und mit 01.11.2026.
  */
-const PRONOVO_RUNDE_4_2026 = {
-  ende: Date.parse("2026-11-02T00:00:00+01:00"),
-  eintrag: {
-    titel: "Frist: Pronovo-Auktionsrunde 4/2026 (18. Oktober bis 1. November)",
-    text: "Gebote für die vierte PV-Auktionsrunde 2026 können vom **18. Oktober bis und mit 1. November 2026** eingereicht werden. Ausgeschrieben sind 50 MW für die hohe Einmalvergütung (HEIV, Höchstgebot CHF 620/kW) und 10 MW für die gleitende Marktprämie (Höchstgebot 10 Rp./kWh). Gebote lassen sich vorab im Pronovo-Kundenportal erfassen; die Teilnahmegebühr beträgt CHF 300 je Gebot.",
-    quelle: { titel: "Pronovo – PV-Auktionen (Runde 4/2026)", url: "https://pronovo.ch/de/foerderung/photovoltaik/auktionen/" },
-  },
-};
+const PRONOVO_RUNDE_4_2026 = fristAusRegister("termin.pronovo.auktionRunde4", "CH");
 
-const gueltig = (liste, jetzt) => liste.filter((f) => jetzt < f.ende).map((f) => f.eintrag);
+/**
+ * Marktzugang Schweiz: Mitteilung an den Verteilnetzbetreiber bis 31.10.2026 (Art. 11 Abs. 2 StromVV).
+ * Register: termin.ch.marktzugangMitteilung (CH). Neu in Welle 2 – noch von keiner Seite genutzt;
+ * der Fristenkasten auf /reststrom kann ihn übernehmen.
+ */
+export const MARKTZUGANG_CH = fristAusRegister("termin.ch.marktzugangMitteilung", "CH");
+
+const gueltig = (liste, jetzt) => liste.filter((f) => f.eintrag && jetzt < f.ende).map((f) => f.eintrag);
 
 /** Liefert die noch gültigen Fristen-Einträge für österreichische Regionen (Format wie `recht[]`). */
 export function fristenAT(jetzt = Date.now()) {

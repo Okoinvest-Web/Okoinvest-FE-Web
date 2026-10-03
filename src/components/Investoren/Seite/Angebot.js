@@ -6,6 +6,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import { cn } from "@/components/ui/cn";
 import { PHASEN } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 function Etikett({ children, dunkel = false }) {
   return (
@@ -113,8 +114,8 @@ export default function Angebot() {
           {/* Weitere Wege */}
           <div className="grid gap-4 md:col-span-2 md:grid-cols-2 lg:col-span-2 lg:grid-cols-1 lg:gap-5">
             {[
-              { icon: BatteryCharging, titel: "Speicher & Co-Location", text: "Batteriespeicher am selben Netzanschluss wie der Solarpark oder als eigenständiges Projekt an Netzknoten.", href: "/grossspeicher" },
-              { icon: Users, titel: "Beteiligung für Bürger", text: "Kleinere Beträge? Über die Genossenschaft beteiligen sich Bürger und Landwirte an Parks vor Ort.", href: "/genossenschaft" },
+              { icon: BatteryCharging, titel: "Speicher & Co-Location", text: "Batteriespeicher am selben Netzanschluss wie der Solarpark oder als eigenständiges Projekt an Netzknoten.", href: pfad("/grossspeicher") },
+              { icon: Users, titel: "Beteiligung für Bürger", text: "Kleinere Beträge? Über die Genossenschaft beteiligen sich Bürger und Landwirte an Parks vor Ort.", href: pfad("/genossenschaft") },
             ].map((w, i) => (
               <Reveal key={w.href} delay={160 + i * 60} className="flex">
                 <Link

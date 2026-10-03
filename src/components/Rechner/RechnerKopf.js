@@ -8,6 +8,7 @@ import { cn } from "@/components/ui/cn";
 import { TOOLS } from "./tools";
 import { STAND } from "@/lib/rechner/annahmen";
 import { TextEnthuellung } from "@/components/motion";
+import { pfad } from "@/lib/land";
 
 // Titel kommen oft als <>Text <span …>Betonung</span></> – das Fragment auflösen,
 // damit die Wörter einzeln erscheinen und die Betonung ein Block bleibt.
@@ -28,7 +29,7 @@ export default function RechnerKopf({ toolId, breadcrumb, eyebrow, title, lead, 
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-b from-transparent to-navy-950/50" />
 
       <div className="ov-container pb-28 pt-6 sm:pt-8 md:pb-36 md:pt-10">
-        <Breadcrumbs items={[{ name: "Rechner & Tools", href: "/rechner" }, { name: breadcrumb }]} dark className="ov-hero-in mb-8 md:mb-10" />
+        <Breadcrumbs items={[{ name: "Rechner & Tools", href: pfad("/rechner") }, { name: breadcrumb }]} dark className="ov-hero-in mb-8 md:mb-10" />
 
         <div className="grid items-end gap-y-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:gap-x-14 xl:gap-x-20">
           <div className="max-w-[42rem]">

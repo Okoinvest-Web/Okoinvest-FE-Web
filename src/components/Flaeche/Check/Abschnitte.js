@@ -1,10 +1,11 @@
 // Abschnitte der Seite /flaechencheck: Hero mit Ergebnis-Vorschau und „So bewerten wir“ als Punkteskala
-import { ArrowDown, ArrowUp, Banknote, Gauge, Sun, TrafficCone } from "lucide-react";
+import { ArrowDown, ArrowUp, Banknote, ClipboardCheck, Gauge, Sun, TrafficCone } from "lucide-react";
 import Reveal from "@/components/ui/Reveal";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { cn } from "@/components/ui/cn";
 import { TextEnthuellung } from "@/components/motion";
 import { HeroBuehne, HeroPille, Haken } from "@/components/Flaeche/Seite/teile";
+import { LAENDER, einstiegPfad, pfad } from "@/lib/land";
 
 /** Skala 0–100 mit den Ampelgrenzen des Checks (gelb ab 40, grün ab 65) und dem Startwert 50 */
 export function Punkteskala({ dunkel = false, className }) {
@@ -35,22 +36,29 @@ const ERGEBNIS = [
   { icon: TrafficCone, t: "Ampel mit Begründung", x: "jeder Punkt nachvollziehbar" },
   { icon: Gauge, t: "Mögliche Leistung", x: "in kWp bzw. MWp" },
   { icon: Sun, t: "Stromertrag", x: "für Ihre Region" },
-  { icon: Banknote, t: "Pachtspanne", x: "realistisch, je Hektar und Jahr" },
+  { icon: Banknote, t: "Pachtspanne", x: "realistisch, je Hektar und Jahr", nurDe: true },
+  // AT/CH: keine Pachtwerte bis zur Freigabe (B1) – stattdessen der nächste Schritt
+  { icon: ClipboardCheck, t: "Persönliche Prüfung", x: "auf Wunsch im Anschluss", nichtDe: true },
 ];
 
-export function CheckHero() {
+/** land: Land der Route (Welle 2). DE: wie bisher; AT/CH: ohne Pachtspanne (Länder-Sperre, B1). */
+export function CheckHero({ land = "DE" }) {
+  const de = land === "DE";
+  const krumen = de ? [{ name: "Rechner & Tools", href: pfad("/rechner") }, { name: "Flächencheck" }] : [{ name: LAENDER[land].name, href: einstiegPfad(land) }, { name: "Flächencheck" }];
   return (
-    <HeroBuehne breadcrumbs={[{ name: "Rechner & Tools", href: "/rechner" }, { name: "Flächencheck" }]} unten="pb-28 md:pb-32">
+    <HeroBuehne breadcrumbs={krumen} unten="pb-28 md:pb-32">
       <div className="grid grid-cols-[minmax(0,1fr)] items-center gap-y-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-x-16">
         <div className="max-w-[38rem]">
-          <HeroPille marke="2 Min.">Flächencheck für Solarpark und Agri-PV · DE · AT · CH</HeroPille>
+          <HeroPille marke="2 Min.">{de ? "Flächencheck für Solarpark und Agri-PV · DE · AT · CH" : `Flächencheck für Freiflächen-PV und Agri-PV ${LAENDER[land].inLand}`}</HeroPille>
           <h1 id="hero-titel" className="ov-h1 mt-6 text-balance md:mt-8">
             <TextEnthuellung verzoegerung={80}>
               Hat Ihre Fläche das Zeug <span className="ov-text-gradient-light">zum Solarpark?</span>
             </TextEnthuellung>
           </h1>
           <p className="ov-lead ov-hero-in mt-5 text-pretty text-white/75 md:mt-6" style={{ "--ov-delay": "180ms" }}>
-            Vier kurze Schritte: Lage, Größe, Besonderheiten, Netz. Sie erhalten eine Ampel mit Begründung, die mögliche Leistung, den Stromertrag und eine realistische Pachtspanne.
+            {de
+              ? "Vier kurze Schritte: Lage, Größe, Besonderheiten, Netz. Sie erhalten eine Ampel mit Begründung, die mögliche Leistung, den Stromertrag und eine realistische Pachtspanne."
+              : "Vier kurze Schritte: Lage, Größe, Besonderheiten, Netz. Sie erhalten eine Ampel mit Begründung, die mögliche Leistung und den Stromertrag. Pachtwerte zeigt der Check für dieses Land noch nicht – sie folgen nach fachlicher Prüfung."}
           </p>
           <ul className="ov-hero-in mt-7 flex flex-wrap gap-2" style={{ "--ov-delay": "260ms" }}>
             {["Kostenlos & ohne Anmeldung", "Ergebnis sofort", "Mit Agri-PV-Option"].map((x) => (
@@ -75,7 +83,7 @@ export function CheckHero() {
         <div className="ov-hero-in hidden rounded-[1.6rem] bg-white/[0.05] p-6 ring-1 ring-white/12 backdrop-blur-sm lg:block xl:p-7" style={{ "--ov-delay": "220ms" }}>
           <p className="ov-overline text-ov-300">Ihr Ergebnis</p>
           <ul className="mt-5 grid grid-cols-2 gap-3">
-            {ERGEBNIS.map((e) => (
+            {ERGEBNIS.filter((e) => (de ? !e.nichtDe : !e.nurDe)).map((e) => (
               <li key={e.t} className="rounded-2xl bg-white/[0.06] p-4 ring-1 ring-white/10">
                 <e.icon aria-hidden="true" className="h-5 w-5 text-ov-300" />
                 <p className="mt-3 font-display text-[15px] font-bold leading-snug text-white">{e.t}</p>

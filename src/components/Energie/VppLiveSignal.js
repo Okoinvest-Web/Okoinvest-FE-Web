@@ -5,6 +5,7 @@ import { ArrowUpRight, BatteryCharging, Leaf, Sun } from "lucide-react";
 import useEnergyLive, { fmtCt, fmtGw, fmtUhr } from "@/components/ui/useEnergyLive";
 import { LiveDot } from "@/components/ui/LiveTicker";
 import { cn } from "@/components/ui/cn";
+import { pfad } from "@/lib/land";
 
 /**
  * Live-Kennzahl für das virtuelle Kraftwerk: Börsenpreis jetzt im Verhältnis
@@ -85,7 +86,7 @@ export default function VppLiveSignal({ initial = null, dunkel = true, className
         </div>
       </div>
 
-      <Link href="/energie-live" className={cn("mt-4 inline-flex min-h-11 items-center gap-1.5 text-[14px] font-semibold", dunkel ? "text-white/80 hover:text-white" : "text-ov-700 hover:text-ov-800")}>
+      <Link href={pfad("/energie-live")} className={cn("mt-4 inline-flex min-h-11 items-center gap-1.5 text-[14px] font-semibold", dunkel ? "text-white/80 hover:text-white" : "text-ov-700 hover:text-ov-800")}>
         Strommarkt live ansehen <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
       </Link>
     </div>

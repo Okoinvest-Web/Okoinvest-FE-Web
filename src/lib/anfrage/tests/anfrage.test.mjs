@@ -81,3 +81,9 @@ test("Server-Zähler: ohne Kennung, nur grobe Merkmale", () => {
   assert.equal(Object.values(stand)[0], 2);
   assert.ok(!JSON.stringify(stand).includes("@") && !JSON.stringify(stand).includes("1.2.3.4"));
 });
+
+test("Welle 2 (GRP/B3): Zähler kennt die Kanäle „Gruppe“ und „Partner“, alles Unbekannte bleibt „?“", () => {
+  assert.equal(zaehlerSchluessel({ ereignis: "angelegt", typ: "flaeche", land: "AT", kanal: "Gruppe", tag: "2026-10-03" }).kanal, "Gruppe");
+  assert.equal(zaehlerSchluessel({ ereignis: "angelegt", typ: "flaeche", land: "AT", kanal: "Partner", tag: "2026-10-03" }).kanal, "Partner");
+  assert.equal(zaehlerSchluessel({ ereignis: "angelegt", typ: "flaeche", land: "AT", kanal: "beispiel-installateur-de", tag: "2026-10-03" }).kanal, "?", "keine Kennung im Zähler");
+});

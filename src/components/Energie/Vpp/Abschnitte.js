@@ -6,6 +6,7 @@ import Reveal from "@/components/ui/Reveal";
 import Button from "@/components/ui/Button";
 import Kopf from "@/components/Energie/Seite/Kopf";
 import { cn } from "@/components/ui/cn";
+import { pfad } from "@/lib/land";
 
 const TON = [
   { chip: "bg-sun-50 text-sun-700 ring-sun-200", icon: "bg-sun-50 text-sun-600 ring-sun-200", balken: "from-sun-400 to-sun-300" },
@@ -166,7 +167,7 @@ export function Einstieg() {
       marke: "In einer Minute",
       titel: "Reststrom-Ersparnis berechnen",
       text: "Für Unternehmen: was der gebündelte Einkauf im Pool für Ihr Lastprofil bedeuten kann.",
-      href: "/rechner/reststrom",
+      href: pfad("/rechner/reststrom"),
       label: "Zum Reststrom-Rechner",
       primaer: true,
     },

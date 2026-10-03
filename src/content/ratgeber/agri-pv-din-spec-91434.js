@@ -7,6 +7,7 @@
 
 import { AGRI, BAUART } from "@/lib/invest/markt";
 import { fmt, fmtPct } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* ------------------------------------------------------------------ */
 /* Werte, die (noch) nicht in markt.js stehen – mit Quelle             */
@@ -201,7 +202,7 @@ const artikel = {
           typ: "kasten",
           variant: "tipp",
           titel: "Konzept und Pachtvertrag zusammen denken",
-          text: "Das Nutzungskonzept bindet beide Seiten über Jahre. Regeln Sie im [Pachtvertrag](/ratgeber/pachtvertrag-solarpark), wer die Bewirtschaftung übernimmt, wer die Erträge dokumentiert, wer Schäden an Kultur oder Anlage trägt und was passiert, wenn der Landwirt die Fläche aufgibt. Sonst hängt die Förderung des Betreibers an einer Pflicht, die niemand vertraglich übernommen hat.",
+          text: "Das Nutzungskonzept bindet beide Seiten über Jahre. Regeln Sie im [Pachtvertrag](/wissen/ratgeber/pachtvertrag-solarpark), wer die Bewirtschaftung übernimmt, wer die Erträge dokumentiert, wer Schäden an Kultur oder Anlage trägt und was passiert, wenn der Landwirt die Fläche aufgibt. Sonst hängt die Förderung des Betreibers an einer Pflicht, die niemand vertraglich übernommen hat.",
         },
       ],
     },
@@ -259,7 +260,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Wie sich GAP, EEG und Landesprogramme im Detail zusammensetzen, erklärt der Ratgeber [Agri-PV Förderung & GAP](/ratgeber/agri-pv-foerderung-gap). Die Begriffe [DIN SPEC 91434](/wissen/lexikon#din-spec-91434) und [besondere Solaranlagen](/wissen/lexikon#besondere-solaranlagen) finden Sie auch im Lexikon.`,
+          text: `Wie sich GAP, EEG und Landesprogramme im Detail zusammensetzen, erklärt der Ratgeber [Agri-PV Förderung & GAP](/wissen/ratgeber/agri-pv-foerderung-gap). Die Begriffe [DIN SPEC 91434](/wissen/lexikon#din-spec-91434) und [besondere Solaranlagen](/wissen/lexikon#besondere-solaranlagen) finden Sie auch im Lexikon.`,
         },
       ],
     },
@@ -299,7 +300,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Zum letzten Punkt: Agri-PV ist je Kilowattpeak teurer als ein klassischer Solarpark und braucht mehr Fläche je Megawatt. Welche Erlöse nötig sind und welche Bauart sich für welche Kultur rechnet, zeigt unser Ratgeber zur [Agri-PV-Wirtschaftlichkeit](/ratgeber/agri-pv-wirtschaftlichkeit).",
+          text: "Zum letzten Punkt: Agri-PV ist je Kilowattpeak teurer als ein klassischer Solarpark und braucht mehr Fläche je Megawatt. Welche Erlöse nötig sind und welche Bauart sich für welche Kultur rechnet, zeigt unser Ratgeber zur [Agri-PV-Wirtschaftlichkeit](/wissen/ratgeber/agri-pv-wirtschaftlichkeit).",
         },
       ],
     },
@@ -321,7 +322,7 @@ const artikel = {
         },
         {
           typ: "tool",
-          href: "/rechner/agri-pv",
+          href: pfad("/rechner/agri-pv"),
           titel: "Rechnen Sie Ihre Fläche durch",
           text: "Der Agri-PV-Rechner berücksichtigt Kultur, Bauart und Ertragsanteil nach DIN SPEC 91434 – und vergleicht Pacht, Eigeninvestition und Beteiligung.",
           label: "Zum Agri-PV-Rechner",
@@ -358,10 +359,10 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/ratgeber/agri-pv-foerderung-gap", titel: "Agri-PV Förderung & GAP", text: "Direktzahlungen, EEG-Bonus und Baurecht im Überblick." },
-    { href: "/ratgeber/agri-pv-wirtschaftlichkeit", titel: "Agri-PV Wirtschaftlichkeit", text: "Was vertikale und hohe Anlagen kosten und erlösen." },
-    { href: "/agri-pv", titel: "Agri-PV mit ÖkoInvest", text: "Systeme, Kulturen und Beteiligungsmodelle." },
-    { href: "/landwirte", titel: "Agri-PV für Landwirte", text: "Verpachten, selbst investieren oder beteiligen." },
+    { href: "/wissen/ratgeber/agri-pv-foerderung-gap", titel: "Agri-PV Förderung & GAP", text: "Direktzahlungen, EEG-Bonus und Baurecht im Überblick." },
+    { href: "/wissen/ratgeber/agri-pv-wirtschaftlichkeit", titel: "Agri-PV Wirtschaftlichkeit", text: "Was vertikale und hohe Anlagen kosten und erlösen." },
+    { href: pfad("/agri-pv"), titel: "Agri-PV mit ÖkoInvest", text: "Systeme, Kulturen und Beteiligungsmodelle." },
+    { href: pfad("/landwirte"), titel: "Agri-PV für Landwirte", text: "Verpachten, selbst investieren oder beteiligen." },
   ],
 
   quellen: [
@@ -378,14 +379,14 @@ const artikel = {
   seitenCta: {
     titel: "Passt Agri-PV zu Ihrer Kultur?",
     text: "Bauart, Ertragsanteil und Erlöse für Ihre Fläche vergleichen.",
-    href: "/rechner/agri-pv",
+    href: pfad("/rechner/agri-pv"),
     label: "Zum Agri-PV-Rechner",
   },
   cta: {
     title: "Agri-PV normgerecht planen.",
     text: "Sie bewirtschaften eine Fläche und möchten wissen, welche Bauart zu Ihrer Kultur passt? Starten Sie mit dem Flächencheck – für Flächeneigentümer und Landwirte kostenfrei.",
-    primary: { label: "Flächencheck starten", href: "/flaechencheck" },
-    secondary: { label: "Für Landwirte", href: "/landwirte" },
+    primary: { label: "Flächencheck starten", href: pfad("/flaechencheck") },
+    secondary: { label: "Für Landwirte", href: pfad("/landwirte") },
   },
 };
 

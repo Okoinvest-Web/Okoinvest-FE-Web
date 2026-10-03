@@ -64,6 +64,9 @@ export const RECHNER = {
       at_10ha: (m) => m.pachtRechnung({ ha: 10, regionId: "at" }),
       ch_10ha: (m) => m.pachtRechnung({ ha: 10, regionId: "ch" }),
       parkAuf_12ha: (m) => m.parkAuf(12, "de-sued"),
+      // Welle 2, Paket B1: Land als Parameter (gesperrte Länder rechnen mit DE-Basis, sperre gesetzt)
+      land_de_explizit: (m) => m.pachtRechnung({ land: "DE" }),
+      land_ch_explizit: (m) => m.pachtRechnung({ land: "CH", ha: 10 }),
     },
   },
 
@@ -167,6 +170,8 @@ export const RECHNER = {
       klein_1mwp: (m) => m.rechneKommune({ mwp: 1 }),
       at: (m) => m.rechneKommune({ regionId: "at" }),
       ch: (m) => m.rechneKommune({ regionId: "ch" }),
+      // Welle 2, Paket B1: Land als Parameter
+      land_at_explizit: (m) => m.rechneKommune({ land: "AT" }),
     },
   },
 
@@ -185,6 +190,8 @@ export const RECHNER = {
       zahlungsreihe_standard: (m) => m.zahlungsreihe(m.STANDARD),
       marktSpanne_agri: (m) => m.marktSpanne("agri"),
       parkLeistung_20ha: (m) => m.parkLeistung(20, "de-sued", "freiflaeche"),
+      // Welle 2, Paket B1: Land als Parameter
+      land_ch_explizit: (m) => m.pruefePachtangebot({ land: "CH" }),
     },
   },
 

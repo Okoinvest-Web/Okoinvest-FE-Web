@@ -97,6 +97,20 @@ export const KENNZAHLEN = {
 
 export const SOCIAL = [];
 
+/**
+ * Länderangaben für das Länderrouting (Welle 2): einzige Quelle für Ländernamen und
+ * länderbezogene Kontaktangaben. src/lib/land/laender.js setzt daraus Präfix, Sprache
+ * und Währung zusammen.
+ *
+ * postfach: Team-Postfach je Land. TODO-Inhaber: offen (at@/de@/ch@ oder alles an
+ * office@?). Bis zur Entscheidung null; Komponenten zeigen dann KONTAKT.email.
+ */
+export const LAENDER_ANGABEN = {
+  DE: { name: "Deutschland", inLand: "in Deutschland", fuerLand: "für Deutschland", postfach: null },
+  AT: { name: "Österreich", inLand: "in Österreich", fuerLand: "für Österreich", postfach: null },
+  CH: { name: "Schweiz", inLand: "in der Schweiz", fuerLand: "für die Schweiz", postfach: null },
+};
+
 /** hreflang-Paar für Seiten mit englischem Gegenstück (siehe src/components/En/sprachpaare.js) */
 export const sprachAlternates = (dePfad, enPfad) => ({
   canonical: abs(dePfad),

@@ -28,12 +28,12 @@ export default function ArtikelHero({ artikel, titel, kennzahl, badge, abschnitt
       <div aria-hidden="true" className="pointer-events-none absolute -left-40 -top-40 -z-10 h-[480px] w-[480px] rounded-full bg-ov-500/20 blur-[120px]" />
 
       <div className="ov-container pb-14 pt-6 sm:pt-8 md:pb-20 md:pt-10">
-        <Breadcrumbs items={[{ name: "Ratgeber", href: "/ratgeber" }, { name: artikel.kurzTitel || artikel.title }]} dark className="ov-hero-in mb-8 md:mb-12" />
+        <Breadcrumbs items={[{ name: "Ratgeber", href: "/wissen/ratgeber" }, { name: artikel.kurzTitel || artikel.title }]} dark className="ov-hero-in mb-8 md:mb-12" />
 
         <div className="grid items-center gap-y-12 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] lg:gap-x-12 xl:gap-x-16">
           <div className="min-w-0">
             <a
-              href={`/ratgeber#${themaAnker(artikel.kategorie)}`}
+              href={`/wissen/ratgeber#${themaAnker(artikel.kategorie)}`}
               className="ov-hero-in group inline-flex max-w-full items-center gap-2 rounded-full bg-white/[0.06] py-1.5 pl-2 pr-3.5 text-[13px] font-medium text-white/85 ring-1 ring-inset ring-white/15 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300"
               style={{ "--ov-delay": "40ms" }}
             >

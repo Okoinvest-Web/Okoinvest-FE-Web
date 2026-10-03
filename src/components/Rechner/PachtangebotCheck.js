@@ -11,8 +11,10 @@ import { ErgebnisKopf, Hinweis, MobilKurz, RechnerRahmen } from "./InvestTeile";
 import { AMPEL, AmpelMarke, BalkenJahre, DiagrammKarte, FARBEN, ZahlFeld } from "./ToolTeile";
 import { FLAECHENARTEN, INDEXARTEN, MODELLE, OPTIONEN, STANDARD, pruefePachtangebot } from "@/lib/rechner/pachtangebot";
 import { REGION_KURZ } from "@/lib/rechner/pacht";
-import { PACHT, REGIONEN } from "@/lib/invest/markt";
+import { PACHT, REGIONEN, landVonRegion } from "@/lib/invest/markt";
+import BerichtAnfordern from "@/components/Bericht/BerichtAnfordern";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
+import { pfad } from "@/lib/land";
 
 const tsd = (v) => (Math.abs(v) >= 1e6 ? `${fmt(v / 1e6, 2)} Mio. €` : `${fmt(v / 1000, v >= 1e5 ? 0 : 1)} Tsd. €`);
 
@@ -260,6 +262,7 @@ export default function PachtangebotCheck() {
                 Fachliche Orientierung, keine Rechtsberatung. Lassen Sie den Vertragstext vor der Unterschrift anwaltlich prüfen – idealerweise auf Kosten des Projektierers.
               </p>
             </div>
+            {!sperre && <BerichtAnfordern rechner="pachtangebot" land={landVonRegion(e.regionId)} eingaben={e} />}
           </>
         }
         unten={
@@ -292,7 +295,7 @@ export default function PachtangebotCheck() {
                 </p>
               </div>
               <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-                <Button href="/flaechencheck" variant="white" size="lg" pfeil>
+                <Button href={pfad("/flaechencheck")} variant="white" size="lg" pfeil>
                   Fläche prüfen lassen
                 </Button>
               </div>

@@ -74,7 +74,7 @@ export default function Solarpflicht({ pflicht, schwellen, ohne, stand }) {
             <div aria-hidden="true" className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-ov-500/25 blur-3xl" />
             <p className="ov-overline relative text-ov-300">Ratgeber</p>
             <h3 className="relative mt-2 font-display text-[18px] font-bold leading-snug">
-              <Link href="/ratgeber/parkplatz-solarpflicht-bundeslaender" className="group inline-flex items-start gap-2 rounded outline-none after:absolute after:inset-0 after:content-[''] focus-visible:ring-2 focus-visible:ring-ov-300">
+              <Link href="/wissen/ratgeber/parkplatz-solarpflicht-bundeslaender" className="group inline-flex items-start gap-2 rounded outline-none after:absolute after:inset-0 after:content-[''] focus-visible:ring-2 focus-visible:ring-ov-300">
                 Solarpflicht für Parkplätze: Details, Rechtsgrundlagen und Ausnahmen
                 <ArrowUpRight aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-ov-300 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
               </Link>

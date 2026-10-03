@@ -14,6 +14,8 @@ import { AGRI, PACHT, STAND } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import { ereignis, useEreignisEinmal } from "@/lib/ereignis";
 import { grundstueck } from "@/lib/anfrage/laender";
+import BerichtAnfordern from "@/components/Bericht/BerichtAnfordern";
+import { pfad } from "@/lib/land";
 
 const SCHRITTE = ["Standort", "Fläche", "Besonderheiten", "Netz & Eigentum"];
 const NUTZUNG_ICON = { acker: Wheat, gruenland: Sprout, konversion: Factory, deponie: Recycle, parkplatz: Car, sonstige: Info };
@@ -106,10 +108,11 @@ function uebernahmeLesen() {
 
 const spanne = (a, b) => (b >= 1e6 ? `${fmt(a / 1e6, 2)}–${fmt(b / 1e6, 2)} Mio. €` : `${fmt(a / 1000)}–${fmt(b / 1000)} Tsd. €`);
 
-export default function FlaechenWizard() {
+/** land: Land der Route (Welle 2) – belegt die Länderwahl vor; Besucher können sie ändern. */
+export default function FlaechenWizard({ land: routenLand = null }) {
   const [schritt, setSchritt] = useState(0);
   const [richtung, setRichtung] = useState("vor");
-  const [land, setLand] = useState(null);
+  const [land, setLand] = useState(routenLand);
   const [regionId, setRegionId] = useState(null);
   const [ha, setHa] = useState(10);
   const [nutzung, setNutzung] = useState(null);
@@ -825,7 +828,7 @@ function Ergebnis({ e, eingaben, onNeu, onAendern }) {
                   <>. Förderung und Pacht für {LAND_NAME[eingaben.land] || "Ihr Land"}: Rechenlogik in Vorbereitung.</>
                 )}
               </p>
-              <Link href="/agri-pv" className="mt-3 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-ov-700 hover:text-ov-800">
+              <Link href={pfad("/agri-pv")} className="mt-3 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-ov-700 hover:text-ov-800">
                 Agri-PV ansehen <ArrowRight aria-hidden="true" className="h-4 w-4" />
               </Link>
             </div>
@@ -836,7 +839,7 @@ function Ergebnis({ e, eingaben, onNeu, onAendern }) {
                 <Car aria-hidden="true" className="h-5 w-5 text-navy-600" /> Solarcarport
               </p>
               <p className="mt-2 text-[14.5px] leading-relaxed text-ink-700">Auf Parkplätzen bauen wir Solarcarports – mit Ladepunkten und ohne Flächenverlust.</p>
-              <Link href="/solarcarport" className="mt-3 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-navy-700 hover:text-navy-800">
+              <Link href={pfad("/solarcarport")} className="mt-3 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-navy-700 hover:text-navy-800">
                 Solarcarport ansehen <ArrowRight aria-hidden="true" className="h-4 w-4" />
               </Link>
             </div>
@@ -891,6 +894,9 @@ function Ergebnis({ e, eingaben, onNeu, onAendern }) {
           <AnfrageFormular typ="flaeche" land={eingaben.land} daten={daten} felder={["telefon", "plz", "ort", "nachricht"]} button="Ergebnis senden" />
         </div>
       </section>
+
+      {/* Paket B4: Ergebnis als Bericht (ruhiger Zusatz; das Ergebnis oben bleibt frei) */}
+      <BerichtAnfordern rechner="flaechencheck" land={eingaben.land} eingaben={eingaben} className="mt-8" />
 
       <div className="mt-8 flex flex-col items-start justify-between gap-4 border-t border-ink-100 pt-6 sm:flex-row sm:items-center">
         <p className="max-w-2xl text-[13px] leading-relaxed text-ink-500">

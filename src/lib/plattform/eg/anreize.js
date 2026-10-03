@@ -6,6 +6,7 @@
 // Reine Funktionen. Python-Spiegel: plattform/eg_portal_kern.py (Testvektoren eg/testdaten/portal/*.json).
 
 import { fensterText } from "./empfehlung.js";
+import { pfad } from "../../land/index.js";
 
 const WT = ["so", "mo", "di", "mi", "do", "fr", "sa"];
 const r2 = (x) => Math.round((Number(x) || 0) * 100) / 100;
@@ -55,7 +56,7 @@ export function anreizeFuer({ tarif = null, heute = "", stunden = null, kennzahl
   const verbraucht = zaehlpunkte.some((z) => z.richtung !== "erzeugung");
   const speicher = anlagen.some((a) => a.art === "speicher" || Number(a.speicherKwh) > 0);
   const nutzung = kennzahlen?.nutzungPct;
-  if (erzeugt && !speicher) aus.push({ id: "speicher", art: "speicher", prio: nutzung !== null && nutzung !== undefined && nutzung < 60 ? 2 : 3, titel: "Speicher prüfen", text: nutzung !== null && nutzung !== undefined && nutzung < 60 ? `Nur ${de(nutzung)} % Ihrer Erzeugung werden in der Gemeinschaft genutzt. Ein Speicher verschiebt Mittagsstrom in den Abend – fürs eigene Haus und für Ihre Nachbarn.` : "Ein Batteriespeicher erhöht Ihren Eigenverbrauch. Für Gemeinschaftsspeicher sind die Messregeln (§ 111 ElWG) noch offen.", link: "/rechner" });
+  if (erzeugt && !speicher) aus.push({ id: "speicher", art: "speicher", prio: nutzung !== null && nutzung !== undefined && nutzung < 60 ? 2 : 3, titel: "Speicher prüfen", text: nutzung !== null && nutzung !== undefined && nutzung < 60 ? `Nur ${de(nutzung)} % Ihrer Erzeugung werden in der Gemeinschaft genutzt. Ein Speicher verschiebt Mittagsstrom in den Abend – fürs eigene Haus und für Ihre Nachbarn.` : "Ein Batteriespeicher erhöht Ihren Eigenverbrauch. Für Gemeinschaftsspeicher sind die Messregeln (§ 111 ElWG) noch offen.", link: pfad("/rechner") });
   if (verbraucht) aus.push({ id: "wallbox", art: "wallbox", prio: kennzahlen?.anteilPct !== null && kennzahlen?.anteilPct !== undefined && kennzahlen.anteilPct < 25 ? 2 : 3, titel: "E-Auto und Wärmepumpe mittags laufen lassen", text: "Ein Ladeplan für die Wallbox oder eine Zeitschaltung für Wärmepumpe und Boiler verschiebt Verbrauch in die Sonnenstunden – das erhöht Ihren Gemeinschaftsanteil ohne Komfortverlust." });
   for (const m of mehrfach) if (m.richtung === "erzeugung" && m.freiTf > 0 && m.anzahl > 0) aus.push({ id: `frei-${m.zaehlpunktId}`, art: "tf", prio: 2, titel: `${m.freiTf} % Ihrer Erzeugung sind frei`, text: "Sie können diesen Anteil einer weiteren Gemeinschaft zur Verfügung stellen (bis zu fünf Gemeinschaften je Zählpunkt).", link: "/portal/eg/mehrfach" });
   return aus.sort((a, b) => a.prio - b.prio);

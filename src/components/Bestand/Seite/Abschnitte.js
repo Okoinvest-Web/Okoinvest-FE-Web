@@ -6,6 +6,7 @@ import Reveal from "@/components/ui/Reveal";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import BestandAnfrage from "@/components/Bestand/BestandAnfrage";
+import { pfad } from "@/lib/land";
 
 /* ---------- Verkäufer und Käufer ---------- */
 const SEITEN = [
@@ -210,7 +211,7 @@ export function Anfrage() {
             <p className="mt-2 text-[15px] leading-relaxed text-ink-600">
               Der Bewertungsrechner zeigt Ertragswert, Spanne, Wert je kWp und die wichtigsten Werttreiber Ihrer Anlage – ohne Anmeldung.
             </p>
-            <Link href="/rechner/bestandsanlage" className="group mt-5 inline-flex items-center gap-2 rounded text-[15px] font-semibold text-ov-700 hover:text-ov-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
+            <Link href={pfad("/rechner/bestandsanlage")} className="group mt-5 inline-flex items-center gap-2 rounded text-[15px] font-semibold text-ov-700 hover:text-ov-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
               Zum Bewertungsrechner <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
             </Link>
           </Reveal>

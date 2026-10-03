@@ -5,6 +5,7 @@
 
 import { ERLOESE, REGIONEN, STAND } from "@/lib/invest/markt";
 import { fmt, fmtEur, fmtPct, fmtCt } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* ------------------------------------------------------------------ */
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag zur Übernahme */
@@ -101,7 +102,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Für einen Freiflächen-Solarpark ist die [Direktvermarktung](/wissen/lexikon#direktvermarktung) deshalb kein Wahlpunkt, sondern Standard. Offen ist nur, **in welcher Form**: gefördert über die [Marktprämie](/wissen/lexikon#marktpraemie) mit einem Zuschlag aus der [EEG-Ausschreibung](/ratgeber/eeg-ausschreibung-freiflaeche), ungefördert über einen Stromliefervertrag ([PPA](/wissen/lexikon#ppa)) oder rein am Spotmarkt (Merchant). Auch ein ungeförderter Park braucht in aller Regel einen Direktvermarkter, der Prognose, Bilanzkreis und Handel übernimmt.`,
+          text: `Für einen Freiflächen-Solarpark ist die [Direktvermarktung](/wissen/lexikon#direktvermarktung) deshalb kein Wahlpunkt, sondern Standard. Offen ist nur, **in welcher Form**: gefördert über die [Marktprämie](/wissen/lexikon#marktpraemie) mit einem Zuschlag aus der [EEG-Ausschreibung](/wissen/ratgeber/eeg-ausschreibung-freiflaeche), ungefördert über einen Stromliefervertrag ([PPA](/wissen/lexikon#ppa)) oder rein am Spotmarkt (Merchant). Auch ein ungeförderter Park braucht in aller Regel einen Direktvermarkter, der Prognose, Bilanzkreis und Handel übernimmt.`,
         },
         {
           typ: "kasten",
@@ -141,7 +142,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Zur Einordnung: Der Jahresmarktwert Solar lag 2024 bei ${fmtCt(JW_SOLAR[2024], 3)} und 2025 bei ${fmtCt(JW_SOLAR[2025], 3)}. Der durchschnittliche Day-Ahead-Preis betrug laut Bundesnetzagentur ${fmtCt(BASE_CT[2024], 2)} (2024) und ${fmtCt(BASE_CT[2025], 2)} (2025). Solarstrom erlöste also nur rund ${fmtPct(CR[2024], 0)} bzw. ${fmtPct(CR[2025], 0)} des Durchschnittspreises – die [Capture Rate](/wissen/lexikon#capture-rate) sinkt mit jedem Gigawatt Zubau. Liegt der Zuschlagswert eines Parks bei rund ${fmtCt(AW, 1)}, fließt die Prämie deshalb heute in den meisten Jahren tatsächlich. Aktuelle Werte zeigen die [Marktdaten](/marktdaten).`,
+          text: `Zur Einordnung: Der Jahresmarktwert Solar lag 2024 bei ${fmtCt(JW_SOLAR[2024], 3)} und 2025 bei ${fmtCt(JW_SOLAR[2025], 3)}. Der durchschnittliche Day-Ahead-Preis betrug laut Bundesnetzagentur ${fmtCt(BASE_CT[2024], 2)} (2024) und ${fmtCt(BASE_CT[2025], 2)} (2025). Solarstrom erlöste also nur rund ${fmtPct(CR[2024], 0)} bzw. ${fmtPct(CR[2025], 0)} des Durchschnittspreises – die [Capture Rate](/wissen/lexikon#capture-rate) sinkt mit jedem Gigawatt Zubau. Liegt der Zuschlagswert eines Parks bei rund ${fmtCt(AW, 1)}, fließt die Prämie deshalb heute in den meisten Jahren tatsächlich. Aktuelle Werte zeigen die [Marktdaten](/de/marktdaten).`,
         },
       ],
     },
@@ -174,7 +175,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Spreizung von rund ${fmtEur(Math.round((szenario(SZENARIEN[2].faktor).eur - szenario(SZENARIEN[0].faktor).eur) / 1000) * 1000)} im Jahr zeigt, warum Investoren heute nicht nur auf den Zuschlagswert schauen. Hinzu kommt § 51 EEG: In Viertelstunden mit negativen Preisen entfällt für neue Anlagen die Prämie ganz. Wie stark das wirkt und welche Strategien helfen, erklärt der Ratgeber [negative Strompreise und Solarspitzengesetz](/ratgeber/negative-strompreise-solarspitzengesetz). Für die Ertragsseite lohnt ein Blick in das [Ertragsgutachten P50/P90](/ratgeber/ertragsgutachten-p50-p90).`,
+          text: `Die Spreizung von rund ${fmtEur(Math.round((szenario(SZENARIEN[2].faktor).eur - szenario(SZENARIEN[0].faktor).eur) / 1000) * 1000)} im Jahr zeigt, warum Investoren heute nicht nur auf den Zuschlagswert schauen. Hinzu kommt § 51 EEG: In Viertelstunden mit negativen Preisen entfällt für neue Anlagen die Prämie ganz. Wie stark das wirkt und welche Strategien helfen, erklärt der Ratgeber [negative Strompreise und Solarspitzengesetz](/wissen/ratgeber/negative-strompreise-solarspitzengesetz). Für die Ertragsseite lohnt ein Blick in das [Ertragsgutachten P50/P90](/wissen/ratgeber/ertragsgutachten-p50-p90).`,
         },
       ],
     },
@@ -217,7 +218,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Wie Direktvermarkter viele Anlagen, Speicher und Verbraucher gemeinsam steuern, erklären der Ratgeber [virtuelles Kraftwerk](/ratgeber/virtuelles-kraftwerk) und die Seite zum [virtuellen Kraftwerk von ÖkoInvest](/virtuelles-kraftwerk).",
+          text: "Wie Direktvermarkter viele Anlagen, Speicher und Verbraucher gemeinsam steuern, erklären der Ratgeber [virtuelles Kraftwerk](/wissen/ratgeber/virtuelles-kraftwerk) und die Seite zum [virtuellen Kraftwerk von ÖkoInvest](/de/virtuelles-kraftwerk).",
         },
       ],
     },
@@ -249,7 +250,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Bei gesetzlich festgelegten anzulegenden Werten ist die Direktvermarktung eingepreist: Wer ersatzweise Einspeisevergütung nimmt, erhält bei Solar 0,4 ct/kWh weniger (§ 53 Abs. 1 EEG). In der Ausschreibung gibt es diesen Aufschlag nicht – das [Direktvermarktungsentgelt](/wissen/lexikon#direktvermarktungsentgelt) muss im Gebotswert kalkuliert sein. Wie sich Entgelt und Erlöspfad auf die Rendite auswirken, zeigt der [Solarpark-Rechner](/rechner/solarpark).`,
+          text: `Bei gesetzlich festgelegten anzulegenden Werten ist die Direktvermarktung eingepreist: Wer ersatzweise Einspeisevergütung nimmt, erhält bei Solar 0,4 ct/kWh weniger (§ 53 Abs. 1 EEG). In der Ausschreibung gibt es diesen Aufschlag nicht – das [Direktvermarktungsentgelt](/wissen/lexikon#direktvermarktungsentgelt) muss im Gebotswert kalkuliert sein. Wie sich Entgelt und Erlöspfad auf die Rendite auswirken, zeigt der [Solarpark-Rechner](/de/rechner/solarpark).`,
         },
       ],
     },
@@ -264,14 +265,14 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Interessant wird das, wenn der Markt dauerhaft über dem anzulegenden Wert liegt – wie 2022 – oder wenn ein Abnehmer [Herkunftsnachweise](/wissen/lexikon#herkunftsnachweis) braucht. Für geförderten Strom werden keine Herkunftsnachweise ausgestellt; wer grüne Eigenschaften mitverkaufen will, muss die betreffende Menge in die sonstige Direktvermarktung überführen und verzichtet für diese Monate auf die Prämie. Die Förderdauer von 20 Jahren läuft dabei weiter. Wie ein Stromliefervertrag aufgebaut ist, erklärt der Ratgeber [PPA für Unternehmen](/ratgeber/ppa-fuer-unternehmen).`,
+          text: `Interessant wird das, wenn der Markt dauerhaft über dem anzulegenden Wert liegt – wie 2022 – oder wenn ein Abnehmer [Herkunftsnachweise](/wissen/lexikon#herkunftsnachweis) braucht. Für geförderten Strom werden keine Herkunftsnachweise ausgestellt; wer grüne Eigenschaften mitverkaufen will, muss die betreffende Menge in die sonstige Direktvermarktung überführen und verzichtet für diese Monate auf die Prämie. Die Förderdauer von 20 Jahren läuft dabei weiter. Wie ein Stromliefervertrag aufgebaut ist, erklärt der Ratgeber [PPA für Unternehmen](/wissen/ratgeber/ppa-fuer-unternehmen).`,
         },
         {
           typ: "liste",
           punkte: [
             "**Vor dem Wechsel rechnen:** Die Marktprämie ist eine Absicherung nach unten. Wer sie aufgibt, trägt das volle Preisrisiko – bei Bankfinanzierung meist nur mit Zustimmung der Bank.",
             "**Rückweg prüfen:** Der Wechsel zurück in die Marktprämie ist nach denselben Fristen möglich, sollte aber im PPA-Vertrag abgebildet sein (Laufzeit, Mengen, Kündigung).",
-            "**Förderende einplanen:** Nach 20 Jahren entfällt die Prämie; der Park läuft dann über PPA oder Merchant weiter. Das bestimmt den Restwert – mehr im Ratgeber [Bestandsanlagen bewerten](/ratgeber/solarpark-bestandsanlage-wert).",
+            "**Förderende einplanen:** Nach 20 Jahren entfällt die Prämie; der Park läuft dann über PPA oder Merchant weiter. Das bestimmt den Restwert – mehr im Ratgeber [Bestandsanlagen bewerten](/wissen/ratgeber/solarpark-bestandsanlage-wert).",
           ],
         },
       ],
@@ -299,14 +300,14 @@ const artikel = {
         },
         {
           typ: "tool",
-          href: "/rechner/solarpark",
+          href: pfad("/rechner/solarpark"),
           titel: "Erlöspfade durchrechnen",
           text: "Zuschlagswert, PPA-Preis oder Merchant-Erlös eingeben – der Solarpark-Rechner zeigt Cashflow, Rendite und Schuldendienstdeckung.",
           label: "Zum Solarpark-Rechner",
         },
         {
           typ: "p",
-          text: `In Österreich wird die EAG-Marktprämie ebenfalls als gleitende Prämie gezahlt, Direktvermarktung ist dort für größere Anlagen ebenso üblich. In der Schweiz setzen Freiflächenanlagen andere Förderinstrumente voraus. Überblick unter [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich). Stand der Angaben: ${STAND}.`,
+          text: `In Österreich wird die EAG-Marktprämie ebenfalls als gleitende Prämie gezahlt, Direktvermarktung ist dort für größere Anlagen ebenso üblich. In der Schweiz setzen Freiflächenanlagen andere Förderinstrumente voraus. Überblick unter [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich). Stand der Angaben: ${STAND}.`,
         },
       ],
     },
@@ -340,10 +341,10 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/ratgeber/negative-strompreise-solarspitzengesetz", titel: "Negative Strompreise", text: "§ 51 EEG, Solarspitzengesetz und Strategien für Freiflächen." },
-    { href: "/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Wie der anzulegende Wert zustande kommt." },
-    { href: "/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Stromlieferverträge als Alternative zur Marktprämie." },
-    { href: "/marktdaten", titel: "Marktdaten", text: "Zuschlagswerte, Marktwert Solar und Capture Rate." },
+    { href: "/wissen/ratgeber/negative-strompreise-solarspitzengesetz", titel: "Negative Strompreise", text: "§ 51 EEG, Solarspitzengesetz und Strategien für Freiflächen." },
+    { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Wie der anzulegende Wert zustande kommt." },
+    { href: "/wissen/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Stromlieferverträge als Alternative zur Marktprämie." },
+    { href: pfad("/marktdaten"), titel: "Marktdaten", text: "Zuschlagswerte, Marktwert Solar und Capture Rate." },
   ],
 
   quellen: [
@@ -360,14 +361,14 @@ const artikel = {
   seitenCta: {
     titel: "Welcher Erlöspfad trägt?",
     text: "EEG, PPA und Merchant mit Ihren Werten vergleichen.",
-    href: "/rechner/solarpark",
+    href: pfad("/rechner/solarpark"),
     label: "Zum Solarpark-Rechner",
   },
   cta: {
     title: "Solarpark im Blick – mit Zuschlag oder PPA?",
     text: "In der Projektbörse finden Investoren Projekte in allen Entwicklungsphasen. Für Investoren ist die Suche kostenfrei.",
     primary: { label: "Zur Projektbörse", href: "/projektboerse" },
-    secondary: { label: "Virtuelles Kraftwerk", href: "/virtuelles-kraftwerk" },
+    secondary: { label: "Virtuelles Kraftwerk", href: pfad("/virtuelles-kraftwerk") },
   },
 };
 

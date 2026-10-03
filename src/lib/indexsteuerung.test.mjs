@@ -71,6 +71,9 @@ test("robots.txt Nicht-Produktion: alles gesperrt, keine Sitemap", () => {
 test("robots.txt Produktion: Regeln nach E5", () => {
   const r = robotsRegeln({ indexierbar: true, siteUrl: PRODUKTIONS_URL });
   assert.equal(r.sitemap, "https://www.oekoinvest.com/sitemap.xml");
+  // Welle 2: mehrere Sitemaps (je Land und Stamm)
+  const mehr = robotsRegeln({ indexierbar: true, siteUrl: "https://www.oekoinvest.com", sitemaps: ["https://www.oekoinvest.com/sitemap/de.xml", "https://www.oekoinvest.com/sitemap/stamm.xml"] });
+  assert.deepEqual(mehr.sitemap, ["https://www.oekoinvest.com/sitemap/de.xml", "https://www.oekoinvest.com/sitemap/stamm.xml"]);
   const gruppe = (ua) => r.rules.find((g) => (Array.isArray(g.userAgent) ? g.userAgent : [g.userAgent]).includes(ua));
 
   // Such- und Abrufcrawler: keine eigene Gruppe → "*" (öffentliche Seiten erlaubt)
@@ -85,9 +88,10 @@ test("robots.txt Produktion: Regeln nach E5", () => {
   for (const ua of ["GPTBot", "Google-Extended"]) {
     const g = gruppe(ua);
     assert.equal(g.disallow, "/");
-    assert.ok(g.allow.includes("/ratgeber"));
+    assert.ok(g.allow.includes("/wissen/")); // Ratgeber liegt seit Welle 2 unter /wissen/ratgeber
+    assert.ok(g.allow.includes("/de/regionen") && g.allow.includes("/at/regionen"));
     assert.ok(!g.allow.includes("/"));
-    assert.ok(!g.allow.some((p) => p.startsWith("/portal") || p.startsWith("/einladung") || p.startsWith("/energie-live")));
+    assert.ok(!g.allow.some((p) => p.startsWith("/portal") || p.startsWith("/einladung") || p.includes("/energie-live")));
   }
 
   // CCBot und Bytespider komplett gesperrt
@@ -113,6 +117,10 @@ test("Sprache nach Pfad", () => {
   assert.equal(spracheFuerPfad("/en/investors"), "en");
   assert.equal(spracheFuerPfad("/energie-live"), "de");
   assert.equal(spracheFuerPfad("/"), "de");
+  assert.equal(spracheFuerPfad("/de/rechner/pacht"), "de-DE");
+  assert.equal(spracheFuerPfad("/at"), "de-AT");
+  assert.equal(spracheFuerPfad("/ch/marktzugang-check"), "de-CH");
+  assert.equal(spracheFuerPfad("/datenschutz"), "de");
   assert.equal(spracheFuerPfad(null), "de");
 });
 

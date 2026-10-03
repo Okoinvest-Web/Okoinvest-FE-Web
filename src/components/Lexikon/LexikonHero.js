@@ -31,7 +31,7 @@ export default function LexikonHero({ anzahl, proBuchstabe = {}, kennzahlen = []
       </p>
 
       <div className="ov-container pb-20 pt-6 sm:pt-8 md:pb-28 md:pt-10">
-        <Breadcrumbs items={[{ name: "Ratgeber", href: "/ratgeber" }, { name: "Lexikon" }]} dark className="ov-hero-in mb-8 md:mb-12" />
+        <Breadcrumbs items={[{ name: "Ratgeber", href: "/wissen/ratgeber" }, { name: "Lexikon" }]} dark className="ov-hero-in mb-8 md:mb-12" />
 
         <div className="grid items-center gap-y-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)] lg:gap-x-12 xl:gap-x-20">
           {/* ---------- Text ---------- */}

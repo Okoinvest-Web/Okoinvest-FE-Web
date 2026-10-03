@@ -11,6 +11,7 @@
 
 import { AGRI, ERLOESE, PACHT } from "@/lib/invest/markt";
 import { fmt, fmtEur, fmtPct, fmtCt } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* ------------------------------------------------------------------ */
 /* Werte, die (noch) nicht in markt.js stehen – mit Quelle             */
@@ -93,7 +94,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Keiner dieser Hebel greift automatisch. Die Anlage muss so geplant sein, dass die Landwirtschaft die Hauptnutzung bleibt. Maßstab dafür ist fast überall die [DIN SPEC 91434](/ratgeber/agri-pv-din-spec-91434): Sie legt fest, wie viel Fläche die Anlage höchstens verbrauchen darf, welcher Ertrag auf dem Acker bleiben muss und was im landwirtschaftlichen Nutzungskonzept stehen muss. Wer die Norm von Anfang an einplant, erfüllt damit weitgehend auch die Anforderungen für GAP, EEG und Baurecht.",
+          text: "Keiner dieser Hebel greift automatisch. Die Anlage muss so geplant sein, dass die Landwirtschaft die Hauptnutzung bleibt. Maßstab dafür ist fast überall die [DIN SPEC 91434](/wissen/ratgeber/agri-pv-din-spec-91434): Sie legt fest, wie viel Fläche die Anlage höchstens verbrauchen darf, welcher Ertrag auf dem Acker bleiben muss und was im landwirtschaftlichen Nutzungskonzept stehen muss. Wer die Norm von Anfang an einplant, erfüllt damit weitgehend auch die Anforderungen für GAP, EEG und Baurecht.",
         },
         {
           typ: "kennzahl",
@@ -164,7 +165,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Auf ${fmt(HA)} ha verliert der Betrieb durch die Agri-PV-Anlage also rund ${fmtEur(GAP_VERLUST_AGRI)} Direktzahlungen im Jahr – ein kleiner Betrag im Vergleich zur Pacht, die ein Investor für Agri-PV typischerweise zahlt (Orientierung: ${fmtEur(PACHT.agriProHa.min)} bis ${fmtEur(PACHT.agriProHa.max)} je Hektar, auf ${fmt(HA)} ha also etwa ${fmtEur(PACHT_AGRI)} im Mittel). Bei einem klassischen Solarpark wären die vollen ${fmtEur(GAP_OHNE_ANLAGE)} weg. Wie sich Pacht, Direktzahlungen und Deckungsbeitrag zusammen entwickeln, zeigt der [Agri-PV-Rechner](/rechner/agri-pv).`,
+          text: `Auf ${fmt(HA)} ha verliert der Betrieb durch die Agri-PV-Anlage also rund ${fmtEur(GAP_VERLUST_AGRI)} Direktzahlungen im Jahr – ein kleiner Betrag im Vergleich zur Pacht, die ein Investor für Agri-PV typischerweise zahlt (Orientierung: ${fmtEur(PACHT.agriProHa.min)} bis ${fmtEur(PACHT.agriProHa.max)} je Hektar, auf ${fmt(HA)} ha also etwa ${fmtEur(PACHT_AGRI)} im Mittel). Bei einem klassischen Solarpark wären die vollen ${fmtEur(GAP_OHNE_ANLAGE)} weg. Wie sich Pacht, Direktzahlungen und Deckungsbeitrag zusammen entwickeln, zeigt der [Agri-PV-Rechner](/de/rechner/agri-pv).`,
         },
         { typ: "h3", text: "Worauf Sie beim Sammelantrag achten sollten" },
         {
@@ -212,7 +213,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Für eine erste Wirtschaftlichkeitsrechnung setzen unsere Rechner für besondere Solaranlagen eine Planungsannahme von ${fmtCt(ERLOESE.eegBesondereCt)} an – das liegt zwischen dem heutigen Zuschlagsniveau inklusive Aufschlag und dem möglichen Höchstwert des Untersegments. Was das für die Rendite bedeutet und warum Agri-PV heute knapper kalkuliert ist als ein klassischer Solarpark, erklärt unser Ratgeber zur [Agri-PV-Wirtschaftlichkeit](/ratgeber/agri-pv-wirtschaftlichkeit). Wie die Ausschreibung selbst funktioniert, lesen Sie unter [EEG-Ausschreibung für Freiflächenanlagen](/ratgeber/eeg-ausschreibung-freiflaeche).`,
+          text: `Für eine erste Wirtschaftlichkeitsrechnung setzen unsere Rechner für besondere Solaranlagen eine Planungsannahme von ${fmtCt(ERLOESE.eegBesondereCt)} an – das liegt zwischen dem heutigen Zuschlagsniveau inklusive Aufschlag und dem möglichen Höchstwert des Untersegments. Was das für die Rendite bedeutet und warum Agri-PV heute knapper kalkuliert ist als ein klassischer Solarpark, erklärt unser Ratgeber zur [Agri-PV-Wirtschaftlichkeit](/wissen/ratgeber/agri-pv-wirtschaftlichkeit). Wie die Ausschreibung selbst funktioniert, lesen Sie unter [EEG-Ausschreibung für Freiflächenanlagen](/wissen/ratgeber/eeg-ausschreibung-freiflaeche).`,
         },
       ],
     },
@@ -231,7 +232,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Für größere Agri-PV-Parks, wie sie Investoren typischerweise ab etwa 5 MWp planen, führt kein Weg am Bebauungsplan der Gemeinde vorbei. Wie das Verfahren vom Aufstellungsbeschluss bis zum Satzungsbeschluss abläuft, erklärt der Ratgeber [Solarpark-Genehmigung und Bebauungsplan](/ratgeber/solarpark-genehmigung-bebauungsplan). Zum Vergleich: ${fmt(AGRI.privilegierungHa, 1)} ha reichen bei hoch aufgeständerten Systemen für grob 1,5 MWp, bei vertikalen Systemen für knapp 1 MWp.`,
+          text: `Für größere Agri-PV-Parks, wie sie Investoren typischerweise ab etwa 5 MWp planen, führt kein Weg am Bebauungsplan der Gemeinde vorbei. Wie das Verfahren vom Aufstellungsbeschluss bis zum Satzungsbeschluss abläuft, erklärt der Ratgeber [Solarpark-Genehmigung und Bebauungsplan](/wissen/ratgeber/solarpark-genehmigung-bebauungsplan). Zum Vergleich: ${fmt(AGRI.privilegierungHa, 1)} ha reichen bei hoch aufgeständerten Systemen für grob 1,5 MWp, bei vertikalen Systemen für knapp 1 MWp.`,
         },
       ],
     },
@@ -260,7 +261,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Baurechtlich braucht eine größere Anlage in der Regel eine Widmung als Grünland-Photovoltaik, deren Voraussetzungen jedes Bundesland selbst regelt. Bei den Direktzahlungen gilt: Flächen mit PV-Anlagen können unter Bedingungen im Mehrfachantrag beantragt werden, wenn die landwirtschaftliche Nutzung auf dem überwiegenden Teil der Fläche möglich bleibt. Ob ÖPUL-Maßnahmen auf der Fläche weiterlaufen können, sollten Sie vorab mit der Landwirtschaftskammer oder der AMA klären. Mehr dazu im Ratgeber [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich).",
+          text: "Baurechtlich braucht eine größere Anlage in der Regel eine Widmung als Grünland-Photovoltaik, deren Voraussetzungen jedes Bundesland selbst regelt. Bei den Direktzahlungen gilt: Flächen mit PV-Anlagen können unter Bedingungen im Mehrfachantrag beantragt werden, wenn die landwirtschaftliche Nutzung auf dem überwiegenden Teil der Fläche möglich bleibt. Ob ÖPUL-Maßnahmen auf der Fläche weiterlaufen können, sollten Sie vorab mit der Landwirtschaftskammer oder der AMA klären. Mehr dazu im Ratgeber [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich).",
         },
       ],
     },
@@ -275,7 +276,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Gefördert wird über die [Einmalvergütung](/wissen/lexikon#einmalverguetung) der Pronovo. Anlagen ab ${fmt(CH_AUKTION_KW)} kW, die ihren Strom vollständig einspeisen, nehmen an Auktionen teil; die hohe Einmalvergütung kann dort bis zu ${pct0(CH_HEIV_ANTEIL)} der Investitionskosten von Referenzanlagen decken. Offen bleibt die Frage der Direktzahlungen: Der Bundesrat hat 2022 darauf verzichtet, die Direktzahlungsregeln für Flächen unter PV-Anlagen anzupassen. Details im Ratgeber [Freiflächen-PV in der Schweiz](/ratgeber/freiflaechen-pv-schweiz).`,
+          text: `Gefördert wird über die [Einmalvergütung](/wissen/lexikon#einmalverguetung) der Pronovo. Anlagen ab ${fmt(CH_AUKTION_KW)} kW, die ihren Strom vollständig einspeisen, nehmen an Auktionen teil; die hohe Einmalvergütung kann dort bis zu ${pct0(CH_HEIV_ANTEIL)} der Investitionskosten von Referenzanlagen decken. Offen bleibt die Frage der Direktzahlungen: Der Bundesrat hat 2022 darauf verzichtet, die Direktzahlungsregeln für Flächen unter PV-Anlagen anzupassen. Details im Ratgeber [Freiflächen-PV in der Schweiz](/wissen/ratgeber/freiflaechen-pv-schweiz).`,
         },
       ],
     },
@@ -309,7 +310,7 @@ const artikel = {
         {
           typ: "ablauf",
           schritte: [
-            ["Fläche und Ziel klären", "Wie groß ist die Fläche, welche Kultur läuft darauf, wollen Sie verpachten, selbst investieren oder sich beteiligen? Eine erste Einschätzung gibt der [Flächencheck](/flaechencheck)."],
+            ["Fläche und Ziel klären", "Wie groß ist die Fläche, welche Kultur läuft darauf, wollen Sie verpachten, selbst investieren oder sich beteiligen? Eine erste Einschätzung gibt der [Flächencheck](/de/flaechencheck)."],
             ["System wählen", "Vertikal (Kategorie II) für Acker und Grünland, hoch aufgeständert (Kategorie I) vor allem für Sonderkulturen. Die Wahl bestimmt Kosten, Bonus und Flächenverlust."],
             ["Nutzungskonzept erstellen", "Landwirt und Errichter erstellen gemeinsam das Konzept nach DIN SPEC 91434 – es ist Grundlage für GAP, EEG und Baurecht."],
             ["Baurecht klären", `Bis ${fmt(AGRI.privilegierungHa, 1)} ha an der Hofstelle Bauvoranfrage, sonst frühes Gespräch mit der Gemeinde zum Bebauungsplan.`],
@@ -319,7 +320,7 @@ const artikel = {
         },
         {
           typ: "tool",
-          href: "/rechner/agri-pv",
+          href: pfad("/rechner/agri-pv"),
           titel: "Verpachten, investieren oder beteiligen?",
           text: "Der Agri-PV-Rechner vergleicht die drei Wege für Ihre Fläche – inklusive Pacht, Deckungsbeitrag und Direktzahlungen.",
           label: "Zum Agri-PV-Rechner",
@@ -356,12 +357,12 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/ratgeber/agri-pv-din-spec-91434", titel: "DIN SPEC 91434 erklärt", text: "Kategorien, Flächenverlust und 66-%-Regel im Detail." },
-    { href: "/ratgeber/agri-pv-wirtschaftlichkeit", titel: "Agri-PV Wirtschaftlichkeit", text: "Kosten, Erlöse und Rendite vertikal und hoch aufgeständert." },
-    { href: "/landwirte", titel: "Agri-PV für Landwirte", text: "Verpachten, selbst investieren oder beteiligen." },
-    { href: "/rechner/agri-pv", titel: "Agri-PV-Rechner", text: "Drei Wege für Ihre Fläche im Vergleich." },
-    { href: "/agri-pv", titel: "Agri-PV: Systeme und Kulturen", text: "Bauweisen, Kulturen und Rahmenbedingungen im Überblick." },
-    { href: "/flaechencheck", titel: "Flächencheck", text: "Eignet sich Ihre Fläche für Agri-PV?" },
+    { href: "/wissen/ratgeber/agri-pv-din-spec-91434", titel: "DIN SPEC 91434 erklärt", text: "Kategorien, Flächenverlust und 66-%-Regel im Detail." },
+    { href: "/wissen/ratgeber/agri-pv-wirtschaftlichkeit", titel: "Agri-PV Wirtschaftlichkeit", text: "Kosten, Erlöse und Rendite vertikal und hoch aufgeständert." },
+    { href: pfad("/landwirte"), titel: "Agri-PV für Landwirte", text: "Verpachten, selbst investieren oder beteiligen." },
+    { href: pfad("/rechner/agri-pv"), titel: "Agri-PV-Rechner", text: "Drei Wege für Ihre Fläche im Vergleich." },
+    { href: pfad("/agri-pv"), titel: "Agri-PV: Systeme und Kulturen", text: "Bauweisen, Kulturen und Rahmenbedingungen im Überblick." },
+    { href: pfad("/flaechencheck"), titel: "Flächencheck", text: "Eignet sich Ihre Fläche für Agri-PV?" },
   ],
 
   quellen: [
@@ -378,14 +379,14 @@ const artikel = {
   seitenCta: {
     titel: "Was bringt Agri-PV auf Ihrer Fläche?",
     text: "Pacht, Eigeninvestition oder Beteiligung – mit Direktzahlungen gerechnet.",
-    href: "/rechner/agri-pv",
+    href: pfad("/rechner/agri-pv"),
     label: "Zum Agri-PV-Rechner",
   },
   cta: {
     title: "Agri-PV auf Ihrer Fläche prüfen lassen.",
     text: "ÖkoInvest bewertet Lage, Netzanschluss und Baurecht Ihrer Fläche und zeigt, welche Förderwege in Frage kommen. Für Flächeneigentümer ist das kostenfrei.",
-    primary: { label: "Flächencheck starten", href: "/flaechencheck" },
-    secondary: { label: "Agri-PV-Rechner", href: "/rechner/agri-pv" },
+    primary: { label: "Flächencheck starten", href: pfad("/flaechencheck") },
+    secondary: { label: "Agri-PV-Rechner", href: pfad("/rechner/agri-pv") },
   },
 };
 

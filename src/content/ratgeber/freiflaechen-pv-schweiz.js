@@ -7,6 +7,7 @@
 
 import { REGIONEN, GEMEINSCHAFTEN, regionById } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import { pfad } from "../../lib/land/index.js";
 
 /* Werte, die (noch) nicht in markt.js stehen – Vorschlag für markt.js siehe Bericht */
 // HEIV: bis 60 % der Investitionskosten von Referenzanlagen (BFE, Pronovo)
@@ -86,7 +87,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Mit dem Stromgesetz („Mantelerlass“), das die Stimmberechtigten am 9. Juni 2024 mit ${fmt(MANTELERLASS_JA, 1)} % angenommen haben, und dem vorangegangenen Solarexpress hat sich der Spielraum erweitert. Heute gibt es drei realistische Wege zur Freifläche: **freistehende Anlagen in wenig empfindlichen oder vorbelasteten Gebieten, Agri-PV mit Nutzen für die Landwirtschaft und grosse Anlagen von nationalem Interesse** – dazu gehören die alpinen Anlagen des Solarexpress. Einen Überblick zu den Unterschieden in Deutschland und Österreich geben die Ratgeber [Solarpark-Genehmigung](/ratgeber/solarpark-genehmigung-bebauungsplan) und [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich).`,
+          text: `Mit dem Stromgesetz („Mantelerlass“), das die Stimmberechtigten am 9. Juni 2024 mit ${fmt(MANTELERLASS_JA, 1)} % angenommen haben, und dem vorangegangenen Solarexpress hat sich der Spielraum erweitert. Heute gibt es drei realistische Wege zur Freifläche: **freistehende Anlagen in wenig empfindlichen oder vorbelasteten Gebieten, Agri-PV mit Nutzen für die Landwirtschaft und grosse Anlagen von nationalem Interesse** – dazu gehören die alpinen Anlagen des Solarexpress. Einen Überblick zu den Unterschieden in Deutschland und Österreich geben die Ratgeber [Solarpark-Genehmigung](/wissen/ratgeber/solarpark-genehmigung-bebauungsplan) und [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich).`,
         },
       ],
     },
@@ -126,7 +127,7 @@ const artikel = {
           typ: "kasten",
           variant: "recht",
           titel: "Agri-PV: Nutzen muss belegt werden",
-          text: "Die Schweiz geht bei [Agri-PV](/wissen/lexikon#agri-pv) strenger vor als Deutschland mit der DIN SPEC 91434: Es reicht nicht, dass Landwirtschaft unter den Modulen möglich bleibt. Die Anlage muss der landwirtschaftlichen Produktion einen **Vorteil** bringen oder der Forschung dienen. Bei einer Bewilligung bleibt die Fläche nach Art. 16 der Landwirtschaftlichen Begriffsverordnung (LBV) unter Bedingungen beitragsberechtigt – die Einzelheiten klären Sie am besten mit dem kantonalen Landwirtschaftsamt. Mehr zu Systemen und Kennzahlen im Ratgeber [Agri-PV nach DIN SPEC 91434](/ratgeber/agri-pv-din-spec-91434).",
+          text: "Die Schweiz geht bei [Agri-PV](/wissen/lexikon#agri-pv) strenger vor als Deutschland mit der DIN SPEC 91434: Es reicht nicht, dass Landwirtschaft unter den Modulen möglich bleibt. Die Anlage muss der landwirtschaftlichen Produktion einen **Vorteil** bringen oder der Forschung dienen. Bei einer Bewilligung bleibt die Fläche nach Art. 16 der Landwirtschaftlichen Begriffsverordnung (LBV) unter Bedingungen beitragsberechtigt – die Einzelheiten klären Sie am besten mit dem kantonalen Landwirtschaftsamt. Mehr zu Systemen und Kennzahlen im Ratgeber [Agri-PV nach DIN SPEC 91434](/wissen/ratgeber/agri-pv-din-spec-91434).",
         },
         {
           typ: "p",
@@ -183,11 +184,11 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Eine freistehende Anlage mit ${fmt(BEISPIEL_KW / 1000)} MW auf einer vorbelasteten Fläche im Mittelland erzeugt bei rund ${fmt(CH.ertrag)} kWh/kW etwa **${fmt(BEISPIEL_ERTRAG_KWH / 1e6, 1)} GWh** pro Jahr – etwas weniger als in Österreich (${fmt(AT_ERTRAG)} kWh/kW). In der HEIV-Auktion könnte der Betreiber höchstens **CHF ${fmt(HEIV_OBERGRENZE_CHF)}** Einmalvergütung erhalten (Höchstgebot × Leistung); in der Praxis setzt sich durch, wer weniger Förderung je kW verlangt. Alternativ sichert die gleitende Marktprämie beim Höchstgebot einen Erlös von bis zu rund **CHF ${fmt(GMP_MAX_ERLOES_CHF)}** pro Jahr, wobei ein Teil davon aus dem Strommarkt kommt. Welches Modell besser passt, hängt von Finanzierungsstruktur und Preiserwartung ab – die Mechanik erklärt unser Ratgeber [Solarpark als Investment](/ratgeber/solarpark-investment-rendite).`,
+          text: `Eine freistehende Anlage mit ${fmt(BEISPIEL_KW / 1000)} MW auf einer vorbelasteten Fläche im Mittelland erzeugt bei rund ${fmt(CH.ertrag)} kWh/kW etwa **${fmt(BEISPIEL_ERTRAG_KWH / 1e6, 1)} GWh** pro Jahr – etwas weniger als in Österreich (${fmt(AT_ERTRAG)} kWh/kW). In der HEIV-Auktion könnte der Betreiber höchstens **CHF ${fmt(HEIV_OBERGRENZE_CHF)}** Einmalvergütung erhalten (Höchstgebot × Leistung); in der Praxis setzt sich durch, wer weniger Förderung je kW verlangt. Alternativ sichert die gleitende Marktprämie beim Höchstgebot einen Erlös von bis zu rund **CHF ${fmt(GMP_MAX_ERLOES_CHF)}** pro Jahr, wobei ein Teil davon aus dem Strommarkt kommt. Welches Modell besser passt, hängt von Finanzierungsstruktur und Preiserwartung ab – die Mechanik erklärt unser Ratgeber [Solarpark als Investment](/wissen/ratgeber/solarpark-investment-rendite).`,
         },
         {
           typ: "tool",
-          href: "/rechner/solarpark",
+          href: pfad("/rechner/solarpark"),
           titel: "Solarpark durchrechnen",
           text: "Leistung, Region, Baukosten und Erlösmodell eingeben – mit IRR, Kapitalwert und Cashflow über die Laufzeit. Für die Schweiz Region „Mittelland“ wählen.",
           label: "Zum Solarpark-Rechner",
@@ -205,7 +206,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Für den intern gehandelten Strom sinkt das Netznutzungsentgelt um ${fmt(LEG_ABSCHLAG * 100)} %, bei Nutzung der Transformationsebene um ${fmt(LEG_ABSCHLAG_TRAFO * 100)} %. ${GEMEINSCHAFTEN.ch.text} Für grosse Freiflächenanlagen fernab von Verbrauchern bleibt die LEG meist eine Ergänzung; bei Anlagen am Siedlungsrand oder bei Gewerbe kann sie die Wirtschaftlichkeit deutlich verbessern. Die Modelle in Deutschland und Österreich vergleicht der Ratgeber [Energy Sharing und Energiegemeinschaften](/ratgeber/energy-sharing-energiegemeinschaften).`,
+          text: `Für den intern gehandelten Strom sinkt das Netznutzungsentgelt um ${fmt(LEG_ABSCHLAG * 100)} %, bei Nutzung der Transformationsebene um ${fmt(LEG_ABSCHLAG_TRAFO * 100)} %. ${GEMEINSCHAFTEN.ch.text} Für grosse Freiflächenanlagen fernab von Verbrauchern bleibt die LEG meist eine Ergänzung; bei Anlagen am Siedlungsrand oder bei Gewerbe kann sie die Wirtschaftlichkeit deutlich verbessern. Die Modelle in Deutschland und Österreich vergleicht der Ratgeber [Energy Sharing und Energiegemeinschaften](/wissen/ratgeber/energy-sharing-energiegemeinschaften).`,
         },
       ],
     },
@@ -220,7 +221,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Für die Flächensicherung wird meist eine **Dienstbarkeit** (Baurecht oder Nutzungsdienstbarkeit) im Grundbuch eingetragen. Landwirtschaftliche Grundstücke unterliegen dem bäuerlichen Bodenrecht (BGBB) und dem landwirtschaftlichen Pachtrecht (LPG); ob und wie ein Entgelt für eine Solarnutzung frei vereinbart werden kann, sollten Sie rechtlich prüfen lassen. Veröffentlichte Vergleichswerte für Solarpacht sind in der Schweiz selten, weil es nur wenige Freiflächenanlagen gibt. Orientierung zur Vertragsgestaltung geben die Ratgeber [Pachtvertrag Solarpark](/ratgeber/pachtvertrag-solarpark) und die Seite [Fläche verpachten](/flaeche-verpachten).",
+          text: "Für die Flächensicherung wird meist eine **Dienstbarkeit** (Baurecht oder Nutzungsdienstbarkeit) im Grundbuch eingetragen. Landwirtschaftliche Grundstücke unterliegen dem bäuerlichen Bodenrecht (BGBB) und dem landwirtschaftlichen Pachtrecht (LPG); ob und wie ein Entgelt für eine Solarnutzung frei vereinbart werden kann, sollten Sie rechtlich prüfen lassen. Veröffentlichte Vergleichswerte für Solarpacht sind in der Schweiz selten, weil es nur wenige Freiflächenanlagen gibt. Orientierung zur Vertragsgestaltung geben die Ratgeber [Pachtvertrag Solarpark](/wissen/ratgeber/pachtvertrag-solarpark) und die Seite [Fläche verpachten](/de/flaeche-verpachten).",
         },
       ],
     },
@@ -284,17 +285,17 @@ const artikel = {
     },
     {
       q: "Ist Agri-PV in der Schweiz erlaubt?",
-      a: "Ja, wenn die Anlage die landwirtschaftlichen Interessen nicht beeinträchtigt und der Produktion Vorteile bringt – etwa Hagel- oder Sonnenschutz für Beeren und Obst – oder Versuchs- und Forschungszwecken dient. Die Anforderungen sind strenger als in Deutschland. Mehr zu Kosten und Erträgen im Ratgeber [Agri-PV Wirtschaftlichkeit](/ratgeber/agri-pv-wirtschaftlichkeit).",
+      a: "Ja, wenn die Anlage die landwirtschaftlichen Interessen nicht beeinträchtigt und der Produktion Vorteile bringt – etwa Hagel- oder Sonnenschutz für Beeren und Obst – oder Versuchs- und Forschungszwecken dient. Die Anforderungen sind strenger als in Deutschland. Mehr zu Kosten und Erträgen im Ratgeber [Agri-PV Wirtschaftlichkeit](/wissen/ratgeber/agri-pv-wirtschaftlichkeit).",
     },
   ],
 
   passend: [
-    { href: "/ratgeber/freiflaechen-pv-oesterreich", titel: "Freiflächen-PV in Österreich", text: "Widmung je Bundesland und EAG-Förderung." },
-    { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Solarpark-Genehmigung in Deutschland", text: "Bebauungsplan, Privilegierung und Ablauf." },
-    { href: "/ratgeber/energy-sharing-energiegemeinschaften", titel: "Energy Sharing & Energiegemeinschaften", text: "LEG, EEG und Energy Sharing im DACH-Vergleich." },
-    { href: "/agri-pv", titel: "Agri-PV", text: "Doppelnutzung von Fläche für Landwirtschaft und Strom." },
-    { href: "/regionen", titel: "Solarpark nach Region", text: "Recht, Flächenkulisse und Pacht je Bundesland und Kanton." },
-    { href: "/freiflaeche", titel: "Freiflächen-PV entwickeln", text: "Solarparks in DE, AT und CH – vom Acker bis zum Betrieb." },
+    { href: "/wissen/ratgeber/freiflaechen-pv-oesterreich", titel: "Freiflächen-PV in Österreich", text: "Widmung je Bundesland und EAG-Förderung." },
+    { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Solarpark-Genehmigung in Deutschland", text: "Bebauungsplan, Privilegierung und Ablauf." },
+    { href: "/wissen/ratgeber/energy-sharing-energiegemeinschaften", titel: "Energy Sharing & Energiegemeinschaften", text: "LEG, EEG und Energy Sharing im DACH-Vergleich." },
+    { href: pfad("/agri-pv"), titel: "Agri-PV", text: "Doppelnutzung von Fläche für Landwirtschaft und Strom." },
+    { href: pfad("/regionen"), titel: "Solarpark nach Region", text: "Recht, Flächenkulisse und Pacht je Bundesland und Kanton." },
+    { href: pfad("/freiflaeche"), titel: "Freiflächen-PV entwickeln", text: "Solarparks in DE, AT und CH – vom Acker bis zum Betrieb." },
   ],
 
   quellen: [
@@ -307,12 +308,12 @@ const artikel = {
     { titel: "Stromzeit – Aktueller Stand Solarexpress alpine Solaranlagen", url: "https://www.stromzeit.ch/blog/strom-7/solarexpress-aktueller-stand-beim-ausbau-der-alpinen-solaranlagen-schweiz-forderziele-deutlich-verfehlt-679", stand: "09/2026" },
   ],
 
-  seitenCta: { titel: "Projekt in der Schweiz?", text: "Ertrag, Förderung und Rendite überschlägig rechnen.", href: "/rechner/solarpark", label: "Zum Solarpark-Rechner" },
+  seitenCta: { titel: "Projekt in der Schweiz?", text: "Ertrag, Förderung und Rendite überschlägig rechnen.", href: pfad("/rechner/solarpark"), label: "Zum Solarpark-Rechner" },
   cta: {
     title: "Standort in der Schweiz – lohnt sich eine genauere Prüfung?",
     text: "Wir ordnen Ihre Fläche raumplanerisch ein, vergleichen HEIV, Marktprämie und lokale Vermarktung und sagen offen, wenn ein Projekt keine Chance hat.",
     primary: { label: "Kontakt aufnehmen", href: "/kontakt" },
-    secondary: { label: "Solarpark rechnen", href: "/rechner/solarpark" },
+    secondary: { label: "Solarpark rechnen", href: pfad("/rechner/solarpark") },
   },
 };
 

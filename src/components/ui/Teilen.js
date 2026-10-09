@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, Link2, Mail, Share2 } from "lucide-react";
+import { useTexte } from "@/components/Sprache/SpracheKontext";
 import { cn } from "@/components/ui/cn";
 
 /**
@@ -61,6 +62,12 @@ const NETZE = {
   },
 };
 
+// Sprachmodell: feste Texte (Seiten übergeben label weiterhin selbst)
+const TEXTE = {
+  de: { teilen: "Teilen", auf: (n) => `Auf ${n} teilen`, mail: "Per E-Mail teilen", kopieren: "Link kopieren", kopiert: "Link kopiert" },
+  en: { teilen: "Share", auf: (n) => `Share on ${n}`, mail: "Share by email", kopieren: "Copy link", kopiert: "Link copied" },
+};
+
 function Marke({ pfad }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="h-[18px] w-[18px]" fill="currentColor">
@@ -76,9 +83,10 @@ export default function Teilen({
   netze = ["linkedin", "xing", "whatsapp", "facebook", "x"],
   kampagne = "teilen",
   kompakt = false,
-  label = "Teilen",
+  label,
   className,
 }) {
+  const t = useTexte(TEXTE);
   const [kopiert, setKopiert] = useState(false);
   const [nativ, setNativ] = useState(false);
 
@@ -134,13 +142,13 @@ export default function Teilen({
 
   return (
     <div className={cn("flex flex-wrap items-center gap-x-3 gap-y-2.5", className)}>
-      {!kompakt && <p className="mr-1 text-[13px] font-semibold uppercase tracking-[0.14em] text-ink-500">{label}</p>}
+      {!kompakt && <p className="mr-1 text-[13px] font-semibold uppercase tracking-[0.14em] text-ink-500">{label || t.teilen}</p>}
       <ul className="flex flex-wrap items-center gap-2">
         {nativ && (
           <li className="sm:hidden">
             <button type="button" onClick={nativTeilen} className={cn(knopf, "w-auto gap-2 bg-navy-950 px-4 text-[14px] font-semibold text-white ring-navy-950")}>
               <Share2 aria-hidden="true" className="h-4 w-4" />
-              Teilen
+              {t.teilen}
             </button>
           </li>
         )}
@@ -155,8 +163,8 @@ export default function Teilen({
                 target="_blank"
                 rel="noopener noreferrer nofollow"
                 onClick={(e) => oeffnen(e, n)}
-                aria-label={`Auf ${netz.name} teilen`}
-                title={`Auf ${netz.name} teilen`}
+                aria-label={t.auf(netz.name)}
+                title={t.auf(netz.name)}
                 className={cn(knopf, netz.farbe)}
               >
                 <Marke pfad={netz.pfad} />
@@ -167,8 +175,8 @@ export default function Teilen({
         <li>
           <a
             href={`mailto:?subject=${encodeURIComponent(titel)}&body=${encodeURIComponent(`${text ? `${text}\n\n` : ""}${mitUtm("email")}`)}`}
-            aria-label="Per E-Mail teilen"
-            title="Per E-Mail teilen"
+            aria-label={t.mail}
+            title={t.mail}
             className={cn(knopf, "hover:bg-ov-500 hover:text-white hover:ring-ov-500")}
           >
             <Mail aria-hidden="true" className="h-[18px] w-[18px]" />
@@ -178,8 +186,8 @@ export default function Teilen({
           <button
             type="button"
             onClick={kopieren}
-            aria-label={kopiert ? "Link kopiert" : "Link kopieren"}
-            title="Link kopieren"
+            aria-label={kopiert ? t.kopiert : t.kopieren}
+            title={t.kopieren}
             className={cn(knopf, kopiert ? "bg-ov-500 text-white ring-ov-500" : "hover:bg-navy-950 hover:text-white hover:ring-navy-950")}
           >
             {kopiert ? <Check aria-hidden="true" className="h-[18px] w-[18px]" /> : <Link2 aria-hidden="true" className="h-[18px] w-[18px]" />}
@@ -187,7 +195,7 @@ export default function Teilen({
         </li>
       </ul>
       <span role="status" aria-live="polite" className={kopiert ? "text-[13px] font-medium text-ov-700" : "sr-only"}>
-        {kopiert ? "Link kopiert" : ""}
+        {kopiert ? t.kopiert : ""}
       </span>
     </div>
   );

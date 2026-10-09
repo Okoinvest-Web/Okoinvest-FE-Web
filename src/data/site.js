@@ -106,16 +106,10 @@ export const SOCIAL = [];
  * office@?). Bis zur Entscheidung null; Komponenten zeigen dann KONTAKT.email.
  */
 export const LAENDER_ANGABEN = {
-  DE: { name: "Deutschland", inLand: "in Deutschland", fuerLand: "für Deutschland", postfach: null },
-  AT: { name: "Österreich", inLand: "in Österreich", fuerLand: "für Österreich", postfach: null },
-  CH: { name: "Schweiz", inLand: "in der Schweiz", fuerLand: "für die Schweiz", postfach: null },
+  DE: { name: "Deutschland", inLand: "in Deutschland", fuerLand: "für Deutschland", postfach: null, en: { name: "Germany", inLand: "in Germany", fuerLand: "for Germany" } },
+  AT: { name: "Österreich", inLand: "in Österreich", fuerLand: "für Österreich", postfach: null, en: { name: "Austria", inLand: "in Austria", fuerLand: "for Austria" } },
+  CH: { name: "Schweiz", inLand: "in der Schweiz", fuerLand: "für die Schweiz", postfach: null, en: { name: "Switzerland", inLand: "in Switzerland", fuerLand: "for Switzerland" } },
 };
-
-/** hreflang-Paar für Seiten mit englischem Gegenstück (siehe src/components/En/sprachpaare.js) */
-export const sprachAlternates = (dePfad, enPfad) => ({
-  canonical: abs(dePfad),
-  languages: { de: abs(dePfad), en: abs(enPfad), "x-default": abs(dePfad) },
-});
 
 /** Absolute URL zu einem Pfad */
 export const abs = (pfad = "/") => `${SITE.url}${pfad === "/" ? "" : pfad}`;

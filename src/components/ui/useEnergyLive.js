@@ -43,11 +43,14 @@ export default function useEnergyLive({ voll = false, intervall = 5 * 60000 } = 
   return daten;
 }
 
-export const fmtCt = (eurMwh, stellen = 1) =>
-  (eurMwh / 10).toLocaleString("de-DE", { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
+// sprache "en" → englisches Zahlenformat (Sprachmodell); ohne Angabe Deutsch wie bisher
+const LOC = (sprache) => (sprache === "en" ? "en-GB" : "de-DE");
 
-export const fmtGw = (mw) =>
-  (mw / 1000).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+export const fmtCt = (eurMwh, stellen = 1, sprache = "de") =>
+  (eurMwh / 10).toLocaleString(LOC(sprache), { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
+
+export const fmtGw = (mw, sprache = "de") =>
+  (mw / 1000).toLocaleString(LOC(sprache), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 export const fmtUhr = (t) =>
   new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" }).format(new Date(t));

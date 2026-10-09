@@ -10,8 +10,13 @@ import { cn } from "./cn";
  * Stelle, an der das Logo entsteht. Später einfach durch <Image> ersetzen.
  *
  * tone: "light" (auf hellem Grund) | "dark" (auf Navy/Bild)
+ * sprache: "de" | "en" – Titel und Unterzeile (Sprachmodell); die Wortmarke bleibt gleich
  */
-export default function Logo({ tone = "light", unterzeile = true, className, title = "ÖkoInvest – Teil der ÖKOVOLT Gruppe" }) {
+const UNTERZEILE = { de: "Projektentwicklung · ÖKOVOLT Gruppe", en: "Project development · ÖKOVOLT Group" };
+const TITEL = { de: "ÖkoInvest – Teil der ÖKOVOLT Gruppe", en: "ÖkoInvest – part of the ÖKOVOLT Group" };
+
+export default function Logo({ tone = "light", unterzeile = true, className, sprache = "de", title: titleProp }) {
+  const title = titleProp || TITEL[sprache] || TITEL.de;
   const blau = tone === "dark" ? "#ffffff" : "#003473";
   const gruen = "#669933";
   const sub = tone === "dark" ? "rgba(255,255,255,0.75)" : "#003473";
@@ -52,7 +57,7 @@ export default function Logo({ tone = "light", unterzeile = true, className, tit
           fill={sub}
           letterSpacing="0.2"
         >
-          Projektentwicklung · ÖKOVOLT Gruppe
+          {UNTERZEILE[sprache] || UNTERZEILE.de}
         </text>
       )}
     </svg>

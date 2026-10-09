@@ -1,0 +1,6 @@
+// Englische Fassung von /barrierefreiheit (/en) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/barrierefreiheit/page.js; Sprache "en" über params.sprache.
+import Seite, { generateMetadata as metadaten } from "@/app/(stamm)/barrierefreiheit/page";
+import { englisch, englischeMetadaten } from "@/lib/sprache/route";
+export default englisch(Seite);
+export const generateMetadata = englischeMetadaten(metadaten);

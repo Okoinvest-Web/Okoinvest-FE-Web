@@ -11,9 +11,13 @@ import MotionInteraktion from "@/components/motion/MotionInteraktion";
 import ScrollFortschritt from "@/components/motion/ScrollFortschritt";
 import Offenlegung from "@/components/Gruppe/Offenlegung";
 import useLand from "@/components/Land/useLand";
+import { landAusPfad } from "@/lib/land";
+import NichtUebersetzt, { nichtUebersetzt } from "@/components/Sprache/NichtUebersetzt";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 
-// Lange Leseseiten: dünner Lesefortschritt oben (ScrollFortschritt)
-const LESESEITEN = [/^\/wissen\//, /^\/(de|at|ch)\/faq$/, /^\/datenschutz$/, /^\/impressum$/, /^\/nutzungsbedingungen$/, /^\/bedingungen\//];
+// Lange Leseseiten: dünner Lesefortschritt oben (ScrollFortschritt) – geprüft am Pfad ohne
+// Länderpräfix, gilt also gleich für die gemeinsame Seite und ihre Länderfassungen (Ländermodell)
+const LESESEITEN = [/^\/ratgeber\/[^/]+/, /^\/wissen\//, /^\/faq$/, /^\/datenschutz$/, /^\/impressum$/, /^\/nutzungsbedingungen$/, /^\/bedingungen\//];
 
 // const GoogleTagManager = dynamic(
 //   (entfernt)
@@ -22,8 +26,6 @@ const LESESEITEN = [/^\/wissen\//, /^\/(de|at|ch)\/faq$/, /^\/datenschutz$/, /^\
 
 const CookieComponentLazy = dynamic(() => import("@/components/Cookies/cookiecomponent"), { ssr: false });
 const ToTopButtonLazy = dynamic(() => import("@/components/Home/BackToTop"), { ssr: false });
-// Länderhinweis (Welle 2): Vorschlag aus /api/land, schließbar, Cookie erst nach aktiver Wahl
-const LaenderHinweisLazy = dynamic(() => import("@/components/Land/LaenderHinweis"), { ssr: false });
 
 export default function LayoutWrapper({ children }) {
   // Kampagnen-Zuordnung beim ersten Laden im Arbeitsspeicher festhalten (keine Cookies)
@@ -32,6 +34,9 @@ export default function LayoutWrapper({ children }) {
   // Info-Bildschirm (SCADA/TV): nur der Inhalt, ohne Kopf, Fuß, Banner und Widgets
   const pfad = usePathname() || "";
   const { land } = useLand();
+  const sprache = useSprache();
+  // Englische Seite ohne Übersetzung: Inhalt ist deutsch → <main lang="de"> (Screenreader, Silbentrennung)
+  const inhaltDeutsch = nichtUebersetzt(pfad);
   const hauptRef = useRef(null);
   const ersterAufruf = useRef(true);
 
@@ -62,16 +67,17 @@ export default function LayoutWrapper({ children }) {
       {/* <GoogleTagManager gtmId="GTM-WR8PDT7V" /> */}
       <RevealObserver />
       <MotionInteraktion />
-      {LESESEITEN.some((r) => r.test(pfad)) && <ScrollFortschritt key={pfad} />}
+      {LESESEITEN.some((r) => r.test(landAusPfad(pfad).schluessel)) && <ScrollFortschritt key={pfad} />}
       {/* Cookie-Banner vor dem Seitenkopf: in der Tab-Reihenfolge direkt nach dem Sprunglink erreichbar (fixiert positioniert) */}
       <CookieComponentLazy />
-      <LaenderHinweisLazy />
       <Navbar />
+      {/* Sprachmodell: dezenter Hinweis „not yet available in English“ auf noch nicht übersetzten Seiten */}
+      <NichtUebersetzt />
       {/* GRP: Offenlegung „Teil der ÖKOVOLT Gruppe“ – erscheint nur nach Gruppen-/Partnerverweis */}
       <Offenlegung land={land} />
-      <main id="main-content" ref={hauptRef}>{children}</main>
+      <main id="main-content" ref={hauptRef} lang={inhaltDeutsch ? "de" : undefined}>{children}</main>
       <Footer />
-      <aside aria-label="Schnellzugriff">
+      <aside aria-label={sprache === "en" ? "Quick access" : "Schnellzugriff"}>
         <MobileCta />
         <ToTopButtonLazy />
       </aside>

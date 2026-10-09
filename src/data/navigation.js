@@ -168,3 +168,192 @@ export const NAVIGATION = [
     ],
   },
 ];
+
+// ---------------------------------------------------------------------------------------------
+// Englisch (Sprachmodell, src/lib/sprache/woerterbuch.js): nur Texte, gleiche Reihenfolge wie
+// NAVIGATION – hrefs, Icons und slugs kommen aus der deutschen Fassung. Seitenpfade bleiben
+// deutsch (/en/freiflaeche); die Link-Komponente hängt /en und das Land selbst an.
+export const NAVIGATION_EN = [
+  {
+    title: "Solutions",
+    intro: "We develop solar power plants – from farmland to car parks.",
+    groups: [
+      {
+        label: "Developing power plants",
+        items: [
+          { name: "Ground-mounted PV", text: "Solar parks from 1 MWp – development to operation" },
+          { name: "Agrivoltaics", text: "Harvest and power on the same land" },
+          { name: "Solar carports & car parks", text: "Car parks as power plants with charging points" },
+          { name: "Battery storage", text: "Battery storage at grid nodes and in solar parks" },
+        ],
+      },
+      {
+        label: "How we work",
+        items: [
+          { name: "Project process", text: "From the land to commissioning" },
+          { name: "Municipalities", text: "Local value creation and participation" },
+        ],
+      },
+    ],
+    feature: { title: "Check your land in 3 minutes", text: "Location, size, grid – you get an initial assessment with a lease range straight away.", cta: "Start land check" },
+  },
+  {
+    title: "For you",
+    intro: "Everyone brings something. We turn it into a power plant.",
+    groups: [
+      {
+        label: "You have …",
+        items: [
+          { name: "Landowners", text: "Lease your land, secure lease income for 30+ years" },
+          { name: "Roof owners", text: "Lease commercial and warehouse roofs" },
+          { name: "Your region", text: "Law, yield and lease by federal state" },
+          { name: "Farmers", text: "Agrivoltaics: lease, invest yourself or participate" },
+          { name: "Project developers", text: "Market projects via the exchange" },
+        ],
+      },
+      {
+        label: "You are looking for …",
+        items: [
+          { name: "Investors", text: "Project rights, ready-to-build and operating assets" },
+          { name: "Businesses & SMEs", text: "Cheaper power through pooling" },
+          { name: "Citizens & municipalities", text: "Participate through the cooperative" },
+        ],
+      },
+    ],
+    feature: { title: "One login for everything", text: "Land, projects, investments and power – status and documents in the portal at any time.", cta: "Create access" },
+  },
+  {
+    title: "Project exchange",
+    intro: "The marketplace for PV projects in the DACH region.",
+    groups: [
+      {
+        label: "Project exchange",
+        items: [
+          { name: "Discover projects", text: "From project rights to operating assets" },
+          { name: "Exchange on the map", text: "Projects by region in DACH" },
+          { name: "Offer a project", text: "List, have it reviewed, sell" },
+          { name: "For investors", text: "Search profile, NDA, data room" },
+          { name: "Operating assets", text: "Buy and sell operating parks" },
+          { name: "Value a project", text: "Purchase price per kWp by project phase" },
+          { name: "Value an operating asset", text: "Income value by DCF" },
+        ],
+      },
+    ],
+    feature: { title: "Create a search profile", text: "We get in touch as soon as a project matches your profile – before it goes public.", cta: "Register as an investor" },
+  },
+  {
+    title: "Energy",
+    intro: "Generate, pool and source power together – at lower cost.",
+    groups: [
+      {
+        label: "Power",
+        items: [
+          { name: "Virtual power plant", text: "Generation, storage and consumption in a pool" },
+          { name: "Residual power pool for SMEs", text: "What PV and storage do not cover – bought together" },
+          { name: "Power market live", text: "Exchange price and power mix in real time" },
+        ],
+      },
+      {
+        label: "Community",
+        items: [
+          { name: "Energy communities", text: "Energy sharing in DE, EEG in AT, LEG in CH" },
+          { name: "Software for energy communities", text: "Formation, billing and operation under the ElWG" },
+          { name: "Cooperative", text: "Citizens and farmers as co-owners" },
+          { name: "Energy sharing calculator", text: "Benefit per participant" },
+        ],
+      },
+    ],
+    feature: { title: "Cut power costs", text: "Enter your consumption – we show what the pool saves compared with your individual contract.", cta: "Calculate savings" },
+  },
+  {
+    title: "Calculators & tools",
+    intro: "Solid figures before you talk to us.",
+    groups: [
+      {
+        label: "Land & farming",
+        items: [
+          { name: "Land check", text: "Suitability and lease range of your land" },
+          { name: "Lease calculator", text: "Lease over 30 years vs. arable farming" },
+          { name: "Agrivoltaics calculator", text: "Lease, invest or participate" },
+          { name: "Check a lease offer", text: "Clause check with traffic light and present value" },
+          { name: "Roof lease calculator", text: "Commercial roof: lease, PPA or invest" },
+          { name: "Grid connection check", text: "Costs, time frame, risks" },
+        ],
+      },
+      {
+        label: "Investment & power",
+        items: [
+          { name: "Solar park return calculator", text: "IRR, LCOE, cash flow over 30 years" },
+          { name: "Project valuation", text: "What is a project worth in which phase?" },
+          { name: "Residual power calculator", text: "Savings through the power pool" },
+          { name: "Carport calculator", text: "Car park PV with charging points" },
+          { name: "Municipal calculator", text: "Municipal income from the solar park" },
+          { name: "PPA calculator", text: "Solar power at a fixed price" },
+          { name: "Battery storage calculator", text: "BESS return with revenue mix" },
+        ],
+      },
+    ],
+    feature: { title: "All calculators at a glance", text: "Tools for landowners, farmers, investors and businesses.", cta: "To the overview" },
+  },
+  {
+    title: "Knowledge",
+    intro: "Expertise on land, law, markets and financing.",
+    groups: [
+      {
+        label: "Knowledge",
+        items: [
+          { name: "Guides", text: "Expert articles for owners and investors" },
+          { name: "Glossary", text: "From zoning resolution to award value" },
+          { name: "Solar market data", text: "EEG awards, market value, capture rate, additions" },
+          { name: "FAQ", text: "The most common questions – answered briefly" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Company",
+    intro: "Part of the ÖKOVOLT Group. In the solar business since 2010.",
+    groups: [
+      {
+        label: "Company",
+        items: [
+          { name: "About ÖkoInvest", text: "Group, companies, pipeline" },
+          { name: "References", text: "Own solar parks since 2012 – documented" },
+          { name: "Why ÖkoInvest", text: "Marketplace, broker or developer platform?" },
+          { name: "English", text: "For international investors" },
+          { name: "Contact", text: "Enquiry to the project team" },
+          { name: "Book an appointment", text: "Site visit, phone or video consultation" },
+          { name: "Login", text: "Portal for partners and customers" },
+        ],
+      },
+    ],
+  },
+];
+
+/** Hinweis auf die englischen Seiten – entfällt auf Englisch (die Sprachwahl steht in der Kopfleiste). */
+const istSprachEintrag = (s) => s.href === "/en";
+
+/**
+ * Navigation in einer Sprache (gleiche Struktur, gleiche hrefs und slugs; Rückfall Deutsch).
+ * @param {"de"|"en"} sprache
+ */
+export function navigationFuer(sprache = "de") {
+  if (sprache !== "en") return NAVIGATION;
+  return NAVIGATION.map((n, i) => {
+    const e = NAVIGATION_EN[i] || {};
+    return {
+      ...n,
+      title: e.title || n.title,
+      intro: e.intro || n.intro,
+      groups: n.groups.map((g, j) => {
+        const eg = e.groups?.[j] || {};
+        return {
+          ...g,
+          label: eg.label || g.label,
+          items: g.items.map((s, k) => ({ ...s, ...(eg.items?.[k] || {}) })).filter((s) => !istSprachEintrag(s)),
+        };
+      }),
+      ...(n.feature ? { feature: { ...n.feature, ...(e.feature || {}) } } : {}),
+    };
+  });
+}

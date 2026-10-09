@@ -1,9 +1,13 @@
 import { Children, Fragment, cloneElement, isValidElement } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { Accessibility, ArrowRight, ArrowUpRight, Building2, FileSignature, Mail, Phone, Scale, ShieldCheck } from "lucide-react";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import { KONTAKT } from "@/data/site";
 import { LegalDruck, LegalInhalt, LegalMobilInhalt } from "./LegalShellInhalt";
+import NextLink from "next/link";
+import { landDerAnfrage, spracheDerAnfrage } from "@/lib/land/seite";
+import { seitenPfad } from "@/lib/land";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 const RECHTLICHES = [
   { name: "Impressum", href: "/impressum", icon: Building2, text: "Anbieter, Firmenbuch, Offenlegung" },
@@ -11,6 +15,64 @@ const RECHTLICHES = [
   { name: "Nutzungsbedingungen", href: "/nutzungsbedingungen", icon: Scale, text: "Regeln für Website, Portal und Börse" },
   { name: "Barrierefreiheit", href: "/barrierefreiheit", icon: Accessibility, text: "Stand, Einschränkungen, Feedback" },
 ];
+
+/**
+ * Sprachmodell: Rahmentexte je Sprache. Englische Rechtstexte sind Übersetzungen zur Information –
+ * maßgeblich ist die deutsche Fassung (Hinweis oben im Text, Link auf die deutsche Fassung).
+ */
+const TEXTE = {
+  de: {
+    rechtliches: RECHTLICHES,
+    besondere: "Besondere Bedingungen",
+    rechtlichesLabel: "Rechtliches",
+    abschnitte: "Abschnitte",
+    lesezeit: "Lesezeit",
+    minuten: (m) => `ca. ${m} Min.`,
+    stand: "Stand",
+    reiterAria: "Rechtstexte",
+    fragen: "Fragen zu diesem Text?",
+    schriftlich: "Wir antworten schriftlich und verständlich.",
+    kontaktAufnehmen: "Kontakt aufnehmen",
+    standText: (s) => `Stand: ${s}`,
+    rechtstext: "Rechtstext der ÖkoInvest GmbH",
+    nachOben: "Nach oben",
+    kontakt: "Kontakt",
+    erklaeren: "Wir erklären Ihnen gern, was eine Regelung für Ihren Fall bedeutet.",
+    formular: "Schreiben Sie uns über das Kontaktformular – wir antworten schriftlich.",
+    zumFormular: "Zum Kontaktformular",
+    weitere: "Weitere Rechtstexte",
+    siegel: "RECHTLICHES · ÖKOINVEST ·",
+  },
+  en: {
+    rechtliches: [
+      { name: "Legal notice", text: "Provider, commercial register, disclosure" },
+      { name: "Privacy", text: "What data we process and why" },
+      { name: "Terms of use", text: "Rules for website, portal and exchange" },
+      { name: "Accessibility", text: "Status, limitations, feedback" },
+    ],
+    besondere: "Special terms",
+    rechtlichesLabel: "Legal",
+    abschnitte: "Sections",
+    lesezeit: "Reading time",
+    minuten: (m) => `approx. ${m} min`,
+    stand: "As of",
+    reiterAria: "Legal texts",
+    fragen: "Questions about this text?",
+    schriftlich: "We answer in writing and in plain language.",
+    kontaktAufnehmen: "Get in touch",
+    standText: (s) => `As of: ${s}`,
+    rechtstext: "Legal text of ÖkoInvest GmbH",
+    nachOben: "Back to top",
+    kontakt: "Contact",
+    erklaeren: "We are happy to explain what a provision means in your case.",
+    formular: "Write to us via the contact form – we will reply in writing.",
+    zumFormular: "Go to the contact form",
+    weitere: "More legal texts",
+    siegel: "LEGAL · ÖKOINVEST · LEGAL ·",
+    uebersetzung: "This English version is a translation provided for information only. Only the German version is legally binding.",
+    deutsch: "Read the German version",
+  },
+};
 
 /* ------------------------------------------------------------------
    Serverseitige Aufbereitung der Kinder: Jede direkte <h2> erhält eine
@@ -86,7 +148,7 @@ function aufbereiten(children) {
 }
 
 /* Dekor im Kopf: gestapelte Dokumentblätter mit Siegel und Seiten-Symbol */
-function DokumentBuehne({ icon: Icon, titel, abschnitte }) {
+function DokumentBuehne({ icon: Icon, titel, abschnitte, t = TEXTE.de }) {
   return (
     <div aria-hidden="true" className="relative mx-auto h-[300px] w-full max-w-[400px] select-none">
       <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[radial-gradient(closest-side,rgba(140,186,88,0.22),transparent_72%)] blur-2xl" />
@@ -121,7 +183,7 @@ function DokumentBuehne({ icon: Icon, titel, abschnitte }) {
             <div className="h-1.5 w-16 rounded-full bg-white/15" />
             <div className="h-1.5 w-10 rounded-full bg-white/10" />
           </div>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/55">{abschnitte} Abschnitte</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/55">{abschnitte} {t.abschnitte}</span>
         </div>
       </div>
       {/* Siegel */}
@@ -132,7 +194,7 @@ function DokumentBuehne({ icon: Icon, titel, abschnitte }) {
           </defs>
           <circle cx="46" cy="46" r="41" fill="none" stroke="rgba(166,206,120,0.35)" strokeDasharray="2 4" />
           <text fill="rgba(255,255,255,0.6)" fontSize="8.5" fontWeight="700" letterSpacing="2.6">
-            <textPath href="#ov-siegel-kreis">RECHTLICHES · ÖKOINVEST ·</textPath>
+            <textPath href="#ov-siegel-kreis">{t.siegel}</textPath>
           </text>
         </svg>
         <span className="font-display text-[26px] font-extrabold text-ov-300">§</span>
@@ -155,13 +217,16 @@ function DokumentBuehne({ icon: Icon, titel, abschnitte }) {
  */
 export default function LegalShell({ titel, pfad, lead, stand, children }) {
   const { inhalt, eintraege, minuten } = aufbereiten(children);
+  const sprache = spracheDerAnfrage();
+  const en = sprache === "en";
+  const t = uebersetze(TEXTE, sprache);
   const besondere = pfad?.startsWith("/bedingungen/");
   const reiter = besondere
-    ? [...RECHTLICHES, { name: "Besondere Bedingungen", href: pfad, icon: FileSignature }]
-    : RECHTLICHES;
+    ? [...t.rechtliches, { name: t.besondere, href: pfad, icon: FileSignature }]
+    : t.rechtliches;
   const aktuell = reiter.find((r) => r.href === pfad);
   const Icon = aktuell?.icon || FileSignature;
-  const weitere = RECHTLICHES.filter((r) => r.href !== pfad);
+  const weitere = t.rechtliches.filter((r) => r.href !== pfad);
 
   return (
     <div>
@@ -180,7 +245,7 @@ export default function LegalShell({ titel, pfad, lead, stand, children }) {
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ov-300 text-navy-950">
                   <Icon aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.4} />
                 </span>
-                {besondere ? "Besondere Bedingungen" : "Rechtliches"}
+                {besondere ? t.besondere : t.rechtlichesLabel}
               </p>
               <h1 id="legal-titel" className="ov-h1 ov-hero-in mt-6 text-balance" style={{ "--ov-delay": "100ms" }}>
                 {titel}
@@ -193,29 +258,29 @@ export default function LegalShell({ titel, pfad, lead, stand, children }) {
               <dl className="ov-hero-in mt-8 flex flex-wrap gap-x-7 gap-y-3 border-t border-white/10 pt-6 text-[13.5px]" style={{ "--ov-delay": "260ms" }}>
                 {eintraege.length > 1 && (
                   <div>
-                    <dt className="text-white/60">Abschnitte</dt>
+                    <dt className="text-white/60">{t.abschnitte}</dt>
                     <dd className="mt-0.5 font-display text-[17px] font-bold [font-variant-numeric:tabular-nums]">{eintraege.length}</dd>
                   </div>
                 )}
                 <div>
-                  <dt className="text-white/60">Lesezeit</dt>
-                  <dd className="mt-0.5 font-display text-[17px] font-bold">ca. {minuten} Min.</dd>
+                  <dt className="text-white/60">{t.lesezeit}</dt>
+                  <dd className="mt-0.5 font-display text-[17px] font-bold">{t.minuten(minuten)}</dd>
                 </div>
                 {stand && (
                   <div>
-                    <dt className="text-white/60">Stand</dt>
+                    <dt className="text-white/60">{t.stand}</dt>
                     <dd className="mt-0.5 font-display text-[17px] font-bold">{stand}</dd>
                   </div>
                 )}
               </dl>
             </div>
             <div className="hidden lg:block print:hidden">
-              <DokumentBuehne icon={Icon} titel={titel} abschnitte={eintraege.length} />
+              <DokumentBuehne icon={Icon} titel={titel} abschnitte={eintraege.length} t={t} />
             </div>
           </div>
 
           {/* Reiter zwischen den Rechtstexten */}
-          <nav aria-label="Rechtstexte" className="ov-hero-in -mx-4 mt-10 overflow-x-auto px-4 pb-px [scrollbar-width:none] md:mt-14 print:hidden" style={{ "--ov-delay": "320ms" }}>
+          <nav aria-label={t.reiterAria} className="ov-hero-in -mx-4 mt-10 overflow-x-auto px-4 pb-px [scrollbar-width:none] md:mt-14 print:hidden" style={{ "--ov-delay": "320ms" }}>
             <ul className="flex min-w-max gap-1 border-b border-white/10">
               {reiter.map((r) => {
                 const aktiv = r.href === pfad;
@@ -251,10 +316,10 @@ export default function LegalShell({ titel, pfad, lead, stand, children }) {
             <div className="sticky top-28">
               {eintraege.length > 1 && <LegalInhalt eintraege={eintraege} />}
               <div className="mt-4 rounded-2xl bg-white p-5 ring-1 ring-ink-200/70">
-                <p className="font-display text-[15px] font-bold text-ink-900">Fragen zu diesem Text?</p>
-                <p className="mt-1 text-[13.5px] leading-relaxed text-ink-600">Wir antworten schriftlich und verständlich.</p>
+                <p className="font-display text-[15px] font-bold text-ink-900">{t.fragen}</p>
+                <p className="mt-1 text-[13.5px] leading-relaxed text-ink-600">{t.schriftlich}</p>
                 <Link href="/kontakt" className="mt-3 inline-flex items-center gap-1.5 rounded text-[14px] font-semibold text-ov-700 hover:text-ov-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
-                  Kontakt aufnehmen <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                  {t.kontaktAufnehmen} <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </Link>
               </div>
             </div>
@@ -267,18 +332,26 @@ export default function LegalShell({ titel, pfad, lead, stand, children }) {
                 [&>p]:max-w-[72ch] [&>ul]:max-w-[72ch] [&>ol]:max-w-[72ch] [&_li+li]:mt-1.5 [&_li::marker]:text-ov-500
                 [&_a:focus-visible]:rounded-sm [&_a:focus-visible]:outline-none [&_a:focus-visible]:ring-2 [&_a:focus-visible]:ring-ov-500 [&_a:hover]:decoration-ov-600"
             >
+              {en && (
+                <p data-uebersetzung="" className="rounded-2xl bg-sand-50 px-4 py-3 text-[14px] ring-1 ring-inset ring-ink-200/70">
+                  {t.uebersetzung}{" "}
+                  <NextLink href={seitenPfad(pfad || "/", landDerAnfrage(), "de")} hrefLang="de" lang="de" className="font-semibold">
+                    {t.deutsch}
+                  </NextLink>
+                </p>
+              )}
               {inhalt}
             </article>
 
             {/* Seitenende: Aktionen, Kontakt, Querverweise */}
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 px-1 print:hidden">
               <p className="text-[13.5px] text-ink-600">
-                {stand ? <>Stand: {stand}</> : <>Rechtstext der ÖkoInvest GmbH</>}
+                {stand ? t.standText(stand) : t.rechtstext}
               </p>
               <div className="flex flex-wrap gap-2">
                 <LegalDruck />
                 <a href="#legal-titel" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[14px] font-semibold text-ink-800 ring-1 ring-ink-200 transition-colors hover:bg-ink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
-                  Nach oben
+                  {t.nachOben}
                 </a>
               </div>
             </div>
@@ -286,9 +359,9 @@ export default function LegalShell({ titel, pfad, lead, stand, children }) {
             <div className="mt-10 grid gap-4 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] print:hidden">
               <div className="ov-verlauf-nacht ov-noise relative isolate overflow-hidden rounded-[1.75rem] p-6 text-white md:p-8">
                 <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-16 -z-10 h-56 w-56 rounded-full bg-ov-500/25 blur-3xl" />
-                <p className="ov-overline text-ov-300">Kontakt</p>
-                <p className="mt-2 font-display text-[22px] font-extrabold leading-tight md:text-[26px]">Fragen zu diesem Text?</p>
-                <p className="mt-2 text-[15px] leading-relaxed text-white/75">Wir erklären Ihnen gern, was eine Regelung für Ihren Fall bedeutet.</p>
+                <p className="ov-overline text-ov-300">{t.kontakt}</p>
+                <p className="mt-2 font-display text-[22px] font-extrabold leading-tight md:text-[26px]">{t.fragen}</p>
+                <p className="mt-2 text-[15px] leading-relaxed text-white/75">{t.erklaeren}</p>
                 <div className="mt-5 space-y-2">
                   {KONTAKT.telefon && (
                     <a href={KONTAKT.telefonHref || `tel:${KONTAKT.telefon.replace(/[^+\d]/g, "")}`} className="flex items-center gap-2.5 text-[14.5px] text-white/85 hover:text-white">
@@ -301,19 +374,19 @@ export default function LegalShell({ titel, pfad, lead, stand, children }) {
                     </a>
                   )}
                   {!KONTAKT.telefon && !KONTAKT.email && (
-                    <p className="text-[14px] leading-relaxed text-white/70">Schreiben Sie uns über das Kontaktformular – wir antworten schriftlich.</p>
+                    <p className="text-[14px] leading-relaxed text-white/70">{t.formular}</p>
                   )}
                 </div>
                 <Link
                   href="/kontakt"
                   className="mt-6 inline-flex items-center gap-2 rounded-full bg-ov-300 px-5 py-2.5 text-[14.5px] font-bold text-navy-950 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950"
                 >
-                  Zum Kontaktformular <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                  {t.zumFormular} <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </Link>
               </div>
 
-              <nav aria-label="Weitere Rechtstexte" className="rounded-[1.75rem] bg-white p-3 ring-1 ring-ink-200/70">
-                <p className="px-3 pb-1 pt-3 text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-500">Weitere Rechtstexte</p>
+              <nav aria-label={t.weitere} className="rounded-[1.75rem] bg-white p-3 ring-1 ring-ink-200/70">
+                <p className="px-3 pb-1 pt-3 text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-500">{t.weitere}</p>
                 <ul>
                   {weitere.map((r) => {
                     const RIcon = r.icon;

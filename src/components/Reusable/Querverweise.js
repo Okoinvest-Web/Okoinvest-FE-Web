@@ -1,7 +1,8 @@
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowUpRight } from "lucide-react";
 
 import Reveal from "@/components/ui/Reveal";
+import T from "@/components/Sprache/T";
 
 /**
  * Thematische Querverweise am Ende einer Seite.
@@ -13,7 +14,7 @@ import Reveal from "@/components/ui/Reveal";
  *
  * Rendert nichts, wenn keine Verweise uebergeben werden.
  */
-export default function Querverweise({ items = [], ueberschrift = "Das könnte Sie auch interessieren" }) {
+export default function Querverweise({ items = [], ueberschrift = <T de="Das könnte Sie auch interessieren" en="You might also be interested in" /> }) {
   const verweise = items;
   if (verweise.length === 0) return null;
 

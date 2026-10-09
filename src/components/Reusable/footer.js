@@ -1,63 +1,126 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
+import { useState } from "react";
+import Link from "@/components/Land/Link";
 import { ArrowUpRight, Building2, Clock, Mail, MapPin, Phone } from "lucide-react";
 
 import CookieBanner from "../Cookies/cookiecomponent";
+import { navigationFuer } from "@/data/navigation";
+import { useSprache, useTexte } from "@/components/Sprache/SpracheKontext";
 import { GESELLSCHAFT, KONTAKT, SITE } from "@/data/site";
 import LiveTicker from "@/components/ui/LiveTicker";
 import Logo from "@/components/ui/Logo";
 import Stagger from "@/components/ui/Stagger";
-import { pfad } from "@/lib/land";
-import { navLink, navigationFuer } from "@/lib/land/navigation";
-import useLand from "@/components/Land/useLand";
-import Laenderwahl from "@/components/Land/Laenderwahl";
 
-// Spalten aus der zentralen Navigation ableiten – Links je Land (src/lib/land, Welle 2)
-const spalte = (nav, titel, neu) => {
-  const n = nav.find((x) => x.title === titel);
-  return n ? { titel: neu || n.title, links: n.groups.flatMap((g) => g.items).map(({ name, href, giltFuer }) => ({ name, href, giltFuer })) } : null;
-};
-
-const spaltenFuer = (land) => {
-  const nav = navigationFuer(land);
-  const landLink = (schluessel, name) => ({ name, ...navLink(schluessel, land) });
-  return [
-    spalte(nav, "Lösungen"),
-    spalte(nav, "Für Sie", "Zielgruppen"),
-    spalte(nav, "Energie"),
-    {
+// Texte des Fußbereichs (Sprachmodell, src/lib/sprache/woerterbuch.js)
+const TEXTE = {
+  de: {
+    zielgruppen: "Zielgruppen",
+    plattform: {
       titel: "Plattform & Wissen",
       links: [
         { name: "Projektbörse", href: "/projektboerse" },
         { name: "Projekt anbieten", href: "/projektboerse/anbieten" },
-        landLink("/bestandsanlagen", "Bestandsanlagen"),
-        landLink("/marktdaten", "Marktdaten"),
-        landLink("/regionen", "Regionen"),
-        landLink("/rechner", "Alle Rechner"),
-        { name: "Ratgeber", href: "/wissen/ratgeber" },
+        { name: "Bestandsanlagen", href: "/bestandsanlagen" },
+        { name: "Marktdaten", href: "/marktdaten" },
+        { name: "Regionen DACH", href: "/regionen" },
+        { name: "Alle Rechner", href: "/rechner" },
+        { name: "Ratgeber", href: "/ratgeber" },
         { name: "Lexikon", href: "/wissen/lexikon" },
-        landLink("/faq", "FAQ"),
+        { name: "FAQ", href: "/faq" },
         { name: "Über ÖkoInvest", href: "/unternehmen" },
         { name: "Referenzen", href: "/referenzen" },
-        landLink("/warum-oekoinvest", "Warum ÖkoInvest"),
+        { name: "Warum ÖkoInvest", href: "/warum-oekoinvest" },
         { name: "English", href: "/en" },
         { name: "Kontakt", href: "/kontakt" },
         { name: "Portal-Login", href: "/login" },
       ],
     },
-  ].filter(Boolean);
+    fuss: "Fußbereich ÖkoInvest",
+    startseite: "Zur Startseite",
+    claimA: "Flächen. Projekte. Kapital.",
+    claimB: "Strom für den Mittelstand.",
+    flaechePruefen: "Fläche prüfen",
+    boerse: "Zur Projektbörse",
+    tage: {},
+    landName: null,
+    gruppeA: "Ein Unternehmen der",
+    gruppeName: "ÖKOVOLT Gruppe",
+    gruppeB: "– seit 2010 Solarkraftwerke planen, bauen und betreiben.",
+    daten: "Daten: Fraunhofer ISE Energy-Charts (CC BY 4.0)",
+    rechte: "Alle Rechte vorbehalten",
+    rechtlich: "Rechtliche Links",
+    privatsphaere: "Privatsphäre-Einstellungen",
+    impressum: "Impressum",
+    datenschutz: "Datenschutz",
+    nutzung: "Nutzungsbedingungen",
+    barrierefreiheit: "Barrierefreiheit",
+  },
+  en: {
+    zielgruppen: "Who we serve",
+    plattform: {
+      titel: "Platform & knowledge",
+      links: [
+        { name: "Project exchange" },
+        { name: "Offer a project" },
+        { name: "Operating assets" },
+        { name: "Market data" },
+        { name: "DACH regions" },
+        { name: "All calculators" },
+        { name: "Guides" },
+        { name: "Glossary" },
+        { name: "FAQ" },
+        { name: "About ÖkoInvest" },
+        { name: "References" },
+        { name: "Why ÖkoInvest" },
+        { name: "English" },
+        { name: "Contact" },
+        { name: "Portal login" },
+      ],
+    },
+    fuss: "ÖkoInvest footer",
+    startseite: "To the home page",
+    claimA: "Land. Projects. Capital.",
+    claimB: "Power for SMEs.",
+    flaechePruefen: "Check your land",
+    boerse: "To the project exchange",
+    tage: { "Mo – Do": "Mon – Thu", Fr: "Fri" },
+    landName: "Austria",
+    gruppeA: "A company of the",
+    gruppeName: "ÖKOVOLT Group",
+    gruppeB: "– planning, building and operating solar power plants since 2010.",
+    daten: "Data: Fraunhofer ISE Energy-Charts (CC BY 4.0)",
+    rechte: "All rights reserved",
+    rechtlich: "Legal links",
+    privatsphaere: "Privacy settings",
+    impressum: "Legal notice",
+    datenschutz: "Privacy policy",
+    nutzung: "Terms of use",
+    barrierefreiheit: "Accessibility",
+  },
 };
+
+// Spalten aus der zentralen Navigation ableiten (über den slug – unabhängig von der Sprache)
+const spalte = (nav, slug, neu) => {
+  const n = nav.find((x) => x.slug === slug);
+  return n ? { titel: neu || n.title, links: n.groups.flatMap((g) => g.items).map(({ name, href }) => ({ name, href })) } : null;
+};
+
+// Auf Englisch entfällt der Verweis „English“ (/en); die Sprachwahl steht in der Kopfleiste.
+const spalten = (nav, t, sprache) =>
+  [spalte(nav, "loesungen"), spalte(nav, "zielgruppen", t.zielgruppen), spalte(nav, "energie"), t.plattform]
+    .filter(Boolean)
+    .map((s) => (sprache === "en" ? { ...s, links: s.links.filter((l) => l.href !== "/en") } : s));
 
 export default function Footer() {
   const [popup, setPopup] = useState(false);
-  const { land } = useLand();
-  const SPALTEN = useMemo(() => spaltenFuer(land), [land]);
   const jahr = new Date().getFullYear();
+  const sprache = useSprache();
+  const t = useTexte(TEXTE);
+  const SPALTEN = spalten(navigationFuer(sprache), t, sprache);
 
   return (
-    <footer role="contentinfo" aria-label="Fußbereich ÖkoInvest" className="ov-noise relative isolate overflow-hidden bg-navy-950 text-white">
+    <footer role="contentinfo" aria-label={t.fuss} className="ov-noise relative isolate overflow-hidden bg-navy-950 text-white">
       <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10 opacity-60" />
       <div aria-hidden="true" className="absolute -left-40 top-0 -z-10 h-[500px] w-[500px] rounded-full bg-ov-500/15 blur-[140px]" />
       <div aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-ov-300/40 to-transparent" />
@@ -66,20 +129,20 @@ export default function Footer() {
         {/* Kopfzeile */}
         <div className="flex flex-col gap-8 border-b border-white/10 pb-12 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-xl">
-            <Link href="/" className="block h-[58px]" aria-label="Zur Startseite">
-              <Logo tone="dark" />
+            <Link href="/" className="block h-[58px]" aria-label={t.startseite}>
+              <Logo tone="dark" sprache={sprache} />
             </Link>
             <p className="mt-6 font-display text-[clamp(1.4rem,1.1rem+1vw,2rem)] font-bold leading-tight tracking-tight">
-              Flächen. Projekte. Kapital. <span className="ov-text-gradient-light">Strom für den Mittelstand.</span>
+              {t.claimA} <span className="ov-text-gradient-light">{t.claimB}</span>
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link href={pfad("/flaechencheck", land)} className="ov-press group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold shadow-gruen transition-[background-color,transform] hover:bg-ov-700">
-              Fläche prüfen
+            <Link href="/flaechencheck" className="ov-press group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 px-6 text-[15px] font-semibold shadow-gruen transition-[background-color,transform] hover:bg-ov-700">
+              {t.flaechePruefen}
               <ArrowUpRight aria-hidden="true" className="h-4 w-4 transition-transform duration-300 ease-ov-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-focus-visible:-translate-y-0.5 group-focus-visible:translate-x-0.5" />
             </Link>
             <Link href="/projektboerse" className="inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 text-[15px] font-semibold ring-1 ring-inset ring-white/25 transition-colors hover:bg-white/10">
-              Zur Projektbörse
+              {t.boerse}
             </Link>
           </div>
         </div>
@@ -92,7 +155,7 @@ export default function Footer() {
               <address className="not-italic">
                 {GESELLSCHAFT.name}<br />
                 {KONTAKT.strasse}<br />
-                {KONTAKT.ort}, {KONTAKT.land}
+                {KONTAKT.ort}, {t.landName || KONTAKT.land}
               </address>
             </div>
             <p className="flex gap-3">
@@ -116,16 +179,16 @@ export default function Footer() {
               <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
                 {KONTAKT.oeffnungszeiten.map((o) => (
                   <div key={o.tage} className="contents">
-                    <dt>{o.tage}</dt>
+                    <dt>{t.tage[o.tage] || o.tage}</dt>
                     <dd className="ov-num text-white">{o.zeit}</dd>
                   </div>
                 ))}
               </dl>
             </div>
             <p className="text-[13.5px] leading-relaxed text-white/55">
-              Ein Unternehmen der{" "}
-              <a href={SITE.gruppeUrl} target="_blank" rel="noopener noreferrer" className="text-white/80 underline decoration-white/30 hover:text-white">ÖKOVOLT Gruppe</a>
-              {" "}– seit 2010 Solarkraftwerke planen, bauen und betreiben.
+              {t.gruppeA}{" "}
+              <a href={SITE.gruppeUrl} target="_blank" rel="noopener noreferrer" className="text-white/80 underline decoration-white/30 hover:text-white">{t.gruppeName}</a>
+              {" "}{t.gruppeB}
             </p>
           </div>
 
@@ -142,7 +205,6 @@ export default function Footer() {
                     >
                       {l.name}
                     </Link>
-                    {l.giltFuer && <span className="mt-0.5 block text-[12px] text-white/60">(gilt {l.giltFuer})</span>}
                   </li>
                 ))}
               </ul>
@@ -153,22 +215,19 @@ export default function Footer() {
         {/* Live-Leiste */}
         <div className="flex flex-col gap-4 rounded-2xl bg-white/[0.04] px-5 py-4 ring-1 ring-white/10 md:flex-row md:items-center md:justify-between">
           <LiveTicker />
-          <p className="text-[12px] text-white/60">Daten: Fraunhofer ISE Energy-Charts (CC BY 4.0)</p>
+          <p className="text-[12px] text-white/60">{t.daten}</p>
         </div>
 
         {/* Rechtliches */}
         <div className="flex flex-col gap-4 py-8 text-[13.5px] text-white/50 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-            <p suppressHydrationWarning>© {jahr} {GESELLSCHAFT.name} · Alle Rechte vorbehalten</p>
-            <Laenderwahl variante="dunkel" label="Land wählen (Fußbereich)" />
-          </div>
-          <nav aria-label="Rechtliche Links">
+          <p suppressHydrationWarning>© {jahr} {GESELLSCHAFT.name} · {t.rechte}</p>
+          <nav aria-label={t.rechtlich}>
             <ul className="flex flex-wrap gap-x-6 gap-y-2">
-              <li><button type="button" onClick={() => setPopup(true)} className="transition-colors hover:text-white">Privatsphäre-Einstellungen</button></li>
-              <li><Link href="/impressum" className="transition-colors hover:text-white">Impressum</Link></li>
-              <li><Link href="/datenschutz" className="transition-colors hover:text-white">Datenschutz</Link></li>
-              <li><Link href="/nutzungsbedingungen" className="transition-colors hover:text-white">Nutzungsbedingungen</Link></li>
-              <li><Link href="/barrierefreiheit" className="transition-colors hover:text-white">Barrierefreiheit</Link></li>
+              <li><button type="button" onClick={() => setPopup(true)} className="transition-colors hover:text-white">{t.privatsphaere}</button></li>
+              <li><Link href="/impressum" className="transition-colors hover:text-white">{t.impressum}</Link></li>
+              <li><Link href="/datenschutz" className="transition-colors hover:text-white">{t.datenschutz}</Link></li>
+              <li><Link href="/nutzungsbedingungen" className="transition-colors hover:text-white">{t.nutzung}</Link></li>
+              <li><Link href="/barrierefreiheit" className="transition-colors hover:text-white">{t.barrierefreiheit}</Link></li>
             </ul>
           </nav>
         </div>

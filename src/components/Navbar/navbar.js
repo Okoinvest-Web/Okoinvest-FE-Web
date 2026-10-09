@@ -1,21 +1,67 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "@/components/Land/Link";
 import Logo from "@/components/ui/Logo";
 import { usePathname } from "next/navigation";
 import { ArrowRight, ChevronDown, Menu, Phone, X, Mail, Sparkles, UserRound } from "lucide-react";
 
-import { KONTAKT } from "@/data/navigation";
-import { navigationFuer } from "@/lib/land/navigation";
-import useLand from "@/components/Land/useLand";
-import Laenderwahl from "@/components/Land/Laenderwahl";
+import { KONTAKT, navigationFuer } from "@/data/navigation";
 import { iconFor } from "@/components/ui/icons";
 import LiveTicker, { LiveDot } from "@/components/ui/LiveTicker";
 import useEnergyLive, { fmtCt } from "@/components/ui/useEnergyLive";
 import useFokusFalle from "@/components/ui/useFokusFalle";
-import Sprachwahl from "@/components/En/Sprachwahl";
-import { pfad as seitenPfad } from "@/lib/land";
+import Sprachwahl from "@/components/Sprache/Sprachwahl";
+import { useSprache, useTexte } from "@/components/Sprache/SpracheKontext";
+import Laenderwahl from "@/components/Land/Laenderwahl";
+import { landAusPfad } from "@/lib/land";
+
+// Texte der Kopfleiste (Sprachmodell, src/lib/sprache/woerterbuch.js); Menüeinträge: navigationFuer()
+const TEXTE = {
+  de: {
+    gruppe: "Teil der ÖKOVOLT Gruppe · DE · AT · CH",
+    portal: "Portal",
+    login: "Login",
+    zumPortal: "Zum Portal",
+    loginPortal: "Login zum Portal",
+    startseite: "ÖkoInvest – zur Startseite",
+    hauptnavigation: "Hauptnavigation",
+    flaechePruefen: "Fläche prüfen",
+    menueOeffnen: "Menü öffnen",
+    menue: "Menü",
+    menueSchliessen: "Menü schließen",
+    startseiteKurz: "Startseite",
+    landMenue: "Land wählen (Menü)",
+    spracheMenue: "Sprache (Menü)",
+    jetzt: "ct/kWh jetzt",
+    standardFeature: {
+      title: "Fläche in 3 Minuten prüfen",
+      text: "Lage, Größe, Netz – und Sie erhalten sofort eine Ersteinschätzung mit Pachtspanne.",
+      href: "/flaechencheck",
+      cta: "Flächencheck starten",
+    },
+  },
+  en: {
+    gruppe: "Part of the ÖKOVOLT Group · DE · AT · CH",
+    zumPortal: "To the portal",
+    loginPortal: "Log in to the portal",
+    startseite: "ÖkoInvest – to the home page",
+    hauptnavigation: "Main navigation",
+    flaechePruefen: "Check your land",
+    menueOeffnen: "Open menu",
+    menue: "Menu",
+    menueSchliessen: "Close menu",
+    startseiteKurz: "Home",
+    landMenue: "Choose country (menu)",
+    spracheMenue: "Language (menu)",
+    jetzt: "ct/kWh now",
+    standardFeature: {
+      title: "Check your land in 3 minutes",
+      text: "Location, size, grid – you get an initial assessment with a lease range straight away.",
+      cta: "Start land check",
+    },
+  },
+};
 
 /**
  * Seitenkopf 2026
@@ -43,12 +89,14 @@ function useAngemeldet(pfad) {
 }
 
 export default function Navbar() {
-  const pfad = usePathname();
-  // Länderrouting (Welle 2): Links je Land der Route bzw. der aktiven Länderwahl (src/lib/land)
-  const { land } = useLand();
-  const NAVIGATION = useMemo(() => navigationFuer(land), [land]);
+  // Ländermodell: aktive Einträge über den Pfad ohne Länderpräfix; Links bleiben über die
+  // Link-Komponente im Land der Seite (src/components/Land/Link.js)
+  const pfad = landAusPfad(usePathname() || "/").schluessel;
   const angemeldet = useAngemeldet(pfad);
-  const konto = angemeldet ? { href: "/portal", label: "Portal" } : { href: "/login", label: "Login" };
+  const t = useTexte(TEXTE);
+  const sprache = useSprache();
+  const NAVIGATION = navigationFuer(sprache);
+  const konto = angemeldet ? { href: "/portal", label: t.portal } : { href: "/login", label: t.login };
   const [offen, setOffen] = useState(null); // Titel des offenen Mega-Menüs
   const [mobil, setMobil] = useState(false);
   const [mobilGruppe, setMobilGruppe] = useState(null);
@@ -160,7 +208,7 @@ export default function Navbar() {
         <div className="ov-container flex h-10 items-center justify-between gap-6">
           <LiveTicker />
           <div className="flex shrink-0 items-center gap-5 text-[12.5px] text-white/70">
-            <span className="hidden text-white/60 lg:inline">Teil der ÖKOVOLT Gruppe · DE · AT · CH</span>
+            <span className="hidden text-white/60 lg:inline">{t.gruppe}</span>
             {KONTAKT.email && (
               <a href={`mailto:${KONTAKT.email}`} className="hidden items-center gap-1.5 transition-colors hover:text-white lg:flex">
                 <Mail aria-hidden="true" className="h-3.5 w-3.5" />
@@ -196,13 +244,13 @@ export default function Navbar() {
           className={`absolute inset-0 -z-10 shadow-e2 transition-opacity duration-500 ease-ov-out ${gescrollt || offen ? "opacity-100" : "opacity-0"}`}
         />
         <div className={`ov-container flex h-[84px] items-center justify-between gap-6 transition-transform duration-500 ease-ov-out ${gescrollt ? "translate-y-2" : "translate-y-0"}`}>
-          <Link href="/" aria-label="ÖkoInvest – zur Startseite" className="relative shrink-0">
+          <Link href="/" aria-label={t.startseite} className="relative shrink-0">
             <div className={`relative h-[46px] origin-left transition-transform duration-500 ${gescrollt ? "scale-[0.86]" : ""}`}>
-              <Logo />
+              <Logo sprache={sprache} />
             </div>
           </Link>
 
-          <nav aria-label="Hauptnavigation" className="hidden xl:block">
+          <nav aria-label={t.hauptnavigation} className="hidden xl:block">
             <ul className="flex items-center gap-0.5">
               {NAVIGATION.map((item) => {
                 const istOffen = offen === item.title;
@@ -236,23 +284,23 @@ export default function Navbar() {
           <div className="flex shrink-0 items-center gap-2">
             <Link
               href={konto.href}
-              aria-label={angemeldet ? "Zum Portal" : "Login zum Portal"}
+              aria-label={angemeldet ? t.zumPortal : t.loginPortal}
               className="flex h-11 w-11 items-center justify-center rounded-full text-ink-700 ring-1 ring-inset ring-ink-200 transition-colors hover:bg-ink-50 hover:text-ov-700 md:hidden"
             >
               <UserRound aria-hidden="true" className="h-[18px] w-[18px]" />
             </Link>
             <Link
-              href={seitenPfad("/flaechencheck", land)}
+              href="/flaechencheck"
               className="group hidden h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-ov-600 pl-5 pr-4 text-[14.5px] font-semibold text-white shadow-gruen transition-colors hover:bg-ov-700 sm:flex"
             >
-              Fläche prüfen
+              {t.flaechePruefen}
               <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform duration-300 ease-ov-out group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5" />
             </Link>
             <button
               ref={menueKnopf}
               type="button"
               onClick={() => setMobil(true)}
-              aria-label="Menü öffnen"
+              aria-label={t.menueOeffnen}
               aria-expanded={mobil}
               className="flex h-11 w-11 items-center justify-center rounded-full bg-ink-900 text-white transition-colors hover:bg-ink-800 xl:hidden"
             >
@@ -274,7 +322,7 @@ export default function Navbar() {
               offen ? "translate-y-0 scale-100 opacity-100 duration-300 ease-ov-out" : "-translate-y-2 scale-[0.985] opacity-0 duration-200 ease-ov-in"
             }`}
           >
-            {offenesItem && <MegaPanel key={offenesItem.title} item={offenesItem} pfad={pfad} onNavigate={() => setOffen(null)} />}
+            {offenesItem && <MegaPanel key={offenesItem.title} item={offenesItem} pfad={pfad} standard={t.standardFeature} jetzt={t.jetzt} onNavigate={() => setOffen(null)} />}
           </div>
         </div>
       </div>
@@ -298,13 +346,13 @@ export default function Navbar() {
         rueckgabeRef={menueKnopf}
         konto={konto}
         navigation={NAVIGATION}
-        flaechencheck={seitenPfad("/flaechencheck", land)}
+        t={t}
       />
     </header>
   );
 }
 
-function MegaPanel({ item, pfad, onNavigate }) {
+function MegaPanel({ item, pfad, standard, jetzt, onNavigate }) {
   const vieleGruppen = item.groups.length > 1;
   let lfd = 0; // laufende Nummer über alle Gruppen – für den gestaffelten Einstieg
   return (
@@ -338,7 +386,6 @@ function MegaPanel({ item, pfad, onNavigate }) {
                         </span>
                         <span>
                           <span className="block text-[14.5px] font-semibold text-ink-900">{s.name}</span>
-                          {s.giltFuer && <span className="block text-[12px] font-medium text-ink-500">(gilt {s.giltFuer})</span>}
                           <span className={`mt-0.5 block text-[13px] leading-snug ${aktiv ? "text-ink-600" : "text-ink-500"}`}>{s.text}</span>
                         </span>
                       </Link>
@@ -351,21 +398,14 @@ function MegaPanel({ item, pfad, onNavigate }) {
         </div>
 
         <div className="ov-ein p-4" style={{ "--ov-delay": "140ms" }}>
-          {item.feature ? <FeatureKachel feature={item.feature} onNavigate={onNavigate} /> : <FeatureKachel feature={STANDARD_FEATURE} onNavigate={onNavigate} />}
+          <FeatureKachel feature={item.feature || standard} jetzt={jetzt} onNavigate={onNavigate} />
         </div>
       </div>
     </div>
   );
 }
 
-const STANDARD_FEATURE = {
-  title: "Fläche in 3 Minuten prüfen",
-  text: "Lage, Größe, Netz – und Sie erhalten sofort eine Ersteinschätzung mit Pachtspanne.",
-  href: seitenPfad("/flaechencheck"),
-  cta: "Flächencheck starten",
-};
-
-function FeatureKachel({ feature, onNavigate }) {
+function FeatureKachel({ feature, jetzt, onNavigate }) {
   return (
     <Link
       href={feature.href}
@@ -374,7 +414,7 @@ function FeatureKachel({ feature, onNavigate }) {
     >
       <div aria-hidden="true" className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-ov-500/40 blur-3xl transition-transform duration-700 group-hover:scale-125" />
       <div className="relative">
-        {feature.live ? <LivePreis /> : <Sparkles aria-hidden="true" className="h-6 w-6 text-ov-300" />}
+        {feature.live ? <LivePreis jetzt={jetzt} /> : <Sparkles aria-hidden="true" className="h-6 w-6 text-ov-300" />}
         <p className="mt-4 font-display text-[19px] font-bold leading-snug">{feature.title}</p>
         <p className="mt-2 text-[13.5px] leading-relaxed text-white/65">{feature.text}</p>
       </div>
@@ -386,18 +426,20 @@ function FeatureKachel({ feature, onNavigate }) {
   );
 }
 
-function LivePreis() {
+function LivePreis({ jetzt }) {
   const d = useEnergyLive();
+  const sprache = useSprache();
   const p = d?.preis?.aktuell;
   return (
     <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-ov-300">
       <LiveDot />
-      {p ? <span className="ov-num normal-case tracking-normal text-white">{fmtCt(p.eurMwh)} ct/kWh jetzt</span> : "Live"}
+      {p ? <span className="ov-num normal-case tracking-normal text-white">{fmtCt(p.eurMwh, 1, sprache)} {jetzt}</span> : "Live"}
     </div>
   );
 }
 
-function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, konto, navigation: NAVIGATION, flaechencheck }) {
+function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, konto, navigation: NAVIGATION, t }) {
+  const sprache = useSprache();
   const dialog = useRef(null);
   const schliessKnopf = useRef(null);
   useFokusFalle(offen, dialog, { beiEscape: schliessen, startRef: schliessKnopf, rueckgabeRef });
@@ -408,7 +450,7 @@ function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, 
       tabIndex={-1}
       role="dialog"
       aria-modal="true"
-      aria-label="Menü"
+      aria-label={t.menue}
       className={`pointer-events-auto fixed inset-0 z-[120] flex flex-col bg-white transition-[opacity,transform,visibility] xl:hidden ${
         offen
           ? "visible translate-y-0 opacity-100 duration-[420ms] ease-ov-out"
@@ -416,10 +458,10 @@ function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, 
       }`}
     >
       <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-ink-100 px-5">
-        <Link href="/" onClick={schliessen} className="relative h-[40px]" aria-label="Startseite">
-          <Logo />
+        <Link href="/" onClick={schliessen} className="relative h-[40px]" aria-label={t.startseiteKurz}>
+          <Logo sprache={sprache} />
         </Link>
-        <button ref={schliessKnopf} type="button" onClick={schliessen} aria-label="Menü schließen" className="ov-press group flex h-11 w-11 items-center justify-center rounded-full bg-ink-100 text-ink-900 transition-colors hover:bg-ink-200">
+        <button ref={schliessKnopf} type="button" onClick={schliessen} aria-label={t.menueSchliessen} className="ov-press group flex h-11 w-11 items-center justify-center rounded-full bg-ink-100 text-ink-900 transition-colors hover:bg-ink-200">
           <X aria-hidden="true" className={`h-5 w-5 transition-transform duration-500 ease-ov-out ${offen ? "rotate-0" : "-rotate-90"}`} />
         </button>
       </div>
@@ -429,8 +471,8 @@ function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, 
           <LiveTicker />
         </div>
         <div className="mb-2 flex flex-wrap items-center justify-end gap-3">
-          <Laenderwahl label="Land wählen (Menü)" />
-          <Sprachwahl />
+          <Laenderwahl label={t.landMenue} />
+          <Sprachwahl label={t.spracheMenue} />
         </div>
         <ul>
           {NAVIGATION.map((item, i) => {
@@ -466,7 +508,6 @@ function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, 
                               </span>
                               <span>
                                 <span className="block text-[15px] font-semibold text-ink-900">{s.name}</span>
-                                {s.giltFuer && <span className="block text-[12px] font-medium text-ink-500">(gilt {s.giltFuer})</span>}
                                 <span className={`block text-[12.5px] ${pfad === s.href ? "text-ink-600" : "text-ink-500"}`}>{s.text}</span>
                               </span>
                             </Link>
@@ -487,8 +528,8 @@ function MobileMenu({ offen, schliessen, gruppe, setGruppe, pfad, rueckgabeRef, 
           <UserRound aria-hidden="true" className="h-4 w-4" />
           {konto.label}
         </Link>
-        <Link href={flaechencheck} onClick={schliessen} className="ov-press flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 text-[15px] font-semibold text-white shadow-gruen">
-          Fläche prüfen
+        <Link href="/flaechencheck" onClick={schliessen} className="ov-press flex h-12 items-center justify-center gap-2 rounded-full bg-ov-600 text-[15px] font-semibold text-white shadow-gruen">
+          {t.flaechePruefen}
           <ArrowRight aria-hidden="true" className="h-4 w-4" />
         </Link>
       </div>

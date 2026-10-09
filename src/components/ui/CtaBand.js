@@ -1,4 +1,9 @@
-import Link from "next/link";
+"use client";
+
+// Client-Komponente (Sprachmodell): feste Texte und Standardwerte folgen der Sprache der Seite
+// (useTexte). Seiten übergeben eigene Texte wie bisher als Props – bereits übersetzt.
+import Link from "@/components/Land/Link";
+import { useTexte } from "@/components/Sprache/SpracheKontext";
 import { ArrowUpRight, Phone, Calculator, ShieldCheck, Clock, BadgeCheck } from "lucide-react";
 import { KONTAKT } from "@/data/site";
 import { cn } from "./cn";
@@ -13,12 +18,48 @@ import { pfad } from "@/lib/land";
  * Ziele je Zielgruppe (Conversion-Plan): Seiten übergeben `zielgruppe`, eigene `primary`/`secondary` haben Vorrang.
  * Ohne Angabe bleibt alles wie bisher (Fläche prüfen + Projektbörse).
  */
-const ZIELE = {
-  flaeche: { primary: { label: "Fläche prüfen lassen", href: pfad("/flaechencheck") }, secondary: { label: "Pacht berechnen", href: pfad("/rechner/pacht") } },
-  investor: { primary: { label: "Suchprofil anlegen", href: "/registrieren?rolle=investor" }, secondary: { label: "Zur Projektbörse", href: "/projektboerse" } },
-  reststrom: { primary: { label: "Ersparnis berechnen", href: pfad("/rechner/reststrom") }, secondary: { label: "Anfrage stellen", href: "/kontakt?anliegen=reststrom" } },
-  energiegemeinschaft: { primary: { label: "Anfrage Energiegemeinschaft", href: pfad("/energiegemeinschaften#anfrage") }, secondary: { label: "Software ansehen", href: pfad("/energiegemeinschaften/software") } },
-  kommune: { primary: { label: "Gespräch anfragen", href: "/kontakt?anliegen=kommune" }, secondary: { label: "Für Kommunen", href: pfad("/kommunen") } },
+const TEXTE = {
+  de: {
+    ziele: {
+      flaeche: { primary: { label: "Fläche prüfen lassen", href: pfad("/flaechencheck") }, secondary: { label: "Pacht berechnen", href: pfad("/rechner/pacht") } },
+      investor: { primary: { label: "Suchprofil anlegen", href: "/registrieren?rolle=investor" }, secondary: { label: "Zur Projektbörse", href: "/projektboerse" } },
+      reststrom: { primary: { label: "Ersparnis berechnen", href: pfad("/rechner/reststrom") }, secondary: { label: "Anfrage stellen", href: "/kontakt?anliegen=reststrom" } },
+      energiegemeinschaft: { primary: { label: "Anfrage Energiegemeinschaft", href: pfad("/energiegemeinschaften#anfrage") }, secondary: { label: "Software ansehen", href: pfad("/energiegemeinschaften/software") } },
+      kommune: { primary: { label: "Gespräch anfragen", href: "/kontakt?anliegen=kommune" }, secondary: { label: "Für Kommunen", href: pfad("/kommunen") } },
+    },
+    eyebrow: "Kostenlos & unverbindlich",
+    title: "Ihre Fläche, Ihr Projekt, Ihr Kapital – wir machen daraus ein Kraftwerk.",
+    text: "Ein Team, das seit 2010 Solarkraftwerke plant, baut und selbst betreibt. Mit ehrlicher Ersteinschätzung, festem Ansprechpartner und transparentem Status im Portal.",
+    primary: { label: "Fläche prüfen lassen", href: pfad("/flaechencheck") },
+    secondary: { label: "Zur Projektbörse", href: "/projektboerse" },
+    direkt: "Lieber direkt sprechen?",
+    weg: "Direkt zum passenden Weg",
+    wege: [
+      { label: "Ich habe eine Fläche", href: pfad("/flaeche-verpachten") },
+      { label: "Ich bin Landwirt", href: pfad("/landwirte") },
+      { label: "Ich möchte investieren", href: "/investoren" },
+      { label: "Ich brauche günstigen Strom", href: pfad("/reststrom") },
+    ],
+    punkte: ["Teil der ÖKOVOLT Gruppe – seit 2010 im Solargeschäft", "Entwicklung, Bau und Betrieb aus einer Gruppe", "Status, Dokumente und Nachrichten im Portal"],
+  },
+  en: {
+    ziele: {
+      flaeche: { primary: { label: "Have your land checked" }, secondary: { label: "Calculate lease" } },
+      investor: { primary: { label: "Create search profile" }, secondary: { label: "To the project exchange" } },
+      reststrom: { primary: { label: "Calculate savings" }, secondary: { label: "Send enquiry" } },
+      energiegemeinschaft: { primary: { label: "Energy community enquiry" }, secondary: { label: "View the software" } },
+      kommune: { primary: { label: "Request a meeting" }, secondary: { label: "For municipalities" } },
+    },
+    eyebrow: "Free of charge & without obligation",
+    title: "Your land, your project, your capital – we turn it into a power plant.",
+    text: "A team that has been planning, building and operating its own solar power plants since 2010. With an honest initial assessment, a dedicated contact person and transparent status in the portal.",
+    primary: { label: "Have your land checked" },
+    secondary: { label: "To the project exchange" },
+    direkt: "Prefer to talk directly?",
+    weg: "Straight to the right path",
+    wege: [{ label: "I own land" }, { label: "I am a farmer" }, { label: "I want to invest" }, { label: "I need affordable power" }],
+    punkte: ["Part of the ÖKOVOLT Group – in the solar business since 2010", "Development, construction and operation from one group", "Status, documents and messages in the portal"],
+  },
 };
 
 /**
@@ -26,19 +67,15 @@ const ZIELE = {
  * zwei Wegen und einer Wegweiser-Box für die Zielgruppen. Telefon erscheint
  * nur, wenn in src/data/site.js eine Nummer hinterlegt ist.
  */
-export default function CtaBand({
-  eyebrow = "Kostenlos & unverbindlich",
-  title = "Ihre Fläche, Ihr Projekt, Ihr Kapital – wir machen daraus ein Kraftwerk.",
-  text = "Ein Team, das seit 2010 Solarkraftwerke plant, baut und selbst betreibt. Mit ehrlicher Ersteinschätzung, festem Ansprechpartner und transparentem Status im Portal.",
-  primary: primaryProp,
-  secondary: secondaryProp,
-  zielgruppe,
-  className,
-}) {
-  const ziel = ZIELE[zielgruppe];
-  const primary = primaryProp || ziel?.primary || { label: "Fläche prüfen lassen", href: pfad("/flaechencheck") };
+export default function CtaBand({ eyebrow: eyebrowProp, title: titleProp, text: textProp, primary: primaryProp, secondary: secondaryProp, zielgruppe, className }) {
+  const t = useTexte(TEXTE);
+  const eyebrow = eyebrowProp !== undefined ? eyebrowProp : t.eyebrow;
+  const title = titleProp !== undefined ? titleProp : t.title;
+  const text = textProp !== undefined ? textProp : t.text;
+  const ziel = t.ziele[zielgruppe];
+  const primary = primaryProp || ziel?.primary || t.primary;
   // secondary={null} blendet den zweiten Weg weiterhin aus
-  const secondary = secondaryProp !== undefined ? secondaryProp : ziel?.secondary || { label: "Zur Projektbörse", href: "/projektboerse" };
+  const secondary = secondaryProp !== undefined ? secondaryProp : ziel?.secondary || t.secondary;
   return (
     <section className={cn("relative px-4 py-16 md:px-8 md:py-24", className)}>
       {/* Ein ruhiger Moment: Fläche skaliert ein, Überschrift baut sich Wort für Wort auf, Wegweiser folgen
@@ -71,7 +108,7 @@ export default function CtaBand({
           <div className="ov-glass min-w-0 rounded-3xl p-6 md:p-8">
             {KONTAKT.telefon ? (
               <>
-                <p className="text-[13px] font-medium text-white/60">Lieber direkt sprechen?</p>
+                <p className="text-[13px] font-medium text-white/60">{t.direkt}</p>
                 <a href={KONTAKT.telefonHref} className="group mt-2 flex items-center gap-3">
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ov-500 transition-transform group-hover:scale-110">
                     <Phone aria-hidden="true" className="h-5 w-5" />
@@ -81,14 +118,9 @@ export default function CtaBand({
               </>
             ) : (
               <>
-                <p className="text-[13px] font-medium text-white/60">Direkt zum passenden Weg</p>
+                <p className="text-[13px] font-medium text-white/60">{t.weg}</p>
                 <Stagger as="ul" schritt={70} delay={250} className="mt-3 grid gap-2">
-                  {[
-                    { label: "Ich habe eine Fläche", href: pfad("/flaeche-verpachten") },
-                    { label: "Ich bin Landwirt", href: pfad("/landwirte") },
-                    { label: "Ich möchte investieren", href: "/investoren" },
-                    { label: "Ich brauche günstigen Strom", href: pfad("/reststrom") },
-                  ].map((w) => (
+                  {t.wege.map((w) => (
                     <li key={w.href}>
                       <Link href={w.href} className="group flex items-center justify-between gap-3 rounded-2xl bg-white/[0.06] px-4 py-3 text-[15px] font-semibold ring-1 ring-white/10 transition-colors hover:bg-white/[0.12]">
                         {w.label}
@@ -100,9 +132,9 @@ export default function CtaBand({
               </>
             )}
             <ul className="mt-6 space-y-3 border-t border-white/10 pt-6 text-[14.5px] text-white/80">
-              <li className="flex items-start gap-2.5"><BadgeCheck aria-hidden="true" className="mt-[3px] h-4 w-4 shrink-0 text-ov-300" /><span className="min-w-0">Teil der ÖKOVOLT Gruppe – seit 2010 im Solargeschäft</span></li>
-              <li className="flex items-start gap-2.5"><ShieldCheck aria-hidden="true" className="mt-[3px] h-4 w-4 shrink-0 text-ov-300" /><span className="min-w-0">Entwicklung, Bau und Betrieb aus einer Gruppe</span></li>
-              <li className="flex items-start gap-2.5"><Clock aria-hidden="true" className="mt-[3px] h-4 w-4 shrink-0 text-ov-300" /><span className="min-w-0">Status, Dokumente und Nachrichten im Portal</span></li>
+              <li className="flex items-start gap-2.5"><BadgeCheck aria-hidden="true" className="mt-[3px] h-4 w-4 shrink-0 text-ov-300" /><span className="min-w-0">{t.punkte[0]}</span></li>
+              <li className="flex items-start gap-2.5"><ShieldCheck aria-hidden="true" className="mt-[3px] h-4 w-4 shrink-0 text-ov-300" /><span className="min-w-0">{t.punkte[1]}</span></li>
+              <li className="flex items-start gap-2.5"><Clock aria-hidden="true" className="mt-[3px] h-4 w-4 shrink-0 text-ov-300" /><span className="min-w-0">{t.punkte[2]}</span></li>
             </ul>
           </div>
         </div>

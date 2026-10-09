@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ListOrdered, Printer } from "lucide-react";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 
 /** Liefert den Index des aktuell gelesenen Abschnitts und den Lesefortschritt (0–1). */
 function useAbschnitt(eintraege) {
@@ -70,6 +71,7 @@ function Eintrag({ e, i, aktiv, onWahl }) {
 
 /** Desktop: Inhaltsverzeichnis in der Seitenleiste */
 export function LegalInhalt({ eintraege }) {
+  const en = useSprache() === "en";
   const { aktiv, fortschritt } = useAbschnitt(eintraege);
   const liste = useRef(null);
 
@@ -83,10 +85,10 @@ export function LegalInhalt({ eintraege }) {
   }, [aktiv]);
 
   return (
-    <nav aria-label="Inhalt dieser Seite" className="rounded-2xl bg-white p-4 ring-1 ring-ink-200/70">
+    <nav aria-label={en ? "Contents of this page" : "Inhalt dieser Seite"} className="rounded-2xl bg-white p-4 ring-1 ring-ink-200/70">
       <div className="flex items-center justify-between gap-3 px-1">
         <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-500">
-          <ListOrdered aria-hidden="true" className="h-3.5 w-3.5" /> Auf dieser Seite
+          <ListOrdered aria-hidden="true" className="h-3.5 w-3.5" /> {en ? "On this page" : "Auf dieser Seite"}
         </p>
         <span className="text-[12px] font-semibold text-ink-500 [font-variant-numeric:tabular-nums]">{Math.round(fortschritt * 100)} %</span>
       </div>
@@ -104,6 +106,7 @@ export function LegalInhalt({ eintraege }) {
 
 /** Mobil/Tablet: klebende Leiste mit aktuellem Abschnitt und aufklappbarer Liste */
 export function LegalMobilInhalt({ eintraege }) {
+  const en = useSprache() === "en";
   const { aktiv, fortschritt } = useAbschnitt(eintraege);
   const [offen, setOffen] = useState(false);
   const knopf = useRef(null);
@@ -137,10 +140,10 @@ export function LegalMobilInhalt({ eintraege }) {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ink-500">
-              Inhalt · {aktiv + 1 > 0 ? `${aktiv + 1} von ${eintraege.length}` : `${eintraege.length} Abschnitte`}
+              {en ? "Contents" : "Inhalt"} · {aktiv + 1 > 0 ? (en ? `${aktiv + 1} of ${eintraege.length}` : `${aktiv + 1} von ${eintraege.length}`) : en ? `${eintraege.length} sections` : `${eintraege.length} Abschnitte`}
             </span>
             <span className="block truncate text-[14.5px] font-semibold text-ink-900">
-              {aktuell ? `${aktuell.nummer ? `${aktuell.nummer} ` : ""}${aktuell.titel}` : "Abschnitt wählen"}
+              {aktuell ? `${aktuell.nummer ? `${aktuell.nummer} ` : ""}${aktuell.titel}` : en ? "Choose a section" : "Abschnitt wählen"}
             </span>
           </span>
           <ChevronDown aria-hidden="true" className={`h-5 w-5 shrink-0 text-ink-500 transition-transform motion-reduce:transition-none ${offen ? "rotate-180" : ""}`} />
@@ -150,7 +153,7 @@ export function LegalMobilInhalt({ eintraege }) {
         <div className="h-full origin-left bg-gradient-to-r from-ov-500 to-ov-300" style={{ transform: `scaleX(${fortschritt})` }} />
       </div>
       <div id="legal-mobil-inhalt" hidden={!offen} className="absolute inset-x-0 top-full border-b border-ink-200 bg-white shadow-e4">
-        <nav aria-label="Inhalt dieser Seite" className="ov-container max-h-[60vh] overflow-y-auto overscroll-contain py-3">
+        <nav aria-label={en ? "Contents of this page" : "Inhalt dieser Seite"} className="ov-container max-h-[60vh] overflow-y-auto overscroll-contain py-3">
           <ul className="space-y-0.5">
             {eintraege.map((e, i) => (
               <Eintrag key={e.id} e={e} i={i} aktiv={aktiv} onWahl={() => setOffen(false)} />
@@ -164,13 +167,14 @@ export function LegalMobilInhalt({ eintraege }) {
 
 /** Knopf „Drucken / als PDF sichern“ */
 export function LegalDruck() {
+  const en = useSprache() === "en";
   return (
     <button
       type="button"
       onClick={() => window.print()}
       className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[14px] font-semibold text-ink-800 ring-1 ring-ink-200 transition-colors hover:bg-ink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500"
     >
-      <Printer aria-hidden="true" className="h-4 w-4" /> Drucken oder als PDF sichern
+      <Printer aria-hidden="true" className="h-4 w-4" /> {en ? "Print or save as PDF" : "Drucken oder als PDF sichern"}
     </button>
   );
 }

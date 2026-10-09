@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowRight, LoaderCircle } from "lucide-react";
 import { cn } from "./cn";
 

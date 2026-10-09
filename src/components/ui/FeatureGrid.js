@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowUpRight } from "lucide-react";
 import { cn } from "./cn";
 import Reveal from "./Reveal";

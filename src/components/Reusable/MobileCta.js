@@ -1,14 +1,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { usePathname } from "next/navigation";
 import { ArrowRight, ArrowUp, LineChart } from "lucide-react";
 import useFreieUnterkante from "@/components/motion/useFreieUnterkante";
-import { pfad as seitenPfad } from "@/lib/land";
+import { landAusPfad, pfad as seitenPfad } from "@/lib/land";
+import { useTexte } from "@/components/Sprache/SpracheKontext";
 
-// Auf diesen Seiten ist die Leiste überflüssig oder stört den Ablauf.
-const AUSGENOMMEN = [seitenPfad("/flaechencheck"), "/kontakt", "/impressum", "/datenschutz", "/nutzungsbedingungen", "/login", "/registrieren", "/portal", "/en"];
+// Pfade ohne Sprach- und Länderpräfix (landAusPfad().schluessel) – gilt gleich für /…, /at/…, /en/at/…
+const AUSGENOMMEN = [seitenPfad("/flaechencheck"), "/kontakt", "/impressum", "/datenschutz", "/nutzungsbedingungen", "/login", "/registrieren", "/portal"];
+
+// Beschriftungen (Sprachmodell): deutscher Text → englischer Text
+const TEXTE = {
+  de: { boerse: "Börse", nachOben: "Nach oben", labels: {} },
+  en: {
+    boerse: "Exchange",
+    nachOben: "Back to top",
+    labels: {
+      "Fläche prüfen": "Check your land",
+      "Suchprofil anlegen": "Create search profile",
+      "Projekt anbieten": "Offer a project",
+      "Anfrage stellen": "Send enquiry",
+      "PPA anfragen": "Request a PPA",
+      "Ersparnis berechnen": "Calculate savings",
+      "Speicher anfragen": "Enquire about storage",
+      "Carport anfragen": "Enquire about a carport",
+      "Verbund anfragen": "Enquire about the pool",
+      "Interesse vormerken": "Register interest",
+      "Software anfragen": "Enquire about the software",
+      "Gemeinschaft anfragen": "Enquire about a community",
+      "Gespräch anfragen": "Request a meeting",
+    },
+  },
+};
 
 // Ziel der Hauptaktion je Thema (Conversion-Plan): erster passender Präfix gewinnt, sonst „Fläche prüfen“.
 // Nur bestehende Ziele/Anker; Texte kurz genug für 390 px neben „Börse“.
@@ -49,11 +74,14 @@ const zielFuer = (pfad) => ZIEL_JE_PFAD.find(([p]) => pfad === p || pfad.startsW
  * scroll-padding-bottom frei, damit Fokus-/Sprungziele nicht darunter landen.
  */
 export default function MobileCta({ href: hrefStandard = seitenPfad("/flaechencheck"), label: labelStandard = "Fläche prüfen" }) {
-  const pfad = usePathname();
-  const { href, label } = zielFuer(pfad) || { href: hrefStandard, label: labelStandard };
+  const pfadRoh = usePathname() || "/";
+  const pfad = landAusPfad(pfadRoh).schluessel;
+  const t = useTexte(TEXTE);
+  const { href, label: labelDe } = zielFuer(pfad) || { href: hrefStandard, label: labelStandard };
+  const label = t.labels[labelDe] || labelDe;
   const [imBereich, setImBereich] = useState(false);
   const aus = AUSGENOMMEN.some((p) => pfad === p || pfad.startsWith(p + "/"));
-  const { zuruecktreten } = useFreieUnterkante({ aktiv: !aus, pfad });
+  const { zuruecktreten } = useFreieUnterkante({ aktiv: !aus, pfad: pfadRoh });
   const sichtbar = imBereich && !zuruecktreten;
 
   useEffect(() => {
@@ -88,7 +116,7 @@ export default function MobileCta({ href: hrefStandard = seitenPfad("/flaechench
       io?.disconnect();
       document.body.classList.remove("ov-cta-sichtbar");
     };
-  }, [aus, pfad]);
+  }, [aus, pfadRoh]);
 
   useEffect(() => {
     document.body.classList.toggle("ov-cta-sichtbar", sichtbar);
@@ -111,7 +139,7 @@ export default function MobileCta({ href: hrefStandard = seitenPfad("/flaechench
           className="ov-press flex h-12 shrink-0 items-center gap-2 rounded-full bg-white/10 pl-3.5 pr-4 text-[14px] font-semibold text-white"
         >
           <LineChart aria-hidden="true" className="h-[18px] w-[18px]" />
-          Börse
+          {t.boerse}
         </Link>
         <Link
           href={href}
@@ -123,7 +151,7 @@ export default function MobileCta({ href: hrefStandard = seitenPfad("/flaechench
         <button
           type="button"
           onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })}
-          aria-label="Nach oben"
+          aria-label={t.nachOben}
           className="ov-press flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white/80 hover:text-white"
         >
           <ArrowUp aria-hidden="true" className="h-[18px] w-[18px]" />

@@ -1,6 +1,9 @@
 import { cn } from "@/components/ui/cn";
 import { META } from "@/data/regionen/meta";
+import { regionName } from "@/data/regionen";
 import { pfad, regionSchluessel } from "@/lib/land";
+import Link from "@/components/Land/Link";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 const ZELLE = 72;
 const LUECKE = 6;
@@ -14,6 +17,7 @@ const FARBEN = {
 };
 
 const LAND_NAME = { DE: "Deutschland", AT: "Österreich", CH: "Schweiz" };
+const LAND_NAME_EN = { DE: "Germany", AT: "Austria", CH: "Switzerland" };
 
 /**
  * Stilisierte Kachelkarte DACH – jede Kachel ist ein Link auf die Regionalseite.
@@ -24,7 +28,10 @@ const LAND_NAME = { DE: "Deutschland", AT: "Österreich", CH: "Schweiz" };
  *  nachbarn  slugs, die leicht betont werden
  *  titel     zugänglicher Name der Karte
  */
-export default function RegionKarte({ aktiv, nachbarn = [], titel = "Karte der Regionen in Deutschland, Österreich und der Schweiz", className }) {
+export default function RegionKarte({ aktiv, nachbarn = [], titel: titelProp, className }) {
+  const en = spracheDerAnfrage() === "en";
+  const titel = titelProp ?? (en ? "Map of the regions in Germany, Austria and Switzerland" : "Karte der Regionen in Deutschland, Österreich und der Schweiz");
+  const name = (m) => (en ? regionName(m.slug, "en") : m.name);
   const breite = SPALTEN * ZELLE;
   const hoehe = ZEILEN * ZELLE;
   const hervor = new Set(nachbarn);
@@ -44,14 +51,14 @@ export default function RegionKarte({ aktiv, nachbarn = [], titel = "Karte der R
           const gedimmt = aktiv && !istAktiv && !hervor.has(m.slug);
           const f = FARBEN[m.land];
           return (
-            <a
+            <Link
               key={m.slug}
               href={pfad(regionSchluessel(m.slug))}
-              aria-label={`Solarpark und Agri-PV in ${m.name} (${LAND_NAME[m.land]})`}
+              aria-label={en ? `Solar park and agrivoltaics in ${name(m)} (${LAND_NAME_EN[m.land]})` : `Solarpark und Agri-PV in ${m.name} (${LAND_NAME[m.land]})`}
               aria-current={istAktiv ? "page" : undefined}
               className="group outline-none"
             >
-              <title>{m.name}</title>
+              <title>{name(m)}</title>
               <rect
                 x={x}
                 y={y}
@@ -78,16 +85,16 @@ export default function RegionKarte({ aktiv, nachbarn = [], titel = "Karte der R
               >
                 {m.kurz}
               </text>
-            </a>
+            </Link>
           );
         })}
       </svg>
       <figcaption className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-ink-600">
-        <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-[4px] bg-ov-600" />Deutschland</span>
-        <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-[4px] bg-navy-700" />Österreich</span>
-        <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-[4px] bg-ink-700" />Schweiz</span>
-        {aktiv && <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-[4px] bg-sun-400" />diese Seite</span>}
-        <span className="text-ink-500">Schematische Darstellung, nicht maßstäblich</span>
+        <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-[4px] bg-ov-600" />{en ? "Germany" : "Deutschland"}</span>
+        <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-[4px] bg-navy-700" />{en ? "Austria" : "Österreich"}</span>
+        <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-[4px] bg-ink-700" />{en ? "Switzerland" : "Schweiz"}</span>
+        {aktiv && <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-[4px] bg-sun-400" />{en ? "this page" : "diese Seite"}</span>}
+        <span className="text-ink-500">{en ? "Schematic representation, not to scale" : "Schematische Darstellung, nicht maßstäblich"}</span>
       </figcaption>
     </figure>
   );

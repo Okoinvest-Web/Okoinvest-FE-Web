@@ -31,6 +31,7 @@ export const FAQ_VPP = [
   {
     q: "Was bedeutet Direktvermarktung?",
     a: "Neuere Anlagen ab 100 kW müssen ihren Strom in Deutschland in der Regel direkt an der Börse bzw. über einen Direktvermarkter verkaufen. Zusätzlich zum Markterlös erhält der Betreiber eine Marktprämie nach EEG, sofern die Anlage gefördert ist. Der Direktvermarkter prognostiziert die Erzeugung, handelt die Mengen und steuert die Anlage fern – etwa bei negativen Preisen.",
+    nurDE: "Regeln zur Direktvermarktung",
   },
   {
     q: "Welche Rolle spielen Speicher im virtuellen Kraftwerk?",
@@ -39,6 +40,7 @@ export const FAQ_VPP = [
   {
     q: "Was hat Redispatch 2.0 mit dem virtuellen Kraftwerk zu tun?",
     a: "Seit Oktober 2021 werden in Deutschland auch Erzeugungsanlagen ab 100 kW in das Engpassmanagement der Netzbetreiber einbezogen. Betreiber müssen Stammdaten, Planungsdaten und Nichtverfügbarkeiten melden und Abregelungen umsetzen. In einem gut organisierten Verbund werden diese Prozesse gebündelt, meist zusammen mit dem Direktvermarkter als Einsatzverantwortlichem.",
+    nurDE: "Regeln zum Netzengpass-Management",
   },
   {
     q: "Kann ich meine eigene Anlage in das virtuelle Kraftwerk einbringen?",
@@ -62,6 +64,7 @@ export const FAQ_RESTSTROM = [
   {
     q: "Wie viel kann ich mit dem Pool sparen?",
     a: `Der Pool wirkt auf die Beschaffungskomponente Ihres Strompreises (nach unserer Einschätzung für Neuverträge 2026 rund ${ct(beschaffung)} ct/kWh netto). Aus Bündelung, Solar-PPA und Flexibilität halten wir zusammen etwa ${ct(hebelMin)} bis ${ct(hebelMax)} ct/kWh für erreichbar – je nach Lastprofil, Menge und Marktlage. Netzentgelte, Umlagen und Steuern (zusammen rund ${ct(fixCt)} ct/kWh) sind nicht verhandelbar. Der Reststrom-Rechner zeigt Ihre persönliche Spanne.`,
+    nurDE: "Ersparniswerte",
   },
   {
     q: "Muss ich eine Anlage von ÖKOVOLT haben, um teilzunehmen?",
@@ -82,6 +85,7 @@ export const FAQ_RESTSTROM = [
   {
     q: "Was bedeutet die Stromsteuer-Entlastung ab 2026?",
     a: `Seit 2026 zahlen Unternehmen des produzierenden Gewerbes sowie der Land- und Forstwirtschaft in Deutschland für betrieblich genutzten Strom nur noch den EU-Mindestsatz von ${ct(STROM.stromsteuerProduzierend)} ct/kWh statt ${ct(STROM.bestandteile.find((b) => b.id === "stromsteuer")?.ct)} ct/kWh. Die Entlastung gibt es nicht automatisch, sie wird beim Hauptzollamt beantragt. Sie ist keine Leistung des Pools, gehört aber in jede ehrliche Preisrechnung.`,
+    nurDE: "Regeln zur Stromsteuer",
   },
   {
     q: "Schützt mich der Pool vor steigenden Strompreisen?",
@@ -101,10 +105,11 @@ export const FAQ_GEMEINSCHAFT = [
   {
     q: "Was ist Energy Sharing nach § 42c EnWG?",
     a: "Seit dem 1. Juni 2026 können Letztverbraucher in Deutschland Strom aus gemeinsam betriebenen Erneuerbare-Energien-Anlagen über das öffentliche Netz teilen – zunächst innerhalb des Bilanzierungsgebiets eines Verteilnetzbetreibers, ab dem 1. Juni 2028 auch in angrenzenden Gebieten derselben Regelzone. Der geteilte Strom ist kein Eigenverbrauch: Netzentgelte und Umlagen fallen nach aktuellem Stand weiterhin an. Einige Netzbetreiber haben angekündigt, die Abwicklung erst später technisch umsetzen zu können.",
+    nurDE: "Regeln zum Energy Sharing",
   },
   {
     q: "Was ist in Österreich der Unterschied zwischen EEG und BEG?",
-    a: "Erneuerbare-Energie-Gemeinschaften (EEG) sind auf ein Nahebereich-Netzgebiet begrenzt und erhalten dafür reduzierte Netzentgelte auf den geteilten Strom – lokal (bis Netzebene 6/7) nach aktuellem Stand 57 %, regional 28 % auf den Arbeitspreis des Netznutzungsentgelts. Bürgerenergiegemeinschaften (BEG) dürfen österreichweit tätig sein, erhalten aber keine Netzentgeltreduktion. Mit dem neuen Elektrizitätswirtschaftsgesetz (ElWG) werden die Regeln ab Oktober 2026 neu gefasst; bestehende Gemeinschaften bleiben bestehen.",
+    a: "Erneuerbare-Energie-Gemeinschaften (EEG) sind auf ein Nahebereich-Netzgebiet begrenzt und erhalten dafür reduzierte Netzentgelte auf den geteilten Strom – bis Ende 2026 lokal 57 %, regional 28 % (Netzebene 6/7) auf den Arbeitspreis des Netznutzungsentgelts. Bürgerenergiegemeinschaften (BEG) dürfen österreichweit tätig sein, erhalten bisher aber keine Netzentgeltreduktion. Seit 1. Oktober 2026 regelt das Elektrizitätswirtschaftsgesetz (ElWG) die gemeinsame Energienutzung; bestehende Gemeinschaften bleiben bestehen. Neue Modelle erhalten bis Ende 2026 keine reduzierten Netzentgelte, ab 2027 sollen die Reduktionen nach der neuen Systemnutzungsentgelte-Verordnung auch für lokale und regionale BEG gelten – die Sätze sind noch nicht kundgemacht.",
   },
   {
     q: "Was ist eine LEG in der Schweiz?",
@@ -167,6 +172,9 @@ export const FAQ_PROZESS = [
   {
     q: "Wie lange dauert es von der Fläche bis zum fertigen Solarpark?",
     a: `Realistisch zwei bis vier Jahre. Der größte Zeitblock ist das Planungsrecht (B-Plan in Deutschland, Umwidmung in Österreich) und die Netzanschlusszusage. Der Bau selbst dauert meist nur wenige Monate. Wir entwickeln rund 50 MWp pro Jahr neu – baureif werden diese Projekte in der Regel erst Jahre später.`,
+    // Länderfassung: Begriffe des Landes (Widmung AT; Bewilligung Gemeinde/Kanton CH, Vermerk CH in src/lib/land/seiten.js)
+    AT: { a: "Realistisch zwei bis vier Jahre. Der größte Zeitblock ist die Umwidmung der Fläche nach dem Raumordnungsrecht des Bundeslandes und die Netzanschlusszusage. Der Bau selbst dauert meist nur wenige Monate. Wir entwickeln rund 50 MWp pro Jahr neu – baureif werden diese Projekte in der Regel erst Jahre später." },
+    CH: { a: "Das hängt in der Schweiz vor allem von der Bewilligung durch Gemeinde und Kanton und von der Netzanschlusszusage ab; eine belastbare Dauer nennen wir erst nach der Prüfung des Standorts. Der Bau selbst dauert meist nur wenige Monate. Wir entwickeln rund 50 MWp pro Jahr neu – baureif werden diese Projekte in der Regel erst Jahre später." },
   },
   {
     q: "Was sehe ich im Portal?",
@@ -179,6 +187,8 @@ export const FAQ_PROZESS = [
   {
     q: "Was passiert, wenn das Projekt scheitert?",
     a: "Das kommt vor – etwa wenn der Gemeinderat keinen Aufstellungsbeschluss fasst oder kein Netzanschluss möglich ist. Für Flächeneigentümer entstehen dadurch keine Kosten; der Nutzungsvertrag regelt, wann er endet. Im Portal sehen Sie jederzeit, in welcher Phase Ihr Projekt steht und woran es gerade hängt.",
+    AT: { a: "Das kommt vor – etwa wenn die Gemeinde die Fläche nicht umwidmet oder kein Netzanschluss möglich ist. Für Flächeneigentümer entstehen dadurch keine Kosten; der Nutzungsvertrag regelt, wann er endet. Im Portal sehen Sie jederzeit, in welcher Phase Ihr Projekt steht und woran es gerade hängt." },
+    CH: { a: "Das kommt vor – etwa wenn Gemeinde oder Kanton keine Bewilligung erteilen oder kein Netzanschluss möglich ist. Für Flächeneigentümer entstehen dadurch keine Kosten; der Nutzungsvertrag regelt, wann er endet. Im Portal sehen Sie jederzeit, in welcher Phase Ihr Projekt steht und woran es gerade hängt." },
   },
 ];
 
@@ -217,7 +227,8 @@ const FLAECHE = [
   },
   {
     q: "Wie viel Pacht erhalte ich für meine Fläche?",
-    a: `Für Freiflächen-Photovoltaik werden im DACH-Raum derzeit meist ${spanne(PACHT.freiflaecheProHa, " € je Hektar und Jahr")} gezahlt, in vielen Fällen um ${fmt(PACHT.freiflaecheProHa.mittel)} €. Die Höhe hängt vor allem von Netzanschluss, Einstrahlung, Flächengröße und Vergütungsmodell ab. Üblich sind eine jährliche Indexierung und bis zum Baubeginn eine Reservierungsprämie.`,
+    a: `Für Freiflächen-Photovoltaik werden in Deutschland derzeit meist ${spanne(PACHT.freiflaecheProHa, " € je Hektar und Jahr")} gezahlt, in vielen Fällen um ${fmt(PACHT.freiflaecheProHa.mittel)} €. Die Höhe hängt vor allem von Netzanschluss, Einstrahlung, Flächengröße und Vergütungsmodell ab. Üblich sind eine jährliche Indexierung und bis zum Baubeginn eine Reservierungsprämie.`,
+    nurDE: "Pachtwerte",
   },
   {
     q: "Wie lange läuft ein Pachtvertrag für einen Solarpark?",
@@ -230,6 +241,7 @@ const FLAECHE = [
   {
     q: "Verliert meine Fläche ihren Status als landwirtschaftliches Vermögen?",
     a: "Das Jahressteuergesetz 2024 hat die Lage für verpachtete PV-Flächen in Deutschland verbessert: Unter bestimmten Voraussetzungen bleiben sie bei Erbschaft- und Grundsteuer dem land- und forstwirtschaftlichen Vermögen zugeordnet. Die Einzelheiten hängen vom Betrieb ab – bitte stimmen Sie das mit Ihrer Steuerberatung ab.",
+    nurDE: "Steuerregeln",
   },
 ];
 
@@ -237,10 +249,12 @@ const LANDWIRTE = [
   {
     q: "Was unterscheidet Agri-PV von einem normalen Solarpark?",
     a: `Bei Agri-PV bleibt die Fläche landwirtschaftlich genutzt. Nach DIN SPEC 91434 dürfen die Aufbauten höchstens ${fmt(AGRI.flaechenverlustMaxKat1 * 100)} % (Kategorie 1) bzw. ${fmt(AGRI.flaechenverlustMaxKat2 * 100)} % (Kategorie 2) der Fläche beanspruchen, und der landwirtschaftliche Ertrag muss mindestens ${fmt(AGRI.mindestErtrag * 100)} % des Referenzertrags erreichen.`,
+    nurDE: "Regeln für Agri-PV",
   },
   {
     q: "Bekomme ich für Agri-PV-Flächen weiter GAP-Direktzahlungen?",
     a: `In Deutschland bleiben Agri-PV-Flächen, die die Anforderungen der DIN SPEC 91434 erfüllen, in der Regel zu ${fmt(AGRI.gapFoerderfaehig * 100)} % förderfähig. Für klassische Freiflächenanlagen entfällt die Förderfähigkeit dagegen meist.`,
+    nurDE: "Förderregeln für Agri-PV",
   },
   {
     q: "Welche Möglichkeiten habe ich als Landwirt?",
@@ -249,10 +263,12 @@ const LANDWIRTE = [
   {
     q: "Brauche ich für Agri-PV einen Bebauungsplan?",
     a: `Nicht immer. In Deutschland sind Agri-PV-Anlagen mit räumlich-funktionalem Bezug zu einem land- oder forstwirtschaftlichen Betrieb bis zu einer Grundfläche von ${fmt(AGRI.privilegierungHa, 1)} ha im Außenbereich privilegiert (§ 35 Abs. 1 Nr. 9 BauGB). Größere Anlagen brauchen in der Regel einen B-Plan.`,
+    nurDE: "Genehmigungsregeln für Agri-PV",
   },
   {
     q: "Wie hoch ist die Pacht bei Agri-PV?",
     a: `Weil die Landwirtschaft auf der Fläche bleibt, liegt die Pacht meist niedriger als beim reinen Solarpark – als Orientierung ${spanne(PACHT.agriProHa, " € je Hektar und Jahr")}. Dafür behalten Sie Ernte und in der Regel den Großteil der Direktzahlungen.`,
+    nurDE: "Pachtwerte",
   },
 ];
 
@@ -260,6 +276,7 @@ const INVESTOREN = [
   {
     q: "Welche Projekte finde ich auf der Projektbörse?",
     a: `Projekte in allen Phasen – von der gesicherten Fläche über Baurecht bis zum baureifen Projekt (RTB) und zu Bestandsanlagen. Je Phase unterscheiden sich Risiko und Preis erheblich: von etwa ${fmt(PHASEN[0].preisProKwp.min)} €/kWp für gesicherte Flächen bis ${fmt(PHASEN[4].preisProKwp.max)} €/kWp für baureife Projekte.`,
+    nurDE: "Marktspannen je kWp",
   },
   {
     q: "Was kostet die Projektbörse für Investoren?",
@@ -272,6 +289,9 @@ const INVESTOREN = [
   {
     q: "Welche Rendite bringt ein Solarpark?",
     a: "Das hängt von Kaufpreis, Errichtungskosten, Vergütungsmodell (EEG-Zuschlag oder PPA), Finanzierung und Standort ab. Wir versprechen keine Renditen. Der Solarpark-Renditerechner zeigt Projekt- und Eigenkapitalrendite für Ihre eigenen Annahmen.",
+    // Länderfassung: nur das Vergütungsmodell ist anders benannt (Förderwege wie auf /investoren und im Faktenregister)
+    AT: { a: "Das hängt von Kaufpreis, Errichtungskosten, Vergütungsmodell (Marktprämie oder Investitionszuschuss nach dem EAG oder ein PPA), Finanzierung und Standort ab. Wir versprechen keine Renditen. Eine Rechnung mit Werten für Österreich erstellen wir auf Anfrage." },
+    CH: { a: "Das hängt von Kaufpreis, Errichtungskosten, Vergütungsmodell (Einmalvergütung oder Marktprämie über Pronovo oder ein Stromabnahmevertrag), Finanzierung und Standort ab. Wir versprechen keine Renditen. Eine Rechnung mit Werten für die Schweiz erstellen wir auf Anfrage." },
   },
   {
     q: "Wie groß ist die Pipeline von ÖkoInvest?",
@@ -311,6 +331,7 @@ const STROM_POOL = [
   {
     q: "Wie profitieren Gemeinden von einem Solarpark?",
     a: `In Deutschland können Betreiber der Standortgemeinde nach § 6 EEG freiwillig bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je eingespeister kWh zahlen; mehrere Bundesländer schreiben eine Beteiligung inzwischen per Landesgesetz vor. Zusätzlich fließen ${fmt(KOMMUNE.gewerbesteuerStandort * 100)} % der Gewerbesteuer eines Solarparks an die Standortgemeinde. Der Kommunal-Rechner zeigt die Größenordnung für Ihr Projekt.`,
+    nurDE: "Regeln zur Gemeindebeteiligung",
   },
 ];
 

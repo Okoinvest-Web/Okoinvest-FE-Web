@@ -7,9 +7,10 @@ import { notFound } from "next/navigation";
 import ArtikelLayout from "@/components/Ratgeber/ArtikelLayout";
 import ArtikelInhalt from "@/components/Ratgeber/ArtikelInhalt";
 import { klartext } from "@/components/Ratgeber/InlineText";
-import { INHALTS_ARTIKEL, artikelPfad } from "@/lib/ratgeber";
+import { INHALTS_ARTIKEL, artikelInSprache, artikelPfad } from "@/lib/ratgeber";
 import { SITE, abs } from "@/data/site";
 import JsonLd from "@/components/JsonLd";
+import { seitenLand, seitenMetadata, spracheAusParams, spracheDerAnfrage } from "@/lib/land/seite";
 
 const BASE_URL = SITE.url;
 
@@ -21,10 +22,12 @@ export function generateStaticParams() {
 
 const finde = (slug) => INHALTS_ARTIKEL.find((a) => a.slug === slug);
 
-export async function generateMetadata({ params }) {
-  const { slug } = await params;
-  const a = finde(slug);
-  if (!a) return {};
+async function basisMetadata({ params }) {
+  const p = await params;
+  const roh = finde(p.slug);
+  if (!roh) return {};
+  // Englisch: Metadaten aus der englischen Fassung (Titel und Beschreibung gibt es für alle Artikel)
+  const a = artikelInSprache(roh, spracheAusParams(p));
   const url = abs(artikelPfad(a.slug));
   const bild = abs(a.bild);
   return {
@@ -49,17 +52,23 @@ export async function generateMetadata({ params }) {
   };
 }
 
+export const generateMetadata = seitenMetadata(({ slug }) => artikelPfad(slug), (land, p) => basisMetadata({ params: p }));
+
 export default async function RatgeberArtikelPage({ params }) {
+  await seitenLand(params);
   const { slug } = await params;
-  const a = finde(slug);
-  if (!a) notFound();
+  const roh = finde(slug);
+  if (!roh) notFound();
+  const sprache = spracheDerAnfrage();
+  const en = sprache === "en";
+  const a = artikelInSprache(roh, sprache);
 
   const url = abs(artikelPfad(a.slug));
 
   const toc = [
-    ...(a.kurzFazit?.length ? [{ id: "kurz", label: "Das Wichtigste in Kürze" }] : []),
+    ...(a.kurzFazit?.length ? [{ id: "kurz", label: en ? "Key points at a glance" : "Das Wichtigste in Kürze" }] : []),
     ...a.abschnitte.map((s) => ({ id: s.id, label: s.tocLabel || s.titel })),
-    ...(a.faq?.length ? [{ id: "faq", label: "Häufige Fragen" }] : []),
+    ...(a.faq?.length ? [{ id: "faq", label: en ? "Frequently asked questions" : "Häufige Fragen" }] : []),
   ];
 
   const graph = [
@@ -68,7 +77,7 @@ export default async function RatgeberArtikelPage({ params }) {
       "@id": `${url}/#article`,
       headline: a.title,
       description: a.description,
-      inLanguage: "de-DE",
+      inLanguage: en && a.englisch ? "en" : "de-DE",
       datePublished: a.veroeffentlicht,
       dateModified: a.aktualisiert,
       author: { "@type": "Organization", "@id": `${BASE_URL}/#organization`, name: "ÖkoInvest", url: BASE_URL },
@@ -89,7 +98,7 @@ export default async function RatgeberArtikelPage({ params }) {
       "@type": "HowTo",
       "@id": `${url}/#howto`,
       name: a.howTo.name,
-      inLanguage: "de-DE",
+      inLanguage: en && a.englisch ? "en" : "de-DE",
       step: a.howTo.schritte.map((s, i) => ({ "@type": "HowToStep", position: i + 1, name: s.name, text: klartext(s.text) })),
     });
   }

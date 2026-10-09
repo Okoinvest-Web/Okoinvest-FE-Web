@@ -3,6 +3,8 @@ import { CalendarCheck, Clock, Percent, Waypoints } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { GEMEINSCHAFTEN } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import { fmtZahl } from "@/lib/sprache/format";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 const at = GEMEINSCHAFTEN.rechner.at.rabatte.find((r) => r.id === "lokal");
 const ch = GEMEINSCHAFTEN.rechner.ch.rabatte.find((r) => r.id === "leg40");
@@ -14,17 +16,27 @@ const FAKTEN = [
   { icon: Clock, wert: "15", einheit: "Minuten", text: "Raster, in dem der geteilte Strom über Smart Meter zugeordnet wird" },
 ];
 
+/* Sprachmodell: englische Fassung (gleiche Werte) */
+const FAKTEN_EN = [
+  { wert: "2026", einheit: "Energy sharing in DE", text: "possible since 1 June 2026 under § 42c EnWG (German Energy Industry Act)" },
+  { wert: `${fmtZahl(at.anteil * 100, 0, "en")} %`, einheit: "Discount in Austria", text: "on the grid energy charge for shared power, local EEG (renewable energy community)" },
+  { wert: `${fmtZahl(ch.anteil * 100, 0, "en")} %`, einheit: "Discount in Switzerland", text: "on grid usage in the LEG (local electricity community), same grid level" },
+  { wert: "15", einheit: "Minutes", text: "interval in which shared power is allocated via smart meters" },
+];
+
 export default function Fakten() {
+  const en = spracheDerAnfrage() === "en";
+  const fakten = en ? FAKTEN.map((f, i) => ({ ...f, ...FAKTEN_EN[i] })) : FAKTEN;
   return (
     <section data-abschnitt="fakten" aria-labelledby="fakten-titel" className="relative z-10 -mt-12 md:-mt-16">
-      <h2 id="fakten-titel" className="sr-only">Regeln in Zahlen</h2>
+      <h2 id="fakten-titel" className="sr-only">{en ? "The rules in figures" : "Regeln in Zahlen"}</h2>
       <div className="ov-container">
         <div className="relative rounded-[1.75rem] bg-white shadow-e4 ring-1 ring-ink-200/70 md:rounded-[2rem]">
           <div aria-hidden="true" className="absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-ov-400 to-transparent" />
           <dl className="grid px-5 sm:grid-cols-2 sm:px-2 lg:grid-cols-4 lg:px-0 lg:py-3">
-            {FAKTEN.map((f, i) => (
+            {fakten.map((f, i) => (
               <div
-                key={f.einheit}
+                key={i}
                 className={cn(
                   "grid grid-cols-[5.25rem_minmax(0,1fr)] items-start gap-x-4 border-ink-100 py-5 sm:px-5 sm:py-6 lg:grid-cols-1 lg:gap-x-0 lg:px-7 lg:py-5 xl:px-8",
                   i > 0 && "border-t",

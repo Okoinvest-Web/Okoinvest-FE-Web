@@ -5,6 +5,13 @@ import { BatteryCharging, Sun } from "lucide-react";
 import { isoProjektion, quader } from "@/components/Energie/Seite/iso";
 import Zaehler from "@/components/motion/Zaehler";
 import f from "@/components/Energie/fluss.module.css";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+
+const W = {
+  de: { fahrplan: "Fahrplan heute", beispiel: "Beispiel", fahrText: "Börsenpreis und Fahrweise, schematisch", laden: "Laden 11–15 Uhr", entladen: "Entladen 18–21 Uhr", ladezustand: "Ladezustand", mittag: "lädt aus der Mittagsspitze", zahlen: "de-DE" },
+  en: { fahrplan: "Today’s schedule", beispiel: "Example", fahrText: "Exchange price and operation, schematic", laden: "Charge 11 am–3 pm", entladen: "Discharge 6–9 pm", ladezustand: "State of charge", mittag: "charging from the midday peak", zahlen: "en-GB" },
+};
 
 const { p, pts } = isoProjektion({ s: 36, ox: 214, oy: 118 });
 
@@ -168,6 +175,7 @@ function Fahrplan() {
 }
 
 export default function HeroBuehne() {
+  const w = uebersetze(W, spracheDerAnfrage());
   return (
     <div className="relative">
       <div className="relative sm:pr-6 sm:pt-16 lg:pt-20">
@@ -177,19 +185,19 @@ export default function HeroBuehne() {
       {/* Karte: Fahrplan heute */}
       <div className="relative -mt-6 rounded-2xl bg-navy-900/80 p-4 shadow-e4 ring-1 ring-white/15 backdrop-blur-md sm:absolute sm:right-0 sm:top-0 sm:mt-0 sm:w-[54%] sm:p-5">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ov-300">Fahrplan heute</p>
-          <span className="rounded-full bg-sun-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-sun-300 ring-1 ring-sun-400/30">Beispiel</span>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ov-300">{w.fahrplan}</p>
+          <span className="rounded-full bg-sun-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-sun-300 ring-1 ring-sun-400/30">{w.beispiel}</span>
         </div>
-        <p className="mt-1 text-[13px] text-white/70">Börsenpreis und Fahrweise, schematisch</p>
+        <p className="mt-1 text-[13px] text-white/70">{w.fahrText}</p>
         <div className="mt-3">
           <Fahrplan />
         </div>
         <div className="mt-2 flex flex-wrap gap-2 text-[12px]">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-navy-400/20 px-2.5 py-1 text-navy-100 ring-1 ring-navy-300/30">
-            <span aria-hidden="true" className="h-2 w-2 rounded-sm bg-navy-400" /> Laden 11–15 Uhr
+            <span aria-hidden="true" className="h-2 w-2 rounded-sm bg-navy-400" /> {w.laden}
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-ov-500/20 px-2.5 py-1 text-ov-100 ring-1 ring-ov-400/30">
-            <span aria-hidden="true" className="h-2 w-2 rounded-sm bg-ov-400" /> Entladen 18–21 Uhr
+            <span aria-hidden="true" className="h-2 w-2 rounded-sm bg-ov-400" /> {w.entladen}
           </span>
         </div>
       </div>
@@ -202,13 +210,13 @@ export default function HeroBuehne() {
         </svg>
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-[12px] font-semibold text-ink-500">
-            <BatteryCharging aria-hidden="true" className="h-3.5 w-3.5 text-ov-600" /> Ladezustand
+            <BatteryCharging aria-hidden="true" className="h-3.5 w-3.5 text-ov-600" /> {w.ladezustand}
           </p>
           <p className="ov-num font-display text-[24px] font-extrabold leading-none tracking-tight">
-            <Zaehler wert={72} nach=" %" verzoegerung={700} dauer={1100} className="[&>span:last-child]:text-left" />
+            <Zaehler wert={72} nach=" %" verzoegerung={700} dauer={1100} sprache={w.zahlen} className="[&>span:last-child]:text-left" />
           </p>
           <p className="mt-1 flex items-center gap-1 text-[12px] text-ink-600">
-            <Sun aria-hidden="true" className="h-3.5 w-3.5 text-sun-500" /> lädt aus der Mittagsspitze
+            <Sun aria-hidden="true" className="h-3.5 w-3.5 text-sun-500" /> {w.mittag}
           </p>
         </div>
       </div>

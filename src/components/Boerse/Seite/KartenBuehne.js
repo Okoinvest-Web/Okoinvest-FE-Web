@@ -4,6 +4,8 @@ import { KARTE, LAENDER_PFADE, regionPunkt } from "@/components/Boerse/KarteGeo"
 import { LAENDER } from "@/lib/plattform/konstanten";
 import { fmt } from "@/lib/rechner/annahmen";
 import s from "@/components/Boerse/boerse.module.css";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { fmtZahl } from "@/lib/sprache/format";
 
 function cluster(projekte) {
   const m = new Map();
@@ -21,6 +23,7 @@ export default function KartenBuehne({ projekte = [] }) {
   const liste = cluster(projekte);
   const max = Math.max(1, ...liste.map((c) => c.anzahl));
   const top = [...liste].sort((a, b) => b.anzahl - a.anzahl || b.mwp - a.mwp).slice(0, 3);
+  const en = spracheDerAnfrage() === "en";
 
   return (
     <div className="relative mx-auto w-full max-w-[520px]">
@@ -55,12 +58,12 @@ export default function KartenBuehne({ projekte = [] }) {
       </div>
       {top.length > 0 && (
         <div className="mt-4 rounded-2xl bg-white/[0.04] p-3 max-sm:hidden ring-1 ring-inset ring-white/10 sm:p-4">
-          <p className="px-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ov-300">Meiste Projekte</p>
+          <p className="px-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ov-300">{en ? "Most projects" : "Meiste Projekte"}</p>
           <ul className="mt-2 grid gap-1.5 sm:grid-cols-3">
             {top.map((c) => (
               <li key={c.key} className="min-w-0 rounded-xl bg-white/[0.05] px-3 py-2">
                 <span className="block truncate text-[12.5px] font-semibold text-white">{c.bundesland}</span>
-                <span className="ov-num block text-[12px] text-white/60">{c.anzahl} {c.anzahl === 1 ? "Projekt" : "Projekte"} · {fmt(c.mwp, c.mwp < 10 ? 1 : 0)} MWp</span>
+                <span className="ov-num block text-[12px] text-white/60">{c.anzahl} {en ? (c.anzahl === 1 ? "project" : "projects") : c.anzahl === 1 ? "Projekt" : "Projekte"} · {en ? fmtZahl(c.mwp, c.mwp < 10 ? 1 : 0, "en") : fmt(c.mwp, c.mwp < 10 ? 1 : 0)} MWp</span>
               </li>
             ))}
           </ul>

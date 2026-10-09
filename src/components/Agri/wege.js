@@ -1,6 +1,7 @@
 // Die vier Wege für Landwirte – eine Quelle für Vergleich, Entscheider und Rechner.
 import { HandCoins, Handshake, Tractor, Users } from "lucide-react";
 import { pfad } from "@/lib/land";
+import { zusammenfuehren } from "@/lib/sprache/woerterbuch";
 
 export const WEGE = [
   {
@@ -66,3 +67,56 @@ export const WEGE = [
 ];
 
 export const wegById = (id) => WEGE.find((w) => w.id === id);
+
+/** Englisch (Sprachmodell): nur Texte, gleiche Reihenfolge wie WEGE; Icons, ids und hrefs aus WEGE. */
+const WEGE_EN_TEXTE = [
+  {
+    titel: "Lease your land",
+    kurz: "A solar park on your land – you receive a lease.",
+    text: "An operator builds a conventional solar park. You receive a fixed or indexed lease for 30 years; the land is managed extensively, often through grazing.",
+    invest: "none",
+    einnahmen: "Ground-mounted lease, usually the highest per hectare",
+    risiko: "very low",
+    bewirtschaftung: "maintenance/grazing only",
+    aufwand: "very low",
+    fuer: "Land you want to give up or farm less intensively anyway",
+  },
+  {
+    titel: "Invest yourself",
+    kurz: "Your installation – we plan, build and market it.",
+    text: "You own the agrivoltaic installation. We take care of planning, permitting, construction, operational management and direct marketing; you finance it with equity and a bank loan.",
+    invest: "high – equity + bank loan",
+    einnahmen: "Power revenue minus costs, plus harvest and CAP",
+    risiko: "entrepreneurial",
+    bewirtschaftung: "full, on around 85–90 % of the land",
+    aufwand: "medium – decisions, financing",
+    fuer: "Farms with equity that want to keep the added value on the farm",
+  },
+  {
+    titel: "Investor builds, you farm",
+    kurz: "Agrivoltaics by an investor – you receive a lease and keep harvesting.",
+    text: "An investor finances and operates the agrivoltaic installation. You receive a lease and continue to farm the land between or under the modules – CAP support is usually largely retained.",
+    invest: "none",
+    einnahmen: "Agri lease plus harvest plus CAP",
+    risiko: "low",
+    bewirtschaftung: "full, on around 85–90 % of the land",
+    aufwand: "low – coordinating the farming",
+    fuer: "Farms that want to keep farming and build a second income without capital",
+  },
+  {
+    titel: "Participation via the cooperative",
+    kurz: "Lease + co-ownership as a member of the cooperative.",
+    text: "The installation is wholly or partly owned by a cooperative in which you – and, if you wish, neighbours and the municipality – are members. You receive a lease, keep farming and share in the yield through your shares.",
+    invest: "your choice – shares",
+    einnahmen: "Lease plus distribution plus harvest and CAP",
+    risiko: "medium, spread",
+    bewirtschaftung: "full, on around 85–90 % of the land",
+    aufwand: "low – membership",
+    fuer: "Farms that want to share in the earnings without shouldering everything alone",
+  },
+];
+
+export const WEGE_EN = zusammenfuehren(WEGE, WEGE_EN_TEXTE);
+
+/** Die vier Wege in der Sprache der Seite ("de" | "en"). */
+export const wegeFuer = (sprache) => (sprache === "en" ? WEGE_EN : WEGE);

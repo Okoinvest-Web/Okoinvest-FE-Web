@@ -1,11 +1,63 @@
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { AlertTriangle, ArrowRight, ArrowUpRight, BadgeCheck, CalendarClock, Check, Clock, Hash, Info, Lightbulb, Scale } from "lucide-react";
 
 import { cn } from "@/components/ui/cn";
 import Reveal from "@/components/ui/Reveal";
 import InlineText from "./InlineText";
-import { artikelPfad, datumLang, weitereArtikel } from "@/lib/ratgeber";
+import { artikelInSprache, artikelPfad, datumLang, weitereArtikel } from "@/lib/ratgeber";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+
+// Sprachmodell: feste Texte der Bausteine (Server-Komponenten, Sprache aus der Anfrage)
+const TEXTE = {
+  de: {
+    direktlink: (x) => `Direktlink zu „${x}“`,
+    kurz: "Das Wichtigste in Kürze",
+    kasten: { info: "Gut zu wissen", tipp: "Unser Tipp", wichtig: "Wichtig", recht: "Rechtslage" },
+    tabelle: "Tabelle",
+    merkmal: "Merkmal",
+    team: "Projektteam ÖkoInvest",
+    rolle: "Projektentwicklung Freiflächen- und Agri-PV",
+    aktualisiert: "Aktualisiert",
+    lesezeit: (m) => `${m} Min. Lesezeit`,
+    min: (m) => `${m} Min.`,
+    autoren: "Über die Autoren",
+    autorenText: (datum) => (
+      <>
+        Geschrieben vom Projektteam der ÖkoInvest GmbH – Projektentwicklung für Freiflächen-PV, Agri-PV, Solarcarports und Großspeicher, Teil der
+        ÖKOVOLT Gruppe, die seit 2012 eigene Solarparks betreibt. Zahlen und Rechtsstand prüfen wir regelmäßig; zuletzt am {datum}. Die Inhalte
+        ersetzen keine Rechts-, Steuer- oder Anlageberatung.
+      </>
+    ),
+    ueber: "Über ÖkoInvest",
+    lexikon: "Lexikon",
+    fehler: "Fehler gefunden? Schreiben Sie uns",
+  },
+  en: {
+    direktlink: (x) => `Direct link to “${x}”`,
+    kurz: "Key points at a glance",
+    kasten: { info: "Good to know", tipp: "Our tip", wichtig: "Important", recht: "Legal position" },
+    tabelle: "Table",
+    merkmal: "Feature",
+    team: "ÖkoInvest project team",
+    rolle: "Project development, ground-mounted and agri-PV",
+    aktualisiert: "Updated",
+    lesezeit: (m) => `${m} min read`,
+    min: (m) => `${m} min`,
+    autoren: "About the authors",
+    autorenText: (datum) => (
+      <>
+        Written by the project team of ÖkoInvest GmbH – project development for ground-mounted PV, agri-PV, solar carports and utility-scale storage,
+        part of the ÖKOVOLT Group, which has operated its own solar parks since 2012. We review figures and the legal position regularly; most recently
+        on {datum}. The content does not replace legal, tax or investment advice.
+      </>
+    ),
+    ueber: "About ÖkoInvest",
+    lexikon: "Glossary",
+    fehler: "Found a mistake? Write to us",
+  },
+};
+const texte = () => TEXTE[spracheDerAnfrage()] || TEXTE.de;
 
 /* ------------------------------------------------------------------
    Redaktionelle Bausteine für Ratgeber-Artikel (Magazin-Look).
@@ -14,6 +66,7 @@ import { artikelPfad, datumLang, weitereArtikel } from "@/lib/ratgeber";
 
 /** Abschnitt mit Anker: h2 mit Sprunglink, Abstand zur klebenden Navigation. nr (optional): Kapitelnummer wie im Inhaltsverzeichnis. */
 export function Abschnitt({ id, titel, nr, children, className }) {
+  const t = texte();
   return (
     <section id={id} aria-labelledby={`${id}-titel`} className={cn("scroll-mt-28 pt-14 first:pt-0 md:pt-16", className)}>
       {nr ? (
@@ -26,7 +79,7 @@ export function Abschnitt({ id, titel, nr, children, className }) {
         {titel}
         <a
           href={`#${id}`}
-          aria-label={`Direktlink zu „${typeof titel === "string" ? titel : id}“`}
+          aria-label={t.direktlink(typeof titel === "string" ? titel : id)}
           className="ml-2 inline-flex translate-y-[-2px] align-middle text-ink-300 opacity-0 transition-opacity hover:text-ov-600 focus:opacity-100 group-hover:opacity-100"
         >
           <Hash aria-hidden="true" className="h-5 w-5" />
@@ -57,7 +110,8 @@ export function TextLink({ href, children }) {
 }
 
 /** „Das Wichtigste in Kürze“ – zitierfähige Kernaussagen oben im Artikel. */
-export function KurzFazit({ punkte = [], id = "kurz", titel = "Das Wichtigste in Kürze" }) {
+export function KurzFazit({ punkte = [], id = "kurz", titel }) {
+  titel = titel || texte().kurz;
   return (
     <section id={id} aria-labelledby={`${id}-titel`} className="scroll-mt-28">
       <div className="relative isolate overflow-hidden rounded-3xl bg-white p-6 shadow-e2 ring-1 ring-ov-200/70 md:p-8">
@@ -94,6 +148,7 @@ const KASTEN = {
 /** Info-/Merkkasten. variant: info | tipp | wichtig | recht */
 export function Merkkasten({ variant = "info", titel, children, className }) {
   const k = KASTEN[variant] || KASTEN.info;
+  const kastenTitel = texte().kasten[KASTEN[variant] ? variant : "info"];
   const Icon = k.icon;
   return (
     // role="note" statt <aside>: Merkkästen stehen im Artikel, keine eigenständige Landmark
@@ -102,7 +157,7 @@ export function Merkkasten({ variant = "info", titel, children, className }) {
         <Icon aria-hidden="true" className="h-[18px] w-[18px]" />
       </span>
       <div className="min-w-0">
-        <p className="font-display text-[16.5px] font-bold text-ink-900">{titel || k.titel}</p>
+        <p className="font-display text-[16.5px] font-bold text-ink-900">{titel || kastenTitel || k.titel}</p>
         <div className="mt-1.5 text-[15.5px] leading-relaxed text-ink-700 [&_a]:font-medium [&_a]:text-ov-700 [&_a]:underline [&_a]:decoration-ov-300 [&_a]:underline-offset-2">
           {children}
         </div>
@@ -142,10 +197,11 @@ export function Kennzahlband({ icon: Icon, titel, text, wert }) {
  * kopf: ["Spalte", ...]; zeilen: [[th, td, td], ...]; hervorheben: Spaltenindex
  */
 export function Tabelle({ caption, kopf = [], zeilen = [], hervorheben, fussnote, minBreite = 520, markierteZeile }) {
+  const t = texte();
   return (
     <figure className="my-8">
       {/* Scrollbarer Bereich per Tastatur erreichbar (WCAG 2.1.1) */}
-      <div tabIndex={0} role="region" aria-label={caption || "Tabelle"} className="overflow-x-auto rounded-2xl bg-white ring-1 ring-ink-200/80">
+      <div tabIndex={0} role="region" aria-label={caption || t.tabelle} className="overflow-x-auto rounded-2xl bg-white ring-1 ring-ink-200/80">
         <table className="w-full border-collapse text-left text-[15px]" style={{ minWidth: minBreite }}>
           <caption className="sr-only">{caption}</caption>
           {kopf.length > 0 && (
@@ -153,7 +209,7 @@ export function Tabelle({ caption, kopf = [], zeilen = [], hervorheben, fussnote
               <tr className="border-b border-ink-200 bg-sand-50">
                 {kopf.map((k) => (
                   <th key={k} scope="col" className="px-5 py-3.5 text-[12.5px] font-semibold uppercase tracking-[0.08em] text-ink-600">
-                    {k || <span className="sr-only">Merkmal</span>}
+                    {k || <span className="sr-only">{t.merkmal}</span>}
                   </th>
                 ))}
               </tr>
@@ -241,6 +297,8 @@ export function Ablauf({ schritte = [] }) {
 
 /** Meta-Zeile für den Artikel-Hero: Autor, Datum, Lesezeit. */
 export function ArtikelMeta({ artikel }) {
+  const sprache = spracheDerAnfrage();
+  const t = texte();
   return (
     <div className="ov-hero-in mt-9 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-ink-200 pt-7" style={{ "--ov-delay": "300ms" }}>
       <div className="flex items-center gap-3">
@@ -251,17 +309,17 @@ export function ArtikelMeta({ artikel }) {
           </span>
         </span>
         <div className="leading-tight">
-          <p className="text-[14.5px] font-semibold text-ink-900">Projektteam ÖkoInvest</p>
-          <p className="text-[12.5px] text-ink-500">Projektentwicklung Freiflächen- und Agri-PV</p>
+          <p className="text-[14.5px] font-semibold text-ink-900">{t.team}</p>
+          <p className="text-[12.5px] text-ink-500">{t.rolle}</p>
         </div>
       </div>
       <p className="flex items-center gap-2 text-[14px] text-ink-600">
         <CalendarClock aria-hidden="true" className="h-4 w-4 text-ov-600" />
-        Aktualisiert <time dateTime={artikel.aktualisiert}>{datumLang(artikel.aktualisiert)}</time>
+        {t.aktualisiert} <time dateTime={artikel.aktualisiert}>{datumLang(artikel.aktualisiert, sprache)}</time>
       </p>
       <p className="flex items-center gap-2 text-[14px] text-ink-600">
         <Clock aria-hidden="true" className="h-4 w-4 text-ov-600" />
-        {artikel.lesezeit} Min. Lesezeit
+        {t.lesezeit(artikel.lesezeit)}
       </p>
     </div>
   );
@@ -269,21 +327,21 @@ export function ArtikelMeta({ artikel }) {
 
 /** Autorenbox am Artikelende (E-E-A-T). */
 export function Autorenbox({ artikel }) {
+  const sprache = spracheDerAnfrage();
+  const t = texte();
   return (
     <div className="mt-16 flex flex-col gap-5 rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60 sm:flex-row sm:items-start md:p-8">
       <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-navy-950 font-display text-[20px] font-extrabold text-white">ÖI</span>
       <div>
-        <p className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ov-700">Über die Autoren</p>
-        <p className="mt-1.5 font-display text-[19px] font-extrabold text-ink-900">Projektteam ÖkoInvest</p>
+        <p className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ov-700">{t.autoren}</p>
+        <p className="mt-1.5 font-display text-[19px] font-extrabold text-ink-900">{t.team}</p>
         <p className="mt-2 text-[15px] leading-relaxed text-ink-600">
-          Geschrieben vom Projektteam der ÖkoInvest GmbH – Projektentwicklung für Freiflächen-PV, Agri-PV, Solarcarports und Großspeicher,
-          Teil der ÖKOVOLT Gruppe, die seit 2012 eigene Solarparks betreibt. Zahlen und Rechtsstand prüfen wir regelmäßig; zuletzt am{" "}
-          <time dateTime={artikel.aktualisiert}>{datumLang(artikel.aktualisiert)}</time>. Die Inhalte ersetzen keine Rechts-, Steuer- oder Anlageberatung.
+          {t.autorenText(<time dateTime={artikel.aktualisiert}>{datumLang(artikel.aktualisiert, sprache)}</time>)}
         </p>
         <p className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[14px]">
-          <Link href="/unternehmen" className="font-semibold text-ov-700 hover:underline">Über ÖkoInvest</Link>
-          <Link href="/wissen/lexikon" className="font-semibold text-ov-700 hover:underline">Lexikon</Link>
-          <Link href="/kontakt" className="font-semibold text-ov-700 hover:underline">Fehler gefunden? Schreiben Sie uns</Link>
+          <Link href="/unternehmen" className="font-semibold text-ov-700 hover:underline">{t.ueber}</Link>
+          <Link href="/wissen/lexikon" className="font-semibold text-ov-700 hover:underline">{t.lexikon}</Link>
+          <Link href="/kontakt" className="font-semibold text-ov-700 hover:underline">{t.fehler}</Link>
         </p>
       </div>
     </div>
@@ -311,6 +369,8 @@ export function LinkKarten({ links = [] }) {
 
 /** Artikelkarte für Hub und „Weitere Artikel“. */
 export function ArtikelKarte({ artikel, gross = false, delay = 0 }) {
+  const sprache = spracheDerAnfrage();
+  const t = texte();
   return (
     <Reveal as="article" delay={delay} className="flex">
       <div className="group ov-card-hover relative flex w-full flex-col rounded-3xl bg-white ring-1 ring-ink-200/70 focus-within:ring-2 focus-within:ring-ov-500 hover:ring-ov-200">
@@ -323,7 +383,7 @@ export function ArtikelKarte({ artikel, gross = false, delay = 0 }) {
             className="object-cover transition-transform duration-700 group-hover:scale-105"
           />
           <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-[12px] font-semibold text-ink-800 shadow-sm backdrop-blur">
-            {artikel.kategorie}
+            {artikel.kategorieLabel || artikel.kategorie}
           </span>
         </div>
         <div className={cn("flex flex-col p-6", gross ? "md:p-8" : "flex-1")}>
@@ -336,11 +396,11 @@ export function ArtikelKarte({ artikel, gross = false, delay = 0 }) {
           <p className={cn("mt-3 text-ink-600", gross ? "text-[16.5px] leading-relaxed" : "line-clamp-3 text-[15px] leading-relaxed")}>{artikel.excerpt}</p>
           <div className="mt-auto flex items-center justify-between gap-4 pt-6 text-[13px] text-ink-500">
             <span className="flex items-center gap-3">
-              <time dateTime={artikel.aktualisiert}>{datumLang(artikel.aktualisiert)}</time>
+              <time dateTime={artikel.aktualisiert}>{datumLang(artikel.aktualisiert, sprache)}</time>
               <span aria-hidden="true" className="h-1 w-1 rounded-full bg-ink-300" />
               <span className="flex items-center gap-1.5">
                 <Clock aria-hidden="true" className="h-3.5 w-3.5" />
-                {artikel.lesezeit} Min.
+                {t.min(artikel.lesezeit)}
               </span>
             </span>
             <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-ink-100 text-ink-600 transition-all group-hover:bg-ov-500 group-hover:text-white">
@@ -355,7 +415,8 @@ export function ArtikelKarte({ artikel, gross = false, delay = 0 }) {
 
 /** „Weiterlesen“-Raster am Artikelende. */
 export function WeitereArtikel({ slug }) {
-  const liste = weitereArtikel(slug, 3);
+  const sprache = spracheDerAnfrage();
+  const liste = weitereArtikel(slug, 3).map((a) => artikelInSprache(a, sprache));
   if (liste.length === 0) return null;
   return (
     <div className={cn("grid gap-5 sm:grid-cols-2", liste.length >= 3 && "lg:grid-cols-3")}>

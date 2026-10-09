@@ -1,18 +1,20 @@
 // Spannen-Diagramm: typische Dauer je Schritt der Freiflächen-Entwicklung.
 // Datenquelle sind die Prozessdaten (/prozess) – dieselben Spannen, keine Zusagen.
-import { ZIELGRUPPEN } from "@/components/Prozess/prozessDaten";
+import { zielgruppenSprache } from "@/components/Prozess/prozessDaten";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 const MAX = 36;
 const TICKS = [0, 6, 12, 18, 24, 30, 36];
 const pct = (m) => `${(m / MAX) * 100}%`;
 
 export default function DauerDiagramm() {
-  const schritte = ZIELGRUPPEN[0].schritte.filter((s) => s.monate);
+  const en = spracheDerAnfrage() === "en";
+  const schritte = zielgruppenSprache(en ? "en" : "de")[0].schritte.filter((s) => s.monate);
   return (
     <figure className="ov-flaeche-erhaben p-5 sm:p-7 md:p-8">
       <figcaption>
-        <span className="block font-display text-[17px] font-bold text-ink-900">Typische Dauer je Schritt</span>
-        <span className="mt-1 block text-[13.5px] text-ink-500">Freiflächen-Solarpark im DACH-Raum, in Monaten</span>
+        <span className="block font-display text-[17px] font-bold text-ink-900">{en ? "Typical duration per step" : "Typische Dauer je Schritt"}</span>
+        <span className="mt-1 block text-[13.5px] text-ink-500">{en ? "Ground-mounted solar park in the DACH region, in months" : "Freiflächen-Solarpark im DACH-Raum, in Monaten"}</span>
       </figcaption>
 
       <div className="relative mt-7">
@@ -50,7 +52,7 @@ export default function DauerDiagramm() {
         </div>
       </div>
       <p className="mt-4 border-t border-ink-100 pt-4 text-[12.5px] leading-relaxed text-ink-500">
-        Typische Spannen, keine Zusagen – Gemeinde, Netzbetreiber und Behörden bestimmen das Tempo. Danach folgt der Betrieb über Jahrzehnte.
+        {en ? "Typical ranges, not commitments – the municipality, grid operator and authorities set the pace. Operation then follows for decades." : "Typische Spannen, keine Zusagen – Gemeinde, Netzbetreiber und Behörden bestimmen das Tempo. Danach folgt der Betrieb über Jahrzehnte."}
       </p>
     </figure>
   );

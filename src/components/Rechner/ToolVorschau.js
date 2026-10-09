@@ -1,5 +1,6 @@
 import { PACHT, PHASEN, STROM } from "@/lib/invest/markt";
-import { fmt } from "@/lib/rechner/annahmen";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { formate } from "@/lib/sprache/zahlformat";
 
 /* Mini-Vorschauen für die Tool-Karten im Hub /rechner – dekorativ (aria-hidden),
    Werte stammen aus den Marktannahmen bzw. aus Beispielrechnungen der Rechner.
@@ -55,11 +56,13 @@ export function VorschauBalken({ reihen }) {
 
 /** Pachtrechner: Solarpacht gegenüber Ackerpacht je ha */
 export function VorschauPacht() {
+  const f = formate(spracheDerAnfrage());
+  const en = f.sprache === "en";
   return (
     <VorschauBalken
       reihen={[
-        { label: "Ackerpacht", wert: PACHT.ackerProHa, anzeige: `${fmt(PACHT.ackerProHa)} €/ha`, farbe: GRAU },
-        { label: "Solarpacht (Mitte)", wert: PACHT.freiflaecheProHa.mittel, anzeige: `${fmt(PACHT.freiflaecheProHa.mittel)} €/ha`, farbe: GRUEN },
+        { label: en ? "Arable lease" : "Ackerpacht", wert: PACHT.ackerProHa, anzeige: f.eur(PACHT.ackerProHa, "/ha"), farbe: GRAU },
+        { label: en ? "Solar lease (mid)" : "Solarpacht (Mitte)", wert: PACHT.freiflaecheProHa.mittel, anzeige: f.eur(PACHT.freiflaecheProHa.mittel, "/ha"), farbe: GRUEN },
       ]}
     />
   );
@@ -139,6 +142,7 @@ export function VorschauTreppe() {
 
 /** Reststrom: Strompreisbestandteile, beeinflussbarer Teil hervorgehoben */
 export function VorschauStrompreis() {
+  const f = formate(spracheDerAnfrage());
   const summe = STROM.bestandteile.reduce((s, b) => s + b.ct, 0);
   return (
     <div aria-hidden="true">
@@ -150,9 +154,9 @@ export function VorschauStrompreis() {
       <div className="mt-2 flex justify-between text-[11.5px] text-ink-500">
         <span>
           <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: GRUEN }} />
-          Beschaffung – hier wirkt der Pool
+          {f.sprache === "en" ? "Procurement – where the pool takes effect" : "Beschaffung – hier wirkt der Pool"}
         </span>
-        <span className="ov-num font-semibold text-ink-700">{fmt(summe, 1)} ct</span>
+        <span className="ov-num font-semibold text-ink-700">{f.fmt(summe, 1)} ct</span>
       </div>
     </div>
   );

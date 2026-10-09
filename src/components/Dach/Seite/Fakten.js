@@ -2,6 +2,9 @@
 // Mobil: Liste (Zahl rechts), ab sm 2×2, ab lg vier Spalten. Alle Werte aus DACH/Seiteninhalt.
 import { CalendarClock, HandCoins, Ruler, ShieldCheck } from "lucide-react";
 import { cn } from "@/components/ui/cn";
+import { zahlenModus } from "@/lib/land";
+import { landDerAnfrage, spracheDerAnfrage } from "@/lib/land/seite";
+import { fmtZahl } from "@/lib/sprache/format";
 
 /** Variante der Faktenleiste. fakten: [{ icon, wert, einheit, text }] */
 export function FaktenLeiste({ titel, fakten }) {
@@ -41,13 +44,34 @@ export function FaktenLeiste({ titel, fakten }) {
   );
 }
 
+// Länderinhalt: Dachpacht in € ist nur für Deutschland geprüft – in AT/CH ohne Wert (zahlenModus „hinweis“).
 export default function Fakten({ dach }) {
+  const ohneWerte = zahlenModus(landDerAnfrage(), ["DE"]) === "hinweis";
+  if (spracheDerAnfrage() === "en") {
+    const z = (n, s = 2) => fmtZahl(n, s, "en");
+    const verlaengerung = String(dach.verlaengerung).replace(/^(.*) Jahre Option$/, "options of $1 years");
+    return (
+      <FaktenLeiste
+        titel="Roof lease in figures"
+        fakten={[
+          { icon: Ruler, wert: "1,000", einheit: "m² of roof area", text: "from this size, a roof becomes interesting for an operator" },
+          ohneWerte
+            ? { icon: HandCoins, wert: "on request", einheit: "Roof lease per m²", text: "Lease rates for your country are being reviewed – offer after assessing the roof" }
+            : { icon: HandCoins, wert: `${z(dach.pachtProM2.min)}–${z(dach.pachtProM2.max)}`, einheit: "€ per m² per year", text: "guide value for the fixed roof lease" },
+          { icon: CalendarClock, wert: String(dach.laufzeit), einheit: "years term", text: `from commissioning, plus ${verlaengerung}` },
+          { icon: ShieldCheck, wert: "€0", einheit: "for the assessment", text: "initial assessment, offer and draft contract free of charge" },
+        ]}
+      />
+    );
+  }
   return (
     <FaktenLeiste
       titel="Dachpacht in Zahlen"
       fakten={[
         { icon: Ruler, wert: "1.000", einheit: "m² Dachfläche", text: "ab dieser Größe wird ein Dach für einen Betreiber interessant" },
-        { icon: HandCoins, wert: `${dach.pachtProM2.min}–${dach.pachtProM2.max}`, einheit: "€ je m² und Jahr", text: "Orientierung für die feste Dachpacht" },
+        ohneWerte
+          ? { icon: HandCoins, wert: "auf Anfrage", einheit: "Dachpacht je m²", text: "Pachtwerte für Ihr Land werden geprüft – Angebot nach Prüfung des Dachs" }
+          : { icon: HandCoins, wert: `${dach.pachtProM2.min}–${dach.pachtProM2.max}`, einheit: "€ je m² und Jahr", text: "Orientierung für die feste Dachpacht" },
         { icon: CalendarClock, wert: String(dach.laufzeit), einheit: "Jahre Laufzeit", text: `ab Inbetriebnahme, dazu ${dach.verlaengerung}` },
         { icon: ShieldCheck, wert: "0 €", einheit: "für die Prüfung", text: "Erstprüfung, Angebot und Vertragsentwurf kostenfrei" },
       ]}

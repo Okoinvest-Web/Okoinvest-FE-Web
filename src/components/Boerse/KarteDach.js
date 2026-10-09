@@ -12,6 +12,9 @@ import { LAENDER } from "@/lib/plattform/konstanten";
 import { fmt } from "@/lib/rechner/annahmen";
 import { KARTE, LAENDER_PFADE, REGION_MITTE, projiziere, regionPunkt } from "./KarteGeo";
 import s from "./boerse.module.css";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { fmtZahl } from "@/lib/sprache/format";
+import { BEGRIFFE_EN } from "@/lib/sprache/begriffe";
 
 function cluster(projekte) {
   const m = new Map();
@@ -29,7 +32,12 @@ function cluster(projekte) {
     .sort((a, b) => b.anzahl - a.anzahl || b.mwp - a.mwp);
 }
 
-export default function KarteDach({ projekte = [], region = "", onRegion, titel = "Projekte nach Region" }) {
+export default function KarteDach({ projekte = [], region = "", onRegion, titel: titelProp }) {
+  const en = useSprache() === "en";
+  const titel = titelProp ?? (en ? "Projects by region" : "Projekte nach Region");
+  const projekt = (n) => (en ? (n === 1 ? "project" : "projects") : n === 1 ? "Projekt" : "Projekte");
+  const mw = (n) => (en ? fmtZahl(n, 1, "en") : fmt(n, 1));
+  const landName = (k) => (en ? BEGRIFFE_EN.land[k] ?? LAENDER[k] : LAENDER[k]);
   const [hover, setHover] = useState("");
   const liste = useMemo(() => cluster(projekte), [projekte]);
   const max = Math.max(1, ...liste.map((c) => c.anzahl));
@@ -41,7 +49,7 @@ export default function KarteDach({ projekte = [], region = "", onRegion, titel 
     <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
       {/* Cluster „ploppen“ beim Eintritt nacheinander auf (größte zuerst) – zeigt, wo die Projekte liegen */}
       <figure suppressHydrationWarning data-dir="ohne" className="ov-reveal relative min-w-0 overflow-hidden rounded-3xl bg-sand-50 ring-1 ring-ink-200/70">
-        <svg viewBox={`-10 -10 ${KARTE.breite + 20} ${KARTE.hoehe + 20}`} className="mx-auto block h-auto w-full max-w-[520px]" role="group" aria-label={`${titel}: stilisierte Karte Deutschland, Österreich, Schweiz`}>
+        <svg viewBox={`-10 -10 ${KARTE.breite + 20} ${KARTE.hoehe + 20}`} className="mx-auto block h-auto w-full max-w-[520px]" role="group" aria-label={en ? `${titel}: stylised map of Germany, Austria, Switzerland` : `${titel}: stilisierte Karte Deutschland, Österreich, Schweiz`}>
           <defs>
             <pattern id="karte-raster" width="14" height="14" patternUnits="userSpaceOnUse">
               <circle cx="1" cy="1" r="0.9" className="fill-ink-200" />
@@ -74,7 +82,7 @@ export default function KarteDach({ projekte = [], region = "", onRegion, titel 
                 role="button"
                 tabIndex={0}
                 aria-pressed={aktiv}
-                aria-label={`${c.bundesland}: ${c.anzahl} ${c.anzahl === 1 ? "Projekt" : "Projekte"}, ${fmt(c.mwp, 1)} MWp`}
+                aria-label={`${c.bundesland}: ${c.anzahl} ${projekt(c.anzahl)}, ${mw(c.mwp)} MWp`}
                 onClick={() => waehle(c.bundesland)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -100,7 +108,7 @@ export default function KarteDach({ projekte = [], region = "", onRegion, titel 
                   <g className="pointer-events-none">
                     <rect x={c.punkt[0] - 78} y={c.punkt[1] - r - 36} width="156" height="26" rx="13" className="fill-navy-950" />
                     <text x={c.punkt[0]} y={c.punkt[1] - r - 18.5} textAnchor="middle" className="fill-white text-[12px] font-semibold">
-                      {c.bundesland.length > 18 ? `${c.bundesland.slice(0, 17)}…` : c.bundesland} · {fmt(c.mwp, 1)} MWp
+                      {c.bundesland.length > 18 ? `${c.bundesland.slice(0, 17)}…` : c.bundesland} · {mw(c.mwp)} MWp
                     </text>
                   </g>
                 )}
@@ -110,9 +118,9 @@ export default function KarteDach({ projekte = [], region = "", onRegion, titel 
         </svg>
         <figcaption className="flex flex-wrap items-center justify-between gap-2 border-t border-ink-200/70 bg-white/70 px-4 py-2.5 text-[12px] text-ink-500">
           <span className="inline-flex items-center gap-1.5">
-            <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-ov-600" /> Projekte je Bundesland / Kanton
+            <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-ov-600" /> {en ? "Projects per federal state / canton" : "Projekte je Bundesland / Kanton"}
           </span>
-          <span>Stilisiert – keine genaue Lage</span>
+          <span>{en ? "Stylised – no exact location" : "Stilisiert – keine genaue Lage"}</span>
         </figcaption>
       </figure>
 
@@ -121,13 +129,13 @@ export default function KarteDach({ projekte = [], region = "", onRegion, titel 
           <h2 className="font-display text-[17px] font-bold text-ink-900">{titel}</h2>
           {region && (
             <button type="button" onClick={() => onRegion?.("")} className="inline-flex items-center gap-1 text-[13px] font-semibold text-ink-600 hover:text-ink-900">
-              <X aria-hidden="true" className="h-4 w-4" /> Alle Regionen
+              <X aria-hidden="true" className="h-4 w-4" /> {en ? "All regions" : "Alle Regionen"}
             </button>
           )}
         </div>
         {gewaehlt && (
           <p className="mt-2 rounded-2xl bg-navy-50 px-4 py-3 text-[14px] text-navy-900 ring-1 ring-inset ring-navy-100" aria-live="polite">
-            <span className="font-semibold">{gewaehlt.bundesland}</span> ({LAENDER[gewaehlt.land]}): {gewaehlt.anzahl} {gewaehlt.anzahl === 1 ? "Projekt" : "Projekte"} mit zusammen {fmt(gewaehlt.mwp, 1)} MWp – Liste unten gefiltert.
+            <span className="font-semibold">{gewaehlt.bundesland}</span> ({landName(gewaehlt.land)}): {en ? `${gewaehlt.anzahl} ${projekt(gewaehlt.anzahl)} with a total of ${mw(gewaehlt.mwp)} MWp – list below filtered.` : `${gewaehlt.anzahl} ${projekt(gewaehlt.anzahl)} mit zusammen ${mw(gewaehlt.mwp)} MWp – Liste unten gefiltert.`}
           </p>
         )}
         {liste.length ? (
@@ -145,18 +153,18 @@ export default function KarteDach({ projekte = [], region = "", onRegion, titel 
                   <MapPin aria-hidden="true" className={cn("h-4 w-4 shrink-0", c.bundesland === region ? "text-navy-800" : "text-ov-600")} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[14.5px] font-semibold text-ink-900">{c.bundesland}</span>
-                    <span className="block text-[12.5px] text-ink-500">{LAENDER[c.land]}</span>
+                    <span className="block text-[12.5px] text-ink-500">{landName(c.land)}</span>
                   </span>
                   <span className="ov-num shrink-0 text-right text-[13px] text-ink-600">
-                    <span className="block font-bold text-ink-900">{c.anzahl} {c.anzahl === 1 ? "Projekt" : "Projekte"}</span>
-                    {fmt(c.mwp, 1)} MWp
+                    <span className="block font-bold text-ink-900">{c.anzahl} {projekt(c.anzahl)}</span>
+                    {mw(c.mwp)} MWp
                   </span>
                 </button>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="mt-3 rounded-2xl border border-dashed border-ink-200 px-4 py-6 text-center text-[14px] text-ink-500">Keine Projekte zu den gewählten Filtern.</p>
+          <p className="mt-3 rounded-2xl border border-dashed border-ink-200 px-4 py-6 text-center text-[14px] text-ink-500">{en ? "No projects match the selected filters." : "Keine Projekte zu den gewählten Filtern."}</p>
         )}
       </div>
     </div>

@@ -1,10 +1,12 @@
 // Die vier Wege als Karten mit Stufenanzeigen (Server-Komponente)
 // Die Stufen übersetzen die Texte aus wege.js (z. B. Risiko „gering“) in eine Skala 1–4 – keine neuen Zahlen.
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowUpRight } from "lucide-react";
 import Reveal from "@/components/ui/Reveal";
 import { cn } from "@/components/ui/cn";
-import { WEGE } from "@/components/Agri/wege";
+import { wegeFuer } from "@/components/Agri/wege";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 /** Stufen je Weg (1 = wenig, 4 = viel) – abgeleitet aus invest/risiko/aufwand/bewirtschaftung */
 const STUFEN = {
@@ -23,7 +25,17 @@ const ZEILEN = [
 
 const BETONT = "eigen";
 
+/** Sprachmodell: feste Texte der Karten (en nur Texte). */
+const W = {
+  de: { zeilen: ZEILEN, weg: (b) => `Weg ${b}: `, mehr: "Mehr erfahren" },
+  en: { zeilen: [[null, "Own capital"], [null, "Risk"], [null, "Your effort"], [null, "Farming"]], weg: (b) => `Route ${b}: `, mehr: "Learn more" },
+};
+
 export default function WegeKarten() {
+  const sprache = spracheDerAnfrage();
+  const w2 = uebersetze(W, sprache);
+  const WEGE = wegeFuer(sprache);
+  const zeilen = ZEILEN.map(([key], i) => [key, w2.zeilen[i][1]]);
   return (
     <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {WEGE.map((w, i) => {
@@ -47,13 +59,13 @@ export default function WegeKarten() {
                 </span>
               </div>
               <h3 className="mt-6 font-display text-[19px] font-bold leading-snug tracking-[-0.01em] text-ink-900">
-                <span className="sr-only">Weg {w.buchstabe}: </span>
+                <span className="sr-only">{w2.weg(w.buchstabe)}</span>
                 {w.titel}
               </h3>
               <p className="mt-3 text-pretty text-[15px] leading-relaxed text-ink-600">{w.text}</p>
 
               <dl className="mt-6 space-y-3 border-t border-ink-100 pt-5">
-                {ZEILEN.map(([key, label]) => (
+                {zeilen.map(([key, label]) => (
                   <div key={key}>
                     <div className="flex items-baseline justify-between gap-3 text-[12.5px]">
                       <dt className="text-ink-500">{label}</dt>
@@ -69,7 +81,7 @@ export default function WegeKarten() {
               </dl>
 
               <span className="mt-auto inline-flex items-center gap-1.5 pt-6 text-[14.5px] font-semibold text-ov-700">
-                Mehr erfahren
+                {w2.mehr}
                 <ArrowUpRight aria-hidden="true" className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none" />
               </span>
             </Link>

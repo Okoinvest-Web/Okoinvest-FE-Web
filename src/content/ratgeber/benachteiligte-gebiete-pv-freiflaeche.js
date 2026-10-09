@@ -157,7 +157,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Folge für die Praxis: Nicht der Blick in eine alte Landesverordnung entscheidet, sondern die **Bekanntmachung der Bundesnetzagentur zum jeweiligen Gebotstermin**. Darin steht, ob ein Land eine Verordnung nach § 37c Abs. 2 EEG erlassen und eine Überschreitung gemeldet hat. Zum Gebotstermin ${LETZTER_TERMIN} war das in keinem Land der Fall. Wie die Ausschreibung selbst abläuft – Termine, Höchstwerte, Sicherheiten –, erklärt der Ratgeber [EEG-Ausschreibung für Freiflächen](/wissen/ratgeber/eeg-ausschreibung-freiflaeche).`,
+          text: `Die Folge für die Praxis: Nicht der Blick in eine alte Landesverordnung entscheidet, sondern die **Bekanntmachung der Bundesnetzagentur zum jeweiligen Gebotstermin**. Darin steht, ob ein Land eine Verordnung nach § 37c Abs. 2 EEG erlassen und eine Überschreitung gemeldet hat. Zum Gebotstermin ${LETZTER_TERMIN} war das in keinem Land der Fall. Wie die Ausschreibung selbst abläuft – Termine, Höchstwerte, Sicherheiten –, erklärt der Ratgeber [EEG-Ausschreibung für Freiflächen](/ratgeber/eeg-ausschreibung-freiflaeche).`,
         },
       ],
     },
@@ -223,13 +223,13 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Die Kategorien überschneiden sich: Eine Fläche kann zugleich im benachteiligten Gebiet und im Randstreifen liegen. Für die Genehmigung ist die Nähe zur Autobahn oft der stärkere Hebel, weil im 200-m-Korridor die [Privilegierung im Außenbereich](/wissen/lexikon#privilegierung-aussenbereich) greift. Die Einzelheiten dazu erklärt der Ratgeber [Solarparks an Autobahn und Bahn](/wissen/ratgeber/solarpark-autobahn-bahn-privilegierung), das Bebauungsplanverfahren der Ratgeber [Solarpark-Genehmigung](/wissen/ratgeber/solarpark-genehmigung-bebauungsplan).",
+          text: "Die Kategorien überschneiden sich: Eine Fläche kann zugleich im benachteiligten Gebiet und im Randstreifen liegen. Für die Genehmigung ist die Nähe zur Autobahn oft der stärkere Hebel, weil im 200-m-Korridor die [Privilegierung im Außenbereich](/wissen/lexikon#privilegierung-aussenbereich) greift. Die Einzelheiten dazu erklärt der Ratgeber [Solarparks an Autobahn und Bahn](/ratgeber/solarpark-autobahn-bahn-privilegierung), das Bebauungsplanverfahren der Ratgeber [Solarpark-Genehmigung](/ratgeber/solarpark-genehmigung-bebauungsplan).",
         },
         {
           typ: "kasten",
           variant: "wichtig",
           titel: "Naturschutz prüfen, bevor Sie verhandeln",
-          text: "Landschaftsschutzgebiete und Naturparks sind nicht automatisch ausgeschlossen, können aber per Landesverordnung herausgenommen werden – und im B-Plan-Verfahren ohnehin Konflikte auslösen. Artenschutz, Vogelrastgebiete und Biotope prüfen Sie am besten früh; mehr dazu im Ratgeber [Artenschutz im Solarpark](/wissen/ratgeber/solarpark-artenschutz-biodiversitaet).",
+          text: "Landschaftsschutzgebiete und Naturparks sind nicht automatisch ausgeschlossen, können aber per Landesverordnung herausgenommen werden – und im B-Plan-Verfahren ohnehin Konflikte auslösen. Artenschutz, Vogelrastgebiete und Biotope prüfen Sie am besten früh; mehr dazu im Ratgeber [Artenschutz im Solarpark](/ratgeber/solarpark-artenschutz-biodiversitaet).",
         },
       ],
     },
@@ -249,7 +249,7 @@ const artikel = {
             ["Agrar-Kartendienst des Landes öffnen", "Ebene „benachteiligte Gebiete“ bzw. „Ausgleichszulage“ einblenden. Bei Unklarheit das Amt für Landwirtschaft oder die Landwirtschaftskammer fragen."],
             ["Schutzgebiete abgleichen", "Natura 2000, Naturschutzgebiete und Biotope schließen aus; Landschaftsschutzgebiete und Naturparks notieren."],
             ["Aktuelle BNetzA-Bekanntmachung lesen", "Für den nächsten Gebotstermin prüfen, ob Ihr Land eine Verordnung nach § 37c Abs. 2 EEG erlassen hat."],
-            ["Netz und Planungsrecht dazunehmen", "Die Kulisse allein reicht nicht: Entfernung zum Umspannwerk, Regionalplan und Haltung der Gemeinde entscheiden mit. Der [Flächencheck](/de/flaechencheck) bündelt diese Fragen."],
+            ["Netz und Planungsrecht dazunehmen", "Die Kulisse allein reicht nicht: Entfernung zum Umspannwerk, Regionalplan und Haltung der Gemeinde entscheiden mit. Der [Flächencheck](/flaechencheck) bündelt diese Fragen."],
           ],
         },
         {
@@ -283,13 +283,13 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Der Unterschied im Preis je Kilowattstunde wirkt klein. Entscheidend ist die **Sicherheit über die Laufzeit**: Eine Bank finanziert einen Zuschlag über 20 Jahre mit höherem Fremdkapitalanteil als einen zehnjährigen PPA mit anschließendem Marktpreisrisiko. Deshalb liegen Pachtangebote für Flächen in der Kulisse eher im mittleren bis oberen Bereich der Spanne von ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} €/ha, während Flächen ohne Kulisse häufiger am unteren Ende um ${fmtEur(PACHT_MIN / HA)} je Hektar starten – oder gar kein Angebot erhalten. Die Details zur Pachthöhe finden Sie im Ratgeber [Solarpark-Pacht pro Hektar](/wissen/ratgeber/solarpark-pacht-pro-hektar), eine eigene Rechnung im [Pachtrechner](/de/rechner/pacht).`,
+          text: `Der Unterschied im Preis je Kilowattstunde wirkt klein. Entscheidend ist die **Sicherheit über die Laufzeit**: Eine Bank finanziert einen Zuschlag über 20 Jahre mit höherem Fremdkapitalanteil als einen zehnjährigen PPA mit anschließendem Marktpreisrisiko. Deshalb liegen Pachtangebote für Flächen in der Kulisse eher im mittleren bis oberen Bereich der Spanne von ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} €/ha, während Flächen ohne Kulisse häufiger am unteren Ende um ${fmtEur(PACHT_MIN / HA)} je Hektar starten – oder gar kein Angebot erhalten. Die Details zur Pachthöhe finden Sie im Ratgeber [Solarpark-Pacht pro Hektar](/ratgeber/solarpark-pacht-pro-hektar), eine eigene Rechnung im [Pachtrechner](/rechner/pacht).`,
         },
         {
           typ: "kasten",
           variant: "tipp",
           titel: "Kulissenrisiko im Pachtvertrag regeln",
-          text: `Fällt eine Fläche nach Vertragsschluss aus der Kulisse – etwa weil das Land die ${fmtPct(SCHWELLE_BIS_2030, 0)}-Schwelle meldet –, wollen Entwickler aussteigen können. Vereinbaren Sie in diesem Fall mindestens ein Reservierungsentgelt für die bisherige Bindung (üblich ${fmt(PACHT.reservierungProHa.min)}–${fmt(PACHT.reservierungProHa.max)} €/ha) und eine klare Frist. Worauf es in den Klauseln ankommt, zeigt der Ratgeber [Pachtvertrag Solarpark](/wissen/ratgeber/pachtvertrag-solarpark).`,
+          text: `Fällt eine Fläche nach Vertragsschluss aus der Kulisse – etwa weil das Land die ${fmtPct(SCHWELLE_BIS_2030, 0)}-Schwelle meldet –, wollen Entwickler aussteigen können. Vereinbaren Sie in diesem Fall mindestens ein Reservierungsentgelt für die bisherige Bindung (üblich ${fmt(PACHT.reservierungProHa.min)}–${fmt(PACHT.reservierungProHa.max)} €/ha) und eine klare Frist. Worauf es in den Klauseln ankommt, zeigt der Ratgeber [Pachtvertrag Solarpark](/ratgeber/pachtvertrag-solarpark).`,
         },
         {
           typ: "tool",
@@ -307,11 +307,11 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: "**Nein, eine vergleichbare Verknüpfung von Agrarkulisse und Solarförderung gibt es nach unserem Recherchestand weder in Österreich noch in der Schweiz.** Benachteiligte Gebiete spielen dort vor allem für die Ausgleichszulage der Landwirtschaft eine Rolle. Ob ein Solarpark gebaut werden darf, entscheidet in Österreich die Flächenwidmung als Grünland-Photovoltaik bzw. die Zonierung des Landes, gefördert wird über das EAG – mit einem Abschlag für Anlagen auf landwirtschaftlichen Flächen. Details im Ratgeber [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich).",
+          text: "**Nein, eine vergleichbare Verknüpfung von Agrarkulisse und Solarförderung gibt es nach unserem Recherchestand weder in Österreich noch in der Schweiz.** Benachteiligte Gebiete spielen dort vor allem für die Ausgleichszulage der Landwirtschaft eine Rolle. Ob ein Solarpark gebaut werden darf, entscheidet in Österreich die Flächenwidmung als Grünland-Photovoltaik bzw. die Zonierung des Landes, gefördert wird über das EAG – mit einem Abschlag für Anlagen auf landwirtschaftlichen Flächen. Details im Ratgeber [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich).",
         },
         {
           typ: "p",
-          text: "In der Schweiz sind freistehende Anlagen außerhalb der Bauzone nur in engen Grenzen zulässig; landwirtschaftliche Nutzflächen sind besonders geschützt. Einordnung im Ratgeber [Freiflächen-PV in der Schweiz](/wissen/ratgeber/freiflaechen-pv-schweiz).",
+          text: "In der Schweiz sind freistehende Anlagen außerhalb der Bauzone nur in engen Grenzen zulässig; landwirtschaftliche Nutzflächen sind besonders geschützt. Einordnung im Ratgeber [Freiflächen-PV in der Schweiz](/ratgeber/freiflaechen-pv-schweiz).",
         },
       ],
     },
@@ -332,7 +332,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Wer als Landwirt eine Fläche anbietet, sollte außerdem prüfen, ob Agri-PV die bessere Wahl ist: Sie ist unabhängig von der Kulisse ausschreibungsfähig, und ein großer Teil der Fläche bleibt GAP-förderfähig. Mehr dazu unter [Agri-PV](/de/agri-pv) und für landwirtschaftliche Betriebe unter [Landwirte](/de/landwirte).",
+          text: "Wer als Landwirt eine Fläche anbietet, sollte außerdem prüfen, ob Agri-PV die bessere Wahl ist: Sie ist unabhängig von der Kulisse ausschreibungsfähig, und ein großer Teil der Fläche bleibt GAP-förderfähig. Mehr dazu unter [Agri-PV](/agri-pv) und für landwirtschaftliche Betriebe unter [Landwirte](/landwirte).",
         },
       ],
     },
@@ -349,7 +349,7 @@ const artikel = {
     },
     {
       q: "Wie finde ich heraus, ob mein Acker in einem benachteiligten Gebiet liegt?",
-      a: "Über den Agrar-Kartendienst Ihres Landes, etwa den Kartenviewer Agrar in Bayern, oder beim Amt für Landwirtschaft bzw. der Landwirtschaftskammer. Gleichen Sie zusätzlich Schutzgebiete ab. Eine Gesamteinschätzung liefert der [Flächencheck](/de/flaechencheck).",
+      a: "Über den Agrar-Kartendienst Ihres Landes, etwa den Kartenviewer Agrar in Bayern, oder beim Amt für Landwirtschaft bzw. der Landwirtschaftskammer. Gleichen Sie zusätzlich Schutzgebiete ab. Eine Gesamteinschätzung liefert der [Flächencheck](/flaechencheck).",
     },
     {
       q: "Bekomme ich im benachteiligten Gebiet mehr Pacht?",
@@ -366,9 +366,9 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Gebotstermine, Zuschlagswerte und Flächenkulisse." },
-    { href: "/wissen/ratgeber/solarpark-autobahn-bahn-privilegierung", titel: "Solarparks an Autobahn und Bahn", text: "Randstreifen, 200-m-Korridor und Privilegierung." },
-    { href: "/wissen/ratgeber/solarpark-pacht-pro-hektar", titel: "Solarpark-Pacht pro Hektar", text: "Spannen, Einflussfaktoren und Rechenbeispiel." },
+    { href: "/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Gebotstermine, Zuschlagswerte und Flächenkulisse." },
+    { href: "/ratgeber/solarpark-autobahn-bahn-privilegierung", titel: "Solarparks an Autobahn und Bahn", text: "Randstreifen, 200-m-Korridor und Privilegierung." },
+    { href: "/ratgeber/solarpark-pacht-pro-hektar", titel: "Solarpark-Pacht pro Hektar", text: "Spannen, Einflussfaktoren und Rechenbeispiel." },
     { href: pfad("/flaechencheck"), titel: "Flächencheck", text: "Kulisse, Netz und Planungsrecht Ihrer Fläche prüfen." },
   ],
 

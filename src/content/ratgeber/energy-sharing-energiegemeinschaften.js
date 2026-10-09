@@ -150,7 +150,7 @@ const artikel = {
         { typ: "h3", text: "Bürgerenergiegesellschaft und Genossenschaft" },
         {
           typ: "p",
-          text: "Unabhängig vom Energy Sharing kennt das EEG die **Bürgerenergiegesellschaft** (§ 3 Nr. 15 EEG 2023): mindestens 50 natürliche Personen als stimmberechtigte Mitglieder, mindestens 75 % der Stimmrechte bei Menschen, die im Umkreis von 50 km um die Anlage gemeldet sind, und kein Mitglied mit mehr als 10 % der Stimmrechte. Solche Gesellschaften sind für kleinere Wind- und Solarprojekte von der Ausschreibungspflicht befreit bzw. erhalten Erleichterungen. Die klassische Form dafür ist die Energiegenossenschaft – wie eine Beteiligung aussehen kann, zeigt unsere Seite zur [Genossenschaft](/de/genossenschaft).",
+          text: "Unabhängig vom Energy Sharing kennt das EEG die **Bürgerenergiegesellschaft** (§ 3 Nr. 15 EEG 2023): mindestens 50 natürliche Personen als stimmberechtigte Mitglieder, mindestens 75 % der Stimmrechte bei Menschen, die im Umkreis von 50 km um die Anlage gemeldet sind, und kein Mitglied mit mehr als 10 % der Stimmrechte. Solche Gesellschaften sind für kleinere Wind- und Solarprojekte von der Ausschreibungspflicht befreit bzw. erhalten Erleichterungen. Die klassische Form dafür ist die Energiegenossenschaft – wie eine Beteiligung aussehen kann, zeigt unsere Seite zur [Genossenschaft](/genossenschaft).",
         },
       ],
     },
@@ -193,7 +193,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `**Mehrfachteilnahme:** Ein Zählpunkt kann an bis zu ${AT_MEHRFACH} Modellen gleichzeitig teilnehmen, gesteuert über Teilnahmefaktoren (in Summe höchstens 100 %). Große Unternehmen dürfen mit Anlagen bis ${AT_GROSS_MW} MW an BEG und P2P teilnehmen; diese Obergrenze lässt sich nicht durch Aufteilung auf mehrere Gemeinschaften umgehen. Einen Überblick über Freiflächenprojekte in Österreich gibt der Ratgeber [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich).`,
+          text: `**Mehrfachteilnahme:** Ein Zählpunkt kann an bis zu ${AT_MEHRFACH} Modellen gleichzeitig teilnehmen, gesteuert über Teilnahmefaktoren (in Summe höchstens 100 %). Große Unternehmen dürfen mit Anlagen bis ${AT_GROSS_MW} MW an BEG und P2P teilnehmen; diese Obergrenze lässt sich nicht durch Aufteilung auf mehrere Gemeinschaften umgehen. Einen Überblick über Freiflächenprojekte in Österreich gibt der Ratgeber [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich).`,
         },
       ],
     },
@@ -216,7 +216,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Der LEG-Abschlag gilt nicht für Systemdienstleistungen, Stromreserve, den Netzzuschlag und öffentliche Abgaben. Eine LEG braucht einen Vertreter gegenüber dem Netzbetreiber und muss rund drei Monate vorher angemeldet werden. Wie die Rahmenbedingungen für größere Solaranlagen in der Schweiz aussehen, beschreibt der Ratgeber [Freiflächen-PV in der Schweiz](/wissen/ratgeber/freiflaechen-pv-schweiz).",
+          text: "Der LEG-Abschlag gilt nicht für Systemdienstleistungen, Stromreserve, den Netzzuschlag und öffentliche Abgaben. Eine LEG braucht einen Vertreter gegenüber dem Netzbetreiber und muss rund drei Monate vorher angemeldet werden. Wie die Rahmenbedingungen für größere Solaranlagen in der Schweiz aussehen, beschreibt der Ratgeber [Freiflächen-PV in der Schweiz](/ratgeber/freiflaechen-pv-schweiz).",
         },
       ],
     },
@@ -272,7 +272,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Rund ${fmtEur(ERSPARNIS_EUR)} im Jahr – vor Kosten für Messstellenbetrieb und Abrechnungsdienstleister. Für Privathaushalte und Vereine kann das Modell trotzdem attraktiv sein, weil es um regionale Identität, Beteiligung und die Nutzung von Überschüssen geht. Für Betriebe liegt der größere Hebel meist beim **Reststrom**: Die übrigen ${pct(1 - SHARING_ANTEIL)} des Verbrauchs werden weiter am Markt beschafft. Hier setzt der [Reststrom-Pool](/de/reststrom) an, der Strombezug mehrerer Unternehmen bündelt und über das [virtuelle Kraftwerk](/de/virtuelles-kraftwerk) strukturiert beschafft.`,
+          text: `Rund ${fmtEur(ERSPARNIS_EUR)} im Jahr – vor Kosten für Messstellenbetrieb und Abrechnungsdienstleister. Für Privathaushalte und Vereine kann das Modell trotzdem attraktiv sein, weil es um regionale Identität, Beteiligung und die Nutzung von Überschüssen geht. Für Betriebe liegt der größere Hebel meist beim **Reststrom**: Die übrigen ${pct(1 - SHARING_ANTEIL)} des Verbrauchs werden weiter am Markt beschafft. Hier setzt der [Reststrom-Pool](/reststrom) an, der Strombezug mehrerer Unternehmen bündelt und über das [virtuelle Kraftwerk](/virtuelles-kraftwerk) strukturiert beschafft.`,
         },
         {
           typ: "tool",
@@ -314,7 +314,7 @@ const artikel = {
           schritte: [
             ["Ziel und Teilnehmer klären", "Wer erzeugt, wer verbraucht, wie gut passen die Lastprofile zusammen? Eine Gemeinde, ein Gewerbegebiet oder ein Quartier mit Tag- und Abendverbrauchern ist ideal."],
             ["Modell und Rechtsform wählen", "In Deutschland Energy Sharing oder Genossenschaft, in Österreich EEG, BEG oder P2P, in der Schweiz vZEV oder LEG. Verein oder Genossenschaft sind die häufigsten Träger."],
-            ["Erzeugung sichern", "Dachflächen, Freiflächen oder ein Solarpark in der Region. Wer eine Fläche einbringen kann, prüft sie im [Flächencheck](/de/flaechencheck)."],
+            ["Erzeugung sichern", "Dachflächen, Freiflächen oder ein Solarpark in der Region. Wer eine Fläche einbringen kann, prüft sie im [Flächencheck](/flaechencheck)."],
             ["Messung und Netzbetreiber", "Smart Meter bestellen, Nahebereich bzw. Bilanzierungsgebiet klären, Gemeinschaft beim Netzbetreiber anmelden."],
             ["Verträge und Preise", "Interner Strompreis, Aufteilungsschlüssel, Ein- und Austritt, Haftung und Datenschutz regeln; Abrechnung ggf. an einen Dienstleister vergeben."],
             ["Reststrom organisieren", "Für den nicht gedeckten Bedarf einen Liefervertrag abschließen – für Betriebe gern gebündelt."],
@@ -322,7 +322,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Einen Überblick, wie ÖkoInvest Gemeinschaften und Kommunen bei regionalen Projekten unterstützt, finden Sie auf den Seiten [Energiegemeinschaften](/de/energiegemeinschaften) und [Kommunen](/de/kommunen).",
+          text: "Einen Überblick, wie ÖkoInvest Gemeinschaften und Kommunen bei regionalen Projekten unterstützt, finden Sie auf den Seiten [Energiegemeinschaften](/energiegemeinschaften) und [Kommunen](/kommunen).",
         },
       ],
     },
@@ -351,7 +351,7 @@ const artikel = {
     },
     {
       q: "Brauche ich trotz Energiegemeinschaft noch einen Stromlieferanten?",
-      a: "Ja, in allen drei Ländern. Keine Gemeinschaft deckt den Bedarf jederzeit vollständig; den Reststrom liefert ein Lieferant. In Deutschland und Österreich ist er frei wählbar. In der Schweiz haben nur Endverbraucher ab 100 MWh Jahresverbrauch Zugang zum freien Markt (Art. 11 Abs. 2 StromVV); alle anderen bleiben beim Netzbetreiber in der Grundversorgung. Wie Unternehmen diesen Reststrom gebündelt beschaffen können, erklärt die Seite [Reststrom](/de/reststrom).",
+      a: "Ja, in allen drei Ländern. Keine Gemeinschaft deckt den Bedarf jederzeit vollständig; den Reststrom liefert ein Lieferant. In Deutschland und Österreich ist er frei wählbar. In der Schweiz haben nur Endverbraucher ab 100 MWh Jahresverbrauch Zugang zum freien Markt (Art. 11 Abs. 2 StromVV); alle anderen bleiben beim Netzbetreiber in der Grundversorgung. Wie Unternehmen diesen Reststrom gebündelt beschaffen können, erklärt die Seite [Reststrom](/reststrom).",
     },
     {
       q: "Dürfen Unternehmen an Energy Sharing teilnehmen?",
@@ -362,8 +362,8 @@ const artikel = {
   passend: [
     { href: pfad("/energiegemeinschaften"), titel: "Energiegemeinschaften", text: "Wie regionale Gemeinschaften Solarstrom gemeinsam nutzen." },
     { href: pfad("/genossenschaft"), titel: "Genossenschaft", text: "Beteiligung an Solarprojekten in der Region." },
-    { href: "/wissen/ratgeber/virtuelles-kraftwerk", titel: "Virtuelles Kraftwerk erklärt", text: "Wie viele kleine Anlagen gemeinsam am Strommarkt auftreten." },
-    { href: "/wissen/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Solarstrom direkt vom Park beziehen." },
+    { href: "/ratgeber/virtuelles-kraftwerk", titel: "Virtuelles Kraftwerk erklärt", text: "Wie viele kleine Anlagen gemeinsam am Strommarkt auftreten." },
+    { href: "/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Solarstrom direkt vom Park beziehen." },
     { href: pfad("/energiegemeinschaften/software"), titel: "Software für Energiegemeinschaften", text: "Gründung, Zustimmung beim Netzbetreiber und Betrieb in Österreich." },
     { href: pfad("/rechner/energy-sharing"), titel: "Energy-Sharing-Rechner", text: "Vorteil je Teilnehmer in DE, AT und CH berechnen." },
   ],

@@ -2,6 +2,7 @@
 // Mobil: ruhige Liste (Zahl links, Einheit + Erklärung rechts), ab sm 2×2, ab lg vier gleich gebaute Spalten.
 import { BadgeCheck, BellRing, Check, Repeat } from "lucide-react";
 import { cn } from "@/components/ui/cn";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 /** Produktfakten – Regeln, die die Plattform abbildet (keine Unternehmenskennzahlen) */
 const FAKTEN = [
@@ -11,17 +12,27 @@ const FAKTEN = [
   { icon: Check, wert: "0", einheit: "Neuanmeldungen", text: "beim Wechsel – die Zustimmungen der Mitglieder bleiben gültig" },
 ];
 
+/* Sprachmodell: englische Fassung (gleiche Werte) */
+const FAKTEN_EN = [
+  { einheit: "Communities", text: "per metering point – participation factors kept in view" },
+  { einheit: "Working days", text: "consent period – the portal counts along for every member" },
+  { einheit: "Approvals", text: "four-eyes principle for every bill and payment" },
+  { einheit: "New registrations", text: "when switching – the members’ consents remain valid" },
+];
+
 export default function Fakten() {
+  const en = spracheDerAnfrage() === "en";
+  const fakten = en ? FAKTEN.map((f, i) => ({ ...f, ...FAKTEN_EN[i] })) : FAKTEN;
   return (
     <section data-abschnitt="fakten" aria-labelledby="fakten-titel" className="relative z-10 -mt-12 md:-mt-16">
-      <h2 id="fakten-titel" className="sr-only">Regeln, die die Plattform abbildet</h2>
+      <h2 id="fakten-titel" className="sr-only">{en ? "Rules the platform covers" : "Regeln, die die Plattform abbildet"}</h2>
       <div className="ov-container">
         <div className="relative rounded-[1.75rem] bg-white shadow-e4 ring-1 ring-ink-200/70 md:rounded-[2rem]">
           <div aria-hidden="true" className="absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-ov-400 to-transparent" />
           <dl className="grid px-5 sm:grid-cols-2 sm:px-2 lg:grid-cols-4 lg:px-0 lg:py-3">
-            {FAKTEN.map((f, i) => (
+            {fakten.map((f, i) => (
               <div
-                key={f.text}
+                key={i}
                 className={cn(
                   "grid grid-cols-[2.75rem_minmax(0,1fr)] items-start gap-x-4 border-ink-100 py-5 sm:px-5 sm:py-6 lg:grid-cols-1 lg:gap-x-0 lg:px-7 lg:py-5 xl:px-8",
                   i > 0 && "border-t",

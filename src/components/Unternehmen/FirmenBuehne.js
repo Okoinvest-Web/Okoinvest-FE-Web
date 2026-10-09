@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { Landmark } from "lucide-react";
 import { GESELLSCHAFT } from "@/data/site";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 const STATIONEN = [
   { jahr: "2010", text: "Gruppe gegründet" },
@@ -10,14 +11,18 @@ const STATIONEN = [
   { jahr: "2020", text: "ÖkoInvest GmbH" },
 ];
 
+const STATIONEN_EN = ["Group founded", "Own solar parks", "ÖkoInvest GmbH"];
+
 export default function FirmenBuehne() {
+  const en = spracheDerAnfrage() === "en";
+  const stationen = en ? STATIONEN.map((s, i) => ({ ...s, text: STATIONEN_EN[i] })) : STATIONEN;
   return (
     <figure className="relative">
       <div className="relative overflow-hidden rounded-[1.75rem] bg-navy-900 shadow-e5 ring-1 ring-white/15 md:rounded-[2rem]">
         <div className="relative aspect-[4/3] w-full">
           <Image
             src="/img/firmensitz.jpg"
-            alt="Firmensitz der ÖKOVOLT Gruppe mit Firmenfahrzeugen"
+            alt={en ? "Headquarters of the ÖKOVOLT Group with company vehicles" : "Firmensitz der ÖKOVOLT Gruppe mit Firmenfahrzeugen"}
             fill
             priority
             sizes="(max-width: 1024px) 100vw, 640px"
@@ -33,7 +38,7 @@ export default function FirmenBuehne() {
         <div className="rounded-2xl bg-navy-950/90 p-4 shadow-e4 ring-1 ring-white/15 backdrop-blur-md">
           <p className="flex items-center gap-2 text-[11.5px] font-bold uppercase tracking-[0.14em] text-ov-300">
             <Landmark aria-hidden="true" className="h-3.5 w-3.5" />
-            Firmenbuch
+            {en ? "Commercial register" : "Firmenbuch"}
           </p>
           <p className="mt-2 font-display text-[17px] font-bold leading-tight text-white">{GESELLSCHAFT.name}</p>
           <p className="mt-1 text-[13px] leading-snug text-white/70">
@@ -44,8 +49,8 @@ export default function FirmenBuehne() {
 
       {/* Meilensteine – ab sm schwebend unten rechts */}
       <div className="relative mt-3 sm:absolute sm:-bottom-8 sm:right-6 sm:mt-0 lg:-right-4">
-        <ol className="flex items-stretch overflow-hidden rounded-2xl bg-white text-ink-900 shadow-e4 ring-1 ring-ink-200/70" aria-label="Meilensteine der Gruppe">
-          {STATIONEN.map((s, i) => (
+        <ol className="flex items-stretch overflow-hidden rounded-2xl bg-white text-ink-900 shadow-e4 ring-1 ring-ink-200/70" aria-label={en ? "Milestones of the group" : "Meilensteine der Gruppe"}>
+          {stationen.map((s, i) => (
             <li key={s.jahr} className="relative min-w-0 flex-1 px-3.5 py-3.5 sm:px-5">
               {i > 0 && <span aria-hidden="true" className="absolute left-0 top-3 bottom-3 w-px bg-ink-100" />}
               <span className="ov-num block font-display text-[20px] font-extrabold leading-none tracking-tight text-ink-900 sm:text-[22px]">{s.jahr}</span>
@@ -54,7 +59,7 @@ export default function FirmenBuehne() {
           ))}
         </ol>
       </div>
-      <figcaption className="sr-only">Firmensitz der ÖKOVOLT Gruppe</figcaption>
+      <figcaption className="sr-only">{en ? "Headquarters of the ÖKOVOLT Group" : "Firmensitz der ÖKOVOLT Gruppe"}</figcaption>
     </figure>
   );
 }

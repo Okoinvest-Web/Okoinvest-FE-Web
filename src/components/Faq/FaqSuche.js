@@ -1,11 +1,39 @@
 "use client";
 
 import { useEffect, useId, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowRight, Search, X } from "lucide-react";
 import Faq from "@/components/ui/Faq";
 import { cn } from "@/components/ui/cn";
-import { THEMEN, themaIcon } from "./themen";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { themaFuer, themaIcon } from "./themen";
+
+const TEXTE = {
+  de: {
+    suchen: "Fragen durchsuchen",
+    platzhalter: "Suchen, z. B. Pacht oder GAP",
+    leeren: "Suche leeren",
+    filtern: "Nach Thema filtern",
+    alle: "Alle Themen",
+    fragen: (n) => (n === 1 ? "1 Frage" : `${n} Fragen`),
+    zu: (s) => ` zu „${s}"`,
+    keine: "Keine passende Frage gefunden",
+    keineText: "Versuchen Sie einen anderen Begriff – oder stellen Sie uns Ihre Frage direkt.",
+    zuruecksetzen: "Filter zurücksetzen",
+  },
+  en: {
+    suchen: "Search questions",
+    platzhalter: "Search, e.g. lease or CAP",
+    leeren: "Clear search",
+    filtern: "Filter by topic",
+    alle: "All topics",
+    fragen: (n) => (n === 1 ? "1 question" : `${n} questions`),
+    zu: (s) => ` for “${s}”`,
+    keine: "No matching question found",
+    keineText: "Try a different term – or ask us your question directly.",
+    zuruecksetzen: "Reset filters",
+  },
+};
 
 const norm = (s) =>
   String(s || "")
@@ -23,6 +51,8 @@ const norm = (s) =>
  * gruppen: [{ id, titel, items: [{ q, a }] }]
  */
 export default function FaqSuche({ gruppen = [] }) {
+  const sprache = useSprache();
+  const t = TEXTE[sprache] || TEXTE.de;
   const [suche, setSuche] = useState("");
   const [filter, setFilter] = useState("alle");
   const id = useId();
@@ -47,7 +77,7 @@ export default function FaqSuche({ gruppen = [] }) {
           ...g,
           items: g.items.filter((it) => {
             if (!begriffe.length) return true;
-            const text = norm(`${it.q} ${typeof it.a === "string" ? it.a : ""}`);
+            const text = norm(`${it.q} ${typeof it.a === "string" ? it.a : it.aText || ""}`);
             return begriffe.every((b) => text.includes(b));
           }),
         }))
@@ -73,7 +103,7 @@ export default function FaqSuche({ gruppen = [] }) {
       <div className="relative rounded-[2rem] bg-white p-5 shadow-e4 ring-1 ring-ink-200/70 sm:p-7">
         <div aria-hidden="true" className="absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-ov-400 to-transparent" />
         <label htmlFor={`${id}-s`} className="sr-only">
-          Fragen durchsuchen
+          {t.suchen}
         </label>
         <div className="relative">
           <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-400" />
@@ -82,14 +112,14 @@ export default function FaqSuche({ gruppen = [] }) {
             type="search"
             value={suche}
             onChange={(e) => setSuche(e.target.value)}
-            placeholder="Suchen, z. B. Pacht oder GAP"
+            placeholder={t.platzhalter}
             className="block h-14 w-full rounded-2xl bg-sand-50 pl-12 pr-12 text-[16px] text-ink-900 outline-none ring-1 ring-ink-200 placeholder:text-ink-400 focus-visible:ring-2 focus-visible:ring-ov-500"
           />
           {suche && (
             <button
               type="button"
               onClick={() => setSuche("")}
-              aria-label="Suche leeren"
+              aria-label={t.leeren}
               className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-ink-500 hover:bg-ink-100"
             >
               <X aria-hidden="true" className="h-4 w-4" />
@@ -98,9 +128,9 @@ export default function FaqSuche({ gruppen = [] }) {
         </div>
 
         <fieldset className="mt-5">
-          <legend className="sr-only">Nach Thema filtern</legend>
+          <legend className="sr-only">{t.filtern}</legend>
           <div className="flex flex-wrap gap-2">
-            {[{ id: "alle", titel: "Alle Themen" }, ...gruppen].map((g) => {
+            {[{ id: "alle", titel: t.alle }, ...gruppen].map((g) => {
               const an = filter === g.id;
               const n = g.id === "alle" ? gruppen.reduce((s, x) => s + x.items.length, 0) : g.items.length;
               return (
@@ -120,8 +150,8 @@ export default function FaqSuche({ gruppen = [] }) {
           </div>
         </fieldset>
         <p className="mt-4 text-[13.5px] text-ink-500" role="status" aria-live="polite">
-          {anzahl === 1 ? "1 Frage" : `${anzahl} Fragen`}
-          {suche ? ` zu „${suche}"` : ""}
+          {t.fragen(anzahl)}
+          {suche ? t.zu(suche) : ""}
         </p>
       </div>
 
@@ -141,18 +171,18 @@ export default function FaqSuche({ gruppen = [] }) {
                 </span>
                 <span className="min-w-0 flex-1">{g.titel}</span>
                 <span className="ov-num shrink-0 rounded-full bg-ink-50 px-2.5 py-0.5 text-[12.5px] font-semibold text-ink-500 ring-1 ring-ink-200">
-                  {g.items.length === 1 ? "1 Frage" : `${g.items.length} Fragen`}
+                  {t.fragen(g.items.length)}
                 </span>
               </h2>
               <Faq items={g.items} schema={false} />
-              {THEMEN[g.id]?.weiter && <Weiter {...THEMEN[g.id].weiter} />}
+              {themaFuer(g.id, sprache)?.weiter && <Weiter {...themaFuer(g.id, sprache).weiter} />}
             </section>
           );
         })}
         {anzahl === 0 && (
           <div className="rounded-3xl bg-white p-8 text-center ring-1 ring-ink-200/70">
-            <p className="font-display text-[20px] font-bold text-ink-900">Keine passende Frage gefunden</p>
-            <p className="mt-2 text-[15px] text-ink-600">Versuchen Sie einen anderen Begriff – oder stellen Sie uns Ihre Frage direkt.</p>
+            <p className="font-display text-[20px] font-bold text-ink-900">{t.keine}</p>
+            <p className="mt-2 text-[15px] text-ink-600">{t.keineText}</p>
             <button
               type="button"
               onClick={() => {
@@ -161,7 +191,7 @@ export default function FaqSuche({ gruppen = [] }) {
               }}
               className="mt-5 inline-flex h-11 items-center rounded-full px-5 text-[14.5px] font-semibold text-ov-700 ring-1 ring-inset ring-ink-200 hover:bg-ink-50"
             >
-              Filter zurücksetzen
+              {t.zuruecksetzen}
             </button>
           </div>
         )}

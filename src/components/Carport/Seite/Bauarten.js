@@ -3,6 +3,8 @@ import { TreePine, Wrench } from "lucide-react";
 import Section from "@/components/ui/Section";
 import Reveal from "@/components/ui/Reveal";
 import Kopf from "@/components/Energie/Seite/Kopf";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 const STUETZE = "#394050";
 
@@ -84,19 +86,48 @@ const ARTEN = [
   { titel: "Schmetterlingsdach", tag: "Doppelreihen", text: "Zwei Reihen unter einem V-förmigen Dach – deckt beidseitig ab, Wasser läuft in der Mitte ab.", Svg: Schmetterling },
 ];
 
+/** Sprachmodell: Texte (en nur Texte, Listen je Index). */
+const W = {
+  de: {
+    arten: ARTEN,
+    material: [
+      { titel: "Stahl", text: "Schlank, vorgefertigt, wirtschaftlich bei großen Spannweiten. Feuerverzinkt oder beschichtet, mit Anprallschutz an den Stützen." },
+      { titel: "Holz", text: "Brettschichtholz mit konstruktivem Holzschutz: bindet CO₂ und passt zu Kommunen, Handel und Standorten mit Gestaltungsanspruch." },
+    ],
+    eyebrow: "Bauarten",
+    titel: "Vom Einzelplatz bis zur Parkplatzreihe.",
+    lead: "Die Bauart folgt dem Parkplatz: Anordnung, Fahrgassen, Schneelast, Entwässerung und Gestaltungswünsche entscheiden.",
+  },
+  en: {
+    arten: [
+      { titel: "Single and double carport", tag: "small areas", text: "For small areas, visitor spaces and company cars. Quick to install, flexible to extend." },
+      { titel: "Row carport", tag: "rows of spaces", text: "The economical solution for long rows of parking spaces: tilted to one side, with supports in the grid of the spaces." },
+      { titel: "Butterfly roof", tag: "double rows", text: "Two rows under a V-shaped roof – covers both sides, with water draining off in the middle." },
+    ],
+    material: [
+      { titel: "Steel", text: "Slim, prefabricated, economical for large spans. Hot-dip galvanised or coated, with impact protection on the supports." },
+      { titel: "Timber", text: "Glued laminated timber with structural wood protection: stores CO₂ and suits municipalities, retail and sites with design ambitions." },
+    ],
+    eyebrow: "Designs",
+    titel: "From single spaces to rows of parking spaces.",
+    lead: "The design follows the car park: layout, driving lanes, snow load, drainage and design preferences decide.",
+  },
+};
+
 export default function Bauarten() {
+  const w = uebersetze(W, spracheDerAnfrage());
   return (
     <Section tone="white" space="lg" data-abschnitt="bauarten" aria-labelledby="bauarten-titel">
       <Kopf
         id="bauarten-titel"
-        eyebrow="Bauarten"
-        titel="Vom Einzelplatz bis zur Parkplatzreihe."
-        lead="Die Bauart folgt dem Parkplatz: Anordnung, Fahrgassen, Schneelast, Entwässerung und Gestaltungswünsche entscheiden."
+        eyebrow={w.eyebrow}
+        titel={w.titel}
+        lead={w.lead}
         className="mb-12 md:mb-14"
       />
       <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {ARTEN.map(({ titel, tag, text, Svg }, i) => (
-          <Reveal as="li" key={titel} delay={i * 70} className="ov-card-hover group flex flex-col overflow-hidden rounded-[2rem] bg-sand-50 ring-1 ring-ink-200/70">
+        {w.arten.map(({ titel, tag, text, Svg }, i) => (
+          <Reveal as="li" key={i} delay={i * 70} className="ov-card-hover group flex flex-col overflow-hidden rounded-[2rem] bg-sand-50 ring-1 ring-ink-200/70">
             <div className="relative bg-gradient-to-b from-navy-50 to-white px-6 pb-4 pt-8">
               <span className="absolute left-5 top-4 rounded-full bg-white px-2.5 py-0.5 text-[11.5px] font-semibold text-ink-600 shadow-e1 ring-1 ring-ink-200/70">{tag}</span>
               <Svg />
@@ -110,10 +141,10 @@ export default function Bauarten() {
       </ul>
       <div className="mt-5 grid gap-5 md:grid-cols-2">
         {[
-          { icon: Wrench, titel: "Stahl", text: "Schlank, vorgefertigt, wirtschaftlich bei großen Spannweiten. Feuerverzinkt oder beschichtet, mit Anprallschutz an den Stützen.", ton: "bg-ink-50 text-ink-700 ring-ink-200" },
-          { icon: TreePine, titel: "Holz", text: "Brettschichtholz mit konstruktivem Holzschutz: bindet CO₂ und passt zu Kommunen, Handel und Standorten mit Gestaltungsanspruch.", ton: "bg-ov-50 text-ov-700 ring-ov-200" },
+          { icon: Wrench, ...w.material[0], ton: "bg-ink-50 text-ink-700 ring-ink-200" },
+          { icon: TreePine, ...w.material[1], ton: "bg-ov-50 text-ov-700 ring-ov-200" },
         ].map((m, i) => (
-          <Reveal key={m.titel} delay={i * 60} className="flex gap-4 rounded-3xl bg-white p-6 ring-1 ring-ink-200/70 md:p-7">
+          <Reveal key={i} delay={i * 60} className="flex gap-4 rounded-3xl bg-white p-6 ring-1 ring-ink-200/70 md:p-7">
             <span aria-hidden="true" className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ring-1 ${m.ton}`}>
               <m.icon className="h-5 w-5" />
             </span>

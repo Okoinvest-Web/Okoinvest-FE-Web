@@ -4,6 +4,7 @@ import Button from "@/components/ui/Button";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 /*
  * Fachtexte (`text`) sind wörtlich übernommen. Kennzahl, Paragraphen-Badge und
@@ -57,6 +58,61 @@ const ELWG = [
   },
 ];
 
+/* Sprachmodell: englische Fassung (gleiche Reihenfolge; Paragraphen in englischer Zitierweise) */
+const ELWG_EN = [
+  {
+    para: "§ 71(5)",
+    zahlText: "communities per metering point, Σ ≤ 100 %",
+    title: "Up to five communities",
+    text: "One metering point can take part in up to five joint energy-use arrangements; participation factors are whole numbers and together at most 100 % (ElWG § 71(5)).",
+    plattform: "In the platform: rules Σ ≤ 100 % and max. 5 per metering point are checked",
+  },
+  {
+    para: "SNE-V § 5(1a)",
+    zahlText: "local, on the grid usage energy charge, until the end of 2026",
+    title: "Grid fee by proximity area",
+    text: "Until the end of 2026, local EEGs get −57 % and regional EEGs −28 %/−64 % on the grid usage energy charge (SNE-V, Austria’s system usage fees ordinance). From 2027, a new ordinance is to stagger the rates by proximity area – the amount is still pending (to be confirmed).",
+  },
+  {
+    para: "§ 69",
+    zahlText: "generation (households above 30 kW)",
+    title: "Obligations from 100 kW",
+    text: "Communities with more than 100 kW of generation (households above 30 kW) need general terms and conditions, an information sheet and invoices with mandatory content – an organiser can take these on (§ 69).",
+  },
+  {
+    para: "§ 68(6)",
+    zahlText: "of the volume for vulnerable households",
+    title: "Social quota for municipalities",
+    text: "If public authorities take part with their own generation, at least 10 % of the volume should benefit vulnerable households (§ 68(6)).",
+  },
+];
+const ZEITLEISTE_EN = [
+  { wann: "Since 1 October 2026", was: "New rules apply; existing communities are transferred." },
+  { wann: "Until the end of 2026", was: "Reduced grid fee for EEGs on the grid usage energy charge." },
+  { wann: "From 2027", was: "Staggering by proximity area – the amount is still pending." },
+];
+const WORTE = {
+  de: {
+    zeitleiste: "Zeitleiste", bestaetigen: "zu bestätigen", faktoren: "Beispiel: 40 + 30 + 20 + 10 = 100 % in vier Gemeinschaften",
+    netz: ["lokal −57 %", "regional −28 %/−64 %", "ab 2027 offen"], pflichten: ["AGB", "Informationsblatt", "Rechnungen mit Pflichtinhalten"], zehntel: "mindestens ein Zehntel der Menge",
+    eyebrow: "Seit 1. Oktober 2026", titel: "Was das ElWG für Gemeinschaften ändert",
+    lead: "Bestehende Gemeinschaften werden übergeführt; Verträge und Statuten sollten angepasst werden. Die Plattform bildet die neuen Regeln ab.",
+    regeln: "Die wichtigsten Regeln des ElWG", quellen: "Quellen: ",
+    quellenText: "ElWG BGBl. I Nr. 91/2025 (§§ 65–72), SNE-V 2018 § 5 Abs. 1a, Koordinationsstelle für Energiegemeinschaften (FAQ zum ElWG). Keine Rechts- oder Steuerberatung; Details der neuen Netzentgelt-Verordnung zu bestätigen.",
+    paket: "Welches Paket passt?",
+  },
+  en: {
+    zeitleiste: "Timeline", bestaetigen: "to be confirmed", faktoren: "Example: 40 + 30 + 20 + 10 = 100 % in four communities",
+    netz: ["local −57 %", "regional −28 %/−64 %", "from 2027 open"], pflichten: ["General terms", "Information sheet", "Invoices with mandatory content"], zehntel: "at least one tenth of the volume",
+    eyebrow: "Since 1 October 2026", titel: "What the ElWG changes for communities",
+    lead: "Existing communities are transferred; contracts and articles of association should be adapted. The platform reflects the new rules of the ElWG (Elektrizitätswirtschaftsgesetz, Austria’s Electricity Industry Act).",
+    regeln: "The key rules of the ElWG", quellen: "Sources: ",
+    quellenText: "ElWG, Federal Law Gazette BGBl. I No. 91/2025 (§§ 65–72), SNE-V 2018 § 5(1a), Coordination Office for Energy Communities (FAQ on the ElWG). Not legal or tax advice; details of the new grid fee ordinance to be confirmed.",
+    paket: "Which package fits?",
+  },
+};
+const worte = () => WORTE[spracheDerAnfrage() === "en" ? "en" : "de"];
+
 /* Geschützte Leerzeichen: „§ 71“, „57 %“, „Abs. 5“ nie über Zeilen trennen */
 const fest = (t) => t.replace(/(§§?|Abs\.|Nr\.) /g, "$1 ").replace(/ (%|kW|Abs\.)/g, " $1");
 
@@ -69,14 +125,17 @@ const ZEITLEISTE = [
 ];
 
 function Zeitleiste() {
+  const en = spracheDerAnfrage() === "en";
+  const w = worte();
+  const zeitleiste = en ? ZEITLEISTE.map((z, i) => ({ ...z, ...ZEITLEISTE_EN[i] })) : ZEITLEISTE;
   return (
     <Reveal dir="right" delay={120} className="relative rounded-[1.75rem] bg-white/[0.04] p-6 ring-1 ring-inset ring-white/10 backdrop-blur-sm md:p-7">
-      <p className="ov-overline text-white/60">Zeitleiste</p>
+      <p className="ov-overline text-white/60">{w.zeitleiste}</p>
       <ol className="relative mt-5 space-y-6">
         {/* Verbindungslinie */}
         <span aria-hidden="true" className="absolute bottom-3 left-[7px] top-3 w-px bg-gradient-to-b from-ov-300/70 via-white/20 to-white/10" />
-        {ZEITLEISTE.map((z) => (
-          <li key={z.wann} className="relative pl-8">
+        {zeitleiste.map((z) => (
+          <li key={z.stand} className="relative pl-8">
             <span aria-hidden="true" className="absolute left-0 top-[3px] flex h-[15px] w-[15px] items-center justify-center">
               {z.stand === "jetzt" ? (
                 <>
@@ -92,7 +151,7 @@ function Zeitleiste() {
             <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
               <span className="font-display text-[15px] font-bold text-white">{z.wann}</span>
               {z.stand === "offen" && (
-                <span className="rounded-full bg-sun-300/10 px-2 py-0.5 text-[11.5px] font-semibold text-sun-300 ring-1 ring-inset ring-sun-300/30">zu bestätigen</span>
+                <span className="rounded-full bg-sun-300/10 px-2 py-0.5 text-[11.5px] font-semibold text-sun-300 ring-1 ring-inset ring-sun-300/30">{w.bestaetigen}</span>
               )}
             </p>
             <p className="mt-1 text-[14px] leading-relaxed text-white/70 [hyphens:manual]">{fest(z.was)}</p>
@@ -105,6 +164,7 @@ function Zeitleiste() {
 
 /* Mini-Grafiken je Regel (rein dekorativ, Inhalt steht im Text) */
 function Grafik({ art }) {
+  const w = worte();
   if (art === "faktoren") {
     const teile = [40, 30, 20, 10];
     return (
@@ -114,23 +174,23 @@ function Grafik({ art }) {
             <span key={i} className="rounded-full" style={{ width: `${t}%`, background: `color-mix(in oklab, var(--color-ov-300) ${100 - i * 20}%, transparent)` }} />
           ))}
         </div>
-        <p className="mt-2 text-[12px] text-white/55">Beispiel: 40 + 30 + 20 + 10 = 100 % in vier Gemeinschaften</p>
+        <p className="mt-2 text-[12px] text-white/55">{w.faktoren}</p>
       </div>
     );
   }
   if (art === "netzentgelt") {
     return (
       <div className="flex flex-wrap gap-2">
-        <span className="rounded-full bg-ov-300/10 px-3 py-1 text-[12.5px] font-semibold text-ov-200 ring-1 ring-inset ring-ov-300/25">lokal −57 %</span>
-        <span className="rounded-full bg-white/[0.06] px-3 py-1 text-[12.5px] font-semibold text-white/80 ring-1 ring-inset ring-white/15">regional −28 %/−64 %</span>
-        <span className="rounded-full border border-dashed border-sun-300/40 px-3 py-1 text-[12.5px] font-semibold text-sun-300">ab 2027 offen</span>
+        <span className="rounded-full bg-ov-300/10 px-3 py-1 text-[12.5px] font-semibold text-ov-200 ring-1 ring-inset ring-ov-300/25">{w.netz[0]}</span>
+        <span className="rounded-full bg-white/[0.06] px-3 py-1 text-[12.5px] font-semibold text-white/80 ring-1 ring-inset ring-white/15">{w.netz[1]}</span>
+        <span className="rounded-full border border-dashed border-sun-300/40 px-3 py-1 text-[12.5px] font-semibold text-sun-300">{w.netz[2]}</span>
       </div>
     );
   }
   if (art === "pflichten") {
     return (
       <div className="flex flex-wrap gap-2">
-        {["AGB", "Informationsblatt", "Rechnungen mit Pflichtinhalten"].map((p) => (
+        {w.pflichten.map((p) => (
           <span key={p} className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1 text-[12.5px] font-semibold text-white/80 ring-1 ring-inset ring-white/15">
             <span className="h-1.5 w-1.5 rounded-full bg-ov-300" />
             {p}
@@ -147,7 +207,7 @@ function Grafik({ art }) {
           <span key={i} className={i === 0 ? "h-2.5 rounded-full bg-ov-300" : "h-2.5 rounded-full bg-white/10"} />
         ))}
       </div>
-      <p className="mt-2 text-[12px] text-white/55">mindestens ein Zehntel der Menge</p>
+      <p className="mt-2 text-[12px] text-white/55">{w.zehntel}</p>
     </div>
   );
 }
@@ -201,6 +261,9 @@ function RegelKarte({ r, i }) {
 }
 
 export default function Elwg() {
+  const en = spracheDerAnfrage() === "en";
+  const w = worte();
+  const elwg = en ? ELWG.map((r, i) => ({ ...r, ...ELWG_EN[i] })) : ELWG;
   return (
     <Section data-abschnitt="elwg" tone="navy" space="lg" id="elwg" bare className="ov-noise scroll-mt-24 overflow-hidden">
       <div aria-hidden="true" className="ov-grid-bg absolute inset-0 opacity-40" />
@@ -211,9 +274,9 @@ export default function Elwg() {
         <div className="grid gap-10 lg:grid-cols-12 lg:items-center lg:gap-12">
           <SectionHeading
             dark
-            eyebrow="Seit 1. Oktober 2026"
-            title="Was das ElWG für Gemeinschaften ändert"
-            lead="Bestehende Gemeinschaften werden übergeführt; Verträge und Statuten sollten angepasst werden. Die Plattform bildet die neuen Regeln ab."
+            eyebrow={w.eyebrow}
+            title={w.titel}
+            lead={w.lead}
             className="lg:col-span-7"
           />
           <div className="lg:col-span-5">
@@ -221,9 +284,9 @@ export default function Elwg() {
           </div>
         </div>
 
-        <ul aria-label="Die wichtigsten Regeln des ElWG" className="mt-12 grid gap-4 md:mt-16 md:grid-cols-2 md:gap-5">
-          {ELWG.map((r, i) => (
-            <RegelKarte key={r.title} r={r} i={i} />
+        <ul aria-label={w.regeln} className="mt-12 grid gap-4 md:mt-16 md:grid-cols-2 md:gap-5">
+          {elwg.map((r, i) => (
+            <RegelKarte key={r.grafik} r={r} i={i} />
           ))}
         </ul>
 
@@ -233,11 +296,11 @@ export default function Elwg() {
               <ScrollText className="h-[18px] w-[18px]" strokeWidth={1.8} />
             </span>
             <p className="max-w-3xl text-[13px] leading-relaxed text-white/70">
-              <span className="font-semibold text-white/85">Quellen: </span>
-              {fest("ElWG BGBl. I Nr. 91/2025 (§§ 65–72), SNE-V 2018 § 5 Abs. 1a, Koordinationsstelle für Energiegemeinschaften (FAQ zum ElWG). Keine Rechts- oder Steuerberatung; Details der neuen Netzentgelt-Verordnung zu bestätigen.")}
+              <span className="font-semibold text-white/85">{w.quellen}</span>
+              {fest(w.quellenText)}
             </p>
           </div>
-          <Button href="#pakete" variant="white" pfeil className="shrink-0 self-start md:self-auto">Welches Paket passt?</Button>
+          <Button href="#pakete" variant="white" pfeil className="shrink-0 self-start md:self-auto">{w.paket}</Button>
         </div>
       </div>
     </Section>

@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 import { toast } from "@/components/ui/Toast";
 import { bewegungReduziert } from "@/components/ui/motion";
 import { cn } from "@/components/ui/cn";
@@ -30,7 +31,9 @@ function KnopfHaken() {
  * status: "bereit" | "laedt" | "erfolg"
  * laedtText: Beschriftung während des Sendens (Standard: children)
  */
-export function AbsendeKnopf({ status = "bereit", erfolgText = "Erledigt", laedtText, children, icon, pfeil = false, className, variant = "primary", ...rest }) {
+export function AbsendeKnopf({ status = "bereit", erfolgText: erfolgProp, laedtText, children, icon, pfeil = false, className, variant = "primary", ...rest }) {
+  const en = useSprache() === "en";
+  const erfolgText = erfolgProp ?? (en ? "Done" : "Erledigt");
   const laedt = status === "laedt";
   const erfolg = status === "erfolg";
   return (
@@ -54,7 +57,7 @@ export function AbsendeKnopf({ status = "bereit", erfolgText = "Erledigt", laedt
         </span>
       </Button>
       <span className="sr-only" role="status" aria-live="polite">
-        {laedt ? `${laedtText || "Wird gesendet"} …` : erfolg ? erfolgText : ""}
+        {laedt ? `${laedtText || (en ? "Sending" : "Wird gesendet")} …` : erfolg ? erfolgText : ""}
       </span>
     </>
   );

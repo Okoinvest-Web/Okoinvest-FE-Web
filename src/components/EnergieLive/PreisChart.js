@@ -3,8 +3,41 @@
 import { useMemo, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, Sigma, TrendingDown } from "lucide-react";
 import useLiveDaten, { useBreite } from "./useLiveDaten";
-import { preisTage, zeitfenster, achse, ct, uhr, spanne, tagLang, stundenmittel, zahl } from "./berechnung";
+import { preisTage, zeitfenster, achse, stundenmittel, formate } from "./berechnung";
 import KeineDaten from "./KeineDaten";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+
+/* Sprachmodell: feste Texte je Sprache */
+const TEXTE = {
+  de: {
+    keinTitel: "Börsenpreise gerade nicht verfügbar",
+    keinText: "Die Strombörsendaten konnten nicht geladen werden. Die Seite versucht es automatisch erneut – aktuelle Werte finden Sie auch direkt bei Energy-Charts.",
+    avg: "Durchschnitt", jeKwh: "je kWh an der Börse", tief: "Tagestief", hoch: "Tageshoch", um: (u) => `um ${u} Uhr`, fenster3: "Günstigste 3 Stunden",
+    min15: "15 Min.", stuendlich: "stündlich",
+    titel: (heute, tag) => `Börsenstrompreis ${heute ? "heute" : "morgen"}, ${tag}`,
+    tagWaehlen: "Tag wählen", heute: "Heute", morgen: "Morgen", morgenHinweis: "Preise für morgen erscheinen gegen 13 Uhr.",
+    aria: (heute, avg, tief, tiefU, hoch, hochU, f) => `Börsenstrompreis ${heute ? "heute" : "morgen"}: Durchschnitt ${avg} Cent je kWh, Tief ${tief} Cent um ${tiefU} Uhr, Hoch ${hoch} Cent um ${hochU} Uhr${f ? `, günstigstes 3-Stunden-Fenster ${f}` : ""}. Mit Pfeiltasten durch die Werte blättern.`,
+    g3: "Günstigste 3 h", hochK: "Hoch", tiefK: "Tief", jetzt: "Jetzt",
+    boerse: "ct/kWh Börse", dayAhead: "Day-Ahead, netto", negativ: "Negativer Börsenpreis",
+    lPreis: "Day-Ahead-Preis", lFenster: "Günstigstes 3-Stunden-Fenster", lNegativ: "Negativer Preis", keiner: " (heute keiner)", lJetzt: "Aktuelle Viertelstunde",
+    tabelle: "Stundenwerte als Tabelle", caption: "Börsenstrompreis je Stunde in Cent pro Kilowattstunde", stunde: "Stunde",
+    fussA: "Börsenpreise netto ohne Netzentgelte, Umlagen, Steuern und Beschaffungsaufschläge (1 €/MWh = 0,1 ct/kWh). Quelle:",
+  },
+  en: {
+    keinTitel: "Exchange prices currently unavailable",
+    keinText: "The power exchange data could not be loaded. The page will try again automatically – you can also find current figures directly at Energy-Charts.",
+    avg: "Average", jeKwh: "per kWh on the exchange", tief: "Daily low", hoch: "Daily high", um: (u) => `at ${u}`, fenster3: "Cheapest 3 hours",
+    min15: "15 min", stuendlich: "hourly",
+    titel: (heute, tag) => `Exchange power price ${heute ? "today" : "tomorrow"}, ${tag}`,
+    tagWaehlen: "Choose day", heute: "Today", morgen: "Tomorrow", morgenHinweis: "Prices for tomorrow are published at around 13:00.",
+    aria: (heute, avg, tief, tiefU, hoch, hochU, f) => `Exchange power price ${heute ? "today" : "tomorrow"}: average ${avg} cents per kWh, low ${tief} cents at ${tiefU}, high ${hoch} cents at ${hochU}${f ? `, cheapest 3-hour window ${f}` : ""}. Use the arrow keys to browse the values.`,
+    g3: "Cheapest 3 h", hochK: "High", tiefK: "Low", jetzt: "Now",
+    boerse: "ct/kWh exchange", dayAhead: "day-ahead, net", negativ: "Negative exchange price",
+    lPreis: "Day-ahead price", lFenster: "Cheapest 3-hour window", lNegativ: "Negative price", keiner: " (none today)", lJetzt: "Current quarter-hour",
+    tabelle: "Hourly values as a table", caption: "Exchange power price per hour in cents per kilowatt hour", stunde: "Hour",
+    fussA: "Exchange prices net, excluding grid fees, levies, taxes and procurement mark-ups (€1/MWh = 0.1 ct/kWh). Source:",
+  },
+};
 
 // Farben (nur im Diagramm): Preislinie Markenblau, Negativpreise Markengrün
 const F = {
@@ -27,6 +60,9 @@ const F = {
  */
 export default function PreisChart({ initial }) {
   const { daten, jetzt } = useLiveDaten(initial);
+  const sprache = useSprache();
+  const { ct, uhr, spanne, tagLang, zahl } = formate(sprache);
+  const w = TEXTE[sprache === "en" ? "en" : "de"];
   const tage = useMemo(() => preisTage(daten.preis, jetzt), [daten.preis, jetzt]);
   const [wahl, setWahl] = useState("heute");
   const [hover, setHover] = useState(null);
@@ -43,8 +79,8 @@ export default function PreisChart({ initial }) {
   if (!tag) {
     return (
       <KeineDaten
-        titel="Börsenpreise gerade nicht verfügbar"
-        text="Die Strombörsendaten konnten nicht geladen werden. Die Seite versucht es automatisch erneut – aktuelle Werte finden Sie auch direkt bei Energy-Charts."
+        titel={w.keinTitel}
+        text={w.keinText}
       />
     );
   }
@@ -108,10 +144,10 @@ export default function PreisChart({ initial }) {
   const tooltipLinks = hp ? Math.min(Math.max(x(hp.t + s / 2) - 115, 0), breite - 230) : 0;
 
   const stat = [
-    { icon: Sigma, label: "Durchschnitt", wert: `${ct(tag.avg)} ct`, sub: "je kWh an der Börse" },
-    { icon: ArrowDownRight, label: "Tagestief", wert: `${ct(tag.min.eurMwh)} ct`, sub: `um ${uhr(tag.min.t)} Uhr` },
-    { icon: ArrowUpRight, label: "Tageshoch", wert: `${ct(tag.max.eurMwh)} ct`, sub: `um ${uhr(tag.max.t)} Uhr` },
-    fenster && { icon: TrendingDown, label: "Günstigste 3 Stunden", wert: `${ct(fenster.avg)} ct`, sub: spanne(fenster.start, fenster.ende) },
+    { icon: Sigma, label: w.avg, wert: `${ct(tag.avg)} ct`, sub: w.jeKwh },
+    { icon: ArrowDownRight, label: w.tief, wert: `${ct(tag.min.eurMwh)} ct`, sub: w.um(uhr(tag.min.t)) },
+    { icon: ArrowUpRight, label: w.hoch, wert: `${ct(tag.max.eurMwh)} ct`, sub: w.um(uhr(tag.max.t)) },
+    fenster && { icon: TrendingDown, label: w.fenster3, wert: `${ct(fenster.avg)} ct`, sub: spanne(fenster.start, fenster.ende) },
   ].filter(Boolean);
 
   return (
@@ -120,15 +156,15 @@ export default function PreisChart({ initial }) {
       <div className="flex flex-col gap-5 border-b border-ink-100 p-5 sm:p-6 md:flex-row md:items-center md:justify-between md:p-8">
         <div>
           <p className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ov-600">
-            Day-Ahead · DE-LU · {tage.aufloesungMin === 15 ? "15 Min." : "stündlich"}
+            Day-Ahead · DE-LU · {tage.aufloesungMin === 15 ? w.min15 : w.stuendlich}
           </p>
-          <h3 className="ov-h3 mt-2 text-ink-900">Börsenstrompreis {istHeute ? "heute" : "morgen"}, {tagLang(tag.start)}</h3>
+          <h3 className="ov-h3 mt-2 text-ink-900">{w.titel(istHeute, tagLang(tag.start))}</h3>
         </div>
         <div className="flex flex-col items-start gap-2 md:items-end">
-          <div role="group" aria-label="Tag wählen" className="inline-flex rounded-full bg-ink-100 p-1">
+          <div role="group" aria-label={w.tagWaehlen} className="inline-flex rounded-full bg-ink-100 p-1">
             {[
-              { v: "heute", l: "Heute", ok: !!tage.heute },
-              { v: "morgen", l: "Morgen", ok: !!tage.morgen },
+              { v: "heute", l: w.heute, ok: !!tage.heute },
+              { v: "morgen", l: w.morgen, ok: !!tage.morgen },
             ].map((o) => {
               const aktiv = (o.v === "heute" && istHeute) || (o.v === "morgen" && !istHeute);
               return (
@@ -150,7 +186,7 @@ export default function PreisChart({ initial }) {
               );
             })}
           </div>
-          {!tage.morgen && <p className="text-[12.5px] text-ink-500">Preise für morgen erscheinen gegen 13 Uhr.</p>}
+          {!tage.morgen && <p className="text-[12.5px] text-ink-500">{w.morgenHinweis}</p>}
         </div>
       </div>
 
@@ -174,7 +210,7 @@ export default function PreisChart({ initial }) {
           <div
             tabIndex={0}
             role="img"
-            aria-label={`Börsenstrompreis ${istHeute ? "heute" : "morgen"}: Durchschnitt ${ct(tag.avg)} Cent je kWh, Tief ${ct(tag.min.eurMwh)} Cent um ${uhr(tag.min.t)} Uhr, Hoch ${ct(tag.max.eurMwh)} Cent um ${uhr(tag.max.t)} Uhr${fenster ? `, günstigstes 3-Stunden-Fenster ${spanne(fenster.start, fenster.ende)}` : ""}. Mit Pfeiltasten durch die Werte blättern.`}
+            aria-label={w.aria(istHeute, ct(tag.avg), ct(tag.min.eurMwh), uhr(tag.min.t), ct(tag.max.eurMwh), uhr(tag.max.t), fenster ? spanne(fenster.start, fenster.ende) : null)}
             onKeyDown={tasten}
             onBlur={() => setHover(null)}
             className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-4"
@@ -216,7 +252,7 @@ export default function PreisChart({ initial }) {
                     fontWeight="600"
                     fill="#436621"
                   >
-                    {schmal ? "Günstigste 3 h" : `Günstigste 3 h · Ø ${ct(fenster.avg)} ct`}
+                    {schmal ? w.g3 : `${w.g3} · Ø ${ct(fenster.avg)} ct`}
                   </text>
                 </g>
               )}
@@ -239,8 +275,8 @@ export default function PreisChart({ initial }) {
 
               {/* Tief/Hoch selektiv beschriften */}
               {[
-                { p: tag.max, label: `Hoch ${ct(tag.max.eurMwh)}`, oben: true },
-                { p: tag.min, label: `Tief ${ct(tag.min.eurMwh)}`, oben: false },
+                { p: tag.max, label: `${w.hochK} ${ct(tag.max.eurMwh)}`, oben: true },
+                { p: tag.min, label: `${w.tiefK} ${ct(tag.min.eurMwh)}`, oben: false },
               ].map(({ p, label, oben }) => {
                 const yy = y(p.eurMwh / 10);
                 const ty = oben ? Math.max(yy - 14, PAD.t + 12) : Math.min(yy + 20, PAD.t + plotH - 6);
@@ -260,7 +296,7 @@ export default function PreisChart({ initial }) {
                   <line x1={jetztX} x2={jetztX} y1={PAD.t} y2={PAD.t + plotH} stroke={F.tinte} strokeWidth="1" />
                   <rect x={Math.min(Math.max(jetztX - 21, PAD.l), PAD.l + plotW - 42)} y={PAD.t + plotH - 22} width="42" height="18" rx="9" fill={F.tinte} />
                   <text x={Math.min(Math.max(jetztX, PAD.l + 21), PAD.l + plotW - 21)} y={PAD.t + plotH - 9.5} textAnchor="middle" fontSize="11" fontWeight="600" fill="#fff">
-                    Jetzt
+                    {w.jetzt}
                   </text>
                   {aktuellerPunkt && (
                     <circle cx={jetztX} cy={y(aktuellerPunkt.eurMwh / 10)} r="5" fill={F.tinte} stroke="#fff" strokeWidth="2" />
@@ -301,12 +337,12 @@ export default function PreisChart({ initial }) {
               <p className="mt-0.5 flex items-center gap-2">
                 <span aria-hidden="true" className="h-0.5 w-3 rounded-full" style={{ background: hp.eurMwh < 0 ? "#8cba58" : "#7fa7d6" }} />
                 <span className="font-display text-[20px] font-extrabold tracking-tight">{ct(hp.eurMwh, 2)}</span>
-                <span className="text-[12.5px] text-white/70">ct/kWh Börse</span>
+                <span className="text-[12.5px] text-white/70">{w.boerse}</span>
               </p>
               <p className="mt-1 text-[12px] text-white/60">
-                = <span className="ov-num text-white">{zahl(hp.eurMwh, 2)} €/MWh</span> Day-Ahead, netto
+                = <span className="ov-num text-white">{zahl(hp.eurMwh, 2)} €/MWh</span> {w.dayAhead}
               </p>
-              {hp.eurMwh < 0 && <p className="mt-1 text-[12px] font-semibold text-ov-300">Negativer Börsenpreis</p>}
+              {hp.eurMwh < 0 && <p className="mt-1 text-[12px] font-semibold text-ov-300">{w.negativ}</p>}
             </div>
           )}
         </div>
@@ -315,20 +351,20 @@ export default function PreisChart({ initial }) {
         <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 px-1 text-[13px] text-ink-600">
           <li className="flex items-center gap-2">
             <span aria-hidden="true" className="h-0.5 w-4 rounded-full" style={{ background: F.linie }} />
-            Day-Ahead-Preis
+            {w.lPreis}
           </li>
           <li className="flex items-center gap-2">
             <span aria-hidden="true" className="h-3 w-3 rounded-[3px]" style={{ background: F.fenster, boxShadow: `inset 0 2px 0 ${F.fensterKante}` }} />
-            Günstigstes 3-Stunden-Fenster
+            {w.lFenster}
           </li>
           <li className="flex items-center gap-2">
             <span aria-hidden="true" className="h-3 w-3 rounded-[3px]" style={{ background: F.negativFlaeche, boxShadow: `inset 0 -2px 0 ${F.negativ}` }} />
-            Negativer Preis{hatNegativ ? ` (${zahl(tag.negativStunden, tag.negativStunden % 1 ? 2 : 0)} h)` : " (heute keiner)"}
+            {w.lNegativ}{hatNegativ ? ` (${zahl(tag.negativStunden, tag.negativStunden % 1 ? 2 : 0)} h)` : w.keiner}
           </li>
           {jetztX != null && (
             <li className="flex items-center gap-2">
               <span aria-hidden="true" className="h-3.5 w-px bg-ink-900" />
-              Aktuelle Viertelstunde
+              {w.lJetzt}
             </li>
           )}
         </ul>
@@ -337,15 +373,15 @@ export default function PreisChart({ initial }) {
       {/* Tabellenansicht */}
       <details className="group mx-5 mb-5 mt-4 rounded-2xl bg-ink-50 md:mx-8 md:mb-8">
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-4 py-3 text-[14px] font-semibold text-ink-700 [&::-webkit-details-marker]:hidden">
-          Stundenwerte als Tabelle
+          {w.tabelle}
           <span aria-hidden="true" className="text-ink-400 transition-transform group-open:rotate-45">+</span>
         </summary>
         <div className="max-h-80 overflow-auto px-4 pb-4">
           <table className="ov-num w-full text-left text-[13.5px]">
-            <caption className="sr-only">Börsenstrompreis je Stunde in Cent pro Kilowattstunde</caption>
+            <caption className="sr-only">{w.caption}</caption>
             <thead className="sticky top-0 bg-ink-50 text-ink-600">
               <tr>
-                <th scope="col" className="py-2 pr-3 font-medium">Stunde</th>
+                <th scope="col" className="py-2 pr-3 font-medium">{w.stunde}</th>
                 <th scope="col" className="py-2 pr-3 text-right font-medium">Ø ct/kWh</th>
                 <th scope="col" className="py-2 pr-3 text-right font-medium">Min</th>
                 <th scope="col" className="py-2 text-right font-medium">Max</th>
@@ -366,7 +402,7 @@ export default function PreisChart({ initial }) {
       </details>
 
       <p className="border-t border-ink-100 px-5 py-4 text-[12.5px] leading-relaxed text-ink-500 md:px-8">
-        Börsenpreise netto ohne Netzentgelte, Umlagen, Steuern und Beschaffungsaufschläge (1 €/MWh = 0,1 ct/kWh). Quelle:{" "}
+        {w.fussA}{" "}
         {tage.quelle || "Energy-Charts (Fraunhofer ISE)"}.
       </p>
     </div>

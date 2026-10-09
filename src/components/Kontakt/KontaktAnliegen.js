@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowUpRight, BatteryCharging, Car, Check, Factory, FolderUp, HandCoins, Landmark, LineChart, MapPinned, MessageSquare, Sprout, Users } from "lucide-react";
 import AnfrageFormular from "@/components/Plattform/AnfrageFormular";
 import { cn } from "@/components/ui/cn";
 import { pfad } from "@/lib/land";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 /**
  * Anliegen wählen (Chips) → schaltet `typ` des einheitlichen Anfrageformulars.
@@ -25,6 +27,21 @@ export const ANLIEGEN = [
   { typ: "kontakt", label: "Sonstiges", text: "Presse, Partnerschaften oder eine andere Frage – schreiben Sie uns.", felder: ["firma", "telefon", "nachricht"], link: null },
 ];
 
+/** Englisch (Sprachmodell): gleiche Reihenfolge wie ANLIEGEN; ans Backoffice geht weiter das deutsche Label. */
+const ANLIEGEN_EN = [
+  { label: "Lease your land", text: "Do you have land from about 3 ha? With the location and size we can give you an initial assessment.", link: { label: "Go straight to the land check" } },
+  { label: "Agrivoltaics", text: "Lease, invest yourself or take a stake – briefly describe the land and crops.", link: { label: "Agrivoltaics calculator" } },
+  { label: "Invest", text: "Looking for project rights, ready-to-build projects or operating assets? Tell us the region, stage and size.", link: { label: "Create a search profile in the portal" } },
+  { label: "Offer a project", text: "Are you developing a project or selling a plant? Key data is enough to get started.", link: { label: "List directly" } },
+  { label: "Residual power pool", text: "Tell us your annual consumption, current price and contract end – we will get back to you with an assessment.", link: { label: "Calculate savings in advance" } },
+  { label: "Solar carport", text: "Number of parking spaces, location and whether charging points are planned – that is enough to start with.", link: { label: "Carport calculator" } },
+  { label: "Battery storage", text: "Land or a grid connection for battery storage? Tell us the location and connection capacity, if known.", link: { label: "More on battery storage" } },
+  { label: "Municipality", text: "Municipality, municipal utility or special-purpose association: land, participation, energy community – get in touch.", link: { label: "For municipalities" } },
+  { label: "Energy community", text: "Set one up, supply it with power from a solar park or hand over the billing – in DE, AT or CH.", link: { label: "Models compared by country" } },
+  { label: "Cooperative", text: "Interested in the planned energy cooperative? Register without obligation.", link: { label: "Go to the cooperative" } },
+  { label: "Other", text: "Press, partnerships or another question – write to us.", link: null },
+];
+
 /** Symbol je Anliegen (rein visuell) */
 const ICON = {
   flaeche: MapPinned,
@@ -41,6 +58,8 @@ const ICON = {
 };
 
 export default function KontaktAnliegen() {
+  const sprache = useSprache();
+  const anliegen = uebersetze({ de: ANLIEGEN, en: ANLIEGEN_EN }, sprache);
   const [typ, setTyp] = useState("kontakt");
   const name = useId();
 
@@ -60,14 +79,15 @@ export default function KontaktAnliegen() {
     } catch {}
   };
 
-  const a = ANLIEGEN.find((x) => x.typ === typ);
+  const a = anliegen.find((x) => x.typ === typ);
+  const label = ANLIEGEN.find((x) => x.typ === typ).label;
 
   return (
     <div>
       <fieldset>
-        <legend className="mb-3 text-[14.5px] font-semibold text-ink-800">Worum geht es?</legend>
+        <legend className="mb-3 text-[14.5px] font-semibold text-ink-800">{sprache === "en" ? "What is it about?" : "Worum geht es?"}</legend>
         <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2 sm:grid-cols-[repeat(3,minmax(0,1fr))]">
-          {ANLIEGEN.map((x) => {
+          {anliegen.map((x) => {
             const an = x.typ === typ;
             const Icon = ICON[x.typ] || MessageSquare;
             return (
@@ -85,7 +105,7 @@ export default function KontaktAnliegen() {
                 >
                   {an ? <Check className="h-4 w-4" strokeWidth={3} /> : <Icon className="h-4 w-4" />}
                 </span>
-                <span lang="de" className="min-w-0 break-words [hyphens:auto]">{x.label}</span>
+                <span lang={sprache} className="min-w-0 break-words [hyphens:auto]">{x.label}</span>
               </label>
             );
           })}
@@ -103,7 +123,7 @@ export default function KontaktAnliegen() {
       </div>
 
       <div className="mt-8">
-        <AnfrageFormular key={a.typ} typ={a.typ} felder={a.felder} daten={{ anliegen: a.label, quelle: "kontaktseite" }} button="Anfrage senden" />
+        <AnfrageFormular key={a.typ} typ={a.typ} felder={a.felder} daten={{ anliegen: label, quelle: "kontaktseite" }} button={sprache === "en" ? "Send enquiry" : "Anfrage senden"} />
       </div>
     </div>
   );

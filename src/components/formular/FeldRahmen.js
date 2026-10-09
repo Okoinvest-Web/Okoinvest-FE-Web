@@ -5,6 +5,7 @@
 
 import { cn } from "@/components/ui/cn";
 import { fehlerKlasse, hinweisKlasse, labelKlasse } from "./stil";
+import T from "@/components/Sprache/T";
 
 export function FehlerIcon({ className }) {
   return (
@@ -49,10 +50,10 @@ export default function FeldRahmen({ id, label, pflicht = false, optional = fals
             {pflicht && (
               <>
                 <span aria-hidden="true" className={dunkel ? "text-ov-300" : "text-ov-700"}> *</span>
-                <span className="sr-only"> (Pflichtfeld)</span>
+                <span className="sr-only"> <T de="(Pflichtfeld)" en="(required)" /></span>
               </>
             )}
-            {optional && <span className={cn("ml-1 font-normal", dunkel ? "text-white/65" : "text-ink-500")}>(optional)</span>}
+            {optional && <span className={cn("ml-1 font-normal", dunkel ? "text-white/65" : "text-ink-500")}><T de="(optional)" en="(optional)" /></span>}
           </label>
           {zusatz && <span className="mb-1.5 shrink-0 text-[13px]">{zusatz}</span>}
         </div>

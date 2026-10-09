@@ -2,6 +2,9 @@
 import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
 import { fmt } from "@/lib/rechner/annahmen";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { fmtZahl } from "@/lib/sprache/format";
 
 /** Modulband auf einer geraden Dachlinie */
 function Band({ x1, x2, y, n }) {
@@ -67,19 +70,41 @@ const TYPEN = [
   { id: "handel", title: "Handel & Hallen", text: "Märkte, Sporthallen, Werkstätten: Dachpacht ohne eigenes Kapital und ohne Betriebsaufwand.", tag: "ohne Kapital" },
 ];
 
+/** Sprachmodell: Texte (en nur Texte, Listen je Index). */
+const W = {
+  de: {
+    typen: TYPEN,
+    eyebrow: "Für welche Dächer",
+    titel: "Große Dächer, die sonst nur Regen abhalten.",
+    lead: (m) => `Entscheidend sind Größe, Tragreserve, Zustand und ein erreichbarer Netzanschluss. Ab rund ${fmt(m)} m² wird ein Dach für einen Betreiber interessant – mehrere Dächer an einem Standort zählen zusammen.`,
+  },
+  en: {
+    typen: [
+      { title: "Commercial & production", text: "High daytime consumption in the building – ideal for low-cost rooftop power on top of the lease.", tag: "Lease + rooftop power" },
+      { title: "Logistics & warehousing", text: "Very large, contiguous areas, often newly built and structurally well dimensioned.", tag: "large areas" },
+      { title: "Agriculture", text: "Machinery sheds, barns, storage halls – beware of old fibre cement roofing.", tag: "check the roofing" },
+      { title: "Retail & halls", text: "Supermarkets, sports halls, workshops: roof lease without your own capital and without operating effort.", tag: "no capital" },
+    ],
+    eyebrow: "Which roofs",
+    titel: "Large roofs that otherwise only keep the rain out.",
+    lead: (m) => `What matters are size, load reserve, condition and an accessible grid connection. From around ${fmtZahl(m, 0, "en")} m², a roof becomes interesting for an operator – several roofs at one site count together.`,
+  },
+};
+
 export default function Dachtypen({ mindestM2 }) {
+  const w = uebersetze(W, spracheDerAnfrage());
   return (
     <section data-abschnitt="dachtypen" aria-labelledby="dachtypen-titel" className="bg-white pb-20 pt-20 md:pb-28 md:pt-28">
       <div className="ov-container">
         <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
           <SectionHeading
-            eyebrow="Für welche Dächer"
-            title={<span id="dachtypen-titel">Große Dächer, die sonst nur Regen abhalten.</span>}
-            lead={`Entscheidend sind Größe, Tragreserve, Zustand und ein erreichbarer Netzanschluss. Ab rund ${fmt(mindestM2)} m² wird ein Dach für einen Betreiber interessant – mehrere Dächer an einem Standort zählen zusammen.`}
+            eyebrow={w.eyebrow}
+            title={<span id="dachtypen-titel">{w.titel}</span>}
+            lead={w.lead(mindestM2)}
           />
         </div>
         <ul className="mt-10 grid gap-4 sm:grid-cols-2 md:mt-12 lg:grid-cols-4">
-          {TYPEN.map((t, i) => (
+          {w.typen.map((t, i) => (
             <Reveal as="li" key={t.id} delay={i * 70} className="ov-lift flex overflow-hidden rounded-3xl bg-white ring-1 ring-ink-200/70 sm:flex-col">
               <div className="relative flex w-28 shrink-0 items-stretch bg-gradient-to-b from-sand-50 to-sand-100/60 px-0 pt-6 sm:block sm:w-auto sm:px-4 sm:pt-4">
                 <span className={`absolute left-4 top-4 hidden rounded-full sm:inline-block px-2.5 py-1 text-[11.5px] font-semibold ring-1 ${t.warn ? "bg-sun-50 text-sun-700 ring-sun-200" : "bg-white text-ov-700 ring-ov-200"}`}>{t.tag}</span>

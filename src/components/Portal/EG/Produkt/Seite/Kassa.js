@@ -4,6 +4,40 @@ import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
 import { cn } from "@/components/ui/cn";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+
+/* Sprachmodell: Beschriftungen je Sprache */
+const WORTE = {
+  de: {
+    freigabe: [["Vorschau"], ["1. Freigabe", "Kassier"], ["2. Freigabe", "Vorstand"], ["Versand"]],
+    summe: "Summe der Gemeinschaft", sichtbar: "sichtbar", zweck: "Zweck angegeben · Zugriff protokolliert",
+    sepa: ["Abrechnung", "Lastschrift", "Überweisung", "Mahnung"],
+    ust: ["Kleinunternehmer", "Landwirt", "Reverse Charge"],
+    pfad: ["Export", "Rechnung", "Viertelstundenwert"],
+    verein: ["Organe", "Versammlungen", "Beschlüsse"],
+    eyebrow: "Vereinsführung", titel: "Der Verein läuft mit\u00a0– nicht nebenher",
+    lead: "Die Arbeit, die in Vorständen die meiste Zeit kostet, an einem Ort: Vereinsführung, Freigaben, Zahlungsverkehr und Exporte.",
+  },
+  en: {
+    freigabe: [["Preview"], ["1st approval", "Treasurer"], ["2nd approval", "Board"], ["Sending"]],
+    summe: "Community total", sichtbar: "visible", zweck: "Purpose stated · access logged",
+    sepa: ["Billing", "Direct debit", "Transfer", "Reminder"],
+    ust: ["Small business", "Farmer", "Reverse charge"],
+    pfad: ["Export", "Invoice", "Quarter-hourly value"],
+    verein: ["Bodies", "Meetings", "Resolutions"],
+    eyebrow: "Running the association", titel: "The association runs alongside\u00a0– not on the side",
+    lead: "The work that takes up most of a board’s time, in one place: running the association, approvals, payments and exports.",
+  },
+};
+const worte = () => WORTE[spracheDerAnfrage() === "en" ? "en" : "de"];
+const KACHELN_EN = {
+  freigabe: { title: "Four-eyes approval", text: "Every bill and payment with two approvals – status per period and comparison with the previous period." },
+  einsicht: { title: "Individual access only with a purpose", text: "Board and treasurer see totals by default; individual access is only possible with a stated purpose and is logged." },
+  sepa: { title: "SEPA and dunning", text: "SEPA direct debit and transfer straight from the billing, dunning included." },
+  ust: { title: "Special VAT cases", text: "Small businesses, farmers, reverse charge – the cases that associations otherwise handle manually." },
+  export: { title: "Export for the tax adviser", text: "Exports for the tax adviser, every figure with an audit trail down to the quarter-hourly value." },
+  verein: { title: "Bodies and meetings", text: "Running the association directly in the platform: the community’s bodies, meetings and resolutions in one place." },
+};
 
 /*
  * Arbeitswerkzeuge für Kassa und Vorstand – nur Aussagen, die auch in Tour, Vergleich und FAQ stehen.
@@ -14,11 +48,12 @@ import { cn } from "@/components/ui/cn";
 
 /** Vier-Augen-Freigabe: Ablauf der Periode mit zwei Freigaben durch zwei Personen */
 function VisFreigabe() {
+  const f = worte().freigabe;
   const schritte = [
-    { l: "Vorschau", art: "fertig" },
-    { l: "1. Freigabe", wer: "Kassier", art: "person" },
-    { l: "2. Freigabe", wer: "Vorstand", art: "person" },
-    { l: "Versand", art: "ziel" },
+    { l: f[0][0], art: "fertig" },
+    { l: f[1][0], wer: f[1][1], art: "person" },
+    { l: f[2][0], wer: f[2][1], art: "person" },
+    { l: f[3][0], art: "ziel" },
   ];
   return (
     <div aria-hidden="true" className="relative mt-8 rounded-2xl bg-white/70 p-4 ring-1 ring-ink-200/70 sm:p-5">
@@ -50,12 +85,13 @@ function VisFreigabe() {
 
 /** Einzeleinsicht nur mit Zweck: Summen offen, Einzelzeilen gesperrt, Zugriff wird protokolliert */
 function VisEinsicht() {
+  const w = worte();
   return (
     <div aria-hidden="true" className="mt-8 space-y-2.5">
       <div className="rounded-xl bg-white/[0.07] p-3 ring-1 ring-white/12">
         <div className="flex items-center justify-between text-[11.5px] font-semibold text-white/80">
-          <span>Summe der Gemeinschaft</span>
-          <span className="rounded-full bg-ov-400/20 px-2 py-0.5 text-[10.5px] text-ov-200">sichtbar</span>
+          <span>{w.summe}</span>
+          <span className="rounded-full bg-ov-400/20 px-2 py-0.5 text-[10.5px] text-ov-200">{w.sichtbar}</span>
         </div>
         <svg viewBox="0 0 200 36" preserveAspectRatio="none" className="mt-3 h-12 w-full">
           {[14, 22, 18, 28, 24, 31, 26, 20, 27, 33].map((h, i) => (
@@ -72,7 +108,7 @@ function VisEinsicht() {
       ))}
       <div className="flex items-center gap-2 rounded-xl border border-dashed border-sun-300/50 px-3 py-2 text-[11.5px] text-sun-200">
         <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-        <span>Zweck angegeben · Zugriff protokolliert</span>
+        <span>{w.zweck}</span>
       </div>
     </div>
   );
@@ -80,18 +116,19 @@ function VisEinsicht() {
 
 /** SEPA und Mahnwesen: aus der Abrechnung in zwei Zahlungsrichtungen, Mahnung als Folgeschritt */
 function VisSepa() {
+  const s = worte().sepa;
   return (
     <div aria-hidden="true" className="mt-7 flex items-center gap-2 text-[11.5px] font-semibold">
-      <span className="rounded-lg bg-white px-2.5 py-2 text-ink-800 shadow-e1 ring-1 ring-ink-200">Abrechnung</span>
+      <span className="rounded-lg bg-white px-2.5 py-2 text-ink-800 shadow-e1 ring-1 ring-ink-200">{s[0]}</span>
       <svg viewBox="0 0 40 60" className="h-14 w-8 shrink-0" fill="none" stroke="var(--color-ov-500)" strokeWidth="1.5" strokeLinecap="round">
         <path d="M2 30 C 20 30, 20 10, 38 10" />
         <path d="M2 30 C 20 30, 20 50, 38 50" />
         <path d="M33 6 l5 4 -5 4 M33 46 l5 4 -5 4" />
       </svg>
       <span className="flex min-w-0 flex-col gap-2">
-        <span className="truncate rounded-lg bg-ov-50 px-2.5 py-1.5 text-ov-800 ring-1 ring-ov-200">Lastschrift</span>
-        <span className="truncate rounded-lg bg-navy-50 px-2.5 py-1.5 text-navy-700 ring-1 ring-navy-100">Überweisung</span>
-        <span className="truncate rounded-lg border border-dashed border-sun-300 bg-sun-50 px-2.5 py-1.5 text-sun-700">Mahnung</span>
+        <span className="truncate rounded-lg bg-ov-50 px-2.5 py-1.5 text-ov-800 ring-1 ring-ov-200">{s[1]}</span>
+        <span className="truncate rounded-lg bg-navy-50 px-2.5 py-1.5 text-navy-700 ring-1 ring-navy-100">{s[2]}</span>
+        <span className="truncate rounded-lg border border-dashed border-sun-300 bg-sun-50 px-2.5 py-1.5 text-sun-700">{s[3]}</span>
       </span>
     </div>
   );
@@ -101,7 +138,7 @@ function VisSepa() {
 function VisUst() {
   return (
     <div aria-hidden="true" className="mt-7 flex flex-wrap gap-2">
-      {["Kleinunternehmer", "Landwirt", "Reverse Charge"].map((f, i) => (
+      {worte().ust.map((f, i) => (
         <span key={f} className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold ring-1", i === 2 ? "bg-navy-50 text-navy-700 ring-navy-100" : "bg-white text-ink-800 ring-ink-200")}>
           <span className={cn("h-1.5 w-1.5 rounded-full", i === 0 ? "bg-ov-500" : i === 1 ? "bg-sun-500" : "bg-navy-500")} />
           {f}
@@ -113,7 +150,7 @@ function VisUst() {
 
 /** Export mit Prüfpfad: von der Summe bis zum Viertelstundenwert */
 function VisPruefpfad() {
-  const ebenen = ["Export", "Rechnung", "Viertelstundenwert"];
+  const ebenen = worte().pfad;
   return (
     <ol aria-hidden="true" className="mt-7 space-y-1.5">
       {ebenen.map((e, i) => (
@@ -131,7 +168,7 @@ function VisVerein() {
   // Als umbrechende Chips statt drei schmaler Spalten: „Versammlungen“ wurde in der Spaltenbreite getrennt.
   return (
     <div aria-hidden="true" className="mt-7 flex flex-wrap gap-2 text-[13px] font-semibold text-ink-800">
-      {[["Organe", Users], ["Versammlungen", ClipboardList], ["Beschlüsse", FileSignature]].map(([l, Icon]) => (
+      {worte().verein.map((l, i) => [l, [Users, ClipboardList, FileSignature][i]]).map(([l, Icon]) => (
         <span key={l} className="inline-flex items-center gap-2 rounded-full bg-white py-1.5 pl-1.5 pr-3.5 ring-1 ring-ink-200">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy-50 text-navy-700"><Icon className="h-3.5 w-3.5" /></span>
           {l}
@@ -229,12 +266,15 @@ function Kachel({ k, i }) {
 }
 
 export default function Kassa() {
+  const en = spracheDerAnfrage() === "en";
+  const w = worte();
+  const kacheln = en ? KACHELN.map((k) => ({ ...k, ...KACHELN_EN[k.id] })) : KACHELN;
   return (
     <Section data-abschnitt="kassa" tone="sand" space="lg" id="kassa" className="scroll-mt-24">
       {/* Kein Rückverweis auf die Tour: Die Abrechnungs-Ansicht steht unmittelbar darüber. */}
-      <SectionHeading eyebrow="Vereinsführung" title="Der Verein läuft mit&nbsp;– nicht nebenher" lead="Die Arbeit, die in Vorständen die meiste Zeit kostet, an einem Ort: Vereinsführung, Freigaben, Zahlungsverkehr und Exporte." className="mb-10 md:mb-14" />
+      <SectionHeading eyebrow={w.eyebrow} title={w.titel} lead={w.lead} className="mb-10 md:mb-14" />
       <ul className="grid gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-6">
-        {KACHELN.map((k, i) => <Kachel key={k.id} k={k} i={i} />)}
+        {kacheln.map((k, i) => <Kachel key={k.id} k={k} i={i} />)}
       </ul>
     </Section>
   );

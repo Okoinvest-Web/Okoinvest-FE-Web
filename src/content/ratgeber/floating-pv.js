@@ -90,7 +90,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Der Reiz liegt auf der Hand: Die Anlage beansprucht keine Agrarfläche, das Wasser kühlt die Module, und viele Baggerseen liegen direkt neben einem stromintensiven Kieswerk. Dem stehen höhere Kosten, strenge Flächengrenzen und ein vielschichtiges Genehmigungsverfahren gegenüber. Für die Einordnung neben anderen Sonderstandorten lohnt ein Blick in den Ratgeber [Moor-PV](/wissen/ratgeber/moor-pv) und auf die Übersicht der [besonderen Solaranlagen](/wissen/lexikon#besondere-solaranlagen).",
+          text: "Der Reiz liegt auf der Hand: Die Anlage beansprucht keine Agrarfläche, das Wasser kühlt die Module, und viele Baggerseen liegen direkt neben einem stromintensiven Kieswerk. Dem stehen höhere Kosten, strenge Flächengrenzen und ein vielschichtiges Genehmigungsverfahren gegenüber. Für die Einordnung neben anderen Sonderstandorten lohnt ein Blick in den Ratgeber [Moor-PV](/ratgeber/moor-pv) und auf die Übersicht der [besonderen Solaranlagen](/wissen/lexikon#besondere-solaranlagen).",
         },
         {
           typ: "kennzahl",
@@ -147,11 +147,11 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Für besondere Solaranlagen sieht § 37b Abs. 2 EEG einen eigenen Höchstwert von bis zu ${fmt(HOECHSTWERT_BESONDERE_CT, 1)} ct/kWh vor, § 37d EEG ein eigenes Zuschlagsverfahren. Dieses steht laut Bundesnetzagentur unter dem Vorbehalt der beihilferechtlichen Genehmigung; bis dahin konkurrieren Floating-Projekte nach unserem Recherchestand mit klassischen Freiflächen, deren Zuschläge zuletzt um ${fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh lagen. Wie die Ausschreibung abläuft, erklärt der Ratgeber [EEG-Ausschreibung für Freiflächen](/wissen/ratgeber/eeg-ausschreibung-freiflaeche).`,
+          text: `Für besondere Solaranlagen sieht § 37b Abs. 2 EEG einen eigenen Höchstwert von bis zu ${fmt(HOECHSTWERT_BESONDERE_CT, 1)} ct/kWh vor, § 37d EEG ein eigenes Zuschlagsverfahren. Dieses steht laut Bundesnetzagentur unter dem Vorbehalt der beihilferechtlichen Genehmigung; bis dahin konkurrieren Floating-Projekte nach unserem Recherchestand mit klassischen Freiflächen, deren Zuschläge zuletzt um ${fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh lagen. Wie die Ausschreibung abläuft, erklärt der Ratgeber [EEG-Ausschreibung für Freiflächen](/ratgeber/eeg-ausschreibung-freiflaeche).`,
         },
         {
           typ: "p",
-          text: "Oft attraktiver als die Einspeisung ist die **Direktversorgung eines Kieswerks**: Der Strom ersetzt Netzbezug zu Gewerbestrompreisen. Das Fraunhofer ISE hat 2022 für Baden-Württemberg " + fmt(BW_SEEN) + " Baggerseen in aktiver Auskiesung untersucht und ein Potenzial von " + fmt(BW_POTENZIAL_MW.min) + " bis " + fmt(BW_POTENZIAL_MW.max) + " MW ermittelt – mit dem Hinweis, dass die Kieswerke meist einen hohen Strombedarf haben. Wie sich Direktlieferverträge gestalten lassen, zeigt der Ratgeber [PPA für Unternehmen](/wissen/ratgeber/ppa-fuer-unternehmen).",
+          text: "Oft attraktiver als die Einspeisung ist die **Direktversorgung eines Kieswerks**: Der Strom ersetzt Netzbezug zu Gewerbestrompreisen. Das Fraunhofer ISE hat 2022 für Baden-Württemberg " + fmt(BW_SEEN) + " Baggerseen in aktiver Auskiesung untersucht und ein Potenzial von " + fmt(BW_POTENZIAL_MW.min) + " bis " + fmt(BW_POTENZIAL_MW.max) + " MW ermittelt – mit dem Hinweis, dass die Kieswerke meist einen hohen Strombedarf haben. Wie sich Direktlieferverträge gestalten lassen, zeigt der Ratgeber [PPA für Unternehmen](/ratgeber/ppa-fuer-unternehmen).",
         },
       ],
     },
@@ -191,7 +191,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Tabelle zeigt, warum Floating-PV im Wettbewerb mit Ackerparks um ${fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh schwer mithalten kann, solange kein eigenes Untersegment mit höherem Höchstwert greift – und warum der Eigenverbrauch im Kieswerk so wichtig ist. Mit eigenen Annahmen rechnen Sie im [Solarpark-Rechner](/de/rechner/solarpark); den Einfluss der Anbindung ans Netz erklärt der Ratgeber [Netzanschluss für Solarparks](/wissen/ratgeber/netzanschluss-solarpark).`,
+          text: `Die Tabelle zeigt, warum Floating-PV im Wettbewerb mit Ackerparks um ${fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh schwer mithalten kann, solange kein eigenes Untersegment mit höherem Höchstwert greift – und warum der Eigenverbrauch im Kieswerk so wichtig ist. Mit eigenen Annahmen rechnen Sie im [Solarpark-Rechner](/rechner/solarpark); den Einfluss der Anbindung ans Netz erklärt der Ratgeber [Netzanschluss für Solarparks](/ratgeber/netzanschluss-solarpark).`,
         },
       ],
     },
@@ -220,7 +220,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Gewässerökologisch wird vor allem diskutiert, wie sich Beschattung auf Wassertemperatur, Schichtung und Sauerstoffhaushalt auswirkt; das Fraunhofer ISE forscht dazu mit hydroökologischen Simulationen. Bei der 15-%-Grenze gelten die Effekte nach bisherigem Kenntnisstand als begrenzt. Den Ablauf eines Bebauungsplans erklärt der Ratgeber [Solarpark-Genehmigung](/wissen/ratgeber/solarpark-genehmigung-bebauungsplan), die naturschutzfachliche Seite der Ratgeber [Artenschutz im Solarpark](/wissen/ratgeber/solarpark-artenschutz-biodiversitaet).",
+          text: "Gewässerökologisch wird vor allem diskutiert, wie sich Beschattung auf Wassertemperatur, Schichtung und Sauerstoffhaushalt auswirkt; das Fraunhofer ISE forscht dazu mit hydroökologischen Simulationen. Bei der 15-%-Grenze gelten die Effekte nach bisherigem Kenntnisstand als begrenzt. Den Ablauf eines Bebauungsplans erklärt der Ratgeber [Solarpark-Genehmigung](/ratgeber/solarpark-genehmigung-bebauungsplan), die naturschutzfachliche Seite der Ratgeber [Artenschutz im Solarpark](/ratgeber/solarpark-artenschutz-biodiversitaet).",
         },
       ],
     },
@@ -240,12 +240,12 @@ const artikel = {
             "**Abbauphase einplanen:** Solange ausgekiest wird, dürfen Anlage und Verankerung den Betrieb nicht behindern.",
             "**Eigenverbrauch rechnen:** Ein Kieswerk mit hohem Tagesverbrauch kann den Solarstrom direkt nutzen – oft der wirtschaftlich stärkste Hebel.",
             "**Wasserrechte und Dritte:** Fischerei-, Bade- oder Angelrechte und Nachbarn berücksichtigen.",
-            "**Sicherheiten vereinbaren:** Rückbausicherheit und Haftung für Schäden am Gewässer vertraglich regeln; siehe [Pachtvertrag Solarpark](/wissen/ratgeber/pachtvertrag-solarpark).",
+            "**Sicherheiten vereinbaren:** Rückbausicherheit und Haftung für Schäden am Gewässer vertraglich regeln; siehe [Pachtvertrag Solarpark](/ratgeber/pachtvertrag-solarpark).",
           ],
         },
         {
           typ: "p",
-          text: "Für Flächeneigentümer mit Kiesgruben oder Uferflächen lohnt sich oft eine Kombination: Landflächen am Ufer für Wechselrichter, Speicher oder eine Freiflächenanlage, der See für die schwimmende Anlage. Wie ÖkoInvest Flächen einschätzt, erfahren Sie unter [Fläche verpachten](/de/flaeche-verpachten); die Pacht für Landflächen können Sie im [Pachtrechner](/de/rechner/pacht) abschätzen.",
+          text: "Für Flächeneigentümer mit Kiesgruben oder Uferflächen lohnt sich oft eine Kombination: Landflächen am Ufer für Wechselrichter, Speicher oder eine Freiflächenanlage, der See für die schwimmende Anlage. Wie ÖkoInvest Flächen einschätzt, erfahren Sie unter [Fläche verpachten](/flaeche-verpachten); die Pacht für Landflächen können Sie im [Pachtrechner](/rechner/pacht) abschätzen.",
         },
       ],
     },
@@ -280,11 +280,11 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: "**In Österreich ist uns eine starre bundesweite Bedeckungsgrenze wie in § 36 WHG nicht bekannt; maßgeblich sind die wasserrechtliche Bewilligung nach dem Wasserrechtsgesetz 1959 sowie Naturschutz- und Raumordnungsrecht der Länder.** Gefördert wird wie bei anderen Anlagen über das EAG. Zu Widmung, Zonierung und Förderung im Überblick: Ratgeber [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich).",
+          text: "**In Österreich ist uns eine starre bundesweite Bedeckungsgrenze wie in § 36 WHG nicht bekannt; maßgeblich sind die wasserrechtliche Bewilligung nach dem Wasserrechtsgesetz 1959 sowie Naturschutz- und Raumordnungsrecht der Länder.** Gefördert wird wie bei anderen Anlagen über das EAG. Zu Widmung, Zonierung und Förderung im Überblick: Ratgeber [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich).",
         },
         {
           typ: "p",
-          text: "In der **Schweiz** kommen vor allem Stauseen und künstliche Becken in Betracht; Gewässerschutz und Landschaftsschutz sind streng. Die alpine Pilotanlage am Lac des Toules zeigt die technische Machbarkeit. Einordnung der Rahmenbedingungen im Ratgeber [Freiflächen-PV in der Schweiz](/wissen/ratgeber/freiflaechen-pv-schweiz).",
+          text: "In der **Schweiz** kommen vor allem Stauseen und künstliche Becken in Betracht; Gewässerschutz und Landschaftsschutz sind streng. Die alpine Pilotanlage am Lac des Toules zeigt die technische Machbarkeit. Einordnung der Rahmenbedingungen im Ratgeber [Freiflächen-PV in der Schweiz](/ratgeber/freiflaechen-pv-schweiz).",
         },
       ],
     },
@@ -305,7 +305,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Eine erste Einschätzung für Uferflächen und angrenzende Grundstücke liefert der [Flächencheck](/de/flaechencheck). Wer ein Projekt in fortgeschrittenem Stadium sucht oder anbieten möchte, findet dafür die [Projektbörse](/projektboerse).",
+          text: "Eine erste Einschätzung für Uferflächen und angrenzende Grundstücke liefert der [Flächencheck](/flaechencheck). Wer ein Projekt in fortgeschrittenem Stadium sucht oder anbieten möchte, findet dafür die [Projektbörse](/projektboerse).",
         },
       ],
     },
@@ -339,9 +339,9 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/wissen/ratgeber/moor-pv", titel: "Moor-PV", text: "Solarparks auf wiedervernässten Moorböden." },
-    { href: "/wissen/ratgeber/netzanschluss-solarpark", titel: "Netzanschluss für Solarparks", text: "Ablauf, Kosten und Überbauung." },
-    { href: "/wissen/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Solarstrom direkt an Kieswerk und Gewerbe liefern." },
+    { href: "/ratgeber/moor-pv", titel: "Moor-PV", text: "Solarparks auf wiedervernässten Moorböden." },
+    { href: "/ratgeber/netzanschluss-solarpark", titel: "Netzanschluss für Solarparks", text: "Ablauf, Kosten und Überbauung." },
+    { href: "/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Solarstrom direkt an Kieswerk und Gewerbe liefern." },
     { href: pfad("/flaeche-verpachten"), titel: "Fläche verpachten", text: "Ablauf und Voraussetzungen für Eigentümer." },
   ],
 

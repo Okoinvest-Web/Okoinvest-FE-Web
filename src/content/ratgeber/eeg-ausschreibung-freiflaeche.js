@@ -97,7 +97,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Wie ein Projekt überhaupt bis zum Aufstellungsbeschluss kommt, beschreibt der Ratgeber [Solarpark-Genehmigung und Bebauungsplan](/wissen/ratgeber/solarpark-genehmigung-bebauungsplan).",
+          text: "Wie ein Projekt überhaupt bis zum Aufstellungsbeschluss kommt, beschreibt der Ratgeber [Solarpark-Genehmigung und Bebauungsplan](/ratgeber/solarpark-genehmigung-bebauungsplan).",
         },
       ],
     },
@@ -173,7 +173,7 @@ const artikel = {
         { typ: "h3", text: "Besondere Solaranlagen" },
         {
           typ: "p",
-          text: "[Besondere Solaranlagen](/wissen/lexikon#besondere-solaranlagen) wie Agri-PV nach DIN SPEC 91434, Parkplatz-PV oder Anlagen auf wiedervernässten Moorböden sind in der Ausschreibung zugelassen. Das Solarpaket I sieht für sie eine eigene Unterausschreibung mit höherem Höchstwert und einem Bonus für hoch aufgeständerte Agri-PV vor (§ 37d EEG); dieser Teil stand unter beihilferechtlichem Vorbehalt. Nach unserem Recherchestand konkurrieren besondere Solaranlagen derzeit im regulären ersten Segment – in der Märzrunde 2026 erhielten sie 439 MW Zuschläge. Fehlt später der Nachweis der landwirtschaftlichen Nutzung, sinkt der Zuschlagswert nach § 54 Abs. 3 EEG um 2,5 ct/kWh. Mehr dazu im Ratgeber [Agri-PV-Wirtschaftlichkeit](/wissen/ratgeber/agri-pv-wirtschaftlichkeit).",
+          text: "[Besondere Solaranlagen](/wissen/lexikon#besondere-solaranlagen) wie Agri-PV nach DIN SPEC 91434, Parkplatz-PV oder Anlagen auf wiedervernässten Moorböden sind in der Ausschreibung zugelassen. Das Solarpaket I sieht für sie eine eigene Unterausschreibung mit höherem Höchstwert und einem Bonus für hoch aufgeständerte Agri-PV vor (§ 37d EEG); dieser Teil stand unter beihilferechtlichem Vorbehalt. Nach unserem Recherchestand konkurrieren besondere Solaranlagen derzeit im regulären ersten Segment – in der Märzrunde 2026 erhielten sie 439 MW Zuschläge. Fehlt später der Nachweis der landwirtschaftlichen Nutzung, sinkt der Zuschlagswert nach § 54 Abs. 3 EEG um 2,5 ct/kWh. Mehr dazu im Ratgeber [Agri-PV-Wirtschaftlichkeit](/ratgeber/agri-pv-wirtschaftlichkeit).",
         },
       ],
     },
@@ -259,7 +259,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Viele Projekte kombinieren: Ein Teil des Parks geht mit Zuschlag in die Marktprämie, ein anderer Teil liefert per [PPA](/wissen/ratgeber/ppa-fuer-unternehmen) an ein Unternehmen – zum Beispiel über den [Reststrom-Pool](/de/reststrom). Flächen außerhalb der Kulisse, etwa Äcker außerhalb benachteiligter Gebiete, sind ohnehin nur über PPA oder Merchant realisierbar. Unabhängig vom Vermarktungsweg kann die Gemeinde nach § 6 EEG beteiligt werden; bei 10 MWp in Süddeutschland wären das rund ${fmtEur(KOMMUNAL)} pro Jahr.`,
+          text: `Viele Projekte kombinieren: Ein Teil des Parks geht mit Zuschlag in die Marktprämie, ein anderer Teil liefert per [PPA](/ratgeber/ppa-fuer-unternehmen) an ein Unternehmen – zum Beispiel über den [Reststrom-Pool](/reststrom). Flächen außerhalb der Kulisse, etwa Äcker außerhalb benachteiligter Gebiete, sind ohnehin nur über PPA oder Merchant realisierbar. Unabhängig vom Vermarktungsweg kann die Gemeinde nach § 6 EEG beteiligt werden; bei 10 MWp in Süddeutschland wären das rund ${fmtEur(KOMMUNAL)} pro Jahr.`,
         },
         {
           typ: "tool",
@@ -289,7 +289,7 @@ const artikel = {
           typ: "kasten",
           variant: "info",
           titel: "Österreich und Schweiz",
-          text: "In Österreich vergibt die EAG-Förderabwicklungsstelle Marktprämien ebenfalls per Ausschreibung, daneben gibt es Investitionszuschüsse – siehe [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich). In der Schweiz dominieren Einmalvergütungen, für große alpine Anlagen galt der Solarexpress – siehe [Freiflächen-PV in der Schweiz](/wissen/ratgeber/freiflaechen-pv-schweiz).",
+          text: "In Österreich vergibt die EAG-Förderabwicklungsstelle Marktprämien ebenfalls per Ausschreibung, daneben gibt es Investitionszuschüsse – siehe [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich). In der Schweiz dominieren Einmalvergütungen, für große alpine Anlagen galt der Solarexpress – siehe [Freiflächen-PV in der Schweiz](/ratgeber/freiflaechen-pv-schweiz).",
         },
       ],
     },
@@ -310,7 +310,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Wer lieber baureife oder bezuschlagte Projekte erwirbt, statt selbst zu bieten, findet sie auf der [Projektbörse](/projektboerse). Für Investoren ist die Nutzung kostenfrei; eine Provision zahlen nur Verkäufer bei Abschluss. Mehr zur Einordnung der Rendite im Ratgeber [Solarpark-Investment](/wissen/ratgeber/solarpark-investment-rendite).",
+          text: "Wer lieber baureife oder bezuschlagte Projekte erwirbt, statt selbst zu bieten, findet sie auf der [Projektbörse](/projektboerse). Für Investoren ist die Nutzung kostenfrei; eine Provision zahlen nur Verkäufer bei Abschluss. Mehr zur Einordnung der Rendite im Ratgeber [Solarpark-Investment](/ratgeber/solarpark-investment-rendite).",
         },
       ],
     },
@@ -339,14 +339,14 @@ const artikel = {
     },
     {
       q: "Lohnt sich ein PPA mehr als die EEG-Förderung?",
-      a: `Das hängt vom Preis und vom Risiko ab. Solar-PPA liegen nach unseren Annahmen bei ${fmt(ERLOESE.ppaCt.min, 1)} bis ${fmt(ERLOESE.ppaCt.max, 1)} ct/kWh, der EEG-Zuschlag sichert eine Untergrenze für 20 Jahre. Viele Projekte kombinieren beides; der [Solarpark-Rechner](/de/rechner/solarpark) zeigt den Vergleich.`,
+      a: `Das hängt vom Preis und vom Risiko ab. Solar-PPA liegen nach unseren Annahmen bei ${fmt(ERLOESE.ppaCt.min, 1)} bis ${fmt(ERLOESE.ppaCt.max, 1)} ct/kWh, der EEG-Zuschlag sichert eine Untergrenze für 20 Jahre. Viele Projekte kombinieren beides; der [Solarpark-Rechner](/rechner/solarpark) zeigt den Vergleich.`,
     },
   ],
 
   passend: [
-    { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Solarpark-Genehmigung", text: "Der Bebauungsplan Schritt für Schritt." },
-    { href: "/wissen/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Wie Solar-Stromlieferverträge funktionieren." },
-    { href: "/wissen/ratgeber/solarpark-investment-rendite", titel: "Solarpark-Investment", text: "Rendite, Risiken und Kennzahlen." },
+    { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Solarpark-Genehmigung", text: "Der Bebauungsplan Schritt für Schritt." },
+    { href: "/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Wie Solar-Stromlieferverträge funktionieren." },
+    { href: "/ratgeber/solarpark-investment-rendite", titel: "Solarpark-Investment", text: "Rendite, Risiken und Kennzahlen." },
     { href: "/projektboerse", titel: "Projektbörse", text: "Projekte in allen Entwicklungsphasen finden." },
     { href: pfad("/marktdaten"), titel: "Marktdaten Solar", text: "Zuschlagswerte seit 2017 und Marktwert Solar mit Quellen." },
     { href: "/investoren", titel: "Solarprojekte kaufen", text: "Phasenmodell, Preise und Datenraum für Investoren." },

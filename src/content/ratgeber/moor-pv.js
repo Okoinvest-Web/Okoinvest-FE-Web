@@ -81,7 +81,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Für landwirtschaftliche Betriebe in Moorregionen – vor allem in der Norddeutschen Tiefebene und im Alpenvorland – ist das eine neue Option. Die klassische Nutzung als Acker oder intensives Grünland setzt Entwässerung voraus; nach der Wiedervernässung bleibt meist nur eine nasse Bewirtschaftung, etwa Paludikultur. Moor-PV kann dafür eine langfristige Einnahmequelle schaffen. Einen Überblick über alle Nutzungsformen im Moor und auf Wasser gibt der Ratgeber [Floating-PV](/wissen/ratgeber/floating-pv) für künstliche Gewässer.",
+          text: "Für landwirtschaftliche Betriebe in Moorregionen – vor allem in der Norddeutschen Tiefebene und im Alpenvorland – ist das eine neue Option. Die klassische Nutzung als Acker oder intensives Grünland setzt Entwässerung voraus; nach der Wiedervernässung bleibt meist nur eine nasse Bewirtschaftung, etwa Paludikultur. Moor-PV kann dafür eine langfristige Einnahmequelle schaffen. Einen Überblick über alle Nutzungsformen im Moor und auf Wasser gibt der Ratgeber [Floating-PV](/ratgeber/floating-pv) für künstliche Gewässer.",
         },
         {
           typ: "kennzahl",
@@ -151,7 +151,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Baurechtlich braucht Moor-PV wie jeder größere Solarpark in der Regel einen [Bebauungsplan](/wissen/lexikon#bebauungsplan). Moorflächen liegen zudem häufig in oder neben Schutzgebieten; Artenschutz und Landschaftsbild spielen eine große Rolle. Den Ablauf des Verfahrens erklärt der Ratgeber [Solarpark-Genehmigung](/wissen/ratgeber/solarpark-genehmigung-bebauungsplan), die naturschutzfachliche Seite der Ratgeber [Artenschutz im Solarpark](/wissen/ratgeber/solarpark-artenschutz-biodiversitaet).",
+          text: "Baurechtlich braucht Moor-PV wie jeder größere Solarpark in der Regel einen [Bebauungsplan](/wissen/lexikon#bebauungsplan). Moorflächen liegen zudem häufig in oder neben Schutzgebieten; Artenschutz und Landschaftsbild spielen eine große Rolle. Den Ablauf des Verfahrens erklärt der Ratgeber [Solarpark-Genehmigung](/ratgeber/solarpark-genehmigung-bebauungsplan), die naturschutzfachliche Seite der Ratgeber [Artenschutz im Solarpark](/ratgeber/solarpark-artenschutz-biodiversitaet).",
         },
       ],
     },
@@ -180,7 +180,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Ob sich ein Projekt trägt, hängt stark davon ab, ob das Untersegment mit höherem Höchstwert tatsächlich startet. Im regulären Wettbewerb mit günstigen Ackerparks haben Moor-PV-Projekte es schwer, weil Gründung, Wasserbau und Genehmigung mehr kosten. Ergänzende Mittel aus Förderprogrammen für Moorklimaschutz können helfen; welche Programme greifen, unterscheidet sich je Land. Die allgemeinen Regeln der Ausschreibung erklärt der Ratgeber [EEG-Ausschreibung für Freiflächen](/wissen/ratgeber/eeg-ausschreibung-freiflaeche).",
+          text: "Ob sich ein Projekt trägt, hängt stark davon ab, ob das Untersegment mit höherem Höchstwert tatsächlich startet. Im regulären Wettbewerb mit günstigen Ackerparks haben Moor-PV-Projekte es schwer, weil Gründung, Wasserbau und Genehmigung mehr kosten. Ergänzende Mittel aus Förderprogrammen für Moorklimaschutz können helfen; welche Programme greifen, unterscheidet sich je Land. Die allgemeinen Regeln der Ausschreibung erklärt der Ratgeber [EEG-Ausschreibung für Freiflächen](/ratgeber/eeg-ausschreibung-freiflaeche).",
         },
       ],
     },
@@ -250,11 +250,11 @@ const artikel = {
           typ: "checkliste",
           punkte: [
             "**Dauerhaftigkeit:** Eine Wiedervernässung ist praktisch kaum umkehrbar. Nach Ende der Pacht bleibt in der Regel eine nasse Fläche – mit anderem Verkehrswert als ein entwässertes Grünland.",
-            "**Rückbau regeln:** Wer baut die Anlage zurück, und wie wird der Boden danach hinterlassen? Eine Rückbausicherheit gehört in jeden Vertrag, siehe [Pachtvertrag Solarpark](/wissen/ratgeber/pachtvertrag-solarpark).",
+            "**Rückbau regeln:** Wer baut die Anlage zurück, und wie wird der Boden danach hinterlassen? Eine Rückbausicherheit gehört in jeden Vertrag, siehe [Pachtvertrag Solarpark](/ratgeber/pachtvertrag-solarpark).",
             "**Nachbarflächen:** Steigt der Wasserstand auch bei Nachbarn, braucht es deren Zustimmung oder eine Abgrenzung – sonst droht Streit.",
             "**Agrarförderung klären:** Ob und in welchem Umfang die Fläche für GAP-Zahlungen förderfähig bleibt, hängt von Nutzung und Landesregeln ab; siehe [GAP-Direktzahlungen](/wissen/lexikon#gap-direktzahlungen).",
-            "**Steuern prüfen:** Verpachtung und Nutzungsänderung können Folgen für Erbschaft- und Grundsteuer haben; siehe [Erbschaft- und Grundsteuer bei PV-Pacht](/wissen/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer).",
-            "**Grundbuch sichern:** Solarpark und Wasserstand werden über lange Zeit per Dienstbarkeit gesichert, siehe [Dienstbarkeit im Grundbuch](/wissen/ratgeber/dienstbarkeit-grundbuch-pv-pacht).",
+            "**Steuern prüfen:** Verpachtung und Nutzungsänderung können Folgen für Erbschaft- und Grundsteuer haben; siehe [Erbschaft- und Grundsteuer bei PV-Pacht](/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer).",
+            "**Grundbuch sichern:** Solarpark und Wasserstand werden über lange Zeit per Dienstbarkeit gesichert, siehe [Dienstbarkeit im Grundbuch](/ratgeber/dienstbarkeit-grundbuch-pv-pacht).",
           ],
         },
         {
@@ -282,12 +282,12 @@ const artikel = {
             "**Genehmigung:** Wasserrecht, Naturschutz und Bebauungsplan müssen zusammenpassen; Verfahren dauern oft länger als bei Ackerparks.",
             "**Betriebsrisiko:** Werden die Wasserstände nicht gehalten, kann der Förderanspruch gefährdet sein.",
             "**Datenlage:** Langzeiterfahrungen zu Ertrag, Setzungen und Treibhausgasbilanz fehlen noch.",
-            "**Netz:** Moorregionen liegen oft abseits großer Umspannwerke; die Kosten der Anbindung erklärt der Ratgeber [Netzanschluss für Solarparks](/wissen/ratgeber/netzanschluss-solarpark).",
+            "**Netz:** Moorregionen liegen oft abseits großer Umspannwerke; die Kosten der Anbindung erklärt der Ratgeber [Netzanschluss für Solarparks](/ratgeber/netzanschluss-solarpark).",
           ],
         },
         {
           typ: "p",
-          text: "In **Österreich** und der **Schweiz** gibt es nach unserem Recherchestand keine eigene Förderkategorie für Moor-PV. In der Schweiz stehen Moore von besonderer Schönheit und nationaler Bedeutung zudem unter dem Schutz der Bundesverfassung (Art. 78 Abs. 5 BV); Solaranlagen kommen dort nicht in Betracht. Für Flächen in Deutschland lohnt eine erste Einschätzung im [Flächencheck](/de/flaechencheck).",
+          text: "In **Österreich** und der **Schweiz** gibt es nach unserem Recherchestand keine eigene Förderkategorie für Moor-PV. In der Schweiz stehen Moore von besonderer Schönheit und nationaler Bedeutung zudem unter dem Schutz der Bundesverfassung (Art. 78 Abs. 5 BV); Solaranlagen kommen dort nicht in Betracht. Für Flächen in Deutschland lohnt eine erste Einschätzung im [Flächencheck](/flaechencheck).",
         },
       ],
     },
@@ -321,9 +321,9 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/wissen/ratgeber/floating-pv", titel: "Floating-PV", text: "Schwimmende Solarparks auf Baggerseen und Tagebauseen." },
-    { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Termine, Zuschläge und Flächenkulisse." },
-    { href: "/wissen/ratgeber/benachteiligte-gebiete-pv-freiflaeche", titel: "Benachteiligte Gebiete", text: "Die größte Kulisse für Solarparks auf Agrarland." },
+    { href: "/ratgeber/floating-pv", titel: "Floating-PV", text: "Schwimmende Solarparks auf Baggerseen und Tagebauseen." },
+    { href: "/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Termine, Zuschläge und Flächenkulisse." },
+    { href: "/ratgeber/benachteiligte-gebiete-pv-freiflaeche", titel: "Benachteiligte Gebiete", text: "Die größte Kulisse für Solarparks auf Agrarland." },
     { href: pfad("/landwirte"), titel: "Für Landwirte", text: "Verpachten, selbst investieren oder beteiligen." },
     { href: pfad("/flaeche-verpachten"), titel: "Fläche für Solarpark verpachten", text: "Pachtmodelle, Vertrag und Ablauf für Eigentümer." },
     { href: pfad("/rechner/pacht"), titel: "Pachtrechner", text: "Pacht über die Laufzeit berechnen." },

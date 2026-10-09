@@ -12,9 +12,12 @@ import { CheckCircle2, PencilLine, TriangleAlert } from "lucide-react";
 import ErfolgsHaken from "@/components/ui/ErfolgsHaken";
 import { signal } from "@/components/ui/motion";
 import { cn } from "@/components/ui/cn";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { meldungFuer } from "@/lib/sprache/meldungen";
 
 export function FormFehler({ children, dunkel = false, className }) {
   const ref = useRef(null);
+  const sprache = useSprache();
   const text = typeof children === "string" ? children : "";
   useEffect(() => {
     if (children) signal(ref.current, "schuetteln");
@@ -23,7 +26,7 @@ export function FormFehler({ children, dunkel = false, className }) {
   return (
     <div ref={ref} role="alert" className={cn("flex items-start gap-2.5 rounded-2xl px-4 py-3 text-[14px] leading-relaxed ring-1 ring-inset", dunkel ? "bg-danger-500/15 text-white ring-danger-300/40" : "bg-danger-50 text-danger-800 ring-danger-200", className)}>
       <TriangleAlert aria-hidden="true" className={cn("mt-0.5 h-4 w-4 shrink-0", dunkel ? "text-danger-300" : "text-danger-600")} />
-      <span className="min-w-0">{children}</span>
+      <span className="min-w-0">{text ? meldungFuer(text, sprache) : children}</span>
     </div>
   );
 }
@@ -59,7 +62,9 @@ export function ErfolgsAnsicht({ titel, text, dunkel = false, fokus = true, clas
  * abschnitte: [{ titel, schritt?, eintraege: [[label, wert], …] }]
  * onAendern(schritt): „Ändern“ springt zurück zum Schritt
  */
-export function Zusammenfassung({ titel = "Bitte prüfen Sie Ihre Angaben", text, abschnitte = [], onAendern, className }) {
+export function Zusammenfassung({ titel: titelProp, text, abschnitte = [], onAendern, className }) {
+  const en = useSprache() === "en";
+  const titel = titelProp === undefined ? (en ? "Please check your details" : "Bitte prüfen Sie Ihre Angaben") : titelProp;
   return (
     <section className={cn("min-w-0", className)} aria-label={titel}>
       {titel && <h3 className="font-display text-[17px] font-bold text-ink-900">{titel}</h3>}
@@ -70,8 +75,8 @@ export function Zusammenfassung({ titel = "Bitte prüfen Sie Ihre Angaben", text
             <div className="flex items-center justify-between gap-3">
               <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-ink-600">{a.titel}</p>
               {onAendern && a.schritt !== undefined && (
-                <button type="button" onClick={() => onAendern(a.schritt)} className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13.5px] font-semibold text-ov-700 hover:bg-white hover:text-ov-800" aria-label={`${a.titel} ändern`}>
-                  <PencilLine aria-hidden="true" className="h-3.5 w-3.5" /> Ändern
+                <button type="button" onClick={() => onAendern(a.schritt)} className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13.5px] font-semibold text-ov-700 hover:bg-white hover:text-ov-800" aria-label={en ? `Change ${a.titel}` : `${a.titel} ändern`}>
+                  <PencilLine aria-hidden="true" className="h-3.5 w-3.5" /> {en ? "Change" : "Ändern"}
                 </button>
               )}
             </div>

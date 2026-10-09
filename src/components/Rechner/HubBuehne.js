@@ -2,7 +2,13 @@
 // Alle Zahlen stammen aus Beispielrechnungen mit den Standardannahmen der Rechner.
 import { LineChart, MapPinned, HandCoins } from "lucide-react";
 import { PACHT } from "@/lib/invest/markt";
-import { fmt } from "@/lib/rechner/annahmen";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { formate } from "@/lib/sprache/zahlformat";
+
+const TEXTE = {
+  de: { rechner: "Solarpark-Renditerechner", beispiel: "Beispiel", leistung: "Leistung", irr: "Projekt-IRR", amort: "Amortisation", j: "J.", cf: "Kumulierter Cashflow · 30 Jahre", pacht: "Pachtrechner", acker: "Ackerpacht", solar: "Solarpacht (Mitte)", check: "Flächencheck", checkText: "Ampel, Anlagengröße, Pachtspanne" },
+  en: { rechner: "Solar park return calculator", beispiel: "Example", leistung: "Capacity", irr: "Project IRR", amort: "Payback", j: "yrs", cf: "Cumulative cash flow · 30 years", pacht: "Lease calculator", acker: "Arable lease", solar: "Solar lease (mid)", check: "Land check", checkText: "Traffic light, plant size, lease range" },
+};
 import { VorschauCashflow } from "./ToolVorschau";
 
 function Kennzahl({ label, wert, einheit, betont = false }) {
@@ -18,6 +24,10 @@ function Kennzahl({ label, wert, einheit, betont = false }) {
 }
 
 export default function HubBuehne({ park, cashflow }) {
+  const sprache = spracheDerAnfrage();
+  const t = TEXTE[sprache] || TEXTE.de;
+  const f = formate(sprache);
+  const { fmt } = f;
   const irr = park.projektIrr != null ? fmt(park.projektIrr * 100, 1) : "–";
   const amort = park.amortisation != null ? fmt(park.amortisation, 1) : "–";
   const maxPacht = PACHT.freiflaecheProHa.mittel;
@@ -32,8 +42,8 @@ export default function HubBuehne({ park, cashflow }) {
             <span className="h-2 w-2 rounded-full bg-[#ffbd2e]" />
             <span className="h-2 w-2 rounded-full bg-[#28c840]" />
           </span>
-          <span className="truncate text-[11.5px] font-medium text-ink-500">Solarpark-Renditerechner</span>
-          <span className="rounded-full bg-sun-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-sun-700">Beispiel</span>
+          <span className="truncate text-[11.5px] font-medium text-ink-500">{t.rechner}</span>
+          <span className="rounded-full bg-sun-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-sun-700">{t.beispiel}</span>
         </div>
         <div className="rounded-[1.15rem] bg-white p-4 ring-1 ring-ink-200/70 sm:p-5">
           <div className="flex items-center gap-3">
@@ -42,7 +52,7 @@ export default function HubBuehne({ park, cashflow }) {
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2 text-[12px]">
-                <span className="font-semibold text-ink-700">Leistung</span>
+                <span className="font-semibold text-ink-700">{t.leistung}</span>
                 <span className="ov-num font-bold text-ink-900">10 MWp</span>
               </div>
               <div className="relative mt-2 h-1.5 rounded-full bg-ink-100">
@@ -53,15 +63,15 @@ export default function HubBuehne({ park, cashflow }) {
           </div>
 
           <div className="mt-4 grid grid-cols-3 gap-2">
-            <Kennzahl label="Projekt-IRR" wert={irr} einheit="%" betont />
+            <Kennzahl label={t.irr} wert={irr} einheit="%" betont />
             <Kennzahl label="LCOE" wert={fmt(park.lcoeCt, 2)} einheit="ct" />
-            <Kennzahl label="Amortisation" wert={amort} einheit="J." />
+            <Kennzahl label={t.amort} wert={amort} einheit={t.j} />
           </div>
 
           <div className="mt-4 rounded-xl bg-sand-50/70 p-3 ring-1 ring-inset ring-ink-200/60">
             <div className="mb-1.5 flex items-baseline justify-between text-[11px] text-ink-500">
-              <span>Kumulierter Cashflow · 30 Jahre</span>
-              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full border-2 border-sun-600 bg-white" />Amortisation</span>
+              <span>{t.cf}</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full border-2 border-sun-600 bg-white" />{t.amort}</span>
             </div>
             <VorschauCashflow werte={cashflow} />
           </div>
@@ -72,17 +82,17 @@ export default function HubBuehne({ park, cashflow }) {
       <div className="absolute -bottom-10 -left-4 hidden w-[236px] rounded-2xl bg-white p-4 text-ink-900 shadow-e4 ring-1 ring-ink-200/70 sm:block lg:-left-10">
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-ov-50 text-ov-600"><HandCoins className="h-4 w-4" /></span>
-          <span className="text-[12.5px] font-bold">Pachtrechner</span>
+          <span className="text-[12.5px] font-bold">{t.pacht}</span>
         </div>
         <div className="mt-3 space-y-2">
           {[
-            { label: "Ackerpacht", wert: PACHT.ackerProHa, farbe: "bg-ink-300" },
-            { label: "Solarpacht (Mitte)", wert: PACHT.freiflaecheProHa.mittel, farbe: "bg-ov-500" },
+            { label: t.acker, wert: PACHT.ackerProHa, farbe: "bg-ink-300" },
+            { label: t.solar, wert: PACHT.freiflaecheProHa.mittel, farbe: "bg-ov-500" },
           ].map((r) => (
             <div key={r.label}>
               <div className="mb-1 flex justify-between text-[10.5px] text-ink-500">
                 <span>{r.label}</span>
-                <span className="ov-num font-bold text-ink-800">{fmt(r.wert)} €/ha</span>
+                <span className="ov-num font-bold text-ink-800">{f.eur(r.wert, "/ha")}</span>
               </div>
               <div className="h-1.5 rounded-full bg-ink-100">
                 <div className={`h-full rounded-full ${r.farbe}`} style={{ width: `${(r.wert / maxPacht) * 100}%` }} />
@@ -100,8 +110,8 @@ export default function HubBuehne({ park, cashflow }) {
           <span className="h-2 w-2 rounded-full bg-ov-400" />
         </span>
         <span>
-          <span className="flex items-center gap-1.5 text-[12.5px] font-bold"><MapPinned className="h-3.5 w-3.5 text-ov-600" />Flächencheck</span>
-          <span className="block text-[11px] text-ink-500">Ampel, Anlagengröße, Pachtspanne</span>
+          <span className="flex items-center gap-1.5 text-[12.5px] font-bold"><MapPinned className="h-3.5 w-3.5 text-ov-600" />{t.check}</span>
+          <span className="block text-[11px] text-ink-500">{t.checkText}</span>
         </span>
       </div>
     </div>

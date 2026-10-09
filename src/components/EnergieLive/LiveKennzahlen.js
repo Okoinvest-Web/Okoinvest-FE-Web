@@ -4,7 +4,14 @@ import { useMemo } from "react";
 import { ArrowDown, ArrowDownRight, ArrowUpRight, Leaf, Sun, Wind, Gauge, RefreshCw } from "lucide-react";
 import { LiveDot } from "@/components/ui/LiveTicker";
 import useLiveDaten from "./useLiveDaten";
-import { preisTage, zeitfenster, ct, gw, uhr, spanne, zahl } from "./berechnung";
+import { preisTage, zeitfenster, formate } from "./berechnung";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+
+/* Sprachmodell: feste Texte je Sprache */
+const TEXTE = {
+  de: { guenstig: "eher günstig", teuer: "eher teuer", mittel: "mittleres Niveau", stand: "Stand", alle5: "aktualisiert alle 5 Min.", jetzt: "Börsenstrompreis jetzt", dayAhead: "Day-Ahead, netto", fuerHeute: "für heute", nichtAbrufbar: "Der aktuelle Börsenpreis ist gerade nicht abrufbar. Die Anzeige aktualisiert sich automatisch.", tief: "Tagestief", hoch: "Tageshoch", um: (u) => `um ${u} Uhr`, avg: "Ø heute", negativ: (h) => `${h} h negativ`, jeKwh: "je kWh netto", ee: "Erneuerbare", ueber: "über 100 %: Überschuss", anteil: "Anteil am Verbrauch", nachts: "nachts keine Erzeugung", desVerbrauchs: (p) => `${p} % des Verbrauchs`, einspeisung: "Einspeisung jetzt", windSub: "an Land und auf See", verbrauch: "Verbrauch", netzlast: "Netzlast Deutschland", erzeugungStand: "Erzeugung: Stand", zumVerlauf: "Zum Tagesverlauf", null: "0 Uhr", vierundzwanzig: "24 Uhr", guenstigste: "Günstigste 3 h:", aktuellerPreis: "Aktueller Preis" },
+  en: { guenstig: "relatively cheap", teuer: "relatively expensive", mittel: "mid-range", stand: "As of", alle5: "updated every 5 min", jetzt: "Exchange power price now", dayAhead: "day-ahead, net", fuerHeute: "for today", nichtAbrufbar: "The current exchange price cannot be retrieved right now. The display updates automatically.", tief: "Daily low", hoch: "Daily high", um: (u) => `at ${u}`, avg: "Ø today", negativ: (h) => `${h} h negative`, jeKwh: "per kWh, net", ee: "Renewables", ueber: "above 100 %: surplus", anteil: "share of consumption", nachts: "no generation at night", desVerbrauchs: (p) => `${p} % of consumption`, einspeisung: "feed-in now", windSub: "onshore and offshore", verbrauch: "Consumption", netzlast: "Grid load in Germany", erzeugungStand: "Generation: as of", zumVerlauf: "To the daily profile", null: "00:00", vierundzwanzig: "24:00", guenstigste: "Cheapest 3 h:", aktuellerPreis: "Current price" },
+};
 
 /**
  * Live-Kennzahlen im dunklen Seitenkopf: Börsenpreis jetzt (Hero-Zahl) mit
@@ -12,6 +19,9 @@ import { preisTage, zeitfenster, ct, gw, uhr, spanne, zahl } from "./berechnung"
  */
 export default function LiveKennzahlen({ initial }) {
   const { daten, jetzt } = useLiveDaten(initial);
+  const sprache = useSprache();
+  const { ct, gw, uhr, spanne, zahl } = formate(sprache);
+  const w = TEXTE[sprache === "en" ? "en" : "de"];
   const tage = useMemo(() => preisTage(daten.preis, jetzt), [daten.preis, jetzt]);
   const e = daten.erzeugung || {};
   const heute = tage.heute;
@@ -25,7 +35,7 @@ export default function LiveKennzahlen({ initial }) {
   const lage = heute && aktuell && heute.max.eurMwh > heute.min.eurMwh
     ? (aktuell.eurMwh - heute.min.eurMwh) / (heute.max.eurMwh - heute.min.eurMwh)
     : null;
-  const einordnung = lage == null ? null : lage < 0.33 ? "eher günstig" : lage > 0.66 ? "eher teuer" : "mittleres Niveau";
+  const einordnung = lage == null ? null : lage < 0.33 ? w.guenstig : lage > 0.66 ? w.teuer : w.mittel;
 
   return (
     <div className="ov-hero-in mt-12 grid gap-4 lg:grid-cols-[1.25fr_1fr]" style={{ "--ov-delay": "300ms" }}>
@@ -36,16 +46,16 @@ export default function LiveKennzahlen({ initial }) {
             <LiveDot />
             Live
             <span className="font-normal normal-case tracking-normal text-white/60">
-              · Stand {daten.stand ? uhr(Date.parse(daten.stand)) : "–"} Uhr
+              · {w.stand} {daten.stand ? uhr(Date.parse(daten.stand)) : "–"}{sprache === "en" ? "" : " Uhr"}
             </span>
           </p>
           <p className="flex items-center gap-1.5 text-white/50">
             <RefreshCw aria-hidden="true" className="h-3.5 w-3.5" />
-            aktualisiert alle 5 Min.
+            {w.alle5}
           </p>
         </div>
 
-        <p className="mt-6 text-[15px] text-white/70">Börsenstrompreis jetzt</p>
+        <p className="mt-6 text-[15px] text-white/70">{w.jetzt}</p>
         {aktuell ? (
           <>
             <p className="mt-1 flex flex-wrap items-baseline gap-x-3 font-display font-extrabold leading-none tracking-tight text-white">
@@ -53,45 +63,45 @@ export default function LiveKennzahlen({ initial }) {
               <span className="text-[clamp(1.1rem,0.9rem+0.8vw,1.5rem)] font-bold text-white/70">ct/kWh</span>
             </p>
             <p className="mt-3 text-[14px] text-white/60">
-              {spanne(aktuell.t, aktuell.t + tage.schrittMs)} · Day-Ahead, netto
+              {spanne(aktuell.t, aktuell.t + tage.schrittMs)} · {w.dayAhead}
               {einordnung && (
                 <>
                   {" · "}
-                  <span className={lage < 0.33 ? "font-semibold text-ov-300" : lage > 0.66 ? "font-semibold text-sun-300" : "text-white/80"}>{einordnung}</span> für heute
+                  <span className={lage < 0.33 ? "font-semibold text-ov-300" : lage > 0.66 ? "font-semibold text-sun-300" : "text-white/80"}>{einordnung}</span> {w.fuerHeute}
                 </>
               )}
             </p>
           </>
         ) : (
           <p className="mt-2 max-w-md text-[16px] leading-relaxed text-white/75">
-            Der aktuelle Börsenpreis ist gerade nicht abrufbar. Die Anzeige aktualisiert sich automatisch.
+            {w.nichtAbrufbar}
           </p>
         )}
 
-        {heute && <Sparkline tag={heute} jetzt={jetzt} schrittMs={tage.schrittMs} fenster={fenster} aktuell={aktuell} />}
+        {heute && <Sparkline tag={heute} jetzt={jetzt} schrittMs={tage.schrittMs} fenster={fenster} aktuell={aktuell} w={w} ct={ct} spanne={spanne} />}
 
         {heute && (
           <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-white/10 pt-5">
             <div>
               <dt className="flex items-center gap-1.5 text-[12.5px] text-white/55">
                 <ArrowDownRight aria-hidden="true" className="h-3.5 w-3.5 text-ov-300" />
-                Tagestief
+                {w.tief}
               </dt>
               <dd className="mt-1 font-display text-[20px] font-extrabold text-white sm:text-[24px]">{ct(heute.min.eurMwh)} ct</dd>
-              <dd className="text-[12.5px] text-white/55">um {uhr(heute.min.t)} Uhr</dd>
+              <dd className="text-[12.5px] text-white/55">{w.um(uhr(heute.min.t))}</dd>
             </div>
             <div>
               <dt className="flex items-center gap-1.5 text-[12.5px] text-white/55">
                 <ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5 text-sun-300" />
-                Tageshoch
+                {w.hoch}
               </dt>
               <dd className="mt-1 font-display text-[20px] font-extrabold text-white sm:text-[24px]">{ct(heute.max.eurMwh)} ct</dd>
-              <dd className="text-[12.5px] text-white/55">um {uhr(heute.max.t)} Uhr</dd>
+              <dd className="text-[12.5px] text-white/55">{w.um(uhr(heute.max.t))}</dd>
             </div>
             <div>
-              <dt className="text-[12.5px] text-white/55">Ø heute</dt>
+              <dt className="text-[12.5px] text-white/55">{w.avg}</dt>
               <dd className="mt-1 font-display text-[20px] font-extrabold text-white sm:text-[24px]">{ct(heute.avg)} ct</dd>
-              <dd className="text-[12.5px] text-white/55">{heute.negativStunden > 0 ? `${zahl(heute.negativStunden, heute.negativStunden % 1 ? 2 : 0)} h negativ` : "je kWh netto"}</dd>
+              <dd className="text-[12.5px] text-white/55">{heute.negativStunden > 0 ? w.negativ(zahl(heute.negativStunden, heute.negativStunden % 1 ? 2 : 0)) : w.jeKwh}</dd>
             </div>
           </dl>
         )}
@@ -102,9 +112,9 @@ export default function LiveKennzahlen({ initial }) {
         <Kachel
           icon={Leaf}
           farbe="text-ov-300"
-          label="Erneuerbare"
+          label={w.ee}
           wert={eeAnteil != null ? `${eeAnteil} %` : "–"}
-          sub={eeAnteil != null && eeAnteil > 100 ? "über 100 %: Überschuss" : "Anteil am Verbrauch"}
+          sub={eeAnteil != null && eeAnteil > 100 ? w.ueber : w.anteil}
         >
           {eeAnteil != null && (
             <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
@@ -117,14 +127,14 @@ export default function LiveKennzahlen({ initial }) {
           farbe="text-sun-300"
           label="Solar"
           wert={e.solarMw != null ? `${gw(e.solarMw)} GW` : "–"}
-          sub={nachts ? "nachts keine Erzeugung" : e.solarAnteil != null ? `${Math.round(e.solarAnteil)} % des Verbrauchs` : "Einspeisung jetzt"}
+          sub={nachts ? w.nachts : e.solarAnteil != null ? w.desVerbrauchs(Math.round(e.solarAnteil)) : w.einspeisung}
         />
-        <Kachel icon={Wind} farbe="text-navy-200" label="Wind" wert={e.windMw != null ? `${gw(e.windMw)} GW` : "–"} sub="an Land und auf See" />
-        <Kachel icon={Gauge} farbe="text-white/80" label="Verbrauch" wert={e.lastMw != null ? `${gw(e.lastMw)} GW` : "–"} sub="Netzlast Deutschland" />
+        <Kachel icon={Wind} farbe="text-navy-200" label="Wind" wert={e.windMw != null ? `${gw(e.windMw)} GW` : "–"} sub={w.windSub} />
+        <Kachel icon={Gauge} farbe="text-white/80" label={w.verbrauch} wert={e.lastMw != null ? `${gw(e.lastMw)} GW` : "–"} sub={w.netzlast} />
         <p className="col-span-2 flex flex-wrap items-center justify-between gap-2 px-1 text-[12.5px] text-white/50">
-          <span>Erzeugung: Stand {e.zeitpunkt ? `${uhr(e.zeitpunkt)} Uhr` : "–"}</span>
+          <span>{w.erzeugungStand} {e.zeitpunkt ? `${uhr(e.zeitpunkt)}${sprache === "en" ? "" : " Uhr"}` : "–"}</span>
           <a href="#preisverlauf" className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-white/80 hover:text-white">
-            Zum Tagesverlauf
+            {w.zumVerlauf}
             <ArrowDown aria-hidden="true" className="h-3.5 w-3.5" />
           </a>
         </p>
@@ -148,7 +158,7 @@ function Kachel({ icon: Icon, farbe, label, wert, sub, children }) {
 }
 
 /** Tagesverlauf im Kleinformat (Deko, Werte stehen daneben und im Diagramm) */
-function Sparkline({ tag, jetzt, schrittMs, fenster, aktuell }) {
+function Sparkline({ tag, jetzt, schrittMs, fenster, aktuell, w, ct, spanne }) {
   const W = 600;
   const H = 84;
   const werte = tag.punkte.map((p) => p.eurMwh);
@@ -172,12 +182,12 @@ function Sparkline({ tag, jetzt, schrittMs, fenster, aktuell }) {
         {jx != null && <line x1={jx} x2={jx} y1="0" y2={H} stroke="#ffc53d" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />}
       </svg>
       <div className="relative mt-2 flex justify-between text-[11.5px] text-white/45">
-        <span>0 Uhr</span>
-        {fenster && <span className="text-ov-300">Günstigste 3 h: {spanne(fenster.start, fenster.ende)}</span>}
-        <span>24 Uhr</span>
+        <span>{w.null}</span>
+        {fenster && <span className="text-ov-300">{w.guenstigste} {spanne(fenster.start, fenster.ende)}</span>}
+        <span>{w.vierundzwanzig}</span>
       </div>
       {jx != null && aktuell && (
-        <span className="sr-only">Aktueller Preis {ct(aktuell.eurMwh)} ct/kWh</span>
+        <span className="sr-only">{w.aktuellerPreis} {ct(aktuell.eurMwh)} ct/kWh</span>
       )}
     </div>
   );

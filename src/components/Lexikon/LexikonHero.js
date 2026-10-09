@@ -8,6 +8,65 @@ import HeroSuche from "./HeroSuche";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
+// Sprachmodell: feste Texte des Heros (Server-Komponente, Sprache kommt von der Seite)
+const TEXTE = {
+  de: {
+    ratgeber: "Ratgeber",
+    lexikon: "Lexikon",
+    wissen: "Wissen",
+    stand: (s) => `Stand ${s} · laufend gepflegt`,
+    titel: (
+      <>
+        Lexikon: <span className="ov-text-gradient-light">Fachbegriffe</span> von A bis Z
+      </>
+    ),
+    lead: (
+      <>
+        Von Aufstellungsbeschluss bis Zuschlagswert: die Begriffe aus Pachtvertrag, Bebauungsplan, Netzanschluss, Ausschreibung und Projektkauf –{" "}
+        <span className="font-medium text-white">jeweils mit einer Definition in einem Satz</span>, einer Erklärung für Deutschland, Österreich und die
+        Schweiz und dem Weg zum passenden Rechner.
+      </>
+    ),
+    einstieg: "Zum Einstieg:",
+    nav: "Begriffe nach Anfangsbuchstabe",
+    jeBuchstabe: "Begriffe je Buchstabe",
+    gesamt: (n) => `${n} gesamt`,
+    aria: (l, n) => `${l}: ${n} ${n === 1 ? "Begriff" : "Begriffe"}`,
+    wenige: "wenige",
+    viele: "viele Begriffe",
+    fokus: "Begriff im Fokus",
+    lesen: "Ganze Erklärung lesen",
+  },
+  en: {
+    ratgeber: "Guides",
+    lexikon: "Glossary",
+    wissen: "Knowledge",
+    stand: (s) => `As of ${s} · continuously updated`,
+    titel: (
+      <>
+        Glossary: <span className="ov-text-gradient-light">technical terms</span> from A to Z
+      </>
+    ),
+    lead: (
+      <>
+        From the decision to draw up a development plan to the award value: the terms used in lease agreements, development plans, grid connections, tenders
+        and project acquisitions –{" "}
+        <span className="font-medium text-white">each with a one-sentence definition</span>, an explanation for Germany, Austria and Switzerland, and a
+        link to the right calculator. German terms are given in brackets, as you will find them in contracts and official documents.
+      </>
+    ),
+    einstieg: "Popular terms:",
+    nav: "Terms by initial letter",
+    jeBuchstabe: "Terms per letter",
+    gesamt: (n) => `${n} in total`,
+    aria: (l, n) => `${l}: ${n} ${n === 1 ? "term" : "terms"}`,
+    wenige: "few",
+    viele: "many terms",
+    fokus: "Term in focus",
+    lesen: "Read the full explanation",
+  },
+};
+
 /**
  * props:
  *  anzahl     Gesamtzahl Begriffe
@@ -17,7 +76,8 @@ const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
  *  beliebt    [{ id, begriff }]
  *  stand      Text, z. B. „September 2026“
  */
-export default function LexikonHero({ anzahl, proBuchstabe = {}, kennzahlen = [], fokus, beliebt = [], stand }) {
+export default function LexikonHero({ anzahl, proBuchstabe = {}, kennzahlen = [], fokus, beliebt = [], stand, sprache = "de" }) {
+  const t = TEXTE[sprache] || TEXTE.de;
   const max = Math.max(1, ...Object.values(proBuchstabe));
 
   return (
@@ -31,7 +91,7 @@ export default function LexikonHero({ anzahl, proBuchstabe = {}, kennzahlen = []
       </p>
 
       <div className="ov-container pb-20 pt-6 sm:pt-8 md:pb-28 md:pt-10">
-        <Breadcrumbs items={[{ name: "Ratgeber", href: "/wissen/ratgeber" }, { name: "Lexikon" }]} dark className="ov-hero-in mb-8 md:mb-12" />
+        <Breadcrumbs items={[{ name: t.ratgeber, href: "/ratgeber" }, { name: t.lexikon }]} dark className="ov-hero-in mb-8 md:mb-12" />
 
         <div className="grid items-center gap-y-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)] lg:gap-x-12 xl:gap-x-20">
           {/* ---------- Text ---------- */}
@@ -40,25 +100,23 @@ export default function LexikonHero({ anzahl, proBuchstabe = {}, kennzahlen = []
               className="ov-hero-in inline-flex max-w-full items-center gap-2.5 rounded-full bg-white/[0.06] py-1 pl-1 pr-3.5 text-[13px] text-white/85 ring-1 ring-inset ring-white/15"
               style={{ "--ov-delay": "40ms" }}
             >
-              <span className="shrink-0 rounded-full bg-ov-300 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-navy-950">Wissen</span>
-              <span className="min-w-0 truncate">Stand {stand} · laufend gepflegt</span>
+              <span className="shrink-0 rounded-full bg-ov-300 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-navy-950">{t.wissen}</span>
+              <span className="min-w-0 truncate">{t.stand(stand)}</span>
             </p>
 
             <h1 id="lexikon-titel" className="ov-h1 mt-6 text-balance md:mt-8">
-              <HeroTitel><>Lexikon: <span className="ov-text-gradient-light">Fachbegriffe</span> von A bis Z</></HeroTitel>
+              <HeroTitel>{t.titel}</HeroTitel>
             </h1>
 
             <p className="ov-lead ov-hero-in mt-5 text-pretty text-white/75 md:mt-6" style={{ "--ov-delay": "180ms" }}>
-              Von Aufstellungsbeschluss bis Zuschlagswert: die Begriffe aus Pachtvertrag, Bebauungsplan, Netzanschluss, Ausschreibung und Projektkauf –{" "}
-              <span className="font-medium text-white">jeweils mit einer Definition in einem Satz</span>, einer Erklärung für Deutschland, Österreich und
-              die Schweiz und dem Weg zum passenden Rechner.
+              {t.lead}
             </p>
 
             <div className="ov-hero-in mt-8 md:mt-10" style={{ "--ov-delay": "260ms" }}>
               <HeroSuche />
               {beliebt.length > 0 && (
                 <div className="mt-4 flex flex-wrap items-center gap-2 text-[13.5px]">
-                  <span className="mr-1 text-white/60">Zum Einstieg:</span>
+                  <span className="mr-1 text-white/60">{t.einstieg}</span>
                   {beliebt.map((b) => (
                     <a
                       key={b.id}
@@ -89,10 +147,10 @@ export default function LexikonHero({ anzahl, proBuchstabe = {}, kennzahlen = []
           <div className="ov-hero-in relative mx-auto w-full max-w-[560px] lg:mx-0 lg:max-w-none" style={{ "--ov-delay": "220ms" }}>
             <div aria-hidden="true" className="pointer-events-none absolute -inset-x-10 -inset-y-14 -z-10 rounded-full bg-[radial-gradient(closest-side,rgba(140,186,88,0.2),transparent_70%)] blur-2xl" />
 
-            <nav aria-label="Begriffe nach Anfangsbuchstabe" className="ov-glass rounded-[1.75rem] p-5 sm:p-6">
+            <nav aria-label={t.nav} className="ov-glass rounded-[1.75rem] p-5 sm:p-6">
               <div className="flex items-baseline justify-between gap-3">
-                <p className="text-[12.5px] font-semibold uppercase tracking-[0.12em] text-white/70">Begriffe je Buchstabe</p>
-                <p className="ov-num text-[12.5px] text-white/60">{anzahl} gesamt</p>
+                <p className="text-[12.5px] font-semibold uppercase tracking-[0.12em] text-white/70">{t.jeBuchstabe}</p>
+                <p className="ov-num text-[12.5px] text-white/60">{t.gesamt(anzahl)}</p>
               </div>
               <ul className="mt-4 grid grid-cols-7 gap-1.5 sm:gap-2">
                 {ALPHABET.map((l) => {
@@ -108,7 +166,7 @@ export default function LexikonHero({ anzahl, proBuchstabe = {}, kennzahlen = []
                     <li key={l}>
                       <a
                         href={`#buchstabe-${l}`}
-                        aria-label={`${l}: ${n} ${n === 1 ? "Begriff" : "Begriffe"}`}
+                        aria-label={t.aria(l, n)}
                         className="group relative flex aspect-square flex-col items-center justify-center rounded-xl ring-1 ring-inset ring-white/10 transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300 motion-reduce:transition-none"
                         style={{ backgroundColor: `rgba(140, 186, 88, ${staerke.toFixed(2)})` }}
                       >
@@ -120,19 +178,19 @@ export default function LexikonHero({ anzahl, proBuchstabe = {}, kennzahlen = []
                 })}
               </ul>
               <div className="mt-4 flex items-center gap-2 text-[11.5px] text-white/60" aria-hidden="true">
-                <span>wenige</span>
+                <span>{t.wenige}</span>
                 <span className="h-1.5 w-20 rounded-full bg-gradient-to-r from-ov-400/20 to-ov-400/60" />
-                <span>viele Begriffe</span>
+                <span>{t.viele}</span>
               </div>
             </nav>
 
             {fokus && (
               <div className="relative mt-4 rounded-[1.5rem] bg-white p-5 text-ink-900 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.7)] sm:p-6 lg:-ml-10 lg:mr-10">
-                <p className="ov-overline text-ov-700">Begriff im Fokus</p>
+                <p className="ov-overline text-ov-700">{t.fokus}</p>
                 <p className="mt-2 font-display text-[22px] font-extrabold tracking-tight">{fokus.begriff}</p>
                 <p className="mt-2 text-[15px] leading-relaxed text-ink-600">{fokus.kurz}</p>
                 <a href={`#${fokus.id}`} className="mt-4 inline-flex items-center gap-2 rounded text-[14px] font-semibold text-ov-700 hover:text-ov-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
-                  Ganze Erklärung lesen
+                  {t.lesen}
                   <ArrowDown aria-hidden="true" className="h-4 w-4" />
                 </a>
               </div>

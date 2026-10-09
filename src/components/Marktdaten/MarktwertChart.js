@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useBreite, Tooltip } from "@/components/Rechner/bausteine";
-import { fmt } from "@/lib/rechner/annahmen";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { useFormate } from "@/components/Sprache/useFormate";
 
 /**
  * Jahresmarktwert Spot (Base) vs. Jahresmarktwert Solar je Jahr als
@@ -18,6 +19,9 @@ const ACHSE = "#6b7486";
 const RASTER = "#eef0f4";
 
 export default function MarktwertChart({ daten }) {
+  const en = useSprache() === "en";
+  const f = useFormate();
+  const { fmt } = f;
   const [ref, breite] = useBreite(720);
   const [aktiv, setAktiv] = useState(null);
   const n = daten.length;
@@ -53,11 +57,11 @@ export default function MarktwertChart({ daten }) {
       <ul className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-ink-600">
         <li className="flex items-center gap-2">
           <span aria-hidden="true" className="h-3 w-3 rounded-[3px]" style={{ background: SPOT }} />
-          Jahresmarktwert Spot (Base)
+          {en ? "Annual market value, spot (base)" : "Jahresmarktwert Spot (Base)"}
         </li>
         <li className="flex items-center gap-2">
           <span aria-hidden="true" className="h-3 w-3 rounded-[3px]" style={{ background: SOLAR }} />
-          Jahresmarktwert Solar
+          {en ? "Annual market value, solar" : "Jahresmarktwert Solar"}
         </li>
       </ul>
       <div ref={ref} className="relative">
@@ -67,7 +71,11 @@ export default function MarktwertChart({ daten }) {
           viewBox={`0 0 ${breite} ${H}`}
           role="img"
           tabIndex={0}
-          aria-label={`Balkendiagramm: Jahresmarktwert Spot und Solar ${daten[0].jahr} bis ${daten[n - 1].jahr} in ct/kWh, zuletzt ${fmt(daten[n - 1].spot, 2)} und ${fmt(daten[n - 1].solar, 2)} ct/kWh, Capture Rate ${fmt(daten[n - 1].capture * 100)} Prozent. Mit Pfeiltasten durch die Jahre blättern.`}
+          aria-label={
+            en
+              ? `Bar chart: annual market value spot and solar ${daten[0].jahr} to ${daten[n - 1].jahr} in ct/kWh, most recently ${fmt(daten[n - 1].spot, 2)} and ${fmt(daten[n - 1].solar, 2)} ct/kWh, capture rate ${fmt(daten[n - 1].capture * 100)} percent. Use the arrow keys to move through the years.`
+              : `Balkendiagramm: Jahresmarktwert Spot und Solar ${daten[0].jahr} bis ${daten[n - 1].jahr} in ct/kWh, zuletzt ${fmt(daten[n - 1].spot, 2)} und ${fmt(daten[n - 1].solar, 2)} ct/kWh, Capture Rate ${fmt(daten[n - 1].capture * 100)} Prozent. Mit Pfeiltasten durch die Jahre blättern.`
+          }
           className="block touch-pan-y select-none rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2"
           onPointerMove={(e) => setzen(e.clientX, e.currentTarget)}
           onPointerDown={(e) => setzen(e.clientX, e.currentTarget)}
@@ -101,7 +109,7 @@ export default function MarktwertChart({ daten }) {
               </text>
               {/* Capture Rate erscheint nach den Balken – sie ist das Verhältnis der beiden */}
               <text x={x(i)} y={H - 12} textAnchor="middle" fontSize="12" fontWeight="700" fill="#151a24" className="ov-num ov-flaeche-ein" style={{ animationDelay: `${700 + i * 60}ms` }}>
-                {fmt(d.capture * 100)} %
+                {f.fmtPct(d.capture, 0)}
               </text>
             </g>
           ))}
@@ -110,18 +118,19 @@ export default function MarktwertChart({ daten }) {
           <Tooltip x={x(aktiv)} y={y(Math.max(a.spot, a.solar)) - 10} breite={breite}>
             <p className="font-semibold">{a.jahr}</p>
             <p>
-              Spot (Base): <strong className="ov-num">{fmt(a.spot, 2)} ct/kWh</strong>
+              {en ? "Spot (base):" : "Spot (Base):"} <strong className="ov-num">{fmt(a.spot, 2)} ct/kWh</strong>
             </p>
             <p>
               Solar: <strong className="ov-num">{fmt(a.solar, 2)} ct/kWh</strong>
             </p>
-            <p className="text-white/75">Capture Rate {fmt(a.capture * 100, 1)} %</p>
+            <p className="text-white/75">{en ? "Capture rate" : "Capture Rate"} {f.fmtPct(a.capture, 1)}</p>
           </Tooltip>
         )}
       </div>
       <figcaption className="mt-3 text-[12.5px] leading-relaxed text-ink-500">
-        Prozentwerte unter den Jahren: Capture Rate = Jahresmarktwert Solar ÷ Jahresmarktwert Spot. Quelle: Übertragungsnetzbetreiber
-        (netztransparenz.de), eigene Berechnung.
+        {en
+          ? "Percentages below the years: capture rate = annual market value solar ÷ annual market value spot. Source: transmission system operators (netztransparenz.de), own calculation."
+          : "Prozentwerte unter den Jahren: Capture Rate = Jahresmarktwert Solar ÷ Jahresmarktwert Spot. Quelle: Übertragungsnetzbetreiber (netztransparenz.de), eigene Berechnung."}
       </figcaption>
     </figure>
   );

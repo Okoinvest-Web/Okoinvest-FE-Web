@@ -3,11 +3,47 @@ import { Check, FileSignature, KeyRound, Lock, Search, UserPlus } from "lucide-r
 import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
 import { cn } from "@/components/ui/cn";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
 
-const OEFFENTLICH = ["Typ", "Leistung", "Phase", "Region", "Preisindikation"];
-const VERTRAULICH = ["Gemeinde", "Flurstücke", "Netzbetreiber", "Unterlagen"];
+const TEXTE = {
+  de: {
+    oeffentlich: ["Typ", "Leistung", "Phase", "Region", "Preisindikation"],
+    vertraulich: ["Gemeinde", "Flurstücke", "Netzbetreiber", "Unterlagen"],
+    sichtbar: " (sichtbar)",
+    gesperrt: " (gesperrt)",
+    schritte: [
+      { titel: "Registrieren & Suchprofil", text: "Kostenloses Investorenkonto mit Größe, Phasen, Ländern und Ticket. Passende Projekte zeigen wir zuerst.", aria: "Angaben im Suchprofil", chips: ["Größe", "Phasen", "Länder", "Ticket"], label: "Ihr Suchprofil" },
+      { titel: "Exposé prüfen", text: "Eckdaten, Phase, Netzanschluss und Preisindikation – anonym, ohne genaue Lage.", aria: "Sichtbarkeit im öffentlichen Teaser", label: "Sichtbar im Teaser" },
+      { titel: "NDA per Klick", text: "Vertraulichkeitsvereinbarung im Portal akzeptieren. Nach Freigabe öffnet sich der Datenraum.", aria: "Sichtbarkeit nach Freigabe", label: "Nach Freigabe sichtbar" },
+      { titel: "LOI & Abschluss", text: "Absichtserklärung digital abgeben, Due Diligence, Kaufvertrag – begleitet durch das Backoffice.", aria: "Weg zum Abschluss", chips: ["LOI", "Due Diligence", "Kaufvertrag"], label: "Bis zum Vertrag" },
+    ],
+    eyebrow: "Ablauf",
+    titel: "Vom Exposé zum Abschluss – alles im Portal",
+    lead: "Einheitlicher, nachvollziehbarer Prozess für beide Seiten. Jeder Schritt wird protokolliert.",
+    stufen: "Vertraulichkeit in Stufen:",
+    stufenText: " Öffentlich zeigen wir nur Region, Bundesland bzw. Kanton und Eckdaten. Gemeinde, Flurstücke, Netzbetreiber und Unterlagen sehen Investoren erst nach NDA und Freigabe des Datenraums.",
+  },
+  en: {
+    oeffentlich: ["Type", "Capacity", "Stage", "Region", "Price indication"],
+    vertraulich: ["Municipality", "Plots", "Grid operator", "Documents"],
+    sichtbar: " (visible)",
+    gesperrt: " (locked)",
+    schritte: [
+      { titel: "Register & search profile", text: "Free investor account with size, stages, countries and ticket. We show you suitable projects first.", aria: "Details in the search profile", chips: ["Size", "Stages", "Countries", "Ticket"], label: "Your search profile" },
+      { titel: "Review the exposé", text: "Key data, stage, grid connection and price indication – anonymous, without the exact location.", aria: "Visibility in the public teaser", label: "Visible in the teaser" },
+      { titel: "NDA in one click", text: "Accept the non-disclosure agreement in the portal. Once approved, the data room opens.", aria: "Visibility after approval", label: "Visible after approval" },
+      { titel: "LOI & closing", text: "Submit a letter of intent digitally, due diligence, purchase agreement – supported by our back office.", aria: "Path to closing", chips: ["LOI", "Due diligence", "Purchase agreement"], label: "Through to the contract" },
+    ],
+    eyebrow: "How it works",
+    titel: "From exposé to closing – all in the portal",
+    lead: "A uniform, traceable process for both sides. Every step is logged.",
+    stufen: "Confidentiality in stages:",
+    stufenText: " Publicly, we only show the region, federal state or canton and key data. Investors only see the municipality, plots, grid operator and documents after the NDA and approval of the data room.",
+  },
+};
 
-function Chip({ offen = true, dunkel = false, children }) {
+function Chip({ offen = true, dunkel = false, t, children }) {
   return (
     <li
       className={cn(
@@ -17,55 +53,48 @@ function Chip({ offen = true, dunkel = false, children }) {
     >
       {offen ? <Check aria-hidden="true" className="h-3 w-3" strokeWidth={3} /> : <Lock aria-hidden="true" className="h-3 w-3" />}
       {children}
-      <span className="sr-only">{offen ? " (sichtbar)" : " (gesperrt)"}</span>
+      <span className="sr-only">{offen ? t.sichtbar : t.gesperrt}</span>
     </li>
   );
 }
 
-const SCHRITTE = [
+const schritteFuer = (t) => [
   {
     icon: UserPlus,
-    titel: "Registrieren & Suchprofil",
-    text: "Kostenloses Investorenkonto mit Größe, Phasen, Ländern und Ticket. Passende Projekte zeigen wir zuerst.",
+    ...t.schritte[0],
     sicht: (
-      <ul className="flex flex-wrap gap-1.5" aria-label="Angaben im Suchprofil">
-        {["Größe", "Phasen", "Länder", "Ticket"].map((x) => <Chip key={x}>{x}</Chip>)}
+      <ul className="flex flex-wrap gap-1.5" aria-label={t.schritte[0].aria}>
+        {t.schritte[0].chips.map((x) => <Chip key={x} t={t}>{x}</Chip>)}
       </ul>
     ),
-    label: "Ihr Suchprofil",
   },
   {
     icon: Search,
-    titel: "Exposé prüfen",
-    text: "Eckdaten, Phase, Netzanschluss und Preisindikation – anonym, ohne genaue Lage.",
+    ...t.schritte[1],
     sicht: (
-      <ul className="flex flex-wrap gap-1.5" aria-label="Sichtbarkeit im öffentlichen Teaser">
-        {OEFFENTLICH.map((x) => <Chip key={x}>{x}</Chip>)}
-        {VERTRAULICH.map((x) => <Chip key={x} offen={false}>{x}</Chip>)}
+      <ul className="flex flex-wrap gap-1.5" aria-label={t.schritte[1].aria}>
+        {t.oeffentlich.map((x) => <Chip key={x} t={t}>{x}</Chip>)}
+        {t.vertraulich.map((x) => <Chip key={x} t={t} offen={false}>{x}</Chip>)}
       </ul>
     ),
-    label: "Sichtbar im Teaser",
   },
   {
     icon: KeyRound,
-    titel: "NDA per Klick",
-    text: "Vertraulichkeitsvereinbarung im Portal akzeptieren. Nach Freigabe öffnet sich der Datenraum.",
+    ...t.schritte[2],
     dunkel: true,
     sicht: (
-      <ul className="flex flex-wrap gap-1.5" aria-label="Sichtbarkeit nach Freigabe">
-        {OEFFENTLICH.map((x) => <Chip key={x} dunkel>{x}</Chip>)}
-        {VERTRAULICH.map((x) => <Chip key={x} dunkel>{x}</Chip>)}
+      <ul className="flex flex-wrap gap-1.5" aria-label={t.schritte[2].aria}>
+        {t.oeffentlich.map((x) => <Chip key={x} t={t} dunkel>{x}</Chip>)}
+        {t.vertraulich.map((x) => <Chip key={x} t={t} dunkel>{x}</Chip>)}
       </ul>
     ),
-    label: "Nach Freigabe sichtbar",
   },
   {
     icon: FileSignature,
-    titel: "LOI & Abschluss",
-    text: "Absichtserklärung digital abgeben, Due Diligence, Kaufvertrag – begleitet durch das Backoffice.",
+    ...t.schritte[3],
     sicht: (
-      <ol className="flex flex-wrap items-center gap-1.5 whitespace-nowrap text-[11.5px] font-semibold text-ink-700" aria-label="Weg zum Abschluss">
-        {["LOI", "Due Diligence", "Kaufvertrag"].map((x, i) => (
+      <ol className="flex flex-wrap items-center gap-1.5 whitespace-nowrap text-[11.5px] font-semibold text-ink-700" aria-label={t.schritte[3].aria}>
+        {t.schritte[3].chips.map((x, i) => (
           <li key={x} className="flex items-center gap-1.5">
             {i > 0 && <span aria-hidden="true" className="h-px w-3 bg-ink-300" />}
             <span className="rounded-full bg-white px-2 py-1 ring-1 ring-inset ring-ink-200">{x}</span>
@@ -73,18 +102,19 @@ const SCHRITTE = [
         ))}
       </ol>
     ),
-    label: "Bis zum Vertrag",
   },
 ];
 
 export default function Ablauf() {
+  const t = uebersetze(TEXTE, spracheDerAnfrage());
+  const SCHRITTE = schritteFuer(t);
   return (
     <section data-abschnitt="ablauf" aria-labelledby="ablauf-titel" className="bg-white py-20 md:py-32">
       <div className="ov-container">
         <div className="grid items-end gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)] lg:gap-16">
-          <SectionHeading eyebrow="Ablauf" title={<span id="ablauf-titel">Vom Exposé zum Abschluss – alles im Portal</span>} lead="Einheitlicher, nachvollziehbarer Prozess für beide Seiten. Jeder Schritt wird protokolliert." />
+          <SectionHeading eyebrow={t.eyebrow} title={<span id="ablauf-titel">{t.titel}</span>} lead={t.lead} />
           <p className="text-[15px] leading-relaxed text-ink-600 lg:pb-2">
-            <span className="font-semibold text-ink-900">Vertraulichkeit in Stufen:</span> Öffentlich zeigen wir nur Region, Bundesland bzw. Kanton und Eckdaten. Gemeinde, Flurstücke, Netzbetreiber und Unterlagen sehen Investoren erst nach NDA und Freigabe des Datenraums.
+            <span className="font-semibold text-ink-900">{t.stufen}</span>{t.stufenText}
           </p>
         </div>
 

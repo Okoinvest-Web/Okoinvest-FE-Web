@@ -81,7 +81,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Die Bundesebene regelt vor allem die Förderung über das Erneuerbaren-Ausbau-Gesetz ([EAG](/wissen/lexikon#eag)), das neue Elektrizitätswirtschaftsgesetz (ElWG) mit Netzzugang und Netzentgelten sowie das UVP-G. Mit dem Erneuerbaren-Ausbau-Beschleunigungsgesetz kommt ein weiterer Rahmen dazu, der die Länder zu Beschleunigungsgebieten verpflichtet. Wie ein Projekt vom ersten Flächengespräch bis zur Baureife läuft, zeigt unser [Prozess](/de/prozess) – der Unterschied zu Deutschland liegt vor allem in den ersten beiden Schritten.",
+          text: "Die Bundesebene regelt vor allem die Förderung über das Erneuerbaren-Ausbau-Gesetz ([EAG](/wissen/lexikon#eag)), das neue Elektrizitätswirtschaftsgesetz (ElWG) mit Netzzugang und Netzentgelten sowie das UVP-G. Mit dem Erneuerbaren-Ausbau-Beschleunigungsgesetz kommt ein weiterer Rahmen dazu, der die Länder zu Beschleunigungsgebieten verpflichtet. Wie ein Projekt vom ersten Flächengespräch bis zur Baureife läuft, zeigt unser [Prozess](/prozess) – der Unterschied zu Deutschland liegt vor allem in den ersten beiden Schritten.",
         },
         {
           typ: "kasten",
@@ -124,11 +124,11 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Für Flächeneigentümer ist die entscheidende Frage deshalb nicht nur „Ist die Fläche eben und sonnig?“, sondern: **Liegt sie in einer Zone, grenzt sie an eine Zone oder ist sie vorbelastet?** In Niederösterreich darf eine Fläche von höchstens 2 ha auch direkt an eine Zone angrenzend gewidmet werden. In der Steiermark dürfen Gemeinden außerhalb der Vorrangzonen nur kleinere Anlagen ausweisen. Im Burgenland ist außerhalb der Eignungszonen praktisch nichts möglich. Einen ersten Eindruck, ob Ihre Fläche grundsätzlich infrage kommt, gibt der [Flächencheck](/de/flaechencheck).",
+          text: "Für Flächeneigentümer ist die entscheidende Frage deshalb nicht nur „Ist die Fläche eben und sonnig?“, sondern: **Liegt sie in einer Zone, grenzt sie an eine Zone oder ist sie vorbelastet?** In Niederösterreich darf eine Fläche von höchstens 2 ha auch direkt an eine Zone angrenzend gewidmet werden. In der Steiermark dürfen Gemeinden außerhalb der Vorrangzonen nur kleinere Anlagen ausweisen. Im Burgenland ist außerhalb der Eignungszonen praktisch nichts möglich. Einen ersten Eindruck, ob Ihre Fläche grundsätzlich infrage kommt, gibt der [Flächencheck](/flaechencheck).",
         },
         {
           typ: "p",
-          text: "Die Widmung ist kein Rechtsanspruch. Die Gemeinde entscheidet im Gemeinderat, das Land prüft als Aufsichtsbehörde. Gute Chancen haben Projekte, die Bodenschutz, Landschaftsbild, Netzanschluss und Akzeptanz früh zusammendenken – etwa mit Biodiversitätsflächen, Beweidung oder einer Beteiligung der Bevölkerung über eine [Energiegemeinschaft](/de/energiegemeinschaften).",
+          text: "Die Widmung ist kein Rechtsanspruch. Die Gemeinde entscheidet im Gemeinderat, das Land prüft als Aufsichtsbehörde. Gute Chancen haben Projekte, die Bodenschutz, Landschaftsbild, Netzanschluss und Akzeptanz früh zusammendenken – etwa mit Biodiversitätsflächen, Beweidung oder einer Beteiligung der Bevölkerung über eine [Energiegemeinschaft](/energiegemeinschaften).",
         },
       ],
     },
@@ -179,7 +179,7 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: `**Für Solarparks ist die EAG-Marktprämie das zentrale Förderinstrument.** Sie wird für Anlagen über 10 kWp per Ausschreibung vergeben, gleicht die Differenz zwischen dem bezuschlagten anzulegenden Wert und dem Referenzmarktwert aus und läuft in der Regel 20 Jahre. Für 2026 sind vier Gebotstermine festgelegt – 17. März, 11. Juni, 24. September und 10. Dezember – mit jeweils ${fmt(EAG_VOLUMEN_KWP)} kWp Volumen und einem Höchstpreis von ${fmtCt(EAG_HOECHSTPREIS_CT, 2)}. Das Prinzip ähnelt der deutschen [EEG-Ausschreibung](/wissen/ratgeber/eeg-ausschreibung-freiflaeche) mit gleitender [Marktprämie](/wissen/lexikon#marktpraemie).`,
+          text: `**Für Solarparks ist die EAG-Marktprämie das zentrale Förderinstrument.** Sie wird für Anlagen über 10 kWp per Ausschreibung vergeben, gleicht die Differenz zwischen dem bezuschlagten anzulegenden Wert und dem Referenzmarktwert aus und läuft in der Regel 20 Jahre. Für 2026 sind vier Gebotstermine festgelegt – 17. März, 11. Juni, 24. September und 10. Dezember – mit jeweils ${fmt(EAG_VOLUMEN_KWP)} kWp Volumen und einem Höchstpreis von ${fmtCt(EAG_HOECHSTPREIS_CT, 2)}. Das Prinzip ähnelt der deutschen [EEG-Ausschreibung](/ratgeber/eeg-ausschreibung-freiflaeche) mit gleitender [Marktprämie](/wissen/lexikon#marktpraemie).`,
         },
         {
           typ: "kasten",
@@ -193,7 +193,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Ein Park mit ${fmt(BEISPIEL_MWP)} MWp erzeugt in Österreich bei rund ${fmt(AT.ertrag)} kWh/kWp etwa **${fmt(ERTRAG_KWH / 1e6, 1)} GWh** im ersten Jahr. Bietet der Projektierer ${fmtCt(GEBOT_CT)}, bleibt auf einer normalen Grünlandfläche nach Abschlag ein anzulegender Wert von **${fmtCt(NACH_ABSCHLAG_CT, 2)}**. In Jahren, in denen der Marktwert unter diesem Wert liegt, fehlen dem Projekt dadurch bis zu **${fmtEur(DIFF_EUR)}** pro Jahr gegenüber einer Anlage ohne Abschlag. Das erklärt, warum in Österreich viele Freiflächenprojekte als Agri-PV, auf Deponien oder vorbelasteten Flächen geplant oder ganz über [Stromlieferverträge (PPA)](/wissen/ratgeber/ppa-fuer-unternehmen) finanziert werden.`,
+          text: `Ein Park mit ${fmt(BEISPIEL_MWP)} MWp erzeugt in Österreich bei rund ${fmt(AT.ertrag)} kWh/kWp etwa **${fmt(ERTRAG_KWH / 1e6, 1)} GWh** im ersten Jahr. Bietet der Projektierer ${fmtCt(GEBOT_CT)}, bleibt auf einer normalen Grünlandfläche nach Abschlag ein anzulegender Wert von **${fmtCt(NACH_ABSCHLAG_CT, 2)}**. In Jahren, in denen der Marktwert unter diesem Wert liegt, fehlen dem Projekt dadurch bis zu **${fmtEur(DIFF_EUR)}** pro Jahr gegenüber einer Anlage ohne Abschlag. Das erklärt, warum in Österreich viele Freiflächenprojekte als Agri-PV, auf Deponien oder vorbelasteten Flächen geplant oder ganz über [Stromlieferverträge (PPA)](/ratgeber/ppa-fuer-unternehmen) finanziert werden.`,
         },
         {
           typ: "p",
@@ -227,11 +227,11 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: `**Die Pacht für Freiflächen-PV liegt im DACH-Raum aktuell meist zwischen ${fmtEur(PACHT.freiflaecheProHa.min)} und ${fmtEur(PACHT.freiflaecheProHa.max)} je Hektar und Jahr.** In Österreich drücken der Grünland-Abschlag und die kleineren zulässigen Flächen je Widmung eher auf die Obergrenze; auf Deponien, Schottergruben oder in Zonen mit guter Netzanbindung sind höhere Werte möglich. Für die ${fmt(FLAECHE_HA, 1)} ha unseres ${fmt(BEISPIEL_MWP)}-MWp-Beispiels ergäbe ein mittlerer Wert rund **${fmtEur(PACHT_MITTEL)}** pro Jahr. Details und Vertragsgestaltung erklären die Ratgeber [Solarpark-Pacht pro Hektar](/wissen/ratgeber/solarpark-pacht-pro-hektar) und [Pachtvertrag Solarpark](/wissen/ratgeber/pachtvertrag-solarpark).`,
+          text: `**Die Pacht für Freiflächen-PV liegt im DACH-Raum aktuell meist zwischen ${fmtEur(PACHT.freiflaecheProHa.min)} und ${fmtEur(PACHT.freiflaecheProHa.max)} je Hektar und Jahr.** In Österreich drücken der Grünland-Abschlag und die kleineren zulässigen Flächen je Widmung eher auf die Obergrenze; auf Deponien, Schottergruben oder in Zonen mit guter Netzanbindung sind höhere Werte möglich. Für die ${fmt(FLAECHE_HA, 1)} ha unseres ${fmt(BEISPIEL_MWP)}-MWp-Beispiels ergäbe ein mittlerer Wert rund **${fmtEur(PACHT_MITTEL)}** pro Jahr. Details und Vertragsgestaltung erklären die Ratgeber [Solarpark-Pacht pro Hektar](/ratgeber/solarpark-pacht-pro-hektar) und [Pachtvertrag Solarpark](/ratgeber/pachtvertrag-solarpark).`,
         },
         {
           typ: "p",
-          text: `Üblich sind Laufzeiten von ${fmt(PACHT.laufzeit)} Jahren mit Verlängerungsoptionen, eine Indexierung und eine Rückbauverpflichtung mit Sicherheit (Bankgarantie). In Österreich wird das Nutzungsrecht meist über einen Bestandvertrag und eine im Grundbuch eingetragene Dienstbarkeit gesichert. Steuerliche Fragen – etwa ob verpachtete Flächen weiter als land- und forstwirtschaftliches Vermögen gelten – sind in Österreich anders geregelt als in Deutschland und sollten mit einer Steuerberatung geklärt werden. Mit dem [Pachtrechner](/de/rechner/pacht) können Sie Fixpacht und Umsatzbeteiligung vergleichen.`,
+          text: `Üblich sind Laufzeiten von ${fmt(PACHT.laufzeit)} Jahren mit Verlängerungsoptionen, eine Indexierung und eine Rückbauverpflichtung mit Sicherheit (Bankgarantie). In Österreich wird das Nutzungsrecht meist über einen Bestandvertrag und eine im Grundbuch eingetragene Dienstbarkeit gesichert. Steuerliche Fragen – etwa ob verpachtete Flächen weiter als land- und forstwirtschaftliches Vermögen gelten – sind in Österreich anders geregelt als in Deutschland und sollten mit einer Steuerberatung geklärt werden. Mit dem [Pachtrechner](/rechner/pacht) können Sie Fixpacht und Umsatzbeteiligung vergleichen.`,
         },
       ],
     },
@@ -260,7 +260,7 @@ const artikel = {
         {
           typ: "ablauf",
           schritte: [
-            ["Fläche prüfen", "Zonenpläne des Landes, Bodengüte, Schutzgebiete, Hochwasserzonen und Abstand zum Umspannwerk klären – ein erster Schritt ist der [Flächencheck](/de/flaechencheck)."],
+            ["Fläche prüfen", "Zonenpläne des Landes, Bodengüte, Schutzgebiete, Hochwasserzonen und Abstand zum Umspannwerk klären – ein erster Schritt ist der [Flächencheck](/flaechencheck)."],
             ["Netz anfragen", "Netzzugangsanfrage beim Verteilernetzbetreiber stellen; Anschlusskonzept und Kosten schriftlich einholen."],
             ["Gemeinde gewinnen", "Projekt im Gemeinderat vorstellen, Widmungsverfahren anstoßen, Beteiligung (Energiegemeinschaft, Bürgerbeteiligung) anbieten."],
             ["Genehmigungen einholen", "Naturschutz- und ggf. elektrizitätsrechtliche Bewilligung, Wasser- und Forstrecht, Blendgutachten."],
@@ -298,7 +298,7 @@ const artikel = {
     },
     {
       q: "Lohnt sich Agri-PV in Österreich mehr als eine normale Freiflächenanlage?",
-      a: "Förderrechtlich oft ja, weil der 25-%-Abschlag bei der Marktprämie entfallen kann und der Investitionszuschuss einen Zuschlag vorsieht. Dem stehen höhere Baukosten gegenüber. Eine erste Einschätzung liefert der [Agri-PV-Rechner](/de/rechner/agri-pv), Details der Ratgeber [Agri-PV Wirtschaftlichkeit](/wissen/ratgeber/agri-pv-wirtschaftlichkeit).",
+      a: "Förderrechtlich oft ja, weil der 25-%-Abschlag bei der Marktprämie entfallen kann und der Investitionszuschuss einen Zuschlag vorsieht. Dem stehen höhere Baukosten gegenüber. Eine erste Einschätzung liefert der [Agri-PV-Rechner](/rechner/agri-pv), Details der Ratgeber [Agri-PV Wirtschaftlichkeit](/ratgeber/agri-pv-wirtschaftlichkeit).",
     },
     {
       q: "Was ist das EABG?",
@@ -306,14 +306,14 @@ const artikel = {
     },
     {
       q: "Wie viel Pacht bekomme ich in Österreich für einen Solarpark?",
-      a: `Als Orientierung gelten im DACH-Raum ${fmtEur(PACHT.freiflaecheProHa.min)} bis ${fmtEur(PACHT.freiflaecheProHa.max)} je Hektar und Jahr. Entscheidend sind Widmungsfähigkeit, Netzanschluss und Förderfähigkeit der Fläche. Mit dem [Pachtrechner](/de/rechner/pacht) können Sie Ihre Fläche durchrechnen.`,
+      a: `Als Orientierung gelten im DACH-Raum ${fmtEur(PACHT.freiflaecheProHa.min)} bis ${fmtEur(PACHT.freiflaecheProHa.max)} je Hektar und Jahr. Entscheidend sind Widmungsfähigkeit, Netzanschluss und Förderfähigkeit der Fläche. Mit dem [Pachtrechner](/rechner/pacht) können Sie Ihre Fläche durchrechnen.`,
     },
   ],
 
   passend: [
-    { href: "/wissen/ratgeber/freiflaechen-pv-schweiz", titel: "Freiflächen-PV in der Schweiz", text: "Raumplanung, Solarexpress und Einmalvergütung." },
-    { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Solarpark-Genehmigung in Deutschland", text: "Bebauungsplan, Privilegierung und Verfahrensschritte." },
-    { href: "/wissen/ratgeber/solarpark-pacht-pro-hektar", titel: "Solarpark-Pacht pro Hektar", text: "Was Flächeneigentümer realistisch erwarten können." },
+    { href: "/ratgeber/freiflaechen-pv-schweiz", titel: "Freiflächen-PV in der Schweiz", text: "Raumplanung, Solarexpress und Einmalvergütung." },
+    { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Solarpark-Genehmigung in Deutschland", text: "Bebauungsplan, Privilegierung und Verfahrensschritte." },
+    { href: "/ratgeber/solarpark-pacht-pro-hektar", titel: "Solarpark-Pacht pro Hektar", text: "Was Flächeneigentümer realistisch erwarten können." },
     { href: pfad("/flaeche-verpachten"), titel: "Fläche verpachten", text: "So läuft die Verpachtung für einen Solarpark ab." },
     { href: pfad("/regionen"), titel: "Solarpark nach Region", text: "Recht, Flächenkulisse und Pacht je Bundesland und Kanton." },
     { href: pfad("/freiflaeche"), titel: "Freiflächen-PV entwickeln", text: "Solarparks in DE, AT und CH – vom Acker bis zum Betrieb." },

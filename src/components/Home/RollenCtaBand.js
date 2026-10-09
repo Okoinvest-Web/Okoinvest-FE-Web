@@ -2,7 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 import CtaBand from "@/components/ui/CtaBand";
-import { GRUPPEN, ROLLE_EREIGNIS, ROLLE_SPEICHER } from "./zielgruppen";
+import { ROLLE_EREIGNIS, ROLLE_SPEICHER, gruppenFuer } from "./zielgruppen";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 
 /**
  * Abschluss der Startseite: greift die Zielgruppen-Wahl aus dem Hero auf
@@ -29,6 +30,6 @@ function lesen() {
 
 export default function RollenCtaBand() {
   const rolle = useSyncExternalStore(abonnieren, lesen, () => null);
-  const abschluss = GRUPPEN.find((g) => g.id === rolle)?.abschluss;
+  const abschluss = gruppenFuer(useSprache()).find((g) => g.id === rolle)?.abschluss;
   return <CtaBand {...(abschluss || {})} />;
 }

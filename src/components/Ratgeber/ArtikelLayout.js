@@ -10,6 +10,12 @@ import { artikelPfad } from "@/lib/ratgeber";
 import { abs } from "@/data/site";
 import { Autorenbox, WeitereArtikel } from "./Bausteine";
 import ArtikelHero from "./ArtikelHero";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+
+const TEXTE = {
+  de: { hilfreich: "Hilfreich? Teilen Sie den Artikel.", teilen: "Artikel teilen", weiter: "Weiterlesen", mehr: "Mehr aus dem Ratgeber" },
+  en: { hilfreich: "Found this helpful? Share the article.", teilen: "Share article", weiter: "Read on", mehr: "More from the guides" },
+};
 
 const TEILEN_NETZE = ["whatsapp", "linkedin", "facebook", "xing", "x", "telegram"];
 
@@ -28,7 +34,9 @@ const TEILEN_NETZE = ["whatsapp", "linkedin", "facebook", "xing", "x", "telegram
  *  cta       Props für <CtaBand/>
  */
 export default function ArtikelLayout({ artikel, toc, titel, kennzahl, badge, seitenCta, cta = {}, children }) {
-  const url = abs(artikelPfad(artikel.slug));
+  const sprache = spracheDerAnfrage();
+  const t = TEXTE[sprache] || TEXTE.de;
+  const url = abs(sprache === "en" ? `/en${artikelPfad(artikel.slug)}` : artikelPfad(artikel.slug));
   const teilenText = artikel.excerpt || artikel.description;
 
   return (
@@ -44,7 +52,7 @@ export default function ArtikelLayout({ artikel, toc, titel, kennzahl, badge, se
               {children}
               {seitenCta && <SeitenCta {...seitenCta} className="mt-14 lg:hidden" />}
               <div className="mt-14 flex flex-col gap-3 rounded-3xl border border-ink-200 p-5 sm:flex-row sm:items-center sm:justify-between md:p-6">
-                <p className="font-display text-[17px] font-bold text-ink-900">Hilfreich? Teilen Sie den Artikel.</p>
+                <p className="font-display text-[17px] font-bold text-ink-900">{t.hilfreich}</p>
                 <Teilen url={url} titel={artikel.title} text={teilenText} netze={TEILEN_NETZE} kampagne="ratgeber" kompakt />
               </div>
               <Autorenbox artikel={artikel} />
@@ -55,7 +63,7 @@ export default function ArtikelLayout({ artikel, toc, titel, kennzahl, badge, se
           <div className="hidden lg:block">
             <div className="sticky top-28 space-y-6">
               <TableOfContents items={toc} variant="desktop" />
-              <Teilen url={url} titel={artikel.title} text={teilenText} netze={["whatsapp", "linkedin", "facebook"]} kampagne="ratgeber" label="Artikel teilen" className="border-t border-ink-100 pt-5" />
+              <Teilen url={url} titel={artikel.title} text={teilenText} netze={["whatsapp", "linkedin", "facebook"]} kampagne="ratgeber" label={t.teilen} className="border-t border-ink-100 pt-5" />
               {seitenCta && <SeitenCta {...seitenCta} />}
             </div>
           </div>
@@ -63,7 +71,7 @@ export default function ArtikelLayout({ artikel, toc, titel, kennzahl, badge, se
       </Section>
 
       <Section tone="sand" space="md">
-        <SectionHeading eyebrow="Weiterlesen" title="Mehr aus dem Ratgeber" className="mb-10" />
+        <SectionHeading eyebrow={t.weiter} title={t.mehr} className="mb-10" />
         <WeitereArtikel slug={artikel.slug} />
       </Section>
 

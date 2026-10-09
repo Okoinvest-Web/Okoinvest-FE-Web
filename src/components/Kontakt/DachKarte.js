@@ -3,6 +3,7 @@
  * Bewusst ohne Google Maps: keine Datenübertragung an Dritte.
  * Projektion: einfache Plattkarte mit Breitenkorrektur – für die Orientierung genügt das.
  */
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 const X = (lon) => (lon - 5.5) * 60;
 const Y = (lat) => (55.2 - lat) * 90;
@@ -30,9 +31,10 @@ const TUERKHEIM = [10.64, 48.06];
 export default function DachKarte({ className }) {
   const [ox, oy] = [X(OSTERMIETHING[0]), Y(OSTERMIETHING[1])];
   const [tx, ty] = [X(TUERKHEIM[0]), Y(TUERKHEIM[1])];
+  const en = spracheDerAnfrage() === "en";
   return (
     <svg viewBox="-20 -20 740 880" className={className} role="img" aria-labelledby="dach-karte-t">
-      <title id="dach-karte-t">Stilisierte Karte von Deutschland, Österreich und der Schweiz mit dem Standort Ostermiething (Oberösterreich)</title>
+      <title id="dach-karte-t">{en ? "Stylised map of Germany, Austria and Switzerland showing the Ostermiething location (Upper Austria)" : "Stilisierte Karte von Deutschland, Österreich und der Schweiz mit dem Standort Ostermiething (Oberösterreich)"}</title>
       <defs>
         <pattern id="dach-punkte" width="14" height="14" patternUnits="userSpaceOnUse">
           <circle cx="2" cy="2" r="1.3" fill="#cde3b1" />
@@ -66,7 +68,7 @@ export default function DachKarte({ className }) {
         Türkheim
       </text>
       <text x={tx} y={ty + 56} textAnchor="middle" fontSize="15" fill="#5b6475" paintOrder="stroke" stroke="#f4f9ee" strokeWidth="6">
-        Muttergesellschaft
+        {en ? "Parent company" : "Muttergesellschaft"}
       </text>
 
       {/* Ostermiething – ÖkoInvest */}
@@ -76,7 +78,7 @@ export default function DachKarte({ className }) {
       <g transform={`translate(${ox + 4} ${oy - 132})`}>
         <rect width="256" height="68" rx="16" fill="#03122b" />
         <text x="18" y="29" fontSize="19" fontWeight="800" fill="#ffffff" fontFamily="var(--font-display, sans-serif)">ÖkoInvest GmbH</text>
-        <text x="18" y="52" fontSize="15" fill="#aed083">Ostermiething · Oberösterreich</text>
+        <text x="18" y="52" fontSize="15" fill="#aed083">{en ? "Ostermiething · Upper Austria" : "Ostermiething · Oberösterreich"}</text>
       </g>
     </svg>
   );

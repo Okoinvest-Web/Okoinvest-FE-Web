@@ -8,6 +8,7 @@ import { mitUebergang, bewegungReduziert } from "@/components/ui/motion";
 import { RahmenKontext, useKurzwerteMelden, useRahmen } from "./kontext";
 import ErgebnisWerkzeuge from "./Werkzeuge";
 import { LaenderSperre } from "./LaenderSperre";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 import "./rechner.css";
 
 /* ------------------------------------------------------------------
@@ -64,6 +65,7 @@ export function RechnerRahmen({ eingaben, ergebnis, unten, breiteLinks = 410, mi
  */
 export function MobilKurz({ werte }) {
   const rahmen = useRahmen();
+  const en = useSprache() === "en";
   useKurzwerteMelden(werte);
   const [bereit, setBereit] = useState(false);
   const [sichtbar, setSichtbar] = useState(false);
@@ -131,7 +133,7 @@ export function MobilKurz({ werte }) {
       )}
       style={{ marginBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div role="region" aria-label="Ergebnis in Kürze" className="mx-auto flex max-w-xl items-center gap-3 rounded-2xl bg-navy-950/95 py-2.5 pl-4 pr-2.5 text-white shadow-e5 ring-1 ring-white/10 backdrop-blur-xl">
+      <div role="region" aria-label={en ? "Result at a glance" : "Ergebnis in Kürze"} className="mx-auto flex max-w-xl items-center gap-3 rounded-2xl bg-navy-950/95 py-2.5 pl-4 pr-2.5 text-white shadow-e5 ring-1 ring-white/10 backdrop-blur-xl">
         <div className="min-w-0 flex-1">
           <KurzListe werte={werte} />
         </div>
@@ -139,7 +141,7 @@ export function MobilKurz({ werte }) {
           type="button"
           onClick={zumErgebnis}
           aria-controls={rahmen.ergebnisId}
-          aria-label="Zum vollständigen Ergebnis"
+          aria-label={en ? "Go to the full result" : "Zum vollständigen Ergebnis"}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ov-600 text-white transition-colors hover:bg-ov-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
         >
           <ArrowDown aria-hidden="true" className="h-5 w-5" />
@@ -164,7 +166,9 @@ function KurzListe({ werte }) {
 }
 
 /** Überschrift des Ergebnisbereichs mit Status-Plakette */
-export function ErgebnisKopf({ titel = "Ihr Ergebnis", plakette }) {
+export function ErgebnisKopf({ titel: eigenerTitel, plakette }) {
+  const en = useSprache() === "en";
+  const titel = eigenerTitel ?? (en ? "Your result" : "Ihr Ergebnis");
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <h2 className="font-display text-[22px] font-extrabold tracking-tight text-ink-900 md:text-[26px]">{titel}</h2>

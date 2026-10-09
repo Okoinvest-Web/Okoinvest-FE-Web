@@ -124,7 +124,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Pacht erhöht Ihr zu versteuerndes Einkommen voll. Bei ${fmt(BSP_HA)} ha und einer Pacht von ${fmt(PACHT.freiflaecheProHa.mittel)} € je Hektar kommen ${fmtEur(PACHT_BSP)} im Jahr hinzu – im Vergleich zur Ackerpacht von rund ${fmt(PACHT.ackerProHa)} € je Hektar ein spürbarer Sprung in der Progression. Einmalzahlungen wie ein Reservierungsentgelt oder eine Vorauszahlung für mehrere Jahre können unter bestimmten Voraussetzungen auf die Laufzeit verteilt werden (bei Überschussrechnung nach § 11 EStG, bei Bilanzierung über einen passiven Rechnungsabgrenzungsposten). Wie hoch die Pacht realistisch ist, zeigt der [Pachtrechner](/de/rechner/pacht).`,
+          text: `Die Pacht erhöht Ihr zu versteuerndes Einkommen voll. Bei ${fmt(BSP_HA)} ha und einer Pacht von ${fmt(PACHT.freiflaecheProHa.mittel)} € je Hektar kommen ${fmtEur(PACHT_BSP)} im Jahr hinzu – im Vergleich zur Ackerpacht von rund ${fmt(PACHT.ackerProHa)} € je Hektar ein spürbarer Sprung in der Progression. Einmalzahlungen wie ein Reservierungsentgelt oder eine Vorauszahlung für mehrere Jahre können unter bestimmten Voraussetzungen auf die Laufzeit verteilt werden (bei Überschussrechnung nach § 11 EStG, bei Bilanzierung über einen passiven Rechnungsabgrenzungsposten). Wie hoch die Pacht realistisch ist, zeigt der [Pachtrechner](/rechner/pacht).`,
         },
       ],
     },
@@ -237,7 +237,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Ein Rechenbeispiel: Ein Einzelunternehmer erzielt mit seiner Anlage ${fmtEur(GEWINN_BSP)} Gewinn. Nach Abzug des Freibetrags ergibt sich bei ${fmtPct(KOMMUNE.messzahl)} Steuermesszahl ein Messbetrag von ${fmtEur(MESSBETRAG)}, bei ${fmtPct(KOMMUNE.hebesatz, 0)} Hebesatz eine Gewerbesteuer von ${fmtEur(GEWST)}. Angerechnet werden bis zu ${fmtEur(ANRECHNUNG)} – vorausgesetzt, die tarifliche Einkommensteuer auf die gewerblichen Einkünfte reicht dafür aus. Bei höheren Hebesätzen bleibt ein Rest. Die Gewerbesteuer fließt nach § 29 GewStG zu ${fmtPct(KOMMUNE.gewerbesteuerStandort, 0)} an die Standortgemeinde – ein Argument, das im Gemeinderat zählt, wie die Seite für [Kommunen](/de/kommunen) zeigt.`,
+          text: `Ein Rechenbeispiel: Ein Einzelunternehmer erzielt mit seiner Anlage ${fmtEur(GEWINN_BSP)} Gewinn. Nach Abzug des Freibetrags ergibt sich bei ${fmtPct(KOMMUNE.messzahl)} Steuermesszahl ein Messbetrag von ${fmtEur(MESSBETRAG)}, bei ${fmtPct(KOMMUNE.hebesatz, 0)} Hebesatz eine Gewerbesteuer von ${fmtEur(GEWST)}. Angerechnet werden bis zu ${fmtEur(ANRECHNUNG)} – vorausgesetzt, die tarifliche Einkommensteuer auf die gewerblichen Einkünfte reicht dafür aus. Bei höheren Hebesätzen bleibt ein Rest. Die Gewerbesteuer fließt nach § 29 GewStG zu ${fmtPct(KOMMUNE.gewerbesteuerStandort, 0)} an die Standortgemeinde – ein Argument, das im Gemeinderat zählt, wie die Seite für [Kommunen](/kommunen) zeigt.`,
         },
         {
           typ: "p",
@@ -271,7 +271,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Die Details, die Rolle des Jahressteuergesetzes 2024 und die Sonderstellung der Agri-PV erklärt der Ratgeber [Erbschaft- und Grundsteuer bei PV-Pacht](/wissen/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer). Bei Agri-PV, die nach DIN SPEC 91434 und GAP-Recht als landwirtschaftliche Hauptnutzung anerkannt ist, sieht die Lage günstiger aus – siehe [Agri-PV Förderung und GAP](/wissen/ratgeber/agri-pv-foerderung-gap).",
+          text: "Die Details, die Rolle des Jahressteuergesetzes 2024 und die Sonderstellung der Agri-PV erklärt der Ratgeber [Erbschaft- und Grundsteuer bei PV-Pacht](/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer). Bei Agri-PV, die nach DIN SPEC 91434 und GAP-Recht als landwirtschaftliche Hauptnutzung anerkannt ist, sieht die Lage günstiger aus – siehe [Agri-PV Förderung und GAP](/ratgeber/agri-pv-foerderung-gap).",
         },
       ],
     },
@@ -286,7 +286,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Im [Agri-PV-Rechner](/de/rechner/agri-pv) können Sie die Wege Verpachten, Selbstinvestieren und Beteiligen vergleichen – mit einem Anteil von ${fmtPct(AGRI.beteiligungAnteil.min, 0)} bis ${fmtPct(AGRI.beteiligungAnteil.max, 0)}. Wie eine Genossenschaftslösung aussehen kann, zeigt die Seite [Genossenschaft](/de/genossenschaft), die Zielgruppenseite [Landwirte](/de/landwirte) fasst alle Wege zusammen.`,
+          text: `Im [Agri-PV-Rechner](/rechner/agri-pv) können Sie die Wege Verpachten, Selbstinvestieren und Beteiligen vergleichen – mit einem Anteil von ${fmtPct(AGRI.beteiligungAnteil.min, 0)} bis ${fmtPct(AGRI.beteiligungAnteil.max, 0)}. Wie eine Genossenschaftslösung aussehen kann, zeigt die Seite [Genossenschaft](/genossenschaft), die Zielgruppenseite [Landwirte](/landwirte) fasst alle Wege zusammen.`,
         },
       ],
     },
@@ -299,10 +299,10 @@ const artikel = {
           typ: "ablauf",
           schritte: [
             ["Ausgangslage klären", "Gehört die Fläche zum Betriebsvermögen? Welche Gewinnermittlungsart, welche Rechtsform, welcher Buchwert? Steht eine Hofübergabe an?"],
-            ["Wege vergleichen", "Pacht, eigene Anlage und Beteiligung nach Steuern gegenüberstellen – nicht nur die Bruttopacht. Den Pachtvertrag selbst erläutert der Ratgeber [Pachtvertrag Solarpark](/wissen/ratgeber/pachtvertrag-solarpark)."],
-            ["Umsatzsteuer im Vertrag regeln", "Option ja oder nein, Nettopacht oder Bruttopacht, Behandlung von Zusatzleistungen wie Pflege oder [Beweidung](/wissen/ratgeber/solarpark-beweidung-schafe)."],
+            ["Wege vergleichen", "Pacht, eigene Anlage und Beteiligung nach Steuern gegenüberstellen – nicht nur die Bruttopacht. Den Pachtvertrag selbst erläutert der Ratgeber [Pachtvertrag Solarpark](/ratgeber/pachtvertrag-solarpark)."],
+            ["Umsatzsteuer im Vertrag regeln", "Option ja oder nein, Nettopacht oder Bruttopacht, Behandlung von Zusatzleistungen wie Pflege oder [Beweidung](/ratgeber/solarpark-beweidung-schafe)."],
             ["Entnahme vermeiden", "Keine Erklärungen abgeben, die als Entnahme gewertet werden könnten; Nutzung nach Vertragsende dokumentieren."],
-            ["Grundbuch und Steuer zusammen denken", "Die [Dienstbarkeit](/wissen/ratgeber/dienstbarkeit-grundbuch-pv-pacht) belastet das Grundstück über die Laufzeit – auch das wirkt sich auf Bewertung und Übergabe aus."],
+            ["Grundbuch und Steuer zusammen denken", "Die [Dienstbarkeit](/ratgeber/dienstbarkeit-grundbuch-pv-pacht) belastet das Grundstück über die Laufzeit – auch das wirkt sich auf Bewertung und Übergabe aus."],
             ["Verbindliche Auskunft erwägen", "Bei großen Flächen oder unklarer Einordnung kann eine verbindliche Auskunft des Finanzamts Sicherheit schaffen."],
           ],
         },
@@ -344,13 +344,13 @@ const artikel = {
     },
     {
       q: "Welche Steuer wird bei PV-Pacht am häufigsten unterschätzt?",
-      a: "Meist die Erbschaft- und Schenkungsteuer, weil die Fläche aus dem land- und forstwirtschaftlichen Vermögen fallen kann. Mehr dazu unter [Erbschaft- und Grundsteuer bei PV-Pacht](/wissen/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer).",
+      a: "Meist die Erbschaft- und Schenkungsteuer, weil die Fläche aus dem land- und forstwirtschaftlichen Vermögen fallen kann. Mehr dazu unter [Erbschaft- und Grundsteuer bei PV-Pacht](/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer).",
     },
   ],
 
   passend: [
-    { href: "/wissen/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer", titel: "Erbschaft- und Grundsteuer bei PV-Pacht", text: "Warum die Fläche zu Grundvermögen werden kann." },
-    { href: "/wissen/ratgeber/agri-pv-wirtschaftlichkeit", titel: "Agri-PV Wirtschaftlichkeit", text: "Kosten, Erlöse und Rendite ehrlich gerechnet." },
+    { href: "/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer", titel: "Erbschaft- und Grundsteuer bei PV-Pacht", text: "Warum die Fläche zu Grundvermögen werden kann." },
+    { href: "/ratgeber/agri-pv-wirtschaftlichkeit", titel: "Agri-PV Wirtschaftlichkeit", text: "Kosten, Erlöse und Rendite ehrlich gerechnet." },
     { href: pfad("/rechner/agri-pv"), titel: "Agri-PV-Rechner", text: "Verpachten, investieren oder beteiligen im Vergleich." },
     { href: pfad("/landwirte"), titel: "Für Landwirte", text: "Alle Wege zu Solarpark und Agri-PV." },
   ],

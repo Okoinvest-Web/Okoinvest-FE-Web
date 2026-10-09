@@ -3,13 +3,64 @@ import { ArrowDown, Database } from "lucide-react";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import Button from "@/components/ui/Button";
 import { AUSSCHREIBUNGEN, LETZTE_AUSSCHREIBUNG, MAX_ZUSCHLAG, MIN_ZUSCHLAG } from "@/data/marktdaten";
-import { fmt } from "@/lib/rechner/annahmen";
 import { pfad } from "@/lib/land";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { formate } from "@/lib/sprache/zahlformat";
 
-const MONATE = ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."];
-const kurz = (iso) => `${MONATE[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
+// Sprachmodell: Texte des Heros (Server-Komponente, Sprache aus der Anfrage)
+const TEXTE = {
+  de: {
+    monate: ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."],
+    wissen: "Wissen",
+    marktdaten: "Marktdaten",
+    pill: (
+      <>
+        Marktdaten<span className="max-sm:hidden"> · Freiflächen-PV</span> DACH
+      </>
+    ),
+    titel: (
+      <>
+        Marktdaten Solar: <span className="ov-text-gradient-light">Zuschläge, Marktwerte, Trends</span>
+      </>
+    ),
+    lead: "Alle EEG-Ausschreibungen für Freiflächen-Solaranlagen seit 2017, der Marktwert von Solarstrom, die Capture Rate, negative Preise, Zubau und Pachtniveau – mit Quellen, als Diagramm und Tabelle.",
+    zuZuschlaegen: "Zu den Zuschlägen",
+    rendite: "Rendite rechnen",
+    stand: (s) => `Datenstand ${s} · Börsenpreis live weiter unten`,
+    kartenTitel: "Ø Zuschlagswert Solar je Gebotstermin",
+    zuletzt: (k, n, j) => `zuletzt, ${k} · ${n} Termine seit ${j}`,
+    ueber: (x) => `${x}-fach überzeichnet`,
+    aria: (a, b, c, d, e, f) => `Verlauf des mengengewichteten Zuschlagswerts von ${a} ct/kWh (${b}) bis ${c} ct/kWh (${d}); Tiefstwert ${e} ct, Höchstwert ${f} ct.`,
+    quelle: "Quelle: Bundesnetzagentur, mengengewichteter Durchschnitt je Gebotstermin",
+  },
+  en: {
+    monate: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    wissen: "Knowledge",
+    marktdaten: "Market data",
+    pill: (
+      <>
+        Market data<span className="max-sm:hidden"> · ground-mounted PV</span> DACH
+      </>
+    ),
+    titel: (
+      <>
+        Solar market data: <span className="ov-text-gradient-light">awards, market values, trends</span>
+      </>
+    ),
+    lead: "All EEG tenders for ground-mounted solar installations since 2017, the market value of solar power, the capture rate, negative prices, additions and lease levels – with sources, as charts and tables.",
+    zuZuschlaegen: "Go to the awards",
+    rendite: "Calculate returns",
+    stand: (s) => `Data as of ${s} · live exchange price further down`,
+    kartenTitel: "Ø solar award value per bidding date",
+    zuletzt: (k, n, j) => `latest, ${k} · ${n} bidding dates since ${j}`,
+    ueber: (x) => `${x}× oversubscribed`,
+    aria: (a, b, c, d, e, f) => `Development of the volume-weighted award value from ${a} ct/kWh (${b}) to ${c} ct/kWh (${d}); lowest ${e} ct, highest ${f} ct.`,
+    quelle: "Source: Bundesnetzagentur (Federal Network Agency), volume-weighted average per bidding date",
+  },
+};
 
 export default function Hero({ standText }) {
+  const t = TEXTE[spracheDerAnfrage()] || TEXTE.de;
   return (
     <section data-abschnitt="hero" aria-labelledby="hero-titel" className="ov-verlauf-nacht ov-noise relative isolate overflow-hidden text-white">
       <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10 opacity-50" />
@@ -17,29 +68,29 @@ export default function Hero({ standText }) {
       <div aria-hidden="true" className="pointer-events-none absolute -left-40 -top-40 -z-10 h-[520px] w-[520px] rounded-full bg-ov-500/20 blur-[120px]" />
 
       <div className="ov-container pb-24 pt-6 sm:pt-8 md:pb-32 md:pt-10">
-        <Breadcrumbs items={[{ name: "Wissen", href: "/wissen/ratgeber" }, { name: "Marktdaten" }]} dark className="ov-hero-in mb-8 md:mb-12" />
+        <Breadcrumbs items={[{ name: t.wissen, href: "/ratgeber" }, { name: t.marktdaten }]} dark className="ov-hero-in mb-8 md:mb-12" />
         <div className="grid items-center gap-y-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-x-14 xl:gap-x-20">
           <div className="max-w-[36rem]">
             <p className="ov-hero-in inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-3.5 py-1.5 text-[12.5px] font-semibold uppercase tracking-[0.14em] text-ov-300 ring-1 ring-inset ring-white/15" style={{ "--ov-delay": "40ms" }}>
               <Database aria-hidden="true" className="h-3.5 w-3.5" />
-              <span>Marktdaten<span className="max-sm:hidden"> · Freiflächen-PV</span> DACH</span>
+              <span>{t.pill}</span>
             </p>
             <h1 id="hero-titel" className="ov-h1 ov-hero-in mt-6 text-balance md:mt-8" style={{ "--ov-delay": "100ms" }}>
-              Marktdaten Solar: <span className="ov-text-gradient-light">Zuschläge, Marktwerte, Trends</span>
+              {t.titel}
             </h1>
             <p className="ov-lead ov-hero-in mt-5 text-pretty text-white/75 md:mt-6" style={{ "--ov-delay": "180ms" }}>
-              Alle EEG-Ausschreibungen für Freiflächen-Solaranlagen seit 2017, der Marktwert von Solarstrom, die Capture Rate, negative Preise, Zubau und Pachtniveau&nbsp;– mit Quellen, als Diagramm und Tabelle.
+              {t.lead}
             </p>
             <div className="ov-hero-in mt-8 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-10" style={{ "--ov-delay": "260ms" }}>
-              <Button href="#ausschreibungen" size="lg" icon={ArrowDown} className="w-full sm:w-auto">Zu den Zuschlägen</Button>
-              <Button href={pfad("/rechner/solarpark")} size="lg" variant="outlineLight" className="w-full sm:w-auto">Rendite rechnen</Button>
+              <Button href="#ausschreibungen" size="lg" icon={ArrowDown} className="w-full sm:w-auto">{t.zuZuschlaegen}</Button>
+              <Button href={pfad("/rechner/solarpark")} size="lg" variant="outlineLight" className="w-full sm:w-auto">{t.rendite}</Button>
             </div>
-            <p className="ov-hero-in mt-4 text-[13px] text-white/70" style={{ "--ov-delay": "300ms" }}>Datenstand {standText} · Börsenpreis live weiter unten</p>
+            <p className="ov-hero-in mt-4 text-[13px] text-white/70" style={{ "--ov-delay": "300ms" }}>{t.stand(standText)}</p>
           </div>
 
           <div className="ov-hero-in relative" style={{ "--ov-delay": "320ms" }}>
             <div aria-hidden="true" className="pointer-events-none absolute -inset-x-8 -inset-y-10 -z-10 rounded-full bg-[radial-gradient(closest-side,rgba(140,186,88,0.2),transparent_70%)] blur-2xl" />
-            <ZuschlagKarte />
+            <ZuschlagKarte t={t} />
           </div>
         </div>
       </div>
@@ -47,7 +98,9 @@ export default function Hero({ standText }) {
   );
 }
 
-function ZuschlagKarte() {
+function ZuschlagKarte({ t }) {
+  const { fmt } = formate(spracheDerAnfrage());
+  const kurz = (iso) => `${t.monate[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
   const d = AUSSCHREIBUNGEN;
   const W = 520;
   const H = 210;
@@ -67,17 +120,17 @@ function ZuschlagKarte() {
     <figure className="ov-glass rounded-[1.75rem] p-5 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)] sm:p-7">
       <figcaption className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-white/70">Ø Zuschlagswert Solar je Gebotstermin</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-white/70">{t.kartenTitel}</p>
           <p className="mt-2 flex items-baseline gap-2">
             <span className="ov-kpi-l">{fmt(L.mittel, 2)}</span>
             <span className="text-[15px] font-bold text-white/70">ct/kWh</span>
           </p>
-          <p className="mt-1 text-[13px] text-white/70">zuletzt, {kurz(L.datum)} · {d.length} Termine seit {d[0].datum.slice(0, 4)}</p>
+          <p className="mt-1 text-[13px] text-white/70">{t.zuletzt(kurz(L.datum), d.length, d[0].datum.slice(0, 4))}</p>
         </div>
-        <span className="rounded-full bg-ov-400/15 px-3 py-1 text-[12px] font-semibold text-ov-200 ring-1 ring-inset ring-ov-300/30">{fmt(L.gebote / L.volumen, 1)}-fach überzeichnet</span>
+        <span className="rounded-full bg-ov-400/15 px-3 py-1 text-[12px] font-semibold text-ov-200 ring-1 ring-inset ring-ov-300/30">{t.ueber(fmt(L.gebote / L.volumen, 1))}</span>
       </figcaption>
 
-      <svg viewBox={`0 0 ${W} ${H}`} className="mt-5 h-auto w-full" role="img" aria-label={`Verlauf des mengengewichteten Zuschlagswerts von ${fmt(d[0].mittel, 2)} ct/kWh (${kurz(d[0].datum)}) bis ${fmt(L.mittel, 2)} ct/kWh (${kurz(L.datum)}); Tiefstwert ${fmt(MIN_ZUSCHLAG.mittel, 2)} ct, Höchstwert ${fmt(MAX_ZUSCHLAG.mittel, 2)} ct.`}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="mt-5 h-auto w-full" role="img" aria-label={t.aria(fmt(d[0].mittel, 2), kurz(d[0].datum), fmt(L.mittel, 2), kurz(L.datum), fmt(MIN_ZUSCHLAG.mittel, 2), fmt(MAX_ZUSCHLAG.mittel, 2))}>
         <defs>
           <linearGradient id="md-hero-fl" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0" stopColor="#aed083" stopOpacity="0.4" />
@@ -111,7 +164,7 @@ function ZuschlagKarte() {
           );
         })}
       </svg>
-      <p className="mt-3 text-[12px] text-white/60">Quelle: Bundesnetzagentur, mengengewichteter Durchschnitt je Gebotstermin</p>
+      <p className="mt-3 text-[12px] text-white/60">{t.quelle}</p>
     </figure>
   );
 }

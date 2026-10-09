@@ -1,3 +1,6 @@
+import T from "@/components/Sprache/T";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+
 /**
  * Schematischer Tagesverlauf: Solarerzeugung, Börsenpreis und Fahrweise eines
  * Batteriespeichers (laden mittags, entladen morgens und abends). Illustration ohne
@@ -10,10 +13,10 @@
 export function TagesprofilLegende({ className = "" }) {
   return (
     <ul className={`flex flex-wrap items-center gap-x-5 gap-y-2 text-[12.5px] text-white/75 ${className}`}>
-      <li className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-[3px] w-5 rounded-full bg-ov-300" /> Börsenpreis</li>
-      <li className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-[3px] bg-sun-300/80" /> Solarerzeugung</li>
-      <li className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-[3px] bg-navy-400" /> Speicher lädt</li>
-      <li className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-[3px] bg-ov-500" /> Speicher entlädt</li>
+      <li className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-[3px] w-5 rounded-full bg-ov-300" /> <T de="Börsenpreis" en="Exchange price" /></li>
+      <li className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-[3px] bg-sun-300/80" /> <T de="Solarerzeugung" en="Solar generation" /></li>
+      <li className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-[3px] bg-navy-400" /> <T de="Speicher lädt" en="Storage charging" /></li>
+      <li className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-[3px] bg-ov-500" /> <T de="Speicher entlädt" en="Storage discharging" /></li>
     </ul>
   );
 }
@@ -39,7 +42,7 @@ export default function TagesprofilGrafik({ legende = true }) {
 
   return (
     <figure>
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Schema: Der Speicher lädt mittags bei hoher Solarerzeugung und niedrigen Preisen und entlädt morgens und abends bei hohen Preisen.">
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={spracheDerAnfrage() === "en" ? "Schematic: the storage system charges at midday when solar generation is high and prices are low, and discharges in the morning and evening when prices are high." : "Schema: Der Speicher lädt mittags bei hoher Solarerzeugung und niedrigen Preisen und entlädt morgens und abends bei hohen Preisen."}>
         <defs>
           <linearGradient id="sp-solar" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor="#ffd873" stopOpacity="0.7" />
@@ -57,8 +60,8 @@ export default function TagesprofilGrafik({ legende = true }) {
         {/* Zeitfenster hinterlegt */}
         <rect x={x(11)} y={P.t - 22} width={x(15) - x(11)} height={mitte + balkenH + 8 - P.t + 22} rx="10" fill="#4a7cbd" fillOpacity="0.1" />
         <rect x={x(18)} y={P.t - 22} width={x(21) - x(18)} height={mitte + balkenH + 8 - P.t + 22} rx="10" fill="#8cba58" fillOpacity="0.1" />
-        <text x={(x(11) + x(15)) / 2} y={P.t - 6} textAnchor="middle" fill="#b2cbe9" fontSize="12" fontWeight="600">Mittagstief · laden</text>
-        <text x={(x(18) + x(21)) / 2} y={P.t - 6} textAnchor="middle" fill="#cde3b1" fontSize="12" fontWeight="600">Abendspitze · entladen</text>
+        <text x={(x(11) + x(15)) / 2} y={P.t - 6} textAnchor="middle" fill="#b2cbe9" fontSize="12" fontWeight="600"><T de="Mittagstief · laden" en="Midday low · charge" /></text>
+        <text x={(x(18) + x(21)) / 2} y={P.t - 6} textAnchor="middle" fill="#cde3b1" fontSize="12" fontWeight="600"><T de="Abendspitze · entladen" en="Evening peak · discharge" /></text>
 
         {[0, 6, 12, 18, 24].map((h) => (
           <g key={h}>

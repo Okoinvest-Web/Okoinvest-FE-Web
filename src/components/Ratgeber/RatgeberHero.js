@@ -2,14 +2,60 @@
 // mit den drei empfohlenen Artikeln und dem Themenmix (echte Artikelzahlen).
 import Image from "next/image";
 import HeroTitel from "@/components/Unternehmen/HeroTitel";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowRight, ArrowUpRight, Clock } from "lucide-react";
 
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import { cn } from "@/components/ui/cn";
-import { artikelPfad, datumLang } from "@/lib/ratgeber";
+import { artikelPfad, datumLang, kategorieName } from "@/lib/ratgeber";
 import HeroSuche from "./HeroSuche";
 import { TON, thema } from "./themen";
+
+// Sprachmodell: feste Texte des Heros (Server-Komponente, Sprache kommt von der Seite)
+const TEXTE = {
+  de: {
+    ratgeber: "Ratgeber",
+    stand: "Stand",
+    zuletzt: "zuletzt aktualisiert",
+    titel: (
+      <>
+        Wissen für <span className="ov-text-gradient-light">Fläche, Projekt und Kapital.</span>
+      </>
+    ),
+    lead: (
+      <>
+        Was bringt eine Fläche an Pacht, wie läuft ein Bebauungsplan, was ist ein Projekt in welcher Phase wert und wie funktionieren PPA und
+        Energiegemeinschaften? <span className="font-medium text-white">Fachartikel für Deutschland, Österreich und die Schweiz</span> – mit Quellen,
+        Rechenbeispielen und ehrlichen Grenzen.
+      </>
+    ),
+    anfang: "Hier fangen die meisten an",
+    lesezeit: (m) => `${m} Min. Lesezeit`,
+    mix: "Themenmix",
+    artikel: (n) => `${n} Artikel`,
+  },
+  en: {
+    ratgeber: "Guides",
+    stand: "As of",
+    zuletzt: "last updated",
+    titel: (
+      <>
+        Knowledge for <span className="ov-text-gradient-light">land, projects and capital.</span>
+      </>
+    ),
+    lead: (
+      <>
+        What lease can land earn, how does a development plan work, what is a project worth in which phase, and how do PPAs and energy
+        communities work? <span className="font-medium text-white">Specialist articles for Germany, Austria and Switzerland</span> – with sources,
+        worked examples and honest limits. Articles marked “in German” have not yet been translated.
+      </>
+    ),
+    anfang: "Where most readers start",
+    lesezeit: (m) => `${m} min read`,
+    mix: "Topic mix",
+    artikel: (n) => `${n} articles`,
+  },
+};
 
 /**
  * props:
@@ -19,7 +65,8 @@ import { TON, thema } from "./themen";
  *  stand      Text, z. B. „September 2026“
  *  aktualisiert ISO-Datum des zuletzt aktualisierten Artikels
  */
-export default function RatgeberHero({ empfohlen = [], themen = [], kennzahlen = [], stand, aktualisiert }) {
+export default function RatgeberHero({ empfohlen = [], themen = [], kennzahlen = [], stand, aktualisiert, sprache = "de" }) {
+  const t = TEXTE[sprache] || TEXTE.de;
   const [titel, ...weitere] = empfohlen;
   const gesamt = themen.reduce((s, t) => s + t.anzahl, 0) || 1;
 
@@ -31,7 +78,7 @@ export default function RatgeberHero({ empfohlen = [], themen = [], kennzahlen =
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-b from-transparent to-navy-950/60" />
 
       <div className="ov-container pb-20 pt-6 sm:pt-8 md:pb-28 md:pt-10">
-        <Breadcrumbs items={[{ name: "Ratgeber" }]} dark className="ov-hero-in mb-8 md:mb-12" />
+        <Breadcrumbs items={[{ name: t.ratgeber }]} dark className="ov-hero-in mb-8 md:mb-12" />
 
         <div className="grid items-center gap-y-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-x-12 xl:gap-x-20">
           {/* ---------- Text ---------- */}
@@ -40,20 +87,18 @@ export default function RatgeberHero({ empfohlen = [], themen = [], kennzahlen =
               className="ov-hero-in inline-flex max-w-full items-center gap-2.5 rounded-full bg-white/[0.06] py-1 pl-1 pr-3.5 text-[13px] text-white/85 ring-1 ring-inset ring-white/15"
               style={{ "--ov-delay": "40ms" }}
             >
-              <span className="shrink-0 rounded-full bg-ov-300 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-navy-950">Stand</span>
+              <span className="shrink-0 rounded-full bg-ov-300 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-navy-950">{t.stand}</span>
               <span className="min-w-0 truncate">
-                {stand} · zuletzt aktualisiert <time dateTime={aktualisiert}>{datumLang(aktualisiert)}</time>
+                {stand} · {t.zuletzt} <time dateTime={aktualisiert}>{datumLang(aktualisiert, sprache)}</time>
               </span>
             </p>
 
             <h1 id="ratgeber-titel" className="ov-h1 mt-6 text-balance md:mt-8">
-              <HeroTitel><>Wissen für <span className="ov-text-gradient-light">Fläche, Projekt und Kapital.</span></></HeroTitel>
+              <HeroTitel>{t.titel}</HeroTitel>
             </h1>
 
             <p className="ov-lead ov-hero-in mt-5 text-pretty text-white/75 md:mt-6" style={{ "--ov-delay": "180ms" }}>
-              Was bringt eine Fläche an Pacht, wie läuft ein Bebauungsplan, was ist ein Projekt in welcher Phase wert und wie funktionieren PPA und
-              Energiegemeinschaften? <span className="font-medium text-white">Fachartikel für Deutschland, Österreich und die Schweiz</span> – mit
-              Quellen, Rechenbeispielen und ehrlichen Grenzen.
+              {t.lead}
             </p>
 
             <div className="ov-hero-in mt-8 md:mt-10" style={{ "--ov-delay": "260ms" }}>
@@ -80,7 +125,7 @@ export default function RatgeberHero({ empfohlen = [], themen = [], kennzahlen =
 
               <p className="mb-4 flex items-center gap-3 text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-300">
                 <span aria-hidden="true" className="h-px w-8 bg-ov-300/60" />
-                Hier fangen die meisten an
+                {t.anfang}
               </p>
 
               <div className="relative">
@@ -112,11 +157,11 @@ export default function RatgeberHero({ empfohlen = [], themen = [], kennzahlen =
                     />
                     <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-navy-950/55 via-transparent to-transparent" />
                     <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-[12px] font-semibold text-ink-800 shadow-sm">
-                      {titel.kategorie}
+                      {titel.kategorieLabel || titel.kategorie}
                     </span>
                     <span className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-navy-950/70 px-3 py-1 text-[12px] font-medium text-white backdrop-blur">
                       <Clock aria-hidden="true" className="h-3.5 w-3.5" />
-                      {titel.lesezeit} Min. Lesezeit
+                      {t.lesezeit(titel.lesezeit)}
                     </span>
                   </div>
                   <div className="flex items-start gap-4 p-5 sm:p-6">
@@ -148,7 +193,7 @@ export default function RatgeberHero({ empfohlen = [], themen = [], kennzahlen =
                           <Image src={a.bild} alt="" fill sizes="56px" className="object-cover" />
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ov-300">{a.kategorie}</span>
+                          <span className="block text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ov-300">{a.kategorieLabel || a.kategorie}</span>
                           <span className="mt-0.5 block text-[14.5px] font-semibold leading-snug text-white">{a.kurzTitel || a.title}</span>
                         </span>
                         <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0 text-white/50 transition-transform group-hover:translate-x-0.5 group-hover:text-white motion-reduce:transition-none" />
@@ -162,20 +207,20 @@ export default function RatgeberHero({ empfohlen = [], themen = [], kennzahlen =
               {themen.length > 0 && (
                 <figure className="ov-glass mt-4 rounded-2xl p-4 sm:p-5">
                   <figcaption className="flex items-baseline justify-between gap-3 text-[12.5px]">
-                    <span className="font-semibold uppercase tracking-[0.12em] text-white/70">Themenmix</span>
-                    <span className="ov-num text-white/60">{gesamt} Artikel</span>
+                    <span className="font-semibold uppercase tracking-[0.12em] text-white/70">{t.mix}</span>
+                    <span className="ov-num text-white/60">{t.artikel(gesamt)}</span>
                   </figcaption>
                   <div className="mt-3 flex h-2.5 gap-1 overflow-hidden rounded-full" aria-hidden="true">
-                    {themen.map((t) => (
-                      <span key={t.name} className={cn("h-full rounded-full", TON[thema(t.name).ton].balken)} style={{ width: `${(t.anzahl / gesamt) * 100}%` }} />
+                    {themen.map((th) => (
+                      <span key={th.name} className={cn("h-full rounded-full", TON[thema(th.name).ton].balken)} style={{ width: `${(th.anzahl / gesamt) * 100}%` }} />
                     ))}
                   </div>
                   <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12.5px] text-white/75 sm:grid-cols-3">
-                    {themen.map((t) => (
-                      <li key={t.name} className="flex min-w-0 items-center gap-2">
-                        <span aria-hidden="true" className={cn("h-2 w-2 shrink-0 rounded-full", TON[thema(t.name).ton].balken)} />
-                        <span className="min-w-0 truncate">{t.name}</span>
-                        <span className="ov-num ml-auto text-white/55">{t.anzahl}</span>
+                    {themen.map((th) => (
+                      <li key={th.name} className="flex min-w-0 items-center gap-2">
+                        <span aria-hidden="true" className={cn("h-2 w-2 shrink-0 rounded-full", TON[thema(th.name).ton].balken)} />
+                        <span className="min-w-0 truncate">{kategorieName(th.name, sprache)}</span>
+                        <span className="ov-num ml-auto text-white/55">{th.anzahl}</span>
                       </li>
                     ))}
                   </ul>

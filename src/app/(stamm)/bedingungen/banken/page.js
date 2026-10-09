@@ -9,11 +9,12 @@
 
 import LegalShell from "@/components/Reusable/LegalShell";
 import { GESELLSCHAFT } from "@/data/site";
-import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata, STAND_BEDINGUNGEN } from "../_teile";
+import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata, bedingungenMetadataEn, STAND_BEDINGUNGEN } from "../_teile";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
 
 const PFAD = "/bedingungen/banken";
 
-export const metadata = bedingungenMetadata({
+const metadata = bedingungenMetadata({
   pfad: PFAD,
   titel: "Vertraulichkeitsbedingungen Banken | ÖkoInvest",
   beschreibung:
@@ -22,17 +23,112 @@ export const metadata = bedingungenMetadata({
   bildAlt: "Team bei einer Präsentation",
 });
 
+// Englisch (Sprachmodell): Übersetzung zur Information – maßgeblich ist die deutsche Fassung. ENTWURF.
+const metadataEn = bedingungenMetadataEn({
+  titel: "Confidentiality terms for banks | ÖkoInvest",
+  beschreibung: "Draft of the confidentiality terms for banks in the bank portal: use of the bank package, permitted disclosure, access, log, data protection and duration.",
+  bildAlt: "Team during a presentation",
+});
+
 const G = GESELLSCHAFT;
 
-export default function VertraulichkeitBankenPage() {
+export default async function VertraulichkeitBankenPage({ params }) {
+  await seitenLand(params);
+  const en = spracheDerAnfrage() === "en";
   return (
     <LegalShell
-      titel="Vertraulichkeitsbedingungen für Banken"
+      titel={en ? "Confidentiality terms for banks" : "Vertraulichkeitsbedingungen für Banken"}
       pfad={PFAD}
       stand={STAND_BEDINGUNGEN}
-      lead="Regeln für Banken und Finanzierungspartner, die im Bank-Portal Finanzierungsanfragen der ÖkoInvest-Gruppe prüfen und das Bankenpaket abrufen."
+      lead={en ? "Rules for banks and financing partners that review financing requests from the ÖkoInvest group in the bank portal and retrieve the bank package." : "Regeln für Banken und Finanzierungspartner, die im Bank-Portal Finanzierungsanfragen der ÖkoInvest-Gruppe prüfen und das Bankenpaket abrufen."}
     >
       <EntwurfHinweis />
+      {en ? (
+        <>
+      <h2>§ 1 Scope and access</h2>
+      <p>
+        (1) {G.name} or the respective project company (“requesting party”) invites banks to a financing request via a personal, time-limited link. By
+        retrieving documents for the first time, the bank accepts these terms. Existing individual confidentiality agreements, or those concluded later,
+        take precedence.
+      </p>
+      <p>
+        (2) Access is personal and tied to the invited e-mail address. Access data and links must not be passed on; further persons at the bank will be
+        invited on request. The bank notifies us when an authorised person leaves.
+      </p>
+
+      <h2>§ 2 Confidential information</h2>
+      <p>
+        All information made available to the bank in connection with the request is confidential – in particular the <strong>bank package</strong>{" "}
+        (project profile, financial model, yield assessment, contracts, permits, land register and easement documents), queries and answers, and the fact
+        of the request itself. This excludes information that is or becomes publicly known through no fault of the bank, that was demonstrably already
+        known to the bank or that it lawfully received from third parties without an obligation of confidentiality.
+      </p>
+
+      <h2>§ 3 Purpose limitation and permitted disclosure</h2>
+      <p>
+        (1) The bank uses the information exclusively to assess, structure, decide on and carry out the requested financing.
+      </p>
+      <p>(2) Disclosure is only permitted to</p>
+      <ul>
+        <li>corporate bodies, employees and credit committees of the bank and its group companies, insofar as they need the information,</li>
+        <li>the bank&apos;s advisers, experts and auditors bound by confidentiality,</li>
+        <li>
+          potential syndicate banks, development and refinancing institutions and credit insurers – only with the prior consent of the requesting party
+          and subject to an equivalent obligation of confidentiality,
+        </li>
+        <li>supervisory authorities, courts and authorities, insofar as the bank is legally obliged to do so.</li>
+      </ul>
+      <p>The bank ensures that recipients comply with the same obligations. Banking secrecy and obligations under banking law remain unaffected.</p>
+
+      <h2>§ 4 Marking and log</h2>
+      <p>
+        Every retrieval of documents is logged with the person and time. Documents may bear the recipient&apos;s name. The bank does not remove such
+        markings and does not download documents automatically or in bulk.
+      </p>
+
+      <h2>§ 5 Personal data</h2>
+      <p>
+        (1) The bank package may contain personal data of third parties, for example of landowners and roof owners (lease and easement agreements, land
+        register extracts) or power offtakers. The requesting party only passes on what is necessary for the credit decision and collateral.
+      </p>
+      <p>
+        (2) The bank processes this data as an independent controller only for the purpose under § 3, protects it with appropriate technical and
+        organisational measures and deletes it as soon as it is no longer needed and there is no retention obligation. It forwards requests from data
+        subjects that concern the requesting party.
+      </p>
+
+      <h2>§ 6 Non-binding nature</h2>
+      <p>
+        (1) The request is not a commitment to conclude with the bank. The requesting party is free to approach several banks and to reject offers. Term
+        sheets are indicative unless expressly designated as binding.
+      </p>
+      <p>
+        (2) Each party bears its own costs of the review, unless otherwise agreed in writing (e.g. an arrangement fee in the term sheet).
+      </p>
+
+      <h2>§ 7 No warranty</h2>
+      <p>
+        The information is provided to the best of our knowledge. Financial models and forecasts are based on assumptions as of a given date; the
+        requesting party only gives a warranty of completeness, accuracy or the occurrence of forecasts within the scope of the subsequent loan agreement.
+        The bank carries out its own review.
+      </p>
+
+      <h2>§ 8 Return, deletion and duration</h2>
+      <p>
+        (1) If no financing is concluded, the bank deletes or returns the documents received on request; this excludes copies it must retain due to legal or
+        regulatory obligations and automatic backup copies – confidentiality continues to apply to these.
+      </p>
+      <p>
+        (2) The obligations apply for the duration of the request and beyond that for{" "}
+        <Platzhalter>e.g. 3 years after the end of the request or for the term of a loan relationship</Platzhalter>.
+      </p>
+      <p>
+        (3) The requesting party may end access at any time, in particular after the request has been completed or in the event of breaches of these
+        terms.
+      </p>
+        </>
+      ) : (
+        <>
 
       <h2>§ 1 Geltung und Zugang</h2>
       <p>
@@ -122,7 +218,12 @@ export default function VertraulichkeitBankenPage() {
         Bedingungen.
       </p>
 
+        </>
+      )}
+
       <WeitereBedingungen pfad={PFAD} />
     </LegalShell>
   );
 }
+
+export const generateMetadata = seitenMetadata("/bedingungen/banken", metadata, { en: metadataEn });

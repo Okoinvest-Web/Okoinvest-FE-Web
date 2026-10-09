@@ -1,0 +1,277 @@
+// src/app/rechner/kommune/page.js – Kommunal-Rechner
+//
+// Sprachmodell: deutsche Texte in DE, englische in EN (gleiche Struktur; Regeln:
+// src/lib/sprache/woerterbuch.js). Zahlen im Format der Sprache (src/lib/sprache/zahlformat.js).
+
+import RechnerSeite, { rechnerMetadata, rechnerMetadataEn } from "@/components/Rechner/RechnerSeite";
+import KommuneRechner from "@/components/Rechner/KommuneRechner";
+import { KOMMUNE, PACHT, STAND } from "@/lib/invest/markt";
+import { fmt } from "@/lib/rechner/annahmen";
+import { LAENDER, pfad as seitenPfad } from "@/lib/land";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { faqFuerLand, NurDEBlock } from "@/components/Land/Laenderteile";
+import { inhaltFuerSprache, uebersetze } from "@/lib/sprache/woerterbuch";
+import { formate } from "@/lib/sprache/zahlformat";
+import { datumText } from "@/lib/sprache/format";
+
+const PFAD = seitenPfad("/rechner/kommune");
+const e = formate("en");
+
+const metadata = rechnerMetadata({
+  pfad: PFAD,
+  title: "Kommunal-Rechner: Einnahmen aus dem Solarpark | ÖkoInvest",
+  description:
+    "Was bringt ein Solarpark der Gemeinde? § 6 EEG-Beteiligung, Gewerbesteuer (90 % Standort) und Pacht auf Gemeindeflächen – pro Jahr, über 20 und 30 Jahre.",
+  keywords: ["Solarpark Gemeinde Einnahmen", "§ 6 EEG Kommune", "Gewerbesteuer Solarpark", "Kommunalbeteiligung Photovoltaik", "Solarpark Kommune Rechner"],
+});
+
+const metadataEn = rechnerMetadataEn({
+  title: "Municipal calculator: income from a solar park | ÖkoInvest",
+  description:
+    "What does a solar park bring the municipality? Participation under § 6 EEG, trade tax (90% to the site) and lease on municipal land – per year, over 20 and 30 years.",
+  keywords: ["solar park municipal income", "§ 6 EEG municipality", "trade tax solar park", "municipal participation photovoltaics", "solar park municipality calculator"],
+});
+
+const FAQ = [
+  {
+    q: "Was ist die Zahlung nach § 6 EEG?",
+    a: `Betreiber von Freiflächenanlagen dürfen der Standortgemeinde bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je tatsächlich eingespeister Kilowattstunde zahlen – ohne Gegenleistung. Grundlage ist ein schriftlicher oder elektronischer Vertrag zwischen Gemeinde und Betreiber. Er darf vor der Genehmigung der Anlage geschlossen werden, wird für die Fläche ein Bebauungsplan aufgestellt, aber nicht vor dessen Beschluss (§ 6 Abs. 4 EEG). Für EEG-geförderte Strommengen kann sich der Betreiber die Zahlung vom Netzbetreiber erstatten lassen. Mehrere Bundesländer, etwa Bayern (ab 5 MW), Brandenburg, Mecklenburg-Vorpommern, Niedersachsen, das Saarland, Sachsen und Sachsen-Anhalt, schreiben eine Beteiligung inzwischen per Landesgesetz vor; diese Landesregeln rechnet der Rechner nicht mit.`,
+    nurDE: "Regeln zur Gemeindebeteiligung",
+  },
+  {
+    q: "Wie viel Gewerbesteuer bleibt in der Gemeinde?",
+    a: `Bei Solaranlagen wird der Gewerbesteuermessbetrag nach § 29 GewStG zu ${fmt(KOMMUNE.gewerbesteuerStandort * 100)} % nach der installierten Leistung auf die Standortgemeinde(n) zerlegt, nur 10 % nach den Arbeitslöhnen. Hat die Betreibergesellschaft ihren Sitz in der Gemeinde, fließt die Gewerbesteuer vollständig dorthin. Liegt der Park auf mehreren Gemarkungen, wird nach Leistungsanteilen aufgeteilt.`,
+    nurDE: "Steuerregeln",
+  },
+  {
+    q: "Warum zahlt ein Solarpark anfangs kaum Gewerbesteuer?",
+    a: `Weil die Anlage über ${KOMMUNE.afaJahre} Jahre abgeschrieben wird und Zinsen für die Finanzierung anfallen – in den ersten Jahren ist der steuerliche Gewinn daher gering oder negativ, Verluste werden vorgetragen. Nach Ende der Abschreibung steigt die Gewerbesteuer deutlich. Wie früh sie einsetzt, hängt vor allem vom Stromerlös ab – im Rechner einstellbar.`,
+    nurDE: "Steuerregeln",
+  },
+  {
+    q: "Gilt das auch in Österreich und der Schweiz?",
+    a: "Nein, der Rechner bildet die deutsche Rechtslage ab. In Österreich gibt es keine Gewerbesteuer; Gemeinden erhalten die Kommunalsteuer auf Löhne, die bei Solarparks gering ist – dort stehen Pacht, Beteiligungsmodelle und Energiegemeinschaften im Vordergrund. In der Schweiz hängt die Besteuerung von Kanton und Gemeinde ab.",
+  },
+  {
+    q: "Welche weiteren Vorteile hat die Gemeinde?",
+    a: "Einkommen- und Pachteinnahmen der Grundeigentümer vor Ort, Aufträge für regionale Betriebe bei Bau und Pflege, Bürgerbeteiligung über eine Genossenschaft und – seit Energy Sharing nach § 42c EnWG – die Möglichkeit, Strom aus dem Park in der Region gemeinsam zu nutzen. Diese Effekte sind im Rechner nicht enthalten.",
+    nurDE: "Regeln",
+  },
+];
+
+const FAQ_EN = [
+  {
+    q: "What is the payment under § 6 EEG?",
+    a: `Operators of ground-mounted plants may pay the host municipality up to ${e.fmt(KOMMUNE.beteiligungCt, 1)} ct per kilowatt hour actually fed into the grid – without any consideration in return. The basis is a written or electronic contract between the municipality and the operator. It may be concluded before the plant is approved, but – if a development plan is drawn up for the site – not before that plan has been adopted (§ 6(4) EEG, German Renewable Energy Sources Act). For EEG-subsidised power, the operator can have the payment reimbursed by the grid operator. Several federal states, such as Bavaria (from 5 MW), Brandenburg, Mecklenburg-Western Pomerania, Lower Saxony, Saarland, Saxony and Saxony-Anhalt, now require a participation by state law; the calculator does not include these state rules.`,
+    nurDE: "Rules on municipal participation",
+  },
+  {
+    q: "How much trade tax stays in the municipality?",
+    a: `For solar plants, the trade tax base amount is allocated under § 29 GewStG (German Trade Tax Act) ${e.pct(KOMMUNE.gewerbesteuerStandort * 100)} according to installed capacity to the host municipality (or municipalities) and only 10% according to wages. If the operating company has its registered office in the municipality, the trade tax goes there in full. If the park spans several districts, it is split according to capacity shares.`,
+    nurDE: "Tax rules",
+  },
+  {
+    q: "Why does a solar park pay hardly any trade tax at first?",
+    a: `Because the plant is depreciated over ${KOMMUNE.afaJahre} years and interest is payable on the financing – in the first years the taxable profit is therefore low or negative, and losses are carried forward. Once depreciation ends, trade tax rises significantly. How early it starts depends mainly on the power revenue – adjustable in the calculator.`,
+    nurDE: "Tax rules",
+  },
+  {
+    q: "Does this also apply in Austria and Switzerland?",
+    a: "No, the calculator reflects the German legal situation. Austria has no trade tax; municipalities receive the municipal tax on wages (Kommunalsteuer), which is low for solar parks – there, lease, participation models and energy communities are the main focus. In Switzerland, taxation depends on the canton and municipality.",
+  },
+  {
+    q: "What other benefits does the municipality have?",
+    a: "Income and lease receipts of local landowners, contracts for regional businesses during construction and maintenance, citizen participation through a cooperative and – since energy sharing under § 42c EnWG – the possibility of using the park’s power jointly in the region. These effects are not included in the calculator.",
+    nurDE: "Rules",
+  },
+];
+
+// Kopf je Land: § 6 EEG und Gewerbesteuer sind deutsches Recht – in AT/CH ohne deutsche Werte (Rechner zeigt die Länder-Sperre)
+const KOPF = {
+  de: {
+    gemeinsam: {
+      lead: "§ 6 EEG-Beteiligung, Gewerbesteuer mit 90 % am Standort und Pacht auf Gemeindeflächen – pro Jahr, über 20 Jahre und über die gesamte Laufzeit. Mit Ihrem Hebesatz.",
+      chips: ["§ 6 EEG: 0,2 ct/kWh", "§ 29 GewStG: 90 % Standort", "Hebesatz einstellbar", "Jahr für Jahr"],
+    },
+    ...Object.fromEntries(
+      ["AT", "CH"].map((l) => [
+        l,
+        {
+          lead: `Der Rechner bildet die Einnahmen einer Gemeinde nach deutschem Recht ab (§ 6 EEG, Gewerbesteuer). Für Gemeinden ${LAENDER[l].inLand} rechnen wir Pacht, Beteiligung und Wertschöpfung persönlich durch.`,
+          chips: ["Pacht auf Gemeindeflächen", "Beteiligungsmodelle", "Ergebnis auf Anfrage", "Jahr für Jahr"],
+        },
+      ])
+    ),
+  },
+  en: {
+    gemeinsam: {
+      lead: "Participation under § 6 EEG, trade tax with 90% to the site and lease on municipal land – per year, over 20 years and over the entire term. With your local multiplier.",
+      chips: ["§ 6 EEG: 0.2 ct/kWh", "§ 29 GewStG: 90% to the site", "Adjustable multiplier", "Year by year"],
+    },
+    ...Object.fromEntries(
+      ["AT", "CH"].map((l) => [
+        l,
+        {
+          lead: `The calculator reflects a municipality’s income under German law (§ 6 EEG, trade tax). For municipalities ${LAENDER[l].en.inLand}, we work through lease, participation and local value creation with you personally.`,
+          chips: ["Lease on municipal land", "Participation models", "Result on request", "Year by year"],
+        },
+      ])
+    ),
+  },
+};
+
+const DE = {
+  breadcrumb: "Kommunal-Rechner",
+  eyebrow: "Für Kommunen & Stadtwerke",
+  title: (
+    <>
+      Was ein Solarpark <span className="ov-text-gradient-light">Ihrer Gemeinde bringt.</span>
+    </>
+  ),
+  app: {
+    name: "Kommunal-Rechner Solarpark",
+    description: "Berechnet die Einnahmen einer Gemeinde aus einem Solarpark: § 6 EEG-Beteiligung, Gewerbesteuer und Pacht.",
+    featureList: ["§ 6 EEG-Beteiligung", "Gewerbesteuer mit Zerlegung nach § 29 GewStG", "Pacht auf Gemeindeflächen", "Einnahmen über 20 und 30 Jahre", "Jahresverlauf je Quelle"],
+  },
+  annahmen: [
+    ["§ 6 EEG", `${fmt(KOMMUNE.beteiligungCt, 1)} ct/kWh`],
+    ["Zerlegung Solar (§ 29 GewStG)", `${fmt(KOMMUNE.gewerbesteuerStandort * 100)} % Standort`],
+    ["Steuermesszahl", `${fmt(KOMMUNE.messzahl * 100, 1)} %`],
+    ["Hebesatz Ø Deutschland", `${fmt(KOMMUNE.hebesatz * 100)} %`],
+    ["Abschreibung", `${KOMMUNE.afaJahre} Jahre linear`],
+    ["Pacht Freifläche", `${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} €/ha`],
+    ["Stand", STAND],
+  ],
+  quellen: [
+    { name: "EEG 2023 § 6", url: "https://www.gesetze-im-internet.de/eeg_2014/__6.html" },
+    { name: "GewStG § 29", url: "https://www.gesetze-im-internet.de/gewstg/__29.html" },
+    { name: "GewStG § 8", url: "https://www.gesetze-im-internet.de/gewstg/__8.html" },
+  ],
+  faqTitel: "Solarpark und Gemeindefinanzen",
+  querverweise: [
+    { href: seitenPfad("/kommunen"), titel: "Für Kommunen & Stadtwerke", text: "Wertschöpfung, Bauleitplanung, Kriterienkataloge und Bürgerbeteiligung." },
+    { href: seitenPfad("/genossenschaft"), titel: "Genossenschaft", text: "Bürger und Landwirte beteiligen sich am Solarpark vor Ort." },
+    { href: seitenPfad("/energiegemeinschaften"), titel: "Energiegemeinschaften", text: "Energy Sharing, EEG in Österreich und LEG in der Schweiz." },
+    { href: seitenPfad("/rechner/pacht"), titel: "Pachtrechner", text: "Solarpacht über 30 Jahre im Vergleich zu Ackerpacht und Deckungsbeitrag." },
+  ],
+  cta: {
+    eyebrow: "Für Kommunen",
+    title: "Ein Solarpark, von dem die ganze Gemeinde etwas hat.",
+    text: "Wir stellen Projekt, § 6-Vertrag und Beteiligungsmodell im Gemeinderat vor – offen, mit Zahlen und ohne Verpflichtung.",
+    primary: { label: "Gespräch anfragen", href: seitenPfad("/kommunen#anfrage") },
+    secondary: { label: "Für Kommunen", href: seitenPfad("/kommunen") },
+  },
+};
+
+const EN = {
+  breadcrumb: "Municipal calculator",
+  eyebrow: "For municipalities & public utilities",
+  title: (
+    <>
+      What a solar park <span className="ov-text-gradient-light">brings your municipality.</span>
+    </>
+  ),
+  app: {
+    name: "Municipal solar park calculator",
+    description: "Calculates a municipality’s income from a solar park: participation under § 6 EEG, trade tax and lease.",
+    featureList: ["Participation under § 6 EEG", "Trade tax with allocation under § 29 GewStG", "Lease on municipal land", "Income over 20 and 30 years", "Annual profile by source"],
+  },
+  annahmen: [
+    ["§ 6 EEG", `${e.fmt(KOMMUNE.beteiligungCt, 1)} ct/kWh`],
+    ["Allocation for solar (§ 29 GewStG)", `${e.pct(KOMMUNE.gewerbesteuerStandort * 100)} to the site`],
+    ["Tax base rate", e.pct(KOMMUNE.messzahl * 100, 1)],
+    ["Average multiplier, Germany", e.pct(KOMMUNE.hebesatz * 100)],
+    ["Depreciation", `${KOMMUNE.afaJahre} years straight-line`],
+    ["Ground-mounted lease", `${e.eur(PACHT.freiflaecheProHa.min)}–${e.eur(PACHT.freiflaecheProHa.max, "/ha")}`],
+    ["As of", datumText(STAND, "en")],
+  ],
+  quellen: [{ name: "EEG 2023 § 6 (German Renewable Energy Sources Act)" }, { name: "GewStG § 29 (German Trade Tax Act)" }, { name: "GewStG § 8" }],
+  faqTitel: "Solar parks and municipal finances",
+  querverweise: [
+    { titel: "For municipalities & public utilities", text: "Local value creation, land-use planning, criteria catalogues and citizen participation." },
+    { titel: "Cooperative", text: "Citizens and farmers participate in the local solar park." },
+    { titel: "Energy communities", text: "Energy sharing, EEG in Austria and LEG in Switzerland." },
+    { titel: "Lease calculator", text: "Solar lease over 30 years compared with arable lease and gross margin." },
+  ],
+  cta: {
+    eyebrow: "For municipalities",
+    title: "A solar park the whole municipality benefits from.",
+    text: "We present the project, the § 6 contract and the participation model to the municipal council – openly, with figures and without obligation.",
+    primary: { label: "Request a meeting" },
+    secondary: { label: "For municipalities" },
+  },
+};
+
+export default async function Page({ params }) {
+  const land = await seitenLand(params);
+  const sprache = spracheDerAnfrage();
+  const en = sprache === "en";
+  const t = uebersetze({ de: DE, en: EN }, sprache);
+  const k = inhaltFuerSprache(KOPF, land, sprache);
+  return (
+    <RechnerSeite
+      pfad={PFAD}
+      toolId="kommune"
+      breadcrumb={t.breadcrumb}
+      eyebrow={t.eyebrow}
+      title={t.title}
+      lead={k.lead}
+      chips={k.chips}
+      app={t.app}
+      rechner={<KommuneRechner />}
+      erklaerung={
+        <NurDEBlock land={land} thema="Rechenwerte und Annahmen" themaEn="Figures and assumptions">
+          {en ? (
+            <div className="ov-prose max-w-none">
+              <h2>How the municipal calculator works</h2>
+              <p>
+                <strong>§ 6 EEG:</strong> {e.fmt(KOMMUNE.beteiligungCt, 1)} ct per kilowatt hour fed into the grid, from the first operating year, provided a contract is concluded. Mandatory payments under state law (e.g. in Brandenburg, Mecklenburg-Western Pomerania or Saxony-Anhalt) are not included.
+              </p>
+              <p>
+                <strong>Trade tax:</strong> the trade income follows from the park’s operating result (revenue minus operation, lease, depreciation over {KOMMUNE.afaJahre} years and interest). Interest above {e.eur(KOMMUNE.hinzurechnungFreibetrag)} is added back at {e.pct(KOMMUNE.hinzurechnungZinsen * 100)}, and losses are carried forward. The base rate of {e.pct(KOMMUNE.messzahl * 100, 1)} × multiplier × {e.pct(KOMMUNE.gewerbesteuerStandort * 100)} site share gives the amount for your municipality.
+              </p>
+              <p>
+                <strong>Lease:</strong> only if the park stands on municipally owned land, with {e.pct(PACHT.indexierung * 100, 1)} annual indexation.
+              </p>
+              <h3>Simplifications</h3>
+              <ul>
+                <li>No minimum taxation on loss carry-forwards, no special depreciation.</li>
+                <li>Financing and costs according to the default values of the solar park calculator.</li>
+                <li>Income tax shares from private leases and regional contracts are not included.</li>
+              </ul>
+            </div>
+          ) : (
+            <div className="ov-prose max-w-none">
+              <h2>So rechnet der Kommunal-Rechner</h2>
+              <p>
+                <strong>§ 6 EEG:</strong> {fmt(KOMMUNE.beteiligungCt, 1)} ct je eingespeister Kilowattstunde, ab dem ersten Betriebsjahr, sofern ein Vertrag geschlossen wird. Landesrechtliche Pflichtzahlungen (z. B. in Brandenburg, Mecklenburg-Vorpommern oder Sachsen-Anhalt) sind nicht enthalten.
+              </p>
+              <p>
+                <strong>Gewerbesteuer:</strong> Aus dem Betriebsergebnis des Parks (Erlöse minus Betrieb, Pacht, Abschreibung über {KOMMUNE.afaJahre} Jahre und Zinsen) ergibt sich der
+                Gewerbeertrag. Zinsen über {fmt(KOMMUNE.hinzurechnungFreibetrag)} € werden zu {fmt(KOMMUNE.hinzurechnungZinsen * 100)} % hinzugerechnet, Verluste vorgetragen. Messzahl{" "}
+                {fmt(KOMMUNE.messzahl * 100, 1)} % × Hebesatz × {fmt(KOMMUNE.gewerbesteuerStandort * 100)} % Standortanteil ergibt den Betrag für Ihre Gemeinde.
+              </p>
+              <p>
+                <strong>Pacht:</strong> Nur wenn der Park auf gemeindeeigenen Flächen steht, mit {fmt(PACHT.indexierung * 100, 1)} % jährlicher Indexierung.
+              </p>
+              <h3>Vereinfachungen</h3>
+              <ul>
+                <li>Keine Mindestbesteuerung beim Verlustvortrag, keine Sonderabschreibungen.</li>
+                <li>Finanzierung und Kosten nach den Standardwerten des Solarpark-Rechners.</li>
+                <li>Einkommensteueranteile aus Pachten Privater und regionale Aufträge sind nicht enthalten.</li>
+              </ul>
+            </div>
+          )}
+        </NurDEBlock>
+      }
+      annahmen={t.annahmen}
+      quellen={t.quellen}
+      faq={faqFuerLand(uebersetze({ de: FAQ, en: FAQ_EN }, sprache), land, { sprache })}
+      faqTitel={t.faqTitel}
+      querverweise={t.querverweise}
+      cta={t.cta}
+    />
+  );
+}
+
+export const generateMetadata = seitenMetadata("/rechner/kommune", metadata, { en: metadataEn });

@@ -9,12 +9,21 @@ import { TOOLS } from "./tools";
 import { STAND } from "@/lib/rechner/annahmen";
 import { TextEnthuellung } from "@/components/motion";
 import { pfad } from "@/lib/land";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { datumText } from "@/lib/sprache/format";
+
+const TEXTE = {
+  de: { krume: "Rechner & Tools", blick: "Ergebnisse auf einen Blick", ergebnis: "Das Ergebnis", kostenlos: "Kostenlos · Stand", zum: "Zum Rechner" },
+  en: { krume: "Calculators & tools", blick: "results at a glance", ergebnis: "The result", kostenlos: "Free · As of", zum: "Go to the calculator" },
+};
 
 // Titel kommen oft als <>Text <span …>Betonung</span></> – das Fragment auflösen,
 // damit die Wörter einzeln erscheinen und die Betonung ein Block bleibt.
 const ohneFragment = (t) => (isValidElement(t) && t.type === Fragment ? t.props.children : t);
 
 export default function RechnerKopf({ toolId, breadcrumb, eyebrow, title, lead, chips = [], app }) {
+  const sprache = spracheDerAnfrage();
+  const t = TEXTE[sprache] || TEXTE.de;
   const tool = TOOLS.find((t) => t.id === toolId);
   const Icon = tool?.icon || Sparkles;
   const leistungen = (app?.featureList || []).slice(0, 6);
@@ -29,7 +38,7 @@ export default function RechnerKopf({ toolId, breadcrumb, eyebrow, title, lead, 
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-b from-transparent to-navy-950/50" />
 
       <div className="ov-container pb-28 pt-6 sm:pt-8 md:pb-36 md:pt-10">
-        <Breadcrumbs items={[{ name: "Rechner & Tools", href: pfad("/rechner") }, { name: breadcrumb }]} dark className="ov-hero-in mb-8 md:mb-10" />
+        <Breadcrumbs items={[{ name: t.krume, href: pfad("/rechner") }, { name: breadcrumb }]} dark className="ov-hero-in mb-8 md:mb-10" />
 
         <div className="grid items-end gap-y-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:gap-x-14 xl:gap-x-20">
           <div className="max-w-[42rem]">
@@ -71,7 +80,7 @@ export default function RechnerKopf({ toolId, breadcrumb, eyebrow, title, lead, 
 
           {/* Steckbrief: was der Rechner liefert – nur ab lg, mobil steht der Rechner direkt darunter */}
           {leistungen.length > 0 && (
-            <aside aria-label={`${app.name}: Ergebnisse auf einen Blick`} className="ov-hero-in relative hidden lg:block" style={{ "--ov-delay": "220ms" }}>
+            <aside aria-label={`${app.name}: ${t.blick}`} className="ov-hero-in relative hidden lg:block" style={{ "--ov-delay": "220ms" }}>
               <div aria-hidden="true" className="pointer-events-none absolute -inset-6 -z-10 rounded-[2.5rem] bg-[radial-gradient(closest-side,rgba(140,186,88,0.18),transparent_75%)] blur-2xl" />
               <div className="ov-glass rounded-[1.75rem] p-6 shadow-kante xl:p-7">
                 <div className="flex items-center gap-3.5">
@@ -79,7 +88,7 @@ export default function RechnerKopf({ toolId, breadcrumb, eyebrow, title, lead, 
                     <Icon className="h-5 w-5" strokeWidth={2.2} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ov-300">Das Ergebnis</p>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ov-300">{t.ergebnis}</p>
                     <p className="line-clamp-2 font-display text-[17px] font-bold leading-snug text-white">{app.name}</p>
                   </div>
                 </div>
@@ -96,13 +105,13 @@ export default function RechnerKopf({ toolId, breadcrumb, eyebrow, title, lead, 
                 <div className="mt-5 flex items-center justify-between gap-4">
                   <p className="flex items-center gap-1.5 text-[12.5px] text-white/60">
                     <Lock aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-                    Kostenlos · Stand {STAND}
+                    {t.kostenlos} {datumText(STAND, sprache)}
                   </p>
                   <a
                     href="#rechner"
                     className="group inline-flex shrink-0 items-center gap-1.5 rounded-full text-[13.5px] font-semibold text-white transition-colors hover:text-ov-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950"
                   >
-                    Zum Rechner
+                    {t.zum}
                     <ArrowDown aria-hidden="true" className="h-3.5 w-3.5 text-ov-300 transition-transform duration-200 group-hover:translate-y-0.5 motion-reduce:transition-none" />
                   </a>
                 </div>

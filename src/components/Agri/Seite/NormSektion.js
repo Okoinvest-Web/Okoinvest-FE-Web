@@ -2,6 +2,56 @@
 import { Check } from "lucide-react";
 import Reveal from "@/components/ui/Reveal";
 import { Eyebrow } from "@/components/ui/SectionHeading";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+
+/** Sprachmodell: Texte des Abschnitts (en nur Texte). */
+const W = {
+  de: {
+    kat1Label: "Querschnitt Kategorie I: Moduldach auf hohen Stützen, darunter Beerensträucher und ein Traktor; lichte Höhe mindestens 2,10 Meter.",
+    kat2Label: "Querschnitt Kategorie II: senkrechte Modulreihen mit breiten Gassen, in denen Getreide wächst und ein Traktor fährt.",
+    kategorien: [
+      { k: "Kategorie I", t: "Hoch aufgeständert", p: ["Bewirtschaftung unter den Modulen", "lichte Höhe mind. 2,10 m"] },
+      { k: "Kategorie II", t: "Bodennah", p: ["Bewirtschaftung zwischen den Reihen", "vertikal, nachgeführt oder geneigt"] },
+    ],
+    titel: "Wann eine Anlage als Agri-PV gilt.",
+    lead: "Die DIN SPEC 91434 (2021) ist in Deutschland die Grundlage für Förderfähigkeit in der GAP, die EEG-Förderung als besondere Solaranlage und die baurechtliche Privilegierung. Sie verlangt ein landwirtschaftliches Nutzungskonzept – vor der Planung der Module.",
+    hoehe: "≥ 2,10 m",
+    gasse: "Gasse nach Arbeitsbreite",
+    verlust: "Flächenverlust ≤ ",
+    verlustLabel: "Flächenverlust durch Aufbauten",
+    beide: "Für beide Kategorien",
+    beideA: "Der landwirtschaftliche Ertrag muss mindestens ",
+    beideB: (p) => `${p} des Referenzertrags`,
+    beideC: " ohne Anlage erreichen, die Bewirtschaftung mit üblicher Technik muss möglich bleiben, und der Rückbau muss gesichert sein. Für die Nutzung mit Tieren und für Dauerkulturen gelten ergänzende Anforderungen.",
+    ertragA: "Landwirtschaftlicher Ertrag",
+    ertragB: " gegenüber Referenz",
+    mindest: "Mindestwert",
+    referenz: "100 % Referenz",
+  },
+  en: {
+    kat1Label: "Cross-section of category I: module roof on tall supports, with berry bushes and a tractor underneath; clearance at least 2.10 metres.",
+    kat2Label: "Cross-section of category II: upright module rows with wide lanes in which cereals grow and a tractor drives.",
+    kategorien: [
+      { k: "Category I", t: "Elevated", p: ["Farming underneath the modules", "clearance of at least 2.10 m"] },
+      { k: "Category II", t: "Ground-level", p: ["Farming between the rows", "vertical, tracking or tilted"] },
+    ],
+    titel: "When an installation counts as agrivoltaics.",
+    lead: "In Germany, DIN SPEC 91434 (2021) is the basis for eligibility under the CAP (Common Agricultural Policy), EEG funding as a special solar installation and privileged status under building law. It requires an agricultural use concept – before the modules are planned.",
+    hoehe: "≥ 2.10 m",
+    gasse: "Lane per working width",
+    verlust: "Land loss ≤ ",
+    verlustLabel: "Land loss through structures",
+    beide: "For both categories",
+    beideA: "The agricultural yield must reach at least ",
+    beideB: (p) => `${p} of the reference yield`,
+    beideC: " without the installation, farming with standard machinery must remain possible, and decommissioning must be secured. Additional requirements apply to use with livestock and to permanent crops.",
+    ertragA: "Agricultural yield",
+    ertragB: " compared with reference",
+    mindest: "Minimum",
+    referenz: "100 % reference",
+  },
+};
 
 /* ---------- Querschnitte ---------- */
 
@@ -44,10 +94,10 @@ function Halme({ x, y, n, abstand = 6 }) {
   );
 }
 
-function SchnittKat1() {
+function SchnittKat1({ w }) {
   const boden = 168;
   return (
-    <svg viewBox="0 0 360 200" className="block h-auto w-full" role="img" aria-label="Querschnitt Kategorie I: Moduldach auf hohen Stützen, darunter Beerensträucher und ein Traktor; lichte Höhe mindestens 2,10 Meter.">
+    <svg viewBox="0 0 360 200" className="block h-auto w-full" role="img" aria-label={w.kat1Label}>
       <rect width="360" height={boden} className="fill-navy-50" />
       <circle cx="320" cy="34" r="16" className="fill-sun-300" />
       {/* Stützen und Dach */}
@@ -68,20 +118,20 @@ function SchnittKat1() {
       <line x1="24" x2="24" y1="62" y2={boden - 3} strokeDasharray="3 3" strokeWidth="1.4" className="stroke-ov-700" />
       <path d={`M19 68 L24 61 L29 68 M19 ${boden - 9} L24 ${boden - 2} L29 ${boden - 9}`} fill="none" strokeWidth="1.4" className="stroke-ov-700" />
       <rect x="31" y="98" width="62" height="22" rx="11" className="fill-white stroke-ov-300" />
-      <text x="62" y="113" textAnchor="middle" className="fill-ov-800 text-[11px] font-bold">≥ 2,10 m</text>
+      <text x="62" y="113" textAnchor="middle" className="fill-ov-800 text-[11px] font-bold">{w.hoehe}</text>
       {/* Boden */}
       <rect y={boden} width="360" height="32" className="fill-sand-100" />
       <rect y={boden - 3} width="360" height="6" rx="3" className="fill-ov-300" />
-      <text x="180" y="190" textAnchor="middle" className="fill-ink-600 text-[10px] font-semibold">Bewirtschaftung unter den Modulen</text>
+      <text x="180" y="190" textAnchor="middle" className="fill-ink-600 text-[10px] font-semibold">{w.kategorien[0].p[0]}</text>
     </svg>
   );
 }
 
-function SchnittKat2() {
+function SchnittKat2({ w }) {
   const boden = 168;
   const reihen = [40, 180, 320];
   return (
-    <svg viewBox="0 0 360 200" className="block h-auto w-full" role="img" aria-label="Querschnitt Kategorie II: senkrechte Modulreihen mit breiten Gassen, in denen Getreide wächst und ein Traktor fährt.">
+    <svg viewBox="0 0 360 200" className="block h-auto w-full" role="img" aria-label={w.kat2Label}>
       <rect width="360" height={boden} className="fill-navy-50" />
       <circle cx="320" cy="34" r="16" className="fill-sun-300" />
       {reihen.map((x) => (
@@ -99,10 +149,10 @@ function SchnittKat2() {
       <line x1="46" x2="174" y1="78" y2="78" strokeDasharray="3 3" strokeWidth="1.4" className="stroke-ov-700" />
       <path d="M52 73 L45 78 L52 83 M168 73 L175 78 L168 83" fill="none" strokeWidth="1.4" className="stroke-ov-700" />
       <rect x="44" y="40" width="132" height="24" rx="12" className="fill-white stroke-ov-300" />
-      <text x="110" y="56" textAnchor="middle" className="fill-ov-800 text-[11px] font-bold">Gasse nach Arbeitsbreite</text>
+      <text x="110" y="56" textAnchor="middle" className="fill-ov-800 text-[11px] font-bold">{w.gasse}</text>
       <rect y={boden} width="360" height="32" className="fill-sand-100" />
       <rect y={boden - 3} width="360" height="6" rx="3" className="fill-ov-300" />
-      <text x="180" y="190" textAnchor="middle" className="fill-ink-600 text-[10px] font-semibold">Bewirtschaftung zwischen den Reihen</text>
+      <text x="180" y="190" textAnchor="middle" className="fill-ink-600 text-[10px] font-semibold">{w.kategorien[1].p[0]}</text>
     </svg>
   );
 }
@@ -133,21 +183,10 @@ function Grenzleiste({ label, wert, skala = 0.2, text, ton = "ov" }) {
 /* ---------- Abschnitt ---------- */
 
 export default function NormSektion({ id, kat1Verlust, kat2Verlust, mindestErtrag, pct }) {
+  const w = uebersetze(W, spracheDerAnfrage());
   const kategorien = [
-    {
-      k: "Kategorie I",
-      t: "Hoch aufgeständert",
-      bild: <SchnittKat1 />,
-      p: ["Bewirtschaftung unter den Modulen", "lichte Höhe mind. 2,10 m"],
-      verlust: kat1Verlust,
-    },
-    {
-      k: "Kategorie II",
-      t: "Bodennah",
-      bild: <SchnittKat2 />,
-      p: ["Bewirtschaftung zwischen den Reihen", "vertikal, nachgeführt oder geneigt"],
-      verlust: kat2Verlust,
-    },
+    { ...w.kategorien[0], bild: <SchnittKat1 w={w} />, verlust: kat1Verlust },
+    { ...w.kategorien[1], bild: <SchnittKat2 w={w} />, verlust: kat2Verlust },
   ];
 
   return (
@@ -156,12 +195,10 @@ export default function NormSektion({ id, kat1Verlust, kat2Verlust, mindestErtra
         <div className="grid gap-x-16 gap-y-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-end">
           <Reveal>
             <Eyebrow className="mb-4">DIN SPEC 91434</Eyebrow>
-            <h2 id="norm-titel" className="ov-h2 text-balance text-ink-900">Wann eine Anlage als Agri-PV gilt.</h2>
+            <h2 id="norm-titel" className="ov-h2 text-balance text-ink-900">{w.titel}</h2>
           </Reveal>
           <Reveal delay={80}>
-            <p className="ov-lead text-pretty text-ink-600">
-              Die DIN SPEC 91434 (2021) ist in Deutschland die Grundlage für Förderfähigkeit in der GAP, die EEG-Förderung als besondere Solaranlage und die baurechtliche Privilegierung. Sie verlangt ein landwirtschaftliches Nutzungskonzept – vor der Planung der Module.
-            </p>
+            <p className="ov-lead text-pretty text-ink-600">{w.lead}</p>
           </Reveal>
         </div>
 
@@ -187,11 +224,11 @@ export default function NormSektion({ id, kat1Verlust, kat2Verlust, mindestErtra
                     <span aria-hidden="true" className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ov-50 ring-1 ring-inset ring-ov-200">
                       <Check className="h-3 w-3 text-ov-600" strokeWidth={3} />
                     </span>
-                    Flächenverlust ≤ {pct(c.verlust)}
+                    {w.verlust}{pct(c.verlust)}
                   </li>
                 </ul>
                 <div className="mt-auto pt-7">
-                  <Grenzleiste label="Flächenverlust durch Aufbauten" wert={c.verlust} text={pct(c.verlust)} />
+                  <Grenzleiste label={w.verlustLabel} wert={c.verlust} text={pct(c.verlust)} />
                 </div>
               </div>
             </Reveal>
@@ -204,14 +241,14 @@ export default function NormSektion({ id, kat1Verlust, kat2Verlust, mindestErtra
           <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-ov-500/25 blur-3xl" />
           <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-center lg:gap-14">
             <div>
-              <p className="ov-overline text-ov-300">Für beide Kategorien</p>
+              <p className="ov-overline text-ov-300">{w.beide}</p>
               <p className="mt-3 text-pretty text-[16px] leading-relaxed text-white/75">
-                Der landwirtschaftliche Ertrag muss mindestens <strong className="text-white">{pct(mindestErtrag)} des Referenzertrags</strong> ohne Anlage erreichen, die Bewirtschaftung mit üblicher Technik muss möglich bleiben, und der Rückbau muss gesichert sein. Für die Nutzung mit Tieren und für Dauerkulturen gelten ergänzende Anforderungen.
+                {w.beideA}<strong className="text-white">{w.beideB(pct(mindestErtrag))}</strong>{w.beideC}
               </p>
             </div>
             <div className="rounded-2xl bg-white/[0.05] p-5 ring-1 ring-inset ring-white/10 md:p-6">
               <div className="flex items-end justify-between gap-4">
-                <p className="text-[13px] font-medium text-white/70">Landwirtschaftlicher Ertrag<br className="sm:hidden" /> gegenüber Referenz</p>
+                <p className="text-[13px] font-medium text-white/70">{w.ertragA}<br className="sm:hidden" />{w.ertragB}</p>
                 <p className="ov-kpi-l shrink-0 whitespace-nowrap text-white">
                   ≥&nbsp;{Math.round(mindestErtrag * 100)}
                   <span className="ov-einheit">%</span>
@@ -223,8 +260,8 @@ export default function NormSektion({ id, kat1Verlust, kat2Verlust, mindestErtra
               </div>
               <div className="mt-2 flex justify-between text-[11.5px] text-white/55" aria-hidden="true">
                 <span>0 %</span>
-                <span className="text-sun-200">Mindestwert</span>
-                <span>100 % Referenz</span>
+                <span className="text-sun-200">{w.mindest}</span>
+                <span>{w.referenz}</span>
               </div>
             </div>
           </div>

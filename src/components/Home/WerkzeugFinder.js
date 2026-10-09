@@ -4,9 +4,10 @@
 // rechts kompakte Werkzeug-Karten. Server-Render zeigt alle Werkzeuge (SEO,
 // funktioniert ohne JavaScript); mobil sind zunächst sechs sichtbar.
 import { useId, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
-import { TOOLS } from "@/components/Rechner/tools";
+import { TOOL_BEGRIFFE_EN, toolsFuer } from "@/components/Rechner/tools";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 import { cn } from "@/components/ui/cn";
 import { pfad } from "@/lib/land";
 
@@ -24,6 +25,15 @@ const TAG_STIL = {
 const TAG_TEXT = { Beliebt: "Guter Einstieg" };
 
 export default function WerkzeugFinder() {
+  const sprache = useSprache();
+  const en = sprache === "en";
+  const TOOLS = useMemo(() => toolsFuer(sprache), [sprache]);
+  // Filterschlüssel bleiben die deutschen Zielgruppen aus tools.js; angezeigt wird die Sprache der Seite
+  const name = (g) => (en ? TOOL_BEGRIFFE_EN.zielgruppe[g] || g : g);
+  const tagText = (tag) => {
+    const de = TAG_TEXT[tag] || tag;
+    return en ? TOOL_BEGRIFFE_EN.tag[de] || de : de;
+  };
   const [filter, setFilter] = useState("Alle");
   const [alleMobil, setAlleMobil] = useState(false);
   const listeId = useId();
@@ -33,7 +43,7 @@ export default function WerkzeugFinder() {
     const bekannt = REIHENFOLGE.filter((g) => zaehler[g]);
     const weitere = Object.keys(zaehler).filter((g) => !REIHENFOLGE.includes(g));
     return [{ name: "Alle", anzahl: TOOLS.length }, ...[...bekannt, ...weitere].map((g) => ({ name: g, anzahl: zaehler[g] }))];
-  }, []);
+  }, [TOOLS]);
 
   const sichtbar = filter === "Alle" ? TOOLS : TOOLS.filter((t) => t.zielgruppe === filter);
   const kuerzen = filter === "Alle" && !alleMobil && sichtbar.length > MOBIL_START;
@@ -42,7 +52,7 @@ export default function WerkzeugFinder() {
     <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-12">
       {/* Filter */}
       <div className="lg:sticky lg:top-28 lg:self-start">
-        <p id={`${listeId}-label`} className="text-[12px] font-semibold uppercase tracking-[0.16em] text-ink-500">Für wen?</p>
+        <p id={`${listeId}-label`} className="text-[12px] font-semibold uppercase tracking-[0.16em] text-ink-500">{en ? "For whom?" : "Für wen?"}</p>
         <ul
           role="list"
           aria-labelledby={`${listeId}-label`}
@@ -64,7 +74,7 @@ export default function WerkzeugFinder() {
                       : "bg-white text-ink-700 ring-1 ring-inset ring-ink-200 hover:bg-ov-50 hover:text-ov-800 hover:ring-ov-200 lg:bg-transparent lg:ring-0"
                   )}
                 >
-                  <span>{g.name}</span>
+                  <span>{name(g.name)}</span>
                   <span className={cn("ov-num rounded-full px-2 py-0.5 text-[11.5px] font-bold", aktiv ? "bg-white/15 text-white" : "bg-ink-100 text-ink-500")}>{g.anzahl}</span>
                 </button>
               </li>
@@ -75,7 +85,7 @@ export default function WerkzeugFinder() {
           href={pfad("/rechner")}
           className="group mt-6 hidden items-center gap-2 rounded-full text-[14.5px] font-semibold text-ov-700 hover:text-ov-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ov-500 lg:inline-flex"
         >
-          Alle Rechner im Überblick
+          {en ? "All calculators at a glance" : "Alle Rechner im Überblick"}
           <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-x-1 motion-reduce:transition-none" />
         </Link>
       </div>
@@ -83,7 +93,7 @@ export default function WerkzeugFinder() {
       {/* Werkzeuge */}
       <div>
         <p className="sr-only" aria-live="polite">
-          {sichtbar.length} Werkzeuge{filter !== "Alle" ? ` für ${filter}` : ""}
+          {en ? `${sichtbar.length} tools${filter !== "Alle" ? ` for ${name(filter)}` : ""}` : `${sichtbar.length} Werkzeuge${filter !== "Alle" ? ` für ${filter}` : ""}`}
         </p>
         <ul id={listeId} className="grid gap-3 md:grid-cols-2">
           {sichtbar.map((t, i) => (
@@ -99,7 +109,7 @@ export default function WerkzeugFinder() {
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="font-display text-[16.5px] font-bold leading-snug text-ink-900">{t.titel}</span>
                     {t.tag && (
-                      <span className={cn("rounded-full px-2 py-px text-[10.5px] font-bold uppercase tracking-wider ring-1 ring-inset", TAG_STIL[t.tag] || TAG_STIL.Neu)}>{TAG_TEXT[t.tag] || t.tag}</span>
+                      <span className={cn("rounded-full px-2 py-px text-[10.5px] font-bold uppercase tracking-wider ring-1 ring-inset", TAG_STIL[t.tag] || TAG_STIL.Neu)}>{tagText(t.tag)}</span>
                     )}
                   </span>
                   <span className="mt-1 block text-[14px] leading-snug text-ink-500">{t.kurz}</span>
@@ -120,7 +130,7 @@ export default function WerkzeugFinder() {
             aria-controls={listeId}
             className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-white text-[15px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ov-500 md:hidden"
           >
-            Alle {sichtbar.length} Werkzeuge zeigen
+            {en ? `Show all ${sichtbar.length} tools` : `Alle ${sichtbar.length} Werkzeuge zeigen`}
             <ChevronDown aria-hidden="true" className="h-4 w-4" />
           </button>
         )}
@@ -128,7 +138,7 @@ export default function WerkzeugFinder() {
           href={pfad("/rechner")}
           className="group mt-5 inline-flex items-center gap-2 text-[15px] font-semibold text-ov-700 hover:text-ov-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ov-500 lg:hidden"
         >
-          Alle Rechner im Überblick
+          {en ? "All calculators at a glance" : "Alle Rechner im Überblick"}
           <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-x-1 motion-reduce:transition-none" />
         </Link>
       </div>

@@ -9,11 +9,12 @@
 
 import LegalShell from "@/components/Reusable/LegalShell";
 import { GESELLSCHAFT } from "@/data/site";
-import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata, STAND_BEDINGUNGEN } from "../_teile";
+import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata, bedingungenMetadataEn, STAND_BEDINGUNGEN } from "../_teile";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
 
 const PFAD = "/bedingungen/lieferanten";
 
-export const metadata = bedingungenMetadata({
+const metadata = bedingungenMetadata({
   pfad: PFAD,
   titel: "Teilnahmebedingungen Energieversorger | ÖkoInvest",
   beschreibung:
@@ -22,17 +23,125 @@ export const metadata = bedingungenMetadata({
   bildAlt: "Photovoltaik und Windkraft am Abend",
 });
 
+// Englisch (Sprachmodell): Übersetzung zur Information – maßgeblich ist die deutsche Fassung. ENTWURF.
+const metadataEn = bedingungenMetadataEn({
+  titel: "Terms of participation for energy suppliers | ÖkoInvest",
+  beschreibung: "Draft of the terms of participation for energy suppliers: invitation, sealed offers, deadlines and validity period, award only with customer approval, confidentiality.",
+  bildAlt: "Photovoltaics and wind power in the evening",
+});
+
 const G = GESELLSCHAFT;
 
-export default function TeilnahmebedingungenLieferantenPage() {
+export default async function TeilnahmebedingungenLieferantenPage({ params }) {
+  await seitenLand(params);
+  const en = spracheDerAnfrage() === "en";
   return (
     <LegalShell
-      titel="Teilnahmebedingungen für Energieversorger"
+      titel={en ? "Terms of participation for energy suppliers" : "Teilnahmebedingungen für Energieversorger"}
       pfad={PFAD}
       stand={STAND_BEDINGUNGEN}
-      lead="Regeln für Energieversorger, die ÖkoInvest zu Angebotsanfragen für die Stromlieferung an Unternehmen einlädt – im Versorger-Portal oder per Angebotslink."
+      lead={en ? "Rules for energy suppliers that ÖkoInvest invites to requests for quotation for the supply of electricity to companies – in the supplier portal or via an offer link." : "Regeln für Energieversorger, die ÖkoInvest zu Angebotsanfragen für die Stromlieferung an Unternehmen einlädt – im Versorger-Portal oder per Angebotslink."}
     >
       <EntwurfHinweis />
+      {en ? (
+        <>
+      <h2>§ 1 Participation</h2>
+      <p>
+        (1) {G.name} (“ÖkoInvest”) obtains offers for the supply of electricity on behalf of its customers. Only energy suppliers invited by ÖkoInvest can
+        take part – via an account in the supplier portal or a personal offer link. By submitting its first offer or accepting the invitation, the supplier
+        accepts these terms.
+      </p>
+      <p>
+        (2) The supplier appoints a contact person authorised to represent it and cooperates in the company check (KYB). It warrants that it holds the
+        licences, registrations and balancing group agreements required for supply in the respective country.
+      </p>
+
+      <h2>§ 2 Procedure</h2>
+      <p>
+        (1) The request for quotation is <strong>not a formal award procedure</strong>. ÖkoInvest treats all invited suppliers according to the same rules
+        communicated in advance: the same documents, the same deadlines, the same information.
+      </p>
+      <p>
+        (2) The documents consist of a lot identifier, rounded key figures (annual volume, peak load), a standardised weekly profile, monthly shares,
+        country, voltage level, metering type, the required product variants (e.g. fixed price, tranches, spot index), start and end of supply, and the
+        price sheet.
+      </p>
+      <p>
+        (3) The supplier asks questions via the portal. Answers go to all invited suppliers in anonymised form. ÖkoInvest may supply additional documents,
+        extend deadlines and hold further rounds; in a further round, at most the information announced in advance is shared (e.g. rank, distance to the
+        best offer or best price) – <strong>never the names of other suppliers</strong>.
+      </p>
+
+      <h2>§ 3 Offers</h2>
+      <p>
+        (1) Offers are submitted exclusively via the price sheet, with all mandatory information: energy price or mark-up on the index, standing charge,
+        guarantees of origin, volume tolerance, <strong>validity period</strong>, payment terms and required collateral. Deviations from the
+        specifications and the supplier&apos;s own contract terms must be expressly stated in the offer; terms not stated do not become part of the offer.
+      </p>
+      <p>
+        (2) Offers are <strong>sealed</strong>: no supplier sees the offers, names or number of other suppliers. In each round, the offer submitted last
+        applies. Offers are locked after the offer deadline has expired.
+      </p>
+      <p>
+        (3) Offers are <strong>binding</strong> until the end of the stated validity period. If the award is made within the validity period, the
+        supplier is obliged to conclude the supply contract on the terms offered.
+      </p>
+
+      <h2>§ 4 Award and contract</h2>
+      <p>
+        (1) The award requires <strong>approval by the customer</strong>. There is no entitlement to an award, to reimbursement of the costs of the offer
+        or to be informed of the reasons; customers may end the procedure without an award.
+      </p>
+      <p>
+        (2) After the award, the successful supplier receives a letter of award and the customer&apos;s company name, address, contact person and location
+        IDs. The supply contract is concluded <strong>directly between the supplier and the customer</strong>. Unsuccessful suppliers are notified.
+      </p>
+
+      <h2>§ 5 Confidentiality and use of data</h2>
+      <ul>
+        <li>
+          Documents and consumption data are confidential and may be used <strong>only for the respective offer</strong> – not for advertising,
+          profiling or other purposes.
+        </li>
+        <li>Attempts to identify customers from the anonymised data are prohibited.</li>
+        <li>
+          Customers in an ongoing request for quotation must not be approached outside the platform regarding that request; this applies until{" "}
+          <Platzhalter>e.g. 12 months</Platzhalter> after the end of the request. Existing customer relationships remain unaffected.
+        </li>
+        <li>
+          Unsuccessful suppliers delete the documents after the end of the request, unless there is a retention obligation. After the award, the supplier
+          processes the customer data as an independent controller in accordance with data protection law.
+        </li>
+      </ul>
+
+      <h2>§ 6 Competition</h2>
+      <p>
+        Agreements between suppliers on prices, offers or participation are not permitted. If there are indications of anti-competitive conduct,
+        ÖkoInvest may exclude the supplier from the procedure.
+      </p>
+
+      <h2>§ 7 Remuneration, assessment</h2>
+      <p>
+        (1) Participation is free of charge for suppliers.{" "}
+        <Platzhalter>decide whether and what remuneration suppliers pay to ÖkoInvest; any remuneration will be disclosed to the customer</Platzhalter>
+      </p>
+      <p>
+        (2) ÖkoInvest documents the cooperation internally (e.g. response time, completeness of offers, contract implementation) and takes this into
+        account for future invitations.
+      </p>
+
+      <h2>§ 8 Exclusion and liability</h2>
+      <p>
+        (1) ÖkoInvest may exclude suppliers from a request, in particular in the case of incomplete or late offers, a missing company check, breaches of
+        these terms or well-founded doubts about the ability to supply.
+      </p>
+      <p>
+        (2) The information in the documents is based on the customer&apos;s data; ÖkoInvest gives no guarantee of its accuracy. Otherwise, the liability
+        provisions of the terms of use (§ 16) apply.
+      </p>
+        </>
+      ) : (
+        <>
 
       <h2>§ 1 Teilnahme</h2>
       <p>
@@ -131,7 +240,12 @@ export default function TeilnahmebedingungenLieferantenPage() {
         die Haftungsregelung der Nutzungsbedingungen (§ 16).
       </p>
 
+        </>
+      )}
+
       <WeitereBedingungen pfad={PFAD} />
     </LegalShell>
   );
 }
+
+export const generateMetadata = seitenMetadata("/bedingungen/lieferanten", metadata, { en: metadataEn });

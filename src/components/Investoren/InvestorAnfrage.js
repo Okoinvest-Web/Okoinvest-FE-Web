@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { cn } from "@/components/ui/cn";
 import AnfrageFormular from "@/components/Plattform/AnfrageFormular";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { BEGRIFFE_EN } from "@/lib/sprache/begriffe";
 
 /**
  * Suchprofil-Kurzform für Investoren: Ticketgröße, Phasen, Länder und
@@ -17,7 +20,34 @@ const TICKETS = [
   { id: "ueber50", label: "über 50 MWp" },
 ];
 
+const TEXTE = {
+  de: {
+    ticket: "Ticketgröße",
+    tickets: TICKETS.map((t) => t.label),
+    phasen: "Phasen (Mehrfachauswahl)",
+    laender: "Länder",
+    laenderNamen: { DE: "Deutschland", AT: "Österreich", CH: "Schweiz" },
+    technologie: "Technologie",
+    technik: { freiflaeche: "Freifläche", agri: "Agri-PV", speicher: "Speicher", carport: "Parkplatz" },
+    button: "Suchprofil senden",
+    erfolg: "Danke! Ihr Suchprofil ist eingegangen. Wir melden uns, sobald ein passendes Projekt verfügbar ist – oft bevor es öffentlich in der Börse steht.",
+  },
+  en: {
+    ticket: "Ticket size",
+    tickets: ["up to 5 MWp", "5–20 MWp", "20–50 MWp", "over 50 MWp"],
+    phasen: "Stages (multiple choice)",
+    laender: "Countries",
+    laenderNamen: { DE: "Germany", AT: "Austria", CH: "Switzerland" },
+    technologie: "Technology",
+    technik: { freiflaeche: "Ground-mounted", agri: "Agrivoltaics", speicher: "Storage", carport: "Car park" },
+    button: "Send search profile",
+    erfolg: "Thank you! Your search profile has been received. We will get in touch as soon as a suitable project is available – often before it is listed publicly on the exchange.",
+  },
+};
+
 export default function InvestorAnfrage({ phasen, dunkel = false }) {
+  const sprache = useSprache();
+  const t = uebersetze(TEXTE, sprache);
   const [ticket, setTicket] = useState("5-20");
   const [gewaehltePhasen, setPhasen] = useState(["satzung", "rtb"]);
   const [laender, setLaender] = useState(["DE"]);
@@ -28,34 +58,30 @@ export default function InvestorAnfrage({ phasen, dunkel = false }) {
   return (
     <div className="space-y-6">
       <fieldset>
-        <legend className={cn("mb-2.5 text-[14px] font-semibold", dunkel ? "text-white" : "text-ink-800")}>Ticketgröße</legend>
+        <legend className={cn("mb-2.5 text-[14px] font-semibold", dunkel ? "text-white" : "text-ink-800")}>{t.ticket}</legend>
         <div className="flex flex-wrap gap-2">
-          {TICKETS.map((t) => (
-            <Chip key={t.id} typ="radio" name="ticket" aktiv={ticket === t.id} onChange={() => setTicket(t.id)} dunkel={dunkel}>
-              {t.label}
+          {TICKETS.map((k, i) => (
+            <Chip key={k.id} typ="radio" name="ticket" aktiv={ticket === k.id} onChange={() => setTicket(k.id)} dunkel={dunkel}>
+              {t.tickets[i]}
             </Chip>
           ))}
         </div>
       </fieldset>
       <fieldset>
-        <legend className={cn("mb-2.5 text-[14px] font-semibold", dunkel ? "text-white" : "text-ink-800")}>Phasen (Mehrfachauswahl)</legend>
+        <legend className={cn("mb-2.5 text-[14px] font-semibold", dunkel ? "text-white" : "text-ink-800")}>{t.phasen}</legend>
         <div className="flex flex-wrap gap-2">
           {phasen.map((p) => (
             <Chip key={p.id} aktiv={gewaehltePhasen.includes(p.id)} onChange={() => umschalten(gewaehltePhasen, setPhasen, p.id)} dunkel={dunkel}>
-              {p.kurz}
+              {sprache === "en" ? BEGRIFFE_EN.phaseKurz[p.id] ?? p.kurz : p.kurz}
             </Chip>
           ))}
         </div>
       </fieldset>
       <div className="grid gap-6 sm:grid-cols-2">
         <fieldset>
-          <legend className={cn("mb-2.5 text-[14px] font-semibold", dunkel ? "text-white" : "text-ink-800")}>Länder</legend>
+          <legend className={cn("mb-2.5 text-[14px] font-semibold", dunkel ? "text-white" : "text-ink-800")}>{t.laender}</legend>
           <div className="flex flex-wrap gap-2">
-            {[
-              ["DE", "Deutschland"],
-              ["AT", "Österreich"],
-              ["CH", "Schweiz"],
-            ].map(([id, label]) => (
+            {["DE", "AT", "CH"].map((id) => [id, t.laenderNamen[id]]).map(([id, label]) => (
               <Chip key={id} aktiv={laender.includes(id)} onChange={() => umschalten(laender, setLaender, id)} dunkel={dunkel}>
                 {label}
               </Chip>
@@ -63,14 +89,9 @@ export default function InvestorAnfrage({ phasen, dunkel = false }) {
           </div>
         </fieldset>
         <fieldset>
-          <legend className={cn("mb-2.5 text-[14px] font-semibold", dunkel ? "text-white" : "text-ink-800")}>Technologie</legend>
+          <legend className={cn("mb-2.5 text-[14px] font-semibold", dunkel ? "text-white" : "text-ink-800")}>{t.technologie}</legend>
           <div className="flex flex-wrap gap-2">
-            {[
-              ["freiflaeche", "Freifläche"],
-              ["agri", "Agri-PV"],
-              ["speicher", "Speicher"],
-              ["carport", "Parkplatz"],
-            ].map(([id, label]) => (
+            {["freiflaeche", "agri", "speicher", "carport"].map((id) => [id, t.technik[id]]).map(([id, label]) => (
               <Chip key={id} aktiv={technik.includes(id)} onChange={() => umschalten(technik, setTechnik, id)} dunkel={dunkel}>
                 {label}
               </Chip>
@@ -87,8 +108,8 @@ export default function InvestorAnfrage({ phasen, dunkel = false }) {
           land={laender.length === 1 ? laender[0] : undefined} // Paket C: eindeutiges Zielland → kontakt.land (Routing je Land)
           felder={["firma", "telefon", "nachricht"]}
           daten={{ ticket, phasen: gewaehltePhasen, laender, technologie: technik }}
-          button="Suchprofil senden"
-          erfolgText="Danke! Ihr Suchprofil ist eingegangen. Wir melden uns, sobald ein passendes Projekt verfügbar ist – oft bevor es öffentlich in der Börse steht."
+          button={t.button}
+          erfolgText={t.erfolg}
         />
       </div>
     </div>

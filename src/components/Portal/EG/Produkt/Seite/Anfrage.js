@@ -5,6 +5,7 @@ import Section from "@/components/ui/Section";
 import { Eyebrow } from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
 import AnfrageMitDaten from "@/components/Gemeinschaft/AnfrageMitDaten";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 // Schritt 2 beschreibt, was das Formular nach dem Absenden tatsächlich anzeigt (Vorgangsnummer, Status im Portal).
 const ABLAUF = [
@@ -18,6 +19,15 @@ const ZUSAGEN = [
   { icon: KeyRound, text: "Die Marktpartner-ID bleibt bei Ihrer Gemeinschaft" },
   { icon: Scale, text: "Auftragsverarbeitung nach Art. 28 DSGVO" },
 ];
+
+/* Sprachmodell: englische Fassung (gleiche Reihenfolge) */
+const ABLAUF_EN = [
+  { titel: "You briefly describe your situation", text: "Model, approximate number of metering points and capacity are enough." },
+  { titel: "You receive a reference number", text: "Immediately after sending. If you register, you can follow the status in the portal." },
+  { titel: "We get back to you with a proposal", text: "Suitable package and a specific offer, openly calculated." },
+  { titel: "You decide", text: "If you wish, we will show you the platform with your own figures." },
+];
+const ZUSAGEN_EN = ["Enquire without obligation", "The market partner ID stays with your community", "Data processing under Art. 28 GDPR"];
 
 // Dekor: Gemeinschaft als Netz – Knoten (Mitglieder) um einen Erzeuger, leise im Hintergrund.
 function NetzDekor({ className }) {
@@ -43,12 +53,14 @@ function NetzDekor({ className }) {
 // Zeitstrahl „Was nach dem Absenden passiert“. Wird für Desktop (Seitenspalte) und mobil (nach dem Formular)
 // gerendert; die jeweils andere Fassung ist per display:none auch für Screenreader ausgeblendet.
 function Ablauf({ className }) {
+  const en = spracheDerAnfrage() === "en";
+  const ablauf = en ? ABLAUF.map((a, i) => ({ ...a, ...ABLAUF_EN[i] })) : ABLAUF;
   return (
     <div className={className}>
-      <h3 className="text-ov-300"><span className="ov-overline block font-sans">Was nach dem Absenden passiert</span></h3>
+      <h3 className="text-ov-300"><span className="ov-overline block font-sans">{en ? "What happens after sending" : "Was nach dem Absenden passiert"}</span></h3>
       <ol className="mt-6">
-        {ABLAUF.map(({ icon: Icon, titel, text }, i) => (
-          <li key={titel} className="relative flex gap-4 pb-7 last:pb-0">
+        {ablauf.map(({ icon: Icon, titel, text }, i) => (
+          <li key={i} className="relative flex gap-4 pb-7 last:pb-0">
             {i < ABLAUF.length - 1 && (
               <span aria-hidden="true" className="absolute bottom-1 left-[21px] top-12 w-px bg-gradient-to-b from-ov-400/60 to-white/10" />
             )}
@@ -58,7 +70,7 @@ function Ablauf({ className }) {
             </span>
             <div className="min-w-0 pt-0.5">
               <p className="font-display text-[17px] font-bold leading-snug text-white">
-                <span className="sr-only">Schritt {i + 1}: </span>
+                <span className="sr-only">{en ? `Step ${i + 1}: ` : `Schritt ${i + 1}: `}</span>
                 {titel}
               </p>
               <p className="mt-1 text-[15px] leading-relaxed text-white/70">{text}</p>
@@ -71,6 +83,8 @@ function Ablauf({ className }) {
 }
 
 export default function Anfrage() {
+  const en = spracheDerAnfrage() === "en";
+  const zusagen = en ? ZUSAGEN.map((z, i) => ({ ...z, text: ZUSAGEN_EN[i] })) : ZUSAGEN;
   return (
     <Section
       data-abschnitt="anfrage"
@@ -87,14 +101,26 @@ export default function Anfrage() {
       <div className="ov-container relative grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
         {/* Kopf */}
         <Reveal className="lg:self-start lg:pt-4">
-          <Eyebrow dark className="mb-4">Anfrage</Eyebrow>
+          <Eyebrow dark className="mb-4">{en ? "Enquiry" : "Anfrage"}</Eyebrow>
           <h2 id="anfrage-titel" className="ov-h2 text-white">
-            Gründen, wechseln oder <span className="ov-text-gradient-light">betreiben lassen</span>
+            {en ? (
+              <>
+                Found, switch or <span className="ov-text-gradient-light">have it operated</span>
+              </>
+            ) : (
+              <>
+                Gründen, wechseln oder <span className="ov-text-gradient-light">betreiben lassen</span>
+              </>
+            )}
           </h2>
-          <p className="ov-lead mt-5 max-w-xl text-white/75">Erzählen Sie uns kurz, wo Ihre Gemeinschaft steht. Wir melden uns mit einem konkreten Vorschlag und Angebot.</p>
+          <p className="ov-lead mt-5 max-w-xl text-white/75">
+            {en
+              ? "Tell us briefly where your community stands. We will get back to you with a specific proposal and offer."
+              : "Erzählen Sie uns kurz, wo Ihre Gemeinschaft steht. Wir melden uns mit einem konkreten Vorschlag und Angebot."}
+          </p>
           <ul className="mt-8 flex flex-wrap gap-2">
-            {ZUSAGEN.map(({ icon: Icon, text }) => (
-              <li key={text} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white/[0.07] px-3.5 py-2 text-[14px] font-medium text-white/90 ring-1 ring-white/15">
+            {zusagen.map(({ icon: Icon, text }, i) => (
+              <li key={i} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white/[0.07] px-3.5 py-2 text-[14px] font-medium text-white/90 ring-1 ring-white/15">
                 <Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-ov-300" />
                 {text}
               </li>
@@ -109,21 +135,30 @@ export default function Anfrage() {
           <div className="relative overflow-hidden rounded-[2rem] bg-white text-ink-900 shadow-e4 ring-1 ring-white/20">
             <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-ink-200/70 bg-gradient-to-r from-ov-50 to-white px-6 py-5 sm:px-8 md:px-10">
               <div className="min-w-0">
-                <p className="font-display text-[20px] font-bold leading-tight text-ink-900">Ihre Anfrage</p>
-                <p className="mt-1 text-[14px] text-ink-600">Pflicht sind nur Name, E-Mail und Ihre Einwilligung.</p>
+                <p className="font-display text-[20px] font-bold leading-tight text-ink-900">{en ? "Your enquiry" : "Ihre Anfrage"}</p>
+                <p className="mt-1 text-[14px] text-ink-600">{en ? "Only name, email and your consent are required." : "Pflicht sind nur Name, E-Mail und Ihre Einwilligung."}</p>
               </div>
             </div>
             <div className="p-6 sm:p-8 md:p-10">
               <AnfrageMitDaten
-                legende="Ihre Gemeinschaft oder Ihr Vorhaben"
+                legende={en ? "Your community or project" : "Ihre Gemeinschaft oder Ihr Vorhaben"}
                 festeDaten={{ quelle: "energiegemeinschaften-software", land: "AT" }}
-                zusatz={[
+                zusatz={
+                  en
+                    ? [
+                        { name: "anliegen", label: "What is it about?", art: "chips", optionen: [{ id: "software", label: "Use the software" }, { id: "betrieb", label: "Hand over operation" }, { id: "gruendung", label: "Found a community" }, { id: "wechsel", label: "Switch provider" }] },
+                        { name: "modell", label: "Model", art: "select", optionen: [{ id: "offen", label: "Still open" }, { id: "eeg_lokal", label: "EEG local" }, { id: "eeg_regional", label: "EEG regional" }, { id: "beg", label: "BEG" }, { id: "gea", label: "GEA" }] },
+                        { name: "zaehlpunkte", label: "How many metering points? (an estimate is enough)", art: "zahl", platzhalter: "e.g. 60" },
+                        { name: "erzeugungKw", label: "Generation capacity in kW (an estimate is enough)", art: "zahl", platzhalter: "e.g. 120" },
+                      ]
+                    : [
                   { name: "anliegen", label: "Worum geht es?", art: "chips", optionen: [{ id: "software", label: "Software nutzen" }, { id: "betrieb", label: "Betrieb abgeben" }, { id: "gruendung", label: "Gemeinschaft gründen" }, { id: "wechsel", label: "Anbieter wechseln" }] },
                   { name: "modell", label: "Modell", art: "select", optionen: [{ id: "offen", label: "Noch offen" }, { id: "eeg_lokal", label: "EEG lokal" }, { id: "eeg_regional", label: "EEG regional" }, { id: "beg", label: "BEG" }, { id: "gea", label: "GEA" }] },
                   { name: "zaehlpunkte", label: "Wie viele Zählpunkte? (Schätzung genügt)", art: "zahl", platzhalter: "z. B. 60" },
                   { name: "erzeugungKw", label: "Erzeugungsleistung in kW (Schätzung genügt)", art: "zahl", platzhalter: "z. B. 120" },
-                ]}
-                formular={{ typ: "energiegemeinschaft", felder: ["firma", "telefon", "plz", "nachricht"], button: "Unverbindlich anfragen" }}
+                ]
+                }
+                formular={{ typ: "energiegemeinschaft", felder: ["firma", "telefon", "plz", "nachricht"], button: en ? "Enquire without obligation" : "Unverbindlich anfragen" }}
               />
             </div>
           </div>

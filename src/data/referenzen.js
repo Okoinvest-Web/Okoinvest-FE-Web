@@ -151,3 +151,58 @@ export const KOMPETENZEN = [
     text: "Die österreichische Schwester errichtete allein 2021 PV-Anlagen mit 30 MWp (Unternehmensangabe).",
   },
 ];
+
+/* ------------------------------------------------------------------ */
+/* Englisch (Sprachmodell): nur Texte, gleiche Reihenfolge             */
+/* Registerangaben (HRA, Amtsgericht) und Namen bleiben im Original.   */
+/* ------------------------------------------------------------------ */
+
+const EN = {
+  quellen: [
+    { titel: "Company information of the ÖKOVOLT Group", text: "Company history, roles of the companies, installed capacity in Austria" },
+    { titel: "Commercial register (Handelsregister), Memmingen local court", text: "Operating companies of the solar parks (HRA 12215, HRA 12240, HRA 12450)" },
+    { titel: "Market Master Data Register of the Federal Network Agency (evaluated by Global Energy Monitor)", text: "Capacity and year of commissioning of the Tilleda solar park" },
+  ],
+  parks: [
+    { name: "Irsingen solar park", ort: "Irsingen, a district of Türkheim", region: "Bavaria", register: "HRA 12450, Memmingen local court", seit: "Operating company since 2013", text: "The solar park right next to the parent company's headquarters – power generated where the group works." },
+    { name: "Artern solar park", ort: "Artern", region: "Thuringia", register: "HRA 12215, Memmingen local court", seit: "Operating company since 2012", text: "One of the first parks with which the founders took the step from the roof to open land in 2012." },
+    { name: "Tilleda solar park", ort: "Tilleda, town of Kelbra (Kyffhäuser)", region: "Saxony-Anhalt", register: "HRA 12240, Memmingen local court", seit: "Operating company since May 2012", text: "Business purpose according to the register: operation of solar power plants.", eckdaten: [{ label: "Capacity", wert: "around 3 MWp" }, { label: "Commissioning", wert: "2012" }] },
+  ],
+  standorte: [
+    { name: "Türkheim (DE)", text: "Parent company ÖKOVOLT GmbH Solartechnik – and the Irsingen solar park" },
+    { name: "Ostermiething (AT)", text: "ÖkoInvest GmbH and ÖKOVOLT Solartechnik GmbH" },
+    { name: "Artern (DE)", text: "Solar park, Thuringia" },
+    { name: "Tilleda (DE)", text: "Solar park, Saxony-Anhalt" },
+  ],
+  chronik: [
+    { titel: "Founded with its own installation company", text: "ÖKOVOLT GmbH in Türkheim and ÖKOVOLT Montage GmbH – planning, construction and commissioning from a single source from the outset." },
+    { titel: "First own solar parks", text: "The founders build solar parks and operate them themselves – one operating company per park, including in Artern and Tilleda. Deutsche Solar & Rammtechnik GmbH is founded alongside." },
+    { titel: "A solar park on the doorstep", text: "Irsingen Solarstrom GmbH & Co. KG creates a park in Irsingen, a district of Türkheim." },
+    { titel: "Parks pooled", text: "The solar parks are pooled in AWSM Beteiligung GmbH, the founders' holding company. ÖKOVOLT Solarstrom Betriebs GmbH acts as general partner of the park limited partnerships." },
+    { jahr: "Today", titel: "More than a decade of operating experience", text: "Yield, maintenance, inverter replacement, grid operators, direct marketing – this experience flows into every new project." },
+  ],
+  kompetenzen: [
+    { titel: "Planning", text: "Planning and consulting for PV systems are part of the parent company's business purpose. ÖkoInvest develops ground-mounted PV and agrivoltaics through to ready-to-build – around 50 MWp of new capacity enters development each year." },
+    { titel: "Construction", text: "Planning, construction and commissioning for businesses, industry, municipalities and agriculture – with in-house installation teams since 2010, supplemented by partner firms where needed." },
+    { titel: "Pile-driving", text: "Own pile-driving equipment for the foundations of ground-mounted plants since 2012 – without depending on third parties for the foundations of the mounting structure." },
+    { titel: "Operation", text: "Own solar parks since 2012, one operating company per park. This keeps financing, liability and operation cleanly separated – the same structure buyers of project companies are familiar with." },
+    { titel: "Direct marketing via partners", gesellschaft: "Experience from operating our parks", text: "The power is marketed via specialised direct marketers. The group knows the requirements from an operator's perspective – contracts, remote controllability, billing." },
+    { titel: "Construction in Austria", text: "In 2021 alone, the Austrian sister company installed PV systems with 30 MWp (company information)." },
+  ],
+};
+
+const STAND_EN = "29/09/2026";
+
+/** Referenzdaten in der Sprache der Seite (Rückfall Deutsch). */
+export function referenzenFuer(sprache) {
+  if (sprache !== "en") return { stand: REFERENZEN_STAND, quellen: QUELLEN_REFERENZEN, parks: PARKS, standorte: STANDORTE, chronik: BETRIEB_CHRONIK, kompetenzen: KOMPETENZEN };
+  const je = (de, en) => de.map((d, i) => ({ ...d, ...en[i], ...(d.eckdaten ? { eckdaten: d.eckdaten.map((e, k) => ({ ...e, ...(en[i]?.eckdaten?.[k] || {}) })) } : {}) }));
+  return {
+    stand: STAND_EN,
+    quellen: je(QUELLEN_REFERENZEN, EN.quellen),
+    parks: je(PARKS, EN.parks),
+    standorte: je(STANDORTE, EN.standorte),
+    chronik: je(BETRIEB_CHRONIK, EN.chronik),
+    kompetenzen: je(KOMPETENZEN, EN.kompetenzen),
+  };
+}

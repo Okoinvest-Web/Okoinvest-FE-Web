@@ -1,12 +1,70 @@
 // „Was wir anbieten“ – Bento-Raster nach Einstiegszeitpunkt
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowUpRight, BatteryCharging, Building2, FileSignature, Handshake, Layers, Users } from "lucide-react";
 import Reveal from "@/components/ui/Reveal";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { cn } from "@/components/ui/cn";
 import { PHASEN } from "@/lib/invest/markt";
-import { fmt } from "@/lib/rechner/annahmen";
-import { pfad } from "@/lib/land";
+import { landCode, landHinweisText, landHinweisTextEn, pfad } from "@/lib/land";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { fmtZahl } from "@/lib/sprache/format";
+import { BEGRIFFE_EN } from "@/lib/sprache/begriffe";
+
+const TEXTE = {
+  de: {
+    eyebrow: "Was wir anbieten",
+    titel: "Vom ersten Pachtvertrag bis zur laufenden Anlage.",
+    lead: "Sie entscheiden, wie viel Entwicklungsrisiko Sie tragen wollen. Je früher der Einstieg, desto günstiger der Preis je kWp\u00a0– und desto wichtiger ein Partner, der das Projekt bis zum Netz bringt.",
+    rechteEtikett: "Einstieg früh · mehr Auswahl",
+    rechteTitel: "Projektrechte in jeder Phase",
+    rechteText: "Von gesicherter Fläche über Netzzusage und Aufstellungsbeschluss bis zum Satzungsbeschluss\u00a0– mit transparentem Stand und offenen Punkten.",
+    spannen: "Marktspannen je kWp für Projektrechte, Details im Phasenmodell unten.",
+    gilt: " (gilt für Deutschland)",
+    frueher: "Je früher die Phase, desto niedriger der Preis je kWp.",
+    thema: "Marktspannen je kWp",
+    rtbEtikett: "Einstieg baureif",
+    rtbTitel: "Baureife Projekte (RTB)",
+    rtbText: "Baurecht, Netzanschluss, Flächen und Gutachten liegen vor. Auf Wunsch mit EPC aus der Gruppe\u00a0– eigene Rammtechnik inklusive.",
+    rtbListe: ["Baurecht liegt vor", "Netzanschluss liegt vor", "Flächen liegt vor", "Gutachten liegt vor"],
+    bestandEtikett: "Einstieg im Betrieb",
+    bestandTitel: "Bestandsanlagen & Secondary",
+    bestandText: "Laufende Solarparks mit Ertragshistorie, Förderung oder PPA\u00a0– für Investoren, die Cashflow statt Entwicklungsrisiko suchen.",
+    coEtikett: "Früh, mit Vorkaufsrecht",
+    coTitel: "Co-Development",
+    coText: "Früh einsteigen, Entwicklung mitfinanzieren, Vorkaufsrecht bei Baureife sichern\u00a0– mit Meilensteinzahlungen und klarer Governance.",
+    wege: [
+      { titel: "Speicher & Co-Location", text: "Batteriespeicher am selben Netzanschluss wie der Solarpark oder als eigenständiges Projekt an Netzknoten." },
+      { titel: "Beteiligung für Bürger", text: "Kleinere Beträge? Über die Genossenschaft beteiligen sich Bürger und Landwirte an Parks vor Ort." },
+    ],
+  },
+  en: {
+    eyebrow: "What we offer",
+    titel: "From the first lease agreement to the operating plant.",
+    lead: "You decide how much development risk you want to take on. The earlier you enter, the lower the price per kWp\u00a0– and the more important a partner who brings the project all the way to the grid.",
+    rechteEtikett: "Early entry · wider choice",
+    rechteTitel: "Project rights at every stage",
+    rechteText: "From secured land via grid commitment and zoning resolution to the adopted development plan\u00a0– with a transparent status and open points.",
+    spannen: "Market ranges per kWp for project rights, details in the stage model below.",
+    gilt: " (applies to Germany)",
+    frueher: "The earlier the stage, the lower the price per kWp.",
+    thema: "Market ranges per kWp",
+    rtbEtikett: "Ready-to-build entry",
+    rtbTitel: "Ready-to-build projects (RTB)",
+    rtbText: "Building rights, grid connection, land and expert reports are in place. On request with EPC from the group\u00a0– including our own pile-driving equipment.",
+    rtbListe: ["Building rights in place", "Grid connection in place", "Land in place", "Expert reports in place"],
+    bestandEtikett: "Entry in operation",
+    bestandTitel: "Operating assets & secondary",
+    bestandText: "Operating solar parks with a yield history, subsidy or PPA\u00a0– for investors who are looking for cash flow rather than development risk.",
+    coEtikett: "Early, with right of first refusal",
+    coTitel: "Co-development",
+    coText: "Enter early, co-finance development, secure a right of first refusal at ready-to-build\u00a0– with milestone payments and clear governance.",
+    wege: [
+      { titel: "Storage & co-location", text: "Battery storage at the same grid connection as the solar park or as a stand-alone project at grid nodes." },
+      { titel: "Participation for citizens", text: "Smaller amounts? Through the cooperative, citizens and farmers take a stake in local parks." },
+    ],
+  },
+};
 
 function Etikett({ children, dunkel = false }) {
   return (
@@ -32,7 +90,14 @@ function Symbol({ icon: Icon, ton = "hell" }) {
   );
 }
 
-export default function Angebot() {
+export default function Angebot({ land = null }) {
+  // Marktspannen je kWp sind Werte für Deutschland (PHASEN): in AT/CH ohne Eurowerte, mit LandHinweis
+  const l = landCode(land);
+  const werte = !l || l === "DE";
+  const sprache = spracheDerAnfrage();
+  const en = sprache === "en";
+  const t = uebersetze(TEXTE, sprache);
+  const f = (n) => fmtZahl(n, 0, sprache);
   const entwicklung = PHASEN.filter((p) => p.id !== "cod");
   const max = Math.max(...entwicklung.map((p) => p.preisProKwp.max));
   return (
@@ -40,10 +105,10 @@ export default function Angebot() {
       <div className="ov-container">
         <div className="mb-10 grid gap-6 md:mb-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.75fr)] lg:items-end lg:gap-16">
           <div>
-            <SectionHeading eyebrow="Was wir anbieten" title={<span id="angebot-titel">Vom ersten Pachtvertrag bis zur laufenden Anlage.</span>} />
+            <SectionHeading eyebrow={t.eyebrow} title={<span id="angebot-titel">{t.titel}</span>} />
           </div>
           <Reveal>
-            <p className="ov-lead text-ink-600">Sie entscheiden, wie viel Entwicklungsrisiko Sie tragen wollen. Je früher der Einstieg, desto günstiger der Preis je kWp&nbsp;– und desto wichtiger ein Partner, der das Projekt bis zum Netz bringt.</p>
+            <p className="ov-lead text-ink-600">{t.lead}</p>
           </Reveal>
         </div>
 
@@ -52,10 +117,10 @@ export default function Angebot() {
           <Reveal className="relative overflow-hidden rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/70 md:col-span-2 md:p-8 lg:col-span-4">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <Symbol icon={Layers} />
-              <Etikett>Einstieg früh · mehr Auswahl</Etikett>
+              <Etikett>{t.rechteEtikett}</Etikett>
             </div>
-            <h3 className="ov-h3 mt-6 text-ink-900">Projektrechte in jeder Phase</h3>
-            <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-ink-600">Von gesicherter Fläche über Netzzusage und Aufstellungsbeschluss bis zum Satzungsbeschluss&nbsp;– mit transparentem Stand und offenen Punkten.</p>
+            <h3 className="ov-h3 mt-6 text-ink-900">{t.rechteTitel}</h3>
+            <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-ink-600">{t.rechteText}</p>
             <div className="mt-7 grid grid-cols-5 items-end gap-2 sm:gap-3" aria-hidden="true">
               {entwicklung.map((p) => (
                 <div key={p.id} className="min-w-0">
@@ -66,12 +131,16 @@ export default function Angebot() {
                       style={{ bottom: `${(p.preisProKwp.min / max) * 100}%`, top: `${100 - (p.preisProKwp.max / max) * 100}%`, minHeight: 6 }}
                     />
                   </div>
-                  <p className="mt-2 truncate text-[11.5px] font-semibold text-ink-700 sm:text-[12.5px]">{p.kurz}</p>
-                  <p className="ov-num text-[11px] text-ink-500 sm:text-[12px]">{fmt(p.preisProKwp.min)}–{fmt(p.preisProKwp.max)} €</p>
+                  <p className="mt-2 truncate text-[11.5px] font-semibold text-ink-700 sm:text-[12.5px]">{en ? BEGRIFFE_EN.phaseKurz[p.id] ?? p.kurz : p.kurz}</p>
+                  {werte && <p className="ov-num text-[11px] text-ink-500 sm:text-[12px]">{en ? `€${f(p.preisProKwp.min)}–${f(p.preisProKwp.max)}` : `${f(p.preisProKwp.min)}–${f(p.preisProKwp.max)} €`}</p>}
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-[12.5px] text-ink-500">Marktspannen je kWp für Projektrechte, Details im Phasenmodell unten.</p>
+            <p className="mt-3 text-[12.5px] text-ink-500">
+              {werte
+                ? `${t.spannen}${l ? "" : t.gilt}`
+                : `${t.frueher} ${en ? landHinweisTextEn(l, t.thema) : landHinweisText(l, t.thema)}.`}
+            </p>
           </Reveal>
 
           {/* RTB – hervorgehoben */}
@@ -79,13 +148,13 @@ export default function Angebot() {
             <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-ov-400/40 blur-3xl" />
             <div className="relative flex flex-wrap items-start justify-between gap-4">
               <Symbol icon={FileSignature} ton="gruen" />
-              <Etikett dunkel>Einstieg baureif</Etikett>
+              <Etikett dunkel>{t.rtbEtikett}</Etikett>
             </div>
-            <h3 className="ov-h3 relative mt-6">Baureife Projekte (RTB)</h3>
-            <p className="relative mt-2 text-[15px] leading-relaxed text-white/85">Baurecht, Netzanschluss, Flächen und Gutachten liegen vor. Auf Wunsch mit EPC aus der Gruppe&nbsp;– eigene Rammtechnik inklusive.</p>
+            <h3 className="ov-h3 relative mt-6">{t.rtbTitel}</h3>
+            <p className="relative mt-2 text-[15px] leading-relaxed text-white/85">{t.rtbText}</p>
             <ul className="relative mt-auto space-y-2 border-t border-white/15 pt-5 text-[13.5px] text-white/85 max-lg:mt-6">
-              {["Baurecht", "Netzanschluss", "Flächen", "Gutachten"].map((x) => (
-                <li key={x} className="flex items-center gap-2"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-sun-300" />{x} liegt vor</li>
+              {t.rtbListe.map((x) => (
+                <li key={x} className="flex items-center gap-2"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-sun-300" />{x}</li>
               ))}
             </ul>
           </Reveal>
@@ -95,27 +164,27 @@ export default function Angebot() {
             <div aria-hidden="true" className="ov-grid-bg pointer-events-none absolute inset-0 opacity-60" />
             <div className="relative flex flex-wrap items-start justify-between gap-4">
               <Symbol icon={Building2} ton="navy" />
-              <Etikett dunkel>Einstieg im Betrieb</Etikett>
+              <Etikett dunkel>{t.bestandEtikett}</Etikett>
             </div>
-            <h3 className="ov-h3 relative mt-6">Bestandsanlagen &amp; Secondary</h3>
-            <p className="relative mt-2 text-[15px] leading-relaxed text-white/75">Laufende Solarparks mit Ertragshistorie, Förderung oder PPA&nbsp;– für Investoren, die Cashflow statt Entwicklungsrisiko suchen.</p>
+            <h3 className="ov-h3 relative mt-6">{t.bestandTitel}</h3>
+            <p className="relative mt-2 text-[15px] leading-relaxed text-white/75">{t.bestandText}</p>
           </Reveal>
 
           {/* Co-Development */}
           <Reveal delay={120} className="relative overflow-hidden rounded-3xl bg-white p-6 ring-1 ring-ink-200/70 md:p-8 lg:col-span-2">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <Symbol icon={Handshake} />
-              <Etikett>Früh, mit Vorkaufsrecht</Etikett>
+              <Etikett>{t.coEtikett}</Etikett>
             </div>
-            <h3 className="ov-h3 mt-6 text-ink-900">Co-Development</h3>
-            <p className="mt-2 text-[15px] leading-relaxed text-ink-600">Früh einsteigen, Entwicklung mitfinanzieren, Vorkaufsrecht bei Baureife sichern&nbsp;– mit Meilensteinzahlungen und klarer Governance.</p>
+            <h3 className="ov-h3 mt-6 text-ink-900">{t.coTitel}</h3>
+            <p className="mt-2 text-[15px] leading-relaxed text-ink-600">{t.coText}</p>
           </Reveal>
 
           {/* Weitere Wege */}
           <div className="grid gap-4 md:col-span-2 md:grid-cols-2 lg:col-span-2 lg:grid-cols-1 lg:gap-5">
             {[
-              { icon: BatteryCharging, titel: "Speicher & Co-Location", text: "Batteriespeicher am selben Netzanschluss wie der Solarpark oder als eigenständiges Projekt an Netzknoten.", href: pfad("/grossspeicher") },
-              { icon: Users, titel: "Beteiligung für Bürger", text: "Kleinere Beträge? Über die Genossenschaft beteiligen sich Bürger und Landwirte an Parks vor Ort.", href: pfad("/genossenschaft") },
+              { icon: BatteryCharging, ...t.wege[0], href: pfad("/grossspeicher") },
+              { icon: Users, ...t.wege[1], href: pfad("/genossenschaft") },
             ].map((w, i) => (
               <Reveal key={w.href} delay={160 + i * 60} className="flex">
                 <Link

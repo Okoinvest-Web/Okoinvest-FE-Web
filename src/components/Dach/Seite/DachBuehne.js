@@ -5,6 +5,45 @@ import { Check, MapPin } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { Zaehler } from "@/components/motion";
 import { fmt } from "@/lib/rechner/annahmen";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { fmtZahl } from "@/lib/sprache/format";
+
+/** Sprachmodell: Texte der Bühne (Werte aus dem Dachpacht-Rechner, Format je Sprache). */
+const WORTE = {
+  de: {
+    f: (n, s = 0) => fmt(n, s),
+    titel: "Gewerbehalle mit Photovoltaik-Modulreihen auf dem Dach, freiem Brandschutzstreifen und Netzanschluss",
+    kopf: (m2) => `Beispiel: ${fmt(m2)} m² Trapezdach · Süd · Süddeutschland`,
+    pacht: "Dachpacht fest",
+    beispiel: "Beispiel",
+    jahr: " / Jahr",
+    leistung: (kwp, mwh) => `≈ ${kwp} kWp · ${mwh} MWh im Jahr`,
+    jahr1: "Jahr 1",
+    summe: (tsd, j) => `${tsd} Tsd. € in ${j} J.`,
+    einmal: (tsd) => `Einmalzahlung ca. ${tsd} Tsd. €`,
+    portal: "Ihr Dach im Portal",
+    status: ["Dachcheck", "Begehung & Statik", "Angebot & Vertrag", "Netz & Genehmigung"],
+    zustand: { fertig: "(erledigt)", aktiv: "(in Arbeit)", offen: "(offen)" },
+    zahlen: "de-DE",
+  },
+  en: {
+    f: (n, s = 0) => fmtZahl(n, s, "en"),
+    titel: "Commercial hall with rows of photovoltaic modules on the roof, a clear fire protection strip and a grid connection",
+    kopf: (m2) => `Example: ${fmtZahl(m2, 0, "en")} m² trapezoidal roof · south · southern Germany`,
+    pacht: "Fixed roof lease",
+    beispiel: "Example",
+    jahr: " / year",
+    leistung: (kwp, mwh) => `≈ ${kwp} kWp · ${mwh} MWh per year`,
+    jahr1: "Year 1",
+    summe: (tsd, j) => `€${tsd}k over ${j} yrs`,
+    einmal: (tsd) => `One-off payment approx. €${tsd}k`,
+    portal: "Your roof in the portal",
+    status: ["Roof check", "Site visit & structural check", "Offer & contract", "Grid & permit"],
+    zustand: { fertig: "(done)", aktiv: "(in progress)", offen: "(open)" },
+    zahlen: "en-GB",
+  },
+};
 
 /* ---------- Isometrie ---------- */
 const S = 25; // Maßstab
@@ -35,10 +74,10 @@ function module() {
 const MODULE = module();
 const REIHEN = Math.max(...MODULE.map((m) => m.r)) + 1;
 
-function Halle() {
+function Halle({ titel }) {
   return (
     <svg viewBox="0 0 560 420" className="block h-auto w-full" role="img" aria-labelledby="dach-buehne-titel">
-      <title id="dach-buehne-titel">Gewerbehalle mit Photovoltaik-Modulreihen auf dem Dach, freiem Brandschutzstreifen und Netzanschluss</title>
+      <title id="dach-buehne-titel">{titel}</title>
       <defs>
         <linearGradient id="db-modul" x1="0" x2="1" y1="0" y2="1">
           <stop offset="0" stopColor="#2a6fc2" />
@@ -140,47 +179,53 @@ const STATUS = [
 ];
 
 export default function DachBuehne({ bsp, m2, laufzeit }) {
+  const w = uebersetze(WORTE, spracheDerAnfrage());
+  const f = w.f;
   return (
     <div className="relative">
       {/* Kopfzeile der Bühne */}
       <div className="mx-auto flex max-w-[440px] items-center justify-center gap-2 rounded-full bg-white/[0.06] px-3.5 py-1.5 text-[12.5px] text-white/75 ring-1 ring-inset ring-white/12 sm:absolute sm:left-4 sm:top-0 sm:mx-0 sm:max-w-none">
         <MapPin aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-ov-300" />
-        Beispiel: {fmt(m2)} m² Trapezdach · Süd · Süddeutschland
+        {w.kopf(m2)}
       </div>
 
       <div className="relative mx-auto mt-2 max-w-[600px] sm:mt-6 lg:mt-8">
-        <Halle />
+        <Halle titel={w.titel} />
       </div>
 
       {/* Karte: Pacht */}
       <div className="ov-hero-in relative mx-auto mt-2 w-full max-w-[300px] rounded-2xl bg-white p-4 text-ink-900 shadow-e4 ring-1 ring-black/5 sm:absolute sm:right-0 sm:top-6 sm:mt-0 sm:w-[260px] lg:-right-2 lg:top-4 xl:-right-6" style={{ "--ov-delay": "900ms" }}>
         <p className="flex items-center justify-between text-[11.5px] font-semibold uppercase tracking-[0.08em] text-ink-500">
-          Dachpacht fest
-          <span className="rounded-full bg-sun-50 px-2 py-0.5 text-[10.5px] font-bold tracking-[0.06em] text-sun-700 ring-1 ring-sun-200">Beispiel</span>
+          {w.pacht}
+          <span className="rounded-full bg-sun-50 px-2 py-0.5 text-[10.5px] font-bold tracking-[0.06em] text-sun-700 ring-1 ring-sun-200">{w.beispiel}</span>
         </p>
         <p className="ov-num mt-2 font-display text-[30px] font-extrabold leading-none tracking-tight">
-          <Zaehler wert={Math.round(bsp.pachtJahr)} nach=" €" dauer={1200} verzoegerung={1000} />
-          <span className="text-[14px] font-bold text-ink-500"> / Jahr</span>
+          {w.zahlen === "en-GB" ? (
+            <Zaehler wert={Math.round(bsp.pachtJahr)} vor="€" dauer={1200} verzoegerung={1000} sprache="en-GB" />
+          ) : (
+            <Zaehler wert={Math.round(bsp.pachtJahr)} nach=" €" dauer={1200} verzoegerung={1000} />
+          )}
+          <span className="text-[14px] font-bold text-ink-500">{w.jahr}</span>
         </p>
         <p className="ov-num mt-1.5 text-[12.5px] text-ink-600">
-          ≈ {fmt(bsp.kwp)} kWp · {fmt(bsp.kwhJahr1 / 1000)} MWh im Jahr
+          {w.leistung(f(bsp.kwp), f(bsp.kwhJahr1 / 1000))}
         </p>
         <PachtSaeulen jahr={bsp.pachtJahr} laufzeit={laufzeit} einmal={bsp.einmalzahlung} />
         <div className="ov-num mt-2 flex items-center justify-between text-[11.5px] text-ink-500">
-          <span>Jahr 1</span>
-          <span className="font-semibold text-ov-700">{fmt(Math.round(bsp.wege.pacht.summe / 1000))} Tsd. € in {laufzeit} J.</span>
+          <span>{w.jahr1}</span>
+          <span className="font-semibold text-ov-700">{w.summe(f(Math.round(bsp.wege.pacht.summe / 1000)), laufzeit)}</span>
         </div>
         <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-ink-500">
           <span aria-hidden="true" className="inline-block w-4 border-t border-dashed border-navy-500" />
-          Einmalzahlung ca. {fmt(Math.round(bsp.einmalzahlung / 1000))} Tsd. €
+          {w.einmal(f(Math.round(bsp.einmalzahlung / 1000)))}
         </p>
       </div>
 
       {/* Karte: Status im Portal */}
       <div className="ov-hero-in relative mx-auto mt-3 w-full max-w-[300px] rounded-2xl bg-navy-900/90 max-sm:hidden p-4 text-white shadow-e4 ring-1 ring-white/12 backdrop-blur sm:absolute sm:bottom-2 sm:left-0 sm:mt-0 sm:w-[250px] lg:-left-4 xl:-left-8" style={{ "--ov-delay": "1050ms" }}>
-        <p className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-white/60">Ihr Dach im Portal</p>
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-white/60">{w.portal}</p>
         <ol className="mt-3 space-y-2">
-          {STATUS.map((x) => (
+          {STATUS.map((x, i) => (
             <li key={x.t} className="flex items-center gap-2.5 text-[13px]">
               <span
                 aria-hidden="true"
@@ -194,8 +239,8 @@ export default function DachBuehne({ bsp, m2, laufzeit }) {
                 {x.s === "fertig" && <Check className="h-2.5 w-2.5" strokeWidth={3.5} />}
                 {x.s === "aktiv" && <span className="h-1.5 w-1.5 rounded-full bg-sun-300" />}
               </span>
-              <span className={x.s === "offen" ? "text-white/55" : "text-white/90"}>{x.t}</span>
-              <span className="sr-only">{x.s === "fertig" ? "(erledigt)" : x.s === "aktiv" ? "(in Arbeit)" : "(offen)"}</span>
+              <span className={x.s === "offen" ? "text-white/55" : "text-white/90"}>{w.status[i]}</span>
+              <span className="sr-only">{w.zustand[x.s]}</span>
             </li>
           ))}
         </ol>

@@ -7,6 +7,29 @@ import { BadgeCheck, CalendarClock, Clock, ListTree } from "lucide-react";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import { datumLang } from "@/lib/ratgeber";
 import { thema, themaAnker } from "./themen";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import Link from "@/components/Land/Link";
+
+const TEXTE = {
+  de: {
+    ratgeber: "Ratgeber",
+    team: "Projektteam ÖkoInvest",
+    rolle: "Projektentwicklung Freiflächen- und Agri-PV",
+    aktualisiert: "Aktualisiert",
+    lesezeit: (m) => `${m} Min. Lesezeit`,
+    kapitel: (n, q) => `${n} Kapitel${q > 0 ? ` · ${q} Quellen` : ""}`,
+    kennzahl: "Kennzahl",
+  },
+  en: {
+    ratgeber: "Guides",
+    team: "ÖkoInvest project team",
+    rolle: "Project development, ground-mounted and agri-PV",
+    aktualisiert: "Updated",
+    lesezeit: (m) => `${m} min read`,
+    kapitel: (n, q) => `${n} chapters${q > 0 ? ` · ${q} sources` : ""}`,
+    kennzahl: "Key figure",
+  },
+};
 
 /**
  * props:
@@ -17,6 +40,8 @@ import { thema, themaAnker } from "./themen";
  *  abschnitte Anzahl Kapitel (für die Meta-Zeile)
  */
 export default function ArtikelHero({ artikel, titel, kennzahl, badge, abschnitte }) {
+  const sprache = spracheDerAnfrage();
+  const t = TEXTE[sprache] || TEXTE.de;
   const meta = thema(artikel.kategorie);
   const Icon = meta.icon;
   const quellen = artikel.quellen?.length || 0;
@@ -28,20 +53,20 @@ export default function ArtikelHero({ artikel, titel, kennzahl, badge, abschnitt
       <div aria-hidden="true" className="pointer-events-none absolute -left-40 -top-40 -z-10 h-[480px] w-[480px] rounded-full bg-ov-500/20 blur-[120px]" />
 
       <div className="ov-container pb-14 pt-6 sm:pt-8 md:pb-20 md:pt-10">
-        <Breadcrumbs items={[{ name: "Ratgeber", href: "/wissen/ratgeber" }, { name: artikel.kurzTitel || artikel.title }]} dark className="ov-hero-in mb-8 md:mb-12" />
+        <Breadcrumbs items={[{ name: t.ratgeber, href: "/ratgeber" }, { name: artikel.kurzTitel || artikel.title }]} dark className="ov-hero-in mb-8 md:mb-12" />
 
         <div className="grid items-center gap-y-12 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] lg:gap-x-12 xl:gap-x-16">
           <div className="min-w-0">
-            <a
-              href={`/wissen/ratgeber#${themaAnker(artikel.kategorie)}`}
+            <Link
+              href={`/ratgeber#${themaAnker(artikel.kategorie)}`}
               className="ov-hero-in group inline-flex max-w-full items-center gap-2 rounded-full bg-white/[0.06] py-1.5 pl-2 pr-3.5 text-[13px] font-medium text-white/85 ring-1 ring-inset ring-white/15 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300"
               style={{ "--ov-delay": "40ms" }}
             >
               <span aria-hidden="true" className="flex h-6 w-6 items-center justify-center rounded-full bg-ov-300 text-navy-950">
                 <Icon className="h-3.5 w-3.5" strokeWidth={2.2} />
               </span>
-              <span className="min-w-0 truncate">{artikel.kategorie}</span>
-            </a>
+              <span className="min-w-0 truncate">{artikel.kategorieLabel || artikel.kategorie}</span>
+            </Link>
 
             <h1 id="artikel-titel" className="ov-h1 mt-6 text-balance md:mt-7">
               <HeroTitel>{titel || artikel.title}</HeroTitel>
@@ -62,25 +87,25 @@ export default function ArtikelHero({ artikel, titel, kennzahl, badge, abschnitt
                   </span>
                 </span>
                 <div className="leading-tight">
-                  <p className="text-[14.5px] font-semibold text-white">Projektteam ÖkoInvest</p>
-                  <p className="text-[12.5px] text-white/60">Projektentwicklung Freiflächen- und Agri-PV</p>
+                  <p className="text-[14.5px] font-semibold text-white">{t.team}</p>
+                  <p className="text-[12.5px] text-white/60">{t.rolle}</p>
                 </div>
               </div>
               <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13.5px] text-white/75">
                 <li className="flex items-center gap-2">
                   <CalendarClock aria-hidden="true" className="h-4 w-4 text-ov-300" />
                   <span>
-                    Aktualisiert <time dateTime={artikel.aktualisiert}>{datumLang(artikel.aktualisiert)}</time>
+                    {t.aktualisiert} <time dateTime={artikel.aktualisiert}>{datumLang(artikel.aktualisiert, sprache)}</time>
                   </span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Clock aria-hidden="true" className="h-4 w-4 text-ov-300" />
-                  {artikel.lesezeit} Min. Lesezeit
+                  {t.lesezeit(artikel.lesezeit)}
                 </li>
                 {abschnitte > 0 && (
                   <li className="flex items-center gap-2">
                     <ListTree aria-hidden="true" className="h-4 w-4 text-ov-300" />
-                    {abschnitte} Kapitel{quellen > 0 ? ` · ${quellen} Quellen` : ""}
+                    {t.kapitel(abschnitte, quellen)}
                   </li>
                 )}
               </ul>
@@ -98,7 +123,7 @@ export default function ArtikelHero({ artikel, titel, kennzahl, badge, abschnitt
                 <div className="relative -mt-10 ml-4 mr-4 sm:absolute sm:-bottom-8 sm:left-auto sm:right-6 sm:m-0 sm:max-w-[300px] lg:-left-8 lg:right-auto">
                   {kennzahl ? (
                     <div className="rounded-2xl bg-white p-5 text-ink-900 shadow-e4 ring-1 ring-ink-100">
-                      <p className="ov-overline text-ov-700">Kennzahl</p>
+                      <p className="ov-overline text-ov-700">{t.kennzahl}</p>
                       <p className="ov-kpi mt-2 text-ink-900">{kennzahl.wert}</p>
                       <p className="mt-1.5 text-[13px] leading-snug text-ink-600">{kennzahl.text}</p>
                     </div>

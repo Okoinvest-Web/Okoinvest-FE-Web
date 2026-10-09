@@ -1,14 +1,16 @@
 // Themenwahl im Kopf von /faq: je Gruppe eine Kachel mit Anzahl der Fragen.
 // Ein Klick setzt den Filter der Suche (Anker #<gruppe>).
 import { ArrowRight } from "lucide-react";
-import { THEMEN, themaIcon } from "./themen";
+import { themaFuer, themaIcon } from "./themen";
 
-export default function ThemenKacheln({ gruppen = [] }) {
+// sprache: von der Seite (Server-Komponente, Sprache der Anfrage)
+export default function ThemenKacheln({ gruppen = [], sprache = "de" }) {
+  const en = sprache === "en";
   return (
     <nav aria-labelledby="themen-titel" className="relative mx-auto max-w-[580px] lg:ml-auto lg:mr-0">
       <p id="themen-titel" className="mb-3 flex items-center justify-between gap-3 text-[13px] text-white/70">
-        <span className="font-semibold text-white">Direkt zum Thema</span>
-        <span>{gruppen.length} Themen</span>
+        <span className="font-semibold text-white">{en ? "Go straight to a topic" : "Direkt zum Thema"}</span>
+        <span>{en ? `${gruppen.length} topics` : `${gruppen.length} Themen`}</span>
       </p>
       <ul className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2.5 sm:gap-3">
         {gruppen.map((g, i) => {
@@ -31,14 +33,14 @@ export default function ThemenKacheln({ gruppen = [] }) {
                     <Icon className="h-5 w-5" />
                   </span>
                   <span className="ov-num rounded-full bg-ink-50 px-2 py-0.5 text-[12px] font-semibold text-ink-600 ring-1 ring-ink-200">
-                    {g.items.length} <span className="sr-only">Fragen</span>
+                    {g.items.length} <span className="sr-only">{en ? "questions" : "Fragen"}</span>
                   </span>
                 </span>
-                <span lang="de" className="mt-4 flex items-center gap-1.5 break-words font-display text-[15px] font-bold leading-tight [hyphens:auto] sm:text-[16.5px]">
+                <span lang={en ? "en" : "de"} className="mt-4 flex items-center gap-1.5 break-words font-display text-[15px] font-bold leading-tight [hyphens:auto] sm:text-[16.5px]">
                   <span className="min-w-0">{g.titel}</span>
                   <ArrowRight aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-ink-400 max-sm:hidden transition-[transform,color] duration-200 group-hover:translate-x-0.5 group-hover:text-ov-600 motion-reduce:transition-none" />
                 </span>
-                {THEMEN[g.id]?.kurz && <span className="mt-1 text-[13px] leading-snug text-ink-500 max-sm:hidden">{THEMEN[g.id].kurz}</span>}
+                {themaFuer(g.id, sprache)?.kurz && <span className="mt-1 text-[13px] leading-snug text-ink-500 max-sm:hidden">{themaFuer(g.id, sprache).kurz}</span>}
               </a>
             </li>
           );

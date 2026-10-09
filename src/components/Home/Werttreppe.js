@@ -1,5 +1,10 @@
 import { PHASEN } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { BEGRIFFE_EN } from "@/lib/sprache/begriffe";
+import { fmtZahl } from "@/lib/sprache/format";
+
+const RISIKO_EN = { "sehr hoch": "very high", hoch: "high", "mittel–hoch": "medium–high", mittel: "medium", gering: "low", "sehr gering": "very low" };
 
 /**
  * Werttreppe eines Freiflächenprojekts: Kaufpreisspanne je kWp nach
@@ -14,6 +19,8 @@ import { fmt } from "@/lib/rechner/annahmen";
 const RISIKO_STUFE = { "sehr hoch": 5, hoch: 4, "mittel–hoch": 3, mittel: 2, gering: 1, "sehr gering": 0 };
 
 export default function Werttreppe() {
+  const en = spracheDerAnfrage() === "en";
+  const z = (n) => (en ? fmtZahl(n, 0, "en") : fmt(n));
   const stufen = PHASEN.filter((p) => p.id !== "cod");
   const bestand = PHASEN.find((p) => p.id === "cod");
   const max = Math.max(...stufen.map((p) => p.preisProKwp.max));
@@ -24,10 +31,10 @@ export default function Werttreppe() {
     <figure className="relative overflow-hidden rounded-[2rem] bg-white p-5 shadow-e3 ring-1 ring-ink-200/70 sm:p-7 md:p-8">
       <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full bg-ov-100/70 blur-3xl" />
       <figcaption className="relative">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-700">Orientierung für Käufer und Verkäufer</p>
+        <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-700">{en ? "Guidance for buyers and sellers" : "Orientierung für Käufer und Verkäufer"}</p>
         <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <span className="font-display text-[20px] font-extrabold tracking-tight text-ink-900">Projektwert nach Phase</span>
-          <span className="text-[12.5px] text-ink-500">Kaufpreis je kWp, Spanne DACH</span>
+          <span className="font-display text-[20px] font-extrabold tracking-tight text-ink-900">{en ? "Project value by phase" : "Projektwert nach Phase"}</span>
+          <span className="text-[12.5px] text-ink-500">{en ? "Purchase price per kWp, DACH range" : "Kaufpreis je kWp, Spanne DACH"}</span>
         </div>
       </figcaption>
 
@@ -42,7 +49,7 @@ export default function Werttreppe() {
                 <div className="min-w-0">
                   <p className="flex items-center gap-2 text-[14.5px] font-semibold leading-tight text-ink-900">
                     <span className="ov-num flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink-100 text-[10.5px] font-bold text-ink-600">{i + 1}</span>
-                    <span className="truncate">{p.kurz}</span>
+                    <span className="truncate">{en ? BEGRIFFE_EN.phaseKurz[p.id] || p.kurz : p.kurz}</span>
                   </p>
                   <p className="mt-1 flex items-center gap-2 pl-7 text-[12px] text-ink-500">
                     {stufe !== undefined && (
@@ -52,11 +59,11 @@ export default function Werttreppe() {
                         ))}
                       </span>
                     )}
-                    Risiko {p.risiko}
+                    {en ? `Risk ${RISIKO_EN[p.risiko] || p.risiko}` : `Risiko ${p.risiko}`}
                   </p>
                 </div>
                 <p className="ov-num shrink-0 whitespace-nowrap font-display text-[15px] font-bold text-ink-900">
-                  {fmt(p.preisProKwp.min)}–{fmt(p.preisProKwp.max)} <span className="text-[12px] font-semibold text-ink-500">€/kWp</span>
+                  {z(p.preisProKwp.min)}–{z(p.preisProKwp.max)} <span className="text-[12px] font-semibold text-ink-500">€/kWp</span>
                 </p>
               </div>
               <div aria-hidden="true" className="relative mt-2.5 h-3 rounded-full bg-ink-100/80">
@@ -89,9 +96,19 @@ export default function Werttreppe() {
       <div className="relative mt-6 flex gap-3 rounded-2xl bg-sand-50 p-4 ring-1 ring-ink-200/60">
         <span aria-hidden="true" className="mt-0.5 h-8 w-1 shrink-0 rounded-full bg-gradient-to-b from-navy-500 to-navy-800" />
         <p className="text-[12.5px] leading-relaxed text-ink-600">
-          <span className="font-semibold text-ink-900">Bestandsanlagen (in Betrieb)</span> werden nach Ertragswert gehandelt, typischerweise{" "}
-          <span className="ov-num font-semibold text-ink-900">{fmt(bestand.preisProKwp.min)}–{fmt(bestand.preisProKwp.max)} €</span> je kWp.
-          Orientierungswerte – Netzanschluss, Tarif und Standort verschieben die Spanne deutlich.
+          {en ? (
+            <>
+              <span className="font-semibold text-ink-900">Operating assets (in operation)</span> are traded on income value, typically{" "}
+              <span className="ov-num font-semibold text-ink-900">€{z(bestand.preisProKwp.min)}–{z(bestand.preisProKwp.max)}</span> per kWp.
+              Guide values – grid connection, tariff and location shift the range considerably.
+            </>
+          ) : (
+            <>
+              <span className="font-semibold text-ink-900">Bestandsanlagen (in Betrieb)</span> werden nach Ertragswert gehandelt, typischerweise{" "}
+              <span className="ov-num font-semibold text-ink-900">{fmt(bestand.preisProKwp.min)}–{fmt(bestand.preisProKwp.max)} €</span> je kWp.
+              Orientierungswerte – Netzanschluss, Tarif und Standort verschieben die Spanne deutlich.
+            </>
+          )}
         </p>
       </div>
     </figure>

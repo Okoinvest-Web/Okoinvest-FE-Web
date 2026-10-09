@@ -1,19 +1,23 @@
-import { LAENDER, KRITERIEN } from "./laender";
+import { laenderFuer } from "./laender";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 /**
  * Vergleichstabelle DE/AT/CH. Ab md echte Tabelle, darunter je Land eine
  * Karte (gleiche Daten) – nichts läuft auf dem Handy horizontal über.
  */
 export default function LaenderVergleich() {
+  const sprache = spracheDerAnfrage();
+  const en = sprache === "en";
+  const { laender: LAENDER, kriterien: KRITERIEN } = laenderFuer(sprache);
   return (
     <>
       <div className="hidden overflow-hidden rounded-[2rem] bg-white shadow-xl ring-1 ring-ink-200/70 md:block">
         <table className="w-full table-fixed border-collapse text-left text-[14.5px]">
-          <caption className="sr-only">Energiegemeinschaften in Deutschland, Österreich und der Schweiz im Vergleich</caption>
+          <caption className="sr-only">{en ? "Energy communities in Germany, Austria and Switzerland compared" : "Energiegemeinschaften in Deutschland, Österreich und der Schweiz im Vergleich"}</caption>
           <thead>
             <tr className="bg-navy-950 text-white">
               <th scope="col" className="w-[19%] px-5 py-4 text-[12.5px] font-semibold uppercase tracking-[0.12em] text-white/60">
-                Kriterium
+                {en ? "Criterion" : "Kriterium"}
               </th>
               {LAENDER.map((l) => (
                 <th key={l.id} scope="col" className="px-5 py-4 font-display text-[17px] font-bold">

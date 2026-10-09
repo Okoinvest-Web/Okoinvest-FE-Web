@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { CircleAlert, HardHat } from "lucide-react";
 import AuthRahmen from "@/components/Plattform/AuthRahmen";
 import GutachterEinladungAnnehmen from "@/components/Portal/Entwicklung/EinladungAnnehmen";

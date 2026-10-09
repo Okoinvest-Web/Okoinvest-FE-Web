@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useBreite, Tooltip } from "@/components/Rechner/bausteine";
-import { fmt } from "@/lib/rechner/annahmen";
+import { useTexte } from "@/components/Sprache/SpracheKontext";
+import { useFormate } from "@/components/Sprache/useFormate";
 
 /**
  * EEG-Ausschreibungen Solar erstes Segment – interaktives SVG-Diagramm.
@@ -25,33 +26,103 @@ const FARBE = {
   text: "#4e5667", // ink-600
 };
 
-const ANSICHTEN = [
-  { id: "werte", label: "Zuschlagswerte" },
-  { id: "mengen", label: "Mengen" },
-  { id: "tabelle", label: "Tabelle" },
-];
-const ZEITRAEUME = [
-  { id: "alle", label: "Seit 2017", ab: 2017 },
-  { id: "eeg23", label: "Seit 2023", ab: 2023 },
-];
+const ZEITRAEUME_AB = { alle: 2017, eeg23: 2023 };
 
-const MONATE = ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."];
-const termin = (iso) => `${Number(iso.slice(8, 10))}. ${MONATE[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
-const ct = (v) => `${fmt(v, 2)} ct`;
-const mw = (v) => `${fmt(v)} MW`;
+// Sprachmodell: Texte des Diagramms (Zahlen im Format der Sprache über useFormate)
+const TEXTE = {
+  de: {
+    ansichten: [
+      { id: "werte", label: "Zuschlagswerte" },
+      { id: "mengen", label: "Mengen" },
+      { id: "tabelle", label: "Tabelle" },
+    ],
+    zeitraeume: [
+      { id: "alle", label: "Seit 2017" },
+      { id: "eeg23", label: "Seit 2023" },
+    ],
+    monate: ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."],
+    termin: (m, iso) => `${Number(iso.slice(8, 10))}. ${m[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`,
+    ansicht: "Ansicht",
+    zeitraum: "Zeitraum",
+    legMittel: "Ø Zuschlagswert (mengengewichtet)",
+    legSpanne: "Spanne niedrigster–höchster Zuschlag",
+    legHoechst: "Höchstwert",
+    werteAria: (a, b, c) => `Liniendiagramm: mengengewichtete Zuschlagswerte der Solar-Ausschreibungen von ${a} bis ${b}, zuletzt ${c} je kWh. Mit Pfeiltasten durch die Gebotstermine blättern.`,
+    gebotstermin: "Gebotstermin",
+    oZuschlag: "Ø Zuschlag:",
+    spanneZeile: (a, b, c) => `Spanne ${a}–${b} ct · Höchstwert ${c} ct`,
+    zuschlaege: (n, x) => `${n} Zuschläge · ${x}`,
+    werteFuss: "Jeder Punkt ist ein Gebotstermin (gleichmäßig nebeneinander, unabhängig vom Datum). Werte in ct/kWh, anzulegender Wert für 20 Jahre. Quelle: Bundesnetzagentur.",
+    legGebote: "Eingereichte Gebotsmenge",
+    legZuschlag: "Bezuschlagte Menge",
+    mengenAria: (a, b) => `Balkendiagramm: eingereichte und bezuschlagte Mengen der Solar-Ausschreibungen je Jahr von ${a} bis ${b} in Megawatt. Mit Pfeiltasten durch die Jahre blättern.`,
+    termine: (n) => (n === 1 ? "Gebotstermin" : "Gebotstermine"),
+    ausgeschrieben: "Ausgeschrieben:",
+    gebote: "Gebote:",
+    zuschlaegeL: "Zuschläge:",
+    ueber: (f, u) => (u >= 1 ? `${f.fmt(u, 1)}-fach überzeichnet` : `unterzeichnet (${f.fmt(u * 100)} % des Volumens)`),
+    mengenFuss: (j) => `Summen aller Gebotstermine eines Jahres in MW; ${j} bis einschließlich Juli. Quelle: Bundesnetzagentur, eigene Summenbildung.`,
+    tabelleAria: "Tabelle der Gebotstermine, horizontal scrollbar",
+    caption: "EEG-Ausschreibungen Solaranlagen erstes Segment je Gebotstermin",
+    kopf: ["Gebotstermin", "Volumen MW", "Gebote MW", "Zuschläge MW", "Ø ct/kWh", "Spanne", "Höchstwert"],
+  },
+  en: {
+    ansichten: [{ label: "Award values" }, { label: "Volumes" }, { label: "Table" }],
+    zeitraeume: [{ label: "Since 2017" }, { label: "Since 2023" }],
+    monate: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    termin: (m, iso) => `${Number(iso.slice(8, 10))} ${m[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`,
+    ansicht: "View",
+    zeitraum: "Period",
+    legMittel: "Ø award value (volume-weighted)",
+    legSpanne: "Range lowest–highest award",
+    legHoechst: "Maximum value",
+    werteAria: (a, b, c) => `Line chart: volume-weighted award values of the solar tenders from ${a} to ${b}, most recently ${c} per kWh. Use the arrow keys to move through the bidding dates.`,
+    gebotstermin: "Bidding date",
+    oZuschlag: "Ø award:",
+    spanneZeile: (a, b, c) => `Range ${a}–${b} ct · maximum ${c} ct`,
+    zuschlaege: (n, x) => `${n} awards · ${x}`,
+    werteFuss: "Each point is one bidding date (evenly spaced, regardless of the date). Values in ct/kWh, award value for 20 years. Source: Bundesnetzagentur (Federal Network Agency).",
+    legGebote: "Volume bid",
+    legZuschlag: "Volume awarded",
+    mengenAria: (a, b) => `Bar chart: volumes bid and awarded in the solar tenders per year from ${a} to ${b} in megawatts. Use the arrow keys to move through the years.`,
+    termine: (n) => (n === 1 ? "bidding date" : "bidding dates"),
+    ausgeschrieben: "Tendered:",
+    gebote: "Bids:",
+    zuschlaegeL: "Awards:",
+    ueber: (f, u) => (u >= 1 ? `${f.fmt(u, 1)}× oversubscribed` : `undersubscribed (${f.pct(u * 100)} of the volume)`),
+    mengenFuss: (j) => `Totals of all bidding dates in a year in MW; ${j} up to and including July. Source: Bundesnetzagentur, own totals.`,
+    tabelleAria: "Table of bidding dates, horizontally scrollable",
+    caption: "EEG tenders for solar installations, first segment, by bidding date",
+    kopf: ["Bidding date", "Volume MW", "Bids MW", "Awards MW", "Ø ct/kWh", "Range", "Maximum"],
+  },
+};
+
+function useTeile() {
+  const t = useTexte(TEXTE);
+  const f = useFormate();
+  return {
+    t,
+    f,
+    fmt: f.fmt,
+    termin: (iso) => t.termin(t.monate, iso),
+    ct: (v) => `${f.fmt(v, 2)} ct`,
+    mw: (v) => `${f.fmt(v)} MW`,
+  };
+}
 
 export default function AusschreibungsChart({ termine, jahre }) {
+  const { t: tx } = useTeile();
   const [ansicht, setAnsicht] = useState("werte");
   const [zeitraum, setZeitraum] = useState("alle");
-  const ab = ZEITRAEUME.find((z) => z.id === zeitraum).ab;
+  const ab = ZEITRAEUME_AB[zeitraum];
   const t = useMemo(() => termine.filter((a) => Number(a.datum.slice(0, 4)) >= ab), [termine, ab]);
   const j = useMemo(() => jahre.filter((a) => a.jahr >= ab), [jahre, ab]);
 
   return (
     <div className="rounded-[2rem] bg-white p-5 shadow-xl ring-1 ring-ink-200/70 sm:p-6 md:p-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <Umschalter label="Ansicht" optionen={ANSICHTEN} wert={ansicht} setWert={setAnsicht} />
-        <Umschalter label="Zeitraum" optionen={ZEITRAEUME} wert={zeitraum} setWert={setZeitraum} klein />
+        <Umschalter label={tx.ansicht} optionen={tx.ansichten} wert={ansicht} setWert={setAnsicht} />
+        <Umschalter label={tx.zeitraum} optionen={tx.zeitraeume} wert={zeitraum} setWert={setZeitraum} klein />
       </div>
 
       <div className="mt-6">
@@ -160,6 +231,7 @@ function YAchse({ g, ticks, format, breite }) {
 /* ------------------------------------------------------------------ */
 
 function WerteDiagramm({ daten, lauf }) {
+  const { t, fmt, termin, ct, mw } = useTeile();
   const [ref, breite] = useBreite(760);
   const [aktiv, setAktiv] = useState(null);
   const n = daten.length;
@@ -192,9 +264,9 @@ function WerteDiagramm({ daten, lauf }) {
     <figure>
       <Legende
         eintraege={[
-          { art: "linie", farbe: FARBE.mittel, label: "Ø Zuschlagswert (mengengewichtet)" },
-          { art: "flaeche", farbe: FARBE.spanne, label: "Spanne niedrigster–höchster Zuschlag" },
-          { art: "strich", farbe: FARBE.hoechst, label: "Höchstwert" },
+          { art: "linie", farbe: FARBE.mittel, label: t.legMittel },
+          { art: "flaeche", farbe: FARBE.spanne, label: t.legSpanne },
+          { art: "strich", farbe: FARBE.hoechst, label: t.legHoechst },
         ]}
       />
       <div ref={ref} className="relative">
@@ -204,7 +276,7 @@ function WerteDiagramm({ daten, lauf }) {
           aktiv={aktiv}
           setAktiv={setAktiv}
           breite={breite}
-          label={`Liniendiagramm: mengengewichtete Zuschlagswerte der Solar-Ausschreibungen von ${termin(daten[0].datum)} bis ${termin(letzte.datum)}, zuletzt ${ct(letzte.mittel)} je kWh. Mit Pfeiltasten durch die Gebotstermine blättern.`}
+          label={t.werteAria(termin(daten[0].datum), termin(letzte.datum), ct(letzte.mittel))}
         >
           <YAchse g={g} ticks={ticks} format={(v) => fmt(v)} breite={breite} />
           <text x={2} y={10} fontSize="10.5" fill={FARBE.achse}>
@@ -241,22 +313,17 @@ function WerteDiagramm({ daten, lauf }) {
         </Interaktion>
         {a && (
           <Tooltip x={g.x(aktiv)} y={g.y(a.hoechst) - 10} breite={breite}>
-            <p className="font-semibold">Gebotstermin {termin(a.datum)}</p>
+            <p className="font-semibold">{t.gebotstermin} {termin(a.datum)}</p>
             <p>
-              Ø Zuschlag: <strong className="ov-num">{ct(a.mittel)}</strong>
+              {t.oZuschlag} <strong className="ov-num">{ct(a.mittel)}</strong>
             </p>
-            <p className="text-white/75">
-              Spanne {fmt(a.min, 2)}–{fmt(a.max, 2)} ct · Höchstwert {fmt(a.hoechst, 2)} ct
-            </p>
-            <p className="text-white/75">
-              {a.anzahl[0]} Zuschläge · {mw(a.zuschlag)}
-            </p>
+            <p className="text-white/75">{t.spanneZeile(fmt(a.min, 2), fmt(a.max, 2), fmt(a.hoechst, 2))}</p>
+            <p className="text-white/75">{t.zuschlaege(a.anzahl[0], mw(a.zuschlag))}</p>
           </Tooltip>
         )}
       </div>
       <figcaption className="mt-3 text-[12.5px] leading-relaxed text-ink-500">
-        Jeder Punkt ist ein Gebotstermin (gleichmäßig nebeneinander, unabhängig vom Datum). Werte in ct/kWh, anzulegender Wert für 20 Jahre. Quelle:
-        Bundesnetzagentur.
+        {t.werteFuss}
       </figcaption>
     </figure>
   );
@@ -265,6 +332,7 @@ function WerteDiagramm({ daten, lauf }) {
 /* ------------------------------------------------------------------ */
 
 function MengenDiagramm({ daten, lauf }) {
+  const { t, f, fmt, mw } = useTeile();
   const [ref, breite] = useBreite(760);
   const [aktiv, setAktiv] = useState(null);
   const n = daten.length;
@@ -291,8 +359,8 @@ function MengenDiagramm({ daten, lauf }) {
     <figure>
       <Legende
         eintraege={[
-          { art: "balken", farbe: FARBE.gebote, label: "Eingereichte Gebotsmenge" },
-          { art: "balken", farbe: FARBE.zuschlag, label: "Bezuschlagte Menge" },
+          { art: "balken", farbe: FARBE.gebote, label: t.legGebote },
+          { art: "balken", farbe: FARBE.zuschlag, label: t.legZuschlag },
         ]}
       />
       <div ref={ref} className="relative">
@@ -302,7 +370,7 @@ function MengenDiagramm({ daten, lauf }) {
           aktiv={aktiv}
           setAktiv={setAktiv}
           breite={breite}
-          label={`Balkendiagramm: eingereichte und bezuschlagte Mengen der Solar-Ausschreibungen je Jahr von ${daten[0].jahr} bis ${daten[n - 1].jahr} in Megawatt. Mit Pfeiltasten durch die Jahre blättern.`}
+          label={t.mengenAria(daten[0].jahr, daten[n - 1].jahr)}
         >
           <YAchse g={g} ticks={ticks} format={(v) => (v >= 1000 ? `${fmt(v / 1000)} GW` : "0")} breite={breite} />
           {a && <rect x={g.m.l + g.band * aktiv + 2} y={g.m.t} width={g.band - 4} height={g.ph} rx="8" fill="#151a24" fillOpacity="0.04" />}
@@ -322,26 +390,25 @@ function MengenDiagramm({ daten, lauf }) {
         {a && (
           <Tooltip x={g.x(aktiv)} y={g.y(Math.max(a.gebote, a.volumen)) - 10} breite={breite}>
             <p className="font-semibold">
-              {a.jahr} · {a.termine} {a.termine === 1 ? "Gebotstermin" : "Gebotstermine"}
+              {a.jahr} · {a.termine} {t.termine(a.termine)}
             </p>
             <p>
-              Ausgeschrieben: <strong className="ov-num">{mw(a.volumen)}</strong>
+              {t.ausgeschrieben} <strong className="ov-num">{mw(a.volumen)}</strong>
             </p>
             <p>
-              Gebote: <strong className="ov-num">{mw(a.gebote)}</strong>
+              {t.gebote} <strong className="ov-num">{mw(a.gebote)}</strong>
             </p>
             <p>
-              Zuschläge: <strong className="ov-num">{mw(a.zuschlag)}</strong>
+              {t.zuschlaegeL} <strong className="ov-num">{mw(a.zuschlag)}</strong>
             </p>
             <p className="text-white/75">
-              {a.ueberzeichnung >= 1 ? `${fmt(a.ueberzeichnung, 1)}-fach überzeichnet` : `unterzeichnet (${fmt(a.ueberzeichnung * 100)} % des Volumens)`} · Ø{" "}
-              {fmt(a.mittel, 2)} ct
+              {t.ueber(f, a.ueberzeichnung)} · Ø {fmt(a.mittel, 2)} ct
             </p>
           </Tooltip>
         )}
       </div>
       <figcaption className="mt-3 text-[12.5px] leading-relaxed text-ink-500">
-        Summen aller Gebotstermine eines Jahres in MW; {daten[n - 1].jahr} bis einschließlich Juli. Quelle: Bundesnetzagentur, eigene Summenbildung.
+        {t.mengenFuss(daten[n - 1].jahr)}
       </figcaption>
     </figure>
   );
@@ -350,19 +417,20 @@ function MengenDiagramm({ daten, lauf }) {
 /* ------------------------------------------------------------------ */
 
 function Tabelle({ daten }) {
+  const { t, fmt, termin } = useTeile();
   return (
-    <div className="-mx-1 overflow-x-auto px-1" tabIndex={0} role="region" aria-label="Tabelle der Gebotstermine, horizontal scrollbar">
+    <div className="-mx-1 overflow-x-auto px-1" tabIndex={0} role="region" aria-label={t.tabelleAria}>
       <table className="w-full min-w-[720px] border-collapse text-left text-[13.5px]">
-        <caption className="sr-only">EEG-Ausschreibungen Solaranlagen erstes Segment je Gebotstermin</caption>
+        <caption className="sr-only">{t.caption}</caption>
         <thead>
           <tr className="border-b border-ink-200 text-[12px] uppercase tracking-[0.08em] text-ink-500">
-            <th scope="col" className="py-2.5 pr-3 font-semibold">Gebotstermin</th>
-            <th scope="col" className="py-2.5 pr-3 text-right font-semibold">Volumen MW</th>
-            <th scope="col" className="py-2.5 pr-3 text-right font-semibold">Gebote MW</th>
-            <th scope="col" className="py-2.5 pr-3 text-right font-semibold">Zuschläge MW</th>
-            <th scope="col" className="py-2.5 pr-3 text-right font-semibold">Ø ct/kWh</th>
-            <th scope="col" className="py-2.5 pr-3 text-right font-semibold">Spanne</th>
-            <th scope="col" className="py-2.5 text-right font-semibold">Höchstwert</th>
+            <th scope="col" className="py-2.5 pr-3 font-semibold">{t.kopf[0]}</th>
+            <th scope="col" className="py-2.5 pr-3 text-right font-semibold">{t.kopf[1]}</th>
+            <th scope="col" className="py-2.5 pr-3 text-right font-semibold">{t.kopf[2]}</th>
+            <th scope="col" className="py-2.5 pr-3 text-right font-semibold">{t.kopf[3]}</th>
+            <th scope="col" className="py-2.5 pr-3 text-right font-semibold">{t.kopf[4]}</th>
+            <th scope="col" className="py-2.5 pr-3 text-right font-semibold">{t.kopf[5]}</th>
+            <th scope="col" className="py-2.5 text-right font-semibold">{t.kopf[6]}</th>
           </tr>
         </thead>
         <tbody>

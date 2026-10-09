@@ -17,36 +17,65 @@
 // (src/components/Reusable/LayoutWrapper.js) mit dem Land der Route bzw. der Länderwahl.
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { Handshake, X } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { GESELLSCHAFT, INDEXIERBAR, SITE } from "@/data/site";
 import { herkunft } from "@/lib/herkunft";
 import { offenlegungDaten } from "@/lib/gruppe/kanal";
 import { pfad } from "@/lib/land";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+
+// Texte (Sprachmodell). Englisch: Übersetzung der Offenlegung – wie die deutsche Fassung Entwurf
+// zur Prüfung durch die Rechtsabteilung.
+const TEXTE = {
+  de: {
+    ueber: (n) => `Sie kommen über ${n}.`,
+    gruppe: (g) => `Sie kommen von einer Website der ${g}.`,
+    partner: "Sie kommen über einen Partnerverweis.",
+    teil: (firma, gruppe) => `Die ${firma} ist Teil der ${gruppe}`,
+    gesellschafter: (name, anteil) => ` – Gesellschafterin ist unter anderem die ${name} (${anteil}).`,
+    mehr: "Mehr zum Unternehmen",
+    entwurf: "Entwurf · Prüfung Rechtsabteilung",
+    aria: "Offenlegung: Teil der ÖKOVOLT Gruppe",
+    schliessen: "Hinweis schließen",
+  },
+  en: {
+    ueber: (n) => `You are visiting via ${n}.`,
+    gruppe: (g) => `You are visiting from a website of the ${g}.`,
+    partner: "You are visiting via a partner link.",
+    teil: (firma, gruppe) => `${firma} is part of the ${gruppe}`,
+    gesellschafter: (name, anteil) => ` – shareholders include ${name} (${anteil}).`,
+    mehr: "More about the company",
+    entwurf: "Draft · legal review",
+    aria: "Disclosure: part of the ÖKOVOLT Group",
+    schliessen: "Close notice",
+  },
+};
 
 // Gesellschafterin aus der Gruppe laut Firmenbuch (site.js) – nur nennen, wenn dort eingetragen.
 const GRUPPEN_GESELLSCHAFTER = GESELLSCHAFT.gesellschafter?.find((g) => /ökovolt/i.test(g.name)) || null;
 
 /** Einleitungssatz je Fall */
-function einleitung(d) {
+function einleitung(d, t = TEXTE.de) {
   if (!d) return null;
-  if (d.name) return `Sie kommen über ${d.name}.`;
-  if (d.kanal === "Gruppe") return `Sie kommen von einer Website der ${SITE.gruppe}.`;
-  return "Sie kommen über einen Partnerverweis.";
+  if (d.name) return t.ueber(d.name);
+  if (d.kanal === "Gruppe") return t.gruppe(SITE.gruppe);
+  return t.partner;
 }
 
 /**
  * Props:
  *   immer    – Hinweis auch ohne Gruppen-/Partnerverweis zeigen (allgemeiner Gruppen-Hinweis)
  *   vorschau – Herkunftsobjekt statt der echten Herkunft (Backoffice-Vorschau, Tests)
- *   land     – DE | AT | CH (Linkziel je Land über src/lib/land; /unternehmen liegt im Stamm)
+ *   land     – DE | AT | CH oder null (Land der Seite; Linkziel über src/lib/land)
  *   className
  */
 export default function Offenlegung({ immer = false, vorschau = null, land, className }) {
   const [daten, setDaten] = useState(null);
   const [bereit, setBereit] = useState(false);
   const [zu, setZu] = useState(false);
+  const t = useSprache() === "en" ? TEXTE.en : TEXTE.de;
 
   useEffect(() => {
     // Herkunft erst im Browser lesen (Arbeitsspeicher) – serverseitig nie, daher kein Hydration-Unterschied
@@ -56,12 +85,12 @@ export default function Offenlegung({ immer = false, vorschau = null, land, clas
 
   if (!bereit || zu || (!daten && !immer)) return null;
 
-  const satz = einleitung(daten);
-  const zielUnternehmen = pfad("/unternehmen", land || daten?.land || "DE"); // Stamm: ohne Präfix
+  const satz = einleitung(daten, t);
+  const zielUnternehmen = pfad("/unternehmen", land); // im Land der Seite, gemeinsam ohne Präfix
 
   return (
     <aside
-      aria-label="Offenlegung: Teil der ÖKOVOLT Gruppe"
+      aria-label={t.aria}
       data-offenlegung={daten?.kanal || "gruppe"}
       data-land={land || daten?.land || undefined}
       data-pruefung="rechtsabteilung"
@@ -77,23 +106,23 @@ export default function Offenlegung({ immer = false, vorschau = null, land, clas
             <span>{daten.text} </span>
           ) : (
             <span>
-              Die {SITE.firma} ist Teil der {SITE.gruppe}
-              {GRUPPEN_GESELLSCHAFTER ? ` – Gesellschafterin ist unter anderem die ${GRUPPEN_GESELLSCHAFTER.name} (${GRUPPEN_GESELLSCHAFTER.anteil}).` : "."}{" "}
+              {t.teil(SITE.firma, SITE.gruppe)}
+              {GRUPPEN_GESELLSCHAFTER ? t.gesellschafter(GRUPPEN_GESELLSCHAFTER.name, GRUPPEN_GESELLSCHAFTER.anteil) : "."}{" "}
             </span>
           )}
           <Link href={zielUnternehmen} className="whitespace-nowrap font-semibold text-navy-700 underline decoration-navy-300 underline-offset-2 hover:decoration-navy-700">
-            Mehr zum Unternehmen
+            {t.mehr}
           </Link>
           {!INDEXIERBAR && (
             <span className="ml-2 inline-flex translate-y-[-1px] items-center rounded-full bg-sun-50 px-2 py-0.5 align-middle text-[11.5px] font-semibold text-sun-700 ring-1 ring-inset ring-sun-200">
-              Entwurf · Prüfung Rechtsabteilung
+              {t.entwurf}
             </span>
           )}
         </p>
         <button
           type="button"
           onClick={() => setZu(true)}
-          aria-label="Hinweis schließen"
+          aria-label={t.schliessen}
           className="-m-1.5 grid h-11 w-11 shrink-0 place-items-center rounded-full text-navy-700 transition-colors hover:bg-white/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-600"
         >
           <X aria-hidden="true" className="h-4 w-4" />

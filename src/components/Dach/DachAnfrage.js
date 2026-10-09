@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/components/ui/cn";
 import AnfrageFormular from "@/components/Plattform/AnfrageFormular";
+import { useTexte } from "@/components/Sprache/SpracheKontext";
 
 /**
  * Anfrage für Dachflächen: Chips (Dachart, Größe, Interesse) vor dem
@@ -57,7 +58,31 @@ const GRUPPEN = [
   },
 ];
 
+/** Sprachmodell: Texte (en nur Texte, Listen je Index; ids bleiben). */
+const TEXTE = {
+  de: {
+    gruppen: GRUPPEN,
+    titel: "Ihr Dach",
+    text: "Drei Klicks, dann Ihre Kontaktdaten. Adresse und – falls vorhanden – Baujahr, letzte Sanierung und Statikunterlagen gern in die Nachricht.",
+    button: "Dach vorstellen",
+    erfolg: "Danke! Ihr Dach ist bei uns eingegangen. Wir melden uns persönlich – registrieren Sie sich mit derselben E-Mail, dann sehen Sie den Stand im Portal.",
+  },
+  en: {
+    gruppen: [
+      { legende: "Roof type", optionen: [{ label: "Trapezoidal sheet" }, { label: "Sandwich panel" }, { label: "Flat roof" }, { label: "Fibre cement" }, { label: "Don’t know" }] },
+      { legende: "Approximate roof area", optionen: [{ label: "1,000–3,000 m²" }, { label: "3,000–10,000 m²" }, { label: "over 10,000 m²" }, { label: "under 1,000 m²" }] },
+      { legende: "Building", optionen: [{ label: "Commercial / production" }, { label: "Logistics / warehouse" }, { label: "Agriculture" }, { label: "Retail" }, { label: "Other" }] },
+      { legende: "What are you interested in?", optionen: [{ label: "Roof lease" }, { label: "One-off payment" }, { label: "Low-cost rooftop power" }, { label: "Roof renovation" }, { label: "Own installation" }] },
+    ],
+    titel: "Your roof",
+    text: "Three clicks, then your contact details. Feel free to add the address and – if available – year of construction, last renovation and structural documents in the message.",
+    button: "Present your roof",
+    erfolg: "Thank you! We have received your roof details. We will get back to you personally – register with the same email address to see the status in the portal.",
+  },
+};
+
 export default function DachAnfrage() {
+  const w = useTexte(TEXTE);
   const [werte, setWerte] = useState(() => Object.fromEntries(GRUPPEN.map((g) => [g.id, g.start ?? (g.mehrfach ? [] : g.optionen[0].id)])));
 
   const waehle = (g, id) =>
@@ -70,12 +95,10 @@ export default function DachAnfrage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="font-display text-[22px] font-bold text-ink-900">Ihr Dach</p>
-        <p className="mt-1.5 text-[15px] leading-relaxed text-ink-600">
-          Drei Klicks, dann Ihre Kontaktdaten. Adresse und – falls vorhanden – Baujahr, letzte Sanierung und Statikunterlagen gern in die Nachricht.
-        </p>
+        <p className="font-display text-[22px] font-bold text-ink-900">{w.titel}</p>
+        <p className="mt-1.5 text-[15px] leading-relaxed text-ink-600">{w.text}</p>
       </div>
-      {GRUPPEN.map((g) => (
+      {w.gruppen.map((g) => (
         <fieldset key={g.id}>
           <legend className="mb-2.5 text-[14px] font-semibold text-ink-800">{g.legende}</legend>
           <div className="flex flex-wrap gap-2">
@@ -102,8 +125,8 @@ export default function DachAnfrage() {
           typ="flaeche"
           daten={{ art: "dach", quelle: "dachflaeche-verpachten", ...werte }}
           felder={["firma", "telefon", "plz", "ort", "land", "nachricht"]}
-          button="Dach vorstellen"
-          erfolgText="Danke! Ihr Dach ist bei uns eingegangen. Wir melden uns persönlich – registrieren Sie sich mit derselben E-Mail, dann sehen Sie den Stand im Portal."
+          button={w.button}
+          erfolgText={w.erfolg}
         />
       </div>
     </div>

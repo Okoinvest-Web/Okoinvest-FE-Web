@@ -1,9 +1,11 @@
 // Sprungnavigation zu den Abschnitten einer langen Seite (Server-Komponente, reine Anker)
 // Mobil: horizontal wischbare Chip-Leiste, ab md eine Zeile mit Titel.
 import { ArrowDownRight } from "lucide-react";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 /** ziele: [{ href, label, nr? }] */
-export default function Sprungleiste({ titel = "Auf dieser Seite", ziele }) {
+export default function Sprungleiste({ titel: titelProp, ziele }) {
+  const titel = titelProp ?? (spracheDerAnfrage() === "en" ? "On this page" : "Auf dieser Seite");
   return (
     <nav aria-label={titel} className="bg-white pb-2 pt-12 md:pt-16">
       <div className="ov-container">

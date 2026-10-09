@@ -4,7 +4,7 @@
 // Inline-Prüfung beim Verlassen, Stärkeanzeige, Übereinstimmung mit Häkchen. Verbindlich prüft der Server.
 
 import { useId, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { useRouter } from "next/navigation";
 import { KeyRound, MailCheck, Send } from "lucide-react";
 import { senden } from "@/lib/plattform/client";

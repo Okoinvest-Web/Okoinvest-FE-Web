@@ -8,10 +8,76 @@ import { TextEnthuellung, Zaehler } from "@/components/motion";
 import { FREIFLAECHE, REGIONEN } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import { pfad } from "@/lib/land";
+import Link from "@/components/Land/Link";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { fmtZahl } from "@/lib/sprache/format";
 
 const BEISPIEL_HA = 20;
 
 const ZUSAGEN = ["Flächensicherung bis Betrieb aus einer Hand", "Genehmigungswege in DE, AT und CH", "Rückbau vertraglich und per Bürgschaft gesichert", "Naturverträglich geplant"];
+
+/** Sprachmodell: feste Texte des Heros (Länderinhalt t kommt bereits in der Sprache der Seite). */
+const TEXTE = {
+  de: {
+    zusagen: ZUSAGEN,
+    parkplan: `Parkplan · Beispiel ${BEISPIEL_HA} ha`,
+    schema: "Schema",
+    gruenland: "Grünland unter den Modulen",
+    kabel: "Kabel zum Netz",
+    leistung: "Leistung",
+    strom: "Strom (Süd-DE)",
+    tsd: "Tsd.",
+    haushalte: "Haushalte",
+    versiegelung: "Versiegelung",
+    meist: "meist < 5 %",
+    rest: "der Fläche – der Rest bleibt Grünland",
+    rueckbau: `Rückbau nach ${FREIFLAECHE.laufzeit} Jahren`,
+    buergschaft: "per Bürgschaft gesichert",
+    brotkrumen: "Freiflächen-PV",
+    pille: `Freiflächen-Photovoltaik ab rund ${FREIFLAECHE.mindestHa} Hektar`,
+    titelA: "Solarparks, die ",
+    titelB: "genehmigt werden",
+    titelC: " – und 30 Jahre tragen.",
+    lead: "Wir entwickeln Freiflächenanlagen ab rund 3 Hektar: von der Flächensicherung über Netzanschluss und Bebauungsplan bis zum Bau und Betrieb – als Teil einer Gruppe, die seit 2012 eigene Solarparks betreibt.",
+    primaer: "Fläche prüfen",
+    sekundaer: "Pacht berechnen",
+    hinweis: "Flächencheck kostenlos und ohne Anmeldung · Ergebnis sofort",
+    eigentuemer: "Eigentümer einer Fläche?",
+    verpachtung: "So funktioniert die Verpachtung",
+    bildunterschrift: `Schematische Darstellung · Kennzahlen aus ${fmt(FREIFLAECHE.haProMwp, 1)} ha je MWp und regionalem Ertrag`,
+    zahlen: "de-DE",
+  },
+  en: {
+    zusagen: ["Securing the land through to operation from a single source", "Permitting routes in DE, AT and CH", "Decommissioning secured by contract and bank guarantee", "Planned to be nature-friendly"],
+    parkplan: `Site plan · example ${BEISPIEL_HA} ha`,
+    schema: "Schematic",
+    gruenland: "Grassland under the modules",
+    kabel: "Cable to the grid",
+    leistung: "Capacity",
+    strom: "Power (southern DE)",
+    tsd: "k",
+    haushalte: "Households",
+    versiegelung: "Soil sealing",
+    meist: "usually < 5 %",
+    rest: "of the land – the rest stays grassland",
+    rueckbau: `Decommissioning after ${FREIFLAECHE.laufzeit} years`,
+    buergschaft: "secured by bank guarantee",
+    brotkrumen: "Ground-mounted PV",
+    pille: `Ground-mounted photovoltaics from around ${FREIFLAECHE.mindestHa} hectares`,
+    titelA: "Solar parks that ",
+    titelB: "get approved",
+    titelC: " – and last 30 years.",
+    lead: "We develop ground-mounted plants from around 3 hectares: from securing the land through grid connection and the development plan to construction and operation – as part of a group that has operated its own solar parks since 2012.",
+    primaer: "Check your land",
+    sekundaer: "Calculate lease",
+    hinweis: "Land check free of charge, no registration · instant result",
+    eigentuemer: "Own a plot of land?",
+    verpachtung: "How leasing works",
+    bildunterschrift: `Schematic illustration · figures based on ${fmtZahl(FREIFLAECHE.haProMwp, 1, "en")} ha per MWp and regional yield`,
+    zahlen: "en-GB",
+  },
+};
 
 /** Draufsicht: Flurstück mit Modulreihen, Hecke, Zufahrt, Station und Kabel zum Netz */
 function Parkplan() {
@@ -74,10 +140,11 @@ function Parkplan() {
   );
 }
 
-function ParkKomposition() {
+/** t: Länderinhalt (inhaltFuer, z. B. src/data/laender/ch/freiflaeche.js) – ohne t wie vor Welle 2 */
+function ParkKomposition({ t = {}, w }) {
   const sued = REGIONEN.find((r) => r.id === "de-sued");
   const mwp = BEISPIEL_HA / FREIFLAECHE.haProMwp;
-  const mwh = mwp * sued.ertrag;
+  const mwh = mwp * (t.ertragKwhProKwp ?? sued.ertrag);
   const haushalte = Math.round(mwh / 3.5 / 10) * 10;
   return (
     <div className="relative">
@@ -88,30 +155,30 @@ function ParkKomposition() {
             <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
             <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
           </span>
-          <span className="mx-auto truncate rounded-md bg-white px-3 py-0.5 text-[11.5px] text-ink-600 ring-1 ring-ink-200">Parkplan · Beispiel {BEISPIEL_HA} ha</span>
-          <span className="rounded-full bg-sun-100 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.1em] text-sun-700">Schema</span>
+          <span className="mx-auto truncate rounded-md bg-white px-3 py-0.5 text-[11.5px] text-ink-600 ring-1 ring-ink-200">{w.parkplan}</span>
+          <span className="rounded-full bg-sun-100 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.1em] text-sun-700">{w.schema}</span>
         </div>
         <div className="relative">
           <Aufbau sofort verzoegerung={260} schritt={60} style={{ "--pop-start": "250ms", "--pop-schritt": "45ms" }}>
             <Parkplan />
           </Aufbau>
           <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[11.5px] font-semibold text-ink-800 shadow-e2 ring-1 ring-ink-200 sm:left-4 sm:top-4">
-            Grünland unter den Modulen
+            {w.gruenland}
           </span>
           <span className="absolute bottom-3 right-3 rounded-full bg-navy-950 px-2.5 py-1 text-[11.5px] font-semibold text-white shadow-e2 sm:bottom-4 sm:right-12">
-            Kabel zum Netz
+            {w.kabel}
           </span>
         </div>
         <dl className="grid grid-cols-3 divide-x divide-ink-100 border-t border-ink-100">
           {[
-            { w: Math.round(mwp), n: 0, e: "MWp", l: "Leistung" },
-            { w: Math.round(mwh / 1000), n: 0, e: "GWh/a", l: "Strom (Süd-DE)" },
-            { w: Math.round(haushalte / 100) / 10, n: 1, e: "Tsd.", l: "Haushalte" },
+            { w: Math.round(mwp), n: 0, e: "MWp", l: w.leistung },
+            { w: Math.round(mwh / 1000), n: 0, e: "GWh/a", l: t.stromLabel ?? w.strom },
+            t.drittWert ? { w: t.drittWert.wert, n: 0, e: t.drittWert.einheit, l: t.drittWert.label } : { w: Math.round(haushalte / 100) / 10, n: 1, e: w.tsd, l: w.haushalte },
           ].map((k, i) => (
             <div key={k.l} className="px-3 py-3.5 sm:px-5">
               <dt className="text-[11.5px] font-medium text-ink-500">{k.l}</dt>
               <dd className="ov-num mt-1 font-display text-[19px] font-extrabold leading-none tracking-tight text-ink-900 sm:text-[24px]">
-                ≈ <Zaehler wert={k.w} nachkomma={k.n} dauer={1200} verzoegerung={700 + i * 120} />
+                ≈ <Zaehler wert={k.w} nachkomma={k.n} dauer={1200} verzoegerung={700 + i * 120} sprache={w.zahlen === "en-GB" ? w.zahlen : t.sprache ?? w.zahlen} />
                 <span className="mt-1 block text-[12px] font-bold tracking-normal text-ink-500 sm:ml-1 sm:mt-0 sm:inline">{k.e}</span>
               </dd>
             </div>
@@ -121,46 +188,47 @@ function ParkKomposition() {
 
       <div className="absolute -left-10 -top-20 hidden rounded-2xl bg-navy-900/90 px-4 py-3 text-white shadow-e4 ring-1 ring-white/15 backdrop-blur sm:block">
         <p className="flex items-center gap-2 text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ov-300">
-          <Leaf aria-hidden="true" className="h-3.5 w-3.5" /> Versiegelung
+          <Leaf aria-hidden="true" className="h-3.5 w-3.5" /> {w.versiegelung}
         </p>
-        <p className="mt-1 font-display text-[22px] font-extrabold leading-none tracking-tight">meist &lt; 5 %</p>
-        <p className="mt-1 text-[12px] text-white/70">der Fläche – der Rest bleibt Grünland</p>
+        <p className="mt-1 font-display text-[22px] font-extrabold leading-none tracking-tight">{w.meist}</p>
+        <p className="mt-1 text-[12px] text-white/70">{w.rest}</p>
       </div>
 
       <div className="relative mt-3 w-fit rounded-2xl bg-white p-3.5 pr-5 text-ink-900 shadow-e4 ring-1 ring-ink-200/70 sm:absolute sm:-right-8 sm:top-[42%] sm:m-0">
         <p className="flex items-center gap-3 text-[13px]">
           <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-ov-600 text-white"><ShieldCheck className="h-4 w-4" /></span>
-          <span className="min-w-0"><span className="block font-bold leading-tight">Rückbau nach {FREIFLAECHE.laufzeit} Jahren</span><span className="text-ink-600">per Bürgschaft gesichert</span></span>
+          <span className="min-w-0"><span className="block font-bold leading-tight">{w.rueckbau}</span><span className="text-ink-600">{w.buergschaft}</span></span>
         </p>
       </div>
     </div>
   );
 }
 
-export default function Hero() {
+export default function Hero({ t = {} }) {
+  const w = uebersetze(TEXTE, spracheDerAnfrage());
   return (
-    <HeroBuehne breadcrumbs={[{ name: "Freiflächen-PV" }]}>
+    <HeroBuehne breadcrumbs={[{ name: w.brotkrumen }]}>
       <div className="grid grid-cols-[minmax(0,1fr)] items-center gap-y-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-x-12 xl:gap-x-20">
         <div className="max-w-[36rem]">
-          <HeroPille marke="DACH">Freiflächen-Photovoltaik ab rund {FREIFLAECHE.mindestHa} Hektar</HeroPille>
+          <HeroPille marke={t.marke ?? "DACH"}>{t.pille ?? w.pille}</HeroPille>
           <h1 id="hero-titel" className="ov-h1 mt-6 text-balance md:mt-8">
             <TextEnthuellung verzoegerung={80}>
-              Solarparks, die <span className="ov-text-gradient-light">genehmigt werden</span> – und 30 Jahre tragen.
+              {w.titelA}<span className="ov-text-gradient-light">{w.titelB}</span>{w.titelC}
             </TextEnthuellung>
           </h1>
           <p className="ov-lead ov-hero-in mt-5 text-pretty text-white/75 md:mt-6" style={{ "--ov-delay": "180ms" }}>
-            Wir entwickeln Freiflächenanlagen ab rund 3 Hektar: von der Flächensicherung über Netzanschluss und Bebauungsplan bis zum Bau und Betrieb – als Teil einer Gruppe, die seit 2012 eigene Solarparks betreibt.
+            {t.lead ?? w.lead}
           </p>
           <div className="ov-hero-in mt-8 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-10" style={{ "--ov-delay": "260ms" }}>
-            <Button href={pfad("/flaechencheck")} size="lg" pfeil magnetisch className="w-full sm:w-auto">Fläche prüfen</Button>
-            <Button href={pfad("/rechner/pacht")} size="lg" variant="outlineLight" className="w-full sm:w-auto">Pacht berechnen</Button>
+            <Button href={pfad("/flaechencheck")} size="lg" pfeil magnetisch className="w-full sm:w-auto">{w.primaer}</Button>
+            <Button href={pfad("/rechner/pacht")} size="lg" variant="outlineLight" className="w-full sm:w-auto">{w.sekundaer}</Button>
           </div>
           <p className="ov-hero-in mt-4 text-[13px] leading-relaxed text-white/70" style={{ "--ov-delay": "300ms" }}>
-            Flächencheck kostenlos und ohne Anmeldung · Ergebnis sofort
+            {w.hinweis}
           </p>
           <div className="ov-hero-in mt-9 border-t border-white/10 pt-7 md:mt-10" style={{ "--ov-delay": "360ms" }}>
             <ul className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-              {ZUSAGEN.map((x) => (
+              {(t.zusagen ?? w.zusagen).map((x) => (
                 <li key={x} className="flex items-start gap-2.5 text-[14px] leading-snug text-white/85">
                   <Haken dunkel className="mt-px" />
                   {x}
@@ -170,10 +238,10 @@ export default function Hero() {
             <p className="mt-6 flex items-center gap-2 text-[14px] text-white/70">
               <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0 text-sun-300" />
               <span>
-                Eigentümer einer Fläche?{" "}
-                <a href={pfad("/flaeche-verpachten")} className="rounded font-semibold text-white underline decoration-sun-300/70 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
-                  So funktioniert die Verpachtung
-                </a>
+                {w.eigentuemer}{" "}
+                <Link href={pfad("/flaeche-verpachten")} className="rounded font-semibold text-white underline decoration-sun-300/70 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
+                  {w.verpachtung}
+                </Link>
               </span>
             </p>
           </div>
@@ -182,10 +250,10 @@ export default function Hero() {
         <figure className="relative mx-auto w-full max-w-[600px] lg:mx-0 lg:ml-auto">
           <div aria-hidden="true" className="pointer-events-none absolute -inset-x-8 -inset-y-12 -z-10 rounded-full bg-[radial-gradient(closest-side,rgba(140,186,88,0.22),transparent_70%)] blur-2xl" />
           <div className="ov-hero-in" style={{ "--ov-delay": "220ms" }}>
-            <ParkKomposition />
+            <ParkKomposition t={t} w={w} />
           </div>
           <figcaption className="mt-8 text-center text-[12px] text-white/60 sm:mt-16">
-            Schematische Darstellung · Kennzahlen aus {fmt(FREIFLAECHE.haProMwp, 1)} ha je MWp und regionalem Ertrag
+            {t.bildunterschrift ?? w.bildunterschrift}
           </figcaption>
         </figure>
       </div>

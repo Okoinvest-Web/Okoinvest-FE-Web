@@ -2,6 +2,13 @@
 
 import { useId, useState } from "react";
 import AnfrageFormular from "@/components/Plattform/AnfrageFormular";
+import { useTexte } from "@/components/Sprache/SpracheKontext";
+
+/* Sprachmodell: feste Texte je Sprache (Werte der Auswahl bleiben gleich) */
+const TEXTE = {
+  de: { legende: "Ihr Strombezug (optional)", verbrauch: "Jahresverbrauch in MWh", verbrauchBsp: "z. B. 450", preis: "Aktueller Preis in ct/kWh netto", preisBsp: "z. B. 22,5", ende: "Vertragsende", messung: "Messung", rlm: "Lastgangmessung (RLM)", slp: "Standardlastprofil (SLP)", unbekannt: "weiß ich nicht", button: "Pool-Angebot anfragen", erfolg: "Danke! Wir prüfen Ihre Angaben und melden uns bei Ihnen – bei Bedarf mit einer Vollmacht für den Lastgangabruf beim Netzbetreiber." },
+  en: { legende: "Your power consumption (optional)", verbrauch: "Annual consumption in MWh", verbrauchBsp: "e.g. 450", preis: "Current price in ct/kWh, net", preisBsp: "e.g. 22.5", ende: "Contract end", messung: "Metering", rlm: "Interval metering (RLM, registered load profile)", slp: "Standard load profile (SLP)", unbekannt: "I don’t know", button: "Request a pool offer", erfolg: "Thank you! We will review your details and get back to you – if needed, with a power of attorney to retrieve your load profile from the grid operator." },
+};
 
 /**
  * Anfrage zum Reststrom-Pool: fachliche Eckdaten (Verbrauch, Preis,
@@ -10,6 +17,7 @@ import AnfrageFormular from "@/components/Plattform/AnfrageFormular";
  */
 export default function ReststromAnfrage() {
   const id = useId();
+  const t = useTexte(TEXTE);
   const [verbrauch, setVerbrauch] = useState("");
   const [preis, setPreis] = useState("");
   const [vertragsende, setVertragsende] = useState("");
@@ -22,26 +30,26 @@ export default function ReststromAnfrage() {
   return (
     <div className="space-y-6">
       <fieldset className="rounded-2xl bg-sand-50 p-5 ring-1 ring-ink-200/70">
-        <legend className="px-1 text-[12px] font-semibold uppercase tracking-[0.14em] text-ov-700">Ihr Strombezug (optional)</legend>
+        <legend className="px-1 text-[12px] font-semibold uppercase tracking-[0.14em] text-ov-700">{t.legende}</legend>
         <div className="mt-2 grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor={`${id}-v`} className={label}>Jahresverbrauch in MWh</label>
-            <input id={`${id}-v`} inputMode="decimal" placeholder="z. B. 450" value={verbrauch} onChange={(e) => setVerbrauch(e.target.value)} className={feld} />
+            <label htmlFor={`${id}-v`} className={label}>{t.verbrauch}</label>
+            <input id={`${id}-v`} inputMode="decimal" placeholder={t.verbrauchBsp} value={verbrauch} onChange={(e) => setVerbrauch(e.target.value)} className={feld} />
           </div>
           <div>
-            <label htmlFor={`${id}-p`} className={label}>Aktueller Preis in ct/kWh netto</label>
-            <input id={`${id}-p`} inputMode="decimal" placeholder="z. B. 22,5" value={preis} onChange={(e) => setPreis(e.target.value)} className={feld} />
+            <label htmlFor={`${id}-p`} className={label}>{t.preis}</label>
+            <input id={`${id}-p`} inputMode="decimal" placeholder={t.preisBsp} value={preis} onChange={(e) => setPreis(e.target.value)} className={feld} />
           </div>
           <div>
-            <label htmlFor={`${id}-e`} className={label}>Vertragsende</label>
+            <label htmlFor={`${id}-e`} className={label}>{t.ende}</label>
             <input id={`${id}-e`} type="month" value={vertragsende} onChange={(e) => setVertragsende(e.target.value)} className={feld} />
           </div>
           <div>
-            <label htmlFor={`${id}-m`} className={label}>Messung</label>
+            <label htmlFor={`${id}-m`} className={label}>{t.messung}</label>
             <select id={`${id}-m`} value={messung} onChange={(e) => setMessung(e.target.value)} className={feld}>
-              <option value="rlm">Lastgangmessung (RLM)</option>
-              <option value="slp">Standardlastprofil (SLP)</option>
-              <option value="unbekannt">weiß ich nicht</option>
+              <option value="rlm">{t.rlm}</option>
+              <option value="slp">{t.slp}</option>
+              <option value="unbekannt">{t.unbekannt}</option>
             </select>
           </div>
         </div>
@@ -50,8 +58,8 @@ export default function ReststromAnfrage() {
       <AnfrageFormular
         typ="reststrom"
         felder={["firma", "telefon", "plz", "land", "nachricht"]}
-        button="Pool-Angebot anfragen"
-        erfolgText="Danke! Wir prüfen Ihre Angaben und melden uns bei Ihnen – bei Bedarf mit einer Vollmacht für den Lastgangabruf beim Netzbetreiber."
+        button={t.button}
+        erfolgText={t.erfolg}
         daten={{
           verbrauchMwh: verbrauch || null,
           arbeitspreisCt: preis || null,

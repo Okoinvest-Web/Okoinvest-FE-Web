@@ -5,6 +5,8 @@
 // Neue Region: Datei anlegen, hier importieren und in meta.js eintragen.
 
 import { META } from "./meta";
+import { INHALT_EN, NAMEN_EN } from "./en/index.js";
+import { uebersetze } from "../../lib/sprache/woerterbuch.js";
 import schleswigHolstein from "./schleswig-holstein";
 import bremen from "./bremen";
 import hamburg from "./hamburg";
@@ -68,3 +70,20 @@ export const regionFuer = (slug) => REGIONEN.find((r) => r.slug === slug) || nul
 
 /** Nachbarregionen als vollständige Objekte */
 export const nachbarnVon = (r) => (r?.nachbarn || []).map(regionFuer).filter(Boolean);
+
+/* ------------------------------------------------------------------ */
+/* Sprachmodell: englische Fassung (src/data/regionen/en/)             */
+/* ------------------------------------------------------------------ */
+
+/** Region in der Sprache der Seite: Englisch = deutsche Daten + Namen + englische Inhalte (uebersetze). */
+export function regionInSprache(r, sprache = "de") {
+  if (!r || sprache !== "en") return r;
+  return uebersetze({ de: r, en: { ...NAMEN_EN[r.slug], ...(INHALT_EN[r.slug] || {}) } }, "en");
+}
+export const regionFuerSprache = (slug, sprache = "de") => regionInSprache(regionFuer(slug), sprache);
+export const regionenInSprache = (sprache = "de") => (sprache === "en" ? REGIONEN.map((r) => regionInSprache(r, "en")) : REGIONEN);
+export const nachbarnInSprache = (r, sprache = "de") => nachbarnVon(r).map((n) => regionInSprache(n, sprache));
+/** Hat die Region eine vollständige englische Fassung? */
+export const hatEnglisch = (slug) => Object.hasOwn(INHALT_EN, slug);
+/** Name einer Region (Kachelkarte, Listen) in der Sprache der Seite */
+export const regionName = (slug, sprache = "de") => (sprache === "en" ? NAMEN_EN[slug]?.name : null) ?? META.find((m) => m.slug === slug)?.name ?? slug;

@@ -1,5 +1,7 @@
 import { cn } from "@/components/ui/cn";
 import Aufbau, { aufbau } from "@/components/Flaeche/Seite/Aufbau";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 /**
  * Schnitt durch eine Gewerbehalle mit PV auf dem Dach (Inline-SVG,
@@ -18,6 +20,29 @@ const LEGENDE = [
   { t: "Stromverbrauch im Gebäude", x: "Wird der Dachstrom direkt im Gebäude genutzt, ersetzt er teuren Netzstrom – Grundlage für Dachstrom-PPA und Eigenverbrauch." },
 ];
 
+/** Sprachmodell: Texte der Grafik (en nur Texte, je Index wie LEGENDE). */
+const TEXTE = {
+  de: {
+    legende: LEGENDE,
+    titel: "Schnitt durch eine Gewerbehalle mit Photovoltaik auf dem Dach",
+    beschreibung: "Flach geneigtes Hallendach mit Modulreihen, freiem Brandschutzstreifen in der Mitte, Dachzugang mit Geländer, Wechselrichter an der Fassade, Übergabestation und Kabel zum Stromnetz sowie Maschinen im Gebäude als Stromverbraucher.",
+  },
+  en: {
+    legende: [
+      { t: "Modules on the roof", x: "Pitched roofs covered in parallel, flat roofs with low east/west mounting – ballasted or bonded, without penetrating the roof membrane wherever possible." },
+      { t: "Structure & load reserve", x: "A structural engineer checks the additional load (usually approx. 12–25 kg/m²) including snow and wind. No reserve, no installation." },
+      { t: "Roof membrane & remaining service life", x: "The roof must last for the contract term – as a rule of thumb at least 25 years. Otherwise, renovate first." },
+      { t: "Fire protection distances", x: "Clear strips at fire walls, roof lights and smoke vents; cables routed properly. The fire brigade and insurers are involved early." },
+      { t: "Roof access & safety", x: "Permanent access, fall protection and walkways for maintenance – set out in the contract, including notification and liability." },
+      { t: "Inverters", x: "On the façade or in the plant room, well ventilated and accessible for service." },
+      { t: "Grid connection", x: "Via the existing building connection or a dedicated transfer station – often medium voltage for larger installations." },
+      { t: "Power consumption in the building", x: "If the rooftop power is used directly in the building, it replaces expensive grid power – the basis for a rooftop PPA and self-consumption." },
+    ],
+    titel: "Cross-section of a commercial hall with photovoltaics on the roof",
+    beschreibung: "Gently sloping hall roof with module rows, a clear fire protection strip in the middle, roof access with railing, inverters on the façade, a transfer station and cable to the power grid, and machines inside the building as power consumers.",
+  },
+};
+
 function Marke({ x, y, n }) {
   return (
     <g className={aufbau.pop} style={{ "--i": n - 1 }}>
@@ -31,6 +56,7 @@ function Marke({ x, y, n }) {
 }
 
 export default function HallenSchnitt({ className }) {
+  const w = uebersetze(TEXTE, spracheDerAnfrage());
   // Dach: Pultdach-ähnlich flach geneigt von (160,170) bis (1040,130)
   const dachY = (x) => 170 - ((x - 160) / 880) * 40;
   const reihen = [];
@@ -43,10 +69,8 @@ export default function HallenSchnitt({ className }) {
       <div className="bg-gradient-to-b from-navy-50 to-white px-2 pt-4 sm:px-4">
         <Aufbau schritt={70} style={{ "--pop-start": "1250ms", "--pop-schritt": "80ms" }}>
         <svg viewBox="0 0 1200 440" className="block h-auto w-full" role="img" aria-labelledby="halle-titel halle-text">
-          <title id="halle-titel">Schnitt durch eine Gewerbehalle mit Photovoltaik auf dem Dach</title>
-          <desc id="halle-text">
-            Flach geneigtes Hallendach mit Modulreihen, freiem Brandschutzstreifen in der Mitte, Dachzugang mit Geländer, Wechselrichter an der Fassade, Übergabestation und Kabel zum Stromnetz sowie Maschinen im Gebäude als Stromverbraucher.
-          </desc>
+          <title id="halle-titel">{w.titel}</title>
+          <desc id="halle-text">{w.beschreibung}</desc>
 
           {/* Sonne */}
           <circle cx="110" cy="80" r="34" className="fill-sun-300" />
@@ -137,8 +161,8 @@ export default function HallenSchnitt({ className }) {
       </div>
       <figcaption className="border-t border-ink-100 p-5 md:p-7">
         <ol className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
-          {LEGENDE.map((l, i) => (
-            <li key={l.t} className="flex gap-3">
+          {w.legende.map((l, i) => (
+            <li key={i} className="flex gap-3">
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-navy-950 font-display text-[13px] font-extrabold text-white">{i + 1}</span>
               <span className="text-[14px] leading-relaxed text-ink-600">
                 <strong className="mb-0.5 block font-display text-[15px] leading-snug text-ink-900">{l.t}</strong>

@@ -20,12 +20,14 @@
 //    Haftung, Änderungen und Gerichtsstand gegen KSchG/§§ 305 ff. BGB prüfen.
 //  - Gerichtsstand konkret benennen.
 
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { AlertTriangle } from "lucide-react";
 import LegalShell from "@/components/Reusable/LegalShell";
 import { GESELLSCHAFT, abs } from "@/data/site";
 import { PROVISION } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { nutzungsbedingungenInhaltEn } from "@/components/Rechtstexte/NutzungsbedingungenEn";
 
 const ENTWURF = true;
 
@@ -37,7 +39,7 @@ const BESCHREIBUNG =
 /** Datum der Fassung */
 const STAND = "30. September 2026";
 
-export const metadata = {
+const metadata = {
   title: TITEL,
   description: BESCHREIBUNG,
   alternates: { canonical: PAGE_URL },
@@ -54,6 +56,19 @@ export const metadata = {
   },
 };
 
+// Englisch (Sprachmodell): Übersetzung zur Information (src/components/Rechtstexte/NutzungsbedingungenEn.js) –
+// maßgeblich ist die deutsche Fassung. ENTWURF, anwaltliche Prüfung.
+const metadataEn = {
+  title: "Terms of use for the platform & project exchange | ÖkoInvest",
+  description: "Terms of use of the ÖkoInvest platform: roles, deal room, bidding process, energy procurement, signature, KYC, commission only on closing and liability.",
+  openGraph: {
+    locale: "en_GB",
+    title: "Terms of use for the platform & project exchange | ÖkoInvest",
+    description: "Terms of use of the ÖkoInvest platform: roles, deal room, bidding process, energy procurement, signature, KYC, commission only on closing and liability.",
+    images: [{ alt: "Investors on a site visit" }],
+  },
+};
+
 const G = GESELLSCHAFT;
 const provVon = fmt(PROVISION.verkaeufer.min * 100, 1);
 const provBis = fmt(PROVISION.verkaeufer.max * 100);
@@ -66,14 +81,20 @@ const BESONDERE = [
   { href: "/bedingungen/banken", titel: "Vertraulichkeitsbedingungen für Banken", text: "für Banken im Bank-Portal (Bankenpaket)" },
 ];
 
-export default function NutzungsbedingungenPage() {
+export default async function NutzungsbedingungenPage({ params }) {
+  await seitenLand(params);
+  const en = spracheDerAnfrage() === "en";
   return (
     <LegalShell
-      titel="Nutzungsbedingungen"
+      titel={en ? "Terms of use" : "Nutzungsbedingungen"}
       pfad="/nutzungsbedingungen"
       stand={STAND}
-      lead="Regeln für die Nutzung von Website, Portal und Projektbörse der ÖkoInvest GmbH – für Flächeneigentümer, Landwirte, Investoren, Projektanbieter, Unternehmen, Kommunen und eingeladene Partner."
+      lead={en ? "Rules for using the website, portal and project exchange of ÖkoInvest GmbH – for landowners, farmers, investors, project sellers, companies, municipalities and invited partners." : "Regeln für die Nutzung von Website, Portal und Projektbörse der ÖkoInvest GmbH – für Flächeneigentümer, Landwirte, Investoren, Projektanbieter, Unternehmen, Kommunen und eingeladene Partner."}
     >
+      {en ? (
+        nutzungsbedingungenInhaltEn({ entwurf: ENTWURF, stand: STAND })
+      ) : (
+        <>
       {ENTWURF && (
         <aside role="note" className="mb-10 flex gap-4 rounded-2xl bg-sun-300/20 p-5 ring-1 ring-sun-300/60 md:p-6">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sun-400 text-navy-950">
@@ -522,6 +543,10 @@ export default function NutzungsbedingungenPage() {
         tritt an ihre Stelle eine wirksame Regelung, die dem wirtschaftlichen Zweck möglichst nahekommt.
       </p>
       <p>Stand: {STAND}.</p>
+        </>
+      )}
     </LegalShell>
   );
 }
+
+export const generateMetadata = seitenMetadata("/nutzungsbedingungen", metadata, { en: metadataEn });

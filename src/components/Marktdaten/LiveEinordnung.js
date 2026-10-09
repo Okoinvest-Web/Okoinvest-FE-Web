@@ -1,10 +1,42 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowRight } from "lucide-react";
 import useEnergyLive, { fmtCt } from "@/components/ui/useEnergyLive";
 import { LiveDot } from "@/components/ui/LiveTicker";
-import { fmt } from "@/lib/rechner/annahmen";
+import { useTexte } from "@/components/Sprache/SpracheKontext";
+import { useFormate } from "@/components/Sprache/useFormate";
+
+const TEXTE = {
+  de: {
+    jetzt: "Börsenpreis jetzt",
+    jetztHinweis: "Day-Ahead, aktuelle Viertelstunde",
+    heute: "Tagesmittel heute",
+    negativ: (n) => `${n} Viertelstunden unter null`,
+    laedt: "wird geladen",
+    zuschlag: "Ø EEG-Zuschlag",
+    marktwert: (j) => `Marktwert Solar ${j}`,
+    marktwertHinweis: "Jahresmarktwert, netztransparenz.de",
+    titel: "Live-Einordnung",
+    unter: "Börsenstrompreis Deutschland jetzt, netto",
+    link: "Zum Live-Dashboard Strommarkt",
+    zuschlagText: (x) => x,
+  },
+  en: {
+    jetzt: "Exchange price now",
+    jetztHinweis: "day-ahead, current quarter-hour",
+    heute: "Daily average today",
+    negativ: (n) => `${n} quarter-hours below zero`,
+    laedt: "loading",
+    zuschlag: "Ø EEG award",
+    marktwert: (j) => `Solar market value ${j}`,
+    marktwertHinweis: "annual market value, netztransparenz.de",
+    titel: "Live context",
+    unter: "Exchange electricity price in Germany now, net",
+    link: "To the live power market dashboard",
+    zuschlagText: (x) => x,
+  },
+};
 import Reveal from "@/components/ui/Reveal";
 import { pfad } from "@/lib/land";
 
@@ -20,16 +52,19 @@ import { pfad } from "@/lib/land";
  *  initial      optional { preis: { aktuell, heute } } vom Server (kein leerer Platzhalter)
  */
 export default function LiveEinordnung({ zuschlagCt, zuschlagText, solarCt, solarJahr, initial = null }) {
+  const t = useTexte(TEXTE);
+  const f = useFormate();
+  const { fmt } = f;
   const d = useEnergyLive() || initial;
   const jetzt = d?.preis?.aktuell;
   const heute = d?.preis?.heute;
   const jetztCt = jetzt ? jetzt.eurMwh / 10 : null;
 
   const zeilen = [
-    { label: "Börsenpreis jetzt", wert: jetztCt, hinweis: "Day-Ahead, aktuelle Viertelstunde", live: true },
-    { label: "Tagesmittel heute", wert: heute ? heute.avg / 10 : null, hinweis: heute ? `${heute.negativ} Viertelstunden unter null` : "wird geladen", live: true },
-    { label: "Ø EEG-Zuschlag", wert: zuschlagCt, hinweis: zuschlagText },
-    { label: `Marktwert Solar ${solarJahr}`, wert: solarCt, hinweis: "Jahresmarktwert, netztransparenz.de" },
+    { label: t.jetzt, wert: jetztCt, hinweis: t.jetztHinweis, live: true },
+    { label: t.heute, wert: heute ? heute.avg / 10 : null, hinweis: heute ? t.negativ(heute.negativ) : t.laedt, live: true },
+    { label: t.zuschlag, wert: zuschlagCt, hinweis: zuschlagText },
+    { label: t.marktwert(solarJahr), wert: solarCt, hinweis: t.marktwertHinweis },
   ];
   const skala = Math.max(12, ...zeilen.map((z) => (z.wert != null ? z.wert : 0)));
 
@@ -37,19 +72,19 @@ export default function LiveEinordnung({ zuschlagCt, zuschlagText, solarCt, sola
     <div className="ov-glass rounded-[2rem] p-6 text-white md:p-8">
       <p className="flex items-center gap-2 text-[12.5px] font-semibold uppercase tracking-[0.14em] text-ov-300">
         <LiveDot />
-        Live-Einordnung
+        {t.titel}
       </p>
       <p className="mt-4 flex items-baseline gap-2 font-display font-extrabold leading-none tracking-tight" aria-live="polite">
         {jetzt ? (
           <>
-            <span className="ov-num text-[clamp(2.6rem,2rem+2vw,3.6rem)]">{fmtCt(jetzt.eurMwh)}</span>
+            <span className="ov-num text-[clamp(2.6rem,2rem+2vw,3.6rem)]">{fmtCt(jetzt.eurMwh, 1, f.sprache)}</span>
             <span className="text-[16px] font-bold text-white/65">ct/kWh</span>
           </>
         ) : (
           <span className="block h-12 w-44 animate-ov-shimmer rounded-lg bg-[linear-gradient(90deg,rgba(255,255,255,0.06),rgba(255,255,255,0.16),rgba(255,255,255,0.06))] bg-[length:200%_100%]" />
         )}
       </p>
-      <p className="mt-2 text-[14px] text-white/65">Börsenstrompreis Deutschland jetzt, netto</p>
+      <p className="mt-2 text-[14px] text-white/65">{t.unter}</p>
 
       {/* Vergleichsbalken wachsen beim Eintritt nacheinander (ov-balken-x am Rahmen); Live-Änderungen per scaleX */}
       <Reveal as="ul" dir="ohne" className="mt-7 space-y-4">
@@ -80,7 +115,7 @@ export default function LiveEinordnung({ zuschlagCt, zuschlagText, solarCt, sola
         href={pfad("/energie-live")}
         className="mt-7 inline-flex items-center gap-2 text-[14px] font-semibold text-ov-300 underline-offset-4 hover:text-white hover:underline"
       >
-        Zum Live-Dashboard Strommarkt
+        {t.link}
         <ArrowRight aria-hidden="true" className="h-4 w-4" />
       </Link>
     </div>

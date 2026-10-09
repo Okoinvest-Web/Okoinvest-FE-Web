@@ -1,6 +1,8 @@
 import { Factory, Hammer, Landmark, MapPinned, SunMedium } from "lucide-react";
 import Stagger from "@/components/ui/Stagger";
 import { GESELLSCHAFT, KENNZAHLEN } from "@/data/site";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 /**
  * Vertrauensleiste direkt unter dem Hero.
@@ -17,16 +19,27 @@ const FAKTEN = [
   { icon: Landmark, titel: GESELLSCHAFT.register, text: GESELLSCHAFT.gericht.replace("Landesgericht", "LG") },
 ];
 
+// Englisch: gleiche Fakten, gleiche Reihenfolge (Registerangaben bleiben im Original)
+const FAKTEN_EN = [
+  { titel: "ÖKOVOLT Group", text: `Photovoltaics since ${KENNZAHLEN.gruppeGegruendet}` },
+  { titel: "Own solar parks", text: "in operation since 2012" },
+  { titel: "Own pile-driving equipment", text: "Foundations from within the group" },
+  { text: "Companies in Germany and Austria" },
+  { text: GESELLSCHAFT.gericht.replace("Landesgericht", "Regional Court") },
+];
+
 export default function Vertrauensleiste() {
+  const en = spracheDerAnfrage() === "en";
+  const FAKTEN_SEITE = uebersetze({ de: FAKTEN, en: FAKTEN_EN }, en ? "en" : "de");
   return (
-    <section aria-label="Fakten zur ÖkoInvest GmbH" className="border-b border-ink-100 bg-white">
+    <section aria-label={en ? "Facts about ÖkoInvest GmbH" : "Fakten zur ÖkoInvest GmbH"} className="border-b border-ink-100 bg-white">
       <div className="ov-container">
         <Stagger
           as="ul"
           schritt={70}
           className="grid grid-cols-2 gap-x-4 gap-y-5 py-7 sm:grid-cols-3 md:py-8 lg:grid-cols-5 lg:gap-0"
         >
-          {FAKTEN.map((f, i) => (
+          {FAKTEN_SEITE.map((f, i) => (
             <li
               key={f.titel}
               className={`flex items-center gap-3 ${i === FAKTEN.length - 1 ? "col-span-2 sm:col-span-1" : ""} lg:justify-center lg:px-4 ${i > 0 ? "lg:border-l lg:border-ink-100" : ""}`}

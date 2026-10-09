@@ -87,7 +87,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Der Gesetzgeber hat diese Flächen bewusst begünstigt: Sie sind durch den Verkehrsweg ohnehin vorbelastet, das Landschaftsbild ist bereits verändert, und Konflikte mit Wohnbebauung sind seltener. Die Grundlagen zum Planverfahren erklärt der Ratgeber [Genehmigung und Bebauungsplan](/wissen/ratgeber/solarpark-genehmigung-bebauungsplan); hier geht es um die Besonderheiten am Verkehrsweg.",
+          text: "Der Gesetzgeber hat diese Flächen bewusst begünstigt: Sie sind durch den Verkehrsweg ohnehin vorbelastet, das Landschaftsbild ist bereits verändert, und Konflikte mit Wohnbebauung sind seltener. Die Grundlagen zum Planverfahren erklärt der Ratgeber [Genehmigung und Bebauungsplan](/ratgeber/solarpark-genehmigung-bebauungsplan); hier geht es um die Besonderheiten am Verkehrsweg.",
         },
         {
           typ: "tabelle",
@@ -123,7 +123,7 @@ const artikel = {
             "**Schienenwege:** Das übergeordnete Netz ist in § 2b AEG definiert – das regelspurige Eisenbahnnetz ohne funktional getrennte Stadt- und Vorortnetze, private Werksbahnen und reine Museums- oder Touristikstrecken. Zusätzlich müssen mindestens zwei Hauptgleise vorhanden sein; eingleisige Nebenstrecken sind nicht privilegiert.",
             "**Öffentliche Belange:** Naturschutz, Wasserschutz, Denkmalschutz, Landschaftsbild und schädliche Umwelteinwirkungen wie Blendung werden trotzdem geprüft (§ 35 Abs. 3 BauGB).",
             "**Gemeinde:** Sie muss ihr Einvernehmen erteilen, kann es bei privilegierten Vorhaben aber nur aus den gesetzlichen Gründen verweigern.",
-            "**Rückbau:** Als weitere Zulässigkeitsvoraussetzung ist eine Rückbauverpflichtung abzugeben (§ 35 Abs. 5 BauGB), meist mit Sicherheit. Details im Ratgeber [Rückbau und Rückbaubürgschaft](/wissen/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).",
+            "**Rückbau:** Als weitere Zulässigkeitsvoraussetzung ist eine Rückbauverpflichtung abzugeben (§ 35 Abs. 5 BauGB), meist mit Sicherheit. Details im Ratgeber [Rückbau und Rückbaubürgschaft](/ratgeber/solarpark-rueckbau-rueckbaubuergschaft).",
           ],
         },
         {
@@ -134,7 +134,7 @@ const artikel = {
           typ: "kasten",
           variant: "tipp",
           titel: "Messen Sie richtig",
-          text: `Maßgeblich ist der äußere Rand der Fahrbahn, nicht die Grundstücksgrenze der Autobahn und nicht die Mitte der Trasse. Böschungen, Rastanlagen und Anschlussstellen verschieben die Linie. Lassen Sie den Korridor vor Vertragsabschluss auf einem amtlichen Lageplan einzeichnen – ein Flurstück, das nur zur Hälfte im ${PRIV_KORRIDOR_M}-m-Korridor liegt, ist baurechtlich zweigeteilt. Eine erste Prüfung bietet der [Flächencheck](/de/flaechencheck).`,
+          text: `Maßgeblich ist der äußere Rand der Fahrbahn, nicht die Grundstücksgrenze der Autobahn und nicht die Mitte der Trasse. Böschungen, Rastanlagen und Anschlussstellen verschieben die Linie. Lassen Sie den Korridor vor Vertragsabschluss auf einem amtlichen Lageplan einzeichnen – ein Flurstück, das nur zur Hälfte im ${PRIV_KORRIDOR_M}-m-Korridor liegt, ist baurechtlich zweigeteilt. Eine erste Prüfung bietet der [Flächencheck](/flaechencheck).`,
         },
       ],
     },
@@ -149,11 +149,11 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Daraus folgt eine wichtige Kombination: **Im 200-m-Korridor ist die Anlage zugleich privilegiert und förderfähig** – sie kann ohne Bebauungsplan an der Ausschreibung teilnehmen. Zwischen 200 und 500 m bleibt sie förderfähig, braucht aber einen Bebauungsplan. Für kleinere Anlagen außerhalb der Ausschreibung enthält § 48 Abs. 1 Satz 1 Nr. 3 c aa EEG eine entsprechende 500-m-Regel mit Bebauungsplan. Wie die Ausschreibung funktioniert, erklärt der Ratgeber [EEG-Ausschreibung für Freiflächen](/wissen/ratgeber/eeg-ausschreibung-freiflaeche).",
+          text: "Daraus folgt eine wichtige Kombination: **Im 200-m-Korridor ist die Anlage zugleich privilegiert und förderfähig** – sie kann ohne Bebauungsplan an der Ausschreibung teilnehmen. Zwischen 200 und 500 m bleibt sie förderfähig, braucht aber einen Bebauungsplan. Für kleinere Anlagen außerhalb der Ausschreibung enthält § 48 Abs. 1 Satz 1 Nr. 3 c aa EEG eine entsprechende 500-m-Regel mit Bebauungsplan. Wie die Ausschreibung funktioniert, erklärt der Ratgeber [EEG-Ausschreibung für Freiflächen](/ratgeber/eeg-ausschreibung-freiflaeche).",
         },
         {
           typ: "p",
-          text: "Auch im Randstreifen gelten die Biodiversitätskriterien des § 37 Abs. 1a EEG: Die Anlage soll mindestens drei von fünf naturschutzfachlichen Kriterien erfüllen. Welche das sind, zeigt der Ratgeber [Artenschutz und Biodiversität](/wissen/ratgeber/solarpark-artenschutz-biodiversitaet). Liegt die Fläche außerhalb aller Kategorien der [Flächenkulisse](/wissen/lexikon#flaechenkulisse), bleiben [benachteiligte Gebiete](/wissen/ratgeber/benachteiligte-gebiete-pv-freiflaeche) mit Landesöffnung oder die Vermarktung über einen [Stromliefervertrag](/wissen/ratgeber/ppa-fuer-unternehmen).",
+          text: "Auch im Randstreifen gelten die Biodiversitätskriterien des § 37 Abs. 1a EEG: Die Anlage soll mindestens drei von fünf naturschutzfachlichen Kriterien erfüllen. Welche das sind, zeigt der Ratgeber [Artenschutz und Biodiversität](/ratgeber/solarpark-artenschutz-biodiversitaet). Liegt die Fläche außerhalb aller Kategorien der [Flächenkulisse](/wissen/lexikon#flaechenkulisse), bleiben [benachteiligte Gebiete](/ratgeber/benachteiligte-gebiete-pv-freiflaeche) mit Landesöffnung oder die Vermarktung über einen [Stromliefervertrag](/ratgeber/ppa-fuer-unternehmen).",
         },
         {
           typ: "tabelle",
@@ -174,7 +174,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die [Kommunalbeteiligung](/wissen/lexikon#kommunalbeteiligung) nach § 6 EEG kann die Zustimmung der Gemeinde erleichtern – auch bei privilegierten Anlagen, bei denen die Gemeinde keinen Bebauungsplan beschließen muss. Was die Pacht für Ihre Fläche ergibt, rechnen Sie im [Pachtrechner](/de/rechner/pacht).`,
+          text: `Die [Kommunalbeteiligung](/wissen/lexikon#kommunalbeteiligung) nach § 6 EEG kann die Zustimmung der Gemeinde erleichtern – auch bei privilegierten Anlagen, bei denen die Gemeinde keinen Bebauungsplan beschließen muss. Was die Pacht für Ihre Fläche ergibt, rechnen Sie im [Pachtrechner](/rechner/pacht).`,
         },
       ],
     },
@@ -232,7 +232,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Für die Netzanbindung lohnt ein früher Blick auf die Trasse: Muss die Kabelverbindung Autobahn oder Bahn queren, sind Bohrungen und Verträge mit dem Baulastträger nötig. Mehr dazu im Ratgeber [Netzanschluss für Solarparks](/wissen/ratgeber/netzanschluss-solarpark).",
+          text: "Für die Netzanbindung lohnt ein früher Blick auf die Trasse: Muss die Kabelverbindung Autobahn oder Bahn queren, sind Bohrungen und Verträge mit dem Baulastträger nötig. Mehr dazu im Ratgeber [Netzanschluss für Solarparks](/ratgeber/netzanschluss-solarpark).",
         },
       ],
     },
@@ -247,7 +247,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Besonders sensibel sind Abschnitte, in denen die Trasse nach Osten oder Westen verläuft und die Sonne tief steht, sowie Kurven, Anschlussstellen und Signalstandorte. Abhilfe schaffen die Ausrichtung der Module, ein modulfreier Randstreifen, Sichtschutz in Höhe der Moduloberkante oder reflexionsarme Module. Die Methodik und die Maßstäbe für Wohnhäuser erklärt der Ratgeber [Abstand zur Wohnbebauung und Blendgutachten](/wissen/ratgeber/solarpark-abstand-wohnbebauung-blendgutachten).",
+          text: "Besonders sensibel sind Abschnitte, in denen die Trasse nach Osten oder Westen verläuft und die Sonne tief steht, sowie Kurven, Anschlussstellen und Signalstandorte. Abhilfe schaffen die Ausrichtung der Module, ein modulfreier Randstreifen, Sichtschutz in Höhe der Moduloberkante oder reflexionsarme Module. Die Methodik und die Maßstäbe für Wohnhäuser erklärt der Ratgeber [Abstand zur Wohnbebauung und Blendgutachten](/ratgeber/solarpark-abstand-wohnbebauung-blendgutachten).",
         },
       ],
     },
@@ -258,7 +258,7 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: "**Eine bundesweite Privilegierung wie den 200-m-Korridor gibt es nach aktuellem Stand weder in Österreich noch in der Schweiz.** Freiflächen an Autobahnen werden dort über die Flächenwidmung bzw. die kantonale Nutzungsplanung entwickelt; Verkehrsflächen und Lärmschutzwände werden teils direkt vom Straßenbetreiber für Photovoltaik bereitgestellt. Einstieg in die Rahmenbedingungen geben die Ratgeber [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich) und [Freiflächen-PV in der Schweiz](/wissen/ratgeber/freiflaechen-pv-schweiz).",
+          text: "**Eine bundesweite Privilegierung wie den 200-m-Korridor gibt es nach aktuellem Stand weder in Österreich noch in der Schweiz.** Freiflächen an Autobahnen werden dort über die Flächenwidmung bzw. die kantonale Nutzungsplanung entwickelt; Verkehrsflächen und Lärmschutzwände werden teils direkt vom Straßenbetreiber für Photovoltaik bereitgestellt. Einstieg in die Rahmenbedingungen geben die Ratgeber [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich) und [Freiflächen-PV in der Schweiz](/ratgeber/freiflaechen-pv-schweiz).",
         },
       ],
     },
@@ -311,14 +311,14 @@ const artikel = {
     },
     {
       q: "Zahlen Betreiber an der Autobahn mehr Pacht?",
-      a: `Häufig ja, weil Baurecht und Förderung dort leichter zu erreichen sind. Entscheidend bleibt aber der Netzanschluss. Die übliche Spanne liegt bei ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr; Details im [Pachtrechner](/de/rechner/pacht).`,
+      a: `Häufig ja, weil Baurecht und Förderung dort leichter zu erreichen sind. Entscheidend bleibt aber der Netzanschluss. Die übliche Spanne liegt bei ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr; Details im [Pachtrechner](/rechner/pacht).`,
     },
   ],
 
   passend: [
-    { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Genehmigung und Bebauungsplan", text: "Das Regelverfahren und wann die Privilegierung hilft." },
-    { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Flächenkulisse, Höchstwerte und Zuschläge." },
-    { href: "/wissen/ratgeber/solarpark-abstand-wohnbebauung-blendgutachten", titel: "Abstand und Blendgutachten", text: "Wie Blendung geprüft und vermieden wird." },
+    { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Genehmigung und Bebauungsplan", text: "Das Regelverfahren und wann die Privilegierung hilft." },
+    { href: "/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Flächenkulisse, Höchstwerte und Zuschläge." },
+    { href: "/ratgeber/solarpark-abstand-wohnbebauung-blendgutachten", titel: "Abstand und Blendgutachten", text: "Wie Blendung geprüft und vermieden wird." },
     { href: pfad("/flaechencheck"), titel: "Flächencheck", text: "Lage zu Autobahn und Bahn prüfen lassen." },
     { href: pfad("/flaeche-verpachten"), titel: "Fläche für Solarpark verpachten", text: "Pachtmodelle, Vertrag und Ablauf für Eigentümer." },
     { href: pfad("/freiflaeche"), titel: "Freiflächen-PV entwickeln", text: "Flächenkriterien, Genehmigung und Zeitplan." },

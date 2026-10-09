@@ -1,4 +1,5 @@
 import { CloudOff, ExternalLink } from "lucide-react";
+import T from "@/components/Sprache/T";
 
 /** Ruhiger Ersatzzustand, wenn eine Datenquelle ausfällt – nie ein leeres Diagramm. */
 export default function KeineDaten({ titel, text }) {
@@ -15,7 +16,7 @@ export default function KeineDaten({ titel, text }) {
         rel="noopener noreferrer"
         className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full px-5 text-[14.5px] font-semibold text-ov-700 ring-1 ring-inset ring-ink-200 hover:bg-ink-50"
       >
-        Energy-Charts öffnen
+        <T de="Energy-Charts öffnen" en="Open Energy-Charts" />
         <ExternalLink aria-hidden="true" className="h-4 w-4" />
       </a>
     </div>

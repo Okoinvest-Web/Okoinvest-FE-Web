@@ -149,11 +149,11 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: `**Flächen mit [Agri-PV](/de/agri-pv) der Kategorien I oder II nach [DIN SPEC 91434](/wissen/lexikon#din-spec-91434) bleiben nach den gleich lautenden Ländererlassen vom 15. Juli 2022 land- und forstwirtschaftliches Vermögen** – für Erbschaft-, Schenkung- und Grundsteuer. Voraussetzung ist, dass die landwirtschaftliche Nutzung prägend bleibt; die DIN SPEC begrenzt den Flächenverlust durch Aufbauten auf ${fmtPct(AGRI.flaechenverlustMaxKat1, 0)} (Kategorie I) bzw. ${fmtPct(AGRI.flaechenverlustMaxKat2, 0)} (Kategorie II) und verlangt mindestens ${fmtPct(AGRI.mindestErtrag, 0)} des Referenzertrags.`,
+          text: `**Flächen mit [Agri-PV](/agri-pv) der Kategorien I oder II nach [DIN SPEC 91434](/wissen/lexikon#din-spec-91434) bleiben nach den gleich lautenden Ländererlassen vom 15. Juli 2022 land- und forstwirtschaftliches Vermögen** – für Erbschaft-, Schenkung- und Grundsteuer. Voraussetzung ist, dass die landwirtschaftliche Nutzung prägend bleibt; die DIN SPEC begrenzt den Flächenverlust durch Aufbauten auf ${fmtPct(AGRI.flaechenverlustMaxKat1, 0)} (Kategorie I) bzw. ${fmtPct(AGRI.flaechenverlustMaxKat2, 0)} (Kategorie II) und verlangt mindestens ${fmtPct(AGRI.mindestErtrag, 0)} des Referenzertrags.`,
         },
         {
           typ: "p",
-          text: `Dafür ist die Pacht bei Agri-PV niedriger – typischerweise ${fmt(PACHT.agriProHa.min)}–${fmt(PACHT.agriProHa.max)} € je Hektar statt ${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} € bei klassischer Freifläche –, weil die Bewirtschaftung weiterläuft. Ob sich das für Sie rechnet, zeigen der [Agri-PV-Rechner](/de/rechner/agri-pv) und die Ratgeber [Agri-PV nach DIN SPEC 91434](/wissen/ratgeber/agri-pv-din-spec-91434) und [Agri-PV-Wirtschaftlichkeit](/wissen/ratgeber/agri-pv-wirtschaftlichkeit).`,
+          text: `Dafür ist die Pacht bei Agri-PV niedriger – typischerweise ${fmt(PACHT.agriProHa.min)}–${fmt(PACHT.agriProHa.max)} € je Hektar statt ${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} € bei klassischer Freifläche –, weil die Bewirtschaftung weiterläuft. Ob sich das für Sie rechnet, zeigen der [Agri-PV-Rechner](/rechner/agri-pv) und die Ratgeber [Agri-PV nach DIN SPEC 91434](/ratgeber/agri-pv-din-spec-91434) und [Agri-PV-Wirtschaftlichkeit](/ratgeber/agri-pv-wirtschaftlichkeit).`,
         },
       ],
     },
@@ -196,7 +196,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Schuldner der Grundsteuer bleibt der Eigentümer. Ob der Betreiber die Mehrbelastung übernimmt, ist Verhandlungssache – eine entsprechende Klausel gehört in jeden [Pachtvertrag für einen Solarpark](/wissen/ratgeber/pachtvertrag-solarpark).",
+          text: "Schuldner der Grundsteuer bleibt der Eigentümer. Ob der Betreiber die Mehrbelastung übernimmt, ist Verhandlungssache – eine entsprechende Klausel gehört in jeden [Pachtvertrag für einen Solarpark](/ratgeber/pachtvertrag-solarpark).",
         },
       ],
     },
@@ -207,11 +207,11 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: "**In Österreich gibt es seit 2008 keine Erbschafts- und Schenkungssteuer mehr – relevant sind vor allem Einheitswert, Grundsteuer und Grunderwerbsteuer.** Nach Auffassung der Finanzverwaltung scheiden Flächen, die an einen PV-Betreiber verpachtet werden, in der Regel aus dem land- und forstwirtschaftlichen Vermögen aus und werden als Grundvermögen bewertet. Das kann die Grundsteuer erhöhen und bei einer späteren Übergabe zu einer höheren Grunderwerbsteuer führen, weil Grundvermögen nicht mehr mit dem begünstigten Einheitswert angesetzt wird. Die Landwirtschaftskammern nennen Ausnahmen für Konzepte mit fortgesetzter landwirtschaftlicher Nutzung; Details sind im Einzelfall mit der Kammer oder Steuerberatung zu klären. Weitere Hinweise im Ratgeber [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich).",
+          text: "**In Österreich gibt es seit 2008 keine Erbschafts- und Schenkungssteuer mehr – relevant sind vor allem Einheitswert, Grundsteuer und Grunderwerbsteuer.** Nach Auffassung der Finanzverwaltung scheiden Flächen, die an einen PV-Betreiber verpachtet werden, in der Regel aus dem land- und forstwirtschaftlichen Vermögen aus und werden als Grundvermögen bewertet. Das kann die Grundsteuer erhöhen und bei einer späteren Übergabe zu einer höheren Grunderwerbsteuer führen, weil Grundvermögen nicht mehr mit dem begünstigten Einheitswert angesetzt wird. Die Landwirtschaftskammern nennen Ausnahmen für Konzepte mit fortgesetzter landwirtschaftlicher Nutzung; Details sind im Einzelfall mit der Kammer oder Steuerberatung zu klären. Weitere Hinweise im Ratgeber [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich).",
         },
         {
           typ: "p",
-          text: "**In der Schweiz sind Erbschafts- und Schenkungssteuern Sache der Kantone.** Direkte Nachkommen sind nach der Übersicht der Eidgenössischen Steuerverwaltung in den meisten Kantonen befreit, Ehegatten in allen. Für landwirtschaftliche Grundstücke gelten zudem besondere Regeln des bäuerlichen Bodenrechts. Da klassische Solarparks auf Landwirtschaftsland in der Schweiz selten sind, empfehlen wir hier ausdrücklich eine kantonale Steuer- und Rechtsberatung. Mehr unter [Freiflächen-PV in der Schweiz](/wissen/ratgeber/freiflaechen-pv-schweiz).",
+          text: "**In der Schweiz sind Erbschafts- und Schenkungssteuern Sache der Kantone.** Direkte Nachkommen sind nach der Übersicht der Eidgenössischen Steuerverwaltung in den meisten Kantonen befreit, Ehegatten in allen. Für landwirtschaftliche Grundstücke gelten zudem besondere Regeln des bäuerlichen Bodenrechts. Da klassische Solarparks auf Landwirtschaftsland in der Schweiz selten sind, empfehlen wir hier ausdrücklich eine kantonale Steuer- und Rechtsberatung. Mehr unter [Freiflächen-PV in der Schweiz](/ratgeber/freiflaechen-pv-schweiz).",
         },
       ],
     },
@@ -229,7 +229,7 @@ const artikel = {
           schritte: [
             ["Ausgangslage klären", "Gehört die Fläche zu einem land- und forstwirtschaftlichen Betrieb? Gab es in den letzten Jahren eine Übergabe mit Verschonung? Ist eine Nachfolge geplant?"],
             ["Steuerberatung einbinden", "Mit einer auf Land- und Forstwirtschaft spezialisierten Steuerberatung Erbschaft-, Grund- und Einkommensteuer für Ihren Fall durchrechnen lassen."],
-            ["Alternativen prüfen", "Kommt [Agri-PV](/de/agri-pv) infrage? Welche Pacht und welcher Aufwand stehen dem gegenüber? Hinweise für Betriebe unter [Landwirte](/de/landwirte)."],
+            ["Alternativen prüfen", "Kommt [Agri-PV](/agri-pv) infrage? Welche Pacht und welcher Aufwand stehen dem gegenüber? Hinweise für Betriebe unter [Landwirte](/landwirte)."],
             ["Vertrag verhandeln", "Regelung zur Grundsteuer und ggf. zum Ausgleich steuerlicher Mehrbelastungen in den Vertrag aufnehmen; Vertrag anwaltlich prüfen lassen."],
             ["Rechtslage beobachten", "Die Diskussion um eine gesetzliche Lösung läuft. Lassen Sie den Stand vor der Unterschrift und bei einer späteren Übergabe erneut prüfen."],
           ],
@@ -256,7 +256,7 @@ const artikel = {
     },
     {
       q: "Ist Agri-PV steuerlich besser gestellt?",
-      a: "Ja. Agri-PV der Kategorien I und II nach DIN SPEC 91434 bleibt nach den Ländererlassen vom 15. Juli 2022 land- und forstwirtschaftliches Vermögen – für Erbschaft-, Schenkung- und Grundsteuer. Dafür ist die Pacht meist niedriger. Mehr unter [Agri-PV](/de/agri-pv).",
+      a: "Ja. Agri-PV der Kategorien I und II nach DIN SPEC 91434 bleibt nach den Ländererlassen vom 15. Juli 2022 land- und forstwirtschaftliches Vermögen – für Erbschaft-, Schenkung- und Grundsteuer. Dafür ist die Pacht meist niedriger. Mehr unter [Agri-PV](/agri-pv).",
     },
     {
       q: "Muss ich für eine Solarpark-Fläche Grundsteuer B zahlen?",
@@ -273,9 +273,9 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/wissen/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Klauseln, Grundbuch, Rückbau und Checkliste." },
-    { href: "/wissen/ratgeber/solarpark-pacht-pro-hektar", titel: "Pacht pro Hektar für Solarparks", text: "Spannen und Rechnung über 30 Jahre." },
-    { href: "/wissen/ratgeber/agri-pv-din-spec-91434", titel: "Agri-PV nach DIN SPEC 91434", text: "Die Voraussetzungen für die steuerliche Ausnahme." },
+    { href: "/ratgeber/pachtvertrag-solarpark", titel: "Pachtvertrag Solarpark", text: "Klauseln, Grundbuch, Rückbau und Checkliste." },
+    { href: "/ratgeber/solarpark-pacht-pro-hektar", titel: "Pacht pro Hektar für Solarparks", text: "Spannen und Rechnung über 30 Jahre." },
+    { href: "/ratgeber/agri-pv-din-spec-91434", titel: "Agri-PV nach DIN SPEC 91434", text: "Die Voraussetzungen für die steuerliche Ausnahme." },
     { href: pfad("/landwirte"), titel: "Für Landwirte", text: "Verpachten, selbst investieren oder beteiligen." },
   ],
 

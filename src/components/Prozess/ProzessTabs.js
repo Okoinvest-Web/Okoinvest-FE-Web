@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
-import Link from "next/link";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import Link from "@/components/Land/Link";
 import { ArrowRight, Clock, Factory, FileText, FolderUp, LayoutDashboard, LineChart, MapPinned, Tractor, User, Building2 } from "lucide-react";
 import { cn } from "@/components/ui/cn";
-import { ZIELGRUPPEN } from "./prozessDaten";
+import { ZIELGRUPPEN as ALLE_WEGE, zielgruppenFuerSprache } from "./prozessDaten";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+import useLand from "@/components/Land/useLand";
 import st from "@/components/Unternehmen/vertrauen.module.css";
 
 const ICONS = { MapPinned, Tractor, LineChart, FolderUp, Factory };
@@ -21,6 +23,10 @@ const ICONS = { MapPinned, Tractor, LineChart, FolderUp, Factory };
  * Reduzierte Bewegung: alles sofort und statisch.
  */
 export default function ProzessTabs() {
+  const { land } = useLand();
+  const sprache = useSprache();
+  const en = sprache === "en";
+  const ZIELGRUPPEN = useMemo(() => zielgruppenFuerSprache(land, sprache), [land, sprache]);
   const [aktiv, setAktiv] = useState(ZIELGRUPPEN[0].id);
   const basis = useId();
   const refs = useRef({});
@@ -28,7 +34,7 @@ export default function ProzessTabs() {
   useEffect(() => {
     const lesen = () => {
       const h = window.location.hash.replace("#", "");
-      if (ZIELGRUPPEN.some((z) => z.id === h)) setAktiv(h);
+      if (ALLE_WEGE.some((z) => z.id === h)) setAktiv(h);
     };
     lesen();
     window.addEventListener("hashchange", lesen);
@@ -66,7 +72,7 @@ export default function ProzessTabs() {
       ))}
       <div
         role="tablist"
-        aria-label="Zielgruppe wählen"
+        aria-label={en ? "Choose your role" : "Zielgruppe wählen"}
         onKeyDown={tastatur}
         className="grid grid-cols-2 gap-1.5 rounded-2xl bg-white p-1.5 shadow-lg ring-1 ring-ink-200/70 sm:grid-cols-3 lg:grid-cols-5"
       >
@@ -118,10 +124,10 @@ export default function ProzessTabs() {
           <div className="relative border-t border-white/10 pt-6 lg:col-span-2">
             <p className="mb-4 flex items-center gap-2 text-[13px] text-white/70">
               <LayoutDashboard aria-hidden="true" className="h-4 w-4" />
-              Statusstufen im Portal
+              {en ? "Status stages in the portal" : "Statusstufen im Portal"}
             </p>
             {/* Mobil: Chips, ab md: verbundene Schiene */}
-            <ol className="flex flex-wrap gap-2 md:grid md:gap-0" style={{ gridTemplateColumns: `repeat(${z.schritte.length}, minmax(0, 1fr))` }} aria-label="Statusstufen im Portal">
+            <ol className="flex flex-wrap gap-2 md:grid md:gap-0" style={{ gridTemplateColumns: `repeat(${z.schritte.length}, minmax(0, 1fr))` }} aria-label={en ? "Status stages in the portal" : "Statusstufen im Portal"}>
               {z.schritte.map((s, i) => (
                 <li
                   key={s.portal}
@@ -164,7 +170,7 @@ export default function ProzessTabs() {
                 <article className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-ink-200/70 md:p-7">
                   <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
                     <h3 className="font-display text-[20px] font-bold leading-snug text-ink-900">
-                      <span className="sr-only">Schritt {i + 1}: </span>
+                      <span className="sr-only">{en ? "Step" : "Schritt"} {i + 1}: </span>
                       {s.titel}
                     </h3>
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-sand-100 px-3 py-1 text-[12.5px] font-semibold text-ink-700">
@@ -175,7 +181,7 @@ export default function ProzessTabs() {
                   <dl className="mt-5 grid gap-3 md:grid-cols-2">
                     <div className="rounded-2xl bg-sand-50 p-4">
                       <dt className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-ink-500">
-                        <User aria-hidden="true" className="h-3.5 w-3.5" /> Sie
+                        <User aria-hidden="true" className="h-3.5 w-3.5" /> {en ? "You" : "Sie"}
                       </dt>
                       <dd className="mt-1.5 text-[14.5px] leading-relaxed text-ink-700">{s.sie}</dd>
                     </div>
@@ -204,7 +210,7 @@ export default function ProzessTabs() {
                       className="group mt-4 flex min-h-11 items-center justify-between gap-3 rounded-2xl bg-ov-50 px-4 py-2.5 text-[14.5px] font-semibold text-ov-800 ring-1 ring-ov-200 transition-colors hover:bg-ov-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500"
                     >
                       <span>
-                        <span className="text-ov-700">Hier starten:</span> {z.cta.label}
+                        <span className="text-ov-700">{en ? "Start here:" : "Hier starten:"}</span> {z.cta.label}
                       </span>
                       <ArrowRight aria-hidden="true" className="ov-pfeil h-4 w-4 shrink-0" />
                     </Link>

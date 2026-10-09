@@ -1,11 +1,18 @@
 // Abschluss: ruhige Weiterleitung für alle, die noch nicht anfragen möchten.
 // Bewusst kein zweiter Anfrage-Aufruf – das Formular steht direkt darüber.
 // Kein Verweis auf den Ersparnis-Rechner: Er steht bereits vollständig auf dieser Seite (#rechner).
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowUpRight, Globe2, Landmark } from "lucide-react";
 import Reveal from "@/components/ui/Reveal";
 import { Eyebrow } from "@/components/ui/SectionHeading";
 import { pfad } from "@/lib/land";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+
+/* Sprachmodell: englische Fassung (gleiche Reihenfolge) */
+const QUERVERWEISE_EN = [
+  { titel: "Energy communities at a glance", text: "Rules in Germany, Austria and Switzerland compared." },
+  { titel: "For municipalities", text: "Local value creation, participation and own installations." },
+];
 
 const QUERVERWEISE = [
   { href: pfad("/energiegemeinschaften"), icon: Globe2, titel: "Energiegemeinschaften im Überblick", text: "Regeln in Deutschland, Österreich und der Schweiz im Vergleich." },
@@ -13,20 +20,22 @@ const QUERVERWEISE = [
 ];
 
 export default function Abschluss() {
+  const en = spracheDerAnfrage() === "en";
+  const querverweise = en ? QUERVERWEISE.map((q, i) => ({ ...q, ...QUERVERWEISE_EN[i] })) : QUERVERWEISE;
   return (
     <div data-abschnitt="abschluss">
       <section aria-labelledby="abschluss-titel" className="bg-white">
         <div className="ov-container py-16 md:py-24">
           <Reveal className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-10">
             <div className="max-w-2xl">
-              <Eyebrow className="mb-3">Weiterlesen</Eyebrow>
-              <h2 id="abschluss-titel" className="ov-h3 text-ink-900 md:text-[30px]">Noch nicht so weit? Hier geht es weiter.</h2>
+              <Eyebrow className="mb-3">{en ? "Read on" : "Weiterlesen"}</Eyebrow>
+              <h2 id="abschluss-titel" className="ov-h3 text-ink-900 md:text-[30px]">{en ? "Not quite ready yet? Here is where to go next." : "Noch nicht so weit? Hier geht es weiter."}</h2>
             </div>
-            <p className="max-w-sm text-[15.5px] leading-relaxed text-ink-600">Grundlagen und der Blick der Gemeinde – in Ruhe nachlesen.</p>
+            <p className="max-w-sm text-[15.5px] leading-relaxed text-ink-600">{en ? "The basics and the municipality’s perspective – to read at your leisure." : "Grundlagen und der Blick der Gemeinde – in Ruhe nachlesen."}</p>
           </Reveal>
 
           <ul className="mt-8 grid gap-4 md:mt-10 lg:grid-cols-2 lg:gap-5">
-            {QUERVERWEISE.map(({ href, icon: Icon, titel, text }, i) => (
+            {querverweise.map(({ href, icon: Icon, titel, text }, i) => (
               <Reveal as="li" key={href} delay={i * 70} className="flex">
                 <article className="group ov-card-hover relative flex w-full items-start gap-4 rounded-3xl bg-sand-50 p-5 ring-1 ring-ink-200/60 transition-colors focus-within:ring-2 focus-within:ring-ov-500 hover:bg-white sm:p-6 md:gap-5 md:p-7">
                   <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-ov-600 shadow-e1 ring-1 ring-ink-200/70 transition-colors duration-300 group-hover:bg-ov-600 group-hover:text-white group-hover:ring-ov-600">

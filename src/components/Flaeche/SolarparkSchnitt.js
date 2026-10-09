@@ -1,5 +1,7 @@
 import { cn } from "@/components/ui/cn";
 import Aufbau, { aufbau } from "@/components/Flaeche/Seite/Aufbau";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 /**
  * Schnitt durch einen naturverträglichen Solarpark (Inline-SVG, Server-Komponente).
@@ -18,6 +20,30 @@ const LEGENDE = [
   { t: "Wechselrichter & Station", x: "Trafo- bzw. Übergabestation bündelt den Strom auf Mittelspannung." },
   { t: "Erdkabel zum Netz", x: "Mittelspannungskabel zum Netzverknüpfungspunkt – je kürzer, desto besser." },
 ];
+
+/** Sprachmodell: Texte der Grafik (en nur Texte, Reihenfolge wie LEGENDE). */
+const TEXTE = {
+  de: {
+    legende: LEGENDE,
+    titel: "Schnitt durch einen Solarpark",
+    beschreibung: "Modulreihen auf gerammten Stahlpfosten über extensivem Grünland mit Blühpflanzen und Schafen, eingezäunt mit Bodenabstand für Kleintiere, Hecke am Rand, Übergabestation und Erdkabel zum Stromnetz.",
+  },
+  en: {
+    legende: [
+      { t: "Module tables", x: "South-facing, tilted approx. 15–25°, lower edge approx. 0.8–1 m above ground – grass keeps growing underneath." },
+      { t: "Driven piles", x: "Steel profiles without concrete, driven approx. 1.5–2.5 m deep, fully removable at decommissioning." },
+      { t: "Row spacing", x: "An open strip of a few metres, matched to shading, maintenance and biodiversity." },
+      { t: "Extensive grassland", x: "Wildflower mix, no fertiliser, no pesticides – the soil recovers over 30 years." },
+      { t: "Grazing or mowing", x: "Sheep keep the vegetation short; alternatively late mowing in sections." },
+      { t: "Fence with ground clearance", x: "A gap of approx. 15–20 cm so that hedgehogs, hares and amphibians can pass through." },
+      { t: "Hedge & buffer strip", x: "Visual screen, habitat and ecological compensation area in one." },
+      { t: "Inverters & substation", x: "The transformer or transfer station feeds the power into the medium-voltage grid." },
+      { t: "Underground cable to the grid", x: "Medium-voltage cable to the grid connection point – the shorter, the better." },
+    ],
+    titel: "Cross-section of a solar park",
+    beschreibung: "Module rows on driven steel piles above extensive grassland with flowering plants and sheep, fenced with ground clearance for small animals, a hedge along the edge, a transfer station and an underground cable to the power grid.",
+  },
+};
 
 function Marke({ x, y, n }) {
   return (
@@ -71,15 +97,14 @@ function Schaf({ x, y }) {
 
 export default function SolarparkSchnitt({ className }) {
   const tische = [300, 440, 580, 720, 860];
+  const w = uebersetze(TEXTE, spracheDerAnfrage());
   return (
     <figure className={cn("overflow-hidden rounded-[2rem] bg-white ring-1 ring-ink-200/70", className)}>
       <div className="bg-gradient-to-b from-navy-50 to-white px-2 pt-4 sm:px-4">
         <Aufbau schritt={110} style={{ "--pop-start": "1100ms", "--pop-schritt": "80ms" }}>
         <svg viewBox="0 0 1200 440" className="block h-auto w-full" role="img" aria-labelledby="schnitt-titel schnitt-text">
-          <title id="schnitt-titel">Schnitt durch einen Solarpark</title>
-          <desc id="schnitt-text">
-            Modulreihen auf gerammten Stahlpfosten über extensivem Grünland mit Blühpflanzen und Schafen, eingezäunt mit Bodenabstand für Kleintiere, Hecke am Rand, Übergabestation und Erdkabel zum Stromnetz.
-          </desc>
+          <title id="schnitt-titel">{w.titel}</title>
+          <desc id="schnitt-text">{w.beschreibung}</desc>
 
           {/* Sonne */}
           <circle cx="110" cy="80" r="34" className="fill-sun-300" />
@@ -163,8 +188,8 @@ export default function SolarparkSchnitt({ className }) {
       </div>
       <figcaption className="border-t border-ink-100 p-5 md:p-7">
         <ol className="grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-          {LEGENDE.map((l, i) => (
-            <li key={l.t} className="flex gap-3">
+          {w.legende.map((l, i) => (
+            <li key={i} className="flex gap-3">
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-navy-950 font-display text-[13px] font-extrabold text-white">{i + 1}</span>
               <span className="text-[14.5px] leading-snug text-ink-600">
                 <strong className="block text-ink-900">{l.t}</strong>

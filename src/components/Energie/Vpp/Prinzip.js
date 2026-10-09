@@ -3,6 +3,8 @@ import { CalendarClock, LineChart, SlidersHorizontal } from "lucide-react";
 import Section from "@/components/ui/Section";
 import Reveal from "@/components/ui/Reveal";
 import Kopf from "@/components/Energie/Seite/Kopf";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 const PUNKTE = [
   { icon: CalendarClock, title: "Prognose", text: "Wetter, Lastgänge und Börsenpreise im Viertelstundenraster" },
@@ -10,7 +12,41 @@ const PUNKTE = [
   { icon: LineChart, title: "Vermarktung", text: "gemeinsam statt jede Anlage für sich" },
 ];
 
-function LueckeGrafik() {
+/** Sprachmodell: Texte (en nur Texte, Listen je Index). */
+const W = {
+  de: {
+    punkte: PUNKTE,
+    grafikLabel: "Schema: Mittags erzeugt der Solarpark mehr, als der Betrieb braucht, und der Börsenpreis fällt; abends und nachts braucht der Betrieb Strom, wenn der Park nichts liefert und der Preis steigt.",
+    ueberschuss: "Überschuss",
+    luecke: "Lücke",
+    eyebrow: "Das Prinzip",
+    titel: "Was ist ein virtuelles Kraftwerk?",
+    p1: "Ein einzelner Solarpark liefert, wenn die Sonne scheint. Ein Unternehmen verbraucht, wenn es produziert. Beides passt selten genau zusammen – und genau diese Lücke kostet Geld: Mittags fällt der Börsenpreis, abends steigt er.",
+    p2: "Ein virtuelles Kraftwerk verbindet viele Anlagen über Software und Fernsteuerung zu einem Verbund. Es prognostiziert Erzeugung und Verbrauch, verschiebt Energie mit Speichern und flexiblen Lasten und tritt am Markt auf wie ein großes Kraftwerk. Physisch bleibt jede Anlage, wo sie ist.",
+    figur: "Ein Tag am Solarpark und im Betrieb",
+    schematisch: "schematisch, keine Messdaten",
+    legende: ["Solarerzeugung", "Verbrauch im Betrieb", "Börsenpreis"],
+  },
+  en: {
+    punkte: [
+      { title: "Forecast", text: "Weather, load profiles and exchange prices in 15-minute intervals" },
+      { title: "Control", text: "Schedules for parks, storage and flexible consumers" },
+      { title: "Marketing", text: "together instead of each installation on its own" },
+    ],
+    grafikLabel: "Schematic: at midday, the solar park generates more than the business needs and the exchange price falls; in the evening and at night, the business needs power when the park delivers nothing and the price rises.",
+    ueberschuss: "Surplus",
+    luecke: "Gap",
+    eyebrow: "The principle",
+    titel: "What is a virtual power plant?",
+    p1: "A single solar park delivers when the sun shines. A company consumes when it produces. The two rarely match exactly – and this gap costs money: at midday the exchange price falls, in the evening it rises.",
+    p2: "A virtual power plant connects many installations into a network via software and remote control. It forecasts generation and consumption, shifts energy with storage and flexible loads and acts on the market like a large power plant. Physically, every installation stays where it is.",
+    figur: "A day at the solar park and in the business",
+    schematisch: "schematic, no measured data",
+    legende: ["Solar generation", "Consumption in the business", "Exchange price"],
+  },
+};
+
+function LueckeGrafik({ w }) {
   const W = 560;
   const H = 300;
   const L = 16;
@@ -28,7 +64,7 @@ function LueckeGrafik() {
   const pfad = (f) => stunden.map((h, i) => `${i ? "L" : "M"}${x(h).toFixed(1)},${y(f(h)).toFixed(1)}`).join(" ");
   const flaeche = (f) => `${pfad(f)} L${x(24)},${B} L${x(0)},${B} Z`;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Schema: Mittags erzeugt der Solarpark mehr, als der Betrieb braucht, und der Börsenpreis fällt; abends und nachts braucht der Betrieb Strom, wenn der Park nichts liefert und der Preis steigt.">
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={w.grafikLabel}>
       <defs>
         <linearGradient id="vk-solar" x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor="#ffc53d" stopOpacity="0.55" />
@@ -52,33 +88,28 @@ function LueckeGrafik() {
       ))}
       <g fontSize="13" fontWeight="700">
         <rect x={x(10.2)} y={T - 6} width="118" height="24" rx="12" fill="#fff7df" stroke="#f5a70f" />
-        <text x={x(10.2) + 59} y={T + 10} textAnchor="middle" fill="#8a5a00">Überschuss</text>
+        <text x={x(10.2) + 59} y={T + 10} textAnchor="middle" fill="#8a5a00">{w.ueberschuss}</text>
         <rect x={x(19.9)} y={y(0.42) - 12} width="96" height="24" rx="12" fill="#eef4fb" stroke="#1f5aa1" />
-        <text x={x(19.9) + 48} y={y(0.42) + 4} textAnchor="middle" fill="#03285a">Lücke</text>
+        <text x={x(19.9) + 48} y={y(0.42) + 4} textAnchor="middle" fill="#03285a">{w.luecke}</text>
       </g>
     </svg>
   );
 }
 
 export default function Prinzip() {
+  const w = uebersetze(W, spracheDerAnfrage());
   return (
     <Section tone="white" space="lg" data-abschnitt="prinzip" aria-labelledby="prinzip-titel">
       <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-16">
         <div>
-          <Kopf id="prinzip-titel" eyebrow="Das Prinzip" titel="Was ist ein virtuelles Kraftwerk?" />
+          <Kopf id="prinzip-titel" eyebrow={w.eyebrow} titel={w.titel} />
           <Reveal className="mt-6 space-y-4 text-[16.5px] leading-relaxed text-ink-600">
-            <p>
-              Ein einzelner Solarpark liefert, wenn die Sonne scheint. Ein Unternehmen verbraucht, wenn es produziert. Beides passt selten genau zusammen – und genau diese Lücke kostet Geld:
-              Mittags fällt der Börsenpreis, abends steigt er.
-            </p>
-            <p>
-              Ein virtuelles Kraftwerk verbindet viele Anlagen über Software und Fernsteuerung zu einem Verbund. Es prognostiziert Erzeugung und Verbrauch, verschiebt Energie mit Speichern und
-              flexiblen Lasten und tritt am Markt auf wie ein großes Kraftwerk. Physisch bleibt jede Anlage, wo sie ist.
-            </p>
+            <p>{w.p1}</p>
+            <p>{w.p2}</p>
           </Reveal>
           <ol className="mt-8 grid gap-3 sm:grid-cols-3">
-            {PUNKTE.map((p, i) => (
-              <Reveal as="li" key={p.title} delay={i * 60} className="rounded-2xl bg-sand-50 p-4 ring-1 ring-ink-200/60">
+            {w.punkte.map((p, i) => (
+              <Reveal as="li" key={i} delay={i * 60} className="rounded-2xl bg-sand-50 p-4 ring-1 ring-ink-200/60">
                 <span aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-ov-600 shadow-e1 ring-1 ring-ink-200/70">
                   <p.icon className="h-5 w-5" />
                 </span>
@@ -91,21 +122,21 @@ export default function Prinzip() {
 
         <Reveal dir="scale" as="figure" className="min-w-0 rounded-[2rem] bg-white p-5 shadow-e4 ring-1 ring-ink-200/70 sm:p-7">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <figcaption className="font-display text-[18px] font-bold text-ink-900">Ein Tag am Solarpark und im Betrieb</figcaption>
-            <span className="text-[12px] text-ink-500">schematisch, keine Messdaten</span>
+            <figcaption className="font-display text-[18px] font-bold text-ink-900">{w.figur}</figcaption>
+            <span className="text-[12px] text-ink-500">{w.schematisch}</span>
           </div>
           <div className="mt-5">
-            <LueckeGrafik />
+            <LueckeGrafik w={w} />
           </div>
           <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[12.5px] text-ink-600">
             <li className="inline-flex items-center gap-2">
-              <span aria-hidden="true" className="h-[3px] w-5 rounded-full bg-sun-500" /> Solarerzeugung
+              <span aria-hidden="true" className="h-[3px] w-5 rounded-full bg-sun-500" /> {w.legende[0]}
             </li>
             <li className="inline-flex items-center gap-2">
-              <span aria-hidden="true" className="h-[3px] w-5 rounded-full bg-navy-500" /> Verbrauch im Betrieb
+              <span aria-hidden="true" className="h-[3px] w-5 rounded-full bg-navy-500" /> {w.legende[1]}
             </li>
             <li className="inline-flex items-center gap-2">
-              <span aria-hidden="true" className="h-0 w-5 border-t-2 border-dashed border-ov-600" /> Börsenpreis
+              <span aria-hidden="true" className="h-0 w-5 border-t-2 border-dashed border-ov-600" /> {w.legende[2]}
             </li>
           </ul>
         </Reveal>

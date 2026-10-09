@@ -14,7 +14,7 @@
 // /de|/at|/ch), eingaben (genau die Eingaben, mit denen das Ergebnis gerechnet wurde), className.
 
 import { useEffect, useId, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { usePathname } from "next/navigation";
 import { landAusPfad } from "@/lib/land";
 import { FileText, Send } from "lucide-react";
@@ -28,6 +28,41 @@ import { checkboxKlasse } from "@/components/formular/stil";
 import { einwilligungenFuer } from "@/lib/anfrage/hinweise";
 import { herkunft } from "@/lib/herkunft";
 import { ANFORDERUNG, BERICHT_TEXT_VERSION } from "@/lib/bericht/texte";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+
+// Englisch (Sprachmodell): Bedienung englisch; Datenschutzhinweis und Einwilligungstexte bleiben
+// in der geprüften deutschen Fassung (versioniert, BERICHT_TEXT_VERSION) – englische Fassung erst
+// nach Freigabe der Rechtsabteilung.
+const EN = {
+  aus: "Report delivery starts when the site goes live.",
+  titel: "Result as a report",
+  text: "With the calculation method and all assumptions, including source and date – to print or save. Your result above stays visible without entering any details.",
+  bestaetigen: "Please confirm your email address",
+  spam: "No email received? Please also check your spam folder. Without confirmation, we delete your details after 48 hours.",
+  anfordern: "Request report",
+  vorname: "First name",
+  nachname: "Last name",
+  email: "Email",
+  telefon: "Phone",
+  telefonHinweis: "Only if you would like us to call you with questions.",
+  rechtDe: "The following data protection notice and consent wording are legally binding in German:",
+  freiwillig: "Voluntary – only if you wish",
+  laedt: "Sending …",
+  gesendet: "Sent",
+  senden: "Send confirmation link",
+  abbrechen: "Cancel",
+  verbindung: "The connection is currently disrupted. Please try again in a moment.",
+  fehlgeschlagen: "Sending failed. Please try again.",
+};
+const emailEn = (v) => {
+  const s = String(v ?? "").trim();
+  return !s || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) ? "" : "Please enter a valid email address.";
+};
+const SCHEMA_EN = {
+  vorname: [regel.pflicht("Please enter your first name.")],
+  nachname: [regel.pflicht("Please enter your last name.")],
+  email: [regel.pflicht("Please enter your email address."), emailEn],
+};
 
 const AUS_TEXT = "Berichtsversand startet mit dem Livegang.";
 const OPTIONEN = einwilligungenFuer({ mitTelefon: true });
@@ -62,12 +97,13 @@ export default function BerichtAnfordern({ rechner, land: landProp, eingaben, cl
   // Rechenland kommt vom Rechner (Eingaben); ohne Angabe das Land der Route (Welle 2), sonst DE
   const routenLand = landAusPfad(usePathname() || "/").land;
   const land = landProp || routenLand || "DE";
+  const en = useSprache() === "en";
   const id = useId();
   const [versand, setVersand] = useState("laedt"); // laedt | an | aus
   const [offen, setOffen] = useState(false);
   const [fertig, setFertig] = useState(null);
-  const form = useFormular(LEER, SCHEMA);
-  const a = useAbsenden({ uebersetzen: (e) => (e instanceof TypeError || !e?.message ? "Die Verbindung ist gerade gestört. Bitte versuchen Sie es gleich noch einmal." : e.message) });
+  const form = useFormular(LEER, en ? SCHEMA_EN : SCHEMA);
+  const a = useAbsenden({ uebersetzen: (e) => (e instanceof TypeError || !e?.message ? (en ? EN.verbindung : "Die Verbindung ist gerade gestört. Bitte versuchen Sie es gleich noch einmal.") : en ? EN.fehlgeschlagen : e.message) });
   const w = form.werte;
 
   useEffect(() => {
@@ -115,12 +151,12 @@ export default function BerichtAnfordern({ rechner, land: landProp, eingaben, cl
       </span>
       <div className="min-w-0 flex-1">
         <h3 id={`${id}-t`} className="font-display text-[17px] font-bold leading-snug text-ink-900">
-          Ergebnis als Bericht
+          {en ? EN.titel : "Ergebnis als Bericht"}
         </h3>
         <p className="mt-1 text-[14px] leading-relaxed text-ink-600">
           {versand === "aus"
-            ? AUS_TEXT
-            : "Mit Rechenweg und allen Annahmen samt Quelle und Stand – zum Ausdrucken oder Speichern. Ihr Ergebnis oben bleibt ohne Angaben sichtbar."}
+            ? en ? EN.aus : AUS_TEXT
+            : en ? EN.text : "Mit Rechenweg und allen Annahmen samt Quelle und Stand – zum Ausdrucken oder Speichern. Ihr Ergebnis oben bleibt ohne Angaben sichtbar."}
         </p>
       </div>
     </div>
@@ -134,8 +170,8 @@ export default function BerichtAnfordern({ rechner, land: landProp, eingaben, cl
       className={cn("mt-5 rounded-3xl bg-white p-5 ring-1 ring-ink-200/70 print:hidden md:p-6", className)}
     >
       {fertig ? (
-        <ErfolgsAnsicht titel="Bitte bestätigen Sie Ihre E-Mail-Adresse" text={fertig.hinweis}>
-          <p className="mt-3 text-[13.5px] leading-relaxed text-ink-600">Keine E-Mail erhalten? Schauen Sie bitte auch im Spam-Ordner nach. Ohne Bestätigung löschen wir Ihre Angaben nach 48 Stunden.</p>
+        <ErfolgsAnsicht titel={en ? EN.bestaetigen : "Bitte bestätigen Sie Ihre E-Mail-Adresse"} text={en ? undefined : fertig.hinweis}>
+          <p className="mt-3 text-[13.5px] leading-relaxed text-ink-600">{en ? EN.spam : "Keine E-Mail erhalten? Schauen Sie bitte auch im Spam-Ordner nach. Ohne Bestätigung löschen wir Ihre Angaben nach 48 Stunden."}</p>
         </ErfolgsAnsicht>
       ) : (
         <>
@@ -143,7 +179,7 @@ export default function BerichtAnfordern({ rechner, land: landProp, eingaben, cl
           {versand === "an" && !offen && (
             <div className="mt-4 sm:pl-[3.375rem]">
               <Button variant="secondary" size="sm" icon={FileText} onClick={() => setOffen(true)} aria-expanded="false" aria-controls={`${id}-f`}>
-                Bericht anfordern
+                {en ? EN.anfordern : "Bericht anfordern"}
               </Button>
             </div>
           )}
@@ -158,15 +194,16 @@ export default function BerichtAnfordern({ rechner, land: landProp, eingaben, cl
               data-hinweis-version={BERICHT_TEXT_VERSION}
             >
               <div className="grid gap-4 sm:grid-cols-2">
-                <Textfeld id={`${id}-vn`} label="Vorname" pflicht autoComplete="given-name" maxLength={80} {...form.feld("vorname")} />
-                <Textfeld id={`${id}-nn`} label="Nachname" pflicht autoComplete="family-name" maxLength={80} {...form.feld("nachname")} />
-                <Textfeld id={`${id}-em`} label="E-Mail" pflicht type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} maxLength={190} {...form.feld("email")} />
-                <Textfeld id={`${id}-te`} label="Telefon" optional type="tel" inputMode="tel" autoComplete="tel" maxLength={40} hinweis="Nur wenn Sie Rückfragen per Telefon möchten." {...form.feld("telefon")} />
+                <Textfeld id={`${id}-vn`} label={en ? EN.vorname : "Vorname"} pflicht autoComplete="given-name" maxLength={80} {...form.feld("vorname")} />
+                <Textfeld id={`${id}-nn`} label={en ? EN.nachname : "Nachname"} pflicht autoComplete="family-name" maxLength={80} {...form.feld("nachname")} />
+                <Textfeld id={`${id}-em`} label={en ? EN.email : "E-Mail"} pflicht type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} maxLength={190} {...form.feld("email")} />
+                <Textfeld id={`${id}-te`} label={en ? EN.telefon : "Telefon"} optional type="tel" inputMode="tel" autoComplete="tel" maxLength={40} hinweis={en ? EN.telefonHinweis : "Nur wenn Sie Rückfragen per Telefon möchten."} {...form.feld("telefon")} />
               </div>
               {/* Honeypot */}
               <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" value={w.website} onChange={(e) => form.setze("website", e.target.value)} />
 
-              <p className="text-[13.5px] leading-relaxed text-ink-600">
+              {en && <p className="text-[13px] font-semibold text-ink-700">{EN.rechtDe}</p>}
+              <p className="text-[13.5px] leading-relaxed text-ink-600" lang={en ? "de" : undefined}>
                 {ANFORDERUNG.hinweis} {ANFORDERUNG.verweisVor}{" "}
                 <Link href="/datenschutz" className="font-medium text-ink-900 underline underline-offset-2">
                   {ANFORDERUNG.verweisLink}
@@ -176,11 +213,11 @@ export default function BerichtAnfordern({ rechner, land: landProp, eingaben, cl
 
               {OPTIONEN.length > 0 && (
                 <fieldset className="space-y-2.5">
-                  <legend className="mb-1 text-[13px] font-semibold text-ink-700">Freiwillig – nur wenn Sie möchten</legend>
+                  <legend className="mb-1 text-[13px] font-semibold text-ink-700">{en ? EN.freiwillig : "Freiwillig – nur wenn Sie möchten"}</legend>
                   {OPTIONEN.filter((o) => !o.nurMitTelefon || String(w.telefon || "").trim()).map((o) => (
                     <label key={o.id} className="flex cursor-pointer items-start gap-3 text-[13.5px] leading-relaxed text-ink-700">
                       <input type="checkbox" name={o.id} data-einwilligung={o.id} checked={w[o.id] === true} onChange={(e) => form.setze(o.id, e.target.checked)} className={checkboxKlasse} />
-                      <span>{o.text}</span>
+                      <span lang={en ? "de" : undefined}>{o.text}</span>
                     </label>
                   ))}
                 </fieldset>
@@ -188,11 +225,11 @@ export default function BerichtAnfordern({ rechner, land: landProp, eingaben, cl
 
               <FormFehler>{a.fehler}</FormFehler>
               <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-                <AbsendeKnopf status={a.status} icon={Send} laedtText="Wird gesendet …" erfolgText="Gesendet" className="shrink-0 px-6">
-                  Bestätigungslink senden
+                <AbsendeKnopf status={a.status} icon={Send} laedtText={en ? EN.laedt : "Wird gesendet …"} erfolgText={en ? EN.gesendet : "Gesendet"} className="shrink-0 px-6">
+                  {en ? EN.senden : "Bestätigungslink senden"}
                 </AbsendeKnopf>
                 <button type="button" onClick={() => setOffen(false)} className="inline-flex min-h-11 items-center justify-center rounded-full px-4 text-[14px] font-semibold text-ink-600 hover:bg-ink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
-                  Abbrechen
+                  {en ? EN.abbrechen : "Abbrechen"}
                 </button>
               </div>
             </form>

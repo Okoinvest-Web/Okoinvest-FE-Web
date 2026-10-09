@@ -6,6 +6,8 @@ import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { TextEnthuellung } from "@/components/motion";
 import AgriPanorama from "./AgriPanorama";
+import Link from "@/components/Land/Link";
+import T from "@/components/Sprache/T";
 
 /**
  * pill:    { href, marke, text, textKurz }
@@ -27,7 +29,7 @@ export default function AgriHero({ breadcrumbs, pill, titel, lead, aktionen, hin
         <div className="grid items-center gap-y-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-x-12 xl:gap-x-16">
           <div className="max-w-[36rem]">
             {pill && (
-              <a
+              <Link
                 href={pill.href}
                 className="ov-hero-in group inline-flex max-w-full items-center gap-2.5 rounded-full bg-white/[0.06] py-1 pl-1 pr-3.5 text-[13px] text-white/85 ring-1 ring-inset ring-white/15 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300"
                 style={{ "--ov-delay": "40ms" }}
@@ -38,7 +40,7 @@ export default function AgriHero({ breadcrumbs, pill, titel, lead, aktionen, hin
                   <span className="max-sm:hidden">{pill.text}</span>
                 </span>
                 <ArrowRight aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-ov-300 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" />
-              </a>
+              </Link>
             )}
 
             <h1 id="hero-titel" className="ov-h1 mt-6 text-balance md:mt-8">
@@ -82,9 +84,9 @@ export default function AgriHero({ breadcrumbs, pill, titel, lead, aktionen, hin
                     <Calculator aria-hidden="true" className="h-4 w-4 shrink-0 text-sun-300" />
                     <span>
                       {hinweis.text}{" "}
-                      <a href={hinweis.href} className="rounded font-semibold text-white underline decoration-sun-300/70 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
+                      <Link href={hinweis.href} className="rounded font-semibold text-white underline decoration-sun-300/70 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
                         {hinweis.label}
-                      </a>
+                      </Link>
                     </span>
                   </p>
                 )}
@@ -127,7 +129,7 @@ export default function AgriHero({ breadcrumbs, pill, titel, lead, aktionen, hin
               <Karte k={k3} className="max-sm:hidden sm:-right-4 sm:top-8 lg:-right-6" verzoegerung="720ms" hell />
             )}
 
-            <figcaption className="mt-4 text-center text-[12px] text-white/60 sm:text-left">Schematische Darstellung, nicht maßstäblich</figcaption>
+            <figcaption className="mt-4 text-center text-[12px] text-white/60 sm:text-left"><T de="Schematische Darstellung, nicht maßstäblich" en="Schematic illustration, not to scale" /></figcaption>
           </figure>
           )}
         </div>

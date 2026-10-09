@@ -1,9 +1,12 @@
 // Hero-Bühne für /landwirte: Foto im Rahmen + Glas-Panel mit den vier Wegen (Server-Komponente)
 import Image from "next/image";
 import { ArrowDownRight, Wheat } from "lucide-react";
-import { WEGE } from "@/components/Agri/wege";
+import { wegeFuer } from "@/components/Agri/wege";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 export default function WegeBuehne({ bild, notiz }) {
+  const en = spracheDerAnfrage() === "en";
+  const WEGE = wegeFuer(en ? "en" : "de");
   return (
     <div className="ov-hero-in relative mx-auto w-full max-w-[640px] lg:mx-0 lg:max-w-none xl:-mr-6" style={{ "--ov-delay": "220ms" }}>
       <div aria-hidden="true" className="pointer-events-none absolute -inset-x-8 -inset-y-12 -z-10 rounded-full bg-[radial-gradient(closest-side,rgba(140,186,88,0.22),transparent_70%)] blur-2xl" />
@@ -13,8 +16,8 @@ export default function WegeBuehne({ bild, notiz }) {
           <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-navy-950/90 via-navy-950/20 to-transparent" />
         </div>
         {/* Wege-Panel: ab sm auf dem Bild, mobil darunter */}
-        <nav aria-label="Die vier Wege" className="relative bg-navy-950 p-3 sm:absolute sm:inset-x-4 sm:bottom-4 sm:rounded-[1.4rem] sm:bg-navy-950/75 sm:p-2 sm:ring-1 sm:ring-inset sm:ring-white/15 sm:backdrop-blur-md">
-          <p className="px-2 pb-2 pt-1 text-[11px] font-bold uppercase tracking-[0.14em] text-ov-300 sm:px-3 sm:pt-2">Vier Wege zu Ihrem Solarstrom</p>
+        <nav aria-label={en ? "The four routes" : "Die vier Wege"} className="relative bg-navy-950 p-3 sm:absolute sm:inset-x-4 sm:bottom-4 sm:rounded-[1.4rem] sm:bg-navy-950/75 sm:p-2 sm:ring-1 sm:ring-inset sm:ring-white/15 sm:backdrop-blur-md">
+          <p className="px-2 pb-2 pt-1 text-[11px] font-bold uppercase tracking-[0.14em] text-ov-300 sm:px-3 sm:pt-2">{en ? "Four routes to your solar power" : "Vier Wege zu Ihrem Solarstrom"}</p>
           <ul className="grid gap-1.5 sm:grid-cols-2">
             {WEGE.map((w) => (
               <li key={w.id}>

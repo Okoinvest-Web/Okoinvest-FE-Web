@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import {
   ArrowLeft, ArrowRight, Car, Check, CircleAlert, CircleMinus, CirclePlus, Factory, HandCoins, Info, Landmark, Mountain,
   Recycle, RotateCcw, ShieldAlert, Sprout, TrainFront, Trees, User, Users, Waves, Wheat,
@@ -16,6 +16,10 @@ import { ereignis, useEreignisEinmal } from "@/lib/ereignis";
 import { grundstueck } from "@/lib/anfrage/laender";
 import BerichtAnfordern from "@/components/Bericht/BerichtAnfordern";
 import { pfad } from "@/lib/land";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { datumText, fmtZahl } from "@/lib/sprache/format";
+import { AMPEL_EN, BESONDERHEITEN_EN, EIGENTUM_EN, LAENDER_EN, NETZ_EN, NUTZUNGEN_EN, REGIONEN_EN, satzEn } from "@/components/Flaeche/flaechencheckEn";
 
 const SCHRITTE = ["Standort", "Fläche", "Besonderheiten", "Netz & Eigentum"];
 const NUTZUNG_ICON = { acker: Wheat, gruenland: Sprout, konversion: Factory, deponie: Recycle, parkplatz: Car, sonstige: Info };
@@ -32,25 +36,223 @@ const HA_MAX = 2000;
 const FEHLER_HA = "Bitte geben Sie die Fläche in Hektar an, z. B. 12,5.";
 /** Pacht-, GAP- und €-Werte gelten nur für Deutschland, bis die Länderlogik AT/CH steht (Masterplan S1 „Länder-Sperre bis B1“) */
 const LAENDER_LOGIK_FERTIG = ["DE"];
-const LAND_NAME = { AT: "Österreich", CH: "die Schweiz" };
 /** Grobe Größenklasse für die Messung – nie der exakte Wert */
 const haKlasse = (ha) => (ha < 1 ? "unter 1 ha" : ha < 5 ? "1 bis 5 ha" : ha < 20 ? "5 bis 20 ha" : ha < 100 ? "20 bis 100 ha" : "ab 100 ha");
 /** „Benachteiligtes Gebiet“ gibt es nur als deutsche EEG-Kulisse – bei AT/CH nicht mitzählen (sonst unsichtbarer, nicht abwählbarer Chip) */
 const besonderheitenFuer = (land, liste) => liste.filter((id) => id !== "benachteiligt" || land === "DE");
 const WEITER_HINWEIS = ["Bitte wählen Sie Land und Region.", "Bitte wählen Sie die Nutzung.", "", "Bitte wählen Sie die Entfernung zum Netz und wem die Fläche gehört."];
 
-/** Eingabe „25,5“ oder „25.5“ → Zahl; leer/ungültig → null (kein Klemmen beim Tippen). */
-const haLesen = (text) => {
-  const t = String(text).trim().split(" ").join("").replace(",", ".");
+/** Eingabe „25,5“ oder „25.5“ → Zahl; leer/ungültig → null (kein Klemmen beim Tippen).
+ *  Englisch: Komma ist Tausendertrennzeichen („1,250.5“), Dezimalpunkt. */
+const haLesen = (text, en = false) => {
+  const roh = String(text).trim().split(" ").join("");
+  const t = en ? roh.split(",").join("") : roh.replace(",", ".");
   if (!t) return null;
   const n = Number(t);
   return Number.isFinite(n) && n > 0 ? n : null;
 };
-/** Zahl → Feldtext ohne Tausenderpunkt („1250,5“), bis zwei Nachkommastellen. */
-const haText = (v) => {
+/** Zahl → Feldtext ohne Tausenderpunkt („1250,5“), bis zwei Nachkommastellen; Englisch mit Dezimalpunkt. */
+const haText = (v, en = false) => {
   const r = Math.round(v * 100) / 100;
-  return String(r).replace(".", ",");
+  return en ? String(r) : String(r).replace(".", ",");
 };
+
+/** Sprachmodell: feste Texte des Assistenten (en nur Texte). Listen der Rechenlogik: flaechencheckEn.js */
+const TEXTE = {
+  de: {
+    schritte: SCHRITTE,
+    ergebnisSchritt: "Ergebnis",
+    fehlerHa: FEHLER_HA,
+    weiterHinweis: WEITER_HINWEIS,
+    fortschritt: "Fortschritt",
+    schrittVon: (n, s) => `Schritt ${n} von 4 · ${s}`,
+    ihrErgebnis: "Ihr Ergebnis",
+    uebernommen: "Übernommene Angaben:",
+    aendern: ". Sie können alles ändern.",
+    woTitel: "Wo liegt die Fläche?",
+    woText: "Land und Region bestimmen Einstrahlung, Förderung und Genehmigungsweg.",
+    region: "Region",
+    groesseTitel: "Wie groß ist die Fläche?",
+    groesseText: (mehrzahl) => `Eine grobe Angabe genügt. Mehrere zusammenhängende ${mehrzahl} zählen zusammen.`,
+    flaechengroesse: "Flächengröße",
+    minLabel: "0,5 ha",
+    maxLabel: "150+ ha",
+    genau: "Genau eingeben",
+    haHilfe: "0,1 bis 2.000 ha, Komma erlaubt",
+    nutzungTitel: "Wie wird die Fläche heute genutzt?",
+    besTitel: "Trifft etwas davon zu?",
+    besText: "Mehrfachauswahl möglich. Wenn Sie es nicht wissen, lassen Sie es leer – wir prüfen das ohnehin.",
+    netzTitel: "Wie weit ist es bis zum Stromnetz?",
+    netzText: "Gemeint ist die nächste Mittelspannungsleitung (Freileitung auf Betonmasten, Trafostation) oder ein Umspannwerk.",
+    eigentumTitel: "Wem gehört die Fläche?",
+    zurueck: "Zurück",
+    geraet: "Ihre Angaben bleiben auf diesem Gerät, bis Sie neu starten.",
+    start: "Schritt 1 von 4 · dauert ca. 2 Minuten · ohne Anmeldung",
+    zeigen: "Ergebnis anzeigen",
+    nichts: "Nichts davon – weiter",
+    weiter: "Weiter",
+    neu: "Neu starten",
+    entfaellt: "Entfällt: ",
+    zwischenstand: "Zwischenstand: ",
+    punkte: "Punkte",
+    nochNicht: "Noch nicht alle Angaben – der Wert bewegt sich mit jeder Auswahl.",
+    punktwert: (s) => `Punktwert ${s} von 100`,
+    vonHundert: "von 100 Punkten",
+    kopf: (stand) => `Ihr Flächencheck · Stand ${stand}`,
+    chipFlaeche: (ha, nutzung) => `${ha} ha ${nutzung}`,
+    chipBes: (n) => (n ? `${n} Besonderheit${n > 1 ? "en" : ""}` : "keine Besonderheiten"),
+    chipNetz: (netz) => `Netz ${netz}`,
+    chipAendern: (c) => `${c} ändern`,
+    leistung: "Mögliche Leistung",
+    leistungZ: (ha) => `auf ~${ha} ha nutzbarer Fläche`,
+    ertrag: "Stromertrag",
+    ertragW: (gwh) => `${gwh} GWh/Jahr`,
+    haushalte: (n) => `≈ ${n} Haushalte`,
+    pachtJahr: "Pacht pro Jahr",
+    pachtHa: (a, b) => `${a}–${b} €/ha`,
+    pacht30: "Pacht über 30 Jahre",
+    indexiert: (p) => `indexiert mit ${p} % p. a.`,
+    pacht: "Pacht",
+    vorbereitung: "Rechenlogik in Vorbereitung",
+    pachtLand: (name) => `Für ${name} nennen wir die Pachtspanne nach der Prüfung Ihrer Fläche.`,
+    landName: { AT: "Österreich", CH: "die Schweiz" }, // früher LAND_NAME
+    ihrLand: "Ihr Land",
+    bewertung: "So kommt die Bewertung zustande",
+    agriTitel: "Option Agri-PV",
+    agriA: "Soll die Landwirtschaft weitergehen? Mit vertikalen Modulreihen wären rund ",
+    agriB: " möglich",
+    agriPacht: (gap, a, b) => `, ${gap} % der Fläche bleiben in der Regel GAP-förderfähig. Pacht meist ${a}–${b} €/ha – plus Ihre Ernte.`,
+    agriLand: (name) => `. Förderung und Pacht für ${name}: Rechenlogik in Vorbereitung.`,
+    agriLink: "Agri-PV ansehen",
+    carportTitel: "Solarcarport",
+    carportText: "Auf Parkplätzen bauen wir Solarcarports – mit Ladepunkten und ohne Flächenverlust.",
+    carportLink: "Solarcarport ansehen",
+    naechste: "Nächste Schritte",
+    termin: "Beratungstermin buchen",
+    sendenTitel: "Ergebnis an unser Flächenteam senden",
+    sendenText: (genau) => `Ihre Angaben und dieses Ergebnis werden mitgeschickt – Sie müssen nichts doppelt eingeben. Wir prüfen die Fläche ${genau} und melden uns bei Ihnen.`,
+    sendenPunkte: ["Kostenfrei und unverbindlich", "Status und Dokumente später im Portal", "Keine Weitergabe an Dritte ohne Ihre Zustimmung"],
+    kontoA: "Lieber zuerst ein Konto anlegen?",
+    kontoLink: "Kostenlos registrieren",
+    kontoB: "– Ihre Anfragen und deren Status sehen Sie dann im Portal.",
+    rot: "Auch bei roter Ampel lohnt oft ein Blick: Die Heuristik kennt Ihre Fläche nicht im Detail.",
+    senden: "Ergebnis senden",
+    fuss: (stand, genau) => `Erste Einschätzung auf Basis Ihrer Angaben und typischer Marktwerte, Stand ${stand} – kein Angebot und keine Zusage. Netzkapazität, Planungsrecht und Schutzgüter prüfen wir ${genau}.`,
+  },
+  en: {
+    schritte: ["Location", "Land", "Special features", "Grid & ownership"],
+    ergebnisSchritt: "Result",
+    fehlerHa: "Please enter the area in hectares, e.g. 12.5.",
+    weiterHinweis: ["Please select country and region.", "Please select the current use.", "", "Please select the distance to the grid and who owns the land."],
+    fortschritt: "Progress",
+    schrittVon: (n, s) => `Step ${n} of 4 · ${s}`,
+    ihrErgebnis: "Your result",
+    uebernommen: "Details carried over:",
+    aendern: ". You can change everything.",
+    woTitel: "Where is the land?",
+    woText: "Country and region determine irradiation, funding and the permitting route.",
+    region: "Region",
+    groesseTitel: "How large is the land?",
+    groesseText: () => "A rough figure is enough. Several adjoining plots count together.",
+    flaechengroesse: "Site size",
+    minLabel: "0.5 ha",
+    maxLabel: "150+ ha",
+    genau: "Enter exactly",
+    haHilfe: "0.1 to 2,000 ha, decimals allowed",
+    nutzungTitel: "How is the land used today?",
+    besTitel: "Does any of this apply?",
+    besText: "You can select several. If you do not know, leave it blank – we will check anyway.",
+    netzTitel: "How far is it to the power grid?",
+    netzText: "This means the nearest medium-voltage line (overhead line on concrete pylons, transformer station) or a substation.",
+    eigentumTitel: "Who owns the land?",
+    zurueck: "Back",
+    geraet: "Your details stay on this device until you start again.",
+    start: "Step 1 of 4 · takes about 2 minutes · no registration",
+    zeigen: "Show result",
+    nichts: "None of these – continue",
+    weiter: "Continue",
+    neu: "Start again",
+    entfaellt: "No longer applies: ",
+    zwischenstand: "Interim result: ",
+    punkte: "points",
+    nochNicht: "Not all details yet – the score moves with every choice.",
+    punktwert: (s) => `Score ${s} out of 100`,
+    vonHundert: "out of 100 points",
+    kopf: (stand) => `Your land check · as of ${stand}`,
+    chipFlaeche: (ha, nutzung) => `${ha} ha ${String(nutzung || "").toLowerCase()}`,
+    chipBes: (n) => (n ? `${n} special feature${n > 1 ? "s" : ""}` : "no special features"),
+    chipNetz: (netz) => `Grid ${netz}`,
+    chipAendern: (c) => `Change ${c}`,
+    leistung: "Possible capacity",
+    leistungZ: (ha) => `on ~${ha} ha of usable land`,
+    ertrag: "Power yield",
+    ertragW: (gwh) => `${gwh} GWh/year`,
+    haushalte: (n) => `≈ ${n} households`,
+    pachtJahr: "Lease per year",
+    pachtHa: (a, b) => `€${a}–${b}/ha`,
+    pacht30: "Lease over 30 years",
+    indexiert: (p) => `indexed at ${p} % p.a.`,
+    pacht: "Lease",
+    vorbereitung: "Calculation in preparation",
+    pachtLand: (name) => `For ${name}, we will give you the lease range after assessing your land.`,
+    landName: { AT: "Austria", CH: "Switzerland" },
+    ihrLand: "your country",
+    bewertung: "How the score is made up",
+    agriTitel: "Agrivoltaics option",
+    agriA: "Should farming continue? With vertical module rows, around ",
+    agriB: " would be possible",
+    agriPacht: (gap, a, b) => `; ${gap} % of the land usually remains eligible for CAP support. Lease usually €${a}–${b}/ha – plus your harvest.`,
+    agriLand: (name) => `. Funding and lease for ${name}: calculation in preparation.`,
+    agriLink: "View agrivoltaics",
+    carportTitel: "Solar carport",
+    carportText: "On car parks we build solar carports – with charging points and no loss of land.",
+    carportLink: "View solar carports",
+    naechste: "Next steps",
+    termin: "Book a consultation",
+    sendenTitel: "Send the result to our land team",
+    sendenText: () => "Your details and this result are sent along – you do not need to enter anything twice. We will check the land plot by plot and get back to you.",
+    sendenPunkte: ["Free of charge and without obligation", "Status and documents later in the portal", "No disclosure to third parties without your consent"],
+    kontoA: "Prefer to create an account first?",
+    kontoLink: "Register free of charge",
+    kontoB: "– you will then see your enquiries and their status in the portal.",
+    rot: "Even with a red light, it is often worth a closer look: the heuristic does not know your land in detail.",
+    senden: "Send result",
+    fuss: (stand) => `Initial assessment based on your details and typical market values, as of ${stand} – not an offer and no commitment. We check grid capacity, planning law and protected assets plot by plot.`,
+  },
+};
+
+/** Anzeige-Texte der Rechenlogik je Sprache (ids bleiben, Texte aus flaechencheckEn.js). */
+function anzeige(en) {
+  if (!en) {
+    return {
+      f: fmt,
+      land: (l) => l.label,
+      region: (r) => r,
+      nutzung: (n) => n,
+      bes: (b) => b,
+      netz: (n) => n.label,
+      eig: (e) => e,
+      ampel: (k) => AMPEL[k],
+      satz: (s) => s,
+      spanne,
+      stand: STAND,
+    };
+  }
+  const f = (n, s = 0) => fmtZahl(n, s, "en");
+  return {
+    f,
+    land: (l) => LAENDER_EN[l.id] ?? l.label,
+    region: (r) => (r ? { ...r, ...(REGIONEN_EN[r.id] || {}) } : r),
+    nutzung: (n) => (n ? { ...n, ...(NUTZUNGEN_EN[n.id] || {}) } : n),
+    bes: (b) => (b ? { ...b, ...(BESONDERHEITEN_EN[b.id] || {}) } : b),
+    netz: (n) => NETZ_EN[n.id] ?? n.label,
+    eig: (e) => (e ? { ...e, ...(EIGENTUM_EN[e.id] || {}) } : e),
+    ampel: (k) => ({ ...AMPEL[k], ...AMPEL_EN[k] }),
+    satz: satzEn,
+    spanne: (a, b) => (b >= 1e6 ? `€${f(a / 1e6, 2)}–${f(b / 1e6, 2)}m` : `€${f(a / 1000)}–${f(b / 1000)}k`),
+    stand: datumText(STAND, "en"),
+  };
+}
 
 /** Gespeicherten Zwischenstand prüfen – nur bekannte Werte übernehmen. */
 function zustandLesen() {
@@ -110,6 +312,10 @@ const spanne = (a, b) => (b >= 1e6 ? `${fmt(a / 1e6, 2)}–${fmt(b / 1e6, 2)} Mi
 
 /** land: Land der Route (Welle 2) – belegt die Länderwahl vor; Besucher können sie ändern. */
 export default function FlaechenWizard({ land: routenLand = null }) {
+  const sprache = useSprache();
+  const en = sprache === "en";
+  const w = uebersetze(TEXTE, sprache);
+  const az = anzeige(en);
   const [schritt, setSchritt] = useState(0);
   const [richtung, setRichtung] = useState("vor");
   const [land, setLand] = useState(routenLand);
@@ -137,7 +343,7 @@ export default function FlaechenWizard({ land: routenLand = null }) {
       setLand(z.land);
       setRegionId(z.regionId);
       setHa(z.ha);
-      setHaEingabe(haText(z.ha));
+      setHaEingabe(haText(z.ha, document.documentElement.lang === "en"));
       setNutzung(z.nutzung);
       setBesonderheiten(z.besonderheiten);
       setNetz(z.netz);
@@ -151,7 +357,7 @@ export default function FlaechenWizard({ land: routenLand = null }) {
         if (u.regionId) setRegionId(u.regionId);
         if (u.ha != null) {
           setHa(u.ha);
-          setHaEingabe(haText(u.ha));
+          setHaEingabe(haText(u.ha, document.documentElement.lang === "en"));
         }
         // Mit vollständigem Standort direkt zur Flächengröße – ohne Scrollsprung beim Laden
         if (u.land && u.regionId) {
@@ -176,9 +382,9 @@ export default function FlaechenWizard({ land: routenLand = null }) {
   // Regler bewegt → Feld nachziehen (nicht, während jemand im Feld tippt)
   useEffect(() => {
     if (typeof document !== "undefined" && document.activeElement === haFeldRef.current) return;
-    setHaEingabe(haText(ha));
+    setHaEingabe(haText(ha, en));
     setHaFehler(false);
-  }, [ha]);
+  }, [ha, en]);
 
   useEffect(() => {
     if (ersterRender.current) {
@@ -198,7 +404,7 @@ export default function FlaechenWizard({ land: routenLand = null }) {
 
   const regionen = land ? regionenFuer(land) : [];
   const weiterOk = [Boolean(land && regionId), Boolean(nutzung && ha > 0 && !haFehler), true, Boolean(netz && eigentum)][schritt];
-  const weiterHinweis = schritt === 1 && haFehler ? FEHLER_HA : WEITER_HINWEIS[schritt];
+  const weiterHinweis = schritt === 1 && haFehler ? w.fehlerHa : w.weiterHinweis[schritt];
 
   // Live-Zwischenstand ab Schritt 2: dieselbe Bewertung wie am Ende, nur mit den bisherigen Angaben
   const zwischenstand = useMemo(
@@ -211,21 +417,21 @@ export default function FlaechenWizard({ land: routenLand = null }) {
 
   function haTippen(text) {
     setHaEingabe(text);
-    const v = haLesen(text);
+    const v = haLesen(text, en);
     if (v == null) return; // leerer oder halber Zwischenstand: nichts klemmen
     setHaFehler(false);
     if (v >= HA_MIN && v <= HA_MAX) setHa(v);
   }
 
   function haVerlassen() {
-    const v = haLesen(haEingabe);
+    const v = haLesen(haEingabe, en);
     if (v == null) {
       setHaFehler(true);
       return;
     }
     const geklemmt = Math.max(HA_MIN, Math.min(HA_MAX, v));
     setHa(geklemmt);
-    setHaEingabe(haText(geklemmt));
+    setHaEingabe(haText(geklemmt, en));
     setHaFehler(false);
   }
 
@@ -286,8 +492,8 @@ export default function FlaechenWizard({ land: routenLand = null }) {
     <div className="overflow-hidden rounded-[2rem] bg-white shadow-[0_40px_90px_-50px_rgba(3,18,43,0.55)] ring-1 ring-ink-200/70">
       {/* Fortschritt */}
       <div ref={kopfRef} tabIndex={-1} className="border-b border-ink-100 bg-sand-50/70 px-5 py-5 outline-none sm:px-8 md:px-10">
-        <ol className="flex items-center gap-2 sm:gap-3" aria-label="Fortschritt">
-          {[...SCHRITTE, "Ergebnis"].map((s, i) => {
+        <ol className="flex items-center gap-2 sm:gap-3" aria-label={w.fortschritt}>
+          {[...w.schritte, w.ergebnisSchritt].map((s, i) => {
             const fertig = i < schritt;
             const aktiv = i === schritt;
             return (
@@ -305,21 +511,21 @@ export default function FlaechenWizard({ land: routenLand = null }) {
           })}
         </ol>
         <p className="mt-3 text-[13px] font-semibold text-ink-700 xl:hidden" aria-hidden="true">
-          {schritt < 4 ? `Schritt ${schritt + 1} von 4 · ${SCHRITTE[schritt]}` : "Ihr Ergebnis"}
+          {schritt < 4 ? w.schrittVon(schritt + 1, w.schritte[schritt]) : w.ihrErgebnis}
         </p>
         {uebernommen && schritt < 4 && (
           <p className="ov-ein mt-3 flex items-start gap-2 rounded-2xl bg-ov-50 px-3.5 py-2.5 text-[13px] leading-snug text-ov-900 ring-1 ring-inset ring-ov-200" role="status">
             <Check aria-hidden="true" className="mt-px h-4 w-4 shrink-0 text-ov-700" strokeWidth={3} />
             <span className="min-w-0">
-              Übernommene Angaben:{" "}
-              {[uebernommen.ha != null && `${fmt(uebernommen.ha, uebernommen.ha % 1 ? 1 : 0)} ha`, uebernommen.land && LAENDER.find((l) => l.id === uebernommen.land)?.label, uebernommen.regionId && regionenFuer(uebernommen.land).find((r) => r.id === uebernommen.regionId)?.label]
+              {w.uebernommen}{" "}
+              {[uebernommen.ha != null && `${az.f(uebernommen.ha, uebernommen.ha % 1 ? 1 : 0)} ha`, uebernommen.land && az.land(LAENDER.find((l) => l.id === uebernommen.land) || { id: uebernommen.land }), uebernommen.regionId && az.region(regionenFuer(uebernommen.land).find((r) => r.id === uebernommen.regionId))?.label]
                 .filter((x, i, alle) => x && alle.indexOf(x) === i)
                 .join(" · ")}
-              . Sie können alles ändern.
+              {w.aendern}
             </span>
           </p>
         )}
-        {zwischenstand && <LiveAmpel e={zwischenstand} />}
+        {zwischenstand && <LiveAmpel e={zwischenstand} w={w} az={az} />}
       </div>
 
       <div className="p-5 sm:p-8 md:p-10">
@@ -328,8 +534,8 @@ export default function FlaechenWizard({ land: routenLand = null }) {
           {schritt === 0 && (
             <div className="space-y-8">
               <fieldset>
-                <legend className={legende}>Wo liegt die Fläche?</legend>
-                <p className="mt-2 text-[15.5px] text-ink-600">Land und Region bestimmen Einstrahlung, Förderung und Genehmigungsweg.</p>
+                <legend className={legende}>{w.woTitel}</legend>
+                <p className="mt-2 text-[15.5px] text-ink-600">{w.woText}</p>
                 <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
                   {LAENDER.map((l) => {
                     const an = land === l.id;
@@ -337,7 +543,7 @@ export default function FlaechenWizard({ land: routenLand = null }) {
                       <label key={l.id} className={cn(karte(an), "flex-col gap-2 text-center sm:flex-row sm:text-left")}>
                         <input type="radio" name="land" value={l.id} checked={an} onChange={() => landWaehlen(l.id)} className="sr-only" />
                         <span className={cn(iconBox(an), "font-display text-[13px] font-extrabold")}>{l.id}</span>
-                        <span className="text-[14.5px] font-semibold leading-tight text-ink-900">{l.label}</span>
+                        <span className="text-[14.5px] font-semibold leading-tight text-ink-900">{az.land(l)}</span>
                       </label>
                     );
                   })}
@@ -345,9 +551,9 @@ export default function FlaechenWizard({ land: routenLand = null }) {
               </fieldset>
               {land && regionen.length > 1 && (
                 <fieldset className="ov-step-vor">
-                  <legend className="text-[15px] font-semibold text-ink-800">Region</legend>
+                  <legend className="text-[15px] font-semibold text-ink-800">{w.region}</legend>
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    {regionen.map((r) => {
+                    {regionen.map(az.region).map((r) => {
                       const an = regionId === r.id;
                       return (
                         <label key={r.id} className={cn(karte(an), "py-3.5 sm:py-4")}>
@@ -356,7 +562,7 @@ export default function FlaechenWizard({ land: routenLand = null }) {
                             <span className="block text-[15px] font-semibold text-ink-900">{r.label}</span>
                             <span className="block text-[13px] text-ink-500">{r.sub}</span>
                           </span>
-                          <span className="ov-num shrink-0 text-[12.5px] font-semibold text-ov-700">{fmt(r.ertrag)} kWh/kWp</span>
+                          <span className="ov-num shrink-0 text-[12.5px] font-semibold text-ov-700">{az.f(r.ertrag)} kWh/kWp</span>
                         </label>
                       );
                     })}
@@ -370,23 +576,23 @@ export default function FlaechenWizard({ land: routenLand = null }) {
           {schritt === 1 && (
             <div className="space-y-8">
               <div>
-                <p className={legende}>Wie groß ist die Fläche?</p>
-                <p className="mt-2 text-[15.5px] text-ink-600">Eine grobe Angabe genügt. Mehrere zusammenhängende {grundstueck(land).mehrzahl} zählen zusammen.</p>
+                <p className={legende}>{w.groesseTitel}</p>
+                <p className="mt-2 text-[15.5px] text-ink-600">{w.groesseText(grundstueck(land).mehrzahl)}</p>
                 <div className="mt-6 grid items-end gap-5 sm:grid-cols-[1fr_auto]">
                   <Regler
-                    label="Flächengröße"
+                    label={w.flaechengroesse}
                     wert={Math.min(ha, 150)}
                     min={0.5}
                     max={150}
                     step={0.5}
-                    format={(v) => (v >= 150 && ha > 150 ? `${fmt(ha, ha % 1 ? 1 : 0)} ha` : `${fmt(v, v % 1 ? 1 : 0)} ha`)}
+                    format={(v) => (v >= 150 && ha > 150 ? `${az.f(ha, ha % 1 ? 1 : 0)} ha` : `${az.f(v, v % 1 ? 1 : 0)} ha`)}
                     onChange={setHa}
-                    minLabel="0,5 ha"
-                    maxLabel="150+ ha"
+                    minLabel={w.minLabel}
+                    maxLabel={w.maxLabel}
                   />
                   <div>
                     <label htmlFor="fc-ha-genau" className="mb-1.5 block text-[13px] font-semibold text-ink-700">
-                      Genau eingeben
+                      {w.genau}
                     </label>
                     <span className="relative block">
                       <input
@@ -418,19 +624,19 @@ export default function FlaechenWizard({ land: routenLand = null }) {
                       {haFehler ? (
                         <>
                           <CircleAlert aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                          {FEHLER_HA}
+                          {w.fehlerHa}
                         </>
                       ) : (
-                        "0,1 bis 2.000 ha, Komma erlaubt"
+                        w.haHilfe
                       )}
                     </p>
                   </div>
                 </div>
               </div>
               <fieldset>
-                <legend className="text-[15px] font-semibold text-ink-800">Wie wird die Fläche heute genutzt?</legend>
+                <legend className="text-[15px] font-semibold text-ink-800">{w.nutzungTitel}</legend>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {NUTZUNGEN.map((n) => {
+                  {NUTZUNGEN.map(az.nutzung).map((n) => {
                     const an = nutzung === n.id;
                     const Icon = NUTZUNG_ICON[n.id];
                     return (
@@ -454,10 +660,10 @@ export default function FlaechenWizard({ land: routenLand = null }) {
           {/* 3 Besonderheiten */}
           {schritt === 2 && (
             <fieldset>
-              <legend className={legende}>Trifft etwas davon zu?</legend>
-              <p className="mt-2 text-[15.5px] text-ink-600">Mehrfachauswahl möglich. Wenn Sie es nicht wissen, lassen Sie es leer – wir prüfen das ohnehin.</p>
+              <legend className={legende}>{w.besTitel}</legend>
+              <p className="mt-2 text-[15.5px] text-ink-600">{w.besText}</p>
               <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {BESONDERHEITEN.filter((b) => b.id !== "benachteiligt" || land === "DE").map((b) => {
+                {BESONDERHEITEN.filter((b) => b.id !== "benachteiligt" || land === "DE").map(az.bes).map((b) => {
                   const an = besonderheiten.includes(b.id);
                   const Icon = BES_ICON[b.id];
                   return (
@@ -484,24 +690,24 @@ export default function FlaechenWizard({ land: routenLand = null }) {
           {schritt === 3 && (
             <div className="space-y-9">
               <fieldset>
-                <legend className={legende}>Wie weit ist es bis zum Stromnetz?</legend>
-                <p className="mt-2 text-[15.5px] text-ink-600">Gemeint ist die nächste Mittelspannungsleitung (Freileitung auf Betonmasten, Trafostation) oder ein Umspannwerk.</p>
+                <legend className={legende}>{w.netzTitel}</legend>
+                <p className="mt-2 text-[15.5px] text-ink-600">{w.netzText}</p>
                 <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
                   {NETZ.map((n) => {
                     const an = netz === n.id;
                     return (
                       <label key={n.id} className={cn("flex min-h-[56px] cursor-pointer items-center justify-center rounded-2xl px-3 py-2 text-center text-[14.5px] font-semibold transition-all focus-within:ring-2 focus-within:ring-ov-500", an ? "bg-ov-50 text-ov-800 ring-2 ring-ov-500" : "bg-sand-50 text-ink-800 ring-1 ring-ink-200 hover:bg-white")}>
                         <input type="radio" name="netz" value={n.id} checked={an} onChange={() => setNetz(n.id)} className="sr-only" />
-                        {n.label}
+                        {az.netz(n)}
                       </label>
                     );
                   })}
                 </div>
               </fieldset>
               <fieldset>
-                <legend className="text-[15px] font-semibold text-ink-800">Wem gehört die Fläche?</legend>
+                <legend className="text-[15px] font-semibold text-ink-800">{w.eigentumTitel}</legend>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                  {EIGENTUM.map((e) => {
+                  {EIGENTUM.map(az.eig).map((e) => {
                     const an = eigentum === e.id;
                     const Icon = EIG_ICON[e.id];
                     return (
@@ -523,7 +729,7 @@ export default function FlaechenWizard({ land: routenLand = null }) {
           )}
 
           {schritt === 4 && ergebnis && (
-            <Ergebnis e={ergebnis} eingaben={{ land, regionId, ha, nutzung, besonderheiten, netz, eigentum }} onNeu={neu} onAendern={gehe} />
+            <Ergebnis e={ergebnis} eingaben={{ land, regionId, ha, nutzung, besonderheiten, netz, eigentum }} onNeu={neu} onAendern={gehe} w={w} az={az} en={en} />
           )}
         </div>
 
@@ -531,11 +737,11 @@ export default function FlaechenWizard({ land: routenLand = null }) {
           <div className="mt-10 flex flex-col-reverse items-stretch justify-between gap-3 border-t border-ink-100 pt-6 sm:flex-row sm:items-center">
             {schritt > 0 ? (
               <button type="button" onClick={() => gehe(schritt - 1)} className="inline-flex h-12 items-center justify-center gap-2 rounded-full px-5 text-[15px] font-semibold text-ink-700 hover:bg-ink-100">
-                <ArrowLeft aria-hidden="true" className="h-4 w-4" /> Zurück
+                <ArrowLeft aria-hidden="true" className="h-4 w-4" /> {w.zurueck}
               </button>
             ) : (
               <p className="text-[13px] text-ink-500">
-                {wiederhergestellt ? "Ihre Angaben bleiben auf diesem Gerät, bis Sie neu starten." : "Schritt 1 von 4 · dauert ca. 2 Minuten · ohne Anmeldung"}
+                {wiederhergestellt ? w.geraet : w.start}
               </p>
             )}
             <div className="flex flex-col items-stretch gap-2 sm:items-end">
@@ -547,7 +753,7 @@ export default function FlaechenWizard({ land: routenLand = null }) {
               onClick={() => gehe(schritt + 1)}
               className="group inline-flex h-14 items-center justify-center gap-2.5 rounded-full bg-ov-600 px-8 text-[16px] font-semibold text-white shadow-[0_8px_24px_-8px_rgba(102,153,51,0.65)] transition-[background-color,box-shadow,transform] duration-200 ease-ov-out hover:bg-ov-700 enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-ink-200 disabled:text-ink-500 disabled:shadow-none"
             >
-              {schritt === 3 ? "Ergebnis anzeigen" : schritt === 2 && besonderheiten.length === 0 ? "Nichts davon – weiter" : "Weiter"}
+              {schritt === 3 ? w.zeigen : schritt === 2 && besonderheiten.length === 0 ? w.nichts : w.weiter}
               <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform duration-200 group-enabled:group-hover:translate-x-1 group-enabled:group-focus-visible:translate-x-1" />
             </button>
             {!weiterOk && weiterHinweis && (
@@ -560,9 +766,9 @@ export default function FlaechenWizard({ land: routenLand = null }) {
         )}
         {schritt < 4 && schritt > 0 && wiederhergestellt && (
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[12.5px] text-ink-500">
-            <p>Ihre Angaben bleiben auf diesem Gerät, bis Sie neu starten.</p>
+            <p>{w.geraet}</p>
             <button type="button" onClick={neu} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 font-semibold text-ink-700 hover:bg-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
-              <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" /> Neu starten
+              <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" /> {w.neu}
             </button>
           </div>
         )}
@@ -575,8 +781,8 @@ export default function FlaechenWizard({ land: routenLand = null }) {
  * Live-Zwischenstand im Kopf des Assistenten: Punktwert als Balken (scaleX),
  * Ampel mit Text und die zuletzt wirksame Begründung („+15 Punkte: …“).
  */
-function LiveAmpel({ e }) {
-  const a = AMPEL[e.ampel];
+function LiveAmpel({ e, w, az }) {
+  const a = az.ampel(e.ampel);
   const vorher = useRef(null);
   const [letzte, setLetzte] = useState(null);
 
@@ -592,7 +798,7 @@ function LiveAmpel({ e }) {
       setLetzte({ punkte: neu.punkte, text: neu.text, delta });
     } else if (delta !== 0) {
       const weg = alt.gruende.find((g) => g.punkte !== 0 && !e.gruende.some((x) => x.text === g.text));
-      if (weg) setLetzte({ punkte: -weg.punkte, text: `Entfällt: ${weg.text}`, delta });
+      if (weg) setLetzte({ punkte: -weg.punkte, text: weg.text, entfaellt: true, delta });
     }
   }, [e]);
 
@@ -603,7 +809,7 @@ function LiveAmpel({ e }) {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <p className="flex items-center gap-2 text-[13px] font-semibold text-ink-900">
           <span aria-hidden="true" className={cn("h-2.5 w-2.5 rounded-full", a.ton)} />
-          Zwischenstand: {a.label}
+          {w.zwischenstand}{a.label}
         </p>
         <div className="flex min-w-[8rem] flex-1 items-center gap-3">
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink-100" aria-hidden="true">
@@ -618,17 +824,17 @@ function LiveAmpel({ e }) {
       <p className="mt-1.5 min-h-5 text-[12.5px] leading-snug text-ink-600" aria-live="polite">
         {letzte ? (
           <span key={`${letzte.text}${letzte.delta}`} className="animate-ov-einblenden block truncate">
-            <span className={cn("ov-num font-bold", letzte.punkte > 0 ? "text-ov-700" : "text-ink-700")}>{vz(letzte.punkte)} Punkte</span> · {letzte.text}
+            <span className={cn("ov-num font-bold", letzte.punkte > 0 ? "text-ov-700" : "text-ink-700")}>{vz(letzte.punkte)} {w.punkte}</span> · {letzte.entfaellt ? w.entfaellt : ""}{az.satz(letzte.text)}
           </span>
         ) : (
-          "Noch nicht alle Angaben – der Wert bewegt sich mit jeder Auswahl."
+          w.nochNicht
         )}
       </p>
     </div>
   );
 }
 
-function Tacho({ score, farbe }) {
+function Tacho({ score, farbe, w }) {
   // Halbkreis 180°, Radius 80. Füllung über stroke-dashoffset (pathLength 100) statt stroke-dasharray –
   // nur der Versatz wird animiert (DESIGN § 3.3); unter reduced-motion springt der Wert.
   // Ergebnis-Moment: Beim Erscheinen füllt sich der Bogen von 0 und die Zahl zählt mit (rAF, ändert nur den Textknoten).
@@ -674,7 +880,7 @@ function Tacho({ score, farbe }) {
   }, [score]);
 
   return (
-    <svg viewBox="0 0 200 116" className="h-auto w-full max-w-[220px]" role="img" aria-label={`Punktwert ${score} von 100`}>
+    <svg viewBox="0 0 200 116" className="h-auto w-full max-w-[220px]" role="img" aria-label={w.punktwert(score)}>
       <path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="16" strokeLinecap="round" />
       <path
         d="M20 100 A80 80 0 0 1 180 100"
@@ -688,18 +894,23 @@ function Tacho({ score, farbe }) {
         className="motion-safe:transition-[stroke-dashoffset] motion-safe:duration-[900ms] motion-safe:ease-ov-out"
       />
       <text ref={zahlRef} x="100" y="92" textAnchor="middle" className="fill-white font-display text-[40px] font-extrabold" style={{ fontVariantNumeric: "tabular-nums" }}>{score}</text>
-      <text x="100" y="112" textAnchor="middle" className="fill-white/75 text-[11px]">von 100 Punkten</text>
+      <text x="100" y="112" textAnchor="middle" className="fill-white/75 text-[11px]">{w.vonHundert}</text>
     </svg>
   );
 }
 
-function Ergebnis({ e, eingaben, onNeu, onAendern }) {
-  const a = AMPEL[e.ampel];
+function Ergebnis({ e, eingaben, onNeu, onAendern, w, az, en }) {
+  const a = az.ampel(e.ampel);
   const nutzungLabel = NUTZUNGEN.find((n) => n.id === eingaben.nutzung)?.label;
   const netzLabel = NETZ.find((n) => n.id === eingaben.netz)?.label;
+  const nutzungAnzeige = az.nutzung(NUTZUNGEN.find((n) => n.id === eingaben.nutzung))?.label;
+  const netzAnzeige = az.netz(NETZ.find((n) => n.id === eingaben.netz) || NETZ[NETZ.length - 1]);
   const gs = grundstueck(eingaben.land);
-  // Texte der Rechenlogik sagen „Flurstücke“ – in AT/CH heißt das Grundstück/Parzelle (Begriff aus src/lib/anfrage/laender.js)
-  const schritteLand = e.schritte.map((t) => t.replace(/Flurstücke/g, gs.mehrzahl).replace(/Flurstück/g, gs.einzahl));
+  const f = az.f;
+  // Texte der Rechenlogik sagen „Flurstücke“ – in AT/CH heißt das Grundstück/Parzelle (Begriff aus src/lib/anfrage/laender.js).
+  // Englisch: Übersetzung der deutschen Sätze („plots“ für alle Länder).
+  const schritteLand = en ? e.schritte.map(az.satz) : e.schritte.map((t) => t.replace(/Flurstücke/g, gs.mehrzahl).replace(/Flurstück/g, gs.einzahl));
+  const landName = w.landName[eingaben.land] || w.ihrLand;
   // Länder-Sperre: €-Pacht und GAP nur für Deutschland, bis die Rechenlogik AT/CH geprüft ist (Paket E / B1)
   const mitPacht = LAENDER_LOGIK_FERTIG.includes(eingaben.land) && Boolean(e.pachtJahr && e.pacht30);
 
@@ -741,10 +952,10 @@ function Ergebnis({ e, eingaben, onNeu, onAendern }) {
         <div aria-hidden="true" className="absolute -right-16 -top-24 h-72 w-72 rounded-full bg-ov-500/30 blur-[90px]" />
         <div className="relative grid items-center gap-6 md:grid-cols-[auto_1fr] md:gap-10">
           <div className="mx-auto w-full max-w-[220px]">
-            <Tacho score={e.score} farbe={a.farbe} />
+            <Tacho score={e.score} farbe={a.farbe} w={w} />
           </div>
           <div>
-            <p className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ov-300">Ihr Flächencheck · Stand {STAND}</p>
+            <p className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ov-300">{w.kopf(az.stand)}</p>
             <h2 className="mt-3 flex flex-wrap items-center gap-3 font-display text-[clamp(1.6rem,1.2rem+1.6vw,2.4rem)] font-extrabold leading-tight tracking-tight" aria-live="polite">
               <span aria-hidden="true" className={cn("h-4 w-4 rounded-full ring-4 ring-white/10", a.ton)} />
               {a.label}
@@ -752,13 +963,13 @@ function Ergebnis({ e, eingaben, onNeu, onAendern }) {
             <p className="mt-2 max-w-xl text-[15.5px] leading-relaxed text-white/70">{a.text}</p>
             <ul className="mt-4 flex flex-wrap gap-2 text-[13px]">
               {[
-                [e.region.label, 0],
-                [`${fmt(eingaben.ha, eingaben.ha % 1 ? 1 : 0)} ha ${nutzungLabel}`, 1],
-                [eingaben.besonderheiten.length ? `${eingaben.besonderheiten.length} Besonderheit${eingaben.besonderheiten.length > 1 ? "en" : ""}` : "keine Besonderheiten", 2],
-                [`Netz ${netzLabel}`, 3],
+                [az.region(e.region).label, 0],
+                [w.chipFlaeche(f(eingaben.ha, eingaben.ha % 1 ? 1 : 0), nutzungAnzeige), 1],
+                [w.chipBes(eingaben.besonderheiten.length), 2],
+                [w.chipNetz(netzAnzeige), 3],
               ].map(([c, s]) => (
                 <li key={c}>
-                  <button type="button" onClick={() => onAendern(s)} className="ov-glass inline-flex items-center rounded-full px-3 py-1.5 text-white/90 hover:bg-white/15" aria-label={`${c} ändern`}>
+                  <button type="button" onClick={() => onAendern(s)} className="ov-glass inline-flex items-center rounded-full px-3 py-1.5 text-white/90 hover:bg-white/15" aria-label={w.chipAendern(c)}>
                     {c}
                   </button>
                 </li>
@@ -771,14 +982,14 @@ function Ergebnis({ e, eingaben, onNeu, onAendern }) {
       {/* Kennzahlen */}
       <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
-          ["Mögliche Leistung", `${fmt(e.kwp / 1000, 1)} MWp`, `auf ~${fmt(e.nutzbarHa, 1)} ha nutzbarer Fläche`],
-          ["Stromertrag", `${fmt(e.kwh / 1e6, 1)} GWh/Jahr`, `≈ ${fmt(Math.round(e.kwh / 3500 / 10) * 10)} Haushalte`],
+          [w.leistung, `${f(e.kwp / 1000, 1)} MWp`, w.leistungZ(f(e.nutzbarHa, 1))],
+          [w.ertrag, w.ertragW(f(e.kwh / 1e6, 1)), w.haushalte(f(Math.round(e.kwh / 3500 / 10) * 10))],
           ...(mitPacht
             ? [
-                ["Pacht pro Jahr", spanne(e.pachtJahr.min, e.pachtJahr.max), `${fmt(e.pachtJahr.min / eingaben.ha)}–${fmt(e.pachtJahr.max / eingaben.ha)} €/ha`],
-                ["Pacht über 30 Jahre", spanne(e.pacht30.min, e.pacht30.max), `indexiert mit ${fmt(PACHT.indexierung * 100, 1)} % p. a.`],
+                [w.pachtJahr, az.spanne(e.pachtJahr.min, e.pachtJahr.max), w.pachtHa(f(e.pachtJahr.min / eingaben.ha), f(e.pachtJahr.max / eingaben.ha))],
+                [w.pacht30, az.spanne(e.pacht30.min, e.pacht30.max), w.indexiert(f(PACHT.indexierung * 100, 1))],
               ]
-            : [["Pacht", "Rechenlogik in Vorbereitung", `Für ${LAND_NAME[eingaben.land] || "Ihr Land"} nennen wir die Pachtspanne nach der Prüfung Ihrer Fläche.`]]),
+            : [[w.pacht, w.vorbereitung, w.pachtLand(landName)]]),
         ].map(([k, v, z], i) => (
           <div key={k} className={cn("rounded-2xl p-4 md:p-5", i === 2 ? "bg-ov-600 text-white" : "bg-white ring-1 ring-ink-200/70", !mitPacht && i === 2 && "col-span-2")}>
             <p className={cn("text-[12.5px] font-medium", i === 2 ? "text-white" : "text-ink-500")}>{k}</p>
@@ -791,7 +1002,7 @@ function Ergebnis({ e, eingaben, onNeu, onAendern }) {
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         {/* Begründung */}
         <section aria-labelledby="fc-gruende" className="rounded-3xl bg-sand-50 p-5 ring-1 ring-ink-200/60 md:p-7">
-          <h3 id="fc-gruende" className="font-display text-[19px] font-extrabold tracking-tight text-ink-900">So kommt die Bewertung zustande</h3>
+          <h3 id="fc-gruende" className="font-display text-[19px] font-extrabold tracking-tight text-ink-900">{w.bewertung}</h3>
           <ul className="mt-5 space-y-3">
             {e.gruende.map((g) => (
               <li key={g.text} className="flex gap-3 text-[14.5px] leading-relaxed text-ink-700">
@@ -802,7 +1013,7 @@ function Ergebnis({ e, eingaben, onNeu, onAendern }) {
                 ) : (
                   <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-navy-400" />
                 )}
-                <span className="min-w-0 flex-1">{g.text}</span>
+                <span className="min-w-0 flex-1">{az.satz(g.text)}</span>
                 {g.punkte !== 0 && (
                   <span className={cn("ov-num shrink-0 font-semibold", g.punkte > 0 ? "text-ov-700" : "text-ink-500")}>
                     {g.punkte > 0 ? "+" : "−"}
@@ -818,34 +1029,30 @@ function Ergebnis({ e, eingaben, onNeu, onAendern }) {
           {e.agri && (
             <div className="rounded-3xl bg-ov-50 p-5 ring-1 ring-ov-200 md:p-6">
               <p className="flex items-center gap-2 font-display text-[17px] font-bold text-ink-900">
-                <Sprout aria-hidden="true" className="h-5 w-5 text-ov-600" /> Option Agri-PV
+                <Sprout aria-hidden="true" className="h-5 w-5 text-ov-600" /> {w.agriTitel}
               </p>
               <p className="mt-2 text-[14.5px] leading-relaxed text-ink-700">
-                Soll die Landwirtschaft weitergehen? Mit vertikalen Modulreihen wären rund <strong>{fmt(e.agri.kwp / 1000, 1)} MWp</strong> möglich
-                {mitPacht ? (
-                  <>, {fmt(AGRI.gapFoerderfaehig * 100)} % der Fläche bleiben in der Regel GAP-förderfähig. Pacht meist {fmt(PACHT.agriProHa.min)}–{fmt(PACHT.agriProHa.max)} €/ha – plus Ihre Ernte.</>
-                ) : (
-                  <>. Förderung und Pacht für {LAND_NAME[eingaben.land] || "Ihr Land"}: Rechenlogik in Vorbereitung.</>
-                )}
+                {w.agriA}<strong>{f(e.agri.kwp / 1000, 1)} MWp</strong>{w.agriB}
+                {mitPacht ? w.agriPacht(f(AGRI.gapFoerderfaehig * 100), f(PACHT.agriProHa.min), f(PACHT.agriProHa.max)) : w.agriLand(landName)}
               </p>
               <Link href={pfad("/agri-pv")} className="mt-3 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-ov-700 hover:text-ov-800">
-                Agri-PV ansehen <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                {w.agriLink} <ArrowRight aria-hidden="true" className="h-4 w-4" />
               </Link>
             </div>
           )}
           {e.carport && (
             <div className="rounded-3xl bg-navy-50 p-5 ring-1 ring-navy-100 md:p-6">
               <p className="flex items-center gap-2 font-display text-[17px] font-bold text-ink-900">
-                <Car aria-hidden="true" className="h-5 w-5 text-navy-600" /> Solarcarport
+                <Car aria-hidden="true" className="h-5 w-5 text-navy-600" /> {w.carportTitel}
               </p>
-              <p className="mt-2 text-[14.5px] leading-relaxed text-ink-700">Auf Parkplätzen bauen wir Solarcarports – mit Ladepunkten und ohne Flächenverlust.</p>
+              <p className="mt-2 text-[14.5px] leading-relaxed text-ink-700">{w.carportText}</p>
               <Link href={pfad("/solarcarport")} className="mt-3 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-navy-700 hover:text-navy-800">
-                Solarcarport ansehen <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                {w.carportLink} <ArrowRight aria-hidden="true" className="h-4 w-4" />
               </Link>
             </div>
           )}
           <div className="rounded-3xl bg-white p-5 ring-1 ring-ink-200/70 md:p-6">
-            <p className="font-display text-[17px] font-bold text-ink-900">Nächste Schritte</p>
+            <p className="font-display text-[17px] font-bold text-ink-900">{w.naechste}</p>
             <ol className="mt-4 space-y-3">
               {schritteLand.map((s, i) => (
                 <li key={s} className="flex gap-3 text-[14px] leading-relaxed text-ink-700">
@@ -855,7 +1062,7 @@ function Ergebnis({ e, eingaben, onNeu, onAendern }) {
               ))}
             </ol>
             <Link href="/termin?herkunft=flaechencheck&art=beratung_video" className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-ov-600 px-5 text-[14.5px] font-semibold text-white hover:bg-ov-700">
-              Beratungstermin buchen
+              {w.termin}
             </Link>
           </div>
         </div>
@@ -864,12 +1071,10 @@ function Ergebnis({ e, eingaben, onNeu, onAendern }) {
       {/* Anfrage */}
       <section aria-labelledby="fc-anfrage" className="mt-10 grid gap-8 rounded-3xl bg-sand-50 p-5 ring-1 ring-ink-200/60 md:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-12">
         <div>
-          <h3 id="fc-anfrage" className="font-display text-[clamp(1.35rem,1.1rem+0.8vw,1.75rem)] font-extrabold tracking-tight text-ink-900">Ergebnis an unser Flächenteam senden</h3>
-          <p className="mt-3 text-[15px] leading-relaxed text-ink-600">
-            Ihre Angaben und dieses Ergebnis werden mitgeschickt – Sie müssen nichts doppelt eingeben. Wir prüfen die Fläche {gs.genau} und melden uns bei Ihnen.
-          </p>
+          <h3 id="fc-anfrage" className="font-display text-[clamp(1.35rem,1.1rem+0.8vw,1.75rem)] font-extrabold tracking-tight text-ink-900">{w.sendenTitel}</h3>
+          <p className="mt-3 text-[15px] leading-relaxed text-ink-600">{w.sendenText(gs.genau)}</p>
           <ul className="mt-5 space-y-2.5 text-[14.5px] text-ink-700">
-            {["Kostenfrei und unverbindlich", "Status und Dokumente später im Portal", "Keine Weitergabe an Dritte ohne Ihre Zustimmung"].map((t) => (
+            {w.sendenPunkte.map((t) => (
               <li key={t} className="flex gap-2.5">
                 <Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" strokeWidth={3} />
                 {t}
@@ -877,21 +1082,21 @@ function Ergebnis({ e, eingaben, onNeu, onAendern }) {
             ))}
           </ul>
           <p className="mt-5 text-[13.5px] leading-relaxed text-ink-600">
-            Lieber zuerst ein Konto anlegen?{" "}
+            {w.kontoA}{" "}
             <Link href="/registrieren?rolle=flaeche" className="font-semibold text-ov-700 underline underline-offset-4 hover:text-ov-800">
-              Kostenlos registrieren
+              {w.kontoLink}
             </Link>{" "}
-            – Ihre Anfragen und deren Status sehen Sie dann im Portal.
+            {w.kontoB}
           </p>
           {e.ampel === "rot" && (
             <p className="mt-5 flex gap-2.5 rounded-2xl bg-white p-4 text-[13.5px] leading-relaxed text-ink-600 ring-1 ring-ink-200">
               <CircleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-sun-500" />
-              Auch bei roter Ampel lohnt oft ein Blick: Die Heuristik kennt Ihre Fläche nicht im Detail.
+              {w.rot}
             </p>
           )}
         </div>
         <div className="rounded-3xl bg-white p-5 ring-1 ring-ink-200/70 md:p-7">
-          <AnfrageFormular typ="flaeche" land={eingaben.land} daten={daten} felder={["telefon", "plz", "ort", "nachricht"]} button="Ergebnis senden" />
+          <AnfrageFormular typ="flaeche" land={eingaben.land} daten={daten} felder={["telefon", "plz", "ort", "nachricht"]} button={w.senden} />
         </div>
       </section>
 
@@ -900,10 +1105,10 @@ function Ergebnis({ e, eingaben, onNeu, onAendern }) {
 
       <div className="mt-8 flex flex-col items-start justify-between gap-4 border-t border-ink-100 pt-6 sm:flex-row sm:items-center">
         <p className="max-w-2xl text-[13px] leading-relaxed text-ink-500">
-          Erste Einschätzung auf Basis Ihrer Angaben und typischer Marktwerte, Stand {STAND} – kein Angebot und keine Zusage. Netzkapazität, Planungsrecht und Schutzgüter prüfen wir {gs.genau}.
+          {w.fuss(az.stand, gs.genau)}
         </p>
         <button type="button" onClick={onNeu} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-4 text-[14.5px] font-semibold text-ink-700 ring-1 ring-ink-200 hover:bg-ink-50">
-          <RotateCcw aria-hidden="true" className="h-4 w-4" /> Neu starten
+          <RotateCcw aria-hidden="true" className="h-4 w-4" /> {w.neu}
         </button>
       </div>
     </div>

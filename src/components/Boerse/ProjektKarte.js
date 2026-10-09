@@ -1,6 +1,6 @@
 // Karte eines Projekts in der Börse (öffentlich und im Portal). Nur Teaser-Felder.
 
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowUpRight, MapPin, Zap } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import TypIllustration, { varianteAus } from "./TypIllustration";
@@ -10,6 +10,9 @@ import { mwp, preisText } from "@/lib/plattform/format";
 import { statusLabel } from "@/lib/plattform/prozesse";
 import { phaseById, PHASEN } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import T from "@/components/Sprache/T";
+import { BEGRIFFE_EN, mwpEn, preisTextEn } from "@/lib/sprache/begriffe";
+import { fmtZahl } from "@/lib/sprache/format";
 
 export function PhaseBadge({ phase, className, dunkel = false }) {
   const p = phaseById(phase);
@@ -21,7 +24,7 @@ export function PhaseBadge({ phase, className, dunkel = false }) {
           <span key={x.id} className={cn("h-2.5 w-1 rounded-full", i <= idx ? "bg-ov-500" : dunkel ? "bg-white/25" : "bg-ink-200")} />
         ))}
       </span>
-      {p.kurz}
+      <T de={p.kurz} en={BEGRIFFE_EN.phaseKurz[p.id]} />
     </span>
   );
 }
@@ -37,13 +40,13 @@ export default function ProjektKarte({ projekt: p, href, extra, aktion, classNam
         <div className="absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2">
           <PhaseBadge phase={p.phase} />
           <span className="flex flex-wrap justify-end gap-1.5">
-            {reserviert && <span className="rounded-full bg-navy-900 px-2.5 py-1 text-[12px] font-semibold text-white">{statusLabel("projekt", "reserviert")}</span>}
+            {reserviert && <span className="rounded-full bg-navy-900 px-2.5 py-1 text-[12px] font-semibold text-white"><T de={statusLabel("projekt", "reserviert")} en={BEGRIFFE_EN.projektStatus.reserviert} /></span>}
             {p.demo && <span className="rounded-full bg-sun-400 px-2.5 py-1 text-[11.5px] font-bold uppercase tracking-wide text-navy-950">Demo</span>}
           </span>
         </div>
       </div>
       <div className="flex flex-1 flex-col p-5 md:p-6">
-        <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ov-700">{PROJEKT_TYPEN[p.typ]}</p>
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ov-700"><T de={PROJEKT_TYPEN[p.typ]} en={BEGRIFFE_EN.projektTyp[p.typ]} /></p>
         <h3 className="mt-1.5 font-display text-[18px] font-bold leading-snug text-ink-900">
           <Link href={href} className="outline-none after:absolute after:inset-0 after:rounded-3xl after:content-[''] focus-visible:underline focus-visible:after:ring-2 focus-visible:after:ring-ov-500">
             {p.titel}
@@ -51,31 +54,31 @@ export default function ProjektKarte({ projekt: p, href, extra, aktion, classNam
         </h3>
         <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] font-medium text-ink-500">
           <MapPin aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          {[p.region, p.bundesland, LAENDER[p.land]].filter(Boolean).join(" · ")}
+          <T de={[p.region, p.bundesland, LAENDER[p.land]].filter(Boolean).join(" · ")} en={[p.region, p.bundesland, BEGRIFFE_EN.land[p.land]].filter(Boolean).join(" · ")} />
         </p>
         <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-ink-100 ring-1 ring-ink-100 transition-colors duration-300 group-hover:ring-ov-200">
           <div className="min-w-0 bg-sand-50 px-3.5 py-3">
-            <dt className="text-[11.5px] text-ink-500">Leistung</dt>
-            <dd className="ov-num mt-0.5 font-display text-[18px] font-extrabold leading-tight text-ink-900">{p.typ === "speicher" ? `${fmt(p.mwp, p.mwp < 10 ? 1 : 0)} MW` : mwp(p.mwp)}{p.mwhSpeicher ? <span className="ml-1 text-[13px] font-semibold text-ink-500">/ {fmt(p.mwhSpeicher)} MWh</span> : null}</dd>
+            <dt className="text-[11.5px] text-ink-500"><T de="Leistung" en="Capacity" /></dt>
+            <dd className="ov-num mt-0.5 font-display text-[18px] font-extrabold leading-tight text-ink-900"><T de={p.typ === "speicher" ? `${fmt(p.mwp, p.mwp < 10 ? 1 : 0)} MW` : mwp(p.mwp)} en={p.typ === "speicher" ? `${fmtZahl(p.mwp, p.mwp < 10 ? 1 : 0, "en")} MW` : mwpEn(p.mwp)} />{p.mwhSpeicher ? <span className="ml-1 text-[13px] font-semibold text-ink-500">/ <T de={fmt(p.mwhSpeicher)} en={fmtZahl(p.mwhSpeicher, 0, "en")} /> MWh</span> : null}</dd>
           </div>
           <div className="min-w-0 bg-sand-50 px-3.5 py-3">
-            <dt className="text-[11.5px] text-ink-500">Preisindikation</dt>
-            <dd className="mt-0.5 font-display text-[18px] font-extrabold leading-tight text-ink-900">{preisText(p)}</dd>
+            <dt className="text-[11.5px] text-ink-500"><T de="Preisindikation" en="Price indication" /></dt>
+            <dd className="mt-0.5 font-display text-[18px] font-extrabold leading-tight text-ink-900"><T de={preisText(p)} en={preisTextEn(p)} /></dd>
           </div>
         </dl>
         <p className="mt-3.5 text-[13px] leading-snug text-ink-600">
-          <Zap aria-hidden="true" className="-mt-0.5 mr-1 inline h-3.5 w-3.5 text-ov-600" />{NETZANSCHLUSS[p.netzanschluss] || "Netzanschluss offen"}
+          <Zap aria-hidden="true" className="-mt-0.5 mr-1 inline h-3.5 w-3.5 text-ov-600" /><T de={NETZANSCHLUSS[p.netzanschluss] || "Netzanschluss offen"} en={BEGRIFFE_EN.netzanschluss[p.netzanschluss] || "Grid connection open"} />
           {p.codGeplant && <span className="text-ink-500"> · COD {p.codGeplant}</span>}
         </p>
         {typeof p.datenraumQualitaet === "number" && (
           <div className="mt-3">
-            <QualitaetsBalken quote={p.datenraumQualitaet} klein />
+            <QualitaetsBalken quote={p.datenraumQualitaet} klein label={<T de="Datenraum-Qualität" en="Data room quality" />} labelId={`dq-${p.id || p.slug}`} />
           </div>
         )}
         {extra && <div className="mt-3">{extra}</div>}
         <div className="mt-auto flex items-center justify-between gap-3 pt-5">
           <span className="inline-flex items-center gap-2 text-[14px] font-semibold text-ov-700">
-            Exposé ansehen
+            <T de="Exposé ansehen" en="View exposé" />
             <span aria-hidden="true" className="flex h-7 w-7 items-center justify-center rounded-full bg-ov-50 text-ov-700 ring-1 ring-inset ring-ov-200 transition-colors group-hover:bg-ov-600 group-hover:text-white group-hover:ring-ov-600">
               <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-px group-hover:translate-x-px motion-reduce:transition-none" />
             </span>

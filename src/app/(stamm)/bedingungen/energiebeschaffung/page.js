@@ -11,11 +11,12 @@
 
 import LegalShell from "@/components/Reusable/LegalShell";
 import { GESELLSCHAFT } from "@/data/site";
-import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata, STAND_BEDINGUNGEN } from "../_teile";
+import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata, bedingungenMetadataEn, STAND_BEDINGUNGEN } from "../_teile";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
 
 const PFAD = "/bedingungen/energiebeschaffung";
 
-export const metadata = bedingungenMetadata({
+const metadata = bedingungenMetadata({
   pfad: PFAD,
   titel: "Servicevertrag Energiebeschaffung | ÖkoInvest",
   beschreibung:
@@ -24,17 +25,185 @@ export const metadata = bedingungenMetadata({
   bildAlt: "Gewerbedach mit Photovoltaikanlage",
 });
 
+// Englisch (Sprachmodell): Übersetzung zur Information – maßgeblich ist die deutsche Fassung. ENTWURF.
+const metadataEn = bedingungenMetadataEn({
+  titel: "Energy procurement service agreement | ÖkoInvest",
+  beschreibung: "Draft of the energy procurement service agreement: services, procurement mandate, cooperation, remuneration, confidentiality, liability and term for companies.",
+  bildAlt: "Commercial roof with a photovoltaic system",
+});
+
 const G = GESELLSCHAFT;
 
-export default function ServicevertragEnergiePage() {
+export default async function ServicevertragEnergiePage({ params }) {
+  await seitenLand(params);
+  const en = spracheDerAnfrage() === "en";
   return (
     <LegalShell
-      titel="Servicevertrag Energiebeschaffung"
+      titel={en ? "Energy procurement service agreement" : "Servicevertrag Energiebeschaffung"}
       pfad={PFAD}
       stand={STAND_BEDINGUNGEN}
-      lead="Besondere Bedingungen für Unternehmen, die ihren Strom über die ÖkoInvest-Plattform einkaufen lassen – einzeln oder gebündelt im Reststrom-Pool."
+      lead={en ? "Special terms for companies that have their electricity purchased via the ÖkoInvest platform – individually or pooled in the residual power pool." : "Besondere Bedingungen für Unternehmen, die ihren Strom über die ÖkoInvest-Plattform einkaufen lassen – einzeln oder gebündelt im Reststrom-Pool."}
     >
       <EntwurfHinweis />
+      {en ? (
+        <>
+      <h2>§ 1 Subject matter of the agreement</h2>
+      <p>
+        (1) {G.name} (“ÖkoInvest”) supports the customer in purchasing electricity for the supply points specified in the portal. For this purpose, it
+        obtains offers from energy suppliers, evaluates them and supports the switch. In doing so, ÖkoInvest acts as the <strong>customer&apos;s service
+        provider</strong>; it becomes neither the electricity supplier nor a party to the supply contract.
+      </p>
+      <p>
+        (2) The agreement is aimed at entrepreneurs. Public contracting authorities must observe § 9. The agreement is concluded by confirmation in the
+        portal or by signature; the procurement mandate (§ 4) is a prerequisite for every request for quotation.
+      </p>
+
+      <h2>§ 2 Scope of services</h2>
+      <p>(1) Depending on the instructions given in the portal, ÖkoInvest provides the following services:</p>
+      <ul>
+        <li>
+          <strong>Data collection:</strong> recording of supply points, metering type, voltage level, current contracts and notice periods; import and
+          check of the load profile (15-minute values).
+        </li>
+        <li>
+          <strong>Analysis:</strong> consumption profile, influence of own PV and storage systems, costs of different procurement models (fixed price,
+          tranches, spot index) retrospectively and as a forecast; recommendation on timing (tender, wait, extend).
+        </li>
+        <li>
+          <strong>Request for quotation:</strong> selection and invitation of suitable energy suppliers, anonymised documents (lot, rounded key figures,
+          standardised profile), deadlines, questions and answers, further rounds if necessary.
+        </li>
+        <li>
+          <strong>Evaluation:</strong> comparison of offers on a uniform basis (energy price per consumption profile, contract terms, risks),
+          sensitivities and a reasoned award proposal.
+        </li>
+        <li>
+          <strong>Conclusion and switch:</strong> after approval by the customer, transmission of the award, forwarding of the contract data to the
+          selected supplier and support with the termination of the previous contract and the change of supplier.
+        </li>
+        <li>
+          <strong>Ongoing support:</strong> monitoring of contract terms and notice periods with reminders, regular switching analysis against the futures
+          market.
+        </li>
+        <li>
+          <strong>Pool (optional):</strong> bundling with other customers to achieve better terms. The supply contract is nevertheless concluded for each
+          customer, unless expressly agreed otherwise.
+        </li>
+      </ul>
+      <p>
+        (2) In particular, the following are <strong>not owed</strong>: a specific price or saving, legal and tax advice, trading for own account, the
+        assumption of balancing group, price or volume risks, payment processing with the supplier and the conduct of formal award procedures.
+      </p>
+
+      <h2>§ 3 Cooperation of the customer</h2>
+      <ul>
+        <li>complete and correct information on supply points, consumption, current contracts and notice periods, and a usable load profile,</li>
+        <li>timely notification of material changes (e.g. new plant, site closure, shift pattern, jump in consumption),</li>
+        <li>appointment of a contact person with decision-making authority,</li>
+        <li>
+          decision on the award proposal within the validity period of the offers – after the validity period has expired, the supplier is no longer
+          bound,
+        </li>
+        <li>review and signature of the supply contract or the supplier&apos;s order confirmation.</li>
+      </ul>
+      <p>
+        Delays or disadvantages resulting from missing or late cooperation – for example a missed notice period due to incorrect information – are not
+        borne by ÖkoInvest.
+      </p>
+
+      <h2>§ 4 Procurement mandate</h2>
+      <p>
+        (1) In the portal (versioned text, time, IP address; on request additionally with an electronic signature), the customer authorises ÖkoInvest to
+        obtain offers, to pass on anonymised consumption data for this purpose and, after the customer&apos;s express approval, to transmit the award and
+        to initiate the change of supplier, including termination of the previous contract, in the customer&apos;s name.
+      </p>
+      <p>
+        (2) <strong>No supply contract is concluded without the customer&apos;s approval in the portal.</strong> Only the successful supplier receives the
+        name, address and location IDs, and only after approval.
+      </p>
+      <p>
+        (3) The customer can revoke the mandate in the portal at any time. Awards already made and supply contracts already concluded remain unaffected;
+        ongoing requests for quotation are ended.
+      </p>
+
+      <h2>§ 5 Remuneration</h2>
+      <p>
+        (1) The remuneration is set for each customer in the portal or in the offer. Possible components:
+      </p>
+      <ul>
+        <li>
+          <strong>Service fee</strong> per MWh supplied over the term of the contract: <Platzhalter>amount in €/MWh</Platzhalter>
+        </li>
+        <li>
+          <strong>Success fee</strong> as a share of the saving compared with a reference set in advance (e.g. the previous supplier&apos;s renewal
+          offer): <Platzhalter>percentage, reference and calculation period</Platzhalter>
+        </li>
+        <li>
+          <strong>Minimum or flat fee</strong> for analysis without an award: <Platzhalter>amount or “not applicable”</Platzhalter>
+        </li>
+      </ul>
+      <p>
+        (2) Due date and invoicing: <Platzhalter>e.g. annually or after the start of supply, payment within 14 days</Platzhalter>. All amounts are
+        subject to VAT.
+      </p>
+      <p>
+        (3) <strong>Transparency:</strong> if ÖkoInvest receives remuneration from a supplier in connection with the customer&apos;s order, ÖkoInvest
+        discloses this to the customer before the award. <Platzhalter>decision whether supplier commissions are excluded in principle</Platzhalter>
+      </p>
+
+      <h2>§ 6 Neutrality and equal treatment</h2>
+      <p>
+        ÖkoInvest treats all invited suppliers according to the same rules announced in advance and makes recommendations according to transparent
+        criteria (price, contract terms, creditworthiness and capability of the supplier). Any connections to a supplier – for example via companies of
+        the ÖKOVOLT Group – are indicated in the comparison.
+      </p>
+
+      <h2>§ 7 Confidentiality and data</h2>
+      <p>
+        (1) Both parties treat information received under the agreement confidentially. In the offer phase, suppliers only receive anonymised key figures,
+        no names, locations, location IDs or time series. Suppliers&apos; offers are intended for the customer and must not be passed on to suppliers.
+      </p>
+      <p>
+        (2) ÖkoInvest may use anonymised and aggregated data (e.g. price levels, profile key figures) for its own market monitoring and to improve its
+        analyses, provided that no conclusions can be drawn about the customer. The processing of personal data is governed by the privacy policy
+        (section “Energy procurement”).
+      </p>
+
+      <h2>§ 8 Liability</h2>
+      <p>
+        (1) Market analyses, forecasts and recommendations are based on market data as of a given date and on assumptions; they are{" "}
+        <strong>assessments and not a commitment</strong> to future prices or savings. The customer decides on the award.
+      </p>
+      <p>
+        (2) ÖkoInvest is not liable for the performance of the contract, the supplier&apos;s ability to deliver or its insolvency, nor for price
+        components that are not subject to competition (grid charges, taxes, levies, surcharges).
+      </p>
+      <p>
+        (3) Otherwise, ÖkoInvest is only liable for intent and gross negligence; the limitation does not apply to personal injury and the breach of
+        material contractual obligations within the scope of the foreseeable, typical damage. Liability for slight negligence is – insofar as permissible –
+        limited in amount to <Platzhalter>maximum amount, e.g. the remuneration for the last 12 months</Platzhalter>.
+      </p>
+
+      <h2>§ 9 Public contracting authorities</h2>
+      <p>
+        Municipalities, special-purpose associations and municipal companies are subject to public procurement law when purchasing electricity (in
+        Germany in particular the GWB/VgV or, below the thresholds, the UVgO and state law; in Austria the BVergG 2018). The request for quotation does not
+        replace a formal award procedure. For public contracting authorities, ÖkoInvest only provides the services as market research or in coordination
+        with the contracting authority&apos;s award procedure; responsibility under procurement law remains with the contracting authority.
+      </p>
+
+      <h2>§ 10 Term and termination</h2>
+      <p>
+        (1) Term: <Platzhalter>e.g. 12 months, renewal for a further 12 months each time, notice period of 3 months to the end of the term</Platzhalter>.
+        The right to terminate for good cause remains unaffected.
+      </p>
+      <p>
+        (2) The procurement mandate expires when the agreement ends. Ongoing requests for quotation are ended unless the parties agree to complete them.
+        Remuneration claims for supply contracts concluded during the term remain in place.
+      </p>
+        </>
+      ) : (
+        <>
 
       <h2>§ 1 Vertragsgegenstand</h2>
       <p>
@@ -193,7 +362,12 @@ export default function ServicevertragEnergiePage() {
         sie abzuschließen. Vergütungsansprüche für Lieferverträge, die während der Laufzeit zustande gekommen sind, bleiben bestehen.
       </p>
 
+        </>
+      )}
+
       <WeitereBedingungen pfad={PFAD} />
     </LegalShell>
   );
 }
+
+export const generateMetadata = seitenMetadata("/bedingungen/energiebeschaffung", metadata, { en: metadataEn });

@@ -1,6 +1,6 @@
 // src/components/Angebot/Buehne.js – Darstellung der Code-Eingabe (/angebot) und der Hinweisseiten von /angebot/[code].
 // Server-Komponenten ohne Daten: zeigen nur, wo der Code im Anschreiben steht. Keine Eigentümer- oder Kampagnendaten.
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { FileText, KeyRound, MapPin, Calculator, Sun, Leaf, ShieldCheck, EyeOff } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import Aufbau, { aufbau } from "@/components/Flaeche/Seite/Aufbau";

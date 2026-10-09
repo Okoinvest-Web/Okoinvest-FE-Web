@@ -8,6 +8,7 @@ import { cn } from "@/components/ui/cn";
 import { MockAbschluss, MockEnergieHeute, MockKassier, MockZustimmung } from "@/components/Portal/EG/Produkt/Mockups";
 import { Haken } from "./teile";
 import { TourBuehnenMotiv } from "./TourBuehne";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 const TOUR = [
   {
@@ -41,6 +42,38 @@ const TOUR = [
     geraet: "Ansicht für die Kassa",
   },
 ];
+
+/* Sprachmodell: englische Fassung (gleiche ids und Reihenfolge) */
+const TOUR_EN = [
+  {
+    eyebrow: "For members",
+    kurz: "Energy today",
+    titel: "Energy today: members see their savings before they ask",
+    text: "The dashboard shows the energy flow from the region’s installations to the home, the savings from energy price, grid fee and levy, and the green hours of the day – with a hint on when it pays to run the washing machine or wallbox.",
+    punkte: ["Savings split into energy, grid and levy, marked as an estimate", "Green hours from forecast and meter readings – a recommendation, not a control", "Receipts, price sheet and personal data in one place"],
+    bildText: "Sample view Energy today on a mobile phone, fictitious values: plenty of community power according to the forecast, energy flow from the region via the Sonnenland community to the home, €71.40 savings this year, 38 % from the community and the green hours of the day.",
+    geraet: "Mobile view",
+  },
+  {
+    eyebrow: "For new members",
+    kurz: "Consent",
+    titel: "So that no registration lapses: countdown and instructions per grid operator",
+    text: "If a member forgets to give consent in the grid operator’s portal, the registration lapses after ten working days. Our portal counts down the days and explains every click for the respective grid operator – right after joining.",
+    punkte: ["Status of every registration, step by step", "Deadline ring with date, urgent from seven days", "Instructions per grid operator in the context of the metering point"],
+    bildText: "Sample view of consent at the grid operator, fictitious values: deadline ring with 6 of 10 working days left, marked as urgent, deadline 14 Oct; instructions in five steps, the first two done (open customer portal, choose energy communities section), now due: find the community’s request; then check participation factor and give consent.",
+    geraet: "View in the member portal",
+  },
+  {
+    eyebrow: "For treasurer and board",
+    kurz: "Billing",
+    titel: "Billing as a guided routine – with four-eyes approval",
+    text: "Calculate a preview, see changes compared with the previous month, approve as treasurer and board, send: every step has a clear status, every figure an audit trail down to the quarter-hourly value.",
+    punkte: ["Status pipeline per period, four-eyes approval with confirmation", "Comparison with the previous period, highlighting conspicuous members", "SEPA direct debit and transfer, dunning, exports for the tax adviser"],
+    bildText: "Sample view of the October billing, fictitious values: status pipeline at step 5 of 6 (sent), 58 invoices and 14 credit notes, three conspicuous changes compared with September, checked by the treasurer and approved by the board; completion message: 72 documents sent, direct debit on 5 Nov.",
+    geraet: "View for the treasurer",
+  },
+];
+const tourFuer = (en) => (en ? TOUR.map((t, i) => ({ ...t, ...TOUR_EN[i] })) : TOUR);
 
 /** Farbwelt je Kapitel: Bühne, Nummer, Knoten auf der Zeitleiste */
 const WELT = {
@@ -85,11 +118,11 @@ function TourBild({ t }) {
 }
 
 /** Inhaltsverzeichnis der Tour: drei Sprungmarken, gleichzeitig Vorschau auf die Erzählung */
-function Kapitelwahl() {
+function Kapitelwahl({ en, tour }) {
   return (
-    <Reveal as="nav" aria-label="Kapitel der Produkt-Tour" className="mb-16 md:mb-24">
+    <Reveal as="nav" aria-label={en ? "Chapters of the product tour" : "Kapitel der Produkt-Tour"} className="mb-16 md:mb-24">
       <ol className="grid gap-2 sm:grid-cols-3 sm:gap-3">
-        {TOUR.map((t, i) => (
+        {tour.map((t, i) => (
           <li key={t.id}>
             <a
               href={`#produkt-${t.id}`}
@@ -101,7 +134,7 @@ function Kapitelwahl() {
                 <span className="block font-display text-[16px] font-bold text-ink-900">{t.kurz}</span>
               </span>
               <ArrowDown aria-hidden="true" className="h-4 w-4 shrink-0 text-ink-400 transition-transform group-hover:translate-y-0.5 group-hover:text-ink-700" />
-              <span className="sr-only">, Kapitel {i + 1} von {TOUR.length}</span>
+              <span className="sr-only">{en ? `, chapter ${i + 1} of ${tour.length}` : `, Kapitel ${i + 1} von ${tour.length}`}</span>
             </a>
           </li>
         ))}
@@ -110,7 +143,7 @@ function Kapitelwahl() {
   );
 }
 
-function Kapitel({ t, i }) {
+function Kapitel({ t, i, en, n }) {
   const rechts = i % 2 === 1; // Text rechts, Bild links
   const welt = WELT[t.id];
   return (
@@ -122,16 +155,16 @@ function Kapitel({ t, i }) {
         <div className="flex items-end gap-4">
           <span aria-hidden="true" className={cn("ov-kpi-xl select-none leading-[0.8]", welt.nummer)}>{nr(i)}</span>
           <p className="pb-1 text-[12.5px] font-semibold uppercase leading-snug tracking-[0.14em] text-ink-500">
-            <span className="sr-only">Kapitel {i + 1} von {TOUR.length}: </span>
-            <span aria-hidden="true" className="block text-ink-400">Kapitel {i + 1} / {TOUR.length}</span>
+            <span className="sr-only">{en ? `Chapter ${i + 1} of ${n}: ` : `Kapitel ${i + 1} von ${n}: `}</span>
+            <span aria-hidden="true" className="block text-ink-400">{en ? `Chapter ${i + 1} / ${n}` : `Kapitel ${i + 1} / ${n}`}</span>
             <span className="block text-ink-800">{t.eyebrow}</span>
           </p>
         </div>
         <h3 id={`produkt-${t.id}-titel`} className="ov-h3 mt-6 text-balance text-ink-900 md:text-[1.75rem] md:leading-[1.2]">{t.titel}</h3>
         <p className="ov-text mt-4 text-ink-600">{t.text}</p>
         <ul className="mt-7 divide-y divide-ink-100 border-y border-ink-100">
-          {t.punkte.map((x) => (
-            <li key={x} className="ov-klein flex gap-3 py-3 text-ink-700"><Haken />{x}</li>
+          {t.punkte.map((x, k) => (
+            <li key={k} className="ov-klein flex gap-3 py-3 text-ink-700"><Haken />{x}</li>
           ))}
         </ul>
       </Reveal>
@@ -150,7 +183,7 @@ function Kapitel({ t, i }) {
           <figcaption className="mt-3 flex flex-col items-center justify-center gap-x-2 gap-y-0.5 text-center text-[12.5px] text-ink-500 sm:flex-row">
             <span className="font-semibold text-ink-700">{t.geraet}</span>
             <span aria-hidden="true" className="hidden sm:inline">·</span>
-            <span>Beispielansicht mit fiktiven Werten</span>
+            <span>{en ? "Sample view with fictitious values" : "Beispielansicht mit fiktiven Werten"}</span>
           </figcaption>
         </figure>
       </Reveal>
@@ -159,15 +192,26 @@ function Kapitel({ t, i }) {
 }
 
 export default function Tour() {
+  const en = spracheDerAnfrage() === "en";
+  const tour = tourFuer(en);
   return (
     <Section data-abschnitt="tour" tone="white" space="lg" id="produkt" className="scroll-mt-24 overflow-hidden">
-      <SectionHeading eyebrow="Das Produkt" title="Drei Ansichten, ein Gedanke: niemand muss nachfragen" lead="So sieht die Plattform für Mitglieder, für die Zustimmung beim Netzbetreiber und für die Kassa aus. Alle Werte in den Ansichten sind Beispiele." className="mb-10 md:mb-12" />
-      <Kapitelwahl />
+      <SectionHeading
+        eyebrow={en ? "The product" : "Das Produkt"}
+        title={en ? "Three views, one idea: nobody needs to ask" : "Drei Ansichten, ein Gedanke: niemand muss nachfragen"}
+        lead={
+          en
+            ? "This is what the platform looks like for members, for consent at the grid operator and for the treasurer. All values in the views are examples."
+            : "So sieht die Plattform für Mitglieder, für die Zustimmung beim Netzbetreiber und für die Kassa aus. Alle Werte in den Ansichten sind Beispiele."
+        }
+        className="mb-10 md:mb-12"
+      />
+      <Kapitelwahl en={en} tour={tour} />
 
       <div className="relative space-y-16 md:space-y-24 lg:space-y-24">
         {/* Zeitleiste zwischen den Kapiteln (dekorativ, ab lg) */}
         <span aria-hidden="true" className="absolute inset-y-[12%] left-1/2 hidden w-px -translate-x-1/2 bg-gradient-to-b from-ov-200 via-sun-200 to-navy-200 lg:block" />
-        {TOUR.map((t, i) => <Kapitel key={t.id} t={t} i={i} />)}
+        {tour.map((t, i) => <Kapitel key={t.id} t={t} i={i} en={en} n={tour.length} />)}
       </div>
 
       <Reveal className="mt-16 md:mt-24">
@@ -175,11 +219,11 @@ export default function Tour() {
           <div aria-hidden="true" className="ov-grid-bg-light absolute inset-0 -z-10 opacity-70" />
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-xl">
-              <p className="font-display text-[1.25rem] font-bold leading-snug text-ink-900 md:text-[1.4rem]">Möchten Sie die Ansichten mit Ihren eigenen Zahlen sehen?</p>
-              <p className="ov-klein mt-2 text-ink-600">Mitglied, Zustimmung und Abrechnung – in einer Vorführung für Ihre Gemeinschaft.</p>
+              <p className="font-display text-[1.25rem] font-bold leading-snug text-ink-900 md:text-[1.4rem]">{en ? "Would you like to see the views with your own figures?" : "Möchten Sie die Ansichten mit Ihren eigenen Zahlen sehen?"}</p>
+              <p className="ov-klein mt-2 text-ink-600">{en ? "Member, consent and billing – in a demonstration for your community." : "Mitglied, Zustimmung und Abrechnung – in einer Vorführung für Ihre Gemeinschaft."}</p>
             </div>
             {/* Kein Verweis auf „Kassa & Vorstand“: Der Abschnitt folgt unmittelbar. */}
-            <Button href="#anfrage" pfeil className="self-start lg:self-auto">Vorführung anfragen</Button>
+            <Button href="#anfrage" pfeil className="self-start lg:self-auto">{en ? "Request a demonstration" : "Vorführung anfragen"}</Button>
           </div>
         </div>
       </Reveal>

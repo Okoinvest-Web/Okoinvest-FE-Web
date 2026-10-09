@@ -14,6 +14,18 @@ const FALLBACK = { icon: BookOpen, kurz: "sonstiges", ton: "sand", text: "" };
 
 export const thema = (kategorie) => THEMEN[kategorie] || FALLBACK;
 
+/** Englische Kurzbeschreibung je Themenbereich (Sprachmodell) */
+const TEXT_EN = {
+  "Fläche & Pacht": "Lease level, contract, land register and taxes for landowners.",
+  "Agri-PV & Landwirtschaft": "Agri-PV, support and farming under and between the modules.",
+  "Investieren & Projektbörse": "Project rights, valuation, returns and due diligence.",
+  "Recht & Genehmigung": "Development plans, grid connection, tenders and conditions.",
+  "Strom, Markt & Gemeinschaft": "Marketing, PPAs, storage and energy communities.",
+};
+
+/** Kurzbeschreibung eines Themenbereichs in der Sprache */
+export const themaText = (kategorie, sprache = "de") => (sprache === "en" && TEXT_EN[kategorie]) || thema(kategorie).text;
+
 /** Anker, über den Themenkarten die Artikelliste vorfiltern (#thema-flaeche …) */
 export const themaAnker = (kategorie) => `thema-${thema(kategorie).kurz}`;
 

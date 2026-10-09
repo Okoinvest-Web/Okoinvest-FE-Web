@@ -1,17 +1,20 @@
 // Rollenwahl im Kopf von /prozess: fünf Wege mit typischer Gesamtdauer
 // (aus prozessDaten) – jeder Eintrag öffnet den passenden Tab.
 import { ArrowRight, Clock, Factory, FolderUp, LineChart, MapPinned, Tractor } from "lucide-react";
-import { ZIELGRUPPEN } from "./prozessDaten";
+import { zielgruppenSprache } from "./prozessDaten";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 const ICONS = { MapPinned, Tractor, LineChart, FolderUp, Factory };
 
 export default function RollenWahl() {
+  const en = spracheDerAnfrage() === "en";
+  const ZIELGRUPPEN = zielgruppenSprache(en ? "en" : "de");
   return (
     <nav aria-labelledby="rollen-titel" className="relative mx-auto max-w-[560px] lg:ml-auto lg:mr-0">
       <div className="rounded-[1.75rem] bg-white/[0.06] p-2 ring-1 ring-inset ring-white/15 backdrop-blur-md sm:p-2.5">
         <p id="rollen-titel" className="flex items-center justify-between gap-3 px-3 pb-2 pt-2 text-[13px] text-white/70 sm:px-4">
-          <span className="font-semibold text-white">Ihr Weg – wählen Sie Ihre Rolle</span>
-          <span className="max-sm:hidden">Typische Gesamtdauer</span>
+          <span className="font-semibold text-white">{en ? "Your path – choose your role" : "Ihr Weg – wählen Sie Ihre Rolle"}</span>
+          <span className="max-sm:hidden">{en ? "Typical overall duration" : "Typische Gesamtdauer"}</span>
         </p>
         <ul className="space-y-1.5">
           {ZIELGRUPPEN.map((z, i) => {
@@ -55,6 +58,6 @@ export default function RollenWahl() {
 
 /** „2–4 Jahre bis zum Betrieb“ → ["2–4 Jahre", "bis zum Betrieb"] */
 function splitDauer(t) {
-  const m = String(t).match(/^([\d,]+–[\d,]+\s+\S+)\s+(.*)$/);
+  const m = String(t).match(/^([\d.,]+–[\d.,]+\s+\S+)\s+(.*)$/);
   return m ? [m[1], m[2]] : [t, ""];
 }

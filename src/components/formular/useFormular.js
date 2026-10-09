@@ -14,6 +14,8 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { signal } from "@/components/ui/motion";
 import { regeln as basisRegeln } from "@/components/Portal/Bedienung/pruefung";
 import { passwortFehler } from "@/lib/plattform/validierung";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { meldungFuer } from "@/lib/sprache/meldungen";
 
 /** Prüfregeln: Basis aus Bedienung/pruefung + Formular-spezifische Ergänzungen */
 export const regel = {
@@ -45,6 +47,7 @@ export default function useFormular(startwerte, schema = {}) {
   const werteRef = useRef(startwerte);
   const beruehrtRef = useRef({});
   const formRef = useRef(null);
+  const sprache = useSprache();
 
   const markiere = useCallback((neu) => {
     beruehrtRef.current = neu;
@@ -135,7 +138,7 @@ export default function useFormular(startwerte, schema = {}) {
         }
       : { value: werte[name] ?? "", onChange: (e) => setze(name, e.target.value) }),
     onBlur: () => verlassen(name),
-    fehler: beruehrt[name] ? fehler[name] : "",
+    fehler: beruehrt[name] ? meldungFuer(fehler[name], sprache) : "",
     gueltig: istGueltig(name),
   });
 

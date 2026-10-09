@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/components/ui/cn";
 import AnfrageFormular from "@/components/Plattform/AnfrageFormular";
+import { useTexte } from "@/components/Sprache/SpracheKontext";
 
 /**
  * Anfrage zu Bestandsanlagen (Verkauf oder Kauf). Geht als typ="projekt"
@@ -48,21 +49,48 @@ const GRUPPEN = [
   },
 ];
 
+const TEXTE = {
+  de: {
+    gruppen: GRUPPEN,
+    suchprofil: "Ihr Suchprofil",
+    anlage: "Ihre Anlage",
+    textKaufen: "Nennen Sie Größe, Region und Renditeerwartung – wir melden uns, sobald eine passende Bestandsanlage in die Börse kommt.",
+    textVerkaufen: "Inbetriebnahmejahr, Leistung, Vergütung und – wenn zur Hand – Ertragsdaten der letzten Jahre bitte in die Nachricht.",
+    buttonKaufen: "Suchprofil senden",
+    buttonVerkaufen: "Anlage vorstellen",
+    erfolg: "Danke! Ihre Anfrage ist eingegangen. Wir melden uns persönlich – registrieren Sie sich mit derselben E-Mail, dann sehen Sie den Stand im Portal.",
+  },
+  en: {
+    gruppen: [
+      { legende: "Your request", optionen: [{ label: "Sell a plant" }, { label: "Valuation only" }, { label: "Buy operating assets" }] },
+      { legende: "Plant", optionen: [{ label: "Ground-mounted" }, { label: "Rooftop" }, { label: "Agrivoltaics" }, { label: "Portfolio" }] },
+      { legende: "Capacity", optionen: [{ label: "under 1 MWp" }, { label: "1–10 MWp" }, { label: "over 10 MWp" }] },
+      { legende: "Country", optionen: [{ label: "Germany" }, { label: "Austria" }, { label: "Switzerland" }] },
+    ],
+    suchprofil: "Your search profile",
+    anlage: "Your plant",
+    textKaufen: "Tell us the size, region and expected return – we will get in touch as soon as a suitable operating plant comes onto the exchange.",
+    textVerkaufen: "Please include the year of commissioning, capacity, remuneration and – if to hand – yield data from recent years in your message.",
+    buttonKaufen: "Send search profile",
+    buttonVerkaufen: "Present your plant",
+    erfolg: "Thank you! Your enquiry has been received. We will get back to you personally – register with the same e-mail address to see the status in the portal.",
+  },
+};
+
 export default function BestandAnfrage() {
+  const t = useTexte(TEXTE);
   const [werte, setWerte] = useState(() => Object.fromEntries(GRUPPEN.map((g) => [g.id, g.optionen[0].id])));
   const kaufen = werte.absicht === "kaufen";
 
   return (
     <div className="space-y-6">
       <div>
-        <p className="font-display text-[22px] font-bold text-ink-900">{kaufen ? "Ihr Suchprofil" : "Ihre Anlage"}</p>
+        <p className="font-display text-[22px] font-bold text-ink-900">{kaufen ? t.suchprofil : t.anlage}</p>
         <p className="mt-1.5 text-[15px] leading-relaxed text-ink-600">
-          {kaufen
-            ? "Nennen Sie Größe, Region und Renditeerwartung – wir melden uns, sobald eine passende Bestandsanlage in die Börse kommt."
-            : "Inbetriebnahmejahr, Leistung, Vergütung und – wenn zur Hand – Ertragsdaten der letzten Jahre bitte in die Nachricht."}
+          {kaufen ? t.textKaufen : t.textVerkaufen}
         </p>
       </div>
-      {GRUPPEN.map((g) => (
+      {t.gruppen.map((g) => (
         <fieldset key={g.id}>
           <legend className="mb-2.5 text-[14px] font-semibold text-ink-800">{g.legende}</legend>
           <div className="flex flex-wrap gap-2">
@@ -89,8 +117,8 @@ export default function BestandAnfrage() {
           typ="projekt"
           daten={{ phase: "cod", quelle: "bestandsanlagen", ...werte }}
           felder={["firma", "telefon", "land", "nachricht"]}
-          button={kaufen ? "Suchprofil senden" : "Anlage vorstellen"}
-          erfolgText="Danke! Ihre Anfrage ist eingegangen. Wir melden uns persönlich – registrieren Sie sich mit derselben E-Mail, dann sehen Sie den Stand im Portal."
+          button={kaufen ? t.buttonKaufen : t.buttonVerkaufen}
+          erfolgText={t.erfolg}
         />
       </div>
     </div>

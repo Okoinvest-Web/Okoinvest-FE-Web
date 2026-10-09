@@ -32,6 +32,60 @@ import { cn } from "@/components/ui/cn";
 import fluss from "@/components/Energie/fluss.module.css";
 import FortschrittsRing from "@/components/ui/FortschrittsRing";
 import EnergieFluss from "@/components/Portal/EG/Mitglied/EnergieFluss";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+
+/* Sprachmodell: Beschriftungen der Beispiel-Screens je Sprache (fiktive Werte unverändert, nur im Zahlenformat) */
+const WORTE = {
+  de: {
+    beispiel: "Beispiel", plattform: "Plattform", jetzt: "jetzt", uhr24: "24 Uhr",
+    energieHeute: "Energie heute", vielStrom: "Jetzt viel Gemeinschaftsstrom", prognose: "laut Prognose bis 15:00 Uhr",
+    ersparnis: "Ihre Ersparnis · dieses Jahr", betrag: "71,40", ring38: "38 Prozent aus der Gemeinschaft", kwh: "1.180 kWh", kamen: "kamen aus der Gemeinschaft",
+    grueneStunden: "Grüne Stunden heute", fenster: "10–15 Uhr",
+    vergangen: (n) => `${n} Werktage vergangen`, noch: (r, g) => `noch ${r} von ${g}`,
+    schritte: ["Kundenportal öffnen", "Bereich „Energiegemeinschaften“ wählen", "Anfrage der Gemeinschaft finden", "Teilnahmefaktor prüfen", "Zustimmen – erledigt"],
+    fensterZustimmung: "Mein Beitritt · Zustimmung", ring6: "Noch 6 Werktage für die Zustimmung", werktage: "Werktage", dringend: "Dringend",
+    zustimmenTitel: "Jetzt zustimmen – damit „Sonnenland“ Sie versorgen kann", frist: "Frist bis 14.10. · Anleitung für Ihren Netzbetreiber", erledigt: "erledigt", jetztK: "Jetzt",
+    ring6von10: "Noch 6 von 10 Werktagen", offen: "Zustimmung offen", offenText: "noch 6 von 10 Werktagen · Frist bis 14.10.",
+    pipeline: ["Angelegt", "Vorschau", "1. Freigabe", "2. Freigabe", "Versendet", "Abschluss"],
+    auffaellig: [
+      { name: "Hofer, Landwirt", grund: "neuer Zählpunkt", text: "+18 %" },
+      { name: "Gemeindeamt", grund: "Saison", text: "−12 %" },
+      { name: "Familie Brandl", grund: "", text: "neu dabei" },
+    ],
+    fensterKassier: "Abrechnung · Oktober", abrechnung: "Abrechnung", oktober: "Oktober", monat: "Monat 01.10. – 31.10.", vierAugen: "Vier-Augen-Prinzip",
+    schritt: (a, b) => `Schritt ${a} von ${b}`,
+    kacheln: [["Rechnungen", "4.212,80 €", "58 Belege"], ["Gutschriften", "1.906,30 €", "14 Belege"], ["Vorteil Mitglieder", "1.084,10 €", "gesamt"]],
+    veraenderung: "Veränderung zum September", auffaelligN: "3 auffällig",
+    freigaben: [["K", "Geprüft · Kassier"], ["V", "Freigegeben · Vorstand"]], sepa: "SEPA-Export",
+    versendet: "72 Belege versendet", lastschrift: "Lastschrift am 05.11. – alles erledigt für Oktober",
+    heroAria: "Beispielansicht der Plattform mit fiktiven Werten: Mitglied sieht auf dem Handy den Energiefluss und 71,40 € Ersparnis, die Oktober-Abrechnung ist im Vier-Augen-Prinzip freigegeben, 72 Belege sind versendet und eine Zustimmung beim Netzbetreiber ist mit noch 6 von 10 Werktagen offen.",
+  },
+  en: {
+    beispiel: "Example", plattform: "Platform", jetzt: "now", uhr24: "24:00",
+    energieHeute: "Energy today", vielStrom: "Plenty of community power now", prognose: "according to the forecast until 15:00",
+    ersparnis: "Your savings · this year", betrag: "71.40", ring38: "38 percent from the community", kwh: "1,180 kWh", kamen: "came from the community",
+    grueneStunden: "Green hours today", fenster: "10:00–15:00",
+    vergangen: (n) => `${n} working days passed`, noch: (r, g) => `${r} of ${g} left`,
+    schritte: ["Open the customer portal", "Choose the “Energy communities” section", "Find the community’s request", "Check the participation factor", "Consent – done"],
+    fensterZustimmung: "My membership · consent", ring6: "6 working days left for consent", werktage: "working days", dringend: "Urgent",
+    zustimmenTitel: "Consent now – so that “Sonnenland” can supply you", frist: "Deadline 14 Oct · instructions for your grid operator", erledigt: "done", jetztK: "Now",
+    ring6von10: "6 of 10 working days left", offen: "Consent pending", offenText: "6 of 10 working days left · deadline 14 Oct",
+    pipeline: ["Created", "Preview", "1st approval", "2nd approval", "Sent", "Closed"],
+    auffaellig: [
+      { name: "Hofer, farmer", grund: "new metering point", text: "+18 %" },
+      { name: "Municipal office", grund: "season", text: "−12 %" },
+      { name: "Brandl family", grund: "", text: "new member" },
+    ],
+    fensterKassier: "Billing · October", abrechnung: "Billing", oktober: "October", monat: "Month 1 Oct – 31 Oct", vierAugen: "Four-eyes principle",
+    schritt: (a, b) => `Step ${a} of ${b}`,
+    kacheln: [["Invoices", "€4,212.80", "58 documents"], ["Credit notes", "€1,906.30", "14 documents"], ["Member benefit", "€1,084.10", "total"]],
+    veraenderung: "Change compared with September", auffaelligN: "3 conspicuous",
+    freigaben: [["T", "Checked · treasurer"], ["B", "Approved · board"]], sepa: "SEPA export",
+    versendet: "72 documents sent", lastschrift: "Direct debit on 5 Nov – all done for October",
+    heroAria: "Sample view of the platform with fictitious values: a member sees the energy flow and €71.40 savings on a mobile phone, the October billing has been approved under the four-eyes principle, 72 documents have been sent and a consent at the grid operator is pending with 6 of 10 working days left.",
+  },
+};
+const worte = () => WORTE[spracheDerAnfrage() === "en" ? "en" : "de"];
 
 /** Hülle: dekorativ (aria-hidden) oder – mit Beschreibung – ein Bild mit Alternativtext */
 function BeispielBild({ beschreibung, className, children }) {
@@ -47,6 +101,7 @@ function BeispielBild({ beschreibung, className, children }) {
 
 /** Sichtbare Kennzeichnung fiktiver Werte (sun-700 auf sun-50 ≈ 6,4:1) */
 function BeispielPlakette({ hell = false, className }) {
+  const w = worte();
   return (
     <span
       className={cn(
@@ -57,7 +112,7 @@ function BeispielPlakette({ hell = false, className }) {
         className
       )}
     >
-      Beispiel
+      {w.beispiel}
     </span>
   );
 }
@@ -65,7 +120,8 @@ function BeispielPlakette({ hell = false, className }) {
 /* ------------------------------------------------------------------ Rahmen */
 
 /** Browserfenster-Rahmen (ohne echte Adresse) */
-export function FensterRahmen({ titel = "Plattform", beispiel = true, className, children }) {
+export function FensterRahmen({ titel: titelProp, beispiel = true, className, children }) {
+  const titel = titelProp ?? worte().plattform;
   return (
     <div
       className={cn(
@@ -175,6 +231,7 @@ const KURVE_FLAECHE = `${KURVE_LINIE} L${KURVE_B} ${KURVE_H} L0 ${KURVE_H} Z`;
 
 /** Tageskurve mit grünen Fenstern und Jetzt-Marke – Inline-SVG, skaliert scharf */
 function GrueneStundenKurve() {
+  const w = worte();
   return (
     <div>
       <div className="relative">
@@ -196,13 +253,13 @@ function GrueneStundenKurve() {
           style={{ left: prozent(JETZT), top: `${(ky(JETZT) / KURVE_H) * 100}%` }}
         />
         <span className="absolute -top-[15px] -translate-x-1/2 rounded bg-white px-1 py-px text-[8.5px] font-bold leading-none text-navy-900" style={{ left: prozent(JETZT) }}>
-          jetzt
+          {w.jetzt}
         </span>
       </div>
       <div className="ov-num relative mt-1 h-3 text-[9px] font-medium text-white/65">
         <span className="absolute left-0">0</span>
         {[6, 12, 18].map((h) => <span key={h} className="absolute -translate-x-1/2" style={{ left: prozent(h) }}>{h}</span>)}
-        <span className="absolute right-0">24 Uhr</span>
+        <span className="absolute right-0">{w.uhr24}</span>
       </div>
     </div>
   );
@@ -210,17 +267,18 @@ function GrueneStundenKurve() {
 
 /** Mitglied: „Energie heute“ auf dem Handy */
 export function MockEnergieHeute({ className, beschreibung, bewegt = false }) {
+  const w = worte();
   return (
     <BeispielBild beschreibung={beschreibung} className={className}>
       <TelefonRahmen beispiel={false}>
         <div className="ov-verlauf-nacht px-4 pb-6 pt-2.5 text-white">
           <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ov-300">
             {bewegt ? <span className="ov-live-punkt" /> : <span className="inline-block h-1.5 w-1.5 rounded-full bg-ov-400 shadow-[0_0_0_3px_rgba(140,186,88,0.25)]" />}
-            Energie heute
+            {w.energieHeute}
             <BeispielPlakette hell className="ml-auto" />
           </p>
-          <p className="mt-1.5 font-display text-[17px] font-extrabold leading-[1.15] tracking-tight">Jetzt viel Gemeinschaftsstrom</p>
-          <p className="mt-1 text-[11px] text-white/70">laut Prognose bis 15:00 Uhr</p>
+          <p className="mt-1.5 font-display text-[17px] font-extrabold leading-[1.15] tracking-tight">{w.vielStrom}</p>
+          <p className="mt-1 text-[11px] text-white/70">{w.prognose}</p>
 
           <div className="mt-3.5">
             <EnergieFluss gemeinschaftName="Sonnenland" ausGemeinschaft="212 kWh" aktiv={bewegt} kompakt />
@@ -228,23 +286,23 @@ export function MockEnergieHeute({ className, beschreibung, bewegt = false }) {
 
           <div className="mt-3.5 rounded-[18px] bg-gradient-to-b from-white/[0.09] to-white/[0.04] p-3.5 ring-1 ring-inset ring-white/10">
             <p className="flex items-center gap-1.5 text-[10.5px] text-white/70">
-              <PiggyBank aria-hidden="true" className="h-3.5 w-3.5 text-ov-300" />Ihre Ersparnis · dieses Jahr
+              <PiggyBank aria-hidden="true" className="h-3.5 w-3.5 text-ov-300" />{w.ersparnis}
             </p>
             <p className="ov-num mt-0.5 font-display text-[30px] font-extrabold leading-none tracking-tight">
-              71,40<span className="ml-1 align-[0.32em] text-[15px] font-bold text-white/70">€</span>
+              {w.betrag}<span className="ml-1 align-[0.32em] text-[15px] font-bold text-white/70">€</span>
             </p>
             <div className="mt-3 flex items-center gap-3 border-t border-white/10 pt-3">
-              <FortschrittsRing wert={38} groesse={44} staerke={5} ton="hell" dunkel sofort label="38 Prozent aus der Gemeinschaft" />
+              <FortschrittsRing wert={38} groesse={44} staerke={5} ton="hell" dunkel sofort label={w.ring38} />
               <p className="text-[10.5px] leading-snug text-white/75">
-                <span className="ov-num block text-[12px] font-bold text-white">1.180 kWh</span>kamen aus der Gemeinschaft
+                <span className="ov-num block text-[12px] font-bold text-white">{w.kwh}</span>{w.kamen}
               </p>
             </div>
           </div>
 
           <div className="mt-3.5 rounded-[18px] bg-white/[0.03] px-3 pb-2.5 pt-2.5 ring-1 ring-inset ring-white/[0.07]">
             <p className="mb-4 flex items-center gap-1.5 text-[10.5px] font-semibold text-white/85">
-              <Sun aria-hidden="true" className="h-3 w-3 shrink-0 text-sun-300" /><span className="whitespace-nowrap">Grüne Stunden heute</span>
-              <span className="ml-auto whitespace-nowrap rounded-full bg-ov-300/15 px-1.5 py-px text-[9.5px] font-semibold text-ov-200 ring-1 ring-inset ring-ov-300/25">10–15 Uhr</span>
+              <Sun aria-hidden="true" className="h-3 w-3 shrink-0 text-sun-300" /><span className="whitespace-nowrap">{w.grueneStunden}</span>
+              <span className="ml-auto whitespace-nowrap rounded-full bg-ov-300/15 px-1.5 py-px text-[9.5px] font-semibold text-ov-200 ring-1 ring-inset ring-ov-300/25">{w.fenster}</span>
             </p>
             <GrueneStundenKurve />
           </div>
@@ -258,6 +316,7 @@ export function MockEnergieHeute({ className, beschreibung, bewegt = false }) {
 
 /** Zehn Werktage als Segmente: verbrauchte Tage gedeckt, verbleibende in Sonne (dringend ab sieben) */
 function FristSegmente({ rest = 6, gesamt = 10 }) {
+  const w = worte();
   const verbraucht = gesamt - rest;
   return (
     <div>
@@ -267,8 +326,8 @@ function FristSegmente({ rest = 6, gesamt = 10 }) {
         ))}
       </div>
       <p className="ov-num mt-1.5 flex justify-between text-[10.5px] text-ink-500">
-        <span>{verbraucht} Werktage vergangen</span>
-        <span className="font-semibold text-sun-700">noch {rest} von {gesamt}</span>
+        <span>{w.vergangen(verbraucht)}</span>
+        <span className="font-semibold text-sun-700">{w.noch(rest, gesamt)}</span>
       </p>
     </div>
   );
@@ -276,25 +335,26 @@ function FristSegmente({ rest = 6, gesamt = 10 }) {
 
 /** Mitglied: Zustimmung beim Netzbetreiber mit Fristring (dringend ab sieben Werktagen) und Anleitung */
 export function MockZustimmung({ className, beschreibung, beispiel = true }) {
-  const schritte = ["Kundenportal öffnen", "Bereich „Energiegemeinschaften“ wählen", "Anfrage der Gemeinschaft finden", "Teilnahmefaktor prüfen", "Zustimmen – erledigt"];
+  const w = worte();
+  const schritte = w.schritte;
   const aktuell = 2;
   return (
     <BeispielBild beschreibung={beschreibung} className={className}>
-      <FensterRahmen titel="Mein Beitritt · Zustimmung" beispiel={beispiel}>
+      <FensterRahmen titel={w.fensterZustimmung} beispiel={beispiel}>
         <div className="relative border-b border-sun-200/80 bg-gradient-to-br from-sun-50 via-sun-50 to-white px-5 pb-4 pt-5">
           <div className="flex items-center gap-4">
-            <FortschrittsRing wert={6} max={10} groesse={78} staerke={7} ton="warn" label="Noch 6 Werktage für die Zustimmung" className="drop-shadow-[0_6px_14px_rgba(201,133,0,0.18)]">
+            <FortschrittsRing wert={6} max={10} groesse={78} staerke={7} ton="warn" label={w.ring6} className="drop-shadow-[0_6px_14px_rgba(201,133,0,0.18)]">
               <span className="flex flex-col items-center leading-none">
                 <span className="ov-num font-display text-[24px] font-extrabold text-ink-900">6</span>
-                <span className="mt-0.5 text-[10px] font-semibold text-ink-600">Werktage</span>
+                <span className="mt-0.5 text-[10px] font-semibold text-ink-600">{w.werktage}</span>
               </span>
             </FortschrittsRing>
             <div className="min-w-0">
               <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[10.5px] font-bold text-sun-700 shadow-e1 ring-1 ring-sun-200">
-                <BellRing aria-hidden="true" className="h-3 w-3" />Dringend
+                <BellRing aria-hidden="true" className="h-3 w-3" />{w.dringend}
               </span>
-              <p className="mt-1.5 font-display text-[15.5px] font-bold leading-snug text-ink-900">Jetzt zustimmen – damit „Sonnenland“ Sie versorgen kann</p>
-              <p className="mt-0.5 text-[12px] text-ink-600">Frist bis 14.10. · Anleitung für Ihren Netzbetreiber</p>
+              <p className="mt-1.5 font-display text-[15.5px] font-bold leading-snug text-ink-900">{w.zustimmenTitel}</p>
+              <p className="mt-0.5 text-[12px] text-ink-600">{w.frist}</p>
             </div>
           </div>
           <div className="mt-4">
@@ -325,10 +385,10 @@ export function MockZustimmung({ className, beschreibung, beispiel = true }) {
                   {erledigt ? <Check aria-hidden="true" className="h-3 w-3" strokeWidth={3.2} /> : i + 1}
                 </span>
                 <span className={cn("min-w-0", erledigt && "text-ink-500")}>{s}</span>
-                {erledigt && <span className="ml-auto shrink-0 text-[10.5px] font-semibold text-ov-700">erledigt</span>}
+                {erledigt && <span className="ml-auto shrink-0 text-[10.5px] font-semibold text-ov-700">{w.erledigt}</span>}
                 {jetzt && (
                   <span className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-navy-700 px-2.5 py-1 text-[10.5px] font-semibold text-white shadow-navy">
-                    Jetzt<ArrowRight aria-hidden="true" className="h-3 w-3" />
+                    {w.jetztK}<ArrowRight aria-hidden="true" className="h-3 w-3" />
                   </span>
                 )}
               </li>
@@ -342,17 +402,18 @@ export function MockZustimmung({ className, beschreibung, beispiel = true }) {
 
 /** Kurzmeldung „Zustimmung offen“ – für die Hero-Komposition */
 function MockZustimmungKarte({ className }) {
+  const w = worte();
   return (
     <div className={cn("flex items-center gap-3 rounded-2xl bg-white p-3 pr-4 ring-1 ring-ink-900/10 shadow-[0_2px_4px_-1px_rgba(3,18,43,0.1),0_22px_40px_-16px_rgba(3,18,43,0.5)]", className)}>
-      <FortschrittsRing wert={6} max={10} groesse={42} staerke={4.5} ton="warn" sofort label="Noch 6 von 10 Werktagen">
+      <FortschrittsRing wert={6} max={10} groesse={42} staerke={4.5} ton="warn" sofort label={w.ring6von10}>
         <span className="ov-num font-display text-[14px] font-extrabold text-ink-900">6</span>
       </FortschrittsRing>
       <p className="min-w-0 text-[11.5px] leading-snug text-ink-600">
         <strong className="flex items-center gap-1.5 text-[12.5px] text-ink-900">
-          Zustimmung offen
-          <span className="inline-flex items-center gap-0.5 rounded-full bg-sun-50 px-1.5 py-px text-[9.5px] font-bold text-sun-700 ring-1 ring-sun-200"><BellRing aria-hidden="true" className="h-2.5 w-2.5" />Dringend</span>
+          {w.offen}
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-sun-50 px-1.5 py-px text-[9.5px] font-bold text-sun-700 ring-1 ring-sun-200"><BellRing aria-hidden="true" className="h-2.5 w-2.5" />{w.dringend}</span>
         </strong>
-        noch 6 von 10 Werktagen · Frist bis 14.10.
+        {w.offenText}
       </p>
     </div>
   );
@@ -360,7 +421,6 @@ function MockZustimmungKarte({ className }) {
 
 /* --------------------------------------------------------------- Kassier */
 
-const PIPELINE = ["Angelegt", "Vorschau", "1. Freigabe", "2. Freigabe", "Versendet", "Abschluss"];
 const AUFFAELLIG = [
   { name: "Hofer, Landwirt", grund: "neuer Zählpunkt", delta: 18, text: "+18 %" },
   { name: "Gemeindeamt", grund: "Saison", delta: -12, text: "−12 %" },
@@ -415,12 +475,15 @@ function AbweichungsBalken({ delta }) {
  * damit ein überlappendes Gerät in der Komposition keine Inhalte verdeckt.
  */
 export function MockKassier({ className, beschreibung, kompakt = false, freiRechts = 0, hero = false }) {
+  const w = worte();
+  const pipeline = w.pipeline;
+  const auffaellig = AUFFAELLIG.map((z, i) => ({ ...z, ...w.auffaellig[i] }));
   const stand = 4;
   const mitListe = !kompakt || hero;
   const tourFuss = !kompakt && !hero;
   return (
     <BeispielBild beschreibung={beschreibung} className={className}>
-      <FensterRahmen titel="Abrechnung · Oktober">
+      <FensterRahmen titel={w.fensterKassier}>
         <div className="flex">
           <AppLeiste />
           <div
@@ -429,18 +492,18 @@ export function MockKassier({ className, beschreibung, kompakt = false, freiRech
           >
             <div className="flex flex-wrap items-end justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-[10.5px] font-medium text-ink-500">Abrechnung <span className="text-ink-300">/</span> Oktober</p>
-                <p className="ov-num font-display text-[15px] font-bold leading-tight text-ink-900">Monat 01.10. – 31.10.</p>
+                <p className="text-[10.5px] font-medium text-ink-500">{w.abrechnung} <span className="text-ink-300">/</span> {w.oktober}</p>
+                <p className="ov-num font-display text-[15px] font-bold leading-tight text-ink-900">{w.monat}</p>
               </div>
               <span className="inline-flex items-center gap-1 rounded-full bg-navy-50 px-2.5 py-1 text-[10.5px] font-semibold text-navy-700 ring-1 ring-inset ring-navy-100">
-                <UsersRound aria-hidden="true" className="h-3 w-3" />Vier-Augen-Prinzip
+                <UsersRound aria-hidden="true" className="h-3 w-3" />{w.vierAugen}
               </span>
             </div>
 
             <div className="rounded-xl bg-[#fafbfc] px-1 pb-2.5 pt-3 ring-1 ring-inset ring-ink-100">
               {/* Hero: Die Pipeline läuft einmal durch – Verbindungen füllen sich Schritt für Schritt bis „Versendet“ */}
               <ol className={cn("flex items-start", hero && "ov-sofort")} style={hero ? { "--ov-delay": "700ms" } : undefined}>
-                {PIPELINE.map((s, j) => (
+                {pipeline.map((s, j) => (
                   <li key={s} className="relative flex min-w-0 flex-1 flex-col items-center text-center">
                     {j > 0 && <span className={cn("absolute right-1/2 top-[10px] h-[2px] w-full", j <= stand && !hero ? "bg-ov-500" : "bg-ink-200")} />}
                     {hero && j > 0 && j <= stand && <span aria-hidden="true" className="absolute right-1/2 top-[10px] h-[2px] w-full bg-ov-500 ov-balken-x" style={{ "--i": j * 5 }} />}
@@ -459,19 +522,15 @@ export function MockKassier({ className, beschreibung, kompakt = false, freiRech
                 ))}
               </ol>
               <p className="mt-2 text-center text-[11px] text-ink-600 sm:hidden">
-                Schritt {stand + 1} von {PIPELINE.length} · <span className="font-semibold text-ink-900">{PIPELINE[stand]}</span>
+                {w.schritt(stand + 1, pipeline.length)} · <span className="font-semibold text-ink-900">{pipeline[stand]}</span>
               </p>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
-              {[
-                ["Rechnungen", "4.212,80 €", "58 Belege"],
-                ["Gutschriften", "1.906,30 €", "14 Belege"],
-                ["Vorteil Mitglieder", "1.084,10 €", "gesamt"],
-              ].map(([l, w, n], i) => (
-                <div key={l} className={cn("min-w-0 rounded-xl p-2.5 ring-1 ring-inset", i === 2 ? "bg-ov-50 ring-ov-200" : "bg-white ring-ink-200/80")}>
+              {w.kacheln.map(([l, wert, n], i) => (
+                <div key={i} className={cn("min-w-0 rounded-xl p-2.5 ring-1 ring-inset", i === 2 ? "bg-ov-50 ring-ov-200" : "bg-white ring-ink-200/80")}>
                   <p className={cn("text-[10px] font-medium leading-tight", i === 2 ? "text-ov-800" : "text-ink-500")}>{l}</p>
-                  <p className="ov-num mt-1 whitespace-nowrap text-[13px] font-bold leading-none tracking-tight text-ink-900">{w}</p>
+                  <p className="ov-num mt-1 whitespace-nowrap text-[13px] font-bold leading-none tracking-tight text-ink-900">{wert}</p>
                   <p className="ov-num mt-1 text-[10px] leading-none text-ink-500">{n}</p>
                 </div>
               ))}
@@ -480,11 +539,11 @@ export function MockKassier({ className, beschreibung, kompakt = false, freiRech
             {mitListe && (
               <div className="overflow-hidden rounded-xl ring-1 ring-inset ring-ink-200/80">
                 <p className="flex items-center gap-1.5 border-b border-ink-100 bg-[#fafbfc] px-3 py-2 text-[11px] font-semibold text-ink-800">
-                  <GitCompareArrows aria-hidden="true" className="h-3.5 w-3.5 text-ov-600" />Veränderung zum September
-                  <span className="ml-auto rounded-full bg-sun-50 px-1.5 py-px text-[10px] font-bold text-sun-700 ring-1 ring-sun-200">3 auffällig</span>
+                  <GitCompareArrows aria-hidden="true" className="h-3.5 w-3.5 text-ov-600" />{w.veraenderung}
+                  <span className="ml-auto rounded-full bg-sun-50 px-1.5 py-px text-[10px] font-bold text-sun-700 ring-1 ring-sun-200">{w.auffaelligN}</span>
                 </p>
-                {AUFFAELLIG.map((z) => (
-                  <div key={z.name} className="grid grid-cols-[minmax(0,1fr)_56px_auto] items-center gap-3 border-t border-ink-100 px-3 py-[7px] text-[11px] first-of-type:border-t-0">
+                {auffaellig.map((z, i) => (
+                  <div key={i} className="grid grid-cols-[minmax(0,1fr)_56px_auto] items-center gap-3 border-t border-ink-100 px-3 py-[7px] text-[11px] first-of-type:border-t-0">
                     <span className="truncate text-ink-800">{z.name}{z.grund ? <span className="text-ink-500"> · {z.grund}</span> : null}</span>
                     <AbweichungsBalken delta={z.delta} />
                     <span className="ov-num min-w-[54px] text-right font-semibold text-sun-700">{z.text}</span>
@@ -494,7 +553,7 @@ export function MockKassier({ className, beschreibung, kompakt = false, freiRech
             )}
 
             <div className="flex flex-wrap items-center gap-1.5">
-              {[["K", "Geprüft · Kassier"], ["V", "Freigegeben · Vorstand"]].map(([k, t]) => (
+              {w.freigaben.map(([k, t]) => (
                 <span key={t} className="inline-flex items-center gap-1.5 rounded-full bg-ov-50 py-[3px] pl-[3px] pr-2.5 text-[10.5px] font-semibold text-ov-800 ring-1 ring-inset ring-ov-200">
                   <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-ov-600 text-[9px] font-bold text-white">{k}</span>
                   {t}
@@ -503,7 +562,7 @@ export function MockKassier({ className, beschreibung, kompakt = false, freiRech
               ))}
               {tourFuss && (
                 <span className="ml-auto inline-flex h-7 items-center gap-1.5 rounded-full bg-white px-3 text-[10.5px] font-semibold text-ink-700 ring-1 ring-inset ring-ink-200">
-                  <Download aria-hidden="true" className="h-3 w-3" />SEPA-Export
+                  <Download aria-hidden="true" className="h-3 w-3" />{w.sepa}
                 </span>
               )}
             </div>
@@ -516,6 +575,7 @@ export function MockKassier({ className, beschreibung, kompakt = false, freiRech
 
 /** Abschlussmeldung des Kassier-Ablaufs */
 export function MockAbschluss({ className, beschreibung }) {
+  const w = worte();
   return (
     <BeispielBild beschreibung={beschreibung} className={className}>
       <div className="relative flex items-center gap-3 overflow-hidden rounded-2xl bg-white p-3 pr-4 ring-1 ring-ink-900/10 shadow-[0_2px_4px_-1px_rgba(3,18,43,0.1),0_22px_40px_-16px_rgba(3,18,43,0.5)]">
@@ -523,8 +583,8 @@ export function MockAbschluss({ className, beschreibung }) {
           <FileCheck2 aria-hidden="true" className="h-5 w-5" />
         </span>
         <p className="min-w-0 text-[11.5px] leading-snug text-ink-600">
-          <strong className="block text-[12.5px] text-ink-900">72 Belege versendet</strong>
-          Lastschrift am 05.11. – alles erledigt für Oktober
+          <strong className="block text-[12.5px] text-ink-900">{w.versendet}</strong>
+          {w.lastschrift}
         </p>
         <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-ov-400 to-ov-600" />
       </div>
@@ -561,10 +621,11 @@ function HinteresFenster() {
  * Mobil: Abrechnungsfenster mit Zustimmungs-Meldung (das Handy folgt mobil direkt danach in der Tour). Ohne Endlos-Bewegung.
  */
 export function HeroKomposition({ className }) {
+  const w = worte();
   return (
     <div
       role="img"
-      aria-label="Beispielansicht der Plattform mit fiktiven Werten: Mitglied sieht auf dem Handy den Energiefluss und 71,40 € Ersparnis, die Oktober-Abrechnung ist im Vier-Augen-Prinzip freigegeben, 72 Belege sind versendet und eine Zustimmung beim Netzbetreiber ist mit noch 6 von 10 Werktagen offen."
+      aria-label={w.heroAria}
       className={cn("relative isolate mx-auto w-full max-w-[680px]", className)}
     >
       {/* Licht: Schlüssellicht links oben, warmes Gegenlicht rechts unten (statisch) */}

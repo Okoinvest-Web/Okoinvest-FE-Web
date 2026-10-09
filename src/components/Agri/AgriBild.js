@@ -1,5 +1,12 @@
+"use client";
+// Client-Komponente, weil sie auch in Client-Bausteinen läuft (SystemWahl, AgriPvRechner) und die
+// Bildbeschreibung der Sprache der Seite folgt (Sprachmodell, useSprache()).
+
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+import T from "@/components/Sprache/T";
+
 /**
- * Flache Inline-SVG-Illustrationen der Agri-PV-Systeme (Server-Komponente).
+ * Flache Inline-SVG-Illustrationen der Agri-PV-Systeme.
  * typ: hoch | vertikal | tracker | bodennah
  * Maßstab grob: 1 m ≈ 22 px, Boden bei y = 170.
  */
@@ -74,8 +81,9 @@ function Modul({ x1, y1, x2, y2, dick = 4 }) {
 
 /** fuellen: true → Bild füllt einen höheren Rahmen (unten bündig, seitlich beschnitten) */
 export default function AgriBild({ typ = "vertikal", className, titel, fuellen = false }) {
+  const beschreibung = useSprache() === "en" ? BESCHREIBUNG_EN : BESCHREIBUNG;
   return (
-    <svg viewBox="0 0 320 200" className={className} role="img" aria-label={titel || BESCHREIBUNG[typ]} preserveAspectRatio={fuellen ? "xMidYMax slice" : undefined}>
+    <svg viewBox="0 0 320 200" className={className} role="img" aria-label={titel || beschreibung[typ]} preserveAspectRatio={fuellen ? "xMidYMax slice" : undefined}>
       {/* Himmel: über den Rand hinaus, damit er beim Füllen nicht abreißt */}
       <rect x="-200" y="-400" width="720" height={BODEN + 400} className="fill-navy-50" />
       <circle cx="286" cy="30" r="46" className="fill-sun-100" opacity="0.55" />
@@ -103,6 +111,13 @@ const BESCHREIBUNG = {
   bodennah: "Bodennahe Agri-PV mit Beweidung: schräg aufgeständerte Module mit großem Reihenabstand, darunter und dazwischen weiden Schafe.",
 };
 
+const BESCHREIBUNG_EN = {
+  hoch: "Elevated agrivoltaics: module rows on supports around five metres high above fruit bushes, with a tractor driving underneath.",
+  vertikal: "Vertical bifacial agrivoltaics: upright module fences with wide cultivation lanes in which cereals grow and a tractor drives.",
+  tracker: "Single-axis tracking agrivoltaics: modules on rotating axes follow the sun, with arable farming between the rows.",
+  bodennah: "Ground-level agrivoltaics with grazing: tilted modules with wide row spacing, with sheep grazing underneath and in between.",
+};
+
 function Hoch() {
   const stuetzen = [30, 130, 230];
   return (
@@ -120,7 +135,7 @@ function Hoch() {
       <Traktor x={250} s={0.95} />
       {/* Höhenmaß */}
       <line x1="12" x2="12" y1="60" y2={BODEN} strokeDasharray="3 3" className="stroke-navy-400" />
-      <text x="40" y="118" className="fill-navy-700 text-[10px] font-semibold">≥ 2,1 m</text>
+      <text x="40" y="118" className="fill-navy-700 text-[10px] font-semibold"><T de="≥ 2,1 m" en="≥ 2.1 m" /></text>
     </g>
   );
 }
@@ -140,7 +155,7 @@ function Vertikal() {
       <Traktor x={180} s={0.9} />
       <Getreide x={228} n={3} abstand={7.5} />
       <line x1="44" x2="146" y1="186" y2="186" className="stroke-navy-700" strokeWidth="1.2" />
-      <text x="95" y="197" textAnchor="middle" className="fill-navy-700 text-[9px] font-semibold">Gasse ca. 8–12 m</text>
+      <text x="95" y="197" textAnchor="middle" className="fill-navy-700 text-[9px] font-semibold"><T de="Gasse ca. 8–12 m" en="Lane approx. 8–12 m" /></text>
     </g>
   );
 }

@@ -8,6 +8,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
 import { cn } from "@/components/ui/cn";
 import { Haken } from "./teile";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 const PAKETE = [
   {
@@ -50,12 +51,63 @@ const PAKETE = [
   },
 ];
 
+/* Sprachmodell: englische Fassung (gleiche ids) */
+const PAKETE_EN = {
+  "paket-software": {
+    title: "Software",
+    tag: "Self-managed",
+    fuer: "For boards that want to do the billing themselves",
+    frage: "Your board wants to do the billing itself",
+    text: "Platform for board, treasurer and members: master data, EDA processes, energy data, billing, portal.",
+    punkte: ["Member portal and online joining", "Billing with four-eyes approval", "Export for the tax adviser"],
+    teilung: "Your community does the work, we provide the tool and support",
+    anfragen: "Enquire about Software",
+  },
+  "paket-betrieb": {
+    title: "Operational management",
+    tag: "ÖkoInvest as organiser",
+    fuer: "For communities whose volunteers need relief",
+    frage: "Your volunteers need relief",
+    text: "As organiser under § 68(2) ElWG, we take over registrations, data quality, billing and member questions – on the basis of a service and data processing agreement.",
+    punkte: ["Communication with the grid operator", "Supplier obligations from 100 kW (§ 69)", "Contact person for members"],
+    teilung: "We take over day-to-day operation for you",
+    hervorgehoben: "Greatest relief",
+    anfragen: "Enquire about operational management",
+  },
+  "paket-gruendung": {
+    title: "Founding",
+    tag: "From the idea to the first power",
+    fuer: "For municipalities, associations and initiatives at the start",
+    frage: "You want to found a community",
+    text: "Feasibility with simulation, legal form and articles of association, market partners, contract with the grid operator, EDA access, first members.",
+    punkte: ["Grid area and proximity area check", "Articles of association and contracts from templates", "Launch campaign for members"],
+    teilung: "We guide you step by step",
+    anfragen: "Enquire about founding",
+  },
+};
+const WORTE = {
+  de: {
+    gemeinschaft: "Ihre Gemeinschaft", teilung: "Arbeitsteilung: ", eyebrow: "Pakete", titel: "So viel Unterstützung, wie Ihre Gemeinschaft braucht",
+    lead: "Vom Werkzeug für selbstverwaltete Gemeinschaften bis zum kompletten Betrieb. Preise auf Anfrage – wir kalkulieren je Gemeinschaft nach Größe und Leistungsumfang und legen das Angebot transparent dar.",
+    welches: "Welches Paket passt?", schwerpunkte: "Schwerpunkte", preis: "Preis nach Größe", aufAnfrage: "auf Anfrage", anfragen: (t) => `${t} anfragen`,
+    unsicher: "Noch unsicher?", unsicherText: "Schildern Sie kurz Ihre Lage – wir schlagen Ihnen das passende Paket vor und kalkulieren es offen.", anbieter: "Sie haben schon einen Anbieter?",
+  },
+  en: {
+    gemeinschaft: "Your community", teilung: "Division of work: ", eyebrow: "Packages", titel: "As much support as your community needs",
+    lead: "From a tool for self-managed communities to complete operation. Prices on request – we calculate per community by size and scope of services and set out the offer transparently.",
+    welches: "Which package fits?", schwerpunkte: "Focus areas", preis: "Price by size", aufAnfrage: "on request", anfragen: null,
+    unsicher: "Still unsure?", unsicherText: "Briefly describe your situation – we will suggest the right package and calculate it openly.", anbieter: "Already have a provider?",
+  },
+};
+const worte = () => WORTE[spracheDerAnfrage() === "en" ? "en" : "de"];
+
 /** Schematische Arbeitsteilung in vier Segmenten – rein qualitativ, ohne Zahlen */
 function Arbeitsteilung({ sie, text, dunkel }) {
+  const w = worte();
   return (
     <div className={cn("rounded-2xl p-3.5", dunkel ? "bg-white/[0.06] ring-1 ring-white/10" : "bg-sand-50 ring-1 ring-ink-200/60")}>
       <div className={cn("flex items-center justify-between text-[11.5px] font-semibold uppercase tracking-[0.12em]", dunkel ? "text-white/60" : "text-ink-500")}>
-        <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className={cn("h-2 w-2 rounded-full", dunkel ? "bg-white/70" : "bg-navy-700")} />Ihre Gemeinschaft</span>
+        <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className={cn("h-2 w-2 rounded-full", dunkel ? "bg-white/70" : "bg-navy-700")} />{w.gemeinschaft}</span>
         <span className="inline-flex items-center gap-1.5">ÖkoInvest<span aria-hidden="true" className={cn("h-2 w-2 rounded-full", dunkel ? "bg-ov-400" : "bg-ov-500")} /></span>
       </div>
       <div aria-hidden="true" className="mt-2 flex gap-1">
@@ -72,28 +124,31 @@ function Arbeitsteilung({ sie, text, dunkel }) {
         ))}
       </div>
       <p className={cn("mt-2.5 text-[13.5px] leading-snug", dunkel ? "text-white/85" : "text-ink-700")}>
-        <span className="sr-only">Arbeitsteilung: </span>{text}
+        <span className="sr-only">{w.teilung}</span>{text}
       </p>
     </div>
   );
 }
 
 export default function Pakete() {
+  const en = spracheDerAnfrage() === "en";
+  const w = worte();
+  const pakete = en ? PAKETE.map((p) => ({ ...p, ...PAKETE_EN[p.id] })) : PAKETE;
   return (
     <Section data-abschnitt="pakete" tone="sand" space="lg" id="pakete" className="scroll-mt-24">
       <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:gap-16">
         <SectionHeading
-          eyebrow="Pakete"
-          title="So viel Unterstützung, wie Ihre Gemeinschaft braucht"
+          eyebrow={w.eyebrow}
+          title={w.titel}
           className="[&_h2]:hyphens-manual!"
-          lead="Vom Werkzeug für selbstverwaltete Gemeinschaften bis zum kompletten Betrieb. Preise auf Anfrage – wir kalkulieren je Gemeinschaft nach Größe und Leistungsumfang und legen das Angebot transparent dar."
+          lead={w.lead}
         />
 
         {/* Entscheidungshilfe: Lage wählen → zur passenden Karte springen */}
         <Reveal as="nav" aria-labelledby="pakete-wegweiser" delay={120} className="rounded-[1.75rem] bg-white p-2 shadow-e1 ring-1 ring-ink-200/70">
-          <p id="pakete-wegweiser" className="px-4 pb-2 pt-3 text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ink-500">Welches Paket passt?</p>
+          <p id="pakete-wegweiser" className="px-4 pb-2 pt-3 text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ink-500">{w.welches}</p>
           <ul role="list">
-            {PAKETE.map((p) => (
+            {pakete.map((p) => (
               <li key={p.id}>
                 <a
                   href={`#${p.id}`}
@@ -115,12 +170,12 @@ export default function Pakete() {
       </div>
 
       <ul role="list" className="mt-14 grid gap-6 md:mt-16 lg:grid-cols-3 lg:gap-x-5 lg:gap-y-0">
-        {PAKETE.map((p, i) => {
+        {pakete.map((p, i) => {
           const dunkel = Boolean(p.hervorgehoben);
           return (
             <Reveal
               as="li"
-              key={p.title}
+              key={p.id}
               id={p.id}
               delay={i * 90}
               aria-labelledby={`${p.id}-titel`}
@@ -165,10 +220,10 @@ export default function Pakete() {
 
                 {/* 5 Schwerpunkte */}
                 <div className={cn("border-t pt-5 md:col-start-2 md:row-start-3 md:border-t-0 md:pt-0 lg:col-start-auto lg:row-start-auto lg:border-t lg:pt-5", dunkel ? "border-white/10" : "border-ink-100")}>
-                  <p className={cn("text-[12px] font-semibold uppercase tracking-[0.14em]", dunkel ? "text-white/60" : "text-ink-500")}>Schwerpunkte</p>
+                  <p className={cn("text-[12px] font-semibold uppercase tracking-[0.14em]", dunkel ? "text-white/60" : "text-ink-500")}>{w.schwerpunkte}</p>
                   <ul role="list" className="mt-3 space-y-2.5">
-                    {p.punkte.map((x) => (
-                      <li key={x} className={cn("flex gap-2.5 text-[14.5px] leading-snug", dunkel ? "text-white/90" : "text-ink-800")}>
+                    {p.punkte.map((x, k) => (
+                      <li key={k} className={cn("flex gap-2.5 text-[14.5px] leading-snug", dunkel ? "text-white/90" : "text-ink-800")}>
                         <Haken dunkel={dunkel} />
                         {x}
                       </li>
@@ -179,11 +234,11 @@ export default function Pakete() {
                 {/* 6 Preis und nächster Schritt */}
                 <div className={cn("mt-auto border-t pt-5 md:col-span-2 md:row-start-4 md:mt-0 md:flex md:items-center md:justify-between md:gap-8 lg:col-span-1 lg:row-start-auto lg:block lg:self-end", dunkel ? "border-white/10" : "border-ink-100")}>
                   <p className="flex items-baseline justify-between gap-3 md:flex-col md:gap-0.5 lg:flex-row lg:gap-3">
-                    <span className={cn("text-[13px]", dunkel ? "text-white/60" : "text-ink-500")}>Preis nach Größe</span>
-                    <span className={cn("text-[15px] font-semibold", dunkel ? "text-white" : "text-ink-900")}>auf Anfrage</span>
+                    <span className={cn("text-[13px]", dunkel ? "text-white/60" : "text-ink-500")}>{w.preis}</span>
+                    <span className={cn("text-[15px] font-semibold", dunkel ? "text-white" : "text-ink-900")}>{w.aufAnfrage}</span>
                   </p>
                   <Button href="#anfrage" variant={dunkel ? "primary" : "secondary"} block pfeil className="mt-4 md:mt-0 md:w-auto md:min-w-64 lg:mt-4 lg:w-full">
-                    {p.title} anfragen
+                    {p.anfragen ?? w.anfragen(p.title)}
                   </Button>
                 </div>
               </article>
@@ -195,13 +250,13 @@ export default function Pakete() {
       {/* Unsicher? – Brücke zur Anfrage und zum Wechsel */}
       <Reveal className="mt-10 flex flex-col gap-4 rounded-[1.5rem] border border-dashed border-ink-300/80 px-6 py-5 sm:flex-row sm:items-center sm:justify-between md:mt-12">
         <p className="ov-klein max-w-2xl text-ink-700">
-          <span className="font-semibold text-ink-900">Noch unsicher?</span> Schildern Sie kurz Ihre Lage – wir schlagen Ihnen das passende Paket vor und kalkulieren es offen.
+          <span className="font-semibold text-ink-900">{w.unsicher}</span> {w.unsicherText}
         </p>
         <a
           href="#wechsel"
           className="group inline-flex shrink-0 items-center gap-1.5 rounded-full text-[15px] font-semibold text-ov-700 underline-offset-4 hover:text-ov-800 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ov-600"
         >
-          Sie haben schon einen Anbieter?
+          {w.anbieter}
           <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
         </a>
       </Reveal>

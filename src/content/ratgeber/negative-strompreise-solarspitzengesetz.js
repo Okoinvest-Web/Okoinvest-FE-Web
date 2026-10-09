@@ -108,7 +108,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `[Negative Strompreise](/wissen/lexikon#negative-strompreise) entstehen, wenn viel unflexible Erzeugung auf geringe Nachfrage trifft – typischerweise an sonnigen Wochenenden und Feiertagen im Frühjahr und Sommer um die Mittagszeit. Für Solarparks ist das doppelt unangenehm: Die Stunden mit dem höchsten Ertrag sind genau die Stunden mit den niedrigsten Preisen. Das drückt den [Marktwert Solar](/wissen/lexikon#marktwert-solar) und damit die Erlöse aller Parks, die ohne feste Vergütung vermarkten. Wie die Marktprämie grundsätzlich funktioniert, erklärt der Ratgeber [Direktvermarktung für Solarparks](/wissen/ratgeber/direktvermarktung-solarpark).`,
+          text: `[Negative Strompreise](/wissen/lexikon#negative-strompreise) entstehen, wenn viel unflexible Erzeugung auf geringe Nachfrage trifft – typischerweise an sonnigen Wochenenden und Feiertagen im Frühjahr und Sommer um die Mittagszeit. Für Solarparks ist das doppelt unangenehm: Die Stunden mit dem höchsten Ertrag sind genau die Stunden mit den niedrigsten Preisen. Das drückt den [Marktwert Solar](/wissen/lexikon#marktwert-solar) und damit die Erlöse aller Parks, die ohne feste Vergütung vermarkten. Wie die Marktprämie grundsätzlich funktioniert, erklärt der Ratgeber [Direktvermarktung für Solarparks](/ratgeber/direktvermarktung-solarpark).`,
         },
         {
           typ: "kennzahl",
@@ -144,7 +144,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Das erste Halbjahr 2026 brachte nach einer Auswertung auf Basis der SMARD-Daten ${NEG_H1[2026]} Stunden unter null – weniger als im Vorjahreszeitraum (${NEG_H1[2025]} Stunden). Ein Trendbruch ist das nicht zwingend: Wetter, Gaspreise, Exportmöglichkeiten und der Zubau von Großspeichern bestimmen die Zahl von Jahr zu Jahr. Für die Projektplanung sollten Sie mit einem weiter hohen Niveau rechnen. Aktuelle Preise zeigt [Energie live](/de/energie-live), Jahreswerte und Marktwerte die [Marktdaten](/de/marktdaten).`,
+          text: `Das erste Halbjahr 2026 brachte nach einer Auswertung auf Basis der SMARD-Daten ${NEG_H1[2026]} Stunden unter null – weniger als im Vorjahreszeitraum (${NEG_H1[2025]} Stunden). Ein Trendbruch ist das nicht zwingend: Wetter, Gaspreise, Exportmöglichkeiten und der Zubau von Großspeichern bestimmen die Zahl von Jahr zu Jahr. Für die Projektplanung sollten Sie mit einem weiter hohen Niveau rechnen. Aktuelle Preise zeigt [Energie live](/energie-live), Jahreswerte und Marktwerte die [Marktdaten](/marktdaten).`,
         },
       ],
     },
@@ -184,7 +184,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Die Regel gilt unabhängig davon, ob der Zuschlag aus der [EEG-Ausschreibung](/wissen/ratgeber/eeg-ausschreibung-freiflaeche) stammt oder der [anzulegende Wert](/wissen/lexikon#anzulegender-wert) gesetzlich festgelegt ist. Für Bieter heißt das: Negative Preise gehören heute in die Gebotskalkulation, nicht in die Fußnote.",
+          text: "Die Regel gilt unabhängig davon, ob der Zuschlag aus der [EEG-Ausschreibung](/ratgeber/eeg-ausschreibung-freiflaeche) stammt oder der [anzulegende Wert](/wissen/lexikon#anzulegender-wert) gesetzlich festgelegt ist. Für Bieter heißt das: Negative Preise gehören heute in die Gebotskalkulation, nicht in die Fußnote.",
         },
       ],
     },
@@ -224,7 +224,7 @@ const artikel = {
           typ: "kasten",
           variant: "info",
           titel: "Der größere Effekt: die sinkende Capture Rate",
-          text: `Wichtiger als der Prämienverlust ist, dass negative und sehr niedrige Mittagspreise den Marktwert Solar selbst drücken. 2025 erlöste Solarstrom im Jahresmittel nur rund die Hälfte des durchschnittlichen Börsenpreises. Diese [Capture Rate](/wissen/lexikon#capture-rate) bestimmt, was ein Park nach Förderende, im PPA oder als Merchant-Anlage verdient. Wer mit ${fmtCt(ERLOESE.merchantCt, 1)} Merchant-Erlös rechnet, sollte Sensitivitäten nach unten prüfen – etwa im [Solarpark-Rechner](/de/rechner/solarpark).`,
+          text: `Wichtiger als der Prämienverlust ist, dass negative und sehr niedrige Mittagspreise den Marktwert Solar selbst drücken. 2025 erlöste Solarstrom im Jahresmittel nur rund die Hälfte des durchschnittlichen Börsenpreises. Diese [Capture Rate](/wissen/lexikon#capture-rate) bestimmt, was ein Park nach Förderende, im PPA oder als Merchant-Anlage verdient. Wer mit ${fmtCt(ERLOESE.merchantCt, 1)} Merchant-Erlös rechnet, sollte Sensitivitäten nach unten prüfen – etwa im [Solarpark-Rechner](/rechner/solarpark).`,
         },
       ],
     },
@@ -258,11 +258,11 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Bis 2025 verlor ein Speicher am EEG-Park seine Förderfähigkeit schnell, wenn er auch Strom aus dem Netz lud. Mit der **Abgrenzungs- und der Pauschaloption** (§ 19 Abs. 3b und 3c EEG) kann ein Speicher nach aktuellem Stand gemischt betrieben werden, ohne dass der Solarstrom seinen Förderanspruch verliert; die Marktprämie wird dann mit dem Jahresmarktwert berechnet. Die Details – Messkonzept, Abrechnung, Pauschalmengen – sind anspruchsvoll und sollten mit Netzbetreiber und Direktvermarkter abgestimmt werden. Wie Speicher Geld verdienen, zeigt der Ratgeber [Großspeicher-Erlöse](/wissen/ratgeber/grossspeicher-erloese); zur Entwicklung eigener Projekte siehe [Großspeicher](/de/grossspeicher).",
+          text: "Bis 2025 verlor ein Speicher am EEG-Park seine Förderfähigkeit schnell, wenn er auch Strom aus dem Netz lud. Mit der **Abgrenzungs- und der Pauschaloption** (§ 19 Abs. 3b und 3c EEG) kann ein Speicher nach aktuellem Stand gemischt betrieben werden, ohne dass der Solarstrom seinen Förderanspruch verliert; die Marktprämie wird dann mit dem Jahresmarktwert berechnet. Die Details – Messkonzept, Abrechnung, Pauschalmengen – sind anspruchsvoll und sollten mit Netzbetreiber und Direktvermarkter abgestimmt werden. Wie Speicher Geld verdienen, zeigt der Ratgeber [Großspeicher-Erlöse](/ratgeber/grossspeicher-erloese); zur Entwicklung eigener Projekte siehe [Großspeicher](/grossspeicher).",
         },
         {
           typ: "p",
-          text: "Ein oft übersehener Punkt ist der Netzanschluss: Wer den Speicher hinter demselben Netzverknüpfungspunkt betreibt, kann den Park überbauen und Spitzen zwischenspeichern, statt sie abzuregeln. Welche Kapazität verfügbar ist und was ein Anschluss kostet, erklärt der Ratgeber [Netzanschluss für Solarparks](/wissen/ratgeber/netzanschluss-solarpark).",
+          text: "Ein oft übersehener Punkt ist der Netzanschluss: Wer den Speicher hinter demselben Netzverknüpfungspunkt betreibt, kann den Park überbauen und Spitzen zwischenspeichern, statt sie abzuregeln. Welche Kapazität verfügbar ist und was ein Anschluss kostet, erklärt der Ratgeber [Netzanschluss für Solarparks](/ratgeber/netzanschluss-solarpark).",
         },
       ],
     },
@@ -279,7 +279,7 @@ const artikel = {
           typ: "checkliste",
           punkte: [
             "**Direktvermarktungsvertrag:** Wer entscheidet über Abregelung, ab welchem Preis, und wie werden abgeregelte Mengen vergütet?",
-            "**PPA:** Muss der Abnehmer in negativen Viertelstunden abnehmen und zahlen, oder entfällt die Liefer- und Zahlungspflicht? Gilt ein Preisboden? Mehr im Ratgeber [PPA für Unternehmen](/wissen/ratgeber/ppa-fuer-unternehmen).",
+            "**PPA:** Muss der Abnehmer in negativen Viertelstunden abnehmen und zahlen, oder entfällt die Liefer- und Zahlungspflicht? Gilt ein Preisboden? Mehr im Ratgeber [PPA für Unternehmen](/ratgeber/ppa-fuer-unternehmen).",
             "**Umsatzpacht:** Zählen nachgeholte Förderzeiträume nach Jahr 20 zur Umsatzbasis, und gilt dann noch der Pachtvertrag?",
             "**Finanzierung:** Rechnet die Bank mit Abregelungsquoten und einem vorsichtigen Marktwert? Belastbare Szenarien erleichtern die Kreditzusage.",
             "**Ertragsgutachten:** Enthält es Abregelungs- und Preisszenarien, nicht nur die physikalische Erzeugung?",
@@ -287,7 +287,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Auch in Österreich schränkt das EAG die Marktprämie bei negativen Preisen nach aktuellem Stand ein; die genauen Bedingungen sollten Sie für Ihr Projekt prüfen. Speicher und ein günstiges Profil lohnen sich dort aus denselben Gründen. Einen Überblick über den Markt dort gibt [Freiflächen-PV in Österreich](/wissen/ratgeber/freiflaechen-pv-oesterreich).",
+          text: "Auch in Österreich schränkt das EAG die Marktprämie bei negativen Preisen nach aktuellem Stand ein; die genauen Bedingungen sollten Sie für Ihr Projekt prüfen. Speicher und ein günstiges Profil lohnen sich dort aus denselben Gründen. Einen Überblick über den Markt dort gibt [Freiflächen-PV in Österreich](/ratgeber/freiflaechen-pv-oesterreich).",
         },
       ],
     },
@@ -304,7 +304,7 @@ const artikel = {
     },
     {
       q: "Wie viele Stunden mit negativen Strompreisen gab es 2025?",
-      a: `Laut Bundesnetzagentur ${fmt(NEG_STUNDEN[3].stunden)} von ${fmt(NEG_STUNDEN[3].von)} Stunden, nach ${fmt(NEG_STUNDEN[2].stunden)} im Jahr 2024 und ${fmt(NEG_STUNDEN[1].stunden)} im Jahr 2023. Aktuelle Preise sehen Sie unter [Energie live](/de/energie-live).`,
+      a: `Laut Bundesnetzagentur ${fmt(NEG_STUNDEN[3].stunden)} von ${fmt(NEG_STUNDEN[3].von)} Stunden, nach ${fmt(NEG_STUNDEN[2].stunden)} im Jahr 2024 und ${fmt(NEG_STUNDEN[1].stunden)} im Jahr 2023. Aktuelle Preise sehen Sie unter [Energie live](/energie-live).`,
     },
     {
       q: "Lohnt sich ein Speicher am Solarpark wegen negativer Preise?",
@@ -321,9 +321,9 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/wissen/ratgeber/direktvermarktung-solarpark", titel: "Direktvermarktung für Solarparks", text: "Marktprämie, Jahresmarktwert und Direktvermarkter." },
-    { href: "/wissen/ratgeber/grossspeicher-erloese", titel: "Großspeicher-Erlöse", text: "Womit Batteriespeicher Geld verdienen." },
-    { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Termine, Zuschläge und Regeln." },
+    { href: "/ratgeber/direktvermarktung-solarpark", titel: "Direktvermarktung für Solarparks", text: "Marktprämie, Jahresmarktwert und Direktvermarkter." },
+    { href: "/ratgeber/grossspeicher-erloese", titel: "Großspeicher-Erlöse", text: "Womit Batteriespeicher Geld verdienen." },
+    { href: "/ratgeber/eeg-ausschreibung-freiflaeche", titel: "EEG-Ausschreibung Freifläche", text: "Termine, Zuschläge und Regeln." },
     { href: pfad("/marktdaten"), titel: "Marktdaten", text: "Marktwert Solar und Capture Rate im Zeitverlauf." },
   ],
 

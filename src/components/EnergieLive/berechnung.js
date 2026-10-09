@@ -200,3 +200,52 @@ export function erzeugungsVerlauf(erzeugung, stunden = 24) {
   }
   return zeilen.length >= 2 ? zeilen : null;
 }
+
+/* ------------------------------------------------------------------ */
+/* Sprachmodell: Formatierhilfen je Sprache (Rechenwerte unverändert)  */
+/* ------------------------------------------------------------------ */
+
+const uhrFmtEn = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: TZ });
+const tagFmtEn = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: TZ });
+const kurzTagFmtEn = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "2-digit", month: "2-digit", timeZone: TZ });
+const zahlEn = (n, stellen = 1) =>
+  n == null || Number.isNaN(n)
+    ? "–"
+    : n.toLocaleString("en-GB", { minimumFractionDigits: stellen, maximumFractionDigits: stellen }).replace("-", "−");
+
+/** Englische Namen der Energieträger (Schlüssel wie QUELLEN). */
+export const QUELLEN_EN = {
+  braunkohle: "Lignite",
+  steinkohle: "Hard coal",
+  gas: "Natural gas",
+  sonstige: "Other",
+  biomasse: "Biomass",
+  wasser: "Hydropower",
+  windOffshore: "Wind offshore",
+  windOnshore: "Wind onshore",
+  solar: "Solar",
+};
+
+/**
+ * Formatierhilfen je Sprache. `uhrText(t)` hängt im Deutschen „Uhr“ an, im Englischen nicht;
+ * `U` ist das Suffix für Stundenangaben in festen Texten („0 Uhr“ / „00:00“ siehe Aufrufer).
+ */
+export function formate(sprache = "de") {
+  if (sprache !== "en") {
+    return { en: false, zahl, ct, gw, uhr, tagLang, tagKurz, spanne, uhrText: (t) => `${uhr(t)} Uhr`, U: " Uhr", quelle: (q) => q.name };
+  }
+  const uhrEn = (t) => uhrFmtEn.format(new Date(t));
+  return {
+    en: true,
+    zahl: zahlEn,
+    ct: (eurMwh, stellen = 1) => (eurMwh == null ? "–" : zahlEn(eurMwh / 10, stellen)),
+    gw: (mw, stellen = 1) => (mw == null ? "–" : zahlEn(mw / 1000, stellen)),
+    uhr: uhrEn,
+    tagLang: (t) => tagFmtEn.format(new Date(t)),
+    tagKurz: (t) => kurzTagFmtEn.format(new Date(t)),
+    spanne: (von, bis) => `${uhrEn(von)}–${uhrEn(bis)}`,
+    uhrText: uhrEn,
+    U: "",
+    quelle: (q) => QUELLEN_EN[q.key] ?? q.name,
+  };
+}

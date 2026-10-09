@@ -14,11 +14,13 @@ import LegalShell from "@/components/Reusable/LegalShell";
 import { GESELLSCHAFT } from "@/data/site";
 import { PROVISION } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
-import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata, STAND_BEDINGUNGEN } from "../_teile";
+import { EntwurfHinweis, Platzhalter, WeitereBedingungen, bedingungenMetadata, bedingungenMetadataEn, STAND_BEDINGUNGEN } from "../_teile";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { fmtZahl } from "@/lib/sprache/format";
 
 const PFAD = "/bedingungen/projektboerse";
 
-export const metadata = bedingungenMetadata({
+const metadata = bedingungenMetadata({
   pfad: PFAD,
   titel: "Besondere Bedingungen Projektbörse | ÖkoInvest",
   beschreibung:
@@ -27,19 +29,149 @@ export const metadata = bedingungenMetadata({
   bildAlt: "Investoren bei einer Besichtigung vor Ort",
 });
 
+// Englisch (Sprachmodell): Übersetzung zur Information – maßgeblich ist die deutsche Fassung. ENTWURF.
+const metadataEn = bedingungenMetadataEn({
+  titel: "Special terms for the project exchange | ÖkoInvest",
+  beschreibung: "Draft of the special terms for the project exchange: framework of the commission agreement, accrual and due date, protection against circumvention and optional exclusivity.",
+  bildAlt: "Investors on a site visit",
+});
+
 const G = GESELLSCHAFT;
 const provVon = fmt(PROVISION.verkaeufer.min * 100, 1);
 const provBis = fmt(PROVISION.verkaeufer.max * 100);
+const provVonEn = fmtZahl(PROVISION.verkaeufer.min * 100, 1, "en");
+const provBisEn = fmtZahl(PROVISION.verkaeufer.max * 100, 0, "en");
 
-export default function BedingungenProjektboersePage() {
+export default async function BedingungenProjektboersePage({ params }) {
+  await seitenLand(params);
+  const en = spracheDerAnfrage() === "en";
   return (
     <LegalShell
-      titel="Besondere Bedingungen Projektbörse"
+      titel={en ? "Special terms for the project exchange" : "Besondere Bedingungen Projektbörse"}
       pfad={PFAD}
       stand={STAND_BEDINGUNGEN}
-      lead="Rahmen für die Provisionsvereinbarung mit Projektanbietern, den Umgehungsschutz gegenüber Anbietern und Investoren und eine optionale Exklusivität."
+      lead={en ? "Framework for the commission agreement with project sellers, protection against circumvention vis-à-vis sellers and investors, and optional exclusivity." : "Rahmen für die Provisionsvereinbarung mit Projektanbietern, den Umgehungsschutz gegenüber Anbietern und Investoren und eine optionale Exklusivität."}
     >
       <EntwurfHinweis />
+      {en ? (
+        <>
+      <h2>§ 1 Scope</h2>
+      <p>
+        (1) These terms apply to project sellers who offer a project via the project exchange of {G.name} (“ÖkoInvest”) and – insofar as they concern
+        investors (§ 5) – to investors. They form the framework of the <strong>commission agreement</strong> that the seller concludes in the portal before a
+        project is published. The values agreed in the individual case (in particular the commission rate) take precedence over these terms.
+      </p>
+      <p>
+        (2) Use of the project exchange is free of charge for investors and landowners. ÖkoInvest acts on behalf of the seller.{" "}
+        <Platzhalter>to be checked and regulated if necessary: notice of activity also in the interest of investors (dual capacity)</Platzhalter>
+      </p>
+
+      <h2>§ 2 Services of ÖkoInvest</h2>
+      <ul>
+        <li>review of the project for plausibility and completeness, anonymised teaser and confidential exposé,</li>
+        <li>publication on the project exchange and notification of investors with a matching search profile,</li>
+        <li>conclusion of non-disclosure agreements, release of data room stages, moderation of questions and answers,</li>
+        <li>on request, conduct of a bidding process with sealed bids and support through to completion (closing room).</li>
+      </ul>
+      <p>
+        ÖkoInvest owes the referral or brokerage of interested parties, not a successful sale. Legal, tax and technical advice are not part of the
+        service.
+      </p>
+
+      <h2>§ 3 Commission</h2>
+      <p>
+        (1) If a contract relating to the project is concluded between the seller and an investor referred or introduced by ÖkoInvest, the seller owes the
+        agreed commission. Depending on the project, the rate is between <strong>{provVonEn} and {provBisEn} %</strong> and is set when the project is
+        released.
+      </p>
+      <p>
+        (2) A <strong>contract relating to the project</strong> is any contract by which the investor acquires or economically takes over all or part of the
+        project – in particular the purchase of project rights or the plant (asset deal), the acquisition of shares in the project company (share deal),
+        co-development with a purchase option and equivalent arrangements.
+      </p>
+      <p>
+        (3) The <strong>basis of assessment</strong> is the purchase price, including liabilities to the seller assumed or redeemed by the investor; in a
+        share deal <Platzhalter>define equity value or enterprise value (EV)</Platzhalter>. Conditional and staggered payments (milestones, earn-out) are
+        included as soon as they fall due.
+      </p>
+      <p>
+        (4) <strong>Accrual and due date:</strong> the claim arises when the contract is validly concluded; if it is subject to conditions precedent, when
+        these are fulfilled. The commission is due <Platzhalter>14 days after invoice</Platzhalter>, and in the case of staggered purchase price payments
+        pro rata with each payment. Amounts are subject to VAT where applicable.
+      </p>
+      <p>
+        (5) The seller notifies ÖkoInvest of the conclusion of the contract within five working days and discloses the information required for the
+        calculation (purchase price, payment schedule, completion conditions).
+      </p>
+
+      <h2>§ 4 Referral and prior knowledge</h2>
+      <p>
+        (1) An investor is deemed to have been referred by ÖkoInvest if the project details were unlocked for them via the platform (NDA approval) or if
+        they came into contact with the seller via the deal room.
+      </p>
+      <p>
+        (2) If the investor was already known to the seller as an interested party for exactly this project, the seller must notify this, with evidence,
+        within <strong>ten working days</strong> of the interested party being displayed to them (including pseudonymously with an identifier). Without
+        timely notification, the referral by ÖkoInvest is deemed to have been made, insofar as permitted by law.
+      </p>
+
+      <h2>§ 5 Protection against circumvention</h2>
+      <p>
+        (1) The entitlement to commission also exists if the contract is concluded circumventing the platform – directly or via affiliated companies,
+        shareholders, trustees or other third parties – provided that the investor first became known to the seller via the platform and the contract is
+        concluded within <strong>24 months</strong> of the project details being unlocked. This also applies to contracts for other projects of the same
+        seller that were referred via the platform in the same period.
+      </p>
+      <p>
+        (2) Investors undertake not to contact the seller outside the platform until contact has been released and not to use contacts obtained via the
+        platform for circumvention. If an investor breaches this obligation and ÖkoInvest loses the commission as a result, the investor is liable to
+        compensate the amount lost.
+      </p>
+      <p>
+        (3) If there is a well-founded suspicion of circumvention, the seller and investor will provide information on request about how a contract
+        relating to the project came about and its terms. <Platzhalter>contractual penalty yes/no and amount</Platzhalter>
+      </p>
+
+      <h2>§ 6 Exclusivity (optional)</h2>
+      <p>
+        (1) The seller and ÖkoInvest may agree <strong>exclusivity</strong> for a project (sole brokerage mandate). It only applies if expressly agreed in
+        the portal or in writing, for the agreed period of <Platzhalter>e.g. 6 months, thereafter terminable monthly</Platzhalter>.
+      </p>
+      <p>
+        (2) During the exclusivity period, the seller does not offer the project via other brokers or platforms and forwards its own interested parties to
+        ÖkoInvest. In return, ÖkoInvest undertakes to market the project actively, in particular by approaching suitable investors in a targeted manner
+        and reporting regularly on access and interested parties.
+      </p>
+      <p>
+        (3) Whether, and in what amount, a commission is payable if a contract is concluded during the exclusivity period without ÖkoInvest&apos;s
+        involvement is governed by the exclusivity agreement within the limits permitted by law.{" "}
+        <Platzhalter>provision under § 15 of the Austrian Brokers Act (MaklerG) or the applicable law</Platzhalter>
+      </p>
+
+      <h2>§ 7 Obligations of the seller</h2>
+      <p>
+        The obligations under § 5 of the terms of use apply (correct and complete information, power of disposal, rights of third parties, updating). In
+        addition, the seller keeps the data room up to date, answers moderated questions on time and provides information equally to all admitted
+        interested parties.
+      </p>
+
+      <h2>§ 8 Withdrawal and termination</h2>
+      <p>
+        (1) The seller can take its project off the exchange at any time; ÖkoInvest can end publication in accordance with § 6 of the terms of use. Ongoing
+        binding bidding rounds must, as far as possible, be completed or cancelled in an orderly manner.
+      </p>
+      <p>
+        (2) Claims relating to investors already referred and the protection against circumvention (§ 5) continue to apply after withdrawal or termination.
+      </p>
+
+      <h2>§ 9 Liability</h2>
+      <p>
+        ÖkoInvest is not liable for information provided by the seller or investors, for their creditworthiness and contractual compliance or for the
+        conclusion and performance of contracts. Otherwise, the liability provisions of the terms of use (§ 16) apply.
+      </p>
+        </>
+      ) : (
+        <>
 
       <h2>§ 1 Geltung</h2>
       <p>
@@ -157,7 +289,12 @@ export default function BedingungenProjektboersePage() {
         die Erfüllung von Verträgen. Im Übrigen gilt die Haftungsregelung der Nutzungsbedingungen (§ 16).
       </p>
 
+        </>
+      )}
+
       <WeitereBedingungen pfad={PFAD} />
     </LegalShell>
   );
 }
+
+export const generateMetadata = seitenMetadata("/bedingungen/projektboerse", metadata, { en: metadataEn });

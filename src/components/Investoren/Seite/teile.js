@@ -1,5 +1,6 @@
 // Gemeinsame Bausteine der Seite /investoren (Server-Komponenten)
 import { cn } from "@/components/ui/cn";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 /** Sichtbare Kennzeichnung fiktiver Werte in Beispielansichten */
 export function BeispielPlakette({ hell = false, className }) {
@@ -13,7 +14,7 @@ export function BeispielPlakette({ hell = false, className }) {
         className
       )}
     >
-      Beispiel
+      {spracheDerAnfrage() === "en" ? "Example" : "Beispiel"}
     </span>
   );
 }

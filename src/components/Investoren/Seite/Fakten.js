@@ -5,6 +5,8 @@ import { cn } from "@/components/ui/cn";
 import Zaehler from "@/components/motion/Zaehler";
 import { KENNZAHLEN } from "@/data/site";
 import { PHASEN } from "@/lib/invest/markt";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 const FAKTEN = [
   { icon: Sprout, wert: `${KENNZAHLEN.entwicklungMwProJahr}`, zahl: Number(KENNZAHLEN.entwicklungMwProJahr), einheit: "MWp pro Jahr", text: "gehen in der Gruppe rund neu in die Entwicklung" },
@@ -13,15 +15,30 @@ const FAKTEN = [
   { icon: Coins, wert: "0 €", einheit: "für Käufer", text: "Suchprofil, NDA und Datenraum sind kostenfrei" },
 ];
 
+const TEXTE = {
+  de: { titel: "Auf einen Blick", fakten: FAKTEN },
+  en: {
+    titel: "At a glance",
+    fakten: [
+      { einheit: "MWp per year", text: "of new capacity entering development in the group, approx." },
+      { einheit: "years of solar experience", text: `in the ÖKOVOLT Group, since ${KENNZAHLEN.erfahrungSeit}` },
+      { einheit: "entry stages", text: "from secured land to the operating plant" },
+      { wert: "€0", einheit: "for buyers", text: "search profile, NDA and data room are free of charge" },
+    ],
+  },
+};
+
 export default function Fakten() {
+  const sprache = spracheDerAnfrage();
+  const t = uebersetze(TEXTE, sprache);
   return (
     <section data-abschnitt="fakten" aria-labelledby="fakten-titel" className="relative z-10 -mt-12 md:-mt-16">
-      <h2 id="fakten-titel" className="sr-only">Auf einen Blick</h2>
+      <h2 id="fakten-titel" className="sr-only">{t.titel}</h2>
       <div className="ov-container">
         <div className="relative rounded-[1.75rem] bg-white shadow-e4 ring-1 ring-ink-200/70 md:rounded-[2rem]">
           <div aria-hidden="true" className="absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-ov-400 to-transparent" />
           <dl className="grid px-5 sm:grid-cols-2 sm:px-2 lg:grid-cols-4 lg:px-0 lg:py-3">
-            {FAKTEN.map((f, i) => (
+            {t.fakten.map((f, i) => (
               <div
                 key={f.einheit}
                 className={cn(
@@ -42,7 +59,7 @@ export default function Fakten() {
                   </span>
                   <span className="ov-kpi-l block text-ink-900">
                     {/* Count-up nur mit den Werten, die hier ohnehin stehen; „0 €“ bleibt statisch */}
-                    {Number.isFinite(f.zahl) && f.zahl > 0 ? <Zaehler wert={f.zahl} nach={f.nach} verzoegerung={i * 90} dauer={1100} /> : f.wert}
+                    {Number.isFinite(f.zahl) && f.zahl > 0 ? <Zaehler wert={f.zahl} nach={f.nach} verzoegerung={i * 90} dauer={1100} sprache={sprache === "en" ? "en-GB" : undefined} /> : f.wert}
                   </span>
                 </dd>
               </div>

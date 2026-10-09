@@ -81,7 +81,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Der Grund ist einfach: Ein einzelner Solarpark mit 5 MWp ist für den Großhandel zu klein, zu wetterabhängig und zu schlecht prognostizierbar. Im Verbund gleichen sich Prognosefehler aus, Speicher fangen Spitzen ab, und die Menge reicht für Märkte, die ein Einzelbetreiber nicht erreicht. Wie das bei ÖkoInvest aufgebaut ist, zeigt die Seite [Virtuelles Kraftwerk](/de/virtuelles-kraftwerk); das Grundprinzip erklärt auch das [Lexikon](/wissen/lexikon#virtuelles-kraftwerk).",
+          text: "Der Grund ist einfach: Ein einzelner Solarpark mit 5 MWp ist für den Großhandel zu klein, zu wetterabhängig und zu schlecht prognostizierbar. Im Verbund gleichen sich Prognosefehler aus, Speicher fangen Spitzen ab, und die Menge reicht für Märkte, die ein Einzelbetreiber nicht erreicht. Wie das bei ÖkoInvest aufgebaut ist, zeigt die Seite [Virtuelles Kraftwerk](/virtuelles-kraftwerk); das Grundprinzip erklärt auch das [Lexikon](/wissen/lexikon#virtuelles-kraftwerk).",
         },
         {
           typ: "kennzahl",
@@ -118,7 +118,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Besonders wertvoll sind **Speicher**. Ein Batteriespeicher erreicht im Großmaßstab einen Wirkungsgrad um ${fmt(SPEICHER.wirkungsgrad * 100)} % und rund ${fmt(SPEICHER.zyklenProJahr)} Vollzyklen im Jahr – er ist das Werkzeug, mit dem der Verbund Mittagsüberschüsse in den Abend trägt. Mehr zu Erlösen und Investition steht im Ratgeber [Großspeicher-Erlöse](/wissen/ratgeber/grossspeicher-erloese) und auf der Seite [Großspeicher](/de/grossspeicher).`,
+          text: `Besonders wertvoll sind **Speicher**. Ein Batteriespeicher erreicht im Großmaßstab einen Wirkungsgrad um ${fmt(SPEICHER.wirkungsgrad * 100)} % und rund ${fmt(SPEICHER.zyklenProJahr)} Vollzyklen im Jahr – er ist das Werkzeug, mit dem der Verbund Mittagsüberschüsse in den Abend trägt. Mehr zu Erlösen und Investition steht im Ratgeber [Großspeicher-Erlöse](/ratgeber/grossspeicher-erloese) und auf der Seite [Großspeicher](/grossspeicher).`,
         },
       ],
     },
@@ -149,7 +149,7 @@ const artikel = {
         { typ: "h3", text: "Direktvermarktung und negative Preise" },
         {
           typ: "p",
-          text: "Seit dem Solarspitzengesetz (Februar 2025) erhalten neue geförderte Anlagen in Viertelstunden mit **negativen Börsenpreisen keine Marktprämie** mehr; die entgangene Förderung wird nach Ende des 20-jährigen Förderzeitraums anteilig nachgeholt. Für den Verbund heißt das: In diesen Viertelstunden wird abgeregelt oder eingespeichert statt draufgezahlt. Wie häufig das vorkommt, zeigt [Energie live](/de/energie-live); Begriffe wie [Direktvermarktung](/wissen/lexikon#direktvermarktung) und [negative Strompreise](/wissen/lexikon#negative-strompreise) erklärt das Lexikon.",
+          text: "Seit dem Solarspitzengesetz (Februar 2025) erhalten neue geförderte Anlagen in Viertelstunden mit **negativen Börsenpreisen keine Marktprämie** mehr; die entgangene Förderung wird nach Ende des 20-jährigen Förderzeitraums anteilig nachgeholt. Für den Verbund heißt das: In diesen Viertelstunden wird abgeregelt oder eingespeichert statt draufgezahlt. Wie häufig das vorkommt, zeigt [Energie live](/energie-live); Begriffe wie [Direktvermarktung](/wissen/lexikon#direktvermarktung) und [negative Strompreise](/wissen/lexikon#negative-strompreise) erklärt das Lexikon.",
         },
         { typ: "h3", text: "Regelenergie im Pool" },
         {
@@ -298,7 +298,7 @@ const artikel = {
           typ: "ablauf",
           schritte: [
             ["Daten zusammenstellen", "Lastgang der letzten zwölf Monate (Viertelstundenwerte), aktueller Liefervertrag mit Laufzeit, vorhandene oder geplante PV und Speicher."],
-            ["Potenzial abschätzen", "Mit dem [Reststrom-Rechner](/de/rechner/reststrom) die Spanne je Hebel ermitteln und prüfen, ob die Stromsteuer-Entlastung schon beantragt ist."],
+            ["Potenzial abschätzen", "Mit dem [Reststrom-Rechner](/rechner/reststrom) die Spanne je Hebel ermitteln und prüfen, ob die Stromsteuer-Entlastung schon beantragt ist."],
             ["Flexibilität identifizieren", "Welche Prozesse lassen sich verschieben, welche Speicher sind vorhanden oder sinnvoll?"],
             ["Technik anbinden", "Messung und Steuerung einrichten: Lastgangzähler bzw. Smart-Meter-Gateway, Steuerbox für PV und Speicher."],
             ["Vertrag und Einstieg", "Beitritt zum Pool mit Beginn nach Ende des laufenden Liefervertrags; Betreiber von Parks vereinbaren Direktvermarktung oder PPA."],
@@ -306,7 +306,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Wie der Reststrom-Pool aufgebaut ist und für wen er gedacht ist, beschreibt die Seite [Reststrom](/de/reststrom). Für Bürger und Kommunen ist daneben der Ratgeber [Energy Sharing und Energiegemeinschaften](/wissen/ratgeber/energy-sharing-energiegemeinschaften) interessant.",
+          text: "Wie der Reststrom-Pool aufgebaut ist und für wen er gedacht ist, beschreibt die Seite [Reststrom](/reststrom). Für Bürger und Kommunen ist daneben der Ratgeber [Energy Sharing und Energiegemeinschaften](/ratgeber/energy-sharing-energiegemeinschaften) interessant.",
         },
       ],
     },
@@ -342,7 +342,7 @@ const artikel = {
   passend: [
     { href: pfad("/virtuelles-kraftwerk"), titel: "Virtuelles Kraftwerk von ÖkoInvest", text: "Parks, Speicher und Unternehmen im Verbund." },
     { href: pfad("/reststrom"), titel: "Reststrom-Pool", text: "Was PV und Speicher nicht decken – gebündelt beschafft." },
-    { href: "/wissen/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Solarstrom direkt vom Park beziehen." },
+    { href: "/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Solarstrom direkt vom Park beziehen." },
     { href: pfad("/energie-live"), titel: "Energie live", text: "Börsenpreise und negative Preise in Echtzeit." },
   ],
 

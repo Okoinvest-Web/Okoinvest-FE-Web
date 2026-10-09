@@ -142,7 +142,7 @@ const artikel = {
         { typ: "h3", text: "Tolling und Co-Location" },
         {
           typ: "p",
-          text: "Beim **Tolling** (auch Flexibility Purchase Agreement, FPA) zahlt ein Energiehändler eine feste Vergütung je MW und darf die Batterie dafür vermarkten. Der Betreiber tauscht Upside gegen Planbarkeit – für Banken ist das oft die Voraussetzung für eine Fremdfinanzierung. Laut dena-Analyse hat sich das Volumen solcher Verträge in Deutschland 2025 fast verdoppelt, auf 249 MW. Bei der **Co-Location** teilt sich der Speicher Netzanschluss und Fläche mit einem Solarpark. Seit Anfang 2025 dürfen solche Speicher über die Abgrenzungsoption nach § 19 EEG auch aus dem Netz laden – nach Maßgabe der Leitlinien der Bundesnetzagentur –, ohne dass die EEG-Förderung für den Solarstrom verloren geht – das macht Arbitrage und Regelenergie auch für PV-gekoppelte Speicher möglich. Mehr zur Verbindung mit Solarparks unter [Großspeicher](/de/grossspeicher) und [virtuelles Kraftwerk](/wissen/ratgeber/virtuelles-kraftwerk).",
+          text: "Beim **Tolling** (auch Flexibility Purchase Agreement, FPA) zahlt ein Energiehändler eine feste Vergütung je MW und darf die Batterie dafür vermarkten. Der Betreiber tauscht Upside gegen Planbarkeit – für Banken ist das oft die Voraussetzung für eine Fremdfinanzierung. Laut dena-Analyse hat sich das Volumen solcher Verträge in Deutschland 2025 fast verdoppelt, auf 249 MW. Bei der **Co-Location** teilt sich der Speicher Netzanschluss und Fläche mit einem Solarpark. Seit Anfang 2025 dürfen solche Speicher über die Abgrenzungsoption nach § 19 EEG auch aus dem Netz laden – nach Maßgabe der Leitlinien der Bundesnetzagentur –, ohne dass die EEG-Förderung für den Solarstrom verloren geht – das macht Arbitrage und Regelenergie auch für PV-gekoppelte Speicher möglich. Mehr zur Verbindung mit Solarparks unter [Großspeicher](/grossspeicher) und [virtuelles Kraftwerk](/ratgeber/virtuelles-kraftwerk).",
         },
       ],
     },
@@ -208,7 +208,7 @@ const artikel = {
           typ: "kasten",
           variant: "recht",
           titel: "Rechtslage: Privilegierung von Batteriespeichern im Außenbereich",
-          text: "Seit der BauGB-Änderung Ende 2025 sind Batteriespeicher im Außenbereich in zwei Fällen privilegiert: nach § 35 Abs. 1 Nr. 11 BauGB im räumlich-funktionalen Zusammenhang mit einer bestehenden Erneuerbare-Energien-Anlage, nach Nr. 12 als eigenständiger Speicher mit mindestens 4 MW Nennleistung, höchstens 200 m von der Grundstücksgrenze eines Umspannwerks (Hoch-/Mittelspannung oder höher) oder eines Kraftwerks ab 50 MW entfernt. Alle so zugelassenen Speicher einer Gemeinde dürfen zusammen höchstens 0,5 % der Gemeindefläche und maximal 50.000 m² belegen. Außerhalb dieser Fälle braucht es in der Regel einen [Bebauungsplan](/wissen/ratgeber/solarpark-genehmigung-bebauungsplan). Stand September 2026 – Details bitte im Einzelfall rechtlich prüfen lassen.",
+          text: "Seit der BauGB-Änderung Ende 2025 sind Batteriespeicher im Außenbereich in zwei Fällen privilegiert: nach § 35 Abs. 1 Nr. 11 BauGB im räumlich-funktionalen Zusammenhang mit einer bestehenden Erneuerbare-Energien-Anlage, nach Nr. 12 als eigenständiger Speicher mit mindestens 4 MW Nennleistung, höchstens 200 m von der Grundstücksgrenze eines Umspannwerks (Hoch-/Mittelspannung oder höher) oder eines Kraftwerks ab 50 MW entfernt. Alle so zugelassenen Speicher einer Gemeinde dürfen zusammen höchstens 0,5 % der Gemeindefläche und maximal 50.000 m² belegen. Außerhalb dieser Fälle braucht es in der Regel einen [Bebauungsplan](/ratgeber/solarpark-genehmigung-bebauungsplan). Stand September 2026 – Details bitte im Einzelfall rechtlich prüfen lassen.",
         },
         {
           typ: "p",
@@ -260,7 +260,7 @@ const artikel = {
         {
           typ: "ablauf",
           schritte: [
-            ["Standort prüfen", "Nähe zu einem Umspannwerk, freie Netzkapazität und planungsrechtliche Einordnung (Privilegierung oder B-Plan) klären. Flächeneigentümer können eine Fläche über den [Flächencheck](/de/flaechencheck) einreichen."],
+            ["Standort prüfen", "Nähe zu einem Umspannwerk, freie Netzkapazität und planungsrechtliche Einordnung (Privilegierung oder B-Plan) klären. Flächeneigentümer können eine Fläche über den [Flächencheck](/flaechencheck) einreichen."],
             ["Netzanschluss anfragen", "Anschlussbegehren mit Leistung, Kapazität und Zeitplan stellen; BKZ und mögliche flexible Anschlussvereinbarung erfragen."],
             ["Erlösmodell festlegen", "Merchant, Tolling oder Mischform; Angebote mehrerer Vermarkter einholen und Szenarien rechnen."],
             ["Investitionsentscheidung dokumentieren", "Mit Blick auf den Vertrauensschutz bei den Netzentgelten Beschlüsse, Verträge und Finanzierung sauber datieren."],
@@ -269,7 +269,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Speicherprojekte in Entwicklung oder mit Netzzusage werden auch über die [Projektbörse](/projektboerse) gehandelt. Worauf beim Kauf zu achten ist, erklärt der Ratgeber [Projektrechte kaufen](/wissen/ratgeber/projektrechte-kaufen-due-diligence).",
+          text: "Speicherprojekte in Entwicklung oder mit Netzzusage werden auch über die [Projektbörse](/projektboerse) gehandelt. Worauf beim Kauf zu achten ist, erklärt der Ratgeber [Projektrechte kaufen](/ratgeber/projektrechte-kaufen-due-diligence).",
         },
       ],
     },
@@ -298,15 +298,15 @@ const artikel = {
     },
     {
       q: "Kann ich meine Fläche für einen Batteriespeicher verpachten?",
-      a: "Ja, gefragt sind vor allem Flächen in der Nähe von Umspannwerken. Der Flächenbedarf ist deutlich kleiner als bei einem Solarpark. Mehr dazu unter [Fläche verpachten](/de/flaeche-verpachten).",
+      a: "Ja, gefragt sind vor allem Flächen in der Nähe von Umspannwerken. Der Flächenbedarf ist deutlich kleiner als bei einem Solarpark. Mehr dazu unter [Fläche verpachten](/flaeche-verpachten).",
     },
   ],
 
   passend: [
     { href: pfad("/grossspeicher"), titel: "Großspeicher", text: "Speicherprojekte entwickeln, verpachten, investieren." },
-    { href: "/wissen/ratgeber/virtuelles-kraftwerk", titel: "Virtuelles Kraftwerk", text: "Wie Speicher, Parks und Verbraucher gemeinsam vermarktet werden." },
-    { href: "/wissen/ratgeber/projektrechte-kaufen-due-diligence", titel: "Projektrechte kaufen", text: "Preise, Struktur und Due Diligence." },
-    { href: "/wissen/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Grünstrom langfristig beziehen." },
+    { href: "/ratgeber/virtuelles-kraftwerk", titel: "Virtuelles Kraftwerk", text: "Wie Speicher, Parks und Verbraucher gemeinsam vermarktet werden." },
+    { href: "/ratgeber/projektrechte-kaufen-due-diligence", titel: "Projektrechte kaufen", text: "Preise, Struktur und Due Diligence." },
+    { href: "/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Grünstrom langfristig beziehen." },
     { href: pfad("/rechner/grossspeicher"), titel: "Großspeicher-Rechner", text: "Rendite eines Batteriespeichers mit eigenen Werten berechnen." },
     { href: "/projektboerse", titel: "Projektbörse", text: "Speicher- und Solarprojekte im DACH-Raum ansehen." },
   ],

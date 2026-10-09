@@ -5,6 +5,7 @@
 // über ÖkoInvest außer der Entwicklungs-Pipeline (Vorgabe Geschäftsführung).
 
 import { GESELLSCHAFT, KENNZAHLEN } from "@/data/site";
+import { datumText } from "@/lib/sprache/format";
 
 export const MEILENSTEINE = [
   {
@@ -67,4 +68,30 @@ export const PERSONEN = [
     rolle: "Geschäftsführer",
     text: "Seit mehr als zehn Jahren Teil der ÖKOVOLT-Familie und in der Gruppe für den Vertrieb verantwortlich. Er kennt Netzbetreiber, Förderlandschaft und die Anforderungen von Gewerbekunden aus der täglichen Projektpraxis.",
   },
+];
+
+/* ------------------------------------------------------------------ */
+/* Englisch (Sprachmodell): gleiche Reihenfolge, nur Texte              */
+/* ------------------------------------------------------------------ */
+
+export const MEILENSTEINE_EN = [
+  { jahr: "2010", titel: "The beginning in Türkheim", text: "Andreas Wegscheider and Susanne Messmer found ÖKOVOLT GmbH, which is still based in Türkheim in the Unterallgäu district (Bavaria) today – with its own installation company. From the outset, planning, construction and commissioning come from a single source." },
+  { jahr: "2012", titel: "From the roof to the field", text: "The founders build their first solar parks – and operate them themselves, each through its own operating company, for example in Artern and Tilleda. Deutsche Solar & Rammtechnik GmbH is set up for the foundations. In the same year, the Austrian sister company is founded." },
+  { jahr: "2013", titel: "A solar park on the doorstep", text: "The solar park in Irsingen, a district of Türkheim, creates a park right next to the company headquarters." },
+  { jahr: "2020", titel: "ÖkoInvest GmbH is founded", text: `On ${datumText(GESELLSCHAFT.eingetragen, "en")}, ${GESELLSCHAFT.name} in ${GESELLSCHAFT.ort} is entered in the Austrian commercial register (Firmenbuch) – as the group's project company for ground-mounted PV, agrivoltaics, contracting and power purchase agreements.` },
+  { jahr: "2021", titel: "A new structure", text: "The group reorganises: the founders' solar parks are pooled in a holding company, and the German ÖKOVOLT focuses on planning and construction. In this year alone, the Austrian sister company installs PV systems with 30 MWp." },
+  { jahr: "2023", titel: "Own power plant companies", text: "GFL – PV-Kraftwerk GmbH is founded as a wholly owned subsidiary for operating PV power plants. HIL PV Kraftwerk GmbH later follows as a joint company with Prime Energy Solutions GmbH." },
+  { jahr: "Today", titel: "A platform for the DACH region", text: `Around ${KENNZAHLEN.entwicklungMwProJahr} MWp enters development every year. With the project exchange, portal and virtual power plant, we open up project development to landowners, investors, companies and citizens.` },
+];
+
+export const WERTE_EN = [
+  { title: "Operators by conviction", text: "The group has been operating its own solar parks since 2012. We only develop what we would operate ourselves – with experience from more than a decade of yield, maintenance and direct marketing." },
+  { title: "Honest figures", text: "Ranges instead of promises: our calculators show assumptions and sources openly. No promised returns, no embellished schedules." },
+  { title: "Everything from one group", text: "Development, our own pile-driving equipment, construction and operation are all within one group of companies. That shortens the routes and keeps responsibility in one place." },
+  { title: "Local value creation", text: "Lease income for owners, revenue for municipalities, participation for citizens and farmers: a solar park should benefit the region it stands in." },
+];
+
+export const PERSONEN_EN = [
+  { rolle: "Managing Director", text: "Founder of the ÖKOVOLT Group. He planned and installed systems when modules still cost many times what they do today – and, with the first in-house solar parks from 2012, took the step from the roof to open land." },
+  { rolle: "Managing Director", text: "Part of the ÖKOVOLT family for more than ten years and responsible for sales within the group. He knows grid operators, the subsidy landscape and the requirements of commercial customers from day-to-day project work." },
 ];

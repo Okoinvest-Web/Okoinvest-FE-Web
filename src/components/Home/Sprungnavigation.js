@@ -2,18 +2,29 @@
 // Mobil klebt die Leiste beim Scrollen unter dem Seitenkopf (68 px), ab md steht sie normal im Fluss.
 // Server-Komponente, reine Anker-Links – funktioniert ohne JavaScript.
 
-const ZIELE = [
-  { id: "loesungen", label: "Lösungen" },
-  { id: "boerse", label: "Börse" },
-  { id: "energie", label: "Energie" },
-  { id: "tools", label: "Tools" },
-  { id: "faq", label: "FAQ" },
-];
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+
+const TEXTE = {
+  de: {
+    aria: "Auf dieser Seite",
+    ziele: [
+      { id: "loesungen", label: "Lösungen" },
+      { id: "boerse", label: "Börse" },
+      { id: "energie", label: "Energie" },
+      { id: "tools", label: "Tools" },
+      { id: "faq", label: "FAQ" },
+    ],
+  },
+  en: { aria: "On this page", ziele: [{ label: "Solutions" }, { label: "Exchange" }, { label: "Energy" }, { label: "Tools" }, { label: "FAQ" }] },
+};
 
 export default function Sprungnavigation() {
+  const t = uebersetze(TEXTE, spracheDerAnfrage());
+  const ZIELE = t.ziele;
   return (
     <nav
-      aria-label="Auf dieser Seite"
+      aria-label={t.aria}
       className="sticky top-[68px] z-30 border-b border-ink-200/70 bg-white/90 backdrop-blur-xl backdrop-saturate-150 md:static md:bg-white md:backdrop-blur-none"
     >
       <ul className="ov-container flex gap-2 overflow-x-auto py-2.5 [scrollbar-width:none] md:justify-center md:py-3">

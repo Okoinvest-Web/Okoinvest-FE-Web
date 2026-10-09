@@ -10,19 +10,194 @@ import { useTeilbarerZustand } from "./kontext";
 import { ErgebnisKopf, MobilKurz, RechnerRahmen } from "./InvestTeile";
 import { AmpelMarke, FARBEN } from "./ToolTeile";
 import { EBENEN, KAPAZITAETEN, LAENDER, STANDARD, rechneNetzanschluss } from "@/lib/rechner/netzanschluss";
-import { fmt, fmtEur, fmtMio } from "@/lib/rechner/annahmen";
 import { pfad } from "@/lib/land";
+import { useSeitenLand } from "@/components/Land/LandKontext";
+import { landStart } from "@/components/Land/useLand";
+import { useTexte } from "@/components/Sprache/SpracheKontext";
+import { useFormate } from "@/components/Sprache/useFormate";
+import { FREIFLAECHE } from "@/lib/invest/markt";
 
-const geld = (v) => (v >= 1e6 ? fmtMio(v, 2) : `${fmt(Math.round(v / 1000))} Tsd. €`);
-const EBENE_LABEL = { msLeitung: "Mittelspannungsleitung (20 kV)", uwMs: "Umspannwerk, MS-Sammelschiene", hs: "Hochspannung 110 kV" };
-const AMPEL_TEXT = {
-  gut: "Gute Ausgangslage – der Netzanschluss dürfte das Projekt nicht bremsen.",
-  pruefen: "Machbar, aber Kosten oder Kapazität sind offen – früh beim Netzbetreiber anfragen.",
-  kritisch: "Der Netzanschluss ist das Nadelöhr – Kosten oder Wartezeit können das Projekt in Frage stellen.",
+const geldMit = (f) => (v) => (v >= 1e6 ? f.fmtMio(v, 2) : f.tsd(Math.round(v / 1000) * 1000));
+const opt = (liste, tab) => liste.map((x) => ({ ...x, label: tab[x.id]?.[0] ?? x.label, sub: tab[x.id]?.[1] ?? x.sub }));
+
+/**
+ * Englische Risiken und Tipps – dieselben Bedingungen wie rechneNetzanschluss() (src/lib/rechner/netzanschluss.js),
+ * nur die Texte. Die Rechenlogik bleibt unverändert; ändern sich dort Bedingungen, hier nachziehen.
+ */
+function risikenTippsEn(e, r, f) {
+  const risiken = [];
+  if (e.kapazitaet === "knapp") risiken.push("Grid expansion by the grid operator is required – the operator bears the cost (§ 17 EEG), you bear the time: often several years until feed-in.");
+  if (e.kapazitaet === "unbekannt") risiken.push("Capacity unknown: the grid compatibility check may result in a more distant connection point – which changes costs and schedule considerably.");
+  if (e.km > 5) risiken.push(`Long cable route (${f.fmt(e.km, 1)} km): every plot needs a cable easement; crossings of roads, railways and watercourses lengthen planning and approval.`);
+  if (r.ebene === "hs") risiken.push("110 kV connection: own substation with long delivery times for transformers and its own approval procedure.");
+  if (r.anteil > 0.15) risiken.push(`The grid connection accounts for around ${Math.round(r.anteil * 100)}% of the plant costs – this noticeably reduces the return.`);
+  if (e.speicherMw > 0 && e.speicherNetzbezug) risiken.push("Storage drawing from the grid: plan for a construction cost contribution (BGH, 15 July 2025) and grid fees on consumption; exemptions are currently time-limited.");
+  if (e.anschlussQuote < 0.7 && e.speicherMw === 0) risiken.push("Heavy overbuilding without storage: noticeable curtailment losses – storage can absorb most of them.");
+  if (risiken.length === 0) risiken.push("No conspicuous risks based on your inputs – what matters is the binding information from the grid operator.");
+
+  const tipps = [];
+  if (e.land === "de") {
+    tipps.push(`Submit the grid connection request early and completely under § 8 EEG: the grid operator must provide a schedule without delay and present the result of the grid compatibility check, including a cost estimate, within ${FREIFLAECHE.netz.pruefWochen} weeks at the latest (§ 8(5) and (6) EEG).`);
+    tipps.push("Clarify the reservation: many grid operators reserve capacity only for a limited time and require evidence of project progress (such as land secured, resolution to draw up a plan) – sometimes with a reservation fee. The rules differ between grid operators.");
+  }
+  if (e.land === "at") tipps.push("Austria: apply for grid access to the distribution system operator; grid access fees and, where applicable, grid provision fees apply. Capacities are published per grid area – check early.");
+  if (e.land === "ch") tipps.push("Switzerland: the connection conditions of the distribution system operator are decisive; necessary grid reinforcements are usually covered by grid costs (Swissgrid) – have this confirmed in advance.");
+  if (!e.cluster) tipps.push("Consider clustering: use a shared cable route or substation with neighbouring projects – this splits costs and planning effort.");
+  else tipps.push("Clustering: regulate cost sharing, construction sequence and liability if a partner is delayed in a contract.");
+  if (e.anschlussQuote >= 0.95) tipps.push("Consider overbuilding: with 70–80% connection capacity per MWp, often only a few percent of yield are lost; a flexible grid connection agreement under § 8a EEG can make capacity available sooner.");
+  if (e.speicherMw === 0) tipps.push("Storage at the same connection (co-location) smooths feed-in peaks, absorbs curtailment and creates additional revenue.");
+  tipps.push("Secure cable rights early: easements along the route are often the longest path – start in parallel with the development plan procedure.");
+  return { risiken, tipps };
+}
+
+// Sprachmodell: Texte des Rechners
+const TEXTE = {
+  de: {
+    ebeneLabel: { msLeitung: "Mittelspannungsleitung (20 kV)", uwMs: "Umspannwerk, MS-Sammelschiene", hs: "Hochspannung 110 kV" },
+    ampelText: {
+      gut: "Gute Ausgangslage – der Netzanschluss dürfte das Projekt nicht bremsen.",
+      pruefen: "Machbar, aber Kosten oder Kapazität sind offen – früh beim Netzbetreiber anfragen.",
+      kritisch: "Der Netzanschluss ist das Nadelöhr – Kosten oder Wartezeit können das Projekt in Frage stellen.",
+    },
+    ebenen: { auto: ["Automatisch", "nach Leistung"], msLeitung: ["MS-Leitung", "Einschleifen 20 kV"], uwMs: ["Umspannwerk", "MS-Sammelschiene"], hs: ["110 kV", "eigenes Umspannwerk"] },
+    kapazitaeten: { frei: ["Bekannt: frei", "Auskunft liegt vor"], unbekannt: ["Unbekannt", "noch nicht angefragt"], knapp: ["Bekannt: knapp", "Ausbau nötig"] },
+    laender: { de: ["Deutschland"], at: ["Österreich"], ch: ["Schweiz"] },
+    posten: (p) => p.label,
+    land: "Land",
+    kosten: "Kosten",
+    jeKwp: "je kWp",
+    zeit: "Zeit",
+    monate: (a, b) => `${a}–${b} Mon.`,
+    anlage: "Anlage",
+    groesse: "Anlagengröße",
+    anschluss: "Anschlussleistung (Überbauung)",
+    anschlussFormat: (f, v, mw) => `${f.fmt(v)} % · ${mw} MW`,
+    anschlussHinweis: "Einspeiseleistung im Verhältnis zur Modulleistung – weniger Leistung spart Netzkosten, kostet aber etwas Ertrag.",
+    speicher: "Speicher am selben Anschluss",
+    speicherText: "Co-Location, fängt Spitzen auf",
+    speicherLeistung: "Speicherleistung",
+    netzbezug: "Speicher lädt auch aus dem Netz",
+    netzbezugText: "dann fällt ein Baukostenzuschuss an",
+    netz: "Netz",
+    entfernung: "Entfernung zum Anschlusspunkt",
+    entfernungHinweis: "Trassenlänge bis zur MS-Leitung oder zum Umspannwerk – meist länger als Luftlinie.",
+    ebene: "Spannungsebene",
+    kapazitaet: "Freie Netzkapazität",
+    cluster: "Clusterung mit Nachbarprojekt",
+    clusterText: "gemeinsame Trasse bzw. gemeinsames Umspannwerk",
+    sr: (a, b, c, d) => `Netzanschluss grob ${a} bis ${b}, Zeitrahmen ${c} bis ${d} Monate.`,
+    ihr: "Ihr Netzanschluss",
+    hauptLabel: "Kosten des Netzanschlusses (Mitte)",
+    spanne: (a, b) => `Spanne ${a} – ${b}`,
+    anlagenkosten: (x) => `${x} % der Anlagenkosten`,
+    zeitrahmen: "Zeitrahmen",
+    abBegehren: "ab vollständigem Begehren",
+    anschlussK: "Anschluss",
+    systeme: (n) => `${n} × 20-kV-System`,
+    erwartet: (mw, l) => `Für ${mw} MW wäre typischerweise „${l}“ zu erwarten.`,
+    ihrAnteil: "(Ihr Anteil)",
+    fuss: "Grobe Orientierung ohne Gewähr. Verbindlich sind nur Netzverträglichkeitsprüfung und Kostenvoranschlag des Netzbetreibers.",
+    pruefen: "Fläche prüfen lassen",
+    ueberTitel: "Überbauung: lohnt weniger Anschlussleistung?",
+    voll: "Sie rechnen mit voller Anschlussleistung. Stellen Sie den Regler „Anschlussleistung“ auf 70–80 %: Oft sinken die Netzkosten, während nur wenige Prozent Ertrag verloren gehen.",
+    gespart: "Netzkosten gespart",
+    gg100: "ggü. 100 % Anschluss",
+    verlust: "Ertragsverlust",
+    verlustZusatz: (a, b) => `${a} MWh · ${b} je Jahr`,
+    barwert: "Barwert Verlust 20 J.",
+    kleiner: "kleiner als die Ersparnis",
+    groesser: "größer als die Ersparnis",
+    auffang: (x) => `Der Speicher fängt rechnerisch rund ${x} % der Abregelung auf.`,
+    ueberFuss: "Kapazität frei wird oft schneller, wenn Sie eine begrenzte Einspeisung anbieten – etwa über eine flexible Netzanschlussvereinbarung nach § 8a EEG. Ertragsverlust bewertet mit dem EEG-Zuschlag, abgezinst mit 5 %.",
+    risiken: "Risiken",
+    tipps: "Tipps",
+    ziel: { msLeitung: "MS-Leitung", uwMs: "Umspannwerk", hs: "110-kV-Netz" },
+    schemaAria: (km, z) => `Skizze: Solarpark, ${km} km Kabeltrasse, Anschluss an ${z}`,
+    park: (x) => `Park ${x} MWp`,
+  },
+  en: {
+    ebeneLabel: { msLeitung: "Medium-voltage line (20 kV)", uwMs: "Substation, MV busbar", hs: "High voltage 110 kV" },
+    ampelText: {
+      gut: "Good starting position – the grid connection is unlikely to hold the project back.",
+      pruefen: "Feasible, but costs or capacity are still open – enquire with the grid operator early.",
+      kritisch: "The grid connection is the bottleneck – costs or waiting time could call the project into question.",
+    },
+    ebenen: { auto: ["Automatic", "by capacity"], msLeitung: ["MV line", "loop-in 20 kV"], uwMs: ["Substation", "MV busbar"], hs: ["110 kV", "own substation"] },
+    kapazitaeten: { frei: ["Known: available", "information received"], unbekannt: ["Unknown", "not yet requested"], knapp: ["Known: scarce", "expansion needed"] },
+    laender: { de: ["Germany"], at: ["Austria"], ch: ["Switzerland"] },
+    posten: (p, n) =>
+      ({
+        station: "Transfer and transformer stations in the park",
+        einschleifen: "Loop-in into the MV line",
+        kabel: n.ebene === "hs" ? "110 kV cable route" : `20 kV cable route (${n.kabelSysteme} ${n.kabelSysteme > 1 ? "systems" : "system"})`,
+        feld: `Switchgear bay${n.kabelSysteme > 1 ? "s" : ""} at the substation (${n.kabelSysteme})`,
+        uw: "Own 110/20 kV substation",
+        bkz: "Construction cost contribution for the storage system’s grid consumption",
+      })[p.id] ?? p.label,
+    land: "Country",
+    kosten: "Costs",
+    jeKwp: "per kWp",
+    zeit: "Time",
+    monate: (a, b) => `${a}–${b} mths`,
+    anlage: "Plant",
+    groesse: "Plant size",
+    anschluss: "Connection capacity (overbuilding)",
+    anschlussFormat: (f, v, mw) => `${f.pct(v)} · ${mw} MW`,
+    anschlussHinweis: "Feed-in capacity relative to module capacity – less capacity saves grid costs but costs some yield.",
+    speicher: "Storage at the same connection",
+    speicherText: "co-location, absorbs peaks",
+    speicherLeistung: "Storage power",
+    netzbezug: "Storage also charges from the grid",
+    netzbezugText: "then a construction cost contribution applies",
+    netz: "Grid",
+    entfernung: "Distance to the connection point",
+    entfernungHinweis: "Route length to the MV line or substation – usually longer than as the crow flies.",
+    ebene: "Voltage level",
+    kapazitaet: "Available grid capacity",
+    cluster: "Clustering with a neighbouring project",
+    clusterText: "shared cable route or shared substation",
+    sr: (a, b, c, d) => `Grid connection roughly ${a} to ${b}, time frame ${c} to ${d} months.`,
+    ihr: "Your grid connection",
+    hauptLabel: "Cost of the grid connection (mid-point)",
+    spanne: (a, b) => `Range ${a} – ${b}`,
+    anlagenkosten: (x) => `${x}% of the plant costs`,
+    zeitrahmen: "Time frame",
+    abBegehren: "from a complete request",
+    anschlussK: "Connection",
+    systeme: (n) => `${n} × 20 kV system`,
+    erwartet: (mw, l) => `For ${mw} MW, “${l}” would typically be expected.`,
+    ihrAnteil: "(your share)",
+    fuss: "Rough guidance without guarantee. Only the grid operator’s grid compatibility check and cost estimate are binding.",
+    pruefen: "Have your land checked",
+    ueberTitel: "Overbuilding: is less connection capacity worthwhile?",
+    voll: "You are calculating with full connection capacity. Set the “Connection capacity” slider to 70–80%: grid costs often fall while only a few percent of yield are lost.",
+    gespart: "Grid costs saved",
+    gg100: "vs. 100% connection",
+    verlust: "Yield loss",
+    verlustZusatz: (a, b) => `${a} MWh · ${b} per year`,
+    barwert: "Present value of loss, 20 yrs",
+    kleiner: "smaller than the savings",
+    groesser: "larger than the savings",
+    auffang: (x) => `The storage absorbs a calculated ${x}% of the curtailment.`,
+    ueberFuss: "Capacity often becomes available sooner if you offer limited feed-in – for example via a flexible grid connection agreement under § 8a EEG. Yield loss valued at the EEG award, discounted at 5%.",
+    risiken: "Risks",
+    tipps: "Tips",
+    ziel: { msLeitung: "MV line", uwMs: "Substation", hs: "110 kV grid" },
+    schemaAria: (km, z) => `Sketch: solar park, ${km} km cable route, connection to ${z}`,
+    park: (x) => `Park ${x} MWp`,
+  },
 };
 
 export default function NetzanschlussRechner() {
-  const [e, setE] = useState(STANDARD);
+  // Ländermodell: auf /at bzw. /ch Region/Land vorwählen – die Länder-Sperre zeigt dann keine ungeprüften Werte
+  const seitenLand = useSeitenLand();
+  const t = useTexte(TEXTE);
+  const f = useFormate();
+  const { fmt, fmtEur } = f;
+  const geld = geldMit(f);
+  const en = f.sprache === "en";
+  const EBENE_LABEL = t.ebeneLabel;
+  const [e, setE] = useState(() => landStart(STANDARD, seitenLand));
   const set = (k) => (v) => setE((a) => ({ ...a, [k]: v }));
   useTeilbarerZustand(e, (neu) => setE((a) => ({ ...a, ...neu })), {
     optionen: { land: LAENDER.map((x) => x.id), ebene: EBENEN.map((x) => x.id), kapazitaet: KAPAZITAETEN.map((x) => x.id) },
@@ -31,11 +206,12 @@ export default function NetzanschlussRechner() {
   });
   const r = useMemo(() => rechneNetzanschluss(e), [e]);
   const u = r.ueberbauung;
+  const rt = en ? risikenTippsEn(r.eingabe, r, f) : { risiken: r.risiken, tipps: r.tipps };
 
   // Länder-Sperre (Paket E): für AT/CH nur die Regionswahl und der Hinweis aus markt.js
   const sperre = r.sperre;
   const regionWahl = (
-    <Auswahl legende="Land" wert={e.land} onChange={set("land")} optionen={LAENDER} />
+    <Auswahl legende={t.land} wert={e.land} onChange={set("land")} optionen={opt(LAENDER, t.laender)} />
   );
 
   return (
@@ -48,53 +224,53 @@ export default function NetzanschlussRechner() {
         <>
           <MobilKurz
             werte={[
-              ["Kosten", geld(r.summe)],
-              ["je kWp", `${fmt(r.proKwp)} €`],
-              ["Zeit", `${r.monate[0]}–${r.monate[1]} Mon.`],
+              [t.kosten, geld(r.summe)],
+              [t.jeKwp, fmtEur(r.proKwp)],
+              [t.zeit, t.monate(r.monate[0], r.monate[1])],
             ]}
           />
           <div className="space-y-8">
-            <Gruppe titel="Anlage">
+            <Gruppe titel={t.anlage}>
               {regionWahl}
-              <Regler label="Anlagengröße" wert={e.mwp} min={1} max={150} step={1} einheit="MWp" onChange={set("mwp")} />
+              <Regler label={t.groesse} wert={e.mwp} min={1} max={150} step={1} einheit="MWp" onChange={set("mwp")} />
               <Regler
-                label="Anschlussleistung (Überbauung)"
+                label={t.anschluss}
                 wert={e.anschlussQuote * 100}
                 min={50}
                 max={100}
                 step={5}
-                format={(v) => `${fmt(v)} % · ${fmt((e.mwp * v) / 100, 1)} MW`}
-                minLabel="50 %"
-                maxLabel="100 %"
+                format={(v) => t.anschlussFormat(f, v, fmt((e.mwp * v) / 100, 1))}
+                minLabel={f.pct(50)}
+                maxLabel={f.pct(100)}
                 onChange={(v) => set("anschlussQuote")(v / 100)}
-                hinweis="Einspeiseleistung im Verhältnis zur Modulleistung – weniger Leistung spart Netzkosten, kostet aber etwas Ertrag."
+                hinweis={t.anschlussHinweis}
               />
-              <Schalter icon={BatteryCharging} label="Speicher am selben Anschluss" beschreibung="Co-Location, fängt Spitzen auf" an={e.speicherMw > 0} onChange={(v) => set("speicherMw")(v ? Math.max(1, Math.round(e.mwp * 0.3)) : 0)}>
+              <Schalter icon={BatteryCharging} label={t.speicher} beschreibung={t.speicherText} an={e.speicherMw > 0} onChange={(v) => set("speicherMw")(v ? Math.max(1, Math.round(e.mwp * 0.3)) : 0)}>
                 <div className="space-y-4">
-                  <Regler label="Speicherleistung" wert={e.speicherMw} min={1} max={Math.max(5, e.mwp)} step={1} einheit="MW" onChange={set("speicherMw")} />
-                  <Schalter icon={Cable} label="Speicher lädt auch aus dem Netz" beschreibung="dann fällt ein Baukostenzuschuss an" an={e.speicherNetzbezug} onChange={set("speicherNetzbezug")} />
+                  <Regler label={t.speicherLeistung} wert={e.speicherMw} min={1} max={Math.max(5, e.mwp)} step={1} einheit="MW" onChange={set("speicherMw")} />
+                  <Schalter icon={Cable} label={t.netzbezug} beschreibung={t.netzbezugText} an={e.speicherNetzbezug} onChange={set("speicherNetzbezug")} />
                 </div>
               </Schalter>
             </Gruppe>
-            <Gruppe titel="Netz">
-              <Regler label="Entfernung zum Anschlusspunkt" wert={e.km} min={0.2} max={20} step={0.1} stellen={1} format={(v) => `${fmt(v, 1)} km`} onChange={set("km")} hinweis="Trassenlänge bis zur MS-Leitung oder zum Umspannwerk – meist länger als Luftlinie." />
-              <Auswahl legende="Spannungsebene" wert={e.ebene} onChange={set("ebene")} optionen={EBENEN} spalten={2} klein />
-              <Auswahl legende="Freie Netzkapazität" wert={e.kapazitaet} onChange={set("kapazitaet")} optionen={KAPAZITAETEN} klein />
-              <Schalter icon={Users} label="Clusterung mit Nachbarprojekt" beschreibung="gemeinsame Trasse bzw. gemeinsames Umspannwerk" an={e.cluster} onChange={set("cluster")} />
+            <Gruppe titel={t.netz}>
+              <Regler label={t.entfernung} wert={e.km} min={0.2} max={20} step={0.1} stellen={1} format={(v) => `${fmt(v, 1)} km`} onChange={set("km")} hinweis={t.entfernungHinweis} />
+              <Auswahl legende={t.ebene} wert={e.ebene} onChange={set("ebene")} optionen={opt(EBENEN, t.ebenen)} spalten={2} klein />
+              <Auswahl legende={t.kapazitaet} wert={e.kapazitaet} onChange={set("kapazitaet")} optionen={opt(KAPAZITAETEN, t.kapazitaeten)} klein />
+              <Schalter icon={Users} label={t.cluster} beschreibung={t.clusterText} an={e.cluster} onChange={set("cluster")} />
             </Gruppe>
           </div>
         </>
       )}
       ergebnis={
         <>
-          <p className="sr-only" aria-live="polite">{`Netzanschluss grob ${geld(r.spanne.min)} bis ${geld(r.spanne.max)}, Zeitrahmen ${r.monate[0]} bis ${r.monate[1]} Monate.`}</p>
-          <ErgebnisKopf titel="Ihr Netzanschluss" plakette={EBENE_LABEL[r.ebene]} />
+          <p className="sr-only" aria-live="polite">{t.sr(geld(r.spanne.min), geld(r.spanne.max), r.monate[0], r.monate[1])}</p>
+          <ErgebnisKopf titel={t.ihr} plakette={EBENE_LABEL[r.ebene]} />
 
           <Hauptzahl
             className="mt-5"
             icon={Coins}
-            label="Kosten des Netzanschlusses (Mitte)"
-            zusatz={`Spanne ${geld(r.spanne.min)} – ${geld(r.spanne.max)}`}
+            label={t.hauptLabel}
+            zusatz={t.spanne(geld(r.spanne.min), geld(r.spanne.max))}
             rechts={<AmpelMarke ampel={r.ampel} className={r.ampel === "kritisch" ? "bg-white/10 ring-white/25" : undefined} />}
           >
             <Zahl wert={r.summe} format={geld} delta="dunkel" einlauf />
@@ -106,23 +282,23 @@ export default function NetzanschlussRechner() {
             )}
             key={r.ampel}
           >
-            {AMPEL_TEXT[r.ampel]}
+            {t.ampelText[r.ampel]}
           </p>
 
           <Belege>
-            <Kennzahl ton="akzent" icon={Percent} label="je kWp" zusatz={`${fmt(r.anteil * 100)} % der Anlagenkosten`}>
-              <Zahl wert={r.proKwp} suffix=" €" delta="hell" />
+            <Kennzahl ton="akzent" icon={Percent} label={t.jeKwp} zusatz={t.anlagenkosten(fmt(r.anteil * 100))}>
+              <Zahl wert={r.proKwp} format={(v) => fmtEur(v)} delta="hell" />
             </Kennzahl>
-            <Kennzahl icon={CalendarClock} label="Zeitrahmen" zusatz="ab vollständigem Begehren">
-              {r.monate[0]}–{r.monate[1]} Mon.
+            <Kennzahl icon={CalendarClock} label={t.zeitrahmen} zusatz={t.abBegehren}>
+              {t.monate(r.monate[0], r.monate[1])}
             </Kennzahl>
-            <Kennzahl icon={Network} label="Anschluss" zusatz={`${r.kabelSysteme} × 20-kV-System`}>
+            <Kennzahl icon={Network} label={t.anschlussK} zusatz={t.systeme(r.kabelSysteme)}>
               <Zahl wert={r.anschlussMw} stellen={1} suffix=" MW" />
             </Kennzahl>
           </Belege>
 
           {e.ebene !== "auto" && e.ebene !== r.vorschlag && (
-            <p className="mt-3 text-[13px] text-ink-500">Für {fmt(r.anschlussMw, 1)} MW wäre typischerweise „{EBENE_LABEL[r.vorschlag]}“ zu erwarten.</p>
+            <p className="mt-3 text-[13px] text-ink-500">{t.erwartet(fmt(r.anschlussMw, 1), EBENE_LABEL[r.vorschlag])}</p>
           )}
 
           <Schema r={r} km={e.km} />
@@ -132,8 +308,8 @@ export default function NetzanschlussRechner() {
               <li key={p.id} className="rounded-2xl bg-ink-50 px-4 py-3">
                 <div className="flex items-baseline justify-between gap-3 text-[13.5px]">
                   <span className="min-w-0 text-ink-700">
-                    {p.label}
-                    {p.geteilt && <span className="ml-1.5 text-[12px] text-ov-700">(Ihr Anteil)</span>}
+                    {t.posten(p, r)}
+                    {p.geteilt && <span className="ml-1.5 text-[12px] text-ov-700">{t.ihrAnteil}</span>}
                   </span>
                   <span className="ov-num shrink-0 font-semibold text-ink-900">{geld(p.eur)}</span>
                 </div>
@@ -145,9 +321,9 @@ export default function NetzanschlussRechner() {
           </ul>
 
           <div className="mt-7 flex flex-col gap-3 border-t border-ink-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="max-w-md text-[13px] leading-relaxed text-ink-500">Grobe Orientierung ohne Gewähr. Verbindlich sind nur Netzverträglichkeitsprüfung und Kostenvoranschlag des Netzbetreibers.</p>
+            <p className="max-w-md text-[13px] leading-relaxed text-ink-500">{t.fuss}</p>
             <Button href={pfad("/flaechencheck")} size="lg" pfeil className="shrink-0">
-              Fläche prüfen lassen
+              {t.pruefen}
             </Button>
           </div>
         </>
@@ -155,55 +331,55 @@ export default function NetzanschlussRechner() {
       unten={
         <div className="space-y-6">
           <div className="rounded-3xl bg-sand-50 p-5 ring-1 ring-ink-200/60 md:p-6">
-            <h3 className="font-display text-[19px] font-extrabold tracking-tight text-ink-900">Überbauung: lohnt weniger Anschlussleistung?</h3>
+            <h3 className="font-display text-[19px] font-extrabold tracking-tight text-ink-900">{t.ueberTitel}</h3>
             {e.anschlussQuote >= 1 ? (
               <p className="mt-2 text-[14px] leading-relaxed text-ink-600">
-                Sie rechnen mit voller Anschlussleistung. Stellen Sie den Regler „Anschlussleistung“ auf 70–80 %: Oft sinken die Netzkosten, während nur wenige Prozent Ertrag verloren gehen.
+                {t.voll}
               </p>
             ) : (
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <Kennzahl icon={Coins} label="Netzkosten gespart" zusatz="ggü. 100 % Anschluss">
+                <Kennzahl icon={Coins} label={t.gespart} zusatz={t.gg100}>
                   {geld(u.einsparung)}
                 </Kennzahl>
-                <Kennzahl icon={AlertTriangle} label="Ertragsverlust" zusatz={`${fmt(u.verlustKwh / 1000)} MWh · ${fmtEur(u.verlustEurJahr)} je Jahr`}>
-                  {fmt(u.verlust * 100, 1)} %
+                <Kennzahl icon={AlertTriangle} label={t.verlust} zusatz={t.verlustZusatz(fmt(u.verlustKwh / 1000), fmtEur(u.verlustEurJahr))}>
+                  {f.fmtPct(u.verlust, 1)}
                 </Kennzahl>
-                <Kennzahl ton={u.lohnt ? "akzent" : "hell"} icon={Percent} label="Barwert Verlust 20 J." zusatz={u.lohnt ? "kleiner als die Ersparnis" : "größer als die Ersparnis"}>
+                <Kennzahl ton={u.lohnt ? "akzent" : "hell"} icon={Percent} label={t.barwert} zusatz={u.lohnt ? t.kleiner : t.groesser}>
                   {geld(u.verlustBarwert)}
                 </Kennzahl>
               </div>
             )}
             {u.speicherAuffang > 0 && (
-              <p className="mt-3 text-[13px] text-ink-500">Der Speicher fängt rechnerisch rund {fmt(u.speicherAuffang * 100)} % der Abregelung auf.</p>
+              <p className="mt-3 text-[13px] text-ink-500">{t.auffang(fmt(u.speicherAuffang * 100))}</p>
             )}
             <p className="mt-3 text-[12.5px] leading-relaxed text-ink-500">
-              Kapazität frei wird oft schneller, wenn Sie eine begrenzte Einspeisung anbieten – etwa über eine flexible Netzanschlussvereinbarung nach § 8a EEG. Ertragsverlust bewertet mit dem EEG-Zuschlag, abgezinst mit 5 %.
+              {t.ueberFuss}
             </p>
           </div>
 
           <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-2">
             <section aria-labelledby="na-risiken" className="rounded-3xl ring-1 ring-ink-200/70 p-5 md:p-6">
               <h3 id="na-risiken" className="flex items-center gap-2.5 font-display text-[19px] font-extrabold tracking-tight text-ink-900">
-                <AlertTriangle aria-hidden="true" className="h-5 w-5 text-warn-600" /> Risiken
+                <AlertTriangle aria-hidden="true" className="h-5 w-5 text-warn-600" /> {t.risiken}
               </h3>
               <ul className="mt-4 space-y-3">
-                {r.risiken.map((t) => (
-                  <li key={t} className="flex gap-3 text-[14px] leading-relaxed text-ink-700">
+                {rt.risiken.map((x) => (
+                  <li key={x} className="flex gap-3 text-[14px] leading-relaxed text-ink-700">
                     <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sun-500" aria-hidden="true" />
-                    {t}
+                    {x}
                   </li>
                 ))}
               </ul>
             </section>
             <section aria-labelledby="na-tipps" className="rounded-3xl bg-navy-950 p-5 text-white md:p-6">
               <h3 id="na-tipps" className="flex items-center gap-2.5 font-display text-[19px] font-extrabold tracking-tight">
-                <Lightbulb aria-hidden="true" className="h-5 w-5 text-sun-400" /> Tipps
+                <Lightbulb aria-hidden="true" className="h-5 w-5 text-sun-400" /> {t.tipps}
               </h3>
               <ol className="mt-4 space-y-3">
-                {r.tipps.map((t, i) => (
-                  <li key={t} className="flex gap-3 text-[14px] leading-relaxed text-white/85">
+                {rt.tipps.map((x, i) => (
+                  <li key={x} className="flex gap-3 text-[14px] leading-relaxed text-white/85">
                     <span className="ov-num flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-[12px] font-bold text-ov-300">{i + 1}</span>
-                    <span className="min-w-0">{t}</span>
+                    <span className="min-w-0">{x}</span>
                   </li>
                 ))}
               </ol>
@@ -217,10 +393,12 @@ export default function NetzanschlussRechner() {
 
 /** Schematische Skizze: Park → Trasse → Anschlusspunkt */
 function Schema({ r, km }) {
-  const ziel = r.ebene === "msLeitung" ? "MS-Leitung" : r.ebene === "uwMs" ? "Umspannwerk" : "110-kV-Netz";
+  const t = useTexte(TEXTE);
+  const { fmt } = useFormate();
+  const ziel = t.ziel[r.ebene];
   return (
     <div className="mt-5 overflow-hidden rounded-2xl ring-1 ring-ink-200/70">
-      <svg viewBox="0 0 600 120" width="100%" role="img" aria-label={`Skizze: Solarpark, ${fmt(km, 1)} km Kabeltrasse, Anschluss an ${ziel}`} className="block bg-sand-50">
+      <svg viewBox="0 0 600 120" width="100%" role="img" aria-label={t.schemaAria(fmt(km, 1), ziel)} className="block bg-sand-50">
         {/* Park */}
         <g transform="translate(24 30)">
           {[0, 1, 2].map((z) => (
@@ -231,7 +409,7 @@ function Schema({ r, km }) {
             </g>
           ))}
           <text x={46} y={82} textAnchor="middle" className="fill-ink-600 text-[12px] font-semibold">
-            Park {fmt(r.eingabe.mwp)} MWp
+            {t.park(fmt(r.eingabe.mwp))}
           </text>
         </g>
         {/* Station */}

@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 import { ArrowRight, Search } from "lucide-react";
+import { useTexte } from "@/components/Sprache/SpracheKontext";
+import { useLandHref } from "@/components/Land/Link";
+
+const TEXTE = {
+  de: { label: "Begriff im Lexikon suchen", platzhalter: "Begriff suchen, z. B. Dienstbarkeit", knopf: "Nachschlagen" },
+  en: { label: "Search the glossary", platzhalter: "Search for a term, e.g. easement", knopf: "Look up" },
+};
 
 /**
  * Suchfeld im Lexikon-Hero. Übergibt den Begriff an den LexikonExplorer
@@ -10,11 +17,13 @@ import { ArrowRight, Search } from "lucide-react";
  */
 export default function HeroSuche() {
   const [q, setQ] = useState("");
+  const t = useTexte(TEXTE);
+  const ziel = useLandHref("/wissen/lexikon");
 
   return (
     <form
       role="search"
-      action="/wissen/lexikon#lexikon"
+      action={`${ziel}#lexikon`}
       method="get"
       onSubmit={(e) => {
         e.preventDefault();
@@ -29,7 +38,7 @@ export default function HeroSuche() {
     >
       <Search aria-hidden="true" className="pointer-events-none absolute left-5 h-5 w-5 text-ink-400" />
       <label htmlFor="lexikon-hero-suche" className="sr-only">
-        Begriff im Lexikon suchen
+        {t.label}
       </label>
       <input
         id="lexikon-hero-suche"
@@ -37,7 +46,7 @@ export default function HeroSuche() {
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Begriff suchen, z. B. Dienstbarkeit"
+        placeholder={t.platzhalter}
         autoComplete="off"
         className="h-12 min-w-0 flex-1 rounded-full bg-transparent pl-12 pr-3 text-[16px] text-ink-900 outline-none placeholder:text-ink-500 [&::-webkit-search-cancel-button]:hidden"
       />
@@ -45,7 +54,7 @@ export default function HeroSuche() {
         type="submit"
         className="ov-press inline-flex h-12 shrink-0 items-center gap-2 rounded-full bg-ov-600 px-5 text-[15px] font-semibold text-white transition-colors hover:bg-ov-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300 focus-visible:ring-offset-2 sm:px-6"
       >
-        <span className="max-sm:sr-only">Nachschlagen</span>
+        <span className="max-sm:sr-only">{t.knopf}</span>
         <ArrowRight aria-hidden="true" className="h-4 w-4" />
       </button>
     </form>

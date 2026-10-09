@@ -1,5 +1,5 @@
 import { cn } from "@/components/ui/cn";
-import { fmt } from "@/lib/rechner/annahmen";
+import { fmtZahl } from "@/lib/sprache/format";
 import s from "./reststrom.module.css";
 
 /**
@@ -18,7 +18,10 @@ export const FARBEN = {
   stromsteuer: "bg-ink-400",
 };
 
-export default function PreisBalken({ zeilen = [], max, legende = true, dunkel = false, ersparnis = false, className }) {
+export default function PreisBalken({ zeilen = [], max, legende = true, dunkel = false, ersparnis = false, className, sprache = "de" }) {
+  // Sprachmodell: Zahlenformat und feste Texte je Sprache (Beschriftungen kommen übersetzt vom Aufrufer)
+  const fmt = (n, s = 0) => fmtZahl(n, s, sprache);
+  const en = sprache === "en";
   // Einlauf: Balken wird beim Eintritt von links freigelegt (nur auf hellem Grund, siehe reststrom.module.css)
   const summe = (z) => z.teile.reduce((s, t) => s + t.ct, 0);
   const skala = max || Math.max(...zeilen.map(summe), 1);
@@ -39,7 +42,7 @@ export default function PreisBalken({ zeilen = [], max, legende = true, dunkel =
             <div
               className={cn("flex h-12 w-full overflow-hidden rounded-xl", dunkel ? "bg-white/10" : cn("bg-ink-100", s.vorhang))}
               role="img"
-              aria-label={`${z.titel}: ${z.teile.map((t) => `${t.label} ${fmt(t.ct, 2)} ct`).join(", ")}; gesamt ${fmt(gesamt, 2)} ct/kWh`}
+              aria-label={`${z.titel}: ${z.teile.map((t) => `${t.label} ${fmt(t.ct, 2)} ct`).join(", ")}; ${en ? "total" : "gesamt"} ${fmt(gesamt, 2)} ct/kWh`}
             >
               {z.teile.map((t) => {
                 const breite = (t.ct / skala) * 100;
@@ -85,7 +88,7 @@ export default function PreisBalken({ zeilen = [], max, legende = true, dunkel =
               <span aria-hidden="true" className={cn("h-3 w-3 rounded-[4px]", FARBEN[t.id] || "bg-ink-300")} />
               {t.label.replace(" (Pool)", "")}
               {t.beeinflussbar ? (
-                <span className="rounded-full bg-ov-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ov-800">beeinflussbar</span>
+                <span className="rounded-full bg-ov-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ov-800">{en ? "controllable" : "beeinflussbar"}</span>
               ) : null}
             </li>
           ))}

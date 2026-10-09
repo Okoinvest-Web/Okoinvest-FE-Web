@@ -4,6 +4,13 @@
 import { Factory, Home, Landmark, PlugZap, Sun, Waypoints } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import f from "@/components/Energie/fluss.module.css";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+
+/* Sprachmodell: Beschriftungen je Sprache (Reihenfolge der Mitglieder wie MITGLIEDER) */
+const WORTE = {
+  de: { mitglieder: ["Haushalte", "Betrieb", "Gemeinde"], nahe: "Nahebereich", park: "Solarpark", erzeugt: "erzeugt", netz: "Öffentliches Netz", zugeordnet: "je Viertelstunde zugeordnet", rest: "Reststrom", lieferant: "vom Lieferanten" },
+  en: { mitglieder: ["Households", "Business", "Municipality"], nahe: "Proximity area", park: "Solar park", erzeugt: "generates", netz: "Public grid", zugeordnet: "allocated per quarter-hour", rest: "Residual power", lieferant: "from the supplier" },
+};
 
 // bewegt: einmaliger Ablauf beim Laden (Hero) – Leitungen zeichnen sich vom Park aus, dann laufen drei Impulse
 // Park → Netz → Mitglieder. Reststrom bleibt bewusst still (gestrichelt, Nebenweg). Reduziert: Endzustand sofort.
@@ -45,6 +52,7 @@ function Knoten({ pos, icon: Icon, label, sub, dunkel, art = "mitglied" }) {
 }
 
 export default function NetzSchema({ dunkel = false, bewegt = false, className }) {
+  const w = WORTE[spracheDerAnfrage() === "en" ? "en" : "de"];
   const dPark = `M${PARK[0]} ${PARK[1]} C ${(PARK[0] + NETZ[0]) / 2} ${PARK[1]}, ${(PARK[0] + NETZ[0]) / 2} ${NETZ[1]}, ${NETZ[0]} ${NETZ[1]}`;
   const dMitglied = (m) => `M${NETZ[0]} ${NETZ[1]} C ${(NETZ[0] + m.pos[0]) / 2} ${NETZ[1]}, ${(NETZ[0] + m.pos[0]) / 2} ${m.pos[1]}, ${m.pos[0]} ${m.pos[1]}`;
   const zeichnen = bewegt ? { pathLength: "1", className: "ov-linie" } : {};
@@ -79,14 +87,14 @@ export default function NetzSchema({ dunkel = false, bewegt = false, className }
         <path d={`M${LIEFERANT[0]} ${LIEFERANT[1]} C 430 330, 400 315, 370 300`} stroke={dunkel ? "#ffffff" : "#394050"} strokeOpacity={dunkel ? 0.3 : 0.35} strokeWidth="1.5" strokeDasharray="3 5" vectorEffect="non-scaling-stroke" />
       </svg>
 
-      <span className={cn("absolute right-[3%] top-[3%] text-[11px] font-bold uppercase tracking-[0.16em] sm:text-[12px]", dunkel ? "text-ov-300" : "text-ov-700")}>Nahebereich</span>
+      <span className={cn("absolute right-[3%] top-[3%] text-[11px] font-bold uppercase tracking-[0.16em] sm:text-[12px]", dunkel ? "text-ov-300" : "text-ov-700")}>{w.nahe}</span>
 
-      <Knoten pos={PARK} icon={Sun} label="Solarpark" sub="erzeugt" art="park" dunkel={dunkel} />
-      <Knoten pos={NETZ} icon={Waypoints} label="Öffentliches Netz" sub="je Viertelstunde zugeordnet" art="netz" dunkel={dunkel} />
-      {MITGLIEDER.map((m) => (
-        <Knoten key={m.label} pos={m.pos} icon={m.icon} label={m.label} dunkel={dunkel} />
+      <Knoten pos={PARK} icon={Sun} label={w.park} sub={w.erzeugt} art="park" dunkel={dunkel} />
+      <Knoten pos={NETZ} icon={Waypoints} label={w.netz} sub={w.zugeordnet} art="netz" dunkel={dunkel} />
+      {MITGLIEDER.map((m, i) => (
+        <Knoten key={m.label} pos={m.pos} icon={m.icon} label={w.mitglieder[i]} dunkel={dunkel} />
       ))}
-      <Knoten pos={LIEFERANT} icon={PlugZap} label="Reststrom" sub="vom Lieferanten" art="lieferant" dunkel={dunkel} />
+      <Knoten pos={LIEFERANT} icon={PlugZap} label={w.rest} sub={w.lieferant} art="lieferant" dunkel={dunkel} />
     </div>
   );
 }

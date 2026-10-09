@@ -344,15 +344,16 @@ export function Hinweis({ ton = "info", titel, children, className, icon: Icon }
 }
 
 /** Fortschrittsbalken „Datenraum-Qualität“ (auch in Karten nutzbar) */
-export function QualitaetsBalken({ quote, label = "Datenraum-Qualität", klein = false }) {
+// labelId: Beschriftung als Element (z. B. übersetzt über <T>) – dann benennt aria-labelledby den Balken
+export function QualitaetsBalken({ quote, label = "Datenraum-Qualität", klein = false, labelId }) {
   const q = Math.max(0, Math.min(100, Number(quote) || 0));
   return (
     <div className="min-w-0">
       <div className={cn("flex items-baseline justify-between gap-2", klein ? "text-[12px]" : "text-[13px]")}>
-        <span className="text-ink-600">{label}</span>
+        <span id={labelId} className="text-ink-600">{label}</span>
         <span className="ov-num font-bold text-ink-900">{q} %</span>
       </div>
-      <div className={cn("mt-1 rounded-full bg-ink-100", klein ? "h-1.5" : "h-2")} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={q} aria-label={label}>
+      <div className={cn("mt-1 rounded-full bg-ink-100", klein ? "h-1.5" : "h-2")} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={q} aria-label={labelId ? undefined : label} aria-labelledby={labelId}>
         <div className={cn("rounded-full", klein ? "h-1.5" : "h-2", q >= 80 ? "bg-ov-500" : q >= 50 ? "bg-ov-400" : "bg-sun-400")} style={{ width: `${Math.max(3, q)}%` }} />
       </div>
     </div>

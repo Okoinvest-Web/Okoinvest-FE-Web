@@ -1,6 +1,7 @@
 import { Building2, Sun } from "lucide-react";
 import { cn } from "@/components/ui/cn";
-import { STANDORTE } from "@/data/referenzen";
+import { referenzenFuer } from "@/data/referenzen";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 import { KARTE_BOX, UMRISSE } from "./umrisse";
 
 /**
@@ -19,7 +20,12 @@ const LAENDER = [
   { id: "CH", d: UMRISSE.CH, klasse: "fill-ink-50 stroke-ink-200", label: "Schweiz", x: 118, y: 690 },
 ];
 
+const LAENDER_EN = { DE: "Germany", AT: "Austria", CH: "Switzerland" };
+
 export default function DachKarte({ className }) {
+  const en = spracheDerAnfrage() === "en";
+  const { standorte: STANDORTE } = referenzenFuer(en ? "en" : "de");
+  const laender = en ? LAENDER.map((l) => ({ ...l, label: LAENDER_EN[l.id] })) : LAENDER;
   return (
     <figure className={cn("grid items-center gap-8 rounded-[2rem] bg-white p-5 shadow-xl ring-1 ring-ink-200/70 sm:p-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10", className)}>
       <svg
@@ -28,14 +34,14 @@ export default function DachKarte({ className }) {
         aria-labelledby="dach-karte-titel"
         className="mx-auto h-auto w-full max-w-[460px]"
       >
-        <title id="dach-karte-titel">Karte von Deutschland, Österreich und der Schweiz mit den Standorten der ÖKOVOLT Gruppe: Türkheim, Ostermiething sowie den Solarparks Irsingen, Artern und Tilleda</title>
+        <title id="dach-karte-titel">{en ? "Map of Germany, Austria and Switzerland showing the locations of the ÖKOVOLT Group: Türkheim, Ostermiething and the Irsingen, Artern and Tilleda solar parks" : "Karte von Deutschland, Österreich und der Schweiz mit den Standorten der ÖKOVOLT Gruppe: Türkheim, Ostermiething sowie den Solarparks Irsingen, Artern und Tilleda"}</title>
         <g strokeWidth="1.6" strokeLinejoin="round">
           {LAENDER.map((l) => (
             <path key={l.id} d={l.d} className={l.klasse} />
           ))}
         </g>
         <g aria-hidden="true" className="fill-ink-400 font-display" fontSize="17" fontWeight="700" letterSpacing="2.5">
-          {LAENDER.map((l) => (
+          {laender.map((l) => (
             <text key={l.id} x={l.x} y={l.y} textAnchor="middle">{l.label.toUpperCase()}</text>
           ))}
         </g>
@@ -59,7 +65,7 @@ export default function DachKarte({ className }) {
       </svg>
 
       <figcaption className="min-w-0">
-        <p className="font-display text-[20px] font-bold text-ink-900">Standorte der Gruppe</p>
+        <p className="font-display text-[20px] font-bold text-ink-900">{en ? "Locations of the group" : "Standorte der Gruppe"}</p>
         <ol className="mt-5 space-y-3">
           {STANDORTE.map((s) => {
             const park = s.art === "park";
@@ -85,11 +91,11 @@ export default function DachKarte({ className }) {
           })}
         </ol>
         <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 border-t border-ink-100 pt-5 text-[13px] text-ink-500">
-          <span className="flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-full bg-navy-800" /> Unternehmenssitz</span>
-          <span className="flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-full bg-ov-600" /> Solarpark in Eigenbetrieb</span>
+          <span className="flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-full bg-navy-800" /> {en ? "Company headquarters" : "Unternehmenssitz"}</span>
+          <span className="flex items-center gap-2"><span aria-hidden="true" className="h-3 w-3 rounded-full bg-ov-600" /> {en ? "Solar park operated in-house" : "Solarpark in Eigenbetrieb"}</span>
         </div>
         <p className="mt-3 text-[13px] leading-relaxed text-ink-500">
-          Die Schweiz ist Zielmarkt der Projektentwicklung von ÖkoInvest. Kartengrundlage: Natural Earth.
+          {en ? "Switzerland is a target market for ÖkoInvest's project development. Map data: Natural Earth." : "Die Schweiz ist Zielmarkt der Projektentwicklung von ÖkoInvest. Kartengrundlage: Natural Earth."}
         </p>
       </figcaption>
     </figure>

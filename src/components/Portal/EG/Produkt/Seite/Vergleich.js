@@ -4,6 +4,7 @@ import Button from "@/components/ui/Button";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 /** Vergleich: Aussagen zum Markt aus der Marktanalyse (öffentliche Anbieterangaben, Stand 01.10.2026) */
 const VERGLEICH = [
@@ -16,6 +17,36 @@ const VERGLEICH = [
 ];
 const MARKT_KOPF = "Am Markt (laut öffentlichen Angaben)";
 const HINWEIS = "Grundlage: eigene Auswertung öffentlicher Anbieterangaben (Websites, Preisblätter, Dokumentationen), Stand 01.10.2026. „Selten belegt“ heißt: in öffentlichen Quellen nicht gefunden – nicht, dass es eine Funktion nicht gibt.";
+
+/* Sprachmodell: englische Fassung (gleiche Reihenfolge) */
+const VERGLEICH_EN = [
+  { thema: "Online joining, EDA connection, invoices and credit notes, member portal", markt: "standard with almost all providers", wir: "Also included – with guided consent per grid operator and a deadline display" },
+  { thema: "Help with consent in the grid operator’s portal", markt: "partly as instructions (PDF, pages per grid operator)", wir: "Step-by-step status in the portal, countdown and instructions in the context of the metering point" },
+  { thema: "Multiple participation with participation factor", markt: "with individual providers, partly as a separate package", wir: "Overview per metering point, rules Σ ≤ 100 % and max. 5 checked, suggestion from the optimiser" },
+  { thema: "“Green hours” forecast, storage and load-shifting hints", markt: "rarely documented in public sources", wir: "Forecast from meter readings and weather, hints without control" },
+  { thema: "Running the association, dunning, special VAT cases", markt: "rarely documented in public sources", wir: "Bodies, meetings, four-eyes approvals, VAT cases (small business, farmer, reverse charge)" },
+  { thema: "Founding, installations and financing from a single source", markt: "founding support is common, own installation projects are rare", wir: "Founding as a service, PV and storage via the ÖKOVOLT Group, citizen participation" },
+];
+const WORTE = {
+  de: {
+    vergleich: VERGLEICH, marktKopf: MARKT_KOPF, hinweis: HINWEIS,
+    caption: "Vergleich der Funktionen: am Markt laut öffentlichen Angaben und bei der ÖkoInvest-Plattform", aufgabe: "Aufgabe", plattform: "ÖkoInvest-Plattform",
+    listeAria: "Vergleich der Funktionen am Markt und bei der ÖkoInvest-Plattform",
+    eyebrow: "Warum ÖkoInvest", titel: "Was es am Markt gibt – und was wir anders machen",
+    lead: "Rund ein Dutzend Plattformen decken den Grundumfang solide ab. Den Unterschied machen die Aufgaben rund um die Abrechnung, die in Vorständen die meiste Zeit kosten. Die Plattform geht schrittweise in Betrieb – wir sagen Ihnen im Angebot genau, was ab wann verfügbar ist.",
+    heute: "Was ist heute schon verfügbar?", heuteText: "Fragen Sie uns nach dem aktuellen Stand je Funktion.", button: "Aktuellen Funktionsstand erfragen",
+  },
+  en: {
+    vergleich: VERGLEICH_EN, marktKopf: "On the market (according to public information)",
+    hinweis: "Basis: our own evaluation of public provider information (websites, price sheets, documentation), as of 1 October 2026. “Rarely documented” means: not found in public sources – not that a function does not exist.",
+    caption: "Comparison of functions: on the market according to public information and in the ÖkoInvest platform", aufgabe: "Task", plattform: "ÖkoInvest platform",
+    listeAria: "Comparison of functions on the market and in the ÖkoInvest platform",
+    eyebrow: "Why ÖkoInvest", titel: "What the market offers – and what we do differently",
+    lead: "Around a dozen platforms cover the basic scope well. The difference lies in the tasks around billing that take up most of a board’s time. The platform is going into operation step by step – in our offer we tell you exactly what is available from when.",
+    heute: "What is already available today?", heuteText: "Ask us about the current status of each function.", button: "Ask about the current feature status",
+  },
+};
+const worte = () => WORTE[spracheDerAnfrage() === "en" ? "en" : "de"];
 
 /* „≤ 100 %“ und „max. 5“ nicht über Zeilen trennen */
 const fest = (t) => t.replace(/ (%|≤)/g, " $1").replace(/(≤|max\.) /g, "$1 ");
@@ -35,33 +66,34 @@ function MarktPunkt({ className = "mt-[7px]" }) {
 
 /* Ab lg: Tabelle mit hervorgehobener, „schwebender“ eigener Spalte */
 function Tabelle() {
+  const w = worte();
   return (
     <div className="relative hidden lg:block">
       {/* Hintergrund-Karte der eigenen Spalte (Breite = letzte Spalte, 38 %) */}
       <div aria-hidden="true" className="absolute -bottom-3 -top-3 right-0 w-[38%] rounded-[1.75rem] bg-gradient-to-b from-ov-50 to-white shadow-e4 ring-1 ring-ov-200" />
       <table aria-describedby="vergleich-hinweis" className="relative w-full table-fixed border-separate border-spacing-0 text-left">
-        <caption className="sr-only">Vergleich der Funktionen: am Markt laut öffentlichen Angaben und bei der ÖkoInvest-Plattform</caption>
+        <caption className="sr-only">{w.caption}</caption>
         <colgroup><col className="w-[31%]" /><col className="w-[31%]" /><col className="w-[38%]" /></colgroup>
         <thead>
           <tr>
-            <th scope="col" className="border-b border-ink-200 px-6 pb-4 pt-6 align-bottom text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-500">Aufgabe</th>
-            <th scope="col" className="border-b border-ink-200 px-6 pb-4 pt-6 align-bottom text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-500">{MARKT_KOPF}</th>
+            <th scope="col" className="border-b border-ink-200 px-6 pb-4 pt-6 align-bottom text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-500">{w.aufgabe}</th>
+            <th scope="col" className="border-b border-ink-200 px-6 pb-4 pt-6 align-bottom text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-500">{w.marktKopf}</th>
             <th scope="col" className="border-b border-ov-200 px-8 pb-4 pt-6 align-bottom">
               <span className="flex items-center gap-3">
                 <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-xl bg-ov-600 text-white shadow-[0_6px_16px_-6px_rgba(85,130,39,0.8)]">
                   <Check className="h-[18px] w-[18px]" strokeWidth={2.75} />
                 </span>
-                <span className="font-display text-[17px] font-extrabold tracking-[-0.01em] text-ink-900">ÖkoInvest-Plattform</span>
+                <span className="font-display text-[17px] font-extrabold tracking-[-0.01em] text-ink-900">{w.plattform}</span>
               </span>
             </th>
           </tr>
         </thead>
         <tbody>
-          {VERGLEICH.map((v, i) => {
-            const letzte = i === VERGLEICH.length - 1;
+          {w.vergleich.map((v, i) => {
+            const letzte = i === w.vergleich.length - 1;
             const linie = letzte ? "" : "border-b border-ink-100";
             return (
-              <tr key={v.thema} className="group">
+              <tr key={i} className="group">
                 <th scope="row" className={`px-6 py-6 align-top font-normal ${linie}`}>
                   <span className="flex gap-4">
                     <span aria-hidden="true" className="ov-num pt-[3px] font-display text-[12.5px] font-bold text-ink-400">{nr(i)}</span>
@@ -85,28 +117,29 @@ function Tabelle() {
 
 /* Unter lg: scanbare Liste – Aufgabe als Kopf, Markt kompakt, eigene Lösung hervorgehoben */
 function Liste() {
+  const w = worte();
   return (
     <div className="lg:hidden">
       {/* Legende einmal statt Beschriftung in jeder Karte */}
       <div aria-hidden="true" className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-ink-600">
-        <span className="inline-flex items-center gap-2"><MarktPunkt className="" />{MARKT_KOPF}</span>
-        <span className="inline-flex items-center gap-2 font-semibold text-ov-800"><HakenPunkt klein legende />ÖkoInvest-Plattform</span>
+        <span className="inline-flex items-center gap-2"><MarktPunkt className="" />{w.marktKopf}</span>
+        <span className="inline-flex items-center gap-2 font-semibold text-ov-800"><HakenPunkt klein legende />{w.plattform}</span>
       </div>
-      <ol aria-label="Vergleich der Funktionen am Markt und bei der ÖkoInvest-Plattform" className="grid gap-3 md:grid-cols-2 md:gap-4">
-        {VERGLEICH.map((v, i) => (
-          <Reveal as="li" key={v.thema} delay={(i % 2) * 60} className="flex flex-col overflow-hidden rounded-[1.5rem] bg-white shadow-e2 ring-1 ring-ink-200/70">
+      <ol aria-label={w.listeAria} className="grid gap-3 md:grid-cols-2 md:gap-4">
+        {w.vergleich.map((v, i) => (
+          <Reveal as="li" key={i} delay={(i % 2) * 60} className="flex flex-col overflow-hidden rounded-[1.5rem] bg-white shadow-e2 ring-1 ring-ink-200/70">
             <div className="flex gap-3 px-5 pb-4 pt-5">
               <span aria-hidden="true" className="ov-num pt-[2px] font-display text-[12.5px] font-bold text-ink-400">{nr(i)}</span>
               <div className="min-w-0">
                 <h3 className="font-display text-[16px] font-bold leading-snug text-ink-900">{v.thema}</h3>
                 <dl className="mt-3">
-                  <dt className="sr-only">{MARKT_KOPF}</dt>
+                  <dt className="sr-only">{w.marktKopf}</dt>
                   <dd className="flex gap-2.5 text-[14px] leading-relaxed text-ink-600"><MarktPunkt />{v.markt}</dd>
                 </dl>
               </div>
             </div>
             <dl className="mt-auto border-t border-ov-200 bg-ov-50 px-5 py-4">
-              <dt className="sr-only">ÖkoInvest-Plattform</dt>
+              <dt className="sr-only">{w.plattform}</dt>
               <dd className="flex gap-2.5 text-[14.5px] font-medium leading-relaxed text-ink-800"><HakenPunkt klein />{fest(v.wir)}</dd>
             </dl>
           </Reveal>
@@ -117,20 +150,21 @@ function Liste() {
 }
 
 export default function Vergleich() {
+  const w = worte();
   return (
     <Section data-abschnitt="vergleich" tone="white" space="lg" className="overflow-hidden">
       <div aria-hidden="true" className="ov-grid-bg-light pointer-events-none absolute inset-x-0 top-0 h-[28rem]" />
       <div className="relative grid gap-8 lg:grid-cols-12 lg:items-end lg:gap-12">
         <SectionHeading
-          eyebrow="Warum ÖkoInvest"
-          title="Was es am Markt gibt – und was wir anders machen"
-          lead="Rund ein Dutzend Plattformen decken den Grundumfang solide ab. Den Unterschied machen die Aufgaben rund um die Abrechnung, die in Vorständen die meiste Zeit kosten. Die Plattform geht schrittweise in Betrieb – wir sagen Ihnen im Angebot genau, was ab wann verfügbar ist."
+          eyebrow={w.eyebrow}
+          title={w.titel}
+          lead={w.lead}
           className="lg:col-span-8"
         />
         <Reveal delay={120} className="lg:col-span-4">
           <div className="flex gap-3 rounded-2xl bg-sand-50 p-4 ring-1 ring-sand-200 md:p-5">
             <Info aria-hidden="true" className="mt-0.5 h-[18px] w-[18px] shrink-0 text-navy-600" strokeWidth={2} />
-            <p id="vergleich-hinweis" className="text-[13px] leading-relaxed text-ink-600">{HINWEIS}</p>
+            <p id="vergleich-hinweis" className="text-[13px] leading-relaxed text-ink-600">{w.hinweis}</p>
           </div>
         </Reveal>
       </div>
@@ -142,9 +176,9 @@ export default function Vergleich() {
 
       <div className="relative mt-10 flex flex-col items-start gap-4 border-t border-ink-100 pt-8 sm:flex-row sm:items-center sm:justify-between lg:mt-14">
         <p className="max-w-2xl text-[15px] leading-relaxed text-ink-600">
-          <span className="font-semibold text-ink-900">Was ist heute schon verfügbar?</span> Fragen Sie uns nach dem aktuellen Stand je Funktion.
+          <span className="font-semibold text-ink-900">{w.heute}</span> {w.heuteText}
         </p>
-        <Button href="#anfrage" variant="primary" pfeil className="shrink-0">Aktuellen Funktionsstand erfragen</Button>
+        <Button href="#anfrage" variant="primary" pfeil className="shrink-0">{w.button}</Button>
       </div>
     </Section>
   );

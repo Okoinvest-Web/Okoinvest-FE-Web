@@ -11,14 +11,17 @@ import { ErfolgBox, FehlerBox, Feld, eingabe, textbereich } from "@/components/P
 import { senden } from "@/lib/plattform/client";
 import { TERMIN_ARTEN, zeitraumText } from "@/lib/plattform/termine";
 import SlotAuswahl from "./SlotAuswahl";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { terminArt } from "@/lib/sprache/termine";
 
 export const KANAL_ICON = { vor_ort: MapPin, telefon: Phone, video: Video };
 
 export function ArtWahl({ arten, art, setArt, dunkel = false }) {
+  const sprache = useSprache();
   return (
-    <div role="radiogroup" aria-label="Terminart" className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+    <div role="radiogroup" aria-label={sprache === "en" ? "Appointment type" : "Terminart"} className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
       {arten.map((id) => {
-        const a = TERMIN_ARTEN[id];
+        const a = terminArt(TERMIN_ARTEN[id], id, sprache);
         const Icon = KANAL_ICON[a.kanal];
         const aktiv = art === id;
         return (
@@ -38,7 +41,7 @@ export function ArtWahl({ arten, art, setArt, dunkel = false }) {
             </span>
             <span className="min-w-0">
               <span className={cn("block text-[14.5px] font-semibold", aktiv || !dunkel ? "text-ink-900" : "text-white")}>{a.label}</span>
-              <span className={cn("block text-[12.5px] leading-snug", aktiv || !dunkel ? "text-ink-500" : "text-white/60")}>{a.dauer} Minuten · {a.text}</span>
+              <span className={cn("block text-[12.5px] leading-snug", aktiv || !dunkel ? "text-ink-500" : "text-white/60")}>{a.dauer} {sprache === "en" ? "minutes" : "Minuten"} · {a.text}</span>
             </span>
           </button>
         );

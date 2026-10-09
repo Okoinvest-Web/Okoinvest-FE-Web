@@ -90,7 +90,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Für Projektentwickler ist Beteiligung kein Selbstzweck: Ohne [Bebauungsplan](/wissen/lexikon#bebauungsplan) gibt es keinen Solarpark, und über den entscheidet der Gemeinderat. Wo Bürger und Gemeinde sichtbar profitieren, fällt diese Entscheidung leichter. Die Zahlung an die Gemeinde nach § 6 EEG erklärt der Ratgeber [kommunale Beteiligung](/wissen/ratgeber/kommunale-beteiligung-6-eeg); hier geht es um die Beteiligung der Bürgerinnen und Bürger selbst.`,
+          text: `Für Projektentwickler ist Beteiligung kein Selbstzweck: Ohne [Bebauungsplan](/wissen/lexikon#bebauungsplan) gibt es keinen Solarpark, und über den entscheidet der Gemeinderat. Wo Bürger und Gemeinde sichtbar profitieren, fällt diese Entscheidung leichter. Die Zahlung an die Gemeinde nach § 6 EEG erklärt der Ratgeber [kommunale Beteiligung](/ratgeber/kommunale-beteiligung-6-eeg); hier geht es um die Beteiligung der Bürgerinnen und Bürger selbst.`,
         },
         {
           typ: "kennzahl",
@@ -126,7 +126,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Der wichtigste Vorteil: Ein Solarpark bis ${BEG_SOLAR_MW} MW braucht keinen Zuschlag in der [EEG-Ausschreibung](/wissen/ratgeber/eeg-ausschreibung-freiflaeche). Die Gesellschaft spart Gebotsrisiko, Sicherheiten und Wartezeit und erhält den gesetzlich bestimmten anzulegenden Wert, der nach §§ 48 und 49 EEG vom Inbetriebnahmezeitpunkt abhängt. Die Kehrseite: Nach der Mitteilung darf die Gesellschaft ${BEG_SPERRE_JAHRE} Jahre lang keine Förderung für weitere Anlagen derselben Technologie in Anspruch nehmen. Auch bei einer Bürgerenergiegesellschaft muss die Fläche in der Förderkulisse liegen und der Strom ab 100 kW direkt vermarktet werden.`,
+          text: `Der wichtigste Vorteil: Ein Solarpark bis ${BEG_SOLAR_MW} MW braucht keinen Zuschlag in der [EEG-Ausschreibung](/ratgeber/eeg-ausschreibung-freiflaeche). Die Gesellschaft spart Gebotsrisiko, Sicherheiten und Wartezeit und erhält den gesetzlich bestimmten anzulegenden Wert, der nach §§ 48 und 49 EEG vom Inbetriebnahmezeitpunkt abhängt. Die Kehrseite: Nach der Mitteilung darf die Gesellschaft ${BEG_SPERRE_JAHRE} Jahre lang keine Förderung für weitere Anlagen derselben Technologie in Anspruch nehmen. Auch bei einer Bürgerenergiegesellschaft muss die Fläche in der Förderkulisse liegen und der Strom ab 100 kW direkt vermarktet werden.`,
         },
         {
           typ: "p",
@@ -159,7 +159,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Für Landwirte, die ihre Fläche einbringen, gibt es zusätzlich die Kombination aus Pacht und Mitgliedschaft in der Betreibergenossenschaft – etwa bei [Agri-PV](/de/agri-pv). Wie eine Beteiligung über eine Genossenschaft aussehen kann, zeigt die Seite [Genossenschaft](/de/genossenschaft). Die Grundbegriffe erklärt das Lexikon unter [Energiegenossenschaft](/wissen/lexikon#energiegenossenschaft).`,
+          text: `Für Landwirte, die ihre Fläche einbringen, gibt es zusätzlich die Kombination aus Pacht und Mitgliedschaft in der Betreibergenossenschaft – etwa bei [Agri-PV](/agri-pv). Wie eine Beteiligung über eine Genossenschaft aussehen kann, zeigt die Seite [Genossenschaft](/genossenschaft). Die Grundbegriffe erklärt das Lexikon unter [Energiegenossenschaft](/wissen/lexikon#energiegenossenschaft).`,
         },
       ],
     },
@@ -234,7 +234,7 @@ const artikel = {
           schritte: [
             ["Vor dem Aufstellungsbeschluss", "Gespräch mit Bürgermeister und Fraktionen, erste Visualisierung, Eckpunkte zu Fläche, Netzanschluss, Rückbau, § 6-Zahlung und Beteiligungsangebot – unterschrieben wird eine § 6-Vereinbarung erst nach dem Beschluss des Bebauungsplans (§ 6 Abs. 4 EEG), und keine Zusage darf an das Abstimmungsverhalten geknüpft sein. Hintergrund: [Aufstellungsbeschluss](/wissen/lexikon#aufstellungsbeschluss)."],
             ["Frühzeitige Beteiligung", "Informationsabend und Sprechstunden parallel zur [frühzeitigen Beteiligung](/wissen/lexikon#fruehzeitige-beteiligung) nach § 3 Abs. 1 BauGB; Fragen sammeln und öffentlich beantworten."],
-            ["Gutachten offenlegen", "Ergebnisse zu Blendung, Abständen und Artenschutz verständlich aufbereiten – siehe [Abstand und Blendgutachten](/wissen/ratgeber/solarpark-abstand-wohnbebauung-blendgutachten) und [Artenschutz und Biodiversität](/wissen/ratgeber/solarpark-artenschutz-biodiversitaet)."],
+            ["Gutachten offenlegen", "Ergebnisse zu Blendung, Abständen und Artenschutz verständlich aufbereiten – siehe [Abstand und Blendgutachten](/ratgeber/solarpark-abstand-wohnbebauung-blendgutachten) und [Artenschutz und Biodiversität](/ratgeber/solarpark-artenschutz-biodiversitaet)."],
             ["Beteiligungsmodell konkretisieren", "Genossenschaft, Darlehen oder Stromtarif mit klaren Konditionen anbieten, bevor der Satzungsbeschluss ansteht."],
             ["Bau und Betrieb", "Baustellenkommunikation, Tag der offenen Tür, jährlicher Bericht über Erzeugung, Zahlungen an die Gemeinde und Pflegemaßnahmen."],
           ],
@@ -243,7 +243,7 @@ const artikel = {
           typ: "kasten",
           variant: "tipp",
           titel: "Häufige Fehler",
-          text: "Information erst nach dem Aufstellungsbeschluss, Renditeversprechen ohne Risikohinweis, Beteiligung nur für Auswärtige, fehlende Ansprechperson vor Ort und Zusagen, die später nicht eingehalten werden. Wer Flächen anbietet, sollte die Gemeinde von Anfang an einbinden – der [Flächencheck](/de/flaechencheck) klärt vorab, ob eine Fläche überhaupt planbar ist.",
+          text: "Information erst nach dem Aufstellungsbeschluss, Renditeversprechen ohne Risikohinweis, Beteiligung nur für Auswärtige, fehlende Ansprechperson vor Ort und Zusagen, die später nicht eingehalten werden. Wer Flächen anbietet, sollte die Gemeinde von Anfang an einbinden – der [Flächencheck](/flaechencheck) klärt vorab, ob eine Fläche überhaupt planbar ist.",
         },
       ],
     },
@@ -281,7 +281,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Für Solarparks bedeutet das: Anwohner können über eine Energiegemeinschaft Strom aus dem Park beziehen, wenn die Netzebene passt. Wie das in allen drei Ländern funktioniert, erklären der Ratgeber [Energy Sharing und Energiegemeinschaften](/wissen/ratgeber/energy-sharing-energiegemeinschaften) und die Seite [Energiegemeinschaften](/de/energiegemeinschaften). Stand der Angaben: ${STAND}.`,
+          text: `Für Solarparks bedeutet das: Anwohner können über eine Energiegemeinschaft Strom aus dem Park beziehen, wenn die Netzebene passt. Wie das in allen drei Ländern funktioniert, erklären der Ratgeber [Energy Sharing und Energiegemeinschaften](/ratgeber/energy-sharing-energiegemeinschaften) und die Seite [Energiegemeinschaften](/energiegemeinschaften). Stand der Angaben: ${STAND}.`,
         },
       ],
     },
@@ -310,14 +310,14 @@ const artikel = {
     },
     {
       q: "Können sich auch Gemeinden an einer Bürgerenergiegesellschaft beteiligen?",
-      a: `Ja. Stimmrechte, die nicht bei natürlichen Personen liegen, dürfen Kommunen und kleine und mittlere Unternehmen halten. Kein einzelnes Mitglied darf aber mehr als ${fmtPct(BEG.maxStimmrecht, 0)} der Stimmrechte haben. Mehr für Gemeinden unter [Kommunen](/de/kommunen).`,
+      a: `Ja. Stimmrechte, die nicht bei natürlichen Personen liegen, dürfen Kommunen und kleine und mittlere Unternehmen halten. Kein einzelnes Mitglied darf aber mehr als ${fmtPct(BEG.maxStimmrecht, 0)} der Stimmrechte haben. Mehr für Gemeinden unter [Kommunen](/kommunen).`,
     },
   ],
 
   passend: [
     { href: pfad("/genossenschaft"), titel: "Genossenschaft", text: "Beteiligung an Solarprojekten in der Region." },
     { href: pfad("/energiegemeinschaften"), titel: "Energiegemeinschaften", text: "Solarstrom gemeinsam nutzen in DE, AT und CH." },
-    { href: "/wissen/ratgeber/kommunale-beteiligung-6-eeg", titel: "Kommunale Beteiligung § 6 EEG", text: "Was die Gemeinde erhält und wie der Vertrag aussieht." },
+    { href: "/ratgeber/kommunale-beteiligung-6-eeg", titel: "Kommunale Beteiligung § 6 EEG", text: "Was die Gemeinde erhält und wie der Vertrag aussieht." },
     { href: pfad("/kommunen"), titel: "Für Kommunen", text: "Planung, Beteiligung und Einnahmen im Überblick." },
     { href: pfad("/rechner/beteiligung"), titel: "Beteiligungsrechner", text: "Wie die Ausschüttung einer Energiegenossenschaft entsteht." },
     { href: pfad("/rechner/kommune"), titel: "Kommunal-Rechner", text: "Was ein Solarpark der Gemeinde pro Jahr bringt." },

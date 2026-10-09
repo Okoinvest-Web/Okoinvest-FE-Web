@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 
 /**
  * Minimal-Markup für Ratgeber-Inhalte (bewusst kein Markdown-Parser, kein

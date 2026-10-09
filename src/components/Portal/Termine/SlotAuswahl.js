@@ -7,12 +7,18 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { TZ, heuteTag, tagPlus } from "@/lib/plattform/termine";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 
-const tagText = (tag) => new Date(`${tag}T12:00:00Z`).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", timeZone: "UTC" });
-const zeit = (iso) => new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
+const LOCALE = { de: "de-DE", en: "en-GB" };
+const tagTextIn = (tag, l = "de") => new Date(`${tag}T12:00:00Z`).toLocaleDateString(LOCALE[l] || LOCALE.de, { weekday: "short", day: "2-digit", month: l === "en" ? "short" : "2-digit", timeZone: "UTC" });
+const zeitIn = (iso, l = "de") => new Date(iso).toLocaleTimeString(LOCALE[l] || LOCALE.de, { hour: "2-digit", minute: "2-digit", timeZone: TZ });
 const tagVon = (iso) => new Date(iso).toLocaleDateString("sv-SE", { timeZone: TZ });
 
 export default function SlotAuswahl({ art, gewaehlt, onWahl, mitarbeiterId = "", tage = 7, dunkel = false }) {
+  const sprache = useSprache();
+  const en = sprache === "en";
+  const tagText = (tag) => tagTextIn(tag, sprache);
+  const zeit = (iso) => zeitIn(iso, sprache);
   const [von, setVon] = useState(() => heuteTag());
   const [daten, setDaten] = useState({ slots: [], laden: true, fehler: "" });
 
@@ -22,12 +28,12 @@ export default function SlotAuswahl({ art, gewaehlt, onWahl, mitarbeiterId = "",
     const bis = tagPlus(von, tage - 1);
     fetch(`/api/portal/termine/slots?art=${encodeURIComponent(art)}&von=${von}&bis=${bis}${mitarbeiterId ? `&mitarbeiter=${mitarbeiterId}` : ""}`, { credentials: "same-origin", cache: "no-store" })
       .then((r) => r.json().then((j) => ({ ok: r.ok, j })))
-      .then(({ ok, j }) => aktiv && setDaten({ slots: ok ? j.slots || [] : [], laden: false, fehler: ok ? "" : j.error || "Termine konnten nicht geladen werden." }))
-      .catch(() => aktiv && setDaten({ slots: [], laden: false, fehler: "Keine Verbindung." }));
+      .then(({ ok, j }) => aktiv && setDaten({ slots: ok ? j.slots || [] : [], laden: false, fehler: ok ? "" : j.error || (en ? "Appointments could not be loaded." : "Termine konnten nicht geladen werden.") }))
+      .catch(() => aktiv && setDaten({ slots: [], laden: false, fehler: en ? "No connection." : "Keine Verbindung." }));
     return () => {
       aktiv = false;
     };
-  }, [art, von, tage, mitarbeiterId]);
+  }, [art, von, tage, mitarbeiterId, en]);
 
   const jeTag = useMemo(() => {
     const m = new Map();
@@ -42,13 +48,13 @@ export default function SlotAuswahl({ art, gewaehlt, onWahl, mitarbeiterId = "",
   return (
     <div className="min-w-0">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <button type="button" onClick={() => setVon((v) => (tagPlus(v, -tage) < heute ? heute : tagPlus(v, -tage)))} disabled={von <= heute} className={cn("inline-flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-inset disabled:opacity-30", dunkel ? "text-white ring-white/30 hover:bg-white/10" : "text-ink-700 ring-ink-200 hover:bg-ink-50")} aria-label="Frühere Termine">
+        <button type="button" onClick={() => setVon((v) => (tagPlus(v, -tage) < heute ? heute : tagPlus(v, -tage)))} disabled={von <= heute} className={cn("inline-flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-inset disabled:opacity-30", dunkel ? "text-white ring-white/30 hover:bg-white/10" : "text-ink-700 ring-ink-200 hover:bg-ink-50")} aria-label={en ? "Earlier appointments" : "Frühere Termine"}>
           <ChevronLeft className="h-5 w-5" />
         </button>
         <p className={cn("text-[14px] font-semibold", dunkel ? "text-white" : "text-ink-900")} aria-live="polite">
           {tagText(von)} – {tagText(tagPlus(von, tage - 1))}
         </p>
-        <button type="button" onClick={() => setVon((v) => (tagPlus(v, tage) > maxVon ? maxVon : tagPlus(v, tage)))} disabled={von >= maxVon} className={cn("inline-flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-inset disabled:opacity-30", dunkel ? "text-white ring-white/30 hover:bg-white/10" : "text-ink-700 ring-ink-200 hover:bg-ink-50")} aria-label="Spätere Termine">
+        <button type="button" onClick={() => setVon((v) => (tagPlus(v, tage) > maxVon ? maxVon : tagPlus(v, tage)))} disabled={von >= maxVon} className={cn("inline-flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-inset disabled:opacity-30", dunkel ? "text-white ring-white/30 hover:bg-white/10" : "text-ink-700 ring-ink-200 hover:bg-ink-50")} aria-label={en ? "Later appointments" : "Spätere Termine"}>
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
@@ -59,7 +65,7 @@ export default function SlotAuswahl({ art, gewaehlt, onWahl, mitarbeiterId = "",
           <div key={tag} className={cn("min-w-0 rounded-2xl p-2.5 ring-1 ring-inset", dunkel ? "bg-white/5 ring-white/10" : "bg-ink-50/60 ring-ink-100")}>
             <p className={cn("mb-2 text-center text-[12.5px] font-semibold", dunkel ? "text-white/80" : "text-ink-600")}>{tagText(tag)}</p>
             {liste.length ? (
-              <ul className="flex flex-col gap-1.5" aria-label={`Freie Zeiten am ${tagText(tag)}`}>
+              <ul className="flex flex-col gap-1.5" aria-label={en ? `Free times on ${tagText(tag)}` : `Freie Zeiten am ${tagText(tag)}`}>
                 {liste.map((s) => {
                   const aktiv = gewaehlt?.start === s.start;
                   return (
@@ -85,7 +91,7 @@ export default function SlotAuswahl({ art, gewaehlt, onWahl, mitarbeiterId = "",
           </div>
         ))}
       </div>
-      {!daten.laden && !daten.slots.length && !daten.fehler && <p className={cn("mt-3 text-[13.5px]", dunkel ? "text-white/70" : "text-ink-500")}>In dieser Woche ist nichts mehr frei – bitte blättern Sie weiter.</p>}
+      {!daten.laden && !daten.slots.length && !daten.fehler && <p className={cn("mt-3 text-[13.5px]", dunkel ? "text-white/70" : "text-ink-500")}>{en ? "Nothing is free this week – please browse on." : "In dieser Woche ist nichts mehr frei – bitte blättern Sie weiter."}</p>}
     </div>
   );
 }

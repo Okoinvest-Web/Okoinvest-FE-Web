@@ -1,17 +1,18 @@
 // Ruhiger Abschluss: Weiterlesen-Karten statt zweitem Anfrage-Aufruf (das Formular steht darüber).
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowUpRight } from "lucide-react";
 import Reveal from "@/components/ui/Reveal";
 import { Eyebrow } from "@/components/ui/SectionHeading";
+import T from "@/components/Sprache/T";
 
 /** items: [{ href, icon, titel, text }] */
-export default function Weiterlesen({ items = [], titel = "Noch nicht so weit? Hier geht es weiter.", text, id = "weiterlesen-titel" }) {
+export default function Weiterlesen({ items = [], titel = <T de="Noch nicht so weit? Hier geht es weiter." en="Not quite ready yet? Here is where to go next." />, text, id = "weiterlesen-titel" }) {
   return (
     <section data-abschnitt="weiterlesen" aria-labelledby={id} className="bg-white">
       <div className="ov-container py-16 md:py-24">
         <Reveal className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-10">
           <div className="max-w-2xl">
-            <Eyebrow className="mb-3">Weiterlesen</Eyebrow>
+            <Eyebrow className="mb-3"><T de="Weiterlesen" en="Read on" /></Eyebrow>
             <h2 id={id} className="ov-h3 text-balance text-ink-900 md:text-[30px]">
               {titel}
             </h2>

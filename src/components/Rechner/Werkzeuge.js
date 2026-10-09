@@ -6,6 +6,50 @@ import { cn } from "@/components/ui/cn";
 import { toast } from "@/components/ui/Toast";
 import { mitUebergang } from "@/components/ui/motion";
 import { useRahmen } from "./kontext";
+import { useTexte } from "@/components/Sprache/SpracheKontext";
+
+const TEXTE = {
+  de: {
+    wiederhergestellt: ["Szenario A wiederhergestellt", "Die Eingaben stehen wieder auf dem gemerkten Stand."],
+    kopiert: ["Link kopiert", "Der Link enthält Ihre Eingaben – wer ihn öffnet, sieht dasselbe Ergebnis."],
+    kopierFehler: ["Kopieren nicht möglich", "Bitte kopieren Sie die Adresse aus der Adresszeile Ihres Browsers."],
+    vergleich: "Szenario-Vergleich",
+    schliessen: "Vergleich schließen",
+    caption: "Gemerktes Szenario A im Vergleich zum aktuellen Ergebnis",
+    kennzahl: "Kennzahl",
+    gemerkt: "A · gemerkt",
+    aktuell: "Aktuell",
+    geaendertSr: " (geändert)",
+    geaendert: "Grün markiert: Werte, die sich gegenüber A verändert haben.",
+    live: "Ändern Sie jetzt Eingaben – die rechte Spalte rechnet live mit.",
+    wiederherstellen: "A wiederherstellen",
+    alsA: "Aktuelles als A merken",
+    merken: "Szenario merken & vergleichen",
+    teilen: "Ergebnis teilen",
+    drucken: "Drucken / PDF",
+    annahmen: "Annahmen",
+  },
+  en: {
+    wiederhergestellt: ["Scenario A restored", "Your inputs are back to the saved state."],
+    kopiert: ["Link copied", "The link contains your inputs – anyone who opens it sees the same result."],
+    kopierFehler: ["Copying not possible", "Please copy the address from your browser’s address bar."],
+    vergleich: "Scenario comparison",
+    schliessen: "Close comparison",
+    caption: "Saved scenario A compared with the current result",
+    kennzahl: "Metric",
+    gemerkt: "A · saved",
+    aktuell: "Current",
+    geaendertSr: " (changed)",
+    geaendert: "Highlighted in green: values that have changed compared with A.",
+    live: "Now change your inputs – the right-hand column recalculates live.",
+    wiederherstellen: "Restore A",
+    alsA: "Save current as A",
+    merken: "Save & compare scenario",
+    teilen: "Share result",
+    drucken: "Print / PDF",
+    annahmen: "Assumptions",
+  },
+};
 
 /* ------------------------------------------------------------------
    Werkzeugleiste unter jedem Ergebnis: Szenario merken und nebeneinander
@@ -18,6 +62,7 @@ const knopf =
 
 export default function ErgebnisWerkzeuge() {
   const rahmen = useRahmen();
+  const t = useTexte(TEXTE);
   const [a, setA] = useState(null); // { werte, zustand }
   const [annahmen, setAnnahmen] = useState(false);
   const [teilbar, setTeilbar] = useState(true);
@@ -42,7 +87,7 @@ export default function ErgebnisWerkzeuge() {
   const wiederherstellen = () => {
     if (!a?.zustand || !rahmen.zustand.current) return;
     rahmen.zustand.current.setzen(a.zustand);
-    toast.info("Szenario A wiederhergestellt", "Die Eingaben stehen wieder auf dem gemerkten Stand.");
+    toast.info(...t.wiederhergestellt);
   };
 
   const teilen = async () => {
@@ -58,9 +103,9 @@ export default function ErgebnisWerkzeuge() {
     }
     try {
       await navigator.clipboard.writeText(url);
-      toast.erfolg("Link kopiert", "Der Link enthält Ihre Eingaben – wer ihn öffnet, sieht dasselbe Ergebnis.");
+      toast.erfolg(...t.kopiert);
     } catch {
-      toast.fehler("Kopieren nicht möglich", "Bitte kopieren Sie die Adresse aus der Adresszeile Ihres Browsers.");
+      toast.fehler(...t.kopierFehler);
     }
   };
 
@@ -73,19 +118,19 @@ export default function ErgebnisWerkzeuge() {
           <div className="flex items-center justify-between gap-3 bg-sand-50 py-2 pl-4 pr-2">
             <h3 id="szenario-vergleich" className="flex items-center gap-2 text-[13.5px] font-semibold text-ink-900">
               <GitCompareArrows aria-hidden="true" className="h-4 w-4 text-ov-600" />
-              Szenario-Vergleich
+              {t.vergleich}
             </h3>
-            <button type="button" onClick={() => mitUebergang(() => setA(null))} aria-label="Vergleich schließen" className="flex h-10 w-10 items-center justify-center rounded-full text-ink-500 transition-colors hover:bg-white hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
+            <button type="button" onClick={() => mitUebergang(() => setA(null))} aria-label={t.schliessen} className="flex h-10 w-10 items-center justify-center rounded-full text-ink-500 transition-colors hover:bg-white hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
               <X aria-hidden="true" className="h-4 w-4" />
             </button>
           </div>
           <table className="w-full text-[13.5px]">
-            <caption className="sr-only">Gemerktes Szenario A im Vergleich zum aktuellen Ergebnis</caption>
+            <caption className="sr-only">{t.caption}</caption>
             <thead className="text-[11.5px] uppercase tracking-[0.1em] text-ink-500">
               <tr className="border-b border-ink-100">
-                <th scope="col" className="px-4 py-2 text-left font-semibold">Kennzahl</th>
-                <th scope="col" className="px-4 py-2 text-right font-semibold">A · gemerkt</th>
-                <th scope="col" className="px-4 py-2 text-right font-semibold">Aktuell</th>
+                <th scope="col" className="px-4 py-2 text-left font-semibold">{t.kennzahl}</th>
+                <th scope="col" className="px-4 py-2 text-right font-semibold">{t.gemerkt}</th>
+                <th scope="col" className="px-4 py-2 text-right font-semibold">{t.aktuell}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-ink-100">
@@ -98,7 +143,7 @@ export default function ErgebnisWerkzeuge() {
                     <td className="ov-num px-4 py-2.5 text-right text-ink-600">{alt ?? "–"}</td>
                     <td className={cn("ov-num px-4 py-2.5 text-right", anders ? "font-bold text-ink-900" : "text-ink-600")}>
                       {v}
-                      {anders && <span className="sr-only"> (geändert)</span>}
+                      {anders && <span className="sr-only">{t.geaendertSr}</span>}
                     </td>
                   </tr>
                 );
@@ -107,12 +152,12 @@ export default function ErgebnisWerkzeuge() {
           </table>
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-ink-100 px-4 py-2.5">
             <p className="text-[12.5px] leading-snug text-ink-500" aria-live="polite">
-              {geaendert ? "Grün markiert: Werte, die sich gegenüber A verändert haben." : "Ändern Sie jetzt Eingaben – die rechte Spalte rechnet live mit."}
+              {geaendert ? t.geaendert : t.live}
             </p>
             {a.zustand && rahmen.zustand.current && (
               <button type="button" onClick={wiederherstellen} className="inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-ov-700 transition-colors hover:bg-ov-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
                 <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" />
-                A wiederherstellen
+                {t.wiederherstellen}
               </button>
             )}
           </div>
@@ -123,7 +168,7 @@ export default function ErgebnisWerkzeuge() {
         {kurz.length > 0 && (
           <button type="button" onClick={merken} className={knopf} aria-describedby={a ? "szenario-vergleich" : undefined}>
             <GitCompareArrows aria-hidden="true" className="h-4 w-4 text-ov-600" />
-            {a ? "Aktuelles als A merken" : "Szenario merken & vergleichen"}
+            {a ? t.alsA : t.merken}
           </button>
         )}
         {teilbar && (
@@ -133,17 +178,17 @@ export default function ErgebnisWerkzeuge() {
             ) : (
               <Link2 aria-hidden="true" className="h-4 w-4 text-ink-500" />
             )}
-            Ergebnis teilen
+            {t.teilen}
           </button>
         )}
         <button type="button" onClick={() => window.print()} className={knopf}>
           <Printer aria-hidden="true" className="h-4 w-4 text-ink-500" />
-          Drucken / PDF
+          {t.drucken}
         </button>
         {annahmen && (
           <a href="#annahmen" className="inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-[13.5px] font-semibold text-ink-600 underline-offset-4 transition-colors hover:text-ink-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
             <Info aria-hidden="true" className="h-4 w-4" />
-            Annahmen
+            {t.annahmen}
           </a>
         )}
       </div>

@@ -1,17 +1,22 @@
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowRight, Coins, Gauge, Sprout, Sun } from "lucide-react";
 
 import Reveal from "@/components/ui/Reveal";
 import { cn } from "@/components/ui/cn";
 import { STAND } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
-import { BEISPIEL_HA, TENDENZ_TEXT } from "./rechnung";
+import { BEISPIEL_HA, TENDENZ_TEXT, TENDENZ_TEXT_EN } from "./rechnung";
 import { pfad } from "@/lib/land";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { datumText, fmtZahl } from "@/lib/sprache/format";
 
 const tsd = (v) => `${fmt(Math.round(v / 1000))} Tsd. €`;
+const tsdEn = (v) => `€${fmtZahl(Math.round(v / 1000), 0, "en")}k`;
 
 /** Kennzahlen-Leiste einer Regionalseite: Ertrag, Pacht, Beispiel 10 ha, Agri-PV */
 export default function RegionKennzahlen({ region, k }) {
+  const en = spracheDerAnfrage() === "en";
+  if (en) return <KennzahlenEn region={region} k={k} />;
   const kacheln = [
     {
       icon: Sun,
@@ -75,6 +80,76 @@ export default function RegionKennzahlen({ region, k }) {
         </p>
         <Link href={pfad("/rechner/pacht")} className="inline-flex shrink-0 items-center gap-1.5 text-[14px] font-semibold text-ov-700 hover:text-ov-800">
           Mit eigenen Werten rechnen <ArrowRight aria-hidden="true" className="h-4 w-4" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/** Englische Fassung (Sprachmodell) – gleiche Kacheln, gleiche Werte, englisches Zahlenformat */
+function KennzahlenEn({ region, k }) {
+  const f = (n, s = 0) => fmtZahl(n, s, "en");
+  const kacheln = [
+    {
+      icon: Sun,
+      titel: "Specific yield",
+      wert: `${f(k.ertrag)} kWh/kWp`,
+      text: `per year, ${region.ertrag?.ort ? `PVGIS point ${region.ertrag.ort}` : "indicative value"}${region.ertrag?.spanne ? `; in the region ${region.ertrag.spanne}` : ""}.`,
+    },
+    {
+      icon: Coins,
+      titel: "Possible lease",
+      wert: k.pachtGesperrt ? "in preparation" : `€${f(k.spanne.min)}–${f(k.spanne.max)}`,
+      text: k.pachtGesperrt
+        ? `The calculation logic for ${k.land === "CH" ? "Switzerland" : "Austria"} is in preparation – we give lease values in a personal conversation.`
+        : `per hectare and year for ground-mounted PV – ${TENDENZ_TEXT_EN[region.pacht?.tendenz || "mitte"]}.`,
+    },
+    {
+      icon: Gauge,
+      titel: `Example ${BEISPIEL_HA} ha ground-mounted`,
+      wert: `${f(k.mwp, 1)} MWp · ${f(k.gwh, 1)} GWh`,
+      text: `power per year for around ${f(Math.round(k.haushalte / 100) * 100)} households${k.pachtGesperrt ? "" : `; lease ${tsdEn(k.pachtJahr.min)}–${tsdEn(k.pachtJahr.max)} per year`}.`,
+    },
+    {
+      icon: Sprout,
+      titel: `Example ${BEISPIEL_HA} ha agrivoltaics`,
+      wert: `${f(k.agriMwp, 1)} MWp · ${f(k.agriGwh, 1)} GWh`,
+      text: "vertical bifacial; the land remains largely usable for agriculture.",
+    },
+  ];
+  return (
+    <div>
+      <div className="relative rounded-[1.75rem] bg-white shadow-e4 ring-1 ring-ink-200/70 md:rounded-[2rem]">
+        <div aria-hidden="true" className="absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-ov-400 to-transparent" />
+        <dl className="grid px-5 sm:grid-cols-2 sm:px-2 xl:grid-cols-4 xl:px-0 xl:py-3">
+          {kacheln.map((c, i) => (
+            <Reveal
+              key={c.titel}
+              delay={i * 60}
+              className={cn(
+                "flex flex-col border-ink-100 py-5 sm:px-5 sm:py-6 xl:px-7 xl:py-5",
+                i > 0 && "border-t",
+                i === 1 && "sm:border-l sm:border-t-0",
+                i === 3 && "sm:border-l",
+                i > 0 && "xl:border-l xl:border-t-0"
+              )}
+            >
+              <dt className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-ov-700">
+                <c.icon aria-hidden="true" className="h-4 w-4" />
+                {c.titel}
+              </dt>
+              <dd className="ov-num mt-3 font-display text-[24px] font-extrabold leading-tight tracking-tight text-ink-900">{c.wert}</dd>
+              <dd className="mt-2 text-[14px] leading-relaxed text-ink-600">{c.text}</dd>
+            </Reveal>
+          ))}
+        </dl>
+      </div>
+      <div className="mt-5 flex flex-col gap-3 text-[12.5px] leading-relaxed text-ink-500 md:flex-row md:items-start md:justify-between">
+        <p className="max-w-3xl">
+          Yield: PVGIS (EU JRC), fixed mount, optimally tilted, 14 % system losses. Capacity, lease and households from our central market assumptions, as of {datumText(STAND, "en")} – indicative values, not offers.
+        </p>
+        <Link href={pfad("/rechner/pacht")} className="inline-flex shrink-0 items-center gap-1.5 text-[14px] font-semibold text-ov-700 hover:text-ov-800">
+          Calculate with your own values <ArrowRight aria-hidden="true" className="h-4 w-4" />
         </Link>
       </div>
     </div>

@@ -7,6 +7,7 @@ import TextEnthuellung from "@/components/motion/TextEnthuellung";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
+import Link from "@/components/Land/Link";
 
 /**
  * breadcrumbs: [{ name, href? }]
@@ -39,7 +40,7 @@ export default function SeitenHero({ breadcrumbs, pill, titel, lead, primaer, se
         <div className="grid items-center gap-y-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-x-12 xl:gap-x-16">
           <div className="max-w-[36rem]">
             {pill && (
-              <a
+              <Link
                 href={pill.href}
                 className="ov-hero-in group inline-flex max-w-full items-center gap-2.5 rounded-full bg-white/[0.06] py-1 pl-1 pr-3.5 text-[13px] text-white/85 ring-1 ring-inset ring-white/15 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300"
                 style={{ "--ov-delay": "40ms" }}
@@ -56,7 +57,7 @@ export default function SeitenHero({ breadcrumbs, pill, titel, lead, primaer, se
                   )}
                 </span>
                 <ArrowRight aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-ov-300 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" />
-              </a>
+              </Link>
             )}
 
             <h1 id={id} className="ov-h1 mt-6 text-balance md:mt-8">

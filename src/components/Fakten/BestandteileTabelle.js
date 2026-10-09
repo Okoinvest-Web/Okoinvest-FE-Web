@@ -15,6 +15,7 @@ import { createElement as h } from "react";
 import { fakten as faktenAusRegister, istAbgelaufen, datumDe, fmtFaktWert } from "@/lib/fakten";
 import { cn } from "@/components/ui/cn";
 import { LAND_NAME, QuelleZeile, StandEtikett } from "./FristenListe";
+import { datumDeZuEn, datumKurzEn, faktEn, LAND_NAME_EN } from "@/lib/sprache/faktenEn";
 
 export const PRAEFIXE_BESTANDTEILE = ["umlage.", "netzentgelt."];
 
@@ -30,6 +31,16 @@ export const BESTANDTEIL_NAME = {
 
 export const TEXT_OFFEN = "noch nicht veröffentlicht";
 
+/** Englische Anzeigenamen (deutscher Fachbegriff in Klammern, wo er im Original gesucht wird) */
+export const BESTANDTEIL_NAME_EN = {
+  "umlage.kwkg": "CHP levy (KWKG-Umlage)",
+  "umlage.offshoreNetz": "Offshore grid levy",
+  "umlage.besondereNetznutzung": "Surcharge for special grid use",
+  "netzentgelt.de.struktur": "Network charges (structure)",
+  "netzentgelt.at.sne2027": "System usage charges 2027 (Systemnutzungsentgelte)",
+  "netzentgelt.ch.elcomTarife2027": "2027 default supply tariffs (Grundversorgung)",
+};
+
 /** „Veröffentlichung erwartet bis TT.MM.JJJJ“ aus der Notiz eines offenen Werts (oder null) */
 export function erwarteteVeroeffentlichung(f) {
   const m = typeof f?.notiz === "string" ? f.notiz.match(/Veröffentlichung erwartet bis (\d{2}\.\d{2}\.\d{4})/) : null;
@@ -40,8 +51,9 @@ export function erwarteteVeroeffentlichung(f) {
 const notizOhneTermin = (f) => (typeof f?.notiz === "string" ? f.notiz.replace(/Veröffentlichung erwartet bis \d{2}\.\d{2}\.\d{4}\.?\s*/, "").trim() : "");
 
 /** Anzeigetext des Werts: offener Wert → „noch nicht veröffentlicht“ */
-export function bestandteilWert(f, land = f?.land) {
-  if (!f || f.wert === null || f.wert === undefined) return TEXT_OFFEN;
+export function bestandteilWert(f, land = f?.land, sprache = "de") {
+  if (!f || f.wert === null || f.wert === undefined) return sprache === "en" ? "not yet published" : TEXT_OFFEN;
+  if (sprache === "en" && typeof f.wert === "string") return faktEn(f.id, "wert") || f.wert;
   return fmtFaktWert(f, land);
 }
 
@@ -59,7 +71,13 @@ export function bestandteileFuer(land, { heute = new Date(), liste } = {}) {
     .map(({ f }) => f);
 }
 
-const geltung = (f) => {
+const geltung = (f, en) => {
+  if (en) {
+    if (f.gueltigAb && f.gueltigBis) return `${datumKurzEn(f.gueltigAb)} to ${datumKurzEn(f.gueltigBis)}`;
+    if (f.gueltigAb) return `from ${datumKurzEn(f.gueltigAb)}`;
+    if (f.gueltigBis) return `until ${datumKurzEn(f.gueltigBis)}`;
+    return "ongoing, until the next change";
+  }
   if (f.gueltigAb && f.gueltigBis) return `${datumDe(f.gueltigAb)} bis ${datumDe(f.gueltigBis)}`;
   if (f.gueltigAb) return `ab ${datumDe(f.gueltigAb)}`;
   if (f.gueltigBis) return `bis ${datumDe(f.gueltigBis)}`;
@@ -68,24 +86,25 @@ const geltung = (f) => {
 
 const ZELLE = "align-top px-4 py-4 max-md:block max-md:px-0 max-md:py-1.5 max-md:before:mb-0.5 max-md:before:block max-md:before:text-[11.5px] max-md:before:font-semibold max-md:before:uppercase max-md:before:tracking-[0.08em] max-md:before:text-ink-500 max-md:before:content-[attr(data-label)]";
 
-export default function BestandteileTabelle({ land = "DE", heute, liste, beschriftung, className }) {
+export default function BestandteileTabelle({ land = "DE", heute, liste, beschriftung, className, sprache = "de" }) {
+  const en = sprache === "en";
   const jetzt = heute || new Date();
   const zeilen = bestandteileFuer(land, { heute: jetzt, liste });
   if (!zeilen.length) {
     return h(
       "p",
       { className: cn("rounded-3xl bg-white p-5 text-[14.5px] leading-relaxed text-ink-600 ring-1 ring-ink-200/70", className), "data-bestandteile-land": land, "data-bestandteile-leer": "" },
-      `Für ${LAND_NAME[land] || land} sind derzeit keine Preisbestandteile im Register.`
+      en ? `There are currently no price components in the register for ${LAND_NAME_EN[land] || land}.` : `Für ${LAND_NAME[land] || land} sind derzeit keine Preisbestandteile im Register.`
     );
   }
-  const kopf = ["Bestandteil", "Wert", "Gilt", "Stand und Quelle"];
+  const kopf = en ? ["Component", "Value", "Applies", "Status and source"] : ["Bestandteil", "Wert", "Gilt", "Stand und Quelle"];
   return h(
     "div",
     { className: cn("overflow-hidden rounded-3xl bg-white ring-1 ring-ink-200/70", className), "data-bestandteile-land": land },
     h(
       "table",
       { className: "w-full border-collapse text-left text-[14.5px] max-md:block" },
-      h("caption", { className: "sr-only" }, beschriftung || `Preisbestandteile ${LAND_NAME[land] || land}`),
+      h("caption", { className: "sr-only" }, beschriftung || (en ? `Price components ${LAND_NAME_EN[land] || land}` : `Preisbestandteile ${LAND_NAME[land] || land}`)),
       h(
         "thead",
         { className: "bg-sand-50 max-md:sr-only" },
@@ -101,6 +120,7 @@ export default function BestandteileTabelle({ land = "DE", heute, liste, beschri
         zeilen.map((f) => {
           const offen = f.wert === null || f.wert === undefined;
           const erwartet = offen ? erwarteteVeroeffentlichung(f) : null;
+          const notiz = notizOhneTermin(f) ? (en && faktEn(f.id, "notiz")) || notizOhneTermin(f) : "";
           return h(
             "tr",
             {
@@ -110,20 +130,22 @@ export default function BestandteileTabelle({ land = "DE", heute, liste, beschri
               "data-fakt-land": f.land,
               "data-fakt-offen": offen ? "" : undefined,
             },
-            h("th", { scope: "row", "data-label": kopf[0], className: cn(ZELLE, "font-display text-[15.5px] font-bold text-ink-900 md:w-[22%]") }, BESTANDTEIL_NAME[f.id] || f.id),
+            h("th", { scope: "row", "data-label": kopf[0], className: cn(ZELLE, "font-display text-[15.5px] font-bold text-ink-900 md:w-[22%]") }, (en && BESTANDTEIL_NAME_EN[f.id]) || BESTANDTEIL_NAME[f.id] || f.id),
             h(
               "td",
               { "data-label": kopf[1], className: cn(ZELLE, "md:w-[30%]") },
-              h("span", { className: offen ? "font-semibold text-ink-600" : "font-semibold text-ink-900" }, bestandteilWert(f, land)),
-              erwartet ? h("span", { className: "mt-1 block text-[13px] text-ink-500" }, `Veröffentlichung erwartet bis ${erwartet}`) : null
+              h("span", { className: offen ? "font-semibold text-ink-600" : "font-semibold text-ink-900" }, bestandteilWert(f, land, sprache)),
+              erwartet
+                ? h("span", { className: "mt-1 block text-[13px] text-ink-500" }, en ? `Publication expected by ${datumDeZuEn(erwartet)}` : `Veröffentlichung erwartet bis ${erwartet}`)
+                : null
             ),
-            h("td", { "data-label": kopf[2], className: cn(ZELLE, "text-ink-700 md:w-[16%]") }, geltung(f)),
+            h("td", { "data-label": kopf[2], className: cn(ZELLE, "text-ink-700 md:w-[16%]") }, geltung(f, en)),
             h(
               "td",
               { "data-label": kopf[3], className: ZELLE },
-              h(StandEtikett, { fakt: f, heute: jetzt }),
-              h(QuelleZeile, { fakt: f, className: "mt-2" }),
-              notizOhneTermin(f) ? h("p", { className: "mt-1.5 text-[12.5px] leading-relaxed text-ink-500" }, notizOhneTermin(f)) : null
+              h(StandEtikett, { fakt: f, heute: jetzt, sprache }),
+              h(QuelleZeile, { fakt: f, className: "mt-2", sprache }),
+              notiz ? h("p", { className: "mt-1.5 text-[12.5px] leading-relaxed text-ink-500" }, notiz) : null
             )
           );
         })

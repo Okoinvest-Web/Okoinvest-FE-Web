@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { cn } from "@/components/ui/cn";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 
 const formatierer = new Map();
 function format(sprache, nachkomma) {
@@ -31,17 +32,18 @@ function format(sprache, nachkomma) {
  * @param {string} [p.nach]            Text danach, z. B. " MWp" oder " %".
  * @param {number} [p.dauer=1400]      Dauer in ms.
  * @param {number} [p.verzoegerung=0]  Startversatz in ms (z. B. für Kennzahlen-Reihen).
- * @param {string} [p.sprache="de-DE"] Zahlenformat (en/*: "en-GB").
+ * @param {string} [p.sprache]        Zahlenformat; ohne Angabe nach Sprache der Seite ("de-DE" bzw. "en-GB").
  * @param {string} [p.className]
  *
  * @example
  * <p className="ov-kpi-l"><Zaehler wert={48.6} nachkomma={1} nach=" MWp" /></p>
  */
-export default function Zaehler({ wert, nachkomma = 0, vor = "", nach = "", dauer = 1400, verzoegerung = 0, sprache = "de-DE", className }) {
+export default function Zaehler({ wert, nachkomma = 0, vor = "", nach = "", dauer = 1400, verzoegerung = 0, sprache, className }) {
+  const seitenSprache = useSprache();
   const ref = useRef(null);
   const gezaehlt = useRef(false); // nur der erste Eintritt zählt – spätere Wertänderungen springen direkt
   const ziel = Number(wert) || 0;
-  const fmt = format(sprache, nachkomma);
+  const fmt = format(sprache ?? (seitenSprache === "en" ? "en-GB" : "de-DE"), nachkomma);
   const endText = `${vor}${fmt.format(ziel)}${nach}`;
 
   useEffect(() => {

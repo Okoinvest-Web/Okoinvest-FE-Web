@@ -3,6 +3,7 @@
 import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
 import { cn } from "@/components/ui/cn";
+import T from "@/components/Sprache/T";
 
 export default function Zeitleiste({ titelId, eyebrow, titel, lead, schritte, ton = "white" }) {
   const n = schritte.length;
@@ -26,7 +27,7 @@ export default function Zeitleiste({ titelId, eyebrow, titel, lead, schritte, to
                   <s.icon aria-hidden="true" className="h-5 w-5" />
                 </span>
                 <div className="pt-1 lg:mt-5 lg:pt-0">
-                  <p className="ov-num text-[12px] font-semibold uppercase tracking-[0.12em] text-ink-400">Schritt {i + 1}</p>
+                  <p className="ov-num text-[12px] font-semibold uppercase tracking-[0.12em] text-ink-400"><T de="Schritt" en="Step" /> {i + 1}</p>
                   <h3 className={cn("mt-1 font-display text-[17px] font-bold", letzter ? "text-ov-700" : "text-ink-900")}>{s.title}</h3>
                   <p className="mt-2 text-[14px] leading-relaxed text-ink-600">{s.text}</p>
                 </div>

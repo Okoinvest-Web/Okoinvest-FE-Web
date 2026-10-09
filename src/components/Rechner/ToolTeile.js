@@ -6,6 +6,11 @@ import { cn } from "@/components/ui/cn";
 import { Legende } from "./InvestTeile";
 import { Tooltip, eingabeMerken, useBreite } from "./bausteine";
 import { fmt } from "@/lib/rechner/annahmen";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { fmtZahl } from "@/lib/sprache/format";
+
+// Sprachmodell: Ampel-Texte und Achsen auf Englisch
+const AMPEL_EN = { gut: ["Market standard", "Good"], pruefen: ["Ask questions", "Check"], kritisch: ["Critical", "Critical"] };
 
 /* ------------------------------------------------------------------
    Ergänzende Bausteine der Tools aus Ausbaustufe 2 (Pachtangebot-Check,
@@ -24,17 +29,20 @@ export const AMPEL = {
 /** Ampel-Plakette mit Icon und Text (nie nur Farbe) */
 export function AmpelMarke({ ampel, klein = false, className }) {
   const a = AMPEL[ampel] || AMPEL.pruefen;
+  const en = useSprache() === "en";
   const Icon = a.icon;
   return (
     <span className={cn("inline-flex shrink-0 items-center gap-1.5 rounded-full font-semibold ring-1", klein ? "px-2 py-0.5 text-[11.5px]" : "px-2.5 py-1 text-[12.5px]", a.klasse, className)}>
       <Icon aria-hidden="true" className={cn(klein ? "h-3 w-3" : "h-3.5 w-3.5", ampel === "kritisch" ? "text-sun-300" : a.iconKlasse)} />
-      {a.label}
+      {en ? (AMPEL_EN[ampel] || AMPEL_EN.pruefen)[0] : a.label}
     </span>
   );
 }
 
 /** Druckknopf (öffnet die Druckansicht des Browsers) */
-export function Druckknopf({ children = "Druckansicht / PDF", className }) {
+export function Druckknopf({ children: eigenerText, className }) {
+  const en = useSprache() === "en";
+  const children = eigenerText ?? (en ? "Print view / PDF" : "Druckansicht / PDF");
   return (
     <button
       type="button"
@@ -62,9 +70,16 @@ export function achse(min, max, ziel = 5) {
 }
 
 /** Kompakte €-Beschriftung für Achsen */
-export const achsenEur = (v, waehrung = "") => {
+export const achsenEur = (v, waehrung = "", sprache = "de") => {
   const a = Math.abs(v);
   const vz = v < 0 ? "−" : "";
+  if (sprache === "en") {
+    const z = (n, d = 0) => fmtZahl(n, d, "en");
+    const p = waehrung ? `${waehrung} ` : "";
+    if (a >= 1e6) return `${vz}${p}${z(a / 1e6, a >= 1e7 ? 0 : 1)}m`;
+    if (a >= 1e3) return `${vz}${p}${z(a / 1e3)}k`;
+    return `${vz}${p}${z(a)}`;
+  }
   const w = waehrung ? ` ${waehrung}` : "";
   if (a >= 1e6) return `${vz}${fmt(a / 1e6, a >= 1e7 ? 0 : 1)} Mio.${w}`;
   if (a >= 1e3) return `${vz}${fmt(a / 1e3)} Tsd.${w}`;
@@ -113,7 +128,10 @@ const diagrammFokus = "rounded-2xl outline-none focus-visible:ring-2 focus-visib
  * transform; per Tastatur (Pfeile) durch die Jahre.
  * zeilen: [{ label, werte: { key: zahl } }]
  */
-export function BalkenJahre({ zeilen, serien, linie, ariaLabel, tooltip, hoehe, markierung, achsenFormat = achsenEur }) {
+export function BalkenJahre({ zeilen, serien, linie, ariaLabel, tooltip, hoehe, markierung, achsenFormat: eigenesFormat }) {
+  const en = useSprache() === "en";
+  const achsenFormat = eigenesFormat ?? ((v) => achsenEur(v, "", en ? "en" : "de"));
+  const pfeile = en ? "Use the arrow keys to move through the values." : "Mit den Pfeiltasten durch die Werte.";
   const [ref, W] = useBreite(720);
   const [hover, setHover] = useState(null);
   const schmal = W < 520;
@@ -144,7 +162,7 @@ export function BalkenJahre({ zeilen, serien, linie, ariaLabel, tooltip, hoehe, 
 
   return (
     <div ref={ref} className="ov-reveal relative px-2 pb-4 pt-2 md:px-3" data-dir="ohne" suppressHydrationWarning>
-      <div {...tastatur} role="group" aria-label={`${ariaLabel} Mit den Pfeiltasten durch die Werte.`} className={diagrammFokus}>
+      <div {...tastatur} role="group" aria-label={`${ariaLabel} ${pfeile}`} className={diagrammFokus}>
         <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} className="block touch-pan-y select-none" role="img" aria-label={ariaLabel}>
           {ticks.map((v) => (
             <g key={v}>
@@ -227,7 +245,10 @@ export function BalkenJahre({ zeilen, serien, linie, ariaLabel, tooltip, hoehe, 
  * gestrichelte blenden ein; per Tastatur (Pfeile) durch die Punkte.
  * serien: [{ key, label, farbe, werte: [..], dick?, gestrichelt? }]
  */
-export function Linien({ xLabels, serien, ariaLabel, tooltip, hoehe, achsenFormat = achsenEur, nullLinie = true }) {
+export function Linien({ xLabels, serien, ariaLabel, tooltip, hoehe, achsenFormat: eigenesFormat, nullLinie = true }) {
+  const en = useSprache() === "en";
+  const achsenFormat = eigenesFormat ?? ((v) => achsenEur(v, "", en ? "en" : "de"));
+  const pfeile = en ? "Use the arrow keys to move through the values." : "Mit den Pfeiltasten durch die Werte.";
   const [ref, W] = useBreite(720);
   const [hover, setHover] = useState(null);
   const schmal = W < 520;
@@ -253,7 +274,7 @@ export function Linien({ xLabels, serien, ariaLabel, tooltip, hoehe, achsenForma
 
   return (
     <div ref={ref} className="ov-reveal relative px-2 pb-4 pt-2 md:px-3" data-dir="ohne" suppressHydrationWarning>
-      <div {...tastatur} role="group" aria-label={`${ariaLabel} Mit den Pfeiltasten durch die Werte.`} className={diagrammFokus}>
+      <div {...tastatur} role="group" aria-label={`${ariaLabel} ${pfeile}`} className={diagrammFokus}>
         <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} className="block touch-pan-y select-none" role="img" aria-label={ariaLabel}>
           {ticks.map((v) => (
             <g key={v}>

@@ -36,4 +36,48 @@ export const THEMEN = {
   },
 };
 
+// Englische Fassung (Sprachmodell): gleiche ids, hrefs bleiben aus THEMEN
+const THEMEN_EN = {
+  flaecheneigentuemer: {
+    kurz: "Suitability, lease, term",
+    weiter: { text: "Suitability and lease range for your land in a few minutes.", primaer: { label: "Start land check" }, sekundaer: { label: "Calculate lease" } },
+  },
+  landwirte: {
+    kurz: "Agri-PV, CAP, development plan",
+    weiter: { text: "Work out lease, own investment or participation yourself.", primaer: { label: "Agri-PV calculator" }, sekundaer: { label: "Account as a farmer" } },
+  },
+  investoren: {
+    kurz: "Projects, documents, returns",
+    weiter: { text: "Save a search profile and see matching projects in the portal.", primaer: { label: "Create search profile" }, sekundaer: { label: "To the project exchange" } },
+  },
+  projektboerse: {
+    kurz: "Listing, confidentiality, price",
+    weiter: { text: "Key data is enough to get started – reviewed and confidential.", primaer: { label: "Offer a project" }, sekundaer: { label: "Calculate project value" } },
+  },
+  strom: {
+    kurz: "Residual power, power plant, municipalities",
+    weiter: { text: "Estimate the savings from your annual consumption and current price.", primaer: { label: "Calculate savings" }, sekundaer: { label: "Send an enquiry" } },
+  },
+  portal: {
+    kurz: "Access, costs, data",
+    weiter: { text: "Enquiries, status and documents in one place.", primaer: { label: "Create access" }, sekundaer: { label: "Sign in" } },
+  },
+};
+
+/** Themen in der Seitensprache (Texte englisch, Links und Symbole unverändert) */
+export function themaFuer(id, sprache = "de") {
+  const de = THEMEN[id];
+  const en = sprache === "en" ? THEMEN_EN[id] : null;
+  if (!de || !en) return de;
+  return {
+    ...de,
+    kurz: en.kurz,
+    weiter: de.weiter && {
+      text: en.weiter.text,
+      primaer: { ...de.weiter.primaer, label: en.weiter.primaer.label },
+      sekundaer: de.weiter.sekundaer && { ...de.weiter.sekundaer, label: en.weiter.sekundaer.label },
+    },
+  };
+}
+
 export const themaIcon = (id) => THEMEN[id]?.icon || HelpCircle;

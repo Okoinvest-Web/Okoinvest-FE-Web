@@ -29,6 +29,12 @@ export const TENDENZ_TEXT = {
   mitte: "mittleres Band der DACH-Spanne",
   oben: "eher oberes Band der DACH-Spanne",
 };
+/** Sprachmodell: englische Fassung */
+export const TENDENZ_TEXT_EN = {
+  unten: "rather the lower band of the DACH range",
+  mitte: "middle band of the DACH range",
+  oben: "rather the upper band of the DACH range",
+};
 
 /** Kennzahlen für das Beispiel „10 ha“ einer Region */
 export function kennzahlen(region, meta) {

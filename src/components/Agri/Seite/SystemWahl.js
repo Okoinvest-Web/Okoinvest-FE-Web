@@ -5,6 +5,13 @@ import { useRef, useState } from "react";
 import { Check, Minus } from "lucide-react";
 import AgriBild from "@/components/Agri/AgriBild";
 import { cn } from "@/components/ui/cn";
+import { useTexte } from "@/components/Sprache/SpracheKontext";
+
+/** Sprachmodell: feste Texte (System-Texte kommen übersetzt von der Seite). */
+const TEXTE = {
+  de: { tabs: "Agri-PV-Bauweisen", flaeche: "Fläche je MWp", ertrag: "Stromertrag je kWp*", marke: "100 % = Süd, fest", invest: "Investition", kulturen: "Typische Kulturen: ", staerken: "Stärken", grenzen: "Grenzen" },
+  en: { tabs: "Agrivoltaic designs", flaeche: "Land per MWp", ertrag: "Power yield per kWp*", marke: "100 % = south-facing, fixed", invest: "Investment", kulturen: "Typical crops: ", staerken: "Strengths", grenzen: "Limitations" },
+};
 
 /**
  * systeme: [{ typ, titel, kat, text, kulturen, staerken, grenzen,
@@ -15,6 +22,7 @@ export default function SystemWahl({ systeme, skala, fussnote }) {
   const [aktiv, setAktiv] = useState(0);
   const reiter = useRef([]);
   const s = systeme[aktiv];
+  const w = useTexte(TEXTE);
 
   function taste(e) {
     let n = null;
@@ -31,7 +39,7 @@ export default function SystemWahl({ systeme, skala, fussnote }) {
   return (
     <div className="overflow-hidden rounded-[1.75rem] bg-white shadow-e3 ring-1 ring-ink-200/70 md:rounded-[2rem]">
       {/* Reiter */}
-      <div role="tablist" aria-label="Agri-PV-Bauweisen" className="ov-no-scrollbar flex gap-1 overflow-x-auto border-b border-ink-100 bg-sand-50/70 p-2 lg:grid lg:grid-cols-4 lg:gap-2 lg:p-2.5">
+      <div role="tablist" aria-label={w.tabs} className="ov-no-scrollbar flex gap-1 overflow-x-auto border-b border-ink-100 bg-sand-50/70 p-2 lg:grid lg:grid-cols-4 lg:gap-2 lg:p-2.5">
         {systeme.map((x, i) => {
           const an = i === aktiv;
           return (
@@ -74,9 +82,9 @@ export default function SystemWahl({ systeme, skala, fussnote }) {
           </div>
           {/* Kennwerte */}
           <dl className="flex-1 space-y-4 bg-sand-50/60 p-6 md:p-8">
-            <Kennwert label="Fläche je MWp" text={s.flaeche.text} min={s.flaeche.min} max={s.flaeche.max} skala={skala.flaeche} ton="sand" />
-            <Kennwert label="Stromertrag je kWp*" text={s.ertrag.text} max={s.ertrag.wert} skala={skala.ertrag} ton="sun" marke={1} markeText="100 % = Süd, fest" />
-            <Kennwert label="Investition" text={s.invest.text} min={s.invest.min} max={s.invest.max} skala={skala.invest} ton="navy" />
+            <Kennwert label={w.flaeche} text={s.flaeche.text} min={s.flaeche.min} max={s.flaeche.max} skala={skala.flaeche} ton="sand" />
+            <Kennwert label={w.ertrag} text={s.ertrag.text} max={s.ertrag.wert} skala={skala.ertrag} ton="sun" marke={1} markeText={w.marke} />
+            <Kennwert label={w.invest} text={s.invest.text} min={s.invest.min} max={s.invest.max} skala={skala.invest} ton="navy" />
           </dl>
         </div>
 
@@ -84,13 +92,13 @@ export default function SystemWahl({ systeme, skala, fussnote }) {
           <h3 className="ov-h3 text-ink-900">{s.titel}</h3>
           <p className="mt-3 text-pretty text-[15.5px] leading-relaxed text-ink-600">{s.text}</p>
           <p className="mt-4 text-[14px] text-ink-700">
-            <span className="font-semibold text-ink-900">Typische Kulturen: </span>
+            <span className="font-semibold text-ink-900">{w.kulturen}</span>
             {s.kulturen}
           </p>
 
           <div className="mt-6 grid gap-4 border-t border-ink-100 pt-6 sm:grid-cols-2">
             <div>
-              <p className="ov-overline text-ov-700">Stärken</p>
+              <p className="ov-overline text-ov-700">{w.staerken}</p>
               <ul className="mt-2 space-y-1.5">
                 {s.staerken.map((x) => (
                   <li key={x} className="flex gap-2 text-[14px] leading-snug text-ink-700">
@@ -101,7 +109,7 @@ export default function SystemWahl({ systeme, skala, fussnote }) {
               </ul>
             </div>
             <div>
-              <p className="ov-overline text-ink-500">Grenzen</p>
+              <p className="ov-overline text-ink-500">{w.grenzen}</p>
               <ul className="mt-2 space-y-1.5">
                 {s.grenzen.map((x) => (
                   <li key={x} className="flex gap-2 text-[14px] leading-snug text-ink-700">

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { setCookie } from "cookies-next";
 import CookieDetails from "./coookieItem";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { Circle } from "lucide-react";
 import useFokusFalle from "@/components/ui/useFokusFalle";
 import {
@@ -14,6 +14,7 @@ import {
   einwilligungErstellen,
   einwilligungLesen,
 } from "@/lib/ereignis/einwilligung";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 
 // TEXTE: Entwurf (Paket B, Welle 1) – Freigabe durch Strang R (Rechtstexte) steht aus.
 // Fassung der Texte: EINWILLIGUNG_VERSION in src/lib/ereignis/einwilligung.js – bei jeder inhaltlichen Änderung
@@ -48,14 +49,85 @@ export const cookieServices = {
   },
 };
 
-function zeitText(iso) {
+// Englische Fassung (Sprachmodell): Übersetzung des deutschen Entwurfs – Freigabe wie die
+// deutschen Texte durch Strang R. Inhaltlich identisch; EINWILLIGUNG_VERSION gilt für beide Sprachen.
+const DIENST_EN = {
+  googleAnalytics: {
+    description: "Creates statistics on how our public pages are used.",
+    purpose:
+      "Google Analytics 4 records which public pages are visited, through which source (e.g. search engine or campaign) visitors arrive, and their device, browser and approximate location (country/region). In addition, individual actions can be counted without content, for example that an enquiry was submitted – never names, email addresses, phone numbers or form contents. The customer portal, personal invitation and login links and offer links with a code are not measured. We use the data only to improve the website – without advertising features, without Google Signals and without personalisation. Your IP address is technically transmitted to Google; according to Google, for access from the EU and Switzerland it is used only to determine an approximate location and then discarded.",
+    provider: "Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland",
+    cookies: [
+      { name: "_ga", type: "HTTP cookie", duration: "2 years" },
+      { name: "_ga_<ID>", type: "HTTP cookie", duration: "2 years" },
+    ],
+    dataProcessing: {
+      countries: [{ name: "United States" }],
+      mechanisms: [{ name: "Adequacy decision of the EU Commission (EU-US Data Privacy Framework, Art. 45 GDPR)" }],
+    },
+  },
+};
+
+const TEXTE = {
+  de: {
+    region: "Cookie-Einstellungen",
+    titel: "Ihre Privatsphäre zählt",
+    kurz: "Mit Ihrer Zustimmung nutzen wir Google Analytics für Besucherstatistiken auf unseren öffentlichen Seiten. Ohne Zustimmung wird Google Analytics nicht geladen und es werden keine Daten an Google übertragen. Sie können Ihre Wahl jederzeit unter „Privatsphäre-Einstellungen“ im Fußbereich ändern.",
+    notwendige: "Nur notwendige",
+    alle: "Alle akzeptieren",
+    individuell: "Individuelle Einstellungen",
+    datenschutz: "Datenschutzerklärung",
+    impressum: "Impressum",
+    detailTitel: "Individuelle Privatsphäre-Präferenzen",
+    detailText: "Technisch notwendige Cookies setzen wir ohne Einwilligung ein – etwa für die Anmeldung im Portal und um diese Auswahl zu speichern. Google Analytics laden wir nur, wenn Sie der Kategorie „Statistik“ zustimmen. Ihre Einwilligung ist freiwillig und für die Nutzung der Website nicht erforderlich. Sie können sie jederzeit über „Privatsphäre-Einstellungen“ im Fußbereich jeder Seite widerrufen; der Widerruf wirkt für die Zukunft.",
+    auswahl: (erlaubt, zeit, v) => `Ihre aktuelle Auswahl: Statistik ${erlaubt ? "erlaubt" : "abgelehnt"}${zeit ? `, gespeichert am ${zeit}` : ""} (Fassung ${v}).`,
+    speichern: "Auswahl speichern",
+    ohne: "Weiter ohne Einwilligung",
+    usa: "Google Analytics wird von Google Ireland Limited betrieben. Dabei können Daten auch an Google LLC in den USA übermittelt werden. Die Übermittlung stützt sich auf den Angemessenheitsbeschluss der EU-Kommission zum EU-US Data Privacy Framework (Art. 45 DSGVO), unter dem Google LLC zertifiziert ist.",
+    essenziell: "Essenziell",
+    essenziellText: "Essenzielle Cookies sind für die grundlegende Funktion der Website erforderlich (z. B. Anmeldung im Portal, Speichern dieser Auswahl im Cookie „cookieConsent“ für 12 Monate). Sie können nicht abgelehnt werden.",
+    statistik: "Statistik (1)",
+    statistikText: "Statistik-Dienste helfen uns zu verstehen, wie Besucher unsere Website nutzen, damit wir sie verbessern können. Sie werden erst nach Ihrer Zustimmung geladen. Details in der",
+    detailsAus: "Details ausblenden",
+    detailsAn: "Details anzeigen",
+    locale: "de-DE",
+  },
+  en: {
+    region: "Cookie settings",
+    titel: "Your privacy matters",
+    kurz: "With your consent, we use Google Analytics for visitor statistics on our public pages. Without consent, Google Analytics is not loaded and no data is transmitted to Google. You can change your choice at any time under “Privacy settings” in the footer.",
+    notwendige: "Necessary only",
+    alle: "Accept all",
+    individuell: "Individual settings",
+    datenschutz: "Privacy policy",
+    impressum: "Legal notice",
+    detailTitel: "Individual privacy preferences",
+    detailText: "We use technically necessary cookies without consent – for example for logging in to the portal and to store this choice. We only load Google Analytics if you consent to the “Statistics” category. Your consent is voluntary and not required to use the website. You can withdraw it at any time via “Privacy settings” in the footer of every page; the withdrawal applies to the future.",
+    auswahl: (erlaubt, zeit, v) => `Your current choice: statistics ${erlaubt ? "allowed" : "declined"}${zeit ? `, saved on ${zeit}` : ""} (version ${v}).`,
+    speichern: "Save selection",
+    ohne: "Continue without consent",
+    usa: "Google Analytics is operated by Google Ireland Limited. Data may also be transmitted to Google LLC in the USA. The transfer is based on the EU Commission's adequacy decision on the EU-US Data Privacy Framework (Art. 45 GDPR), under which Google LLC is certified.",
+    essenziell: "Essential",
+    essenziellText: "Essential cookies are required for the basic functioning of the website (e.g. logging in to the portal, storing this choice in the cookie “cookieConsent” for 12 months). They cannot be declined.",
+    statistik: "Statistics (1)",
+    statistikText: "Statistics services help us understand how visitors use our website so that we can improve it. They are only loaded after your consent. Details in the",
+    detailsAus: "Hide details",
+    detailsAn: "Show details",
+    locale: "en-GB",
+  },
+};
+
+function zeitText(iso, locale = "de-DE") {
   const d = iso ? new Date(iso) : null;
   if (!d || Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+  return d.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
 }
 
 export default function CookieBanner({ forceShow = false, onClose }) {
   const router = useRouter();
+  const sprache = useSprache();
+  const t = sprache === "en" ? TEXTE.en : TEXTE.de;
+  const ga = sprache === "en" ? { ...cookieServices.statistics.googleAnalytics, ...DIENST_EN.googleAnalytics } : cookieServices.statistics.googleAnalytics;
   const [isShown, setIsShown] = useState(false);
   const [isCompact, setIsCompact] = useState(true);
 
@@ -145,19 +217,15 @@ export default function CookieBanner({ forceShow = false, onClose }) {
     return (
       <div
         role="region"
-        aria-label="Cookie-Einstellungen"
+        aria-label={t.region}
         className="ov-hero-in fixed inset-x-3 bottom-3 z-[9600] md:inset-x-auto md:bottom-6 md:left-6 md:max-w-[440px]"
       >
         <div className="rounded-3xl bg-white p-5 shadow-[0_30px_70px_-20px_rgba(3,18,43,0.45)] ring-1 ring-ink-200/70 md:p-6">
           <div className="flex items-start gap-3">
             <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-ov-50 text-[20px]">🍪</span>
             <div>
-              <h2 ref={kompaktTitel} tabIndex={-1} className="font-display text-[16.5px] font-bold text-ink-900 focus:outline-none">Ihre Privatsphäre zählt</h2>
-              <p className="mt-1 text-[13.5px] leading-relaxed text-ink-600">
-                Mit Ihrer Zustimmung nutzen wir Google Analytics für Besucherstatistiken auf unseren öffentlichen Seiten.
-                Ohne Zustimmung wird Google Analytics nicht geladen und es werden keine Daten an Google übertragen.
-                Sie können Ihre Wahl jederzeit unter „Privatsphäre-Einstellungen“ im Fußbereich ändern.
-              </p>
+              <h2 ref={kompaktTitel} tabIndex={-1} className="font-display text-[16.5px] font-bold text-ink-900 focus:outline-none">{t.titel}</h2>
+              <p className="mt-1 text-[13.5px] leading-relaxed text-ink-600">{t.kurz}</p>
             </div>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-2">
@@ -165,13 +233,13 @@ export default function CookieBanner({ forceShow = false, onClose }) {
               onClick={handleRejectAll}
               className="h-11 cursor-pointer rounded-full bg-ink-900 px-3 text-[14px] font-semibold text-white transition-colors hover:bg-ink-800"
             >
-              Nur notwendige
+              {t.notwendige}
             </button>
             <button
               onClick={handleAcceptAll}
               className="h-11 cursor-pointer rounded-full bg-ov-600 px-3 text-[14px] font-semibold text-white transition-colors hover:bg-ov-700"
             >
-              Alle akzeptieren
+              {t.alle}
             </button>
           </div>
           <button
@@ -180,11 +248,11 @@ export default function CookieBanner({ forceShow = false, onClose }) {
             aria-haspopup="dialog"
             className="mt-3 w-full cursor-pointer text-center text-[13px] font-medium text-ink-600 underline-offset-2 transition-colors hover:text-ink-800 hover:underline"
           >
-            Individuelle Einstellungen
+            {t.individuell}
           </button>
           <p className="mt-2 flex justify-center gap-3 text-[12.5px] text-ink-600">
-            <Link href="/datenschutz" className="underline underline-offset-2 hover:text-ink-800">Datenschutzerklärung</Link>
-            <Link href="/impressum" className="underline underline-offset-2 hover:text-ink-800">Impressum</Link>
+            <Link href="/datenschutz" className="underline underline-offset-2 hover:text-ink-800">{t.datenschutz}</Link>
+            <Link href="/impressum" className="underline underline-offset-2 hover:text-ink-800">{t.impressum}</Link>
           </p>
         </div>
       </div>
@@ -204,20 +272,14 @@ export default function CookieBanner({ forceShow = false, onClose }) {
           className="max-h-[100dvh] h-full lg:max-w-[800px] lg:max-h-[80vh] bg-white lg:rounded-xl shadow-2xl overflow-hidden flex flex-col pointer-events-auto overflow-y-auto relative lg:h-auto focus:outline-none"
         >
           <h2 ref={detailTitel} id="ov-cookie-detail-titel" tabIndex={-1} className="text-2xl font-bold text-gray-800 p-6 sticky bg-white z-10 pb-4 top-0 md:relative focus:outline-none">
-            Individuelle Privatsphäre-Präferenzen
+            {t.detailTitel}
           </h2>
           <div className="p-6 border-b border-gray-200 flex justify-between flex-col-reverse items-start md:flex-row relative">
             <div className="w-[100%] flex-1 md:w-[60%]">
-              <p className="text-gray-600 text-sm">
-                Technisch notwendige Cookies setzen wir ohne Einwilligung ein – etwa für die Anmeldung im Portal und um
-                diese Auswahl zu speichern. Google Analytics laden wir nur, wenn Sie der Kategorie „Statistik“ zustimmen.
-                Ihre Einwilligung ist freiwillig und für die Nutzung der Website nicht erforderlich. Sie können sie jederzeit
-                über „Privatsphäre-Einstellungen“ im Fußbereich jeder Seite widerrufen; der Widerruf wirkt für die Zukunft.
-              </p>
+              <p className="text-gray-600 text-sm">{t.detailText}</p>
               {gespeichert && (
                 <p className="mt-3 text-xs text-gray-600">
-                  Ihre aktuelle Auswahl: Statistik {gespeichert.statistics ? "erlaubt" : "abgelehnt"}
-                  {zeitText(gespeichert.zeit) ? `, gespeichert am ${zeitText(gespeichert.zeit)}` : ""} (Fassung {gespeichert.v}).
+                  {t.auswahl(gespeichert.statistics, zeitText(gespeichert.zeit, t.locale), gespeichert.v)}
                 </p>
               )}
             </div>
@@ -226,27 +288,23 @@ export default function CookieBanner({ forceShow = false, onClose }) {
                 onClick={handleAcceptAll}
                 className="px-4 py-2 text-white bg-[#4d7a1a] rounded-lg hover:bg-[#3f6515] transition-colors text-sm whitespace-nowrap cursor-pointer"
               >
-                Alle akzeptieren
+                {t.alle}
               </button>
               <button
                 onClick={handleAcceptSelected}
                 className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm whitespace-nowrap cursor-pointer"
               >
-                Auswahl speichern
+                {t.speichern}
               </button>
               <button
                 onClick={handleRejectAll}
                 className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm whitespace-nowrap cursor-pointer"
               >
-                Weiter ohne Einwilligung
+                {t.ohne}
               </button>
             </div>
           </div>
-          <p className="text-gray-600 mt-1 p-6 pb-2 text-xs">
-            Google Analytics wird von Google Ireland Limited betrieben. Dabei können Daten auch an Google LLC in den USA
-            übermittelt werden. Die Übermittlung stützt sich auf den Angemessenheitsbeschluss der EU-Kommission zum
-            EU-US Data Privacy Framework (Art. 45 DSGVO), unter dem Google LLC zertifiziert ist.
-          </p>
+          <p className="text-gray-600 mt-1 p-6 pb-2 text-xs">{t.usa}</p>
           <div className="mt-3">
             <button
               type="button"
@@ -254,7 +312,7 @@ export default function CookieBanner({ forceShow = false, onClose }) {
               onClick={() => setIsShown(!isShown)}
               aria-expanded={isShown}
             >
-              Individuelle Privatsphäre-Präferenzen
+              {t.detailTitel}
             </button>
           </div>
 
@@ -271,14 +329,11 @@ export default function CookieBanner({ forceShow = false, onClose }) {
                       disabled
                       className="h-5 w-5 rounded border-gray-300 text-navy-700 focus:ring-ov-500 cursor-pointer"
                     />
-                    <span className="font-medium text-gray-900">Essenziell</span>
+                    <span className="font-medium text-gray-900">{t.essenziell}</span>
                   </label>
                 </div>
               </div>
-              <p className="text-sm text-gray-500 ml-8">
-                Essenzielle Cookies sind für die grundlegende Funktion der Website erforderlich (z. B. Anmeldung im Portal,
-                Speichern dieser Auswahl im Cookie „cookieConsent“ für 12 Monate). Sie können nicht abgelehnt werden.
-              </p>
+              <p className="text-sm text-gray-500 ml-8">{t.essenziellText}</p>
             </div>
 
             {/* Statistik */}
@@ -292,14 +347,13 @@ export default function CookieBanner({ forceShow = false, onClose }) {
                     onChange={toggleStatistik}
                     className="h-5 w-5 rounded border-gray-300 text-navy-700 focus:ring-ov-500 cursor-pointer"
                   />
-                  <span className="font-medium text-gray-900">Statistik (1)</span>
+                  <span className="font-medium text-gray-900">{t.statistik}</span>
                 </label>
               </div>
               <p className="text-sm text-gray-500 ml-8">
-                Statistik-Dienste helfen uns zu verstehen, wie Besucher unsere Website nutzen, damit wir sie verbessern
-                können. Sie werden erst nach Ihrer Zustimmung geladen. Details in der{" "}
+                {t.statistikText}{" "}
                 <Link href="/datenschutz#statistik" className="font-medium text-ov-700 underline">
-                  Datenschutzerklärung
+                  {t.datenschutz}
                 </Link>
                 .&nbsp;&nbsp;
                 <button
@@ -308,7 +362,7 @@ export default function CookieBanner({ forceShow = false, onClose }) {
                   aria-expanded={expandedSections.statistics}
                   className="text-sm font-medium text-navy-700 hover:text-navy-900 hover:underline cursor-pointer bg-transparent border-0 p-0"
                 >
-                  {expandedSections.statistics ? "Details ausblenden" : "Details anzeigen"}
+                  {expandedSections.statistics ? t.detailsAus : t.detailsAn}
                 </button>
               </p>
               {expandedSections.statistics && (
@@ -321,29 +375,29 @@ export default function CookieBanner({ forceShow = false, onClose }) {
                       onChange={toggleStatistik}
                       className="h-5 w-5 rounded border-gray-300 text-navy-700 focus:ring-ov-500 cursor-pointer"
                     />
-                    <span className="font-medium text-black">{cookieServices.statistics.googleAnalytics.title}</span>
+                    <span className="font-medium text-black">{ga.title}</span>
                   </label>
                   <p className="text-sm text-gray-500 ml-8">
-                    {cookieServices.statistics.googleAnalytics.description}&nbsp;&nbsp;
+                    {ga.description}&nbsp;&nbsp;
                     <button
                       type="button"
                       onClick={() => toggleServiceDetails("googleAnalytics")}
                       aria-expanded={expandedServices.googleAnalytics}
                       className="text-sm font-medium text-navy-700 hover:text-navy-900 cursor-pointer bg-transparent border-0 p-0"
                     >
-                      {expandedServices.googleAnalytics ? "Details ausblenden" : "Details anzeigen"}
+                      {expandedServices.googleAnalytics ? t.detailsAus : t.detailsAn}
                     </button>
                   </p>
-                  {expandedServices.googleAnalytics && <CookieDetails service={cookieServices.statistics.googleAnalytics} />}
+                  {expandedServices.googleAnalytics && <CookieDetails service={ga} sprache={sprache} />}
                 </div>
               )}
             </div>
           </div>
           <div className="border-t border-gray-200 bg-gray-50 p-2 sticky bottom-0">
             <p className="text-center text-sm text-gray-600 gap-1 flex justify-center items-center">
-              <Link href={"/datenschutz"} className="cursor-pointer">Datenschutzerklärung</Link>
+              <Link href={"/datenschutz"} className="cursor-pointer">{t.datenschutz}</Link>
               <Circle aria-hidden="true" />
-              <Link href={"/impressum"} className="cursor-pointer">Impressum</Link>
+              <Link href={"/impressum"} className="cursor-pointer">{t.impressum}</Link>
             </p>
           </div>
         </div>

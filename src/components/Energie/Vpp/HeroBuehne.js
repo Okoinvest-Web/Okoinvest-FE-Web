@@ -2,6 +2,10 @@
 import { BatteryCharging, Car, Factory, Network, Sprout, Store, Sun, Zap } from "lucide-react";
 import VppLiveSignal from "@/components/Energie/VppLiveSignal";
 import f from "@/components/Energie/fluss.module.css";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+
+/** Sprachmodell: Beschriftungen der Knoten (ids wie KNOTEN). */
+const LABEL_EN = { park: "Solar park", agri: "Agrivoltaics", carport: "Carport", speicher: "Storage", industrie: "Industry", handel: "Retail", boerse: "Exchange & grid" };
 
 // Bewegung (einmalig beim Laden): Die Verbindungen zeichnen sich von der Leitwarte aus, dann laufen drei
 // Impulse von den Erzeugern und dem Speicher in die Leitwarte und weiter zu Handel, Industrie und Börse –
@@ -28,6 +32,7 @@ const TOENE = {
 };
 
 export default function HeroBuehne({ live }) {
+  const en = spracheDerAnfrage() === "en";
   return (
     <div className="relative">
       <div className="relative" aria-hidden="true">
@@ -79,7 +84,7 @@ export default function HeroBuehne({ live }) {
             className="absolute -translate-x-1/2 whitespace-nowrap rounded-full bg-ov-500 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.08em] text-white sm:text-[11.5px]"
             style={{ left: `${(HUB.x / 640) * 100}%`, top: `${((HUB.y + 58) / 410) * 100}%` }}
           >
-            Leitwarte
+            {en ? "Control centre" : "Leitwarte"}
           </span>
           {KNOTEN.map((k) => (
             <span key={k.id}>
@@ -90,7 +95,7 @@ export default function HeroBuehne({ live }) {
                 className="absolute -translate-x-1/2 whitespace-nowrap text-[10.5px] font-semibold text-white/80 sm:text-[12.5px]"
                 style={{ left: `${(k.x / 640) * 100}%`, top: `${((k.y + 32) / 410) * 100}%` }}
               >
-                {k.label}
+                {en ? LABEL_EN[k.id] : k.label}
               </span>
             </span>
           ))}

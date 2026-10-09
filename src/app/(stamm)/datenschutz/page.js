@@ -30,10 +30,12 @@
 // Rollenverteilung Identitätsanbieter (Auftragsverarbeiter oder eigener
 // Verantwortlicher) und Verpflichtetenstellung nach GwG klären.
 
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import LegalShell from "@/components/Reusable/LegalShell";
 import { GESELLSCHAFT, KONTAKT, abs } from "@/data/site";
 import { pfad as seitenPfad } from "@/lib/land";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { datenschutzInhaltEn } from "@/components/Rechtstexte/DatenschutzEn";
 
 const PAGE_URL = abs("/datenschutz");
 const TITEL = "Datenschutzerklärung | ÖkoInvest";
@@ -43,7 +45,7 @@ const BESCHREIBUNG =
 /** Datum der letzten inhaltlichen Überarbeitung */
 const STAND = "30. September 2026";
 
-export const metadata = {
+const metadata = {
   title: TITEL,
   description: BESCHREIBUNG,
   alternates: { canonical: PAGE_URL },
@@ -57,6 +59,19 @@ export const metadata = {
     title: TITEL,
     description: BESCHREIBUNG,
     images: [{ url: abs("/img/solarpark-himmel.jpg"), alt: "Solarpark unter blauem Himmel" }],
+  },
+};
+
+// Englisch (Sprachmodell): Übersetzung zur Information (src/components/Rechtstexte/DatenschutzEn.js) –
+// maßgeblich ist die deutsche Fassung. ENTWURF, Prüfung Rechtsabteilung.
+const metadataEn = {
+  title: "Privacy policy | ÖkoInvest",
+  description: "How ÖkoInvest GmbH processes personal data: enquiries, portal, project exchange, signature, acquisition, energy procurement, financing and your rights.",
+  openGraph: {
+    locale: "en_GB",
+    title: "Privacy policy | ÖkoInvest",
+    description: "How ÖkoInvest GmbH processes personal data: enquiries, portal, project exchange, signature, acquisition, energy procurement, financing and your rights.",
+    images: [{ alt: "Solar park under a blue sky" }],
   },
 };
 
@@ -92,17 +107,24 @@ const FRISTEN = [
   ["Grundbuch- und Dienstbarkeitsakten", "für die Laufzeit der Dienstbarkeit bzw. des Nutzungsvertrags zuzüglich der Verjährungsfristen"],
   ["Einwilligung (Cookie-Einstellungen)", "12 Monate, danach fragen wir erneut"],
   ["Länderwahl (Cookie „land“, nur nach Ihrer Wahl)", "12 Monate bzw. bis Sie das Cookie löschen [Prüfung Rechtsabteilung]"],
+  ["Sprachwahl (Cookie „sprache“, nur nach Ihrer Wahl)", "12 Monate bzw. bis Sie das Cookie löschen [Prüfung Rechtsabteilung]"],
   ["Google-Analytics-Cookies", "bis zu 2 Jahre bzw. bis zum Widerruf; Ereignisdaten in Google Analytics höchstens 14 Monate"],
 ];
 
-export default function DatenschutzPage() {
+export default async function DatenschutzPage({ params }) {
+  await seitenLand(params);
+  const en = spracheDerAnfrage() === "en";
   return (
     <LegalShell
-      titel="Datenschutzerklärung"
+      titel={en ? "Privacy policy" : "Datenschutzerklärung"}
       pfad="/datenschutz"
       stand={STAND}
-      lead="Welche personenbezogenen Daten wir auf dieser Website, im Portal, in der Projektbörse und in unseren Fachmodulen verarbeiten, wozu, auf welcher Rechtsgrundlage – und welche Rechte Sie haben."
+      lead={en ? "Which personal data we process on this website, in the portal, on the project exchange and in our specialist modules, for what purpose, on what legal basis – and what rights you have." : "Welche personenbezogenen Daten wir auf dieser Website, im Portal, in der Projektbörse und in unseren Fachmodulen verarbeiten, wozu, auf welcher Rechtsgrundlage – und welche Rechte Sie haben."}
     >
+      {en ? (
+        datenschutzInhaltEn({ stand: STAND })
+      ) : (
+        <>
       <nav aria-label="Inhalt der Datenschutzerklärung" className="mb-12 rounded-2xl bg-sand-50 p-4 ring-1 ring-ink-200/60 sm:p-5 md:p-6">
         <p className="px-1 font-display text-[16px] font-bold text-ink-900">Schnellzugriff</p>
         <ul className="!mt-3 grid !list-none gap-2 !pl-0 text-[14.5px] sm:grid-cols-2 [&_li+li]:!mt-0">
@@ -214,6 +236,10 @@ export default function DatenschutzPage() {
         Rechtsgrundlage ist die Durchführung vorvertraglicher Maßnahmen auf Ihre Anfrage (Art. 6 Abs. 1 lit. b DSGVO) sowie unser berechtigtes
         Interesse an einer geordneten Bearbeitung und Auswertung der Kontaktwege (Art. 6 Abs. 1 lit. f DSGVO). Registrieren Sie sich später
         mit derselben E-Mail-Adresse im Portal, wird Ihr Vorgang Ihrem Konto zugeordnet, damit Sie ihn dort weiterverfolgen können.
+      </p>
+      <p>
+        Senden Sie ein Formular von einer englischen Seite, speichern wir die Sprache des Ihnen angezeigten Wortlauts zusammen mit dem Hinweis
+        und einer etwaigen Einwilligung, damit wir nachweisen können, welche Fassung Sie gesehen haben. <em>[Entwurf · Prüfung Rechtsabteilung]</em>
       </p>
 
       <h2 id="konto">6. Portal-Konto und Rollen</h2>
@@ -704,21 +730,26 @@ export default function DatenschutzPage() {
       <p>
         Ihre Auswahl können Sie jederzeit über <strong>„Privatsphäre-Einstellungen“</strong> im Fußbereich jeder Seite ändern oder widerrufen.
       </p>
-      {/* Welle 2, Länderrouting – Entwurf, Prüfung Rechtsabteilung (Rechtsgrundlage, Laufzeit, Wortlaut) */}
-      <h3>Länderhinweis und Länderwahl</h3>
+      {/* Ländermodell – Entwurf, Prüfung Rechtsabteilung (Rechtsgrundlage, Laufzeit, Wortlaut) */}
+      <h3>Länderwahl</h3>
       <p>
-        Die Website hat eigene Seiten für Deutschland, Österreich und die Schweiz. Damit wir Ihnen passende Seiten vorschlagen können, wertet
-        der Server beim Aufruf von „/api/land“ die Spracheinstellung Ihres Browsers (z.&nbsp;B. „de-AT“) und – falls unser Hosting ihn
-        mitliefert – einen Länderhinweis aus Ihrer IP-Adresse aus. Daraus entsteht nur ein <strong>Vorschlag</strong>; es gibt keine
-        automatische Weiterleitung, und das Ergebnis wird weder gespeichert noch protokolliert.
+        Die Website zeigt auf Wunsch die Inhalte für Deutschland, Österreich oder die Schweiz (Recht, Zahlen, Ansprechpartner). Das Land wählen
+        Sie selbst – in der Kopfleiste oder über die Adresse (z.&nbsp;B. „/at“). Es gibt keine Auswertung Ihrer IP-Adresse oder
+        Spracheinstellung und keine automatische Weiterleitung nach Herkunft.
       </p>
       <p>
-        Erst wenn Sie <strong>aktiv ein Land wählen</strong> (im Hinweis oder im Länderwechsler), speichern wir Ihre Wahl im Cookie
-        <strong> „land“</strong> (Inhalt: DE, AT oder CH; Laufzeit 12 Monate), damit der Hinweis nicht erneut erscheint und die Navigation
-        Ihr Land zeigt. Schließen Sie den Hinweis nur, merkt sich Ihr Browser das ausschließlich für die laufende Sitzung (Sitzungsspeicher,
-        kein Cookie, keine Übertragung an uns). Rechtsgrundlage: § 165 Abs. 3 TKG 2021 bzw. § 25 Abs. 2 Nr. 2 TDDDG (von Ihnen ausdrücklich
-        gewünschte Funktion) und Art. 6 Abs. 1 lit. f DSGVO. Sie können das Cookie jederzeit in Ihrem Browser löschen.{" "}
+        Erst wenn Sie <strong>aktiv ein Land wählen</strong> (Klick im Länderwechsler), speichern wir Ihre Wahl im Cookie
+        <strong> „land“</strong> (Inhalt: DE, AT oder CH; Laufzeit 12 Monate). Damit öffnet die Startseite beim nächsten Besuch direkt die
+        Seiten Ihres Landes, bis Sie die Wahl ändern. Rechtsgrundlage: § 165 Abs. 3 TKG 2021 bzw. § 25 Abs. 2 Nr. 2 TDDDG (von Ihnen
+        ausdrücklich gewünschte Funktion) und Art. 6 Abs. 1 lit. f DSGVO. Sie können das Cookie jederzeit in Ihrem Browser löschen.{" "}
         <em>[Entwurf · Prüfung Rechtsabteilung]</em>
+      </p>
+      <h3>Sprachwahl</h3>
+      <p>
+        Sie können die Website zwischen Deutsch und Englisch umschalten (DE · EN in der Kopfleiste). Erst wenn Sie <strong>aktiv eine Sprache
+        wählen</strong>, speichern wir Ihre Wahl im Cookie <strong>„sprache“</strong> (Inhalt: de oder en; Laufzeit 12 Monate), damit die
+        Startseite beim nächsten Besuch in Ihrer Sprache öffnet. Eine Auswertung der Spracheinstellung Ihres Browsers findet nicht statt.
+        Rechtsgrundlage wie bei der Länderwahl. Sie können das Cookie jederzeit in Ihrem Browser löschen. <em>[Entwurf · Prüfung Rechtsabteilung]</em>
       </p>
 
       <h2>11. Google Analytics 4 (nur nach Einwilligung)</h2>
@@ -921,6 +952,10 @@ export default function DatenschutzPage() {
         Wir passen diese Erklärung an, wenn sich unsere Angebote oder die Rechtslage ändern. Es gilt die jeweils hier veröffentlichte Fassung.
         Stand: {STAND}.
       </p>
+        </>
+      )}
     </LegalShell>
   );
 }
+
+export const generateMetadata = seitenMetadata("/datenschutz", metadata, { en: metadataEn });

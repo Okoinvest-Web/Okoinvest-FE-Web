@@ -1,9 +1,57 @@
 "use client";
 
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowUpRight, Search, X } from "lucide-react";
 import { pfad } from "@/lib/land";
+import { useTexte } from "@/components/Sprache/SpracheKontext";
+
+const TEXTE = {
+  de: {
+    alle: "Alle Begriffe",
+    hinweis: "Nach Themenfeld filtern, suchen oder über das Alphabet springen.",
+    filtern: "Nach Thema filtern",
+    alleThemen: "Alle Themen",
+    suchen: "Begriff suchen",
+    platzhalter: "Begriff suchen, z. B. Pacht",
+    leeren: "Suche leeren",
+    leiste: "Alphabetische Sprungleiste",
+    zu: (l) => `Zu Buchstabe ${l}`,
+    keine: (l) => `Buchstabe ${l} – keine Begriffe`,
+    begriffe: (n) => (n === 1 ? "Begriff" : "Begriffe"),
+    gefunden: "gefunden",
+    zuruecksetzen: "Filter zurücksetzen",
+    aZ: "Fachbegriffe von A bis Z",
+    keinTitel: "Kein Begriff gefunden",
+    keinText: "Versuchen Sie ein anderes Stichwort – oder fragen Sie uns direkt. Wir ergänzen das Lexikon laufend.",
+    faq: "Häufige Fragen",
+    frage: "Frage stellen",
+    thema: "Thema: ",
+    auch: "Auch:",
+  },
+  en: {
+    alle: "All terms",
+    hinweis: "Filter by topic, search or jump via the alphabet.",
+    filtern: "Filter by topic",
+    alleThemen: "All topics",
+    suchen: "Search for a term",
+    platzhalter: "Search for a term, e.g. lease",
+    leeren: "Clear search",
+    leiste: "Alphabetical index",
+    zu: (l) => `Go to letter ${l}`,
+    keine: (l) => `Letter ${l} – no terms`,
+    begriffe: (n) => (n === 1 ? "term" : "terms"),
+    gefunden: "found",
+    zuruecksetzen: "Reset filters",
+    aZ: "technical terms from A to Z",
+    keinTitel: "No term found",
+    keinText: "Try a different keyword – or ask us directly. We keep adding to the glossary.",
+    faq: "Frequently asked questions",
+    frage: "Ask a question",
+    thema: "Topic: ",
+    auch: "Also:",
+  },
+};
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -32,6 +80,7 @@ const norm = (s) =>
  *  namen      { id: begriff } – für Beschriftung verwandter Begriffe
  */
 export default function LexikonExplorer({ gruppen, kategorien, namen }) {
+  const t = useTexte(TEXTE);
   const [suche, setSuche] = useState("");
   const [kategorie, setKategorie] = useState("alle");
   const q = useDeferredValue(suche);
@@ -102,11 +151,11 @@ export default function LexikonExplorer({ gruppen, kategorien, namen }) {
     <div>
       {/* ---------- Themen ---------- */}
       <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between md:gap-10">
-        <h2 className="ov-h3 text-ink-900 md:text-[28px]">Alle Begriffe</h2>
-        <p className="text-[14.5px] text-ink-500">Nach Themenfeld filtern, suchen oder über das Alphabet springen.</p>
+        <h2 className="ov-h3 text-ink-900 md:text-[28px]">{t.alle}</h2>
+        <p className="text-[14.5px] text-ink-500">{t.hinweis}</p>
       </div>
-      <div className="ov-no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5 pb-1 md:-mx-8 md:px-8 lg:mx-0 lg:flex-wrap lg:px-0" role="group" aria-label="Nach Thema filtern">
-        {[{ id: "alle", label: "Alle Themen", anzahl: gruppen.reduce((s, [, l]) => s + l.length, 0) }, ...kategorien].map((k) => {
+      <div className="ov-no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5 pb-1 md:-mx-8 md:px-8 lg:mx-0 lg:flex-wrap lg:px-0" role="group" aria-label={t.filtern}>
+        {[{ id: "alle", label: t.alleThemen, anzahl: gruppen.reduce((s, [, l]) => s + l.length, 0) }, ...kategorien].map((k) => {
           const aktiv = kategorie === k.id;
           return (
             <button
@@ -133,14 +182,14 @@ export default function LexikonExplorer({ gruppen, kategorien, namen }) {
           <div className="relative lg:w-[300px] lg:shrink-0">
             <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-400" />
             <label htmlFor="lexikon-suche" className="sr-only">
-              Begriff suchen
+              {t.suchen}
             </label>
             <input
               id="lexikon-suche"
               type="search"
               value={suche}
               onChange={(e) => setSuche(e.target.value)}
-              placeholder="Begriff suchen, z. B. Pacht"
+              placeholder={t.platzhalter}
               autoComplete="off"
               className="h-12 w-full rounded-full bg-white pl-11 pr-11 text-[15px] text-ink-900 ring-1 ring-ink-200 placeholder:text-ink-500 focus:outline-none focus:ring-2 focus:ring-ov-500 lg:bg-ink-50 [&::-webkit-search-cancel-button]:hidden"
             />
@@ -148,7 +197,7 @@ export default function LexikonExplorer({ gruppen, kategorien, namen }) {
               <button
                 type="button"
                 onClick={() => setSuche("")}
-                aria-label="Suche leeren"
+                aria-label={t.leeren}
                 className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-ink-500 hover:bg-ink-100 hover:text-ink-900"
               >
                 <X aria-hidden="true" className="h-4 w-4" />
@@ -156,7 +205,7 @@ export default function LexikonExplorer({ gruppen, kategorien, namen }) {
             )}
           </div>
 
-          <nav aria-label="Alphabetische Sprungleiste" className="ov-no-scrollbar -mx-5 overflow-x-auto px-5 md:-mx-8 md:px-8 lg:mx-0 lg:flex-1 lg:px-0">
+          <nav aria-label={t.leiste} className="ov-no-scrollbar -mx-5 overflow-x-auto px-5 md:-mx-8 md:px-8 lg:mx-0 lg:flex-1 lg:px-0">
             <ul className="flex min-w-max gap-0.5 lg:min-w-0 lg:justify-between">
               {ALPHABET.map((l) => {
                 const ok = vorhanden.has(l);
@@ -166,7 +215,7 @@ export default function LexikonExplorer({ gruppen, kategorien, namen }) {
                       type="button"
                       disabled={!ok}
                       onClick={() => springe(l)}
-                      aria-label={ok ? `Zu Buchstabe ${l}` : `Buchstabe ${l} – keine Begriffe`}
+                      aria-label={ok ? t.zu(l) : t.keine(l)}
                       className="flex h-10 w-9 items-center justify-center rounded-lg font-display text-[14.5px] font-bold text-ink-800 transition-colors hover:bg-ov-500 hover:text-white disabled:cursor-default disabled:text-ink-300 disabled:hover:bg-transparent lg:h-9 lg:w-8"
                     >
                       {l}
@@ -182,7 +231,7 @@ export default function LexikonExplorer({ gruppen, kategorien, namen }) {
       <p className="mt-6 text-[14px] text-ink-500" aria-live="polite">
         {aktivFilter ? (
           <>
-            <span className="ov-num font-semibold text-ink-900">{anzahl}</span> {anzahl === 1 ? "Begriff" : "Begriffe"} gefunden
+            <span className="ov-num font-semibold text-ink-900">{anzahl}</span> {t.begriffe(anzahl)} {t.gefunden}
             <button
               type="button"
               onClick={() => {
@@ -191,12 +240,12 @@ export default function LexikonExplorer({ gruppen, kategorien, namen }) {
               }}
               className="ml-3 font-semibold text-ov-700 underline decoration-ov-300 underline-offset-2 hover:decoration-current"
             >
-              Filter zurücksetzen
+              {t.zuruecksetzen}
             </button>
           </>
         ) : (
           <>
-            <span className="ov-num font-semibold text-ink-900">{anzahl}</span> Fachbegriffe von A bis Z
+            <span className="ov-num font-semibold text-ink-900">{anzahl}</span> {t.aZ}
           </>
         )}
       </p>
@@ -204,16 +253,14 @@ export default function LexikonExplorer({ gruppen, kategorien, namen }) {
       {/* ---------- Begriffe ---------- */}
       {gefiltert.length === 0 ? (
         <div className="mt-8 rounded-3xl bg-white p-10 text-center ring-1 ring-ink-200/70">
-          <p className="font-display text-[20px] font-extrabold text-ink-900">Kein Begriff gefunden</p>
-          <p className="mx-auto mt-2 max-w-md text-[15px] leading-relaxed text-ink-600">
-            Versuchen Sie ein anderes Stichwort – oder fragen Sie uns direkt. Wir ergänzen das Lexikon laufend.
-          </p>
+          <p className="font-display text-[20px] font-extrabold text-ink-900">{t.keinTitel}</p>
+          <p className="mx-auto mt-2 max-w-md text-[15px] leading-relaxed text-ink-600">{t.keinText}</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link href={pfad("/faq")} className="inline-flex h-11 items-center rounded-full bg-ink-900 px-5 text-[14px] font-semibold text-white hover:bg-ink-800">
-              Häufige Fragen
+              {t.faq}
             </Link>
             <Link href="/kontakt" className="inline-flex h-11 items-center rounded-full px-5 text-[14px] font-semibold text-ink-800 ring-1 ring-ink-200 hover:bg-ink-50">
-              Frage stellen
+              {t.frage}
             </Link>
           </div>
         </div>
@@ -227,12 +274,12 @@ export default function LexikonExplorer({ gruppen, kategorien, namen }) {
                     {l}
                   </h2>
                   <p className="ov-num text-[13px] font-medium text-ink-500 lg:mt-3 lg:text-center">
-                    {liste.length} {liste.length === 1 ? "Begriff" : "Begriffe"}
+                    {liste.length} {t.begriffe(liste.length)}
                   </p>
                 </div>
                 <dl className="grid gap-4 md:grid-cols-2">
                   {liste.map((b) => (
-                    <Eintrag key={b.id} b={b} namen={namen} kategorien={kategorien} />
+                    <Eintrag key={b.id} b={b} namen={namen} kategorien={kategorien} t={t} />
                   ))}
                 </dl>
               </div>
@@ -244,7 +291,7 @@ export default function LexikonExplorer({ gruppen, kategorien, namen }) {
   );
 }
 
-function Eintrag({ b, namen, kategorien }) {
+function Eintrag({ b, namen, kategorien, t }) {
   const kat = kategorien.find((k) => k.id === b.kategorie)?.label;
   return (
     <div
@@ -258,7 +305,7 @@ function Eintrag({ b, namen, kategorien }) {
         </a>
         {kat && (
           <span className="mt-0.5 shrink-0 rounded-full bg-sand-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-ink-600">
-            <span className="sr-only">Thema: </span>
+            <span className="sr-only">{t.thema}</span>
             {kat}
           </span>
         )}
@@ -268,7 +315,7 @@ function Eintrag({ b, namen, kategorien }) {
         <p className="mt-3 text-[15px] leading-relaxed text-ink-600">{b.text}</p>
         {b.synonyme?.length > 0 && (
           <p className="mt-3 text-[13px] leading-relaxed text-ink-500">
-            <span className="font-semibold text-ink-600">Auch:</span> {b.synonyme.join(", ")}
+            <span className="font-semibold text-ink-600">{t.auch}</span> {b.synonyme.join(", ")}
           </p>
         )}
         {(b.verwandt?.length > 0 || b.link) && (

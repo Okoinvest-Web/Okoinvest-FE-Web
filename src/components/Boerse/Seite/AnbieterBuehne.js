@@ -1,6 +1,8 @@
 // Hero-Bühne „Projekt anbieten“: Anbieter-Cockpit als Beispielansicht (fiktive Werte) –
 // Inserat mit Prüfstatus, Resonanz-Statistik und Provision nur bei Abschluss.
 import { BadgePercent, Bookmark, Check, Eye, FileSignature, KeyRound } from "lucide-react";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 const SCHRITTE = ["Erfasst", "Geprüft", "Veröffentlicht"];
 // Beispielwerte für die Wochenkurve der Aufrufe (fiktiv, nur Darstellung)
@@ -11,6 +13,41 @@ const STATISTIK = [
   { icon: KeyRound, label: "NDA-Anfragen", wert: "7" },
   { icon: FileSignature, label: "LOIs", wert: "2" },
 ];
+
+const TEXTE = {
+  de: {
+    schritte: SCHRITTE,
+    statistik: STATISTIK,
+    inserat: "Ihr Inserat",
+    beispiel: "Beispiel",
+    titel: "Agri-PV, Aufstellungsbeschluss",
+    region: "Region · Bundesland · Land",
+    oeffentlich: "Öffentlich sichtbar",
+    chipsOffen: ["Typ", "Leistung", "Phase", "Region", "Preis"],
+    nachNda: "Erst nach NDA",
+    chipsNda: ["Gemeinde", "Flurstücke", "Netzbetreiber"],
+    resonanz: "Resonanz",
+    wochen: "letzte 12 Wochen",
+    provision: "Erfolgsprovision",
+    abschluss: "nur bei Abschluss",
+  },
+  en: {
+    schritte: ["Entered", "Checked", "Published"],
+    statistik: [{ label: "Views" }, { label: "Saves" }, { label: "NDA requests" }, { label: "LOIs" }],
+    inserat: "Your listing",
+    beispiel: "Example",
+    titel: "Agrivoltaics, zoning resolution",
+    region: "Region · state · country",
+    oeffentlich: "Publicly visible",
+    chipsOffen: ["Type", "Capacity", "Stage", "Region", "Price"],
+    nachNda: "Only after NDA",
+    chipsNda: ["Municipality", "Plots", "Grid operator"],
+    resonanz: "Response",
+    wochen: "last 12 weeks",
+    provision: "Success fee",
+    abschluss: "only on closing",
+  },
+};
 
 function Kurve() {
   const max = Math.max(...KURVE);
@@ -31,39 +68,40 @@ function Kurve() {
 }
 
 export default function AnbieterBuehne() {
+  const t = uebersetze(TEXTE, spracheDerAnfrage());
   return (
     <div className="relative mx-auto w-full max-w-[560px] select-none lg:max-w-none" aria-hidden="true">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] sm:gap-4">
         {/* Inserat mit Prüfstatus */}
         <div className="rounded-2xl bg-white p-4 text-ink-900 shadow-[0_40px_80px_-30px_rgba(0,8,30,0.8)] ring-1 ring-ink-200/70 sm:row-span-2 sm:p-5">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ov-700">Ihr Inserat</p>
-            <span className="rounded-full bg-sun-300 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.06em] text-navy-950">Beispiel</span>
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ov-700">{t.inserat}</p>
+            <span className="rounded-full bg-sun-300 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.06em] text-navy-950">{t.beispiel}</span>
           </div>
-          <p className="mt-2 font-display text-[15px] font-bold leading-snug sm:text-[17px]">Agri-PV, Aufstellungsbeschluss</p>
-          <p className="mt-1 text-[11.5px] text-ink-500">Region · Bundesland · Land</p>
+          <p className="mt-2 font-display text-[15px] font-bold leading-snug sm:text-[17px]">{t.titel}</p>
+          <p className="mt-1 text-[11.5px] text-ink-500">{t.region}</p>
           <ol className="mt-4 flex items-center gap-1.5">
-            {SCHRITTE.map((s, i) => (
+            {t.schritte.map((s, i) => (
               <li key={s} className="flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center">
                 <span className="flex w-full items-center gap-1.5">
                   <span className={`h-px flex-1 ${i === 0 ? "bg-transparent" : "bg-ov-300"}`} />
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ov-600 text-white"><Check className="h-3 w-3" strokeWidth={3.5} /></span>
-                  <span className={`h-px flex-1 ${i === SCHRITTE.length - 1 ? "bg-transparent" : "bg-ov-300"}`} />
+                  <span className={`h-px flex-1 ${i === t.schritte.length - 1 ? "bg-transparent" : "bg-ov-300"}`} />
                 </span>
                 <span className="text-[10.5px] font-semibold text-ink-700">{s}</span>
               </li>
             ))}
           </ol>
           <div className="mt-4 rounded-xl bg-sand-50 p-3 ring-1 ring-inset ring-ink-200/60 max-sm:hidden">
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-ink-500">Öffentlich sichtbar</p>
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-ink-500">{t.oeffentlich}</p>
             <ul className="mt-2 flex flex-wrap gap-1">
-              {["Typ", "Leistung", "Phase", "Region", "Preis"].map((x) => (
+              {t.chipsOffen.map((x) => (
                 <li key={x} className="rounded-full bg-ov-50 px-2 py-0.5 text-[10.5px] font-medium text-ov-800 ring-1 ring-inset ring-ov-200">{x}</li>
               ))}
             </ul>
-            <p className="mt-2.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-ink-500">Erst nach NDA</p>
+            <p className="mt-2.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-ink-500">{t.nachNda}</p>
             <ul className="mt-2 flex flex-wrap gap-1">
-              {["Gemeinde", "Flurstücke", "Netzbetreiber"].map((x) => (
+              {t.chipsNda.map((x) => (
                 <li key={x} className="rounded-full bg-ink-50 px-2 py-0.5 text-[10.5px] font-medium text-ink-400 ring-1 ring-inset ring-ink-200">{x}</li>
               ))}
             </ul>
@@ -73,12 +111,12 @@ export default function AnbieterBuehne() {
         {/* Resonanz */}
         <div className="rounded-2xl bg-navy-900/90 p-4 text-white shadow-e4 ring-1 ring-inset ring-white/10 backdrop-blur">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[11.5px] font-semibold text-white/85">Resonanz</p>
-            <span className="text-[10px] text-white/55">letzte 12 Wochen</span>
+            <p className="text-[11.5px] font-semibold text-white/85">{t.resonanz}</p>
+            <span className="text-[10px] text-white/55">{t.wochen}</span>
           </div>
           <Kurve />
           <dl className="mt-2 grid grid-cols-2 gap-1.5">
-            {STATISTIK.map((s) => {
+            {t.statistik.map((s) => {
               const Icon = s.icon;
               return (
                 <div key={s.label} className="rounded-lg bg-white/[0.05] px-2.5 py-1.5">
@@ -94,8 +132,8 @@ export default function AnbieterBuehne() {
         <div className="flex items-center gap-3 rounded-2xl bg-ov-600 p-4 text-white shadow-e4">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15"><BadgePercent className="h-5 w-5" /></span>
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/80">Erfolgsprovision</p>
-            <p className="font-display text-[15px] font-extrabold leading-tight">nur bei Abschluss</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/80">{t.provision}</p>
+            <p className="font-display text-[15px] font-extrabold leading-tight">{t.abschluss}</p>
           </div>
         </div>
       </div>

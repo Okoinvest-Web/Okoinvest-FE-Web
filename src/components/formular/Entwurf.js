@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CircleCheck, RotateCcw } from "lucide-react";
 import { cn } from "@/components/ui/cn";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 
 const PRAEFIX = "ov-entwurf:";
 
@@ -102,16 +103,17 @@ const uhrzeit = (t) => (t ? new Date(t).toLocaleTimeString("de-DE", { hour: "2-d
 
 /** Dezenter Hinweis „Entwurf gesichert“; bei wiederhergestelltem Entwurf mit „Verwerfen“ */
 export function AutosaveHinweis({ stand, zeit, onVerwerfen, dunkel = false, className }) {
+  const en = useSprache() === "en";
   return (
     <div className={cn("flex min-h-[1.5rem] flex-wrap items-center gap-x-3 gap-y-1 text-[13px]", dunkel ? "text-white/70" : "text-ink-500", className)}>
       <span role="status" className={cn("inline-flex items-center gap-1.5 transition-opacity duration-300", stand === "leer" ? "opacity-0" : "opacity-100")}>
         <CircleCheck aria-hidden="true" className={cn("h-4 w-4", dunkel ? "text-ov-300" : "text-ov-600")} />
-        {stand === "wiederhergestellt" ? "Ihr Entwurf wurde wiederhergestellt" : stand === "gespeichert" ? "Entwurf in diesem Tab gesichert" : ""}
-        {stand !== "leer" && zeit ? <span className="ov-num"> · {uhrzeit(zeit)} Uhr</span> : null}
+        {stand === "wiederhergestellt" ? (en ? "Your draft has been restored" : "Ihr Entwurf wurde wiederhergestellt") : stand === "gespeichert" ? (en ? "Draft saved in this tab" : "Entwurf in diesem Tab gesichert") : ""}
+        {stand !== "leer" && zeit ? <span className="ov-num"> · {en ? new Date(zeit).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : `${uhrzeit(zeit)} Uhr`}</span> : null}
       </span>
       {stand === "wiederhergestellt" && onVerwerfen && (
         <button type="button" onClick={onVerwerfen} className={cn("inline-flex items-center gap-1 font-semibold underline-offset-4 hover:underline", dunkel ? "text-white/85" : "text-ink-700")}>
-          <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" /> Verwerfen
+          <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" /> {en ? "Discard" : "Verwerfen"}
         </button>
       )}
     </div>

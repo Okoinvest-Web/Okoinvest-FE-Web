@@ -5,6 +5,9 @@ import Reveal from "@/components/ui/Reveal";
 import Kopf from "@/components/Energie/Seite/Kopf";
 import { SPEICHER } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { fmtZahl } from "@/lib/sprache/format";
 
 const KETTE = [
   { icon: BatteryCharging, t: "Batterie-Container", s: "LFP-Zellen" },
@@ -20,30 +23,74 @@ const SCHUTZ = [
   { icon: BatteryCharging, t: "Betrieb", x: "Fernüberwachung rund um die Uhr, Wartung und klare Zuständigkeiten." },
 ];
 
+/** Sprachmodell: Texte (en nur Texte, Listen je Index). */
+const W = {
+  de: {
+    kette: KETTE,
+    schutz: SCHUTZ,
+    daten: () => [
+      ["Zellchemie", "LFP", "Lithium-Eisenphosphat (LFP): langlebig, thermisch stabil, ohne Kobalt."],
+      ["Dauer", "2 h · 4 h", "2-Stunden-Systeme für Regelenergie und Tagesarbitrage; 4-Stunden-Systeme verschieben mehr Solarstrom in den Abend und gewinnen an Bedeutung."],
+      ["Aufbau", "PCS + Trafo", "Batterie-Container, Wechselrichter (PCS), Transformatoren, Energiemanagement und Anbindung an den Vermarkter."],
+      ["Lebensdauer", `${fmt(SPEICHER.zyklenProJahr)} / Jahr`, `Rund ${fmt(SPEICHER.zyklenProJahr)} Vollzyklen pro Jahr; Kapazitätsverlust wird über Erweiterung (Augmentation) oder Garantie ausgeglichen.`],
+    ],
+    eyebrow: "Technik & Sicherheit",
+    titel: "LFP, 2 oder 4 Stunden – und Brandschutz von Anfang an.",
+    aufbau: "So ist ein Großspeicher aufgebaut",
+    steuern: "Energiemanagement & Vermarkter steuern alles",
+    sicherheit: "Sicherheit in Schichten",
+    brandschutz: "Ein Brandschutzkonzept ist Teil jeder Genehmigung.",
+    ebene: (n) => `Ebene ${n}: `,
+  },
+  en: {
+    kette: [
+      { t: "Battery containers", s: "LFP cells" },
+      { t: "Inverters", s: "PCS" },
+      { t: "Transformer", s: "Medium/high voltage" },
+      { t: "Grid & market", s: "Exchange, balancing power" },
+    ],
+    schutz: [
+      { t: "Monitoring", x: "Temperature, voltage and gas per module, automatic shutdown." },
+      { t: "Spacing & standards", x: "Distances between containers and testing to recognised standards for battery systems." },
+      { t: "Firefighting concept", x: "Agreed with the fire brigade, including access, firefighting water and an operations plan." },
+      { t: "Operation", x: "Remote monitoring around the clock, maintenance and clear responsibilities." },
+    ],
+    daten: () => [
+      ["Cell chemistry", "LFP", "Lithium iron phosphate (LFP): durable, thermally stable, cobalt-free."],
+      ["Duration", "2 h · 4 h", "2-hour systems for balancing power and daily arbitrage; 4-hour systems shift more solar power into the evening and are becoming more important."],
+      ["Set-up", "PCS + transformer", "Battery containers, inverters (PCS), transformers, energy management and connection to the trader."],
+      ["Service life", `${fmtZahl(SPEICHER.zyklenProJahr, 0, "en")} / year`, `Around ${fmtZahl(SPEICHER.zyklenProJahr, 0, "en")} full cycles per year; capacity loss is offset by augmentation or warranty.`],
+    ],
+    eyebrow: "Technology & safety",
+    titel: "LFP, 2 or 4 hours – and fire protection from the start.",
+    aufbau: "How a battery storage system is set up",
+    steuern: "Energy management & trader control everything",
+    sicherheit: "Safety in layers",
+    brandschutz: "A fire protection concept is part of every permit.",
+    ebene: (n) => `Layer ${n}: `,
+  },
+};
+
 export default function Technik() {
-  const DATEN = [
-    ["Zellchemie", "LFP", "Lithium-Eisenphosphat (LFP): langlebig, thermisch stabil, ohne Kobalt."],
-    ["Dauer", "2 h · 4 h", "2-Stunden-Systeme für Regelenergie und Tagesarbitrage; 4-Stunden-Systeme verschieben mehr Solarstrom in den Abend und gewinnen an Bedeutung."],
-    ["Aufbau", "PCS + Trafo", "Batterie-Container, Wechselrichter (PCS), Transformatoren, Energiemanagement und Anbindung an den Vermarkter."],
-    ["Lebensdauer", `${fmt(SPEICHER.zyklenProJahr)} / Jahr`, `Rund ${fmt(SPEICHER.zyklenProJahr)} Vollzyklen pro Jahr; Kapazitätsverlust wird über Erweiterung (Augmentation) oder Garantie ausgeglichen.`],
-  ];
+  const w = uebersetze(W, spracheDerAnfrage());
+  const DATEN = w.daten();
 
   return (
     <Section tone="sand" space="lg" data-abschnitt="technik" aria-labelledby="technik-titel">
-      <Kopf id="technik-titel" eyebrow="Technik & Sicherheit" titel="LFP, 2 oder 4 Stunden – und Brandschutz von Anfang an." className="mb-12 md:mb-16" />
+      <Kopf id="technik-titel" eyebrow={w.eyebrow} titel={w.titel} className="mb-12 md:mb-16" />
 
       {/* Systemkette */}
       <Reveal className="relative overflow-hidden rounded-[2rem] bg-white p-5 shadow-e2 ring-1 ring-ink-200/70 sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="ov-overline text-ov-700">So ist ein Großspeicher aufgebaut</p>
+          <p className="ov-overline text-ov-700">{w.aufbau}</p>
           <p className="inline-flex items-center gap-2 rounded-full bg-navy-50 px-3 py-1 text-[12.5px] font-semibold text-navy-700 ring-1 ring-navy-100">
-            <Cpu aria-hidden="true" className="h-3.5 w-3.5" /> Energiemanagement & Vermarkter steuern alles
+            <Cpu aria-hidden="true" className="h-3.5 w-3.5" /> {w.steuern}
           </p>
         </div>
         <ol className="relative mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0">
           <span aria-hidden="true" className="absolute left-[12%] right-[12%] top-[2.1rem] hidden h-0.5 bg-gradient-to-r from-ov-300 via-navy-300 to-navy-500 lg:block" />
-          {KETTE.map((k, i) => (
-            <li key={k.t} className="relative flex items-center gap-4 rounded-2xl bg-sand-50 p-4 ring-1 ring-ink-200/60 lg:flex-col lg:bg-transparent lg:p-0 lg:text-center lg:ring-0">
+          {w.kette.map((k, i) => (
+            <li key={i} className="relative flex items-center gap-4 rounded-2xl bg-sand-50 p-4 ring-1 ring-ink-200/60 lg:flex-col lg:bg-transparent lg:p-0 lg:text-center lg:ring-0">
               <span aria-hidden="true" className="relative flex h-[4.25rem] w-[4.25rem] shrink-0 items-center justify-center rounded-2xl bg-white text-ov-600 shadow-e3 ring-1 ring-ink-200/70">
                 <k.icon className="h-7 w-7" />
                 <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-navy-950 text-[11px] font-bold text-white">{i + 1}</span>
@@ -79,17 +126,17 @@ export default function Technik() {
             ))}
             <circle cx="100" cy="100" r="12" fill="currentColor" />
           </svg>
-          <p className="ov-overline relative text-ov-300">Sicherheit in Schichten</p>
-          <h3 className="relative mt-3 font-display text-[22px] font-bold leading-snug">Ein Brandschutzkonzept ist Teil jeder Genehmigung.</h3>
+          <p className="ov-overline relative text-ov-300">{w.sicherheit}</p>
+          <h3 className="relative mt-3 font-display text-[22px] font-bold leading-snug">{w.brandschutz}</h3>
           <ol className="relative mt-6 space-y-4">
-            {SCHUTZ.map((s, i) => (
-              <li key={s.t} className="flex gap-4">
+            {w.schutz.map((s, i) => (
+              <li key={i} className="flex gap-4">
                 <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.07] text-ov-300 ring-1 ring-white/15">
                   <s.icon className="h-[18px] w-[18px]" />
                 </span>
                 <div className="min-w-0">
                   <p className="font-semibold text-white">
-                    <span className="sr-only">Ebene {i + 1}: </span>
+                    <span className="sr-only">{w.ebene(i + 1)}</span>
                     {s.t}
                   </p>
                   <p className="mt-0.5 text-[14.5px] leading-relaxed text-white/70">{s.x}</p>

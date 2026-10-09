@@ -3,7 +3,7 @@
 // Anmelde-Link einlösen: bewusst per Klick (POST), damit Vorschau-Abrufe von Mailprogrammen das Token nicht verbrauchen.
 
 import { useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { useRouter } from "next/navigation";
 import { LogIn } from "lucide-react";
 import { senden } from "@/lib/plattform/client";

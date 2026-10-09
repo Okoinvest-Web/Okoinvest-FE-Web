@@ -5,7 +5,7 @@
 // (ohne Passwort), Absende-Choreografie. Die maßgebliche Prüfung erfolgt serverseitig (/api/auth/registrieren).
 
 import { useId, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { useRouter } from "next/navigation";
 import { Check, Factory, FolderKanban, Landmark, LandPlot, PencilLine, Tractor, TrendingUp, UserPlus, Users } from "lucide-react";
 import { cn } from "@/components/ui/cn";

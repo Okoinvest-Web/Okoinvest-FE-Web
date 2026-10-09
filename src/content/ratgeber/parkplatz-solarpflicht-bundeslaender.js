@@ -178,7 +178,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Entscheidend ist der **Eigenverbrauch**: Ein Supermarkt, ein Logistikstandort oder ein Bürogebäude mit Tageslast nutzt den Strom direkt und spart den vollen Bezugspreis. Wer den Strom nur einspeist, erreicht mit Carport-Kosten kaum eine tragfähige Rendite. Große Parkplatzanlagen ab 1 MW können als besondere Solaranlage auch an der [EEG-Ausschreibung](/wissen/ratgeber/eeg-ausschreibung-freiflaeche) teilnehmen; alternativ kommt ein [PPA](/wissen/ratgeber/ppa-fuer-unternehmen) mit einem Abnehmer vor Ort in Frage.",
+          text: "Entscheidend ist der **Eigenverbrauch**: Ein Supermarkt, ein Logistikstandort oder ein Bürogebäude mit Tageslast nutzt den Strom direkt und spart den vollen Bezugspreis. Wer den Strom nur einspeist, erreicht mit Carport-Kosten kaum eine tragfähige Rendite. Große Parkplatzanlagen ab 1 MW können als besondere Solaranlage auch an der [EEG-Ausschreibung](/ratgeber/eeg-ausschreibung-freiflaeche) teilnehmen; alternativ kommt ein [PPA](/ratgeber/ppa-fuer-unternehmen) mit einem Abnehmer vor Ort in Frage.",
         },
         {
           typ: "tool",
@@ -206,7 +206,7 @@ const artikel = {
           typ: "kasten",
           variant: "tipp",
           titel: "Planungstipp",
-          text: "Planen Sie Carport, Ladepunkte, Netzanschluss und gegebenenfalls einen [Großspeicher](/de/grossspeicher) gemeinsam. Ein Speicher kann Lastspitzen der Schnelllader abfangen und so eine teure Netzverstärkung vermeiden oder verkleinern.",
+          text: "Planen Sie Carport, Ladepunkte, Netzanschluss und gegebenenfalls einen [Großspeicher](/grossspeicher) gemeinsam. Ein Speicher kann Lastspitzen der Schnelllader abfangen und so eine teure Netzverstärkung vermeiden oder verkleinern.",
         },
       ],
     },
@@ -221,7 +221,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "**In der Schweiz sind Energievorschriften für Gebäude Sache der Kantone.** Der Kanton Bern verlangt seit 1. Januar 2026 eine solaraktive Überdachung für neue, öffentlich zugängliche und kostenpflichtige Parkplätze im Freien ab 80 Abstellplätzen sowie für Park-and-Ride-Anlagen mit mehr als 50 Plätzen (Art. 39a–39e KEnG). Andere Kantone haben eigene Regeln oder keine. Mehr zur Lage in der Schweiz im Ratgeber [Freiflächen-PV in der Schweiz](/wissen/ratgeber/freiflaechen-pv-schweiz).",
+          text: "**In der Schweiz sind Energievorschriften für Gebäude Sache der Kantone.** Der Kanton Bern verlangt seit 1. Januar 2026 eine solaraktive Überdachung für neue, öffentlich zugängliche und kostenpflichtige Parkplätze im Freien ab 80 Abstellplätzen sowie für Park-and-Ride-Anlagen mit mehr als 50 Plätzen (Art. 39a–39e KEnG). Andere Kantone haben eigene Regeln oder keine. Mehr zur Lage in der Schweiz im Ratgeber [Freiflächen-PV in der Schweiz](/ratgeber/freiflaechen-pv-schweiz).",
         },
       ],
     },
@@ -236,14 +236,14 @@ const artikel = {
             ["Pflicht prüfen", "Landesrecht, Stellplatzzahl, Nutzung (gewerblich, öffentlich, Wohnen) und Stichtag des Bauantrags klären."],
             ["Geeignete Fläche ermitteln", "Verschattung durch Bäume und Gebäude, Fahrgassen, Feuerwehrzufahrten und Leitungen berücksichtigen."],
             ["Eigenverbrauch und Netz klären", "Lastgang des Gebäudes, Netzanschlusskapazität und Ladeinfrastruktur nach GEIG zusammen planen."],
-            ["Wirtschaftlichkeit rechnen", "Mit dem [Solarcarport-Rechner](/de/rechner/solarcarport) Investition, Ertrag und Rendite abschätzen."],
+            ["Wirtschaftlichkeit rechnen", "Mit dem [Solarcarport-Rechner](/rechner/solarcarport) Investition, Ertrag und Rendite abschätzen."],
             ["Betreibermodell wählen", "Selbst investieren, Dach bzw. Parkplatz verpachten oder Strom per PPA von einem Betreiber beziehen."],
             ["Bauantrag stellen", "PV-Überdachung in den Bauantrag aufnehmen oder Ausnahme bzw. Ersatzerfüllung begründen."],
           ],
         },
         {
           typ: "p",
-          text: "Mehr zu Bauarten, Betreibermodellen und Ladeinfrastruktur finden Sie auf der Seite [Solarcarports und Parkflächen](/de/solarcarport). Unternehmen, die den verbleibenden Strombedarf günstiger decken wollen, finden Informationen zum [Reststrom-Pool](/de/reststrom).",
+          text: "Mehr zu Bauarten, Betreibermodellen und Ladeinfrastruktur finden Sie auf der Seite [Solarcarports und Parkflächen](/solarcarport). Unternehmen, die den verbleibenden Strombedarf günstiger decken wollen, finden Informationen zum [Reststrom-Pool](/reststrom).",
         },
       ],
     },
@@ -283,8 +283,8 @@ const artikel = {
   passend: [
     { href: pfad("/rechner/solarcarport"), titel: "Solarcarport-Rechner", text: "Investition, Ertrag und Rendite Ihres Parkplatzes." },
     { href: pfad("/solarcarport"), titel: "Solarcarports & Parkflächen", text: "Bauarten, Betreibermodelle, Ladeinfrastruktur." },
-    { href: "/wissen/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Solarstrom vom Parkplatz langfristig beziehen." },
-    { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Solarpark-Genehmigung", text: "Baurecht für Freiflächenanlagen." },
+    { href: "/ratgeber/ppa-fuer-unternehmen", titel: "PPA für Unternehmen", text: "Solarstrom vom Parkplatz langfristig beziehen." },
+    { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Solarpark-Genehmigung", text: "Baurecht für Freiflächenanlagen." },
   ],
 
   quellen: [

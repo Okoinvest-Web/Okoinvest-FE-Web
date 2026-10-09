@@ -1,5 +1,6 @@
 // Kleine Datenvisualisierungen für die Agri-Seiten (Server-Komponenten, HTML/CSS)
 import { cn } from "@/components/ui/cn";
+import T from "@/components/Sprache/T";
 
 /**
  * Spannendiagramm: horizontale Bereichsbalken auf gemeinsamer Achse.
@@ -79,9 +80,9 @@ export function Landnutzung({ werte, quelle }) {
   const max = 2;
   return (
     <figure className="rounded-[1.75rem] bg-white/[0.04] p-6 ring-1 ring-inset ring-white/10 backdrop-blur-sm md:p-8">
-      <figcaption className="text-[13px] font-semibold uppercase tracking-[0.14em] text-ov-300">Landnutzungseffizienz</figcaption>
+      <figcaption className="text-[13px] font-semibold uppercase tracking-[0.14em] text-ov-300"><T de="Landnutzungseffizienz" en="Land use efficiency" /></figcaption>
       <div className="mt-6 space-y-6">
-        <Zeile label="Getrennte Nutzung" sub="Referenz: Ernte oder Strom je Fläche" wert={1} max={max} text="100 %" leise i={0} />
+        <Zeile label={<T de="Getrennte Nutzung" en="Separate use" />} sub={<T de="Referenz: Ernte oder Strom je Fläche" en="Reference: crops or power per area" />} wert={1} max={max} text="100 %" leise i={0} />
         {werte.map((w, i) => (
           <Zeile key={w.label} label={w.label} sub={w.sub} wert={w.wert} max={max} text={w.text} i={i + 1} />
         ))}

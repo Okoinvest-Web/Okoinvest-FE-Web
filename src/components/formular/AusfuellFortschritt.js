@@ -14,6 +14,7 @@
 
 import { ErfolgsZeichen } from "./Textfeld";
 import { cn } from "@/components/ui/cn";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 
 /** Anzahl der Pflichtfelder, deren Regeln (aus dem Formularschema) aktuell erfüllt sind */
 export function pflichtErfuellt(schema, werte, pflicht) {
@@ -25,7 +26,9 @@ export function pflichtErfuellt(schema, werte, pflicht) {
   return n;
 }
 
-export default function AusfuellFortschritt({ erfuellt = 0, gesamt = 1, dunkel = false, bereitText = "Alles bereit – jetzt absenden", className }) {
+export default function AusfuellFortschritt({ erfuellt = 0, gesamt = 1, dunkel = false, bereitText: bereitProp, className }) {
+  const en = useSprache() === "en";
+  const bereitText = bereitProp ?? (en ? "All set – submit now" : "Alles bereit – jetzt absenden");
   const anteil = gesamt ? Math.max(0, Math.min(1, erfuellt / gesamt)) : 0;
   const fertig = erfuellt >= gesamt;
   return (
@@ -44,7 +47,7 @@ export default function AusfuellFortschritt({ erfuellt = 0, gesamt = 1, dunkel =
           </>
         ) : (
           <span className="ov-num">
-            {erfuellt} von {gesamt} Pflichtangaben
+            {en ? `${erfuellt} of ${gesamt} required fields` : `${erfuellt} von ${gesamt} Pflichtangaben`}
           </span>
         )}
       </p>

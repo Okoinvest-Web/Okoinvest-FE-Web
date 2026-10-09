@@ -4,6 +4,8 @@ import { useEffect, useId, useState } from "react";
 import { BatteryCharging, Car, Factory, Network, Pause, Play, Sprout, Store, Sun, Zap } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { useBreite } from "@/components/Rechner/bausteine";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { zusammenfuehren } from "@/lib/sprache/woerterbuch";
 
 /**
  * Interaktive Energiefluss-Grafik des virtuellen Kraftwerks.
@@ -86,6 +88,63 @@ const KURZ = {
   "bezieht aus dem Pool": "aus dem Pool",
 };
 
+/* ---------- Englisch (Sprachmodell): nur Texte, gleiche Schlüssel/Reihenfolge ---------- */
+const KNOTEN_EN = zusammenfuehren(KNOTEN, {
+  netz: { label: "Power exchange & grid", kurz: "Exchange & grid", text: "Day-ahead and intraday markets, the futures market for tranche procurement and the public grid. Surpluses are sold here, shortfalls are bought." },
+  hub: { label: "Pool & control centre", kurz: "Control centre", text: "The heart of the virtual power plant: forecasts for generation and consumption, schedules in 15-minute intervals, control signals to parks and storage, and pooled procurement for the pool." },
+  park: { label: "Solar park", kurz: "Solar park", text: "The group’s ground-mounted installations deliver solar power during the day – marketed directly or via PPA to the companies in the pool." },
+  agri: { label: "Agrivoltaics", kurz: "Agri-PV", text: "Vertical or elevated agrivoltaics spreads generation more evenly over the day – east/west installations deliver more in the morning and evening than conventional south-facing ones." },
+  carport: { label: "Solar carport", kurz: "Carport", text: "Car park PV directly at the consumer, often with charging points: power is used on site, surpluses flow into the pool." },
+  speicher: { label: "Battery storage", kurz: "Storage", text: "Battery storage shifts midday power into the evening, uses low or negative prices and can offer balancing power." },
+  gewerbe: { label: "Manufacturing", kurz: "Industry", text: "Mid-sized companies with one-, two- or three-shift operation source their residual power through the pool." },
+  handel: { label: "Retail & services", kurz: "Retail", text: "Supermarkets, logistics and offices with cooling and air conditioning: a predictable load, often with scope for load shifting." },
+});
+
+const SZENARIEN_EN = zusammenfuehren(SZENARIEN, [
+  {
+    label: "Midday",
+    sub: "Plenty of sun",
+    titel: "Midday: park power covers daytime demand",
+    text: "The parks generate more than the pool companies need at that moment. Part of it flows into the businesses via PPA; surpluses charge the storage or are sold on the exchange – instead of being curtailed at rock-bottom prices.",
+    status: { park: "delivering a lot", agri: "delivering", carport: "delivering", speicher: "charging", gewerbe: "using PPA power", handel: "using PPA power", netz: "selling surpluses" },
+  },
+  {
+    label: "Evening",
+    sub: "Price peak",
+    titel: "Evening: storage instead of peak prices",
+    text: "The sun has gone and the exchange price rises. The storage discharges the midday power into exactly these expensive quarter-hours. The rest comes from tranches secured in advance – not at the spot price of the moment.",
+    status: { park: "no generation", agri: "east/west delivers little", carport: "no generation", speicher: "discharging", gewerbe: "supplied from the pool", handel: "supplied from the pool", netz: "tranches & purchasing" },
+  },
+  {
+    label: "Night",
+    sub: "Wind & futures market",
+    titel: "Night: procured in a structured way",
+    text: "At night, mainly two- and three-shift operations are running. Their demand is covered by tranches that the pool has bought on the futures market over months. If there is a lot of wind and power is cheap, the storage charges for the morning.",
+    status: { park: "no generation", agri: "no generation", carport: "no generation", speicher: "charging cheaply", gewerbe: "shift operation", handel: "base load", netz: "tranches from the futures market" },
+  },
+  {
+    label: "Negative prices",
+    sub: "Surplus in the grid",
+    titel: "Negative prices: flexibility pays off",
+    text: "On sunny public holidays, the exchange price falls below zero. The control centre curtails parks whose feed-in would then cost money, charges the storage with grid power and brings shiftable load forward into these hours – which benefits the pool’s procurement.",
+    status: { park: "curtailed", agri: "partly curtailed", carport: "self-consumption on site", speicher: "charging fully", gewerbe: "load brought forward", handel: "cooling brought forward", netz: "buying at negative prices" },
+  },
+]);
+
+const KURZ_EN = {
+  "partly curtailed": "partly curtailed",
+  "self-consumption on site": "used on site",
+  "east/west delivers little": "delivers little",
+  "no generation": "idle",
+  "using PPA power": "PPA power",
+  "supplied from the pool": "from the pool",
+};
+
+const UI = {
+  de: { tabs: "Situation im virtuellen Kraftwerk", start: "Animation starten", stopp: "Animation anhalten", titel: (l) => `Energieflüsse im virtuellen Kraftwerk – ${l}`, steuert: "steuert", legende: ["Erzeugung", "Speicher", "Verbrauch im Pool", "Börse & Netz", "Steuersignal"], situation: "Situation", baustein: "Baustein", jetzt: "Jetzt: ", tipp: "Tipp: Tippen Sie auf einen Baustein in der Grafik." },
+  en: { tabs: "Situation in the virtual power plant", start: "Start animation", stopp: "Pause animation", titel: (l) => `Energy flows in the virtual power plant – ${l}`, steuert: "controls", legende: ["Generation", "Storage", "Consumption in the pool", "Exchange & grid", "Control signal"], situation: "Situation", baustein: "Component", jetzt: "Now: ", tipp: "Tip: tap a component in the chart." },
+};
+
 const FARBE = {
   erzeuger: { fill: "#f5f3ea", stroke: "#f5a70f", icon: "#f5a70f" },
   speicher: { fill: "#e6f1d8", stroke: "#669933", icon: "#436621" },
@@ -95,6 +154,11 @@ const FARBE = {
 };
 
 export default function EnergieflussGrafik() {
+  const en = useSprache() === "en";
+  const KNOTEN_S = en ? KNOTEN_EN : KNOTEN;
+  const SZENARIEN_S = en ? SZENARIEN_EN : SZENARIEN;
+  const KURZ_S = en ? KURZ_EN : KURZ;
+  const ui = UI[en ? "en" : "de"];
   const [ref, breite] = useBreite(880);
   const [szenarioId, setSzenarioId] = useState("mittag");
   const [auswahl, setAuswahl] = useState("hub");
@@ -111,15 +175,15 @@ export default function EnergieflussGrafik() {
   }, []);
 
   const L = breite < 640 ? LAYOUT.schmal : LAYOUT.breit;
-  const sz = SZENARIEN.find((s) => s.id === szenarioId);
+  const sz = SZENARIEN_S.find((s) => s.id === szenarioId);
   const animiert = !pause && !reduziert;
   const [hx, hy] = L.pos.hub;
-  const k = KNOTEN[auswahl];
+  const k = KNOTEN_S[auswahl];
 
   const tastatur = (e) => {
-    const i = SZENARIEN.findIndex((s) => s.id === szenarioId);
-    if (e.key === "ArrowRight") setSzenarioId(SZENARIEN[(i + 1) % SZENARIEN.length].id);
-    if (e.key === "ArrowLeft") setSzenarioId(SZENARIEN[(i - 1 + SZENARIEN.length) % SZENARIEN.length].id);
+    const i = SZENARIEN_S.findIndex((s) => s.id === szenarioId);
+    if (e.key === "ArrowRight") setSzenarioId(SZENARIEN_S[(i + 1) % SZENARIEN_S.length].id);
+    if (e.key === "ArrowLeft") setSzenarioId(SZENARIEN_S[(i - 1 + SZENARIEN_S.length) % SZENARIEN_S.length].id);
   };
 
   return (
@@ -135,8 +199,8 @@ export default function EnergieflussGrafik() {
 
       {/* Situationen */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div role="tablist" aria-label="Situation im virtuellen Kraftwerk" onKeyDown={tastatur} className="grid grid-cols-2 gap-1.5 rounded-2xl bg-ink-100/80 p-1.5 sm:flex">
-          {SZENARIEN.map((s) => {
+        <div role="tablist" aria-label={ui.tabs} onKeyDown={tastatur} className="grid grid-cols-2 gap-1.5 rounded-2xl bg-ink-100/80 p-1.5 sm:flex">
+          {SZENARIEN_S.map((s) => {
             const aktiv = s.id === szenarioId;
             return (
               <button
@@ -166,7 +230,7 @@ export default function EnergieflussGrafik() {
             className="inline-flex min-h-11 items-center gap-2 self-start rounded-full px-4 text-[13.5px] font-semibold text-ink-700 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 sm:self-auto"
           >
             {pause ? <Play aria-hidden="true" className="h-4 w-4" /> : <Pause aria-hidden="true" className="h-4 w-4" />}
-            {pause ? "Animation starten" : "Animation anhalten"}
+            {pause ? ui.start : ui.stopp}
           </button>
         )}
       </div>
@@ -179,9 +243,9 @@ export default function EnergieflussGrafik() {
             role="img"
             aria-labelledby={`${tabsId}-titel ${tabsId}-desc`}
           >
-            <title id={`${tabsId}-titel`}>{`Energieflüsse im virtuellen Kraftwerk – ${sz.label}`}</title>
+            <title id={`${tabsId}-titel`}>{ui.titel(sz.label)}</title>
             <desc id={`${tabsId}-desc`}>
-              {Object.entries(sz.status).map(([id, st]) => `${KNOTEN[id].label}: ${st}`).join(". ")}
+              {Object.entries(sz.status).map(([id, st]) => `${KNOTEN_S[id].label}: ${st}`).join(". ")}
             </desc>
 
             {/* Raster */}
@@ -196,7 +260,7 @@ export default function EnergieflussGrafik() {
             {Object.entries(L.pos).map(([id, [x, y]]) => {
               if (id === "hub") return null;
               const [st, rein] = sz.fluss[id] || [0, true];
-              const farbe = KNOTEN[id].art === "erzeuger" ? "#f5a70f" : KNOTEN[id].art === "speicher" ? "#669933" : KNOTEN[id].art === "markt" ? "#6b7486" : "#1f5aa1";
+              const farbe = KNOTEN_S[id].art === "erzeuger" ? "#f5a70f" : KNOTEN_S[id].art === "speicher" ? "#669933" : KNOTEN_S[id].art === "markt" ? "#6b7486" : "#1f5aa1";
               // Pfad immer in Flussrichtung zeichnen – die Animation läuft dann „vorwärts"
               const [x1, y1, x2, y2] = rein ? [x, y, hx, hy] : [hx, hy, x, y];
               return (
@@ -225,14 +289,14 @@ export default function EnergieflussGrafik() {
 
             {/* Knoten */}
             {Object.entries(L.pos).map(([id, [x, y]]) => {
-              const kn = KNOTEN[id];
+              const kn = KNOTEN_S[id];
               const f = FARBE[kn.art];
               const Icon = kn.icon;
               const gewaehlt = auswahl === id;
               const r = id === "hub" ? L.r + 8 : L.r;
               const st = sz.fluss[id]?.[0] ?? 1;
               const aus = id !== "hub" && st === 0;
-              const status = id === "hub" ? "steuert" : sz.status[id];
+              const status = id === "hub" ? ui.steuert : sz.status[id];
               return (
                 <g
                   key={id}
@@ -259,7 +323,7 @@ export default function EnergieflussGrafik() {
                   </text>
                   {id !== "hub" && (
                     <text x={x} y={y + r + 21 + L.schrift + 3} textAnchor="middle" paintOrder="stroke" stroke="#fff" strokeWidth="5" strokeLinejoin="round" fontSize={L.schrift - 2} fill={aus ? "#97a0b0" : "#558227"}>
-                      {L === LAYOUT.schmal ? KURZ[status] || status : status}
+                      {L === LAYOUT.schmal ? KURZ_S[status] || status : status}
                     </text>
                   )}
                 </g>
@@ -267,32 +331,32 @@ export default function EnergieflussGrafik() {
             })}
           </svg>
           <figcaption className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[12.5px] text-ink-500">
-            <Legende farbe="#f5a70f">Erzeugung</Legende>
-            <Legende farbe="#669933">Speicher</Legende>
-            <Legende farbe="#1f5aa1">Verbrauch im Pool</Legende>
-            <Legende farbe="#6b7486">Börse & Netz</Legende>
+            <Legende farbe="#f5a70f">{ui.legende[0]}</Legende>
+            <Legende farbe="#669933">{ui.legende[1]}</Legende>
+            <Legende farbe="#1f5aa1">{ui.legende[2]}</Legende>
+            <Legende farbe="#6b7486">{ui.legende[3]}</Legende>
             <span className="inline-flex items-center gap-2">
               <span aria-hidden="true" className="inline-block w-6 border-t-2 border-dashed border-ink-300" />
-              Steuersignal
+              {ui.legende[4]}
             </span>
           </figcaption>
         </figure>
 
         <div className="min-w-0 space-y-4" aria-live="polite">
           <div className="rounded-3xl bg-sand-50 p-5 ring-1 ring-ink-200/60 md:p-6">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ov-700">Situation</p>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ov-700">{ui.situation}</p>
             <h3 className="mt-2 font-display text-[20px] font-bold leading-snug text-ink-900">{sz.titel}</h3>
             <p className="mt-2 text-[15px] leading-relaxed text-ink-600">{sz.text}</p>
           </div>
           <div className="rounded-3xl bg-navy-950 p-5 text-white md:p-6">
             <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-ov-300">
               <k.icon aria-hidden="true" className="h-4 w-4" />
-              Baustein
+              {ui.baustein}
             </p>
             <h3 className="mt-2 font-display text-[19px] font-bold leading-snug">{k.label}</h3>
-            {auswahl !== "hub" && <p className="mt-1 text-[13.5px] font-semibold text-ov-300">Jetzt: {sz.status[auswahl]}</p>}
+            {auswahl !== "hub" && <p className="mt-1 text-[13.5px] font-semibold text-ov-300">{ui.jetzt}{sz.status[auswahl]}</p>}
             <p className="mt-2 text-[14.5px] leading-relaxed text-white/70">{k.text}</p>
-            <p className="mt-3 text-[12.5px] text-white/45">Tipp: Tippen Sie auf einen Baustein in der Grafik.</p>
+            <p className="mt-3 text-[12.5px] text-white/45">{ui.tipp}</p>
           </div>
         </div>
       </div>

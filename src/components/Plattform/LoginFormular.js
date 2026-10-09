@@ -3,7 +3,7 @@
 // Anmeldung: Passwort oder passwortlos per E-Mail-Link; bei aktiver Zwei-Faktor-Anmeldung folgt der Code-Schritt.
 
 import { useId, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { useRouter } from "next/navigation";
 import { KeyRound, LogIn, MailCheck, Wand2 } from "lucide-react";
 import { senden, sicheresZiel } from "@/lib/plattform/client";

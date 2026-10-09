@@ -71,7 +71,7 @@ export const BEGRIFFE = [
     text: `Bei ausschreibungspflichtigen Anlagen entspricht er dem eigenen Zuschlagswert; bei kleineren Anlagen ist er gesetzlich festgelegt. Die Marktprämie ergibt sich aus der Differenz zwischen anzulegendem Wert und Marktwert Solar und wird in der Regel 20 Jahre gezahlt. Zur Orientierung: Im ersten Segment lagen die durchschnittlichen Zuschlagswerte zuletzt bei rund ${fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh.`,
     kategorie: "markt",
     verwandt: ["marktpraemie", "zuschlagswert", "marktwert-solar", "ausschreibung-eeg"],
-    link: { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung erklärt" },
+    link: { href: "/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung erklärt" },
   },
   {
     id: "arbitrage",
@@ -81,7 +81,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Energiearbitrage", "Spread-Handel", "Intraday-Handel"],
     verwandt: ["grossspeicher", "regelenergie", "negative-strompreise", "virtuelles-kraftwerk"],
-    link: { href: "/wissen/ratgeber/grossspeicher-erloese", label: "Erlöse von Großspeichern" },
+    link: { href: "/ratgeber/grossspeicher-erloese", label: "Erlöse von Großspeichern" },
   },
   {
     id: "asset-deal",
@@ -90,7 +90,7 @@ export const BEGRIFFE = [
     text: "Der Käufer kann gezielt auswählen, welche Rechte und Pflichten er übernimmt, und vermeidet so unbekannte Altlasten der Gesellschaft. Dafür muss jeder Vertrag einzeln übertragen werden, was Zustimmungen von Verpächtern, Netzbetreiber oder Behörden erfordern kann. In der Projektentwicklung ist deshalb häufiger der Share Deal üblich.",
     kategorie: "invest",
     verwandt: ["share-deal", "spa", "projektrechte", "due-diligence"],
-    link: { href: "/wissen/ratgeber/projektrechte-kaufen-due-diligence", label: "Projektrechte kaufen" },
+    link: { href: "/ratgeber/projektrechte-kaufen-due-diligence", label: "Projektrechte kaufen" },
   },
   {
     id: "aufstellungsbeschluss",
@@ -99,7 +99,7 @@ export const BEGRIFFE = [
     text: `Mit ihm bekundet die Gemeinde ihren Planungswillen; ein Anspruch auf Baurecht entsteht dadurch noch nicht. Für Solarparks ist er ein wichtiger Meilenstein, weil er zeigt, dass die Kommune das Vorhaben grundsätzlich mitträgt – Projekte in dieser Phase werden zur Orientierung mit etwa ${spanne(phase("aufstellung"))} gehandelt. Häufig wird parallel ein städtebaulicher Vertrag über die Übernahme der Planungskosten geschlossen.`,
     kategorie: "planung",
     verwandt: ["bebauungsplan", "fruehzeitige-beteiligung", "satzungsbeschluss", "flaechennutzungsplan"],
-    link: { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", label: "B-Plan-Verfahren" },
+    link: { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", label: "B-Plan-Verfahren" },
   },
   {
     id: "ausgleichsflaechen",
@@ -119,7 +119,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Solarausschreibung", "erstes Segment", "Bundesnetzagentur"],
     verwandt: ["gebotstermin", "zuschlagswert", "flaechenkulisse", "besondere-solaranlagen"],
-    link: { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung Freifläche" },
+    link: { href: "/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung Freifläche" },
   },
 
   // ---------------------------------------------------------------- B
@@ -141,7 +141,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["B-Plan", "vorhabenbezogener Bebauungsplan", "Sondergebiet Photovoltaik", "Bauleitplanung"],
     verwandt: ["aufstellungsbeschluss", "satzungsbeschluss", "flaechennutzungsplan", "umweltbericht"],
-    link: { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Genehmigung eines Solarparks" },
+    link: { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Genehmigung eines Solarparks" },
   },
   {
     id: "benachteiligte-gebiete",
@@ -161,7 +161,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Floating-PV", "Moor-PV", "Parkplatz-PV", "Agri-PV-Segment"],
     verwandt: ["agri-pv", "ausschreibung-eeg", "din-spec-91434", "flaechenkulisse"],
-    link: { href: "/wissen/ratgeber/agri-pv-wirtschaftlichkeit", label: "Wirtschaftlichkeit Agri-PV" },
+    link: { href: "/ratgeber/agri-pv-wirtschaftlichkeit", label: "Wirtschaftlichkeit Agri-PV" },
   },
   {
     id: "bifazial",
@@ -225,7 +225,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Schuldendienstdeckungsgrad", "Kapitaldienstdeckungsgrad"],
     verwandt: ["p50-p90", "irr", "kapitalwert", "ppa"],
-    link: { href: "/wissen/ratgeber/solarpark-investment-rendite", label: "Rendite von Solarparks" },
+    link: { href: "/ratgeber/solarpark-investment-rendite", label: "Rendite von Solarparks" },
   },
   {
     id: "degradation",
@@ -245,7 +245,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Grunddienstbarkeit", "Servitut", "Leitungsrecht", "Grundbuch"],
     verwandt: ["projektrechte", "rueckbauverpflichtung", "netzverknuepfungspunkt"],
-    link: { href: "/wissen/ratgeber/pachtvertrag-solarpark", label: "Pachtvertrag Solarpark" },
+    link: { href: "/ratgeber/pachtvertrag-solarpark", label: "Pachtvertrag Solarpark" },
   },
   {
     id: "din-spec-91434",
@@ -255,7 +255,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["DIN SPEC Agri-PV", "Kategorie I", "Kategorie II", "DIN SPEC 91492"],
     verwandt: ["agri-pv", "gap-direktzahlungen", "besondere-solaranlagen"],
-    link: { href: "/wissen/ratgeber/agri-pv-din-spec-91434", label: "DIN SPEC 91434 im Detail" },
+    link: { href: "/ratgeber/agri-pv-din-spec-91434", label: "DIN SPEC 91434 im Detail" },
   },
   {
     id: "direktvermarktung",
@@ -275,7 +275,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["DD", "Legal Due Diligence", "Technical Due Diligence"],
     verwandt: ["datenraum", "spa", "projektrechte", "loi"],
-    link: { href: "/wissen/ratgeber/projektrechte-kaufen-due-diligence", label: "Due Diligence bei Projektrechten" },
+    link: { href: "/ratgeber/projektrechte-kaufen-due-diligence", label: "Due Diligence bei Projektrechten" },
   },
 
   // ---------------------------------------------------------------- E
@@ -287,7 +287,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["Erneuerbaren-Ausbau-Gesetz", "OeMAG", "Investitionszuschuss Österreich"],
     verwandt: ["marktpraemie", "eeg-gemeinschaft", "gruenland-photovoltaik"],
-    link: { href: "/wissen/ratgeber/freiflaechen-pv-oesterreich", label: "Freiflächen-PV in Österreich" },
+    link: { href: "/ratgeber/freiflaechen-pv-oesterreich", label: "Freiflächen-PV in Österreich" },
   },
   {
     id: "eeg-gemeinschaft",
@@ -297,7 +297,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["Erneuerbare-Energie-Gemeinschaft", "EEG Österreich", "lokale EEG", "regionale EEG"],
     verwandt: ["buergerenergiegemeinschaft", "eag", "energy-sharing", "leg"],
-    link: { href: "/wissen/ratgeber/energy-sharing-energiegemeinschaften", label: "Energiegemeinschaften im Vergleich" },
+    link: { href: "/ratgeber/energy-sharing-energiegemeinschaften", label: "Energiegemeinschaften im Vergleich" },
   },
   {
     id: "eeg-2023",
@@ -307,7 +307,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Erneuerbare-Energien-Gesetz", "EEG", "Solarpaket I"],
     verwandt: ["ausschreibung-eeg", "flaechenkulisse", "kommunalbeteiligung", "negative-strompreise"],
-    link: { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung" },
+    link: { href: "/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung" },
   },
   {
     id: "einmalverguetung",
@@ -317,7 +317,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["EIV", "KLEIV", "GREIV", "HEIV", "Pronovo"],
     verwandt: ["solarexpress", "zev", "leg"],
-    link: { href: "/wissen/ratgeber/freiflaechen-pv-schweiz", label: "Freiflächen-PV in der Schweiz" },
+    link: { href: "/ratgeber/freiflaechen-pv-schweiz", label: "Freiflächen-PV in der Schweiz" },
   },
   {
     id: "energiegenossenschaft",
@@ -337,7 +337,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["gemeinsame Nutzung", "Energiegemeinschaft Deutschland", "§ 42c EnWG"],
     verwandt: ["eeg-gemeinschaft", "leg", "reststrom", "buergerenergiegemeinschaft"],
-    link: { href: "/wissen/ratgeber/energy-sharing-energiegemeinschaften", label: "Energy Sharing erklärt" },
+    link: { href: "/ratgeber/energy-sharing-energiegemeinschaften", label: "Energy Sharing erklärt" },
   },
   {
     id: "epc",
@@ -375,7 +375,7 @@ export const BEGRIFFE = [
     id: "flaechenpacht",
     begriff: "Flächenpacht (Solarpark)",
     kurz: "Die Flächenpacht ist das Entgelt, das der Betreiber eines Solarparks dem Grundstückseigentümer für die Nutzung seiner Fläche über die gesamte Betriebsdauer zahlt.",
-    text: `Üblich sind im DACH-Raum nach aktuellem Stand etwa ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr für Freiflächen-PV, bei Agri-PV wegen der fortgesetzten Landwirtschaft meist weniger; alternativ wird eine Umsatzbeteiligung von ${pct(PACHT.umsatzbeteiligung.min)} bis ${pct(PACHT.umsatzbeteiligung.max)} der Stromerlöse vereinbart. Pachtverträge laufen in der Regel rund ${PACHT.laufzeit} Jahre mit Verlängerungsoptionen und werden über eine Dienstbarkeit im Grundbuch abgesichert. Zum Vergleich: Ackerland wird in Deutschland im Schnitt für rund ${fmt(PACHT.ackerProHa)} € je Hektar verpachtet.`,
+    text: `Üblich sind in Deutschland nach aktuellem Stand etwa ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr für Freiflächen-PV, bei Agri-PV wegen der fortgesetzten Landwirtschaft meist weniger; alternativ wird eine Umsatzbeteiligung von ${pct(PACHT.umsatzbeteiligung.min)} bis ${pct(PACHT.umsatzbeteiligung.max)} der Stromerlöse vereinbart. Pachtverträge laufen in der Regel rund ${PACHT.laufzeit} Jahre mit Verlängerungsoptionen und werden über eine Dienstbarkeit im Grundbuch abgesichert. Zum Vergleich: Ackerland wird in Deutschland im Schnitt für rund ${fmt(PACHT.ackerProHa)} € je Hektar verpachtet.`,
     kategorie: "flaeche",
     synonyme: ["Solarpacht", "Pacht pro Hektar", "Pachtvertrag Solarpark", "Nutzungsentgelt"],
     verwandt: ["dienstbarkeit", "rueckbauverpflichtung", "landwirtschaftliches-vermoegen", "agri-pv"],
@@ -389,7 +389,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["Öffentlichkeitsbeteiligung", "Scoping", "Behördenbeteiligung"],
     verwandt: ["aufstellungsbeschluss", "bebauungsplan", "umweltbericht"],
-    link: { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Ablauf des B-Plan-Verfahrens" },
+    link: { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Ablauf des B-Plan-Verfahrens" },
   },
 
   // ---------------------------------------------------------------- G
@@ -401,7 +401,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Direktzahlungen", "Einkommensgrundstützung", "GAP", "Betriebsprämie"],
     verwandt: ["agri-pv", "din-spec-91434", "landwirtschaftliches-vermoegen"],
-    link: { href: "/wissen/ratgeber/agri-pv-foerderung-gap", label: "Agri-PV und GAP-Förderung" },
+    link: { href: "/ratgeber/agri-pv-foerderung-gap", label: "Agri-PV und GAP-Förderung" },
   },
   {
     id: "gebotstermin",
@@ -411,7 +411,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Ausschreibungstermin", "Gebotsfrist", "Höchstwert"],
     verwandt: ["ausschreibung-eeg", "zuschlagswert", "anzulegender-wert"],
-    link: { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", label: "Gebotstermine und Ablauf" },
+    link: { href: "/ratgeber/eeg-ausschreibung-freiflaeche", label: "Gebotstermine und Ablauf" },
   },
   {
     id: "grossspeicher",
@@ -431,7 +431,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["Widmung Photovoltaik", "Flächenwidmung Österreich", "Sonderwidmung PV"],
     verwandt: ["eag", "uvp", "flaechennutzungsplan"],
-    link: { href: "/wissen/ratgeber/freiflaechen-pv-oesterreich", label: "Widmung in Österreich" },
+    link: { href: "/ratgeber/freiflaechen-pv-oesterreich", label: "Widmung in Österreich" },
   },
 
   // ---------------------------------------------------------------- H
@@ -443,7 +443,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["HKN", "Guarantee of Origin", "GoO", "Grünstromzertifikat"],
     verwandt: ["ppa", "direktvermarktung", "reststrom"],
-    link: { href: "/wissen/ratgeber/ppa-fuer-unternehmen", label: "PPA für Unternehmen" },
+    link: { href: "/ratgeber/ppa-fuer-unternehmen", label: "PPA für Unternehmen" },
   },
 
   // ---------------------------------------------------------------- I
@@ -489,7 +489,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Erbschaftsteuer Solarpark", "Grundsteuer PV-Fläche", "JStG 2024", "Bewertungsgesetz"],
     verwandt: ["dienstbarkeit", "gap-direktzahlungen", "agri-pv"],
-    link: { href: "/wissen/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer", label: "Pacht, Erbschaft- und Grundsteuer" },
+    link: { href: "/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer", label: "Pacht, Erbschaft- und Grundsteuer" },
   },
   {
     id: "lcoe",
@@ -531,7 +531,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["gleitende Marktprämie", "Marktprämienmodell"],
     verwandt: ["anzulegender-wert", "marktwert-solar", "direktvermarktung", "eag"],
-    link: { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", label: "Förderung über Ausschreibung" },
+    link: { href: "/ratgeber/eeg-ausschreibung-freiflaeche", label: "Förderung über Ausschreibung" },
   },
   {
     id: "marktstammdatenregister",
@@ -617,7 +617,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Ertragsgutachten", "P75", "P99", "Ertragsprognose"],
     verwandt: ["dscr", "spezifischer-ertrag", "performance-ratio", "degradation"],
-    link: { href: "/wissen/ratgeber/solarpark-investment-rendite", label: "Rendite und Risiken" },
+    link: { href: "/ratgeber/solarpark-investment-rendite", label: "Rendite und Risiken" },
   },
   {
     id: "parkplatz-solarpflicht",
@@ -627,7 +627,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["Solarpflicht Parkplatz", "Solarcarport-Pflicht", "Solarcarport"],
     verwandt: ["solarcarport", "besondere-solaranlagen", "ppa", "reststrom"],
-    link: { href: "/wissen/ratgeber/parkplatz-solarpflicht-bundeslaender", label: "Solarpflicht je Bundesland" },
+    link: { href: "/ratgeber/parkplatz-solarpflicht-bundeslaender", label: "Solarpflicht je Bundesland" },
   },
   {
     id: "performance-ratio",
@@ -647,7 +647,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Stromabnahmevertrag", "Corporate PPA", "Solar-PPA", "Direktliefervertrag"],
     verwandt: ["herkunftsnachweis", "capture-rate", "reststrom", "direktvermarktung"],
-    link: { href: "/wissen/ratgeber/ppa-fuer-unternehmen", label: "PPA für Unternehmen" },
+    link: { href: "/ratgeber/ppa-fuer-unternehmen", label: "PPA für Unternehmen" },
   },
   {
     id: "privilegierung-aussenbereich",
@@ -657,7 +657,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["§ 35 BauGB", "Außenbereichsprivilegierung", "200-m-Korridor"],
     verwandt: ["randstreifen", "agri-pv", "bebauungsplan", "rueckbauverpflichtung"],
-    link: { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Genehmigungswege" },
+    link: { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Genehmigungswege" },
   },
   {
     id: "projektrechte",
@@ -709,7 +709,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["FCR", "aFRR", "mFRR", "Primärregelleistung", "Systemdienstleistungen"],
     verwandt: ["grossspeicher", "arbitrage", "virtuelles-kraftwerk"],
-    link: { href: "/wissen/ratgeber/grossspeicher-erloese", label: "Speichererlöse" },
+    link: { href: "/ratgeber/grossspeicher-erloese", label: "Speichererlöse" },
   },
   {
     id: "reststrom",
@@ -729,7 +729,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Rückbaubürgschaft", "Rückbausicherheit"],
     verwandt: ["dienstbarkeit", "privilegierung-aussenbereich", "bebauungsplan"],
-    link: { href: "/wissen/ratgeber/pachtvertrag-solarpark", label: "Was in den Pachtvertrag gehört" },
+    link: { href: "/ratgeber/pachtvertrag-solarpark", label: "Was in den Pachtvertrag gehört" },
   },
 
   // ---------------------------------------------------------------- S
@@ -751,7 +751,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Anteilskauf", "SPV-Verkauf", "Projektgesellschaft"],
     verwandt: ["asset-deal", "spa", "due-diligence", "projektrechte"],
-    link: { href: "/wissen/ratgeber/projektrechte-kaufen-due-diligence", label: "Projektkauf strukturieren" },
+    link: { href: "/ratgeber/projektrechte-kaufen-due-diligence", label: "Projektkauf strukturieren" },
   },
   {
     id: "spa",
@@ -781,7 +781,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["alpine Solaranlagen", "Winterstrom", "alpine PV"],
     verwandt: ["einmalverguetung", "uvp", "leg"],
-    link: { href: "/wissen/ratgeber/freiflaechen-pv-schweiz", label: "Freiflächen-PV in der Schweiz" },
+    link: { href: "/ratgeber/freiflaechen-pv-schweiz", label: "Freiflächen-PV in der Schweiz" },
   },
   {
     id: "spezifischer-ertrag",
@@ -835,7 +835,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["Umweltprüfung", "Artenschutzprüfung", "saP", "Blendgutachten"],
     verwandt: ["ausgleichsflaechen", "uvp", "bebauungsplan", "fruehzeitige-beteiligung"],
-    link: { href: "/wissen/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Gutachten im Verfahren" },
+    link: { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", label: "Gutachten im Verfahren" },
   },
   {
     id: "uvp",
@@ -857,7 +857,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["VPP", "Virtual Power Plant", "Aggregator"],
     verwandt: ["reststrom", "regelenergie", "direktvermarktung", "grossspeicher"],
-    link: { href: "/wissen/ratgeber/virtuelles-kraftwerk", label: "Virtuelles Kraftwerk erklärt" },
+    link: { href: "/ratgeber/virtuelles-kraftwerk", label: "Virtuelles Kraftwerk erklärt" },
   },
 
   // ---------------------------------------------------------------- Z
@@ -879,7 +879,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Gebotswert", "Zuschlag"],
     verwandt: ["ausschreibung-eeg", "anzulegender-wert", "gebotstermin"],
-    link: { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", label: "Ausschreibungsergebnisse" },
+    link: { href: "/ratgeber/eeg-ausschreibung-freiflaeche", label: "Ausschreibungsergebnisse" },
   },
   /* Ausbaustufe 2 (09/2026): Begriffe zu den neuen Ratgebern */
   {
@@ -890,7 +890,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["Anbauverbot", "Anbaubeschränkung", "§ 9 FStrG", "40-m-Zone"],
     verwandt: ["privilegierung-aussenbereich", "randstreifen", "blendgutachten"],
-    link: { href: "/wissen/ratgeber/solarpark-autobahn-bahn-privilegierung", label: "Solarpark an Autobahn und Bahn" },
+    link: { href: "/ratgeber/solarpark-autobahn-bahn-privilegierung", label: "Solarpark an Autobahn und Bahn" },
   },
   {
     id: "baulast",
@@ -900,7 +900,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["Baulastenverzeichnis", "Rückbaubaulast"],
     verwandt: ["rueckbauverpflichtung", "privilegierung-aussenbereich", "dienstbarkeit"],
-    link: { href: "/wissen/ratgeber/solarpark-rueckbau-rueckbaubuergschaft", label: "Rückbau und Rückbaubürgschaft" },
+    link: { href: "/ratgeber/solarpark-rueckbau-rueckbaubuergschaft", label: "Rückbau und Rückbaubürgschaft" },
   },
   {
     id: "blendgutachten",
@@ -910,7 +910,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["Blendwirkung", "Reflexionsgutachten", "LAI-Lichtleitlinie", "Lichtimmissionen"],
     verwandt: ["umweltbericht", "bebauungsplan", "anbauverbotszone"],
-    link: { href: "/wissen/ratgeber/solarpark-abstand-wohnbebauung-blendgutachten", label: "Abstand und Blendgutachten" },
+    link: { href: "/ratgeber/solarpark-abstand-wohnbebauung-blendgutachten", label: "Abstand und Blendgutachten" },
   },
   {
     id: "cef-massnahme",
@@ -920,7 +920,7 @@ export const BEGRIFFE = [
     kategorie: "planung",
     synonyme: ["vorgezogene Ausgleichsmaßnahme", "continuous ecological functionality", "Artenschutzausgleich"],
     verwandt: ["ausgleichsflaechen", "umweltbericht", "bebauungsplan"],
-    link: { href: "/wissen/ratgeber/solarpark-artenschutz-biodiversitaet", label: "Artenschutz und Biodiversität" },
+    link: { href: "/ratgeber/solarpark-artenschutz-biodiversitaet", label: "Artenschutz und Biodiversität" },
   },
   {
     id: "cable-pooling",
@@ -930,7 +930,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["gemeinsamer Netzanschluss", "Netzanschluss teilen", "Co-Location"],
     verwandt: ["netzverknuepfungspunkt", "flexible-netzanschlussvereinbarung", "netzanschlusszusage", "umspannwerk"],
-    link: { href: "/wissen/ratgeber/netzanschluss-solarpark", label: "Netzanschluss für Solarparks" },
+    link: { href: "/ratgeber/netzanschluss-solarpark", label: "Netzanschluss für Solarparks" },
   },
   {
     id: "flexible-netzanschlussvereinbarung",
@@ -940,7 +940,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["Überbauung Netzanschluss", "FCA", "Flexible Connection Agreement", "§ 8a EEG"],
     verwandt: ["cable-pooling", "netzanschlusszusage", "netzverknuepfungspunkt", "grossspeicher", "redispatch"],
-    link: { href: "/wissen/ratgeber/netzanschluss-solarpark", label: "Netzanschluss für Solarparks" },
+    link: { href: "/ratgeber/netzanschluss-solarpark", label: "Netzanschluss für Solarparks" },
   },
   {
     id: "moor-pv",
@@ -950,7 +950,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Moor-Photovoltaik", "Photovoltaik auf Moorböden", "Solarpark im Moor"],
     verwandt: ["besondere-solaranlagen", "ausschreibung-eeg", "floating-pv", "flaechenkulisse"],
-    link: { href: "/wissen/ratgeber/moor-pv", label: "Ratgeber Moor-PV" },
+    link: { href: "/ratgeber/moor-pv", label: "Ratgeber Moor-PV" },
   },
   {
     id: "floating-pv",
@@ -960,7 +960,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["schwimmende Photovoltaik", "schwimmende PV", "FPV", "Floating Solar"],
     verwandt: ["besondere-solaranlagen", "moor-pv", "ausschreibung-eeg", "uvp"],
-    link: { href: "/wissen/ratgeber/floating-pv", label: "Ratgeber Floating-PV" },
+    link: { href: "/ratgeber/floating-pv", label: "Ratgeber Floating-PV" },
   },
   {
     id: "bilanzkreis",
@@ -970,7 +970,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Bilanzkreisverantwortlicher", "BKV", "Unterbilanzkreis", "Ausgleichsenergie"],
     verwandt: ["direktvermarktung", "marktpraemie", "direktvermarktungsentgelt", "virtuelles-kraftwerk"],
-    link: { href: "/wissen/ratgeber/direktvermarktung-solarpark", label: "Direktvermarktung für Solarparks" },
+    link: { href: "/ratgeber/direktvermarktung-solarpark", label: "Direktvermarktung für Solarparks" },
   },
   {
     id: "buergerenergiegesellschaft",
@@ -980,7 +980,7 @@ export const BEGRIFFE = [
     kategorie: "gemeinschaft",
     synonyme: ["Bürgerenergie", "Bürgersolarpark", "§ 22b EEG", "BEG (Deutschland)"],
     verwandt: ["energiegenossenschaft", "buergerenergiegemeinschaft", "ausschreibung-eeg", "kommunalbeteiligung"],
-    link: { href: "/wissen/ratgeber/buergerenergie-solarpark-akzeptanz", label: "Bürgerenergie und Akzeptanz" },
+    link: { href: "/ratgeber/buergerenergie-solarpark-akzeptanz", label: "Bürgerenergie und Akzeptanz" },
   },
   {
     id: "direktvermarktungsentgelt",
@@ -990,7 +990,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["Vermarktungsentgelt", "Direktvermarktungsgebühr", "Managementprämie", "DV-Entgelt"],
     verwandt: ["direktvermarktung", "bilanzkreis", "marktwert-solar", "capture-rate"],
-    link: { href: "/wissen/ratgeber/direktvermarktung-solarpark", label: "Direktvermarktung für Solarparks" },
+    link: { href: "/ratgeber/direktvermarktung-solarpark", label: "Direktvermarktung für Solarparks" },
   },
   {
     id: "fernsteuerbarkeit",
@@ -1000,7 +1000,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["§ 10b EEG", "Steuerbox", "Fernwirktechnik", "Fernsteuerung"],
     verwandt: ["direktvermarktung", "redispatch", "virtuelles-kraftwerk", "negative-strompreise"],
-    link: { href: "/wissen/ratgeber/virtuelles-kraftwerk", label: "Virtuelles Kraftwerk erklärt" },
+    link: { href: "/ratgeber/virtuelles-kraftwerk", label: "Virtuelles Kraftwerk erklärt" },
   },
   {
     id: "betriebsunterbrechungsversicherung",
@@ -1010,7 +1010,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Ertragsausfallversicherung", "BU-Versicherung", "Loss of Profit"],
     verwandt: ["dscr", "p50-p90", "o-und-m"],
-    link: { href: "/wissen/ratgeber/solarpark-versicherung", label: "Solarpark-Versicherung" },
+    link: { href: "/ratgeber/solarpark-versicherung", label: "Solarpark-Versicherung" },
   },
   {
     id: "discounted-cash-flow",
@@ -1020,7 +1020,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["DCF", "DCF-Verfahren", "Barwertmethode", "Ertragswert"],
     verwandt: ["kapitalwert", "irr", "cod", "due-diligence"],
-    link: { href: "/wissen/ratgeber/solarpark-bestandsanlage-wert", label: "Wert einer Bestandsanlage" },
+    link: { href: "/ratgeber/solarpark-bestandsanlage-wert", label: "Wert einer Bestandsanlage" },
   },
   {
     id: "ertragsgutachten",
@@ -1030,7 +1030,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["Energy Yield Assessment", "Ertragsprognose", "Energieertragsgutachten"],
     verwandt: ["p50-p90", "performance-ratio", "spezifischer-ertrag", "dscr"],
-    link: { href: "/wissen/ratgeber/ertragsgutachten-p50-p90", label: "Ertragsgutachten P50/P90" },
+    link: { href: "/ratgeber/ertragsgutachten-p50-p90", label: "Ertragsgutachten P50/P90" },
   },
   {
     id: "repowering",
@@ -1040,7 +1040,7 @@ export const BEGRIFFE = [
     kategorie: "technik",
     synonyme: ["Revamping", "Modultausch", "Ersatz von Solaranlagen"],
     verwandt: ["eeg-2023", "netzverknuepfungspunkt", "degradation", "marktstammdatenregister"],
-    link: { href: "/wissen/ratgeber/repowering-solarpark", label: "Repowering alter Solarparks" },
+    link: { href: "/ratgeber/repowering-solarpark", label: "Repowering alter Solarparks" },
   },
   {
     id: "grunddienstbarkeit",
@@ -1050,7 +1050,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Leitungsrecht", "Wegerecht", "§ 1018 BGB"],
     verwandt: ["dienstbarkeit", "rangruecktritt", "flaechenpacht"],
-    link: { href: "/wissen/ratgeber/dienstbarkeit-grundbuch-pv-pacht", label: "Dienstbarkeit und Grundbuch bei PV-Pacht" },
+    link: { href: "/ratgeber/dienstbarkeit-grundbuch-pv-pacht", label: "Dienstbarkeit und Grundbuch bei PV-Pacht" },
   },
   {
     id: "rangruecktritt",
@@ -1060,7 +1060,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Rangänderung", "Rangvorbehalt", "erste Rangstelle"],
     verwandt: ["dienstbarkeit", "grunddienstbarkeit", "flaechenpacht"],
-    link: { href: "/wissen/ratgeber/dienstbarkeit-grundbuch-pv-pacht", label: "Rang und Rangrücktritt erklärt" },
+    link: { href: "/ratgeber/dienstbarkeit-grundbuch-pv-pacht", label: "Rang und Rangrücktritt erklärt" },
   },
   {
     id: "solarbeweidung",
@@ -1070,7 +1070,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Schafbeweidung Solarpark", "Solar Grazing", "Beweidung PV-Anlage"],
     verwandt: ["agri-pv", "din-spec-91434", "gap-direktzahlungen"],
-    link: { href: "/wissen/ratgeber/solarpark-beweidung-schafe", label: "Beweidung im Solarpark" },
+    link: { href: "/ratgeber/solarpark-beweidung-schafe", label: "Beweidung im Solarpark" },
   },
   {
     id: "nebenbetrieb-landwirtschaft",
@@ -1080,7 +1080,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Nebenbetrieb", "R 15.5 EStR", "Abgrenzung Landwirtschaft Gewerbe"],
     verwandt: ["landwirtschaftliches-vermoegen", "agri-pv", "flaechenpacht"],
-    link: { href: "/wissen/ratgeber/photovoltaik-landwirt-steuern", label: "Steuern für Landwirte mit Photovoltaik" },
+    link: { href: "/ratgeber/photovoltaik-landwirt-steuern", label: "Steuern für Landwirte mit Photovoltaik" },
   },
   // ---------------------------------------------------------------- Fachprüfung Flächen (Team A): Kataster, Grundbuch, Boden, Bindungen, Kommune, Dach
   {
@@ -1119,7 +1119,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["Abteilung II", "Abteilung III", "Grundbuchauszug", "Lasten und Beschränkungen", "Grundschuld"],
     verwandt: ["dienstbarkeit", "rangruecktritt", "niessbrauch"],
-    link: { href: "/wissen/ratgeber/dienstbarkeit-grundbuch-pv-pacht", label: "Dienstbarkeit im Grundbuch" },
+    link: { href: "/ratgeber/dienstbarkeit-grundbuch-pv-pacht", label: "Dienstbarkeit im Grundbuch" },
   },
   {
     id: "niessbrauch",
@@ -1149,7 +1149,7 @@ export const BEGRIFFE = [
     kategorie: "flaeche",
     synonyme: ["AUKM", "ÖPUL", "Agrarumweltprogramm", "Rückforderung", "Biodiversitätsförderfläche"],
     verwandt: ["gap-direktzahlungen", "flaechenpacht", "landpachtvertrag"],
-    link: { href: "/wissen/ratgeber/agri-pv-foerderung-gap", label: "Agri-PV und GAP-Förderung" },
+    link: { href: "/ratgeber/agri-pv-foerderung-gap", label: "Agri-PV und GAP-Förderung" },
   },
   {
     id: "referenzertrag",
@@ -1183,7 +1183,7 @@ export const BEGRIFFE = [
   {
     id: "reservierungspraemie",
     begriff: "Reservierungsprämie",
-    kurz: `Die Reservierungsprämie ist eine jährliche Zahlung an den Flächeneigentümer für die Zeit zwischen Vertragsschluss und Baubeginn, üblich sind ${fmt(PACHT.reservierungProHa.min)}–${fmt(PACHT.reservierungProHa.max)} € je Hektar und Jahr.`,
+    kurz: `Die Reservierungsprämie ist eine jährliche Zahlung an den Flächeneigentümer für die Zeit zwischen Vertragsschluss und Baubeginn, in Deutschland üblich sind ${fmt(PACHT.reservierungProHa.min)}–${fmt(PACHT.reservierungProHa.max)} € je Hektar und Jahr.`,
     text: `Bis zur Baureife vergehen meist mehrere Jahre, in denen die Fläche gebunden ist. Die Prämie gleicht das aus; zusätzlich sollte eine späteste Frist bis Baubeginn vereinbart sein (üblich höchstens ${PACHT.reservierungJahre.max} Jahre), nach der der Vertrag endet und die Dienstbarkeit gelöscht wird. Die Bewirtschaftung läuft bis zum Baubeginn in der Regel weiter.`,
     kategorie: "flaeche",
     synonyme: ["Bereitstellungsentgelt", "Optionsprämie", "Vorhaltepacht"],
@@ -1385,7 +1385,7 @@ export const BEGRIFFE = [
     kategorie: "markt",
     synonyme: ["EEG-Realisierungsfrist", "Pönale EEG"],
     verwandt: ["ausschreibung-eeg", "zuschlagswert", "gebotstermin"],
-    link: { href: "/wissen/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung Freifläche" },
+    link: { href: "/ratgeber/eeg-ausschreibung-freiflaeche", label: "EEG-Ausschreibung Freifläche" },
   },
   {
     id: "verfuegbarkeit",
@@ -1424,7 +1424,7 @@ export const BEGRIFFE = [
     kategorie: "invest",
     synonyme: ["Endschaft", "Kaufoption Vertragsende", "Heimfall"],
     verwandt: ["energie-contracting", "rueckbauverpflichtung"],
-    link: { href: "/wissen/ratgeber/pachtvertrag-solarpark", label: "Pachtvertrag Solarpark" },
+    link: { href: "/ratgeber/pachtvertrag-solarpark", label: "Pachtvertrag Solarpark" },
   },
   {
     id: "nachschusspflicht",

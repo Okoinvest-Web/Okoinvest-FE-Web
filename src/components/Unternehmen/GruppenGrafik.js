@@ -2,6 +2,7 @@ import { Building2, Factory, Hammer, Sun, Zap } from "lucide-react";
 import { GESELLSCHAFT } from "@/data/site";
 import { cn } from "@/components/ui/cn";
 import st from "./vertrauen.module.css";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 /**
  * Struktur der Gruppe aus Sicht von ÖkoInvest – bewusst ohne
@@ -22,32 +23,50 @@ const SCHWESTERN = [
 ];
 const OI = { icon: Sun, titel: GESELLSCHAFT.name, text: "Projektentwicklung, Projektbörse, virtuelles Kraftwerk", land: "AT" };
 
+/** Englisch (Sprachmodell): nur Texte */
+const EN = {
+  schwestern: ["Parent company in Türkheim – PV and storage for businesses", "Sister company in Ostermiething", "Foundations for ground-mounted plants"],
+  oi: "Project development, project exchange, virtual power plant",
+  beteiligungen: { "Betrieb von PV-Kraftwerken": "Operation of PV power plants", "Gemeinschaftsgesellschaft mit der Prime Energy Solutions GmbH": "Joint company with Prime Energy Solutions GmbH" },
+  gruppe: "ÖKOVOLT Group",
+  gruppeText: "Family-run, in the solar business since 2010",
+  caption: "How ÖkoInvest GmbH fits into the ÖKOVOLT Group, with its shareholdings",
+  laender: "Country codes: registered office of the company. We only state shareholdings where they are entered in the commercial register.",
+  anteil: "ÖkoInvest share:",
+};
+
 export default function GruppenGrafik({ className }) {
+  const en = spracheDerAnfrage() === "en";
+  const SCHW = en ? SCHWESTERN.map((k, i) => ({ ...k, text: EN.schwestern[i] })) : SCHWESTERN;
+  const oi = en ? { ...OI, text: EN.oi } : OI;
+  const beteiligungen = GESELLSCHAFT.beteiligungen.map((b) => (en ? { ...b, text: EN.beteiligungen[b.text] ?? b.text } : b));
+  const gruppe = en ? { titel: EN.gruppe, text: EN.gruppeText } : { titel: "ÖKOVOLT Gruppe", text: "Familiengeführt, seit 2010 im Solargeschäft" };
+  const anteilText = en ? EN.anteil : "Anteil ÖkoInvest:";
   return (
     <figure className={cn("relative rounded-[1.75rem] bg-white p-5 shadow-e3 ring-1 ring-ink-200/70 sm:p-7 md:rounded-[2rem] lg:p-10", className)}>
-      <figcaption className="sr-only">Einordnung der ÖkoInvest GmbH in die ÖKOVOLT Gruppe mit ihren Beteiligungen</figcaption>
+      <figcaption className="sr-only">{en ? EN.caption : "Einordnung der ÖkoInvest GmbH in die ÖKOVOLT Gruppe mit ihren Beteiligungen"}</figcaption>
       <div aria-hidden="true" className="ov-grid-bg-light pointer-events-none absolute inset-0 rounded-[inherit] opacity-70" />
 
       {/* Organigramm ab lg */}
       <div className="relative hidden lg:block">
         <div className="mx-auto max-w-sm">
-          <Knoten dunkel icon={Building2} titel="ÖKOVOLT Gruppe" text="Familiengeführt, seit 2010 im Solargeschäft" />
+          <Knoten dunkel icon={Building2} titel={gruppe.titel} text={gruppe.text} />
         </div>
         <Verteiler spalten={4} />
         <div className="grid grid-cols-4 gap-4">
-          {SCHWESTERN.map((k, i) => (
+          {SCHW.map((k, i) => (
             <div key={k.titel} className={st.folgt} style={t(T.knoten + i * 80)}>
               <Knoten {...k} />
             </div>
           ))}
           <div className={st.folgt} style={t(T.knoten + 3 * 80)}>
-            <Knoten gruen {...OI} />
+            <Knoten gruen {...oi} />
           </div>
         </div>
         {/* Beteiligungen unter ÖkoInvest: Linie aus Spalte 4 in die Spalten 3–4 */}
         <div className="grid grid-cols-4 gap-4">
           <p className={cn(st.folgt, "col-span-2 self-end pb-1 pr-8 text-[13px] leading-relaxed text-ink-500")} style={t(T.ast + 160)}>
-            Länderkürzel: Sitz der Gesellschaft. Anteile nennen wir nur dort, wo sie im Firmenbuch eingetragen sind.
+            {en ? EN.laender : "Länderkürzel: Sitz der Gesellschaft. Anteile nennen wir nur dort, wo sie im Firmenbuch eingetragen sind."}
           </p>
           <div className="col-span-2">
             <div aria-hidden="true" className="relative h-10">
@@ -57,9 +76,9 @@ export default function GruppenGrafik({ className }) {
               <span className={cn(st.linieY, "absolute right-[calc(25%-1px)] top-5 h-5 w-0.5 bg-ov-500")} style={t(T.astFall)} />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              {GESELLSCHAFT.beteiligungen.map((b, i) => (
+              {beteiligungen.map((b, i) => (
                 <div key={b.name} className={st.folgt} style={t(T.ast + i * 80)}>
-                  <Knoten icon={Zap} titel={b.name} text={b.text} anteil={b.anteil} />
+                  <Knoten icon={Zap} titel={b.name} text={b.text} anteil={b.anteil} anteilText={anteilText} />
                 </div>
               ))}
             </div>
@@ -69,9 +88,9 @@ export default function GruppenGrafik({ className }) {
 
       {/* Baumliste bis lg */}
       <div className="relative lg:hidden">
-        <Knoten dunkel icon={Building2} titel="ÖKOVOLT Gruppe" text="Familiengeführt, seit 2010 im Solargeschäft" />
+        <Knoten dunkel icon={Building2} titel={gruppe.titel} text={gruppe.text} />
         <ul className="ml-5 border-l-2 border-ov-200 pl-4 pt-3">
-          {SCHWESTERN.map((k) => (
+          {SCHW.map((k) => (
             <li key={k.titel} className="relative pb-3">
               <Ast />
               <Knoten {...k} />
@@ -79,12 +98,12 @@ export default function GruppenGrafik({ className }) {
           ))}
           <li className="relative">
             <Ast gruen />
-            <Knoten gruen {...OI} />
+            <Knoten gruen {...oi} />
             <ul className="ml-5 border-l-2 border-ov-400 pl-4 pt-3">
-              {GESELLSCHAFT.beteiligungen.map((b) => (
+              {beteiligungen.map((b) => (
                 <li key={b.name} className="relative pb-3 last:pb-0">
                   <Ast gruen />
-                  <Knoten icon={Zap} titel={b.name} text={b.text} anteil={b.anteil} />
+                  <Knoten icon={Zap} titel={b.name} text={b.text} anteil={b.anteil} anteilText={anteilText} />
                 </li>
               ))}
             </ul>
@@ -114,7 +133,7 @@ function Ast({ gruen }) {
   return <span aria-hidden="true" className={cn("absolute -left-4 top-7 h-0.5 w-4", gruen ? "bg-ov-400" : "bg-ov-200")} />;
 }
 
-function Knoten({ icon: Icon, titel, text, land, anteil, dunkel, gruen }) {
+function Knoten({ icon: Icon, titel, text, land, anteil, anteilText = "Anteil ÖkoInvest:", dunkel, gruen }) {
   return (
     <div
       className={cn(
@@ -131,7 +150,7 @@ function Knoten({ icon: Icon, titel, text, land, anteil, dunkel, gruen }) {
           {land && <span className={cn("ml-1.5 inline-block rounded px-1.5 py-0.5 align-[2px] text-[10.5px] font-bold leading-none", dunkel || gruen ? "bg-white/15 text-white" : "bg-ink-100 text-ink-600")}>{land}</span>}
         </p>
         <p className={cn("mt-1 text-[13px] leading-snug", dunkel ? "text-white/65" : gruen ? "text-white/90" : "text-ink-600")}>{text}</p>
-        {anteil && <p className="mt-2 inline-flex rounded-full bg-ov-50 px-2 py-0.5 text-[12px] font-semibold text-ov-700 ring-1 ring-ov-200">Anteil ÖkoInvest: {anteil}</p>}
+        {anteil && <p className="mt-2 inline-flex rounded-full bg-ov-50 px-2 py-0.5 text-[12px] font-semibold text-ov-700 ring-1 ring-ov-200">{anteilText} {anteil}</p>}
       </div>
     </div>
   );

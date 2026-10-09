@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowUpRight, Clock3 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { msSeitEingabe } from "./bausteine";
 import BerichtAnfordern from "@/components/Bericht/BerichtAnfordern";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 
 /* ------------------------------------------------------------------
    Ergebnis → passende Anfrage. Steht am Ende jedes Rechner-Ergebnisses:
@@ -17,7 +18,7 @@ import BerichtAnfordern from "@/components/Bericht/BerichtAnfordern";
    ------------------------------------------------------------------ */
 
 const PRAEFIX = "ov-entwurf:";
-const MARKE = "Aus dem "; // eigene Vorbelegungen erkennen: überschreiben ja, Nutzertext nie
+const MARKEN = ["Aus dem ", "From the "]; // eigene Vorbelegungen erkennen (de/en): überschreiben ja, Nutzertext nie
 
 /** Nachricht der Anfrage `anfrage-<typ>` vorbelegen (nur leer oder eigene frühere Vorbelegung). */
 export function anfrageVorbelegen(typ, nachricht) {
@@ -25,8 +26,9 @@ export function anfrageVorbelegen(typ, nachricht) {
   try {
     const schluessel = `${PRAEFIX}anfrage-${typ}`;
     const alt = JSON.parse(window.sessionStorage.getItem(schluessel) || "null")?.werte || {};
-    if (alt.nachricht && !String(alt.nachricht).startsWith(MARKE)) return;
-    const text = `${nachricht}\n\nMeine Eingaben: ${window.location.href}`.slice(0, 4800);
+    if (alt.nachricht && !MARKEN.some((m) => String(alt.nachricht).startsWith(m))) return;
+    const en = String(nachricht).startsWith("From the ");
+    const text = `${nachricht}\n\n${en ? "My inputs" : "Meine Eingaben"}: ${window.location.href}`.slice(0, 4800);
     window.sessionStorage.setItem(schluessel, JSON.stringify({ werte: { ...alt, nachricht: text }, zeit: Date.now() }));
   } catch {
     /* Speicher gesperrt (privater Modus) – der Link funktioniert trotzdem */
@@ -49,18 +51,22 @@ const bewegungReduziert = () => typeof window !== "undefined" && window.matchMed
 export default function ErgebnisAnfrage({
   typ,
   href,
-  eyebrow = "Mit diesem Ergebnis weiter",
+  eyebrow: eigeneEyebrow,
   kennzahl,
   satz,
   nachricht,
-  label = "Mit diesem Ergebnis anfragen",
-  versprechen = "Wir melden uns persönlich – kostenlos und unverbindlich.",
+  label: eigenesLabel,
+  versprechen: eigenesVersprechen,
   signal,
   sekundaer = [],
   hinweis,
   bericht,
   className,
 }) {
+  const en = useSprache() === "en";
+  const eyebrow = eigeneEyebrow ?? (en ? "Take this result further" : "Mit diesem Ergebnis weiter");
+  const label = eigenesLabel ?? (en ? "Enquire with this result" : "Mit diesem Ergebnis anfragen");
+  const versprechen = eigenesVersprechen ?? (en ? "We will get back to you personally – free of charge and without obligation." : "Wir melden uns persönlich – kostenlos und unverbindlich.");
   const leuchten = useRef(null);
   const zuletzt = useRef(-1e9);
   const erst = useRef(true);

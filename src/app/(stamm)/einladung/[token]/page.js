@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { Building2, CircleAlert } from "lucide-react";
 import AuthRahmen from "@/components/Plattform/AuthRahmen";
 import EinladungAnnehmen from "@/components/Plattform/EinladungAnnehmen";

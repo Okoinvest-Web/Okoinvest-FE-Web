@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ArrowUp } from "lucide-react";
 import useFreieUnterkante from "@/components/motion/useFreieUnterkante";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 
 /**
  * Nach-oben-Button mit Lesefortschritt als Ring.
@@ -16,6 +17,7 @@ import useFreieUnterkante from "@/components/motion/useFreieUnterkante";
  */
 export default function ToTopButton() {
   const pfad = usePathname();
+  const en = useSprache() === "en";
   const [sichtbar, setSichtbar] = useState(false);
   const ring = useRef(null);
   const { zuruecktreten } = useFreieUnterkante({ pfad, breite: 112 });
@@ -50,7 +52,7 @@ export default function ToTopButton() {
     <button
       type="button"
       onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })}
-      aria-label="Nach oben"
+      aria-label={en ? "Back to top" : "Nach oben"}
       tabIndex={an ? 0 : -1}
       aria-hidden={!an || undefined}
       style={{ marginBottom: "env(safe-area-inset-bottom)" }}

@@ -3,8 +3,37 @@
 import { useMemo, useState } from "react";
 import { Leaf, Sun, Wind, Factory } from "lucide-react";
 import useLiveDaten, { useBreite } from "./useLiveDaten";
-import { QUELLEN, erzeugungsVerlauf, achse, gw, uhr, zahl, textAuf, berlinTag, tagKurz, STUNDE } from "./berechnung";
+import { QUELLEN, erzeugungsVerlauf, achse, textAuf, berlinTag, STUNDE, formate } from "./berechnung";
 import KeineDaten from "./KeineDaten";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+
+/* Sprachmodell: feste Texte je Sprache */
+const TEXTE = {
+  de: {
+    keinTitel: "Erzeugungsdaten gerade nicht verfügbar",
+    keinText: "Die Daten zur Stromerzeugung werden gerade aktualisiert oder sind vorübergehend nicht erreichbar. Bitte versuchen Sie es in einigen Minuten erneut.",
+    kopf: "Nettostromerzeugung · Deutschland", titel: "Woher der Strom in den letzten 24 Stunden kam",
+    zeitraum: (a, b) => `${a} bis ${b} Uhr · in GW`,
+    aria: (gwh, ee) => `Stromerzeugung der letzten 24 Stunden: ${gwh} Gigawattstunden, davon ${ee} Prozent aus Wind, Sonne, Biomasse und Wasser. Mit Pfeiltasten durch die Werte blättern.`,
+    heute: "Heute", gestern: "Gestern", mitternacht: "Mitternacht", uhrZeit: (u) => `${u} Uhr`,
+    verbrauchLast: "Verbrauch (Last)", ee: "Erneuerbare", stromverbrauch: "Stromverbrauch (Last)",
+    kAnteil: "Anteil Erneuerbare", kAnteilSub: "der Erzeugung in 24 h", kSolar: "Solar-Spitze", um: (u) => `um ${u} Uhr`, keineSolar: "keine Solarerzeugung", kWind: "Wind-Spitze", kErzeugt: "Erzeugt in 24 h", lastspitze: (v) => `Lastspitze ${v} GW`,
+    tabelle: "Stundenwerte als Tabelle", caption: "Stromerzeugung je Quelle und Verbrauch in Gigawatt, volle Stunden", uhrzeit: "Uhrzeit", last: "Last",
+    fuss: (u) => `Stand der Erzeugungsdaten: ${u} Uhr (Meldungen laufen mit etwas Verzögerung ein). Liegt die Linie über dem Stapel, wird Strom importiert oder aus Speichern entnommen; liegt sie darunter, exportiert Deutschland. „Sonstige“: Müll, Öl, Grubengas, Geothermie, Pumpspeicher. Quelle: Energy-Charts (Fraunhofer ISE), CC BY 4.0.`,
+  },
+  en: {
+    keinTitel: "Generation data currently unavailable",
+    keinText: "The power generation data is being updated or is temporarily unreachable. Please try again in a few minutes.",
+    kopf: "Net power generation · Germany", titel: "Where the power came from in the last 24 hours",
+    zeitraum: (a, b) => `${a} to ${b} · in GW`,
+    aria: (gwh, ee) => `Power generation in the last 24 hours: ${gwh} gigawatt hours, of which ${ee} percent from wind, sun, biomass and water. Use the arrow keys to browse the values.`,
+    heute: "Today", gestern: "Yesterday", mitternacht: "Midnight", uhrZeit: (u) => u,
+    verbrauchLast: "Consumption (load)", ee: "Renewables", stromverbrauch: "Power consumption (load)",
+    kAnteil: "Share of renewables", kAnteilSub: "of generation in 24 h", kSolar: "Solar peak", um: (u) => `at ${u}`, keineSolar: "no solar generation", kWind: "Wind peak", kErzeugt: "Generated in 24 h", lastspitze: (v) => `Peak load ${v} GW`,
+    tabelle: "Hourly values as a table", caption: "Power generation per source and consumption in gigawatts, full hours", uhrzeit: "Time", last: "Load",
+    fuss: (u) => `Generation data as of ${u} (reports come in with a slight delay). If the line is above the stack, power is being imported or drawn from storage; if it is below, Germany is exporting. “Other”: waste, oil, mine gas, geothermal, pumped storage. Source: Energy-Charts (Fraunhofer ISE), CC BY 4.0.`,
+  },
+};
 
 const RASTER = "#eef0f4";
 const TEXT = "#6b7486";
@@ -17,6 +46,9 @@ const TINTE = "#151a24";
  */
 export default function ErzeugungChart({ initial }) {
   const { daten } = useLiveDaten(initial);
+  const sprache = useSprache();
+  const { gw, uhr, zahl, tagKurz, quelle: nameQ } = formate(sprache);
+  const w = TEXTE[sprache === "en" ? "en" : "de"];
   const zeilen = useMemo(() => erzeugungsVerlauf(daten.erzeugung, 24), [daten.erzeugung]);
   const [hover, setHover] = useState(null);
   const [ref, breite] = useBreite(1000);
@@ -38,8 +70,8 @@ export default function ErzeugungChart({ initial }) {
   if (!zeilen) {
     return (
       <KeineDaten
-        titel="Erzeugungsdaten gerade nicht verfügbar"
-        text="Die Daten zur Stromerzeugung werden gerade aktualisiert oder sind vorübergehend nicht erreichbar. Bitte versuchen Sie es in einigen Minuten erneut."
+        titel={w.keinTitel}
+        text={w.keinText}
       />
     );
   }
@@ -131,11 +163,11 @@ export default function ErzeugungChart({ initial }) {
     <div className="overflow-hidden rounded-[2rem] bg-white shadow-xl ring-1 ring-ink-200/70">
       <div className="flex flex-col gap-2 border-b border-ink-100 p-5 sm:p-6 md:flex-row md:items-end md:justify-between md:p-8">
         <div>
-          <p className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ov-600">Nettostromerzeugung · Deutschland</p>
-          <h3 className="ov-h3 mt-2 text-ink-900">Woher der Strom in den letzten 24 Stunden kam</h3>
+          <p className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ov-600">{w.kopf}</p>
+          <h3 className="ov-h3 mt-2 text-ink-900">{w.titel}</h3>
         </div>
         <p className="text-[13px] text-ink-500">
-          {tagKurz(t0)} {uhr(t0)} bis {tagKurz(t1)} {uhr(t1)} Uhr · in GW
+          {w.zeitraum(`${tagKurz(t0)} ${uhr(t0)}`, `${tagKurz(t1)} ${uhr(t1)}`)}
         </p>
       </div>
 
@@ -145,7 +177,7 @@ export default function ErzeugungChart({ initial }) {
             <div
               tabIndex={0}
               role="img"
-              aria-label={`Stromerzeugung der letzten 24 Stunden: ${zahl(kennzahlen.gwh, 0)} Gigawattstunden, davon ${Math.round(kennzahlen.eeQuote)} Prozent aus Wind, Sonne, Biomasse und Wasser. Mit Pfeiltasten durch die Werte blättern.`}
+              aria-label={w.aria(zahl(kennzahlen.gwh, 0), Math.round(kennzahlen.eeQuote))}
               onKeyDown={tasten}
               onBlur={() => setHover(null)}
               className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-4"
@@ -174,10 +206,10 @@ export default function ErzeugungChart({ initial }) {
                   <g>
                     <line x1={x(mitternacht.t)} x2={x(mitternacht.t)} y1={PAD.t - 6} y2={PAD.t + plotH} stroke={TINTE} strokeOpacity="0.5" strokeWidth="1" />
                     {x(mitternacht.t) + 50 < PAD.l + plotW && (
-                      <text x={x(mitternacht.t) + 6} y={PAD.t - 10} fontSize="11.5" fontWeight="600" fill={TINTE}>Heute</text>
+                      <text x={x(mitternacht.t) + 6} y={PAD.t - 10} fontSize="11.5" fontWeight="600" fill={TINTE}>{w.heute}</text>
                     )}
                     {x(mitternacht.t) - 60 > PAD.l && (
-                      <text x={x(mitternacht.t) - 6} y={PAD.t - 10} textAnchor="end" fontSize="11.5" fill={TEXT}>{x(mitternacht.t) + 50 < PAD.l + plotW ? "Gestern" : "Mitternacht"}</text>
+                      <text x={x(mitternacht.t) - 6} y={PAD.t - 10} textAnchor="end" fontSize="11.5" fill={TEXT}>{x(mitternacht.t) + 50 < PAD.l + plotW ? w.gestern : w.mitternacht}</text>
                     )}
                   </g>
                 )}
@@ -190,7 +222,7 @@ export default function ErzeugungChart({ initial }) {
 
                 {labels.map((l) => (
                   <text key={l.q.key} className="ov-flaeche-ein" style={{ animationDelay: "700ms" }} x={l.x} y={l.y} textAnchor="middle" fontSize="12" fontWeight="600" fill={textAuf(l.q.farbe)}>
-                    {l.q.name}
+                    {nameQ(l.q)}
                   </text>
                 ))}
 
@@ -223,23 +255,23 @@ export default function ErzeugungChart({ initial }) {
 
             {hz && (
               <div className="pointer-events-none absolute top-2 z-10 w-[220px] rounded-xl bg-ink-900 px-4 py-3 text-white shadow-xl" style={{ left: tipLinks }}>
-                <p className="text-[12px] text-white/60">{uhr(hz.t)} Uhr</p>
+                <p className="text-[12px] text-white/60">{w.uhrZeit(uhr(hz.t))}</p>
                 <ul className="mt-1.5 space-y-0.5 text-[12.5px]">
                   {[...QUELLEN].reverse().map((q) => (
                     <li key={q.key} className="flex items-center gap-2">
                       <span aria-hidden="true" className="h-0.5 w-3 shrink-0 rounded-full" style={{ background: q.farbe }} />
-                      <span className="flex-1 text-white/70">{q.name}</span>
+                      <span className="flex-1 text-white/70">{nameQ(q)}</span>
                       <span className="ov-num font-semibold">{gw(hz[q.key])}</span>
                     </li>
                   ))}
                   <li className="mt-1.5 flex items-center gap-2 border-t border-white/15 pt-1.5">
                     <span aria-hidden="true" className="h-0.5 w-3 shrink-0 rounded-full bg-white" />
-                    <span className="flex-1 text-white/70">Verbrauch (Last)</span>
+                    <span className="flex-1 text-white/70">{w.verbrauchLast}</span>
                     <span className="ov-num font-semibold">{gw(hz.last)}</span>
                   </li>
                   {hz.eeAnteil != null && (
                     <li className="flex items-center gap-2 pl-5">
-                      <span className="flex-1 text-white/70">Erneuerbare</span>
+                      <span className="flex-1 text-white/70">{w.ee}</span>
                       <span className="ov-num font-semibold">{Math.round(hz.eeAnteil)} %</span>
                     </li>
                   )}
@@ -252,39 +284,39 @@ export default function ErzeugungChart({ initial }) {
             {[...QUELLEN].reverse().map((q) => (
               <li key={q.key} className="flex items-center gap-2">
                 <span aria-hidden="true" className="h-3 w-3 rounded-[3px]" style={{ background: q.farbe }} />
-                {q.name}
+                {nameQ(q)}
               </li>
             ))}
             <li className="flex items-center gap-2">
               <span aria-hidden="true" className="h-0.5 w-4 rounded-full bg-ink-900" />
-              Stromverbrauch (Last)
+              {w.stromverbrauch}
             </li>
           </ul>
         </div>
 
         <dl className="grid grid-cols-2 gap-px border-t border-ink-100 bg-ink-100 sm:grid-cols-4 xl:grid-cols-1 xl:border-l xl:border-t-0">
-          <Kennzahl icon={Leaf} label="Anteil Erneuerbare" wert={`${Math.round(kennzahlen.eeQuote)} %`} sub="der Erzeugung in 24 h" />
-          <Kennzahl icon={Sun} label="Solar-Spitze" wert={`${gw(kennzahlen.solarMax.solar)} GW`} sub={kennzahlen.solarMax.solar > 50 ? `um ${uhr(kennzahlen.solarMax.t)} Uhr` : "keine Solarerzeugung"} />
-          <Kennzahl icon={Wind} label="Wind-Spitze" wert={`${gw(kennzahlen.windMax.windOnshore + kennzahlen.windMax.windOffshore)} GW`} sub={`um ${uhr(kennzahlen.windMax.t)} Uhr`} />
-          <Kennzahl icon={Factory} label="Erzeugt in 24 h" wert={`${zahl(kennzahlen.gwh / 1000, 2)} TWh`} sub={`Lastspitze ${gw(kennzahlen.lastMax.last)} GW`} />
+          <Kennzahl icon={Leaf} label={w.kAnteil} wert={`${Math.round(kennzahlen.eeQuote)} %`} sub={w.kAnteilSub} />
+          <Kennzahl icon={Sun} label={w.kSolar} wert={`${gw(kennzahlen.solarMax.solar)} GW`} sub={kennzahlen.solarMax.solar > 50 ? w.um(uhr(kennzahlen.solarMax.t)) : w.keineSolar} />
+          <Kennzahl icon={Wind} label={w.kWind} wert={`${gw(kennzahlen.windMax.windOnshore + kennzahlen.windMax.windOffshore)} GW`} sub={w.um(uhr(kennzahlen.windMax.t))} />
+          <Kennzahl icon={Factory} label={w.kErzeugt} wert={`${zahl(kennzahlen.gwh / 1000, 2)} TWh`} sub={w.lastspitze(gw(kennzahlen.lastMax.last))} />
         </dl>
       </div>
 
       <details className="group mx-5 mb-5 rounded-2xl bg-ink-50 md:mx-8 md:mb-8">
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-4 py-3 text-[14px] font-semibold text-ink-700 [&::-webkit-details-marker]:hidden">
-          Stundenwerte als Tabelle
+          {w.tabelle}
           <span aria-hidden="true" className="text-ink-400 transition-transform group-open:rotate-45">+</span>
         </summary>
         <div className="max-h-80 overflow-auto px-4 pb-4">
           <table className="ov-num w-full min-w-[720px] text-left text-[13px]">
-            <caption className="sr-only">Stromerzeugung je Quelle und Verbrauch in Gigawatt, volle Stunden</caption>
+            <caption className="sr-only">{w.caption}</caption>
             <thead className="sticky top-0 bg-ink-50 text-ink-600">
               <tr>
-                <th scope="col" className="py-2 pr-3 font-medium">Uhrzeit</th>
+                <th scope="col" className="py-2 pr-3 font-medium">{w.uhrzeit}</th>
                 {[...QUELLEN].reverse().map((q) => (
-                  <th key={q.key} scope="col" className="py-2 pr-3 text-right font-medium">{q.name}</th>
+                  <th key={q.key} scope="col" className="py-2 pr-3 text-right font-medium">{nameQ(q)}</th>
                 ))}
-                <th scope="col" className="py-2 text-right font-medium">Last</th>
+                <th scope="col" className="py-2 text-right font-medium">{w.last}</th>
               </tr>
             </thead>
             <tbody className="text-ink-800">
@@ -303,9 +335,7 @@ export default function ErzeugungChart({ initial }) {
       </details>
 
       <p className="border-t border-ink-100 px-5 py-4 text-[12.5px] leading-relaxed text-ink-500 md:px-8">
-        Stand der Erzeugungsdaten: {uhr(letzte.t)} Uhr (Meldungen laufen mit etwas Verzögerung ein). Liegt die Linie über dem Stapel, wird Strom
-        importiert oder aus Speichern entnommen; liegt sie darunter, exportiert Deutschland. „Sonstige“: Müll, Öl, Grubengas, Geothermie,
-        Pumpspeicher. Quelle: Energy-Charts (Fraunhofer ISE), CC BY 4.0.
+        {w.fuss(uhr(letzte.t))}
       </p>
     </div>
   );

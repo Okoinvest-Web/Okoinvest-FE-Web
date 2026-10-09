@@ -103,7 +103,7 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: `**Agri-PV lohnt sich heute vor allem dann, wenn die Anlage der Landwirtschaft einen echten Zusatznutzen bringt oder der Strom zu einem höheren Preis als im EEG-Standardsegment abgesetzt werden kann.** Als reines Stromprojekt steht sie wirtschaftlich schlechter da als ein klassischer [Solarpark](/de/freiflaeche): Die Anlage kostet je Kilowattpeak mehr, braucht mehr Fläche je Megawatt und erzeugt je kWp etwas weniger Strom. Dafür bleibt die Fläche landwirtschaftlich nutzbar, die [GAP-Direktzahlungen](/wissen/lexikon#gap-direktzahlungen) bleiben weitgehend erhalten, und Agri-PV kann auch auf Flächen gebaut werden, die für klassische Solarparks nicht in Frage kommen.`,
+          text: `**Agri-PV lohnt sich heute vor allem dann, wenn die Anlage der Landwirtschaft einen echten Zusatznutzen bringt oder der Strom zu einem höheren Preis als im EEG-Standardsegment abgesetzt werden kann.** Als reines Stromprojekt steht sie wirtschaftlich schlechter da als ein klassischer [Solarpark](/freiflaeche): Die Anlage kostet je Kilowattpeak mehr, braucht mehr Fläche je Megawatt und erzeugt je kWp etwas weniger Strom. Dafür bleibt die Fläche landwirtschaftlich nutzbar, die [GAP-Direktzahlungen](/wissen/lexikon#gap-direktzahlungen) bleiben weitgehend erhalten, und Agri-PV kann auch auf Flächen gebaut werden, die für klassische Solarparks nicht in Frage kommen.`,
         },
         {
           typ: "p",
@@ -144,7 +144,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Hinzu kommen – wie bei jedem Solarpark – Kosten für Netzanschluss und Projektentwicklung. Für Übergabestation und Trafo rechnen wir mit rund ${fmtEur(FREIFLAECHE.netzanschlussFixProMwp)} je MWp, für die Mittelspannungstrasse mit ${fmtEur(FREIFLAECHE.kabelProMeter)} je Meter. Die Entwicklung bis zur Baureife – Gutachten, Bebauungsplan, Nutzungskonzept nach [DIN SPEC 91434](/wissen/ratgeber/agri-pv-din-spec-91434) – kostet typischerweise ${fmt(FREIFLAECHE.entwicklungProKwp.min)}–${fmt(FREIFLAECHE.entwicklungProKwp.max)} €/kWp. Die Betriebskosten liegen bei Agri-PV etwas höher, weil Arbeit unter und zwischen den Modulen mehr Abstimmung, Reinigung und Schutz vor Maschinenschäden erfordert.`,
+          text: `Hinzu kommen – wie bei jedem Solarpark – Kosten für Netzanschluss und Projektentwicklung. Für Übergabestation und Trafo rechnen wir mit rund ${fmtEur(FREIFLAECHE.netzanschlussFixProMwp)} je MWp, für die Mittelspannungstrasse mit ${fmtEur(FREIFLAECHE.kabelProMeter)} je Meter. Die Entwicklung bis zur Baureife – Gutachten, Bebauungsplan, Nutzungskonzept nach [DIN SPEC 91434](/ratgeber/agri-pv-din-spec-91434) – kostet typischerweise ${fmt(FREIFLAECHE.entwicklungProKwp.min)}–${fmt(FREIFLAECHE.entwicklungProKwp.max)} €/kWp. Die Betriebskosten liegen bei Agri-PV etwas höher, weil Arbeit unter und zwischen den Modulen mehr Abstimmung, Reinigung und Schutz vor Maschinenschäden erfordert.`,
         },
       ],
     },
@@ -174,13 +174,13 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: `**Die Erlösseite ist bei Agri-PV derzeit der Knackpunkt.** Das EEG kennt ein eigenes Untersegment für [besondere Solaranlagen](/wissen/lexikon#besondere-solaranlagen) mit höherem Höchstwert, doch dafür fehlt nach aktuellem Stand die EU-Beihilfegenehmigung. Bis dahin konkurrieren Agri-PV-Anlagen im ersten Segment mit klassischen Solarparks. Dort lag der mengengewichtete Zuschlagswert im Juli 2026 bei ${ct2(ZUSCHLAG_HEUTE_CT)}; hoch aufgeständerte Anlagen erhalten übergangsweise ${fmtCt(BONUS_HOCH_CT)} Aufschlag. Details im Ratgeber [Agri-PV Förderung & GAP](/wissen/ratgeber/agri-pv-foerderung-gap).`,
+          text: `**Die Erlösseite ist bei Agri-PV derzeit der Knackpunkt.** Das EEG kennt ein eigenes Untersegment für [besondere Solaranlagen](/wissen/lexikon#besondere-solaranlagen) mit höherem Höchstwert, doch dafür fehlt nach aktuellem Stand die EU-Beihilfegenehmigung. Bis dahin konkurrieren Agri-PV-Anlagen im ersten Segment mit klassischen Solarparks. Dort lag der mengengewichtete Zuschlagswert im Juli 2026 bei ${ct2(ZUSCHLAG_HEUTE_CT)}; hoch aufgeständerte Anlagen erhalten übergangsweise ${fmtCt(BONUS_HOCH_CT)} Aufschlag. Details im Ratgeber [Agri-PV Förderung & GAP](/ratgeber/agri-pv-foerderung-gap).`,
         },
         {
           typ: "liste",
           punkte: [
             `**EEG-Planungsannahme:** Unsere Rechner setzen für besondere Solaranlagen ${ct2(ERLOESE.eegBesondereCt)} an – ein Wert, der ein funktionierendes Agri-PV-Segment voraussetzt. Solange es nicht genehmigt ist, sollten Sie zusätzlich mit dem heutigen Zuschlagsniveau rechnen.`,
-            `**PPA:** Solar-PPA mit zehn Jahren Laufzeit liegen in Deutschland grob bei ${fmt(ERLOESE.ppaCt.min, 1)}–${fmt(ERLOESE.ppaCt.max, 1)} ct/kWh. Abnehmer, die Wert auf regionale Herkunft und Doppelnutzung legen, zahlen teils Aufschläge – das ist Verhandlungssache. Mehr unter [PPA für Unternehmen](/wissen/ratgeber/ppa-fuer-unternehmen).`,
+            `**PPA:** Solar-PPA mit zehn Jahren Laufzeit liegen in Deutschland grob bei ${fmt(ERLOESE.ppaCt.min, 1)}–${fmt(ERLOESE.ppaCt.max, 1)} ct/kWh. Abnehmer, die Wert auf regionale Herkunft und Doppelnutzung legen, zahlen teils Aufschläge – das ist Verhandlungssache. Mehr unter [PPA für Unternehmen](/ratgeber/ppa-fuer-unternehmen).`,
             "**Direktlieferung und Eigenverbrauch:** Wird Strom auf dem Hof oder an einen benachbarten Betrieb geliefert, ersetzt er Netzstrom zu deutlich höheren Preisen. Das ist der stärkste Hebel, betrifft aber meist nur einen kleinen Teil der Erzeugung.",
             `**Nach Förderende:** Für die Jahre nach dem EEG-Zeitraum rechnen wir konservativ mit einem Marktwert von ${ct2(ERLOESE.merchantCt)}.`,
           ],
@@ -214,7 +214,7 @@ const artikel = {
           ],
           hervorheben: 1,
           minBreite: 720,
-          fussnote: `Eigene Rechnung mit dem Rechenkern unseres [Solarpark-Rechners](/de/rechner/solarpark): Errichtung ${fmt(AGRI.capexProKwp.vertikal.mittel)} bzw. ${fmt(AGRI.capexProKwp.hoch.mittel)} €/kWp (Solarpark ${fmt(FREIFLAECHE.capexProKwp.mittel)}), Netzanschluss 1 km, Entwicklung ${fmt(FREIFLAECHE.entwicklungProKwp.min)} €/kWp, Betriebskosten ${fmt(AGRI.opexProKwp)} €/kWp (Solarpark ${fmt(FREIFLAECHE.opexProKwp)}), Pacht ${fmt(PACHT.agriProHa.mittel)} €/ha (Solarpark ${fmt(PACHT.freiflaecheProHa.mittel)}), Degradation ${fmtPct(FREIFLAECHE.degradation, 1)} p. a., nach 20 Jahren Marktwert ${ct2(ERLOESE.merchantCt)}. Kapitalkosten (WACC) aus ${pct0(FINANZIERUNG.fremdkapitalQuote)} Fremdkapital zu ${fmtPct(FINANZIERUNG.zins, 1)} und Eigenkapital-Erwartung ${fmtPct(FINANZIERUNG.diskont, 1)}. Vor Steuern, ohne Förderzuschüsse.`,
+          fussnote: `Eigene Rechnung mit dem Rechenkern unseres [Solarpark-Rechners](/rechner/solarpark): Errichtung ${fmt(AGRI.capexProKwp.vertikal.mittel)} bzw. ${fmt(AGRI.capexProKwp.hoch.mittel)} €/kWp (Solarpark ${fmt(FREIFLAECHE.capexProKwp.mittel)}), Netzanschluss 1 km, Entwicklung ${fmt(FREIFLAECHE.entwicklungProKwp.min)} €/kWp, Betriebskosten ${fmt(AGRI.opexProKwp)} €/kWp (Solarpark ${fmt(FREIFLAECHE.opexProKwp)}), Pacht ${fmt(PACHT.agriProHa.mittel)} €/ha (Solarpark ${fmt(PACHT.freiflaecheProHa.mittel)}), Degradation ${fmtPct(FREIFLAECHE.degradation, 1)} p. a., nach 20 Jahren Marktwert ${ct2(ERLOESE.merchantCt)}. Kapitalkosten (WACC) aus ${pct0(FINANZIERUNG.fremdkapitalQuote)} Fremdkapital zu ${fmtPct(FINANZIERUNG.zins, 1)} und Eigenkapital-Erwartung ${fmtPct(FINANZIERUNG.diskont, 1)}. Vor Steuern, ohne Förderzuschüsse.`,
         },
         {
           typ: "p",
@@ -222,7 +222,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Stellschrauben sind klar: Mit Kosten am unteren Ende der Spanne (${fmt(AGRI.capexProKwp.vertikal.min)} €/kWp) sinken die Stromgestehungskosten der vertikalen Anlage auf ${ct2(V_GUENSTIG.lcoeCt)}, die Projektrendite steigt auf ${pct(V_GUENSTIG.projektIrr)}. Größere Anlagen senken die Fixkosten je kWp weiter. In Norddeutschland mit geringerer Einstrahlung wird es entsprechend schwieriger. Ihren eigenen Fall rechnen Sie im [Solarpark-Rechner](/de/rechner/solarpark) mit der Bauart „Agri-PV“ oder im [Agri-PV-Rechner](/de/rechner/agri-pv) aus Sicht des Landwirts durch.`,
+          text: `Die Stellschrauben sind klar: Mit Kosten am unteren Ende der Spanne (${fmt(AGRI.capexProKwp.vertikal.min)} €/kWp) sinken die Stromgestehungskosten der vertikalen Anlage auf ${ct2(V_GUENSTIG.lcoeCt)}, die Projektrendite steigt auf ${pct(V_GUENSTIG.projektIrr)}. Größere Anlagen senken die Fixkosten je kWp weiter. In Norddeutschland mit geringerer Einstrahlung wird es entsprechend schwieriger. Ihren eigenen Fall rechnen Sie im [Solarpark-Rechner](/rechner/solarpark) mit der Bauart „Agri-PV“ oder im [Agri-PV-Rechner](/rechner/agri-pv) aus Sicht des Landwirts durch.`,
         },
         {
           typ: "kasten",
@@ -239,7 +239,7 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: `**Für Landwirte gibt es drei Wege: die Fläche an einen Investor verpachten und weiter bewirtschaften, selbst investieren oder sich über eine [Genossenschaft](/de/genossenschaft) an einer Anlage beteiligen, die ein Investor baut und betreibt.** In allen drei Fällen bleibt die Landwirtschaft auf der Fläche, und ${pct0(AGRI.gapFoerderfaehig)} der Fläche bleiben für die Direktzahlungen förderfähig. Der Unterschied liegt in Kapitaleinsatz, Risiko und Aufwand.`,
+          text: `**Für Landwirte gibt es drei Wege: die Fläche an einen Investor verpachten und weiter bewirtschaften, selbst investieren oder sich über eine [Genossenschaft](/genossenschaft) an einer Anlage beteiligen, die ein Investor baut und betreibt.** In allen drei Fällen bleibt die Landwirtschaft auf der Fläche, und ${pct0(AGRI.gapFoerderfaehig)} der Fläche bleiben für die Direktzahlungen förderfähig. Der Unterschied liegt in Kapitaleinsatz, Risiko und Aufwand.`,
         },
         {
           typ: "tabelle",
@@ -263,7 +263,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Welcher Weg passt, hängt von Liquidität, Hofnachfolge und Risikoneigung ab. Bei der Eigeninvestition kommen Fragen zu Steuern (Gewerbebetrieb neben der Landwirtschaft) und zur Erbschaftsteuer hinzu, die Sie mit Ihrem Steuerberater klären sollten – Hinweise dazu im Ratgeber [PV-Pacht, Erbschaft- und Grundsteuer](/wissen/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer). Einen Überblick über alle Wege finden Sie auf der Seite [für Landwirte](/de/landwirte).",
+          text: "Welcher Weg passt, hängt von Liquidität, Hofnachfolge und Risikoneigung ab. Bei der Eigeninvestition kommen Fragen zu Steuern (Gewerbebetrieb neben der Landwirtschaft) und zur Erbschaftsteuer hinzu, die Sie mit Ihrem Steuerberater klären sollten – Hinweise dazu im Ratgeber [PV-Pacht, Erbschaft- und Grundsteuer](/ratgeber/pv-pacht-erbschaftsteuer-grundsteuer). Einen Überblick über alle Wege finden Sie auf der Seite [für Landwirte](/landwirte).",
         },
       ],
     },
@@ -317,9 +317,9 @@ const artikel = {
         {
           typ: "ablauf",
           schritte: [
-            ["Fläche und Netz prüfen", "Größe, Zuschnitt, Entfernung zum nächsten Netzverknüpfungspunkt – der [Flächencheck](/de/flaechencheck) gibt eine erste Einschätzung."],
+            ["Fläche und Netz prüfen", "Größe, Zuschnitt, Entfernung zum nächsten Netzverknüpfungspunkt – der [Flächencheck](/flaechencheck) gibt eine erste Einschätzung."],
             ["Kultur und Bauart abstimmen", "Vertikal für Acker und Grünland, hoch aufgeständert vor allem für Sonderkulturen – mit Blick auf die DIN SPEC 91434."],
-            ["Drei Wege durchrechnen", "Im [Agri-PV-Rechner](/de/rechner/agri-pv) Pacht, Eigeninvestition und Beteiligung vergleichen, inklusive Direktzahlungen."],
+            ["Drei Wege durchrechnen", "Im [Agri-PV-Rechner](/rechner/agri-pv) Pacht, Eigeninvestition und Beteiligung vergleichen, inklusive Direktzahlungen."],
             ["Erlösweg und Szenarien festlegen", "EEG heute, EEG mit Agri-PV-Segment, PPA – und prüfen, ab welchem Preis sich das Projekt trägt."],
             ["Verträge und Steuern klären", "Pachtvertrag, Bewirtschaftungspflichten und steuerliche Folgen mit Fachleuten prüfen."],
           ],
@@ -354,7 +354,7 @@ const artikel = {
     },
     {
       q: "Wie viel Pacht bekommt ein Landwirt für Agri-PV?",
-      a: `Als Orientierung ${fmtEur(PACHT.agriProHa.min)} bis ${fmtEur(PACHT.agriProHa.max)} je Hektar und Jahr – weniger als bei einem klassischen Solarpark, weil die landwirtschaftliche Nutzung und ${pct0(AGRI.gapFoerderfaehig)} der Direktzahlungen beim Landwirt bleiben. Mehr dazu unter [Solarpark-Pacht pro Hektar](/wissen/ratgeber/solarpark-pacht-pro-hektar).`,
+      a: `Als Orientierung ${fmtEur(PACHT.agriProHa.min)} bis ${fmtEur(PACHT.agriProHa.max)} je Hektar und Jahr – weniger als bei einem klassischen Solarpark, weil die landwirtschaftliche Nutzung und ${pct0(AGRI.gapFoerderfaehig)} der Direktzahlungen beim Landwirt bleiben. Mehr dazu unter [Solarpark-Pacht pro Hektar](/ratgeber/solarpark-pacht-pro-hektar).`,
     },
     {
       q: "Lohnt sich Agri-PV für Obst und Beeren?",
@@ -364,8 +364,8 @@ const artikel = {
 
   passend: [
     { href: pfad("/rechner/agri-pv"), titel: "Agri-PV-Rechner", text: "Pacht, Eigeninvestition und Beteiligung im Vergleich." },
-    { href: "/wissen/ratgeber/agri-pv-foerderung-gap", titel: "Agri-PV Förderung & GAP", text: "Direktzahlungen, EEG und Baurecht." },
-    { href: "/wissen/ratgeber/solarpark-investment-rendite", titel: "Solarpark-Investment und Rendite", text: "Wie Investoren Solarparks bewerten." },
+    { href: "/ratgeber/agri-pv-foerderung-gap", titel: "Agri-PV Förderung & GAP", text: "Direktzahlungen, EEG und Baurecht." },
+    { href: "/ratgeber/solarpark-investment-rendite", titel: "Solarpark-Investment und Rendite", text: "Wie Investoren Solarparks bewerten." },
     { href: pfad("/agri-pv"), titel: "Agri-PV mit ÖkoInvest", text: "Systeme, Kulturen und Beteiligung." },
   ],
 

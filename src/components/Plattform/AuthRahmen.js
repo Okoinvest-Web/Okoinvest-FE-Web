@@ -5,7 +5,7 @@
 // Server-Komponente; wird innerhalb des normalen Seitenkopfs/-fußes gerendert.
 // Schnittstelle: { eyebrow, titel, text, rolle, children } – neu optional nutzenOben (Registrierung: Nutzen mobil über dem Formular).
 
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { BadgeCheck, Check, CheckCircle2, Clock, FileLock2, FileText, LifeBuoy, LockKeyhole, MessagesSquare, ShieldCheck } from "lucide-react";
 import { PROVISION } from "@/lib/invest/markt";
 import { ROLLEN } from "@/lib/plattform/konstanten";

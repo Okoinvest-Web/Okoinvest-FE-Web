@@ -6,6 +6,7 @@
 
 import { Children, cloneElement, isValidElement } from "react";
 import { cn } from "@/components/ui/cn";
+import T from "@/components/Sprache/T";
 
 export const eingabe =
   "block h-12 w-full min-w-0 rounded-xl bg-white px-4 text-[15px] text-ink-900 outline-none ring-1 ring-inset ring-ink-400 transition-shadow placeholder:text-ink-500 hover:ring-ink-500 focus-visible:ring-2 focus-visible:ring-ov-500 disabled:bg-ink-50 disabled:text-ink-500 aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-danger-500";
@@ -38,7 +39,7 @@ export function Feld({ id, label, hinweis, fehler, pflicht, children, className 
           {pflicht && (
             <>
               <span aria-hidden="true"> *</span>
-              <span className="sr-only"> (Pflichtfeld)</span>
+              <span className="sr-only"> <T de="(Pflichtfeld)" en="(required)" /></span>
             </>
           )}
         </label>

@@ -275,13 +275,13 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Das Beispiel zeigt die Hebelwirkung: Ein paar Prozent weniger P90 kosten schnell mehrere Hunderttausend Euro Kredit, die als Eigenkapital nachgeschossen werden müssen – und senken so die Eigenkapitalrendite. Tritt später tatsächlich der P50 ein, liegt der DSCR im ersten Jahr bei rund ${fmt(DSCR_BEI_P50, 2)}; der Überschuss fließt an die Eigentümer. Ein Gutachten mit gut begründeter, niedriger Unsicherheit ist deshalb bares Geld wert. Wie Rendite und Hebel zusammenhängen, erklärt der Ratgeber [Solarpark als Investment](/wissen/ratgeber/solarpark-investment-rendite); einen ausführlichen Blick auf Vermarktungsrisiken gibt der Ratgeber [Direktvermarktung](/wissen/ratgeber/direktvermarktung-solarpark).`,
+          text: `Das Beispiel zeigt die Hebelwirkung: Ein paar Prozent weniger P90 kosten schnell mehrere Hunderttausend Euro Kredit, die als Eigenkapital nachgeschossen werden müssen – und senken so die Eigenkapitalrendite. Tritt später tatsächlich der P50 ein, liegt der DSCR im ersten Jahr bei rund ${fmt(DSCR_BEI_P50, 2)}; der Überschuss fließt an die Eigentümer. Ein Gutachten mit gut begründeter, niedriger Unsicherheit ist deshalb bares Geld wert. Wie Rendite und Hebel zusammenhängen, erklärt der Ratgeber [Solarpark als Investment](/ratgeber/solarpark-investment-rendite); einen ausführlichen Blick auf Vermarktungsrisiken gibt der Ratgeber [Direktvermarktung](/ratgeber/direktvermarktung-solarpark).`,
         },
         {
           typ: "kasten",
           variant: "wichtig",
           titel: "Was das Gutachten nicht abdeckt",
-          text: "Ein Ertragsgutachten prognostiziert Energie, nicht Erlöse. Abregelung bei [negativen Strompreisen](/wissen/ratgeber/negative-strompreise-solarspitzengesetz), Netzengpässe und sinkende Marktwerte müssen im Finanzmodell separat abgebildet werden. Auch Versicherungsschäden und längere Ausfälle sind nicht enthalten – dazu der Ratgeber [Solarpark-Versicherung](/wissen/ratgeber/solarpark-versicherung).",
+          text: "Ein Ertragsgutachten prognostiziert Energie, nicht Erlöse. Abregelung bei [negativen Strompreisen](/ratgeber/negative-strompreise-solarspitzengesetz), Netzengpässe und sinkende Marktwerte müssen im Finanzmodell separat abgebildet werden. Auch Versicherungsschäden und längere Ausfälle sind nicht enthalten – dazu der Ratgeber [Solarpark-Versicherung](/ratgeber/solarpark-versicherung).",
         },
       ],
     },
@@ -307,7 +307,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Beim Kauf eines Parks ersetzt der gemessene Ertrag nach und nach die Prognose. Wie Monitoringdaten, Degradation und Thermografie in den Kaufpreis eingehen, zeigt der Ratgeber [Wert einer Bestandsanlage](/wissen/ratgeber/solarpark-bestandsanlage-wert). Für Projekte vor dem Bau gehört das Gutachten in den [Datenraum](/wissen/lexikon#datenraum) und in die [Due Diligence](/wissen/ratgeber/projektrechte-kaufen-due-diligence). Passende Projekte finden Investoren in der [Projektbörse](/projektboerse).",
+          text: "Beim Kauf eines Parks ersetzt der gemessene Ertrag nach und nach die Prognose. Wie Monitoringdaten, Degradation und Thermografie in den Kaufpreis eingehen, zeigt der Ratgeber [Wert einer Bestandsanlage](/ratgeber/solarpark-bestandsanlage-wert). Für Projekte vor dem Bau gehört das Gutachten in den [Datenraum](/wissen/lexikon#datenraum) und in die [Due Diligence](/ratgeber/projektrechte-kaufen-due-diligence). Passende Projekte finden Investoren in der [Projektbörse](/projektboerse).",
         },
       ],
     },
@@ -341,8 +341,8 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/wissen/ratgeber/solarpark-investment-rendite", titel: "Solarpark als Investment", text: "Rendite, Hebel und Sensitivitäten im 10-MWp-Beispiel." },
-    { href: "/wissen/ratgeber/solarpark-bestandsanlage-wert", titel: "Wert einer Bestandsanlage", text: "DCF, Multiplikatoren und technische Due Diligence." },
+    { href: "/ratgeber/solarpark-investment-rendite", titel: "Solarpark als Investment", text: "Rendite, Hebel und Sensitivitäten im 10-MWp-Beispiel." },
+    { href: "/ratgeber/solarpark-bestandsanlage-wert", titel: "Wert einer Bestandsanlage", text: "DCF, Multiplikatoren und technische Due Diligence." },
     { href: pfad("/rechner/solarpark"), titel: "Solarpark-Rechner", text: "Ertrag, Cashflow und DSCR mit eigenen Werten." },
     { href: "/investoren", titel: "Für Investoren", text: "Suchprofil anlegen und passende Projekte finden." },
   ],

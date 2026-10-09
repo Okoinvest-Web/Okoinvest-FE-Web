@@ -1,10 +1,11 @@
 "use client";
 
 import { useId, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowRight, Check, UserPlus } from "lucide-react";
 import { cn } from "@/components/ui/cn";
-import { GRUPPEN, ROLLE_EREIGNIS, ROLLE_SPEICHER } from "./zielgruppen";
+import { ROLLE_EREIGNIS, ROLLE_SPEICHER, gruppenFuer } from "./zielgruppen";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 
 /**
  * Weiche im Hero: Wer sind Sie? → passender Nutzen, drei Fakten, zwei Wege + Konto.
@@ -17,6 +18,9 @@ import { GRUPPEN, ROLLE_EREIGNIS, ROLLE_SPEICHER } from "./zielgruppen";
  */
 export default function ZielgruppenWahl() {
   const basis = useId();
+  const sprache = useSprache();
+  const en = sprache === "en";
+  const GRUPPEN = gruppenFuer(sprache);
   const [aktiv, setAktiv] = useState(0);
   const g = GRUPPEN[aktiv];
 
@@ -39,8 +43,8 @@ export default function ZielgruppenWahl() {
 
   return (
     <div className="ov-glass rounded-[2rem] p-3 shadow-2xl sm:p-4">
-      <p className="px-3 pb-3 pt-2 text-[12px] font-semibold uppercase tracking-[0.16em] text-white/60">Wer sind Sie?</p>
-      <div role="tablist" aria-label="Zielgruppe wählen" onKeyDown={taste} className="relative grid grid-cols-5 gap-1 rounded-2xl bg-navy-950/60 p-1">
+      <p className="px-3 pb-3 pt-2 text-[12px] font-semibold uppercase tracking-[0.16em] text-white/60">{en ? "Who are you?" : "Wer sind Sie?"}</p>
+      <div role="tablist" aria-label={en ? "Choose your role" : "Zielgruppe wählen"} onKeyDown={taste} className="relative grid grid-cols-5 gap-1 rounded-2xl bg-navy-950/60 p-1">
         {/* Gleitende Marke: Breite = eine Spalte, Versatz = Index × (Spalte + gap-1) */}
         <span
           aria-hidden="true"
@@ -99,7 +103,7 @@ export default function ZielgruppenWahl() {
         >
           <UserPlus aria-hidden="true" className="h-4 w-4 text-ov-600" />
           <span>
-            Konto anlegen als <span className="text-ink-900 group-hover:text-ov-700">{g.konto}</span>
+            {en ? "Create an account as" : "Konto anlegen als"} <span className="text-ink-900 group-hover:text-ov-700">{g.konto}</span>
           </span>
           <ArrowRight aria-hidden="true" className="ov-pfeil h-3.5 w-3.5" />
         </Link>

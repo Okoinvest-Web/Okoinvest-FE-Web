@@ -1,51 +1,63 @@
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowRight, Calculator } from "lucide-react";
 
 import { cn } from "@/components/ui/cn";
 import Faq from "@/components/ui/Faq";
 import InlineText, { klartext } from "./InlineText";
 import { Ablauf, Abschnitt, Checkliste, KartenRaster, Kennzahlband, KurzFazit, LinkKarten, Merkkasten, Prosa, Tabelle, Zwischentitel } from "./Bausteine";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+
+const TEXTE = {
+  de: { kurz: "Das Wichtigste in Kürze", faq: "Häufige Fragen", passend: "Passend dazu", quellen: "Quellen", abgerufen: "abgerufen", berechnen: "Jetzt berechnen" },
+  en: { kurz: "Key points at a glance", faq: "Frequently asked questions", passend: "Related", quellen: "Sources", abgerufen: "retrieved", berechnen: "Calculate now" },
+};
 
 /**
  * Rendert einen inhaltsgetriebenen Ratgeber-Artikel (src/content/ratgeber/*).
  * Blocktypen siehe src/content/ratgeber/README.md.
  */
 export default function ArtikelInhalt({ artikel }) {
+  const t = TEXTE[spracheDerAnfrage()] || TEXTE.de;
   // Kapitelnummern wie im Inhaltsverzeichnis (dort zählt „Das Wichtigste in Kürze“ mit)
   const versatz = artikel.kurzFazit?.length > 0 ? 1 : 0;
   return (
     <>
-      {artikel.kurzFazit?.length > 0 && <KurzFazit punkte={artikel.kurzFazit.map((p, i) => <InlineText key={i} text={p} />)} />}
+      {artikel.kurzFazit?.length > 0 && <KurzFazit titel={t.kurz} punkte={artikel.kurzFazit.map((p, i) => <InlineText key={i} text={p} />)} />}
 
       {artikel.abschnitte.map((a, i) => (
         <Abschnitt key={a.id} id={a.id} titel={a.titel} nr={i + 1 + versatz}>
           {a.bloecke.map((b, i) => (
-            <Block key={i} block={b} />
+            <Block key={i} block={b} t={t} />
           ))}
         </Abschnitt>
       ))}
 
       {artikel.faq?.length > 0 && (
-        <Abschnitt id="faq" titel={artikel.faqTitel || "Häufige Fragen"} nr={artikel.abschnitte.length + 1 + versatz}>
+        <Abschnitt id="faq" titel={artikel.faqTitel || t.faq} nr={artikel.abschnitte.length + 1 + versatz}>
           <Faq items={artikel.faq.map((f) => ({ q: f.q, a: <InlineText text={f.a} />, aText: klartext(f.a) }))} />
         </Abschnitt>
       )}
 
       {artikel.passend?.length > 0 && (
-        <Abschnitt id="passend" titel="Passend dazu">
+        <Abschnitt id="passend" titel={t.passend}>
           <LinkKarten links={artikel.passend} />
         </Abschnitt>
       )}
 
       {artikel.quellen?.length > 0 && (
-        <Abschnitt id="quellen" titel="Quellen">
+        <Abschnitt id="quellen" titel={t.quellen}>
           <ol className="list-decimal space-y-2 pl-5 text-[14.5px] leading-relaxed text-ink-600 marker:text-ink-500">
             {artikel.quellen.map((q) => (
               <li key={q.url}>
                 <a href={q.url} target="_blank" rel="noopener noreferrer" className="text-ink-700 underline decoration-ink-300 underline-offset-2 hover:text-ov-700">
                   {q.titel}
                 </a>
-                {q.stand && <span className="text-ink-500"> · abgerufen {q.stand}</span>}
+                {q.stand && (
+                  <span className="text-ink-500">
+                    {" "}
+                    · {t.abgerufen} {q.stand}
+                  </span>
+                )}
               </li>
             ))}
           </ol>
@@ -55,7 +67,7 @@ export default function ArtikelInhalt({ artikel }) {
   );
 }
 
-function Block({ block: b }) {
+function Block({ block: b, t }) {
   switch (b.typ) {
     case "p":
       return (
@@ -123,7 +135,7 @@ function Block({ block: b }) {
             </span>
           </span>
           <span className={cn("inline-flex h-11 shrink-0 items-center gap-2 self-start rounded-full bg-white px-5 text-[14.5px] font-semibold text-ov-800 sm:self-auto")}>
-            {b.label || "Jetzt berechnen"}
+            {b.label || t.berechnen}
             <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </span>
         </Link>

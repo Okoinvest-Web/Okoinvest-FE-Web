@@ -4,12 +4,13 @@ import Section from "@/components/ui/Section";
 import { Eyebrow } from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
 import { Clock } from "lucide-react";
+import T from "@/components/Sprache/T";
 
 function Ablauf({ schritte, className }) {
   return (
     <div className={className}>
       <h3 className="text-ov-300">
-        <span className="ov-overline block font-sans">Was nach dem Absenden passiert</span>
+        <span className="ov-overline block font-sans"><T de="Was nach dem Absenden passiert" en="What happens after you submit" /></span>
       </h3>
       <ol className="mt-6">
         {schritte.map(({ icon: Icon, titel, text }, i) => (
@@ -60,7 +61,19 @@ export function RingDekor({ className }) {
   );
 }
 
-export default function AnfrageBuehne({ id = "anfrage", eyebrow = "Anfrage", titel, lead, zusagen = [], ablauf = [], formTitel = "Ihre Anfrage", formText, antwort = "Wir melden uns persönlich bei Ihnen.", dekor, children }) {
+export default function AnfrageBuehne({
+  id = "anfrage",
+  eyebrow = <T de="Anfrage" en="Enquiry" />,
+  titel,
+  lead,
+  zusagen = [],
+  ablauf = [],
+  formTitel = <T de="Ihre Anfrage" en="Your enquiry" />,
+  formText,
+  antwort = <T de="Wir melden uns persönlich bei Ihnen." en="We will get back to you personally." />,
+  dekor,
+  children,
+}) {
   const titelId = `${id}-titel`;
   return (
     <Section data-abschnitt="anfrage" tone="navy" space="lg" id={id} bare aria-labelledby={titelId} className="ov-verlauf-nacht ov-noise scroll-mt-24 overflow-hidden">

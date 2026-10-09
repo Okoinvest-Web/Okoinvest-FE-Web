@@ -1,11 +1,13 @@
 // Anfrage-Abschnitt /kommunen: links Einordnung + „Was nach dem Absenden passiert“ (mitlaufend ab lg),
 // rechts die strukturierte Anfrage (KommuneAnfrage → POST /api/anfrage, unverändert).
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowRight, BadgeCheck, CalendarCheck, ClipboardList, Clock, LockKeyhole } from "lucide-react";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
 import KommuneAnfrage from "@/components/Kommune/KommuneAnfrage";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 // beschreibt genau, was der Erfolgstext der Anfrage zusagt
 const ABLAUF = [
@@ -15,13 +17,49 @@ const ABLAUF = [
 ];
 
 // Zeitstrahl – ab lg in der linken Spalte, mobil nach dem Formular; die andere Fassung ist per display:none ausgeblendet.
-function Ablauf({ className }) {
+/** Sprachmodell: Texte (en nur Texte, je Index). */
+const W = {
+  de: {
+    ablauf: ABLAUF,
+    nachTitel: "Was nach dem Absenden passiert",
+    schritt: (n) => `Schritt ${n}: `,
+    eyebrow: "Gespräch",
+    titel: "Wir stellen uns im Gemeinderat vor.",
+    lead: "Ob konkrete Fläche, Kriterienkatalog oder Stadtwerke-Beteiligung: Schildern Sie kurz Ihr Anliegen – wir melden uns mit einem Terminvorschlag.",
+    formTitel: "Anfrage für Ihre Gemeinde",
+    persoenlich: "Wir melden uns persönlich bei Ihnen.",
+    unverbindlich: "Unverbindlich anfragen",
+    tipp: "Tipp: Im Feld „Unternehmen / Betrieb“ den Namen der Verwaltung bzw. des Stadtwerks angeben. Projektdaten aus Ihrem Gemeindegebiet zeigen wir erst nach Bestätigung der Gemeinde.",
+    portal: "Lieber gleich im Portal starten?",
+    konto: "Konto für Ihre Gemeinde anlegen",
+  },
+  en: {
+    ablauf: [
+      { titel: "You briefly describe your request", text: "A specific site, a catalogue of criteria or a municipal utility stake – a few details are enough." },
+      { titel: "We verify your municipality", text: "Via the administration – only then do we show project data from your municipal area." },
+      { titel: "You receive a proposed appointment", text: "If you wish, we will present to the municipal council. After registering, you will see the projects in your area in the portal." },
+    ],
+    nachTitel: "What happens after you submit",
+    schritt: (n) => `Step ${n}: `,
+    eyebrow: "Conversation",
+    titel: "We will present to your municipal council.",
+    lead: "Whether a specific site, a catalogue of criteria or a municipal utility stake: briefly describe your request – we will get back to you with a proposed appointment.",
+    formTitel: "Enquiry for your municipality",
+    persoenlich: "We will get back to you personally.",
+    unverbindlich: "Enquire without obligation",
+    tipp: "Tip: in the “Company / business” field, enter the name of the administration or municipal utility. We only show project data from your municipal area after the municipality has been verified.",
+    portal: "Prefer to start in the portal straight away?",
+    konto: "Create an account for your municipality",
+  },
+};
+
+function Ablauf({ className, w }) {
   return (
     <div className={className}>
-      <p className="ov-overline text-ink-500">Was nach dem Absenden passiert</p>
+      <p className="ov-overline text-ink-500">{w.nachTitel}</p>
       <ol className="mt-6">
-        {ABLAUF.map(({ icon: Icon, titel, text }, i) => (
-          <li key={titel} className="relative flex gap-4 pb-7 last:pb-0">
+        {w.ablauf.map(({ icon: Icon, titel, text }, i) => (
+          <li key={i} className="relative flex gap-4 pb-7 last:pb-0">
             {i < ABLAUF.length - 1 && <span aria-hidden="true" className="absolute bottom-1 left-[21px] top-12 w-px bg-gradient-to-b from-ov-400/70 to-ink-200" />}
             <span aria-hidden="true" className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-ov-700 shadow-e1 ring-1 ring-ink-200">
               <Icon className="h-5 w-5" />
@@ -29,7 +67,7 @@ function Ablauf({ className }) {
             </span>
             <div className="min-w-0 pt-0.5">
               <p className="font-display text-[16.5px] font-bold leading-snug text-ink-900">
-                <span className="sr-only">Schritt {i + 1}: </span>
+                <span className="sr-only">{w.schritt(i + 1)}</span>
                 {titel}
               </p>
               <p className="mt-1 text-[14.5px] leading-relaxed text-ink-600">{text}</p>
@@ -42,16 +80,17 @@ function Ablauf({ className }) {
 }
 
 export default function Anfrage() {
+  const w = uebersetze(W, spracheDerAnfrage());
   return (
     <Section tone="sand" space="lg" id="anfrage" className="scroll-mt-24">
       <div className="grid gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
         <div className="lg:sticky lg:top-28 lg:self-start">
           <SectionHeading
-            eyebrow="Gespräch"
-            title="Wir stellen uns im Gemeinderat vor."
-            lead="Ob konkrete Fläche, Kriterienkatalog oder Stadtwerke-Beteiligung: Schildern Sie kurz Ihr Anliegen – wir melden uns mit einem Terminvorschlag."
+            eyebrow={w.eyebrow}
+            title={w.titel}
+            lead={w.lead}
           />
-          <Ablauf className="mt-10 max-lg:hidden" />
+          <Ablauf className="mt-10 max-lg:hidden" w={w} />
         </div>
 
         <Reveal className="relative">
@@ -59,31 +98,31 @@ export default function Anfrage() {
           <div className="rounded-[2rem] bg-white p-5 shadow-e3 ring-1 ring-ink-200/70 sm:p-7 md:p-9">
             <div className="mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 pb-6">
               <div className="min-w-0">
-                <p className="font-display text-[20px] font-bold text-ink-900">Anfrage für Ihre Gemeinde</p>
+                <p className="font-display text-[20px] font-bold text-ink-900">{w.formTitel}</p>
                 <p className="mt-1 inline-flex items-center gap-1.5 text-[13.5px] font-medium text-ov-800">
                   <Clock aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-                  Wir melden uns persönlich bei Ihnen.
+                  {w.persoenlich}
                 </p>
               </div>
               <span className="inline-flex items-center gap-1.5 text-[13px] text-ink-500">
                 <LockKeyhole aria-hidden="true" className="h-3.5 w-3.5" />
-                Unverbindlich anfragen
+                {w.unverbindlich}
               </span>
             </div>
             <KommuneAnfrage />
             <p className="mt-5 text-[12.5px] leading-relaxed text-ink-500">
-              Tipp: Im Feld „Unternehmen / Betrieb“ den Namen der Verwaltung bzw. des Stadtwerks angeben. Projektdaten aus Ihrem Gemeindegebiet zeigen wir erst nach Bestätigung der Gemeinde.
+              {w.tipp}
             </p>
             <p className="mt-4 border-t border-ink-100 pt-4 text-[14px] text-ink-600">
-              Lieber gleich im Portal starten?{" "}
+              {w.portal}{" "}
               <Link href="/registrieren?rolle=kommune" className="group inline-flex items-center gap-1 rounded font-semibold text-ov-700 underline decoration-ov-300 underline-offset-4 hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
-                Konto für Ihre Gemeinde anlegen
+                {w.konto}
                 <ArrowRight aria-hidden="true" className="ov-pfeil h-3.5 w-3.5" />
               </Link>
             </p>
           </div>
         </Reveal>
-        <Ablauf className="lg:hidden" />
+        <Ablauf className="lg:hidden" w={w} />
       </div>
     </Section>
   );

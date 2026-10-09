@@ -1,20 +1,22 @@
 // Kennzahlenleiste (überlappt den Hero) + Sprungnavigation zu den Datenkapiteln
 import { cn } from "@/components/ui/cn";
 import Zaehler from "@/components/motion/Zaehler";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 const KAPITEL = [
-  { href: "#ausschreibungen", label: "Ausschreibungen" },
-  { href: "#marktwert-solar", label: "Marktwert & Capture Rate" },
-  { href: "#zubau", label: "Zubau DACH" },
-  { href: "#pacht", label: "Pachtniveau" },
-  { href: "#live", label: "Börsenpreis live" },
+  { href: "#ausschreibungen", label: "Ausschreibungen", en: "Tenders" },
+  { href: "#marktwert-solar", label: "Marktwert & Capture Rate", en: "Market value & capture rate" },
+  { href: "#zubau", label: "Zubau DACH", en: "Additions DACH" },
+  { href: "#pacht", label: "Pachtniveau", en: "Lease levels" },
+  { href: "#live", label: "Börsenpreis live", en: "Live exchange price" },
 ];
 
 /** kennzahlen: [{ icon, wert, zahl?, stellen?, einheit, text }] */
 export default function Kennzahlen({ kennzahlen }) {
+  const en = spracheDerAnfrage() === "en";
   return (
     <section data-abschnitt="kennzahlen" aria-labelledby="kennzahlen-titel" className="relative z-10 -mt-12 md:-mt-16">
-      <h2 id="kennzahlen-titel" className="sr-only">Kennzahlen auf einen Blick</h2>
+      <h2 id="kennzahlen-titel" className="sr-only">{en ? "Key figures at a glance" : "Kennzahlen auf einen Blick"}</h2>
       <div className="ov-container">
         <div className="relative rounded-[1.75rem] bg-white shadow-e4 ring-1 ring-ink-200/70 md:rounded-[2rem]">
           <div aria-hidden="true" className="absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-ov-400 to-transparent" />
@@ -26,7 +28,7 @@ export default function Kennzahlen({ kennzahlen }) {
                   <span className="flex items-baseline gap-1.5">
                     <span className="ov-kpi text-ink-900">
                       {/* Count-up nur, wenn der formatierte Wert exakt der Zahl entspricht (sonst statisch) */}
-                      {typeof k.zahl === "number" ? <Zaehler wert={k.zahl} nachkomma={k.stellen || 0} verzoegerung={i * 90} dauer={1200} /> : k.wert}
+                      {typeof k.zahl === "number" ? <Zaehler wert={k.zahl} nachkomma={k.stellen || 0} verzoegerung={i * 90} dauer={1200} sprache={en ? "en-GB" : undefined} /> : k.wert}
                     </span>
                     <span className="text-[14px] font-bold text-ink-500">{k.einheit}</span>
                   </span>
@@ -39,7 +41,7 @@ export default function Kennzahlen({ kennzahlen }) {
           </dl>
         </div>
 
-        <nav aria-label="Kapitel der Marktdaten" className="mt-8 md:mt-10">
+        <nav aria-label={en ? "Market data chapters" : "Kapitel der Marktdaten"} className="mt-8 md:mt-10">
           <ul className="ov-no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
             {KAPITEL.map((k, i) => (
               <li key={k.href} className="shrink-0">
@@ -48,7 +50,7 @@ export default function Kennzahlen({ kennzahlen }) {
                   className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-[14px] font-semibold text-ink-700 ring-1 ring-ink-200 transition-colors hover:bg-ov-50 hover:text-ov-800 hover:ring-ov-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500"
                 >
                   <span className="ov-num text-[11px] font-bold text-ov-600">{String(i + 1).padStart(2, "0")}</span>
-                  {k.label}
+                  {en ? k.en : k.label}
                 </a>
               </li>
             ))}

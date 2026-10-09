@@ -202,7 +202,7 @@ const artikel = {
           typ: "kasten",
           variant: "tipp",
           titel: "Konzept und Pachtvertrag zusammen denken",
-          text: "Das Nutzungskonzept bindet beide Seiten über Jahre. Regeln Sie im [Pachtvertrag](/wissen/ratgeber/pachtvertrag-solarpark), wer die Bewirtschaftung übernimmt, wer die Erträge dokumentiert, wer Schäden an Kultur oder Anlage trägt und was passiert, wenn der Landwirt die Fläche aufgibt. Sonst hängt die Förderung des Betreibers an einer Pflicht, die niemand vertraglich übernommen hat.",
+          text: "Das Nutzungskonzept bindet beide Seiten über Jahre. Regeln Sie im [Pachtvertrag](/ratgeber/pachtvertrag-solarpark), wer die Bewirtschaftung übernimmt, wer die Erträge dokumentiert, wer Schäden an Kultur oder Anlage trägt und was passiert, wenn der Landwirt die Fläche aufgibt. Sonst hängt die Förderung des Betreibers an einer Pflicht, die niemand vertraglich übernommen hat.",
         },
       ],
     },
@@ -260,7 +260,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Wie sich GAP, EEG und Landesprogramme im Detail zusammensetzen, erklärt der Ratgeber [Agri-PV Förderung & GAP](/wissen/ratgeber/agri-pv-foerderung-gap). Die Begriffe [DIN SPEC 91434](/wissen/lexikon#din-spec-91434) und [besondere Solaranlagen](/wissen/lexikon#besondere-solaranlagen) finden Sie auch im Lexikon.`,
+          text: `Wie sich GAP, EEG und Landesprogramme im Detail zusammensetzen, erklärt der Ratgeber [Agri-PV Förderung & GAP](/ratgeber/agri-pv-foerderung-gap). Die Begriffe [DIN SPEC 91434](/wissen/lexikon#din-spec-91434) und [besondere Solaranlagen](/wissen/lexikon#besondere-solaranlagen) finden Sie auch im Lexikon.`,
         },
       ],
     },
@@ -300,7 +300,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Zum letzten Punkt: Agri-PV ist je Kilowattpeak teurer als ein klassischer Solarpark und braucht mehr Fläche je Megawatt. Welche Erlöse nötig sind und welche Bauart sich für welche Kultur rechnet, zeigt unser Ratgeber zur [Agri-PV-Wirtschaftlichkeit](/wissen/ratgeber/agri-pv-wirtschaftlichkeit).",
+          text: "Zum letzten Punkt: Agri-PV ist je Kilowattpeak teurer als ein klassischer Solarpark und braucht mehr Fläche je Megawatt. Welche Erlöse nötig sind und welche Bauart sich für welche Kultur rechnet, zeigt unser Ratgeber zur [Agri-PV-Wirtschaftlichkeit](/ratgeber/agri-pv-wirtschaftlichkeit).",
         },
       ],
     },
@@ -359,8 +359,8 @@ const artikel = {
   ],
 
   passend: [
-    { href: "/wissen/ratgeber/agri-pv-foerderung-gap", titel: "Agri-PV Förderung & GAP", text: "Direktzahlungen, EEG-Bonus und Baurecht im Überblick." },
-    { href: "/wissen/ratgeber/agri-pv-wirtschaftlichkeit", titel: "Agri-PV Wirtschaftlichkeit", text: "Was vertikale und hohe Anlagen kosten und erlösen." },
+    { href: "/ratgeber/agri-pv-foerderung-gap", titel: "Agri-PV Förderung & GAP", text: "Direktzahlungen, EEG-Bonus und Baurecht im Überblick." },
+    { href: "/ratgeber/agri-pv-wirtschaftlichkeit", titel: "Agri-PV Wirtschaftlichkeit", text: "Was vertikale und hohe Anlagen kosten und erlösen." },
     { href: pfad("/agri-pv"), titel: "Agri-PV mit ÖkoInvest", text: "Systeme, Kulturen und Beteiligungsmodelle." },
     { href: pfad("/landwirte"), titel: "Agri-PV für Landwirte", text: "Verpachten, selbst investieren oder beteiligen." },
   ],

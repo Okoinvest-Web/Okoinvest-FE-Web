@@ -9,6 +9,7 @@
 import { useEffect, useState } from "react";
 import { House, Sun, UsersRound } from "lucide-react";
 import { cn } from "@/components/ui/cn";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 
 const minuten = (hhmm) => {
   const [h, m] = String(hhmm || "0:0").split(":").map(Number);
@@ -89,15 +90,21 @@ function Leitung({ aktiv, label, kompakt }) {
  * eingebracht       kWh eigener Erzeugung in die Gemeinschaft (nur bei Erzeugern)
  * aktiv             Teilchen laufen (jetzt grüne Stunde oder Werte vorhanden)
  */
-export default function EnergieFluss({ gemeinschaftName = "Gemeinschaft", ausGemeinschaft, eingebracht, aktiv = true, zeitraumText = "", kompakt = false }) {
+export default function EnergieFluss({ gemeinschaftName: nameProp, ausGemeinschaft, eingebracht, aktiv = true, zeitraumText = "", kompakt = false }) {
+  // Sprachmodell: im Portal immer Deutsch; auf der öffentlichen Produktseite (/en/…) englisch
+  const en = useSprache() === "en";
+  const gemeinschaftName = nameProp ?? (en ? "Community" : "Gemeinschaft");
+  const aria = en
+    ? `Energy flow${zeitraumText ? ` ${zeitraumText}` : ""}: solar power from the installations flows via ${gemeinschaftName} to you${ausGemeinschaft ? `, ${ausGemeinschaft} from the community` : ""}${eingebracht ? `; you contributed ${eingebracht}` : ""}.`
+    : `Energiefluss${zeitraumText ? ` ${zeitraumText}` : ""}: Sonnenstrom der Anlagen fließt über ${gemeinschaftName} zu Ihnen${ausGemeinschaft ? `, ${ausGemeinschaft} aus der Gemeinschaft` : ""}${eingebracht ? `; Sie haben ${eingebracht} eingebracht` : ""}.`;
   return (
-    <figure className="m-0" aria-label={`Energiefluss${zeitraumText ? ` ${zeitraumText}` : ""}: Sonnenstrom der Anlagen fließt über ${gemeinschaftName} zu Ihnen${ausGemeinschaft ? `, ${ausGemeinschaft} aus der Gemeinschaft` : ""}${eingebracht ? `; Sie haben ${eingebracht} eingebracht` : ""}.`} role="img">
+    <figure className="m-0" aria-label={aria} role="img">
       <div className="flex items-start justify-between">
-        <Knoten icon={Sun} titel={kompakt ? "Region" : "Anlagen der Region"} wert={eingebracht ? `inkl. Ihrer ${eingebracht}` : "Sonnenstrom"} ton="sonne" aktiv={aktiv} kompakt={kompakt} />
-        <Leitung aktiv={aktiv} label="Erzeugung zur Gemeinschaft" kompakt={kompakt} />
-        <Knoten icon={UsersRound} titel={gemeinschaftName} wert="verteilt fair" ton="marke" kompakt={kompakt} />
-        <Leitung aktiv={aktiv} label="Gemeinschaft zu Ihnen" kompakt={kompakt} />
-        <Knoten icon={House} titel="Ihr Zuhause" wert={ausGemeinschaft || "–"} kompakt={kompakt} />
+        <Knoten icon={Sun} titel={kompakt ? "Region" : en ? "Installations in the region" : "Anlagen der Region"} wert={eingebracht ? (en ? `incl. your ${eingebracht}` : `inkl. Ihrer ${eingebracht}`) : en ? "Solar power" : "Sonnenstrom"} ton="sonne" aktiv={aktiv} kompakt={kompakt} />
+        <Leitung aktiv={aktiv} label={en ? "Generation to the community" : "Erzeugung zur Gemeinschaft"} kompakt={kompakt} />
+        <Knoten icon={UsersRound} titel={gemeinschaftName} wert={en ? "shares fairly" : "verteilt fair"} ton="marke" kompakt={kompakt} />
+        <Leitung aktiv={aktiv} label={en ? "Community to you" : "Gemeinschaft zu Ihnen"} kompakt={kompakt} />
+        <Knoten icon={House} titel={en ? "Your home" : "Ihr Zuhause"} wert={ausGemeinschaft || "–"} kompakt={kompakt} />
       </div>
       <style>{`
         @keyframes eg-fluss { 0% { transform: translate3d(0,0,0); opacity: 0; } 12% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translate3d(100%,0,0); opacity: 0; } }

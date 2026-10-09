@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowRight } from "lucide-react";
 import { LiveDot } from "@/components/ui/LiveTicker";
 import useLiveDaten from "./useLiveDaten";

@@ -2,6 +2,32 @@
 import { PlugZap, Sun } from "lucide-react";
 import { isoProjektion, quader } from "@/components/Energie/Seite/iso";
 import f from "@/components/Energie/fluss.module.css";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+
+/** Sprachmodell: Texte der Bühne (Zahlen kommen formatiert von der Seite). */
+const W = {
+  de: {
+    stellplaetze: "100 Stellplätze",
+    beispiel: "Beispiel",
+    leistung: "Leistung",
+    ertrag: "Ertrag pro Jahr",
+    quelle: "Werte aus dem Carport-Rechner (Süd-DE)",
+    last: "Lastmanagement",
+    lastText: "Solarstrom zuerst, Netzanschluss nicht überlasten",
+    ladepunkt: (n) => `Ladepunkt ${n}`,
+  },
+  en: {
+    stellplaetze: "100 parking spaces",
+    beispiel: "Example",
+    leistung: "Capacity",
+    ertrag: "Yield per year",
+    quelle: "Figures from the carport calculator (southern DE)",
+    last: "Load management",
+    lastText: "Solar power first, without overloading the grid connection",
+    ladepunkt: (n) => `Charger ${n}`,
+  },
+};
 
 // Bewegung (einmalig beim Laden): Solarstrom läuft vom Dach zu den drei Ladesäulen, danach füllen sich die
 // Ladepunkte im Lastmanagement – erst Solar, dann das Netz. Reduziert: sofort im Endzustand.
@@ -152,6 +178,7 @@ function Szene() {
 }
 
 export default function HeroBuehne({ kwp, mwh }) {
+  const w = uebersetze(W, spracheDerAnfrage());
   return (
     <div className="relative">
       <div className="relative sm:pb-10 sm:pt-14">
@@ -161,38 +188,38 @@ export default function HeroBuehne({ kwp, mwh }) {
       <div className="relative -mt-4 rounded-2xl bg-white p-4 text-ink-900 shadow-e4 ring-1 ring-ink-200/70 sm:absolute sm:right-0 sm:top-0 sm:mt-0 sm:w-[46%] sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <p className="flex items-center gap-1.5 text-[12px] font-semibold text-ink-500">
-            <Sun aria-hidden="true" className="h-3.5 w-3.5 text-sun-500" /> 100 Stellplätze
+            <Sun aria-hidden="true" className="h-3.5 w-3.5 text-sun-500" /> {w.stellplaetze}
           </p>
-          <span className="rounded-full bg-sun-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-sun-700 ring-1 ring-sun-200">Beispiel</span>
+          <span className="rounded-full bg-sun-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-sun-700 ring-1 ring-sun-200">{w.beispiel}</span>
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-3">
           <div>
-            <dt className="text-[12px] text-ink-500">Leistung</dt>
+            <dt className="text-[12px] text-ink-500">{w.leistung}</dt>
             <dd className="ov-num font-display text-[22px] font-extrabold leading-tight tracking-tight">≈ {kwp} kWp</dd>
           </div>
           <div>
-            <dt className="text-[12px] text-ink-500">Ertrag pro Jahr</dt>
+            <dt className="text-[12px] text-ink-500">{w.ertrag}</dt>
             <dd className="ov-num font-display text-[22px] font-extrabold leading-tight tracking-tight">≈ {mwh} MWh</dd>
           </div>
         </dl>
-        <p className="mt-2 text-[11.5px] text-ink-500">Werte aus dem Carport-Rechner (Süd-DE)</p>
+        <p className="mt-2 text-[11.5px] text-ink-500">{w.quelle}</p>
       </div>
 
       <div className="relative mt-3 rounded-2xl bg-navy-900/85 p-4 text-white shadow-e4 ring-1 ring-white/15 backdrop-blur-md sm:absolute sm:bottom-0 sm:left-0 sm:mt-0 sm:w-[50%]">
         <p className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-ov-300">
-          <PlugZap aria-hidden="true" className="h-3.5 w-3.5" /> Lastmanagement
+          <PlugZap aria-hidden="true" className="h-3.5 w-3.5" /> {w.last}
         </p>
-        <p className="mt-1 text-[13px] text-white/75">Solarstrom zuerst, Netzanschluss nicht überlasten</p>
+        <p className="mt-1 text-[13px] text-white/75">{w.lastText}</p>
         <div className="ov-sofort mt-3 space-y-2" aria-hidden="true" style={{ "--ov-delay": "1300ms" }}>
           {[
-            ["Ladepunkt 1", 0.82, "bg-ov-400"],
-            ["Ladepunkt 2", 0.55, "bg-ov-400"],
-            ["Ladepunkt 3", 0.3, "bg-navy-300"],
-          ].map(([l, w, farbe], i) => (
+            [w.ladepunkt(1), 0.82, "bg-ov-400"],
+            [w.ladepunkt(2), 0.55, "bg-ov-400"],
+            [w.ladepunkt(3), 0.3, "bg-navy-300"],
+          ].map(([l, anteil, farbe], i) => (
             <div key={l} className="flex items-center gap-3 text-[11.5px] text-white/65">
               <span className="w-[4.5rem] shrink-0">{l}</span>
               <span className="h-1.5 flex-1 rounded-full bg-white/10">
-                <span className={`ov-balken-x block h-full rounded-full ${farbe}`} style={{ width: `${w * 100}%`, "--i": i * 3 }} />
+                <span className={`ov-balken-x block h-full rounded-full ${farbe}`} style={{ width: `${anteil * 100}%`, "--i": i * 3 }} />
               </span>
             </div>
           ))}

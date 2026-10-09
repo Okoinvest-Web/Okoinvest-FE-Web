@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { ArrowUpRight, ChevronDown, Info } from "lucide-react";
 import RechnerKopf from "./RechnerKopf";
 import Section from "@/components/ui/Section";
@@ -6,14 +6,54 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import Faq from "@/components/ui/Faq";
 import CtaBand from "@/components/ui/CtaBand";
 import Reveal from "@/components/ui/Reveal";
-import { TOOLS } from "./tools";
+import { TOOLS, TOOL_BEGRIFFE_EN, toolsFuer } from "./tools";
 import { STAND } from "@/lib/rechner/annahmen";
 import { STAND_RECHENLOGIK } from "@/lib/invest/markt";
 import JsonLd from "@/components/JsonLd";
 import "./rechner.css";
 
 import { SITE } from "@/data/site";
-import { pfad as seitenPfad } from "@/lib/land";
+import { LAENDER, landHinweisText, landHinweisTextEn, pfad as seitenPfad } from "@/lib/land";
+import { landDerAnfrage, spracheDerAnfrage } from "@/lib/land/seite";
+import { datumText } from "@/lib/sprache/format";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+
+// Sprachmodell: feste Texte des Rahmens (die Seiten geben ihre eigenen Texte schon übersetzt mit)
+const TEXTE = {
+  de: {
+    druck: (url, stand) => `${url} · Stand der Annahmen ${stand} · Orientierung, kein Angebot`,
+    rechner: "Rechner",
+    methodik: "Methodik",
+    themaRechenwerte: "Rechenwerte",
+    themaAnnahmen: "Annahmen und Rechenwerte",
+    faqEyebrow: "Häufige Fragen",
+    faqTitel: "Häufige Fragen",
+    faqLead: "Ihre Frage ist nicht dabei? Unser Projektteam beantwortet sie persönlich.",
+    nurLand: (fuerLand, rest) => `Dieser Rechner rechnet mit Recht und Werten ${fuerLand}. ${rest}.`,
+  },
+  en: {
+    druck: (url, stand) => `${url} · Assumptions as of ${stand} · For guidance only, not an offer`,
+    rechner: "Calculator",
+    methodik: "Methodology",
+    themaRechenwerte: "Figures",
+    themaAnnahmen: "Assumptions and figures",
+    faqEyebrow: "Frequently asked questions",
+    faqTitel: "Frequently asked questions",
+    faqLead: "Your question isn’t here? Our project team will answer it personally.",
+    nurLand: (fuerLand, rest) => `This calculator uses the law and figures ${fuerLand}. ${rest}.`,
+  },
+};
+
+const BOX = {
+  de: { titel: "Annahmen & Grenzen", stand: "Stand", orientierung: "Orientierung, kein Angebot", alle: (n) => `Alle ${n} Annahmen anzeigen`, weniger: "Weniger anzeigen", quellen: "Quellen:" },
+  en: { titel: "Assumptions & limits", stand: "As of", orientierung: "for guidance only, not an offer", alle: (n) => `Show all ${n} assumptions`, weniger: "Show less", quellen: "Sources:" },
+};
+
+const WEITER = {
+  de: { eyebrow: "Weiterrechnen", titel: "Weitere Rechner & Tools", alle: (n) => `Alle ${n} Tools`, oeffnen: "Öffnen", mehr: "Mehr zum Thema" },
+  en: { eyebrow: "Keep calculating", titel: "More calculators & tools", alle: (n) => `All ${n} tools`, oeffnen: "Open", mehr: "More on this topic" },
+};
+import { GiltFuer, LandHinweis } from "@/components/Land/LandHinweis";
 
 const BASE = SITE.url;
 
@@ -40,6 +80,20 @@ export function rechnerMetadata({ pfad, title, description, keywords = [] }) {
 }
 
 /**
+ * Englische Metadaten einer Rechner-Seite (Sprachmodell) – für seitenMetadata(pfad, metadata, { en: … }).
+ * Wird tief über rechnerMetadata() gelegt; Schlüsselwörter ersetzen die deutsche Liste vollständig.
+ */
+export function rechnerMetadataEn({ title, description, keywords }) {
+  return {
+    title,
+    description,
+    ...(keywords ? { keywords: () => keywords } : {}),
+    openGraph: { title, description, images: [{ alt: "Solar park under a blue sky" }] },
+    twitter: { title, description },
+  };
+}
+
+/**
  * Gemeinsamer Seitenrahmen aller Rechner: kompakter dunkler Hero, Rechner
  * überlappend darunter (above the fold), Erklärung + Annahmen, FAQ,
  * weitere Tools, Querverweise und Abschluss-CTA. Liefert WebApplication-Schema.
@@ -58,10 +112,28 @@ export default function RechnerSeite({
   annahmen = [],
   quellen = [],
   faq = [],
-  faqTitel = "Häufige Fragen",
+  faqTitel,
   querverweise = [],
   cta,
 }) {
+  // Ländermodell: Land der Seite (null = gemeinsam). Rechner, die im Land nicht richtig rechnen
+  // (tools.js: laender), und die Annahmen mit deutschen Werten zeigen in AT/CH den LandHinweis.
+  const land = landDerAnfrage();
+  const sprache = spracheDerAnfrage();
+  const en = sprache === "en";
+  const t = uebersetze(TEXTE, sprache);
+  const tool = TOOLS.find((t) => t.id === toolId);
+  const rechnetImLand = !land || !tool?.laender || tool.laender.includes(land);
+  // Die Annahmen-Werte gelten für ein Land: bei Rechnern nur für ein Land dieses, sonst Deutschland
+  const annahmenLand = tool?.laender?.length === 1 ? tool.laender[0] : "DE";
+  const annahmenModus = !land ? "gemeinsam" : land === annahmenLand ? "zeigen" : "hinweis";
+  // Rechner nur für ein anderes Land (z. B. EAG-Rechner für Österreich): das offen sagen
+  const hinweisText =
+    tool?.laender?.length === 1 && land && !tool.laender.includes(land)
+      ? t.nurLand(LAENDER[tool.laender[0]].fuerLand, landHinweisText(land))
+      : undefined;
+  const hinweisTextEn =
+    hinweisText && en ? TEXTE.en.nurLand(LAENDER[tool.laender[0]].en.fuerLand, landHinweisTextEn(land)) : undefined;
   const url = `${BASE}${pfad}`;
   const schema = {
     "@context": "https://schema.org",
@@ -75,7 +147,7 @@ export default function RechnerSeite({
         applicationCategory: "FinanceApplication",
         operatingSystem: "Web",
         browserRequirements: "Requires JavaScript",
-        inLanguage: "de-DE",
+        inLanguage: en ? "en" : "de-DE",
         isAccessibleForFree: true,
         featureList: app.featureList,
         publisher: { "@id": `${BASE}/#organization` },
@@ -102,7 +174,7 @@ export default function RechnerSeite({
       <div className="ov-druck-ein mb-6 hidden px-1">
         <p className="font-display text-[22px] font-extrabold text-ink-900">{app.name} · ÖkoInvest</p>
         <p className="text-[13px] text-ink-600">
-          {url} · Stand der Annahmen {STAND} · Orientierung, kein Angebot
+          {t.druck(url, datumText(STAND, sprache))}
         </p>
       </div>
 
@@ -111,8 +183,8 @@ export default function RechnerSeite({
       </div>
 
       {/* Rechner überlappt den Hero – sofort sichtbar */}
-      <section id="rechner" aria-label="Rechner" className="relative z-10 -mt-20 scroll-mt-24 pb-6 md:-mt-28 md:pb-10 print:mt-0">
-        <div className="ov-container">{rechner}</div>
+      <section id="rechner" aria-label={t.rechner} className="relative z-10 -mt-20 scroll-mt-24 pb-6 md:-mt-28 md:pb-10 print:mt-0">
+        <div className="ov-container">{rechnetImLand ? rechner : <LandHinweis land={land} thema={TEXTE.de.themaRechenwerte} themaEn={TEXTE.en.themaRechenwerte} text={hinweisText} textEn={hinweisTextEn} className="shadow-e2" />}</div>
       </section>
 
       <Section tone="white" space="md">
@@ -120,12 +192,16 @@ export default function RechnerSeite({
           <div className="ov-druck-aus min-w-0">
             <p className="mb-5 flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.18em] text-ov-700">
               <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-ov-500" />
-              Methodik
+              {t.methodik}
             </p>
             <div className="ov-rechner-methodik max-w-[42rem]">{erklaerung}</div>
           </div>
           <Reveal className="min-w-0 lg:sticky lg:top-28">
-            <AnnahmenBox punkte={annahmen} quellen={quellen} />
+            {annahmenModus === "hinweis" ? (
+              <LandHinweis land={land} thema={TEXTE.de.themaAnnahmen} themaEn={TEXTE.en.themaAnnahmen} />
+            ) : (
+              <AnnahmenBox punkte={annahmen} quellen={quellen} giltFuer={annahmenModus === "gemeinsam" ? annahmenLand : null} />
+            )}
           </Reveal>
         </div>
       </Section>
@@ -134,11 +210,7 @@ export default function RechnerSeite({
       {faq.length > 0 && (
         <Section tone="sand" space="md">
           <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
-            <SectionHeading
-              eyebrow="Häufige Fragen"
-              title={faqTitel}
-              lead="Ihre Frage ist nicht dabei? Unser Projektteam beantwortet sie persönlich."
-            />
+            <SectionHeading eyebrow={t.faqEyebrow} title={faqTitel ?? t.faqTitel} lead={t.faqLead} />
             <Faq items={faq} />
           </div>
         </Section>
@@ -167,7 +239,9 @@ function AnnahmenZeilen({ punkte }) {
  * unter dem Ergebnis). Ab sieben Punkten bleiben die ersten sechs sichtbar,
  * der Rest steht in einem Aufklapper – im Druck immer vollständig.
  */
-export function AnnahmenBox({ punkte = [], quellen = [] }) {
+export function AnnahmenBox({ punkte = [], quellen = [], giltFuer = null }) {
+  const sprache = spracheDerAnfrage();
+  const b = BOX[sprache] || BOX.de;
   const sichtbar = punkte.length > ANNAHMEN_SICHTBAR + 1 ? punkte.slice(0, ANNAHMEN_SICHTBAR) : punkte;
   const rest = punkte.length > ANNAHMEN_SICHTBAR + 1 ? punkte.slice(ANNAHMEN_SICHTBAR) : [];
   return (
@@ -177,8 +251,16 @@ export function AnnahmenBox({ punkte = [], quellen = [] }) {
           <Info aria-hidden="true" className="h-5 w-5" />
         </span>
         <div>
-          <h2 id="annahmen-titel" className="font-display text-[19px] font-bold text-ink-900">Annahmen & Grenzen</h2>
-          <p className="text-[12.5px] text-ink-500">Stand {STAND} · Orientierung, kein Angebot</p>
+          <h2 id="annahmen-titel" className="font-display text-[19px] font-bold text-ink-900">{b.titel}</h2>
+          <p className="text-[12.5px] text-ink-500">
+            {b.stand} {datumText(STAND, sprache)} · {b.orientierung}
+            {giltFuer && (
+              <>
+                {" "}
+                <GiltFuer land={giltFuer} />
+              </>
+            )}
+          </p>
         </div>
       </div>
       <dl className="mt-6 divide-y divide-ink-200/70">
@@ -187,8 +269,8 @@ export function AnnahmenBox({ punkte = [], quellen = [] }) {
       {rest.length > 0 && (
         <details className="group border-t border-ink-200/70">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl py-2.5 text-[14px] font-semibold text-ov-700 hover:text-ov-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500 [&::-webkit-details-marker]:hidden">
-            <span className="group-open:hidden">Alle {punkte.length} Annahmen anzeigen</span>
-            <span className="hidden group-open:inline">Weniger anzeigen</span>
+            <span className="group-open:hidden">{b.alle(punkte.length)}</span>
+            <span className="hidden group-open:inline">{b.weniger}</span>
             <ChevronDown aria-hidden="true" className="h-4 w-4 transition-transform duration-200 group-open:rotate-180" />
           </summary>
           <dl className="animate-ov-einblenden divide-y divide-ink-200/70 border-t border-ink-200/70">
@@ -198,7 +280,7 @@ export function AnnahmenBox({ punkte = [], quellen = [] }) {
       )}
       {quellen.length > 0 && (
         <p className="mt-5 text-[12.5px] leading-relaxed text-ink-500">
-          Quellen: {quellen.map((q, i) => (
+          {b.quellen} {quellen.map((q, i) => (
             <span key={q.name}>
               {i > 0 && " · "}
               {q.url ? (
@@ -222,16 +304,18 @@ const TAG_TON = {
   Beliebt: "bg-navy-50 text-navy-700",
 };
 
-function passendeTools(ohne, anzahl, ausser = []) {
-  const aktuell = TOOLS.find((t) => t.id === ohne);
-  const andere = TOOLS.filter((t) => t.id !== ohne && !ausser.includes(t.href));
+function passendeTools(ohne, anzahl, ausser = [], sprache = "de") {
+  const alle = toolsFuer(sprache);
+  const aktuell = alle.find((t) => t.id === ohne);
+  const andere = alle.filter((t) => t.id !== ohne && !ausser.includes(t.href));
   const sortiert = aktuell ? [...andere.filter((t) => t.zielgruppe === aktuell.zielgruppe), ...andere.filter((t) => t.zielgruppe !== aktuell.zielgruppe)] : andere;
   return sortiert.slice(0, anzahl);
 }
 
-function ToolKachel({ t }) {
+function ToolKachel({ t, w = WEITER.de, en = false }) {
   const Icon = t.icon;
-  const tag = (klasse) => t.tag && <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${TAG_TON[t.tag] || "bg-ink-100 text-ink-700"} ${klasse}`}>{t.tag}</span>;
+  const tagText = en ? TOOL_BEGRIFFE_EN.tag[t.tag] ?? t.tag : t.tag;
+  const tag = (klasse) => t.tag && <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${TAG_TON[t.tag] || "bg-ink-100 text-ink-700"} ${klasse}`}>{tagText}</span>;
   return (
     <Link
       href={t.href}
@@ -250,7 +334,7 @@ function ToolKachel({ t }) {
         </span>
         <span className="mt-1 block text-[14px] leading-relaxed text-ink-600">{t.kurz}</span>
         <span className="mt-auto hidden items-center gap-1.5 pt-4 text-[14px] font-semibold text-ov-700 sm:inline-flex">
-          Öffnen
+          {w.oeffnen}
           <ArrowUpRight aria-hidden="true" className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none" />
         </span>
       </span>
@@ -264,9 +348,13 @@ function ToolKachel({ t }) {
  * (Querverweise der Seite: [{ href, titel, text }]) steht daneben eine
  * dunkle Spalte „Mehr zum Thema“. Signatur rückwärtskompatibel ({ ohne, titel }).
  */
-export function WeitereRechner({ ohne, titel = "Weitere Rechner & Tools", verweise = [] }) {
+export function WeitereRechner({ ohne, titel: eigenerTitel, verweise = [] }) {
+  const sprache = spracheDerAnfrage();
+  const en = sprache === "en";
+  const w = WEITER[sprache] || WEITER.de;
+  const titel = eigenerTitel ?? w.titel;
   const mitVerweisen = verweise.length > 0;
-  const liste = passendeTools(ohne, mitVerweisen ? 4 : 6, verweise.map((v) => v.href));
+  const liste = passendeTools(ohne, mitVerweisen ? 4 : 6, verweise.map((v) => v.href), sprache);
   return (
     <section aria-labelledby="weitere-rechner" className="bg-white">
       <div className="ov-container pb-4 pt-16 md:pt-24">
@@ -274,7 +362,7 @@ export function WeitereRechner({ ohne, titel = "Weitere Rechner & Tools", verwei
           <div>
             <p className="mb-3 flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.18em] text-ov-700">
               <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-ov-500" />
-              Weiterrechnen
+              {w.eyebrow}
             </p>
             <h2 id="weitere-rechner" className="ov-h3 text-ink-900 md:text-[28px]">{titel}</h2>
           </div>
@@ -282,7 +370,7 @@ export function WeitereRechner({ ohne, titel = "Weitere Rechner & Tools", verwei
             href={seitenPfad("/rechner")}
             className="group inline-flex min-h-11 items-center gap-1.5 rounded-full px-1 text-[15px] font-semibold text-ov-700 hover:text-ov-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500"
           >
-            Alle {TOOLS.length} Tools
+            {w.alle(TOOLS.length)}
             <ArrowUpRight aria-hidden="true" className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none" />
           </Link>
         </div>
@@ -290,14 +378,14 @@ export function WeitereRechner({ ohne, titel = "Weitere Rechner & Tools", verwei
           <ul className={`grid gap-3 sm:grid-cols-2 lg:gap-4 ${mitVerweisen ? "lg:h-full lg:auto-rows-fr" : "lg:grid-cols-3"}`}>
             {liste.map((t, i) => (
               <Reveal as="li" key={t.id} delay={i * 50} className="flex">
-                <ToolKachel t={t} />
+                <ToolKachel t={t} w={w} en={en} />
               </Reveal>
             ))}
           </ul>
           {mitVerweisen && (
             <Reveal delay={120} className="min-w-0">
               <nav aria-labelledby="mehr-zum-thema" className="ov-verlauf-nacht ov-noise relative h-full overflow-hidden rounded-3xl p-6 text-white shadow-kante md:p-7">
-                <h3 id="mehr-zum-thema" className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-ov-300">Mehr zum Thema</h3>
+                <h3 id="mehr-zum-thema" className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-ov-300">{w.mehr}</h3>
                 <ul className="mt-4 divide-y divide-white/10">
                   {verweise.map((v) => (
                     <li key={v.href}>

@@ -1,4 +1,5 @@
 import s from "./startseite.module.css";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 /**
  * Die Wertschöpfungskette als Kreislauf: Fläche → Projekt → Kapital → Strom
@@ -36,7 +37,17 @@ export const KNOTEN = [
   { id: "strom", x: 54, y: 200, titel: "Strom", sub: "Mittelstand & Gemeinden" },
 ];
 
+// Englisch: gleiche Stationen; Untertitel mit " & " werden wie im Deutschen zweizeilig gesetzt
+const KNOTEN_EN = {
+  flaeche: { titel: "Land", sub: "Owners & farmers" },
+  projekt: { titel: "Project", sub: "Development & exchange" },
+  kapital: { titel: "Capital", sub: "Investors & citizens" },
+  strom: { titel: "Power", sub: "SMEs & municipalities" },
+};
+
 export default function Kreislauf() {
+  const en = spracheDerAnfrage() === "en";
+  const knoten = en ? KNOTEN.map((k) => ({ ...k, ...KNOTEN_EN[k.id] })) : KNOTEN;
   return (
     <svg viewBox="0 0 400 400" className={`h-auto w-full overflow-visible ${s.kreislauf}`} aria-hidden="true">
       <defs>
@@ -65,10 +76,10 @@ export default function Kreislauf() {
         <circle cx="200" cy="200" r="74" fill="#03122b" />
         <circle cx="200" cy="200" r="74" fill="none" stroke="#669933" strokeOpacity="0.45" strokeWidth="1.5" />
         <text x="200" y="192" textAnchor="middle" fontFamily="var(--font-manrope)" fontWeight="800" fontSize="20" fill="#fff">ÖkoInvest</text>
-        <text x="200" y="215" textAnchor="middle" fontFamily="var(--font-inter)" fontWeight="600" fontSize="11.5" fill="#aed083">Plattform</text>
+        <text x="200" y="215" textAnchor="middle" fontFamily="var(--font-inter)" fontWeight="600" fontSize="11.5" fill="#aed083">{en ? "Platform" : "Plattform"}</text>
       </g>
 
-      {KNOTEN.map((k, i) => (
+      {knoten.map((k, i) => (
         <g key={k.id} className={s.knoten} data-knoten={k.id} style={{ "--i": i }}>
           <g className={s.knotenInnen}>
             <circle cx={k.x} cy={k.y} r="57" fill="none" stroke="#8cba58" strokeWidth="2" className={s.halo} />

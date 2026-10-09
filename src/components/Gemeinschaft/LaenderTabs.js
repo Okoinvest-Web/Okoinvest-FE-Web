@@ -3,11 +3,15 @@
 import { useId, useRef, useState } from "react";
 import { AlertCircle, Check, Handshake } from "lucide-react";
 import { cn } from "@/components/ui/cn";
-import { LAENDER } from "./laender";
+import { laenderFuer } from "./laender";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
 
 /** Länder-Tabs mit Details: So funktioniert es, Grenzen, Rolle von ÖkoInvest. */
-/** start: zuerst geöffnetes Land ("de" | "at" | "ch") – auf /at/energiegemeinschaften Österreich (Welle 2). */
+/** start: zuerst geöffnetes Land ("de" | "at" | "ch") – in der Länderfassung das Land der Seite (Ländermodell). */
 export default function LaenderTabs({ start = "de" }) {
+  const sprache = useSprache();
+  const en = sprache === "en";
+  const { laender: LAENDER } = laenderFuer(sprache);
   const [aktiv, setAktiv] = useState(start);
   const basis = useId();
   const refs = useRef({});
@@ -29,7 +33,7 @@ export default function LaenderTabs({ start = "de" }) {
 
   return (
     <div>
-      <div role="tablist" aria-label="Land wählen" onKeyDown={tastatur} className="grid grid-cols-3 gap-1.5 rounded-2xl bg-sand-100 p-1.5 ring-1 ring-inset ring-ink-200/70 sm:inline-grid">
+      <div role="tablist" aria-label={en ? "Choose country" : "Land wählen"} onKeyDown={tastatur} className="grid grid-cols-3 gap-1.5 rounded-2xl bg-sand-100 p-1.5 ring-1 ring-inset ring-ink-200/70 sm:inline-grid">
         {LAENDER.map((l) => {
           const an = l.id === aktiv;
           return (
@@ -69,8 +73,8 @@ export default function LaenderTabs({ start = "de" }) {
           <h3 className="mt-2 font-display text-[clamp(1.35rem,1.1rem+0.8vw,1.75rem)] font-extrabold leading-tight text-ink-900">{land.titel}</h3>
           <p className="mt-3 text-[16px] leading-relaxed text-ink-600">{land.intro}</p>
           <ul className="mt-6 space-y-3">
-            {land.punkte.map((p) => (
-              <li key={p} className="flex gap-3 text-[15px] leading-relaxed text-ink-700">
+            {land.punkte.map((p, i) => (
+              <li key={i} className="flex gap-3 text-[15px] leading-relaxed text-ink-700">
                 <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ov-100 text-ov-700">
                   <Check aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={3} />
                 </span>
@@ -81,7 +85,7 @@ export default function LaenderTabs({ start = "de" }) {
           <p className="mt-6 flex gap-3 rounded-2xl bg-white p-4 text-[14.5px] leading-relaxed text-ink-600 ring-1 ring-ink-200/60">
             <AlertCircle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-sun-500" />
             <span>
-              <strong className="text-ink-900">Grenzen: </strong>
+              <strong className="text-ink-900">{en ? "Limits: " : "Grenzen: "}</strong>
               {land.grenzen}
             </span>
           </p>
@@ -89,15 +93,17 @@ export default function LaenderTabs({ start = "de" }) {
         <div className="ov-verlauf-nacht relative overflow-hidden rounded-[1.75rem] p-6 text-white md:p-8">
           <div aria-hidden="true" className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-ov-500/25 blur-[80px]" />
           <Handshake aria-hidden="true" className="relative h-7 w-7 text-ov-300" />
-          <h3 className="relative mt-5 font-display text-[21px] font-extrabold leading-tight">Was ÖkoInvest in {land.name === "Schweiz" ? "der Schweiz" : land.name} beiträgt</h3>
+          <h3 className="relative mt-5 font-display text-[21px] font-extrabold leading-tight">
+            {en ? `What ÖkoInvest contributes in ${land.inName}` : <>Was ÖkoInvest in {land.name === "Schweiz" ? "der Schweiz" : land.name} beiträgt</>}
+          </h3>
           <p className="relative mt-3 text-[15.5px] leading-relaxed text-white/70">{land.rolle}</p>
           <dl className="relative mt-6 space-y-3 border-t border-white/10 pt-5 text-[14px]">
             <div>
-              <dt className="text-white/50">Vorteil beim Netzentgelt</dt>
+              <dt className="text-white/50">{en ? "Grid fee advantage" : "Vorteil beim Netzentgelt"}</dt>
               <dd className="mt-0.5 font-semibold text-white">{land.werte.vorteil}</dd>
             </div>
             <div>
-              <dt className="text-white/50">Möglich seit</dt>
+              <dt className="text-white/50">{en ? "Possible since" : "Möglich seit"}</dt>
               <dd className="mt-0.5 font-semibold text-white">{land.werte.seit}</dd>
             </div>
           </dl>

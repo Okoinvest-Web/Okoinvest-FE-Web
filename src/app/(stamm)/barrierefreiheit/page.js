@@ -14,9 +14,11 @@
 // (qa/axe.mjs, 10 Kernseiten + Cookie-Banner; Altlasten in qa/axe-baseline.json).
 // Deshalb jetzt „teilweise vereinbar“ mit den bekannten Mängeln – keine Aussage ohne Prüfung.
 
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import LegalShell from "@/components/Reusable/LegalShell";
 import { GESELLSCHAFT, KONTAKT, SITE, abs } from "@/data/site";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { datumText } from "@/lib/sprache/format";
 
 const PAGE_URL = abs("/barrierefreiheit");
 const TITEL = "Erklärung zur Barrierefreiheit | ÖkoInvest";
@@ -26,7 +28,7 @@ const BESCHREIBUNG =
 /** Datum der Erstellung bzw. letzten Überprüfung dieser Erklärung */
 const STAND = "3. Oktober 2026";
 
-export const metadata = {
+const metadata = {
   title: TITEL,
   description: BESCHREIBUNG,
   alternates: { canonical: PAGE_URL },
@@ -45,13 +47,206 @@ export const metadata = {
 const G = GESELLSCHAFT;
 const domain = SITE.url.replace(/^https?:\/\//, "");
 
-export default function BarrierefreiheitPage() {
+// Englisch (Sprachmodell): Übersetzung zur Information – maßgeblich ist die deutsche Fassung.
+const metadataEn = {
+  title: "Accessibility statement | ÖkoInvest",
+  description: "Accessibility statement for the ÖkoInvest website under the Austrian Accessibility Act (BaFG) and the German BFSG: standards, compliance status, limitations, contact.",
+  openGraph: {
+    locale: "en_GB",
+    title: "Accessibility statement | ÖkoInvest",
+    description: "Accessibility statement for the ÖkoInvest website under the Austrian Accessibility Act (BaFG) and the German BFSG: standards, compliance status, limitations, contact.",
+    images: [{ alt: "Solar park under a blue sky" }],
+  },
+};
+
+export default async function BarrierefreiheitPage({ params }) {
+  await seitenLand(params);
+  const en = spracheDerAnfrage() === "en";
   return (
     <LegalShell
-      titel="Erklärung zur Barrierefreiheit"
+      titel={en ? "Accessibility statement" : "Erklärung zur Barrierefreiheit"}
       pfad="/barrierefreiheit"
-      lead="Wir möchten, dass alle Menschen unsere Website, die Rechner, das Portal und die Projektbörse ohne Hürden nutzen können – unabhängig von Einschränkungen, Endgerät oder Hilfsmitteln."
+      lead={en ? "We want everyone to be able to use our website, the calculators, the portal and the project exchange without barriers – regardless of impairments, device or assistive technology." : "Wir möchten, dass alle Menschen unsere Website, die Rechner, das Portal und die Projektbörse ohne Hürden nutzen können – unabhängig von Einschränkungen, Endgerät oder Hilfsmitteln."}
     >
+      {en ? (
+        <>
+      <h2>Scope</h2>
+      <p>
+        This statement applies to the website <strong>{domain}</strong> of {G.name}, including the online services offered there:
+      </p>
+      <ul className="space-y-1.5">
+        <li>Enquiry forms (including land check, agrivoltaics, offer a project, investor search profile, residual power, energy community)</li>
+        <li>Calculators and tools (lease, agrivoltaics, solar park, project valuation, residual power, solar carport and municipal calculators)</li>
+        <li>Portal with registration, sign-in, messages and documents</li>
+        <li>Project exchange with exposés, non-disclosure agreement (NDA) and data room</li>
+        <li>Live power market data, guides and glossary</li>
+      </ul>
+
+      <h2>Legal framework and standards applied</h2>
+      <p>
+        {G.name} is based in Austria. The applicable law is the Austrian <strong>Accessibility Act (Barrierefreiheitsgesetz, BaFG)</strong>, in force
+        since 28 June 2025, and – for users in Germany – the <strong>German Accessibility Strengthening Act (Barrierefreiheitsstärkungsgesetz, BFSG)</strong>.
+        Both implement the European Accessibility Act (Directive (EU) 2019/882). Our offers are aimed predominantly at businesses; we nevertheless
+        apply the requirements to the entire website.
+      </p>
+      <p>
+        Technically, we follow the harmonised European standard <strong>EN 301 549</strong> and the{" "}
+        <strong>Web Content Accessibility Guidelines (WCAG) 2.1, conformance level AA</strong> referenced therein.
+      </p>
+
+      <h2>What we implement</h2>
+      <p>
+        The following points are the goals of our implementation. Whether they are met on all pages has not yet been fully checked – see
+        “Compliance status”.
+      </p>
+      <ul className="space-y-1.5">
+        <li>
+          <strong>Keyboard operation:</strong> menus, forms, calculators and dialogs should be operable without a mouse. A skip link leads directly to
+          the main content. Dialogs (menu, privacy settings) keep the focus, can be closed with the Escape key and return the focus to the element
+          that opened them.
+        </li>
+        <li>
+          <strong>Screen readers:</strong> pages are structured with headings, landmarks and lists. Controls and form fields are programmatically
+          labelled; tables have captions and header cells, and charts have a text or tabular alternative.
+        </li>
+        <li>
+          <strong>Contrast and colour:</strong> the goal is the minimum contrast ratios under WCAG 2.1 AA; information should not be conveyed by colour
+          alone.
+        </li>
+        <li>
+          <strong>Motion:</strong> your operating system&apos;s “reduce motion” setting is respected – animations are then omitted or greatly shortened.
+        </li>
+        <li>
+          <strong>Zoom and display:</strong> content should be enlargeable up to 400 % and adapt to narrow screens (wide tables scroll within their
+          frame).
+        </li>
+        <li>
+          <strong>No time limits</strong> in forms and calculators.
+        </li>
+        <li>
+          <strong>Language:</strong> German-language pages are marked up as German and the content area of English pages as English, so that screen
+          readers use the correct pronunciation.
+        </li>
+      </ul>
+
+      <h2>Compliance status</h2>
+      <p>
+        The website is <strong>partially compliant</strong> with the requirements listed above. A full review is still pending. The following content
+        and functions are known not yet to be fully accessible.
+      </p>
+
+      <h3>Known limitations</h3>
+      <ul className="space-y-1.5">
+        <li>
+          <strong>Contrast:</strong> on some pages (including ground-mounted PV and the project exchange), some texts do not yet reach the required
+          minimum contrast. We are fixing this step by step.
+        </li>
+        <li>
+          <strong>Lists of key figures:</strong> on some pages (including For farmers and Contact), lists of key figures are not marked up correctly;
+          screen readers sometimes read them out without linking the label and the value.
+        </li>
+        <li>
+          <strong>Multi-step forms:</strong> in the land check, entries from earlier steps can currently be lost. Alternative: describe your request via
+          the contact form.
+        </li>
+        <li>
+          <strong>Maps and site illustrations</strong> (e.g. the location of a piece of land or a project): the graphical map is only partially
+          accessible to screen readers. <em>Alternative:</em> the key information (region, size, key figures) is also provided as text.
+        </li>
+        <li>
+          <strong>Charts with mouse interaction</strong> (exchange power price, generation, calculator curves): individual values can be accessed by
+          keyboard; the complete data is also available as a table or text.
+        </li>
+        <li>
+          <strong>Documents in the data room and documents uploaded by sellers</strong> (e.g. plans, expert reports, contracts as PDF): we have only
+          limited influence on their accessibility. <em>Alternative:</em> on request, we will help you obtain the information in a form that is
+          accessible to you.
+        </li>
+        <li>
+          <strong>Third-party content</strong> (e.g. energy market data from Energy-Charts, linked external sources): we have only limited influence on
+          its accessibility.
+        </li>
+        <li>
+          <strong>Easy-to-read language and sign language:</strong> we do not currently offer information in easy-to-read language or sign language.
+        </li>
+      </ul>
+
+      <h3>Alternative ways to reach us</h3>
+      <p>
+        Every service you can request online is also available by other means: via the <Link href="/kontakt">contact form</Link>
+        {KONTAKT.telefon && (
+          <>
+            , by phone on <a href={KONTAKT.telefonHref || `tel:${KONTAKT.telefon.replace(/[^+\d]/g, "")}`}>{KONTAKT.telefon}</a>
+          </>
+        )}
+        {KONTAKT.email && (
+          <>
+            , by e-mail to <a href={`mailto:${KONTAKT.email}?subject=Accessibility`}>{KONTAKT.email}</a>
+          </>
+        )}{" "}
+        or by post. We are also happy to advise you in person.
+      </p>
+
+      <h2>Preparation of this statement</h2>
+      <p>
+        This statement was prepared on <strong>{datumText(STAND, "en")}</strong>. It is based so far on automated tests (axe-core, WCAG 2.1 A/AA) on ten
+        key pages. A full self-assessment with manual tests (keyboard, screen reader, magnification) has not yet been completed; we will update this
+        statement afterwards. It is also reviewed whenever the website changes significantly, and at least once a year.
+      </p>
+
+      <h2>Feedback and contact</h2>
+      <p>
+        Have you come across barriers or do you need information in a different form? Please write to us – we usually reply within two weeks and will
+        work with you to find a solution.
+      </p>
+      <address className="mt-4 not-italic">
+        <strong>{G.name}</strong>
+        <br />
+        Reference “Accessibility” (Barrierefreiheit)
+        <br />
+        {G.sitz}
+        <br />
+        {G.plz} {G.ort}, Austria
+        {KONTAKT.email && (
+          <>
+            <br />
+            E-mail: <a href={`mailto:${KONTAKT.email}?subject=Accessibility`}>{KONTAKT.email}</a>
+          </>
+        )}
+      </address>
+      <p className="mt-4">
+        Online, you can reach us via the <Link href="/kontakt">contact form</Link>.
+      </p>
+
+      <h2>Market surveillance and complaints</h2>
+      <p>
+        If you believe that our offering does not meet the accessibility requirements and we have not been able to resolve your concern
+        satisfactorily, you can contact the competent market surveillance authority:
+      </p>
+      <p>
+        <strong>Austria:</strong> Sozialministeriumservice (Federal Social Ministry Service), market surveillance of digital accessibility (Upper Austria
+        regional office), <a href="mailto:bafg@sozialministeriumservice.gv.at">bafg@sozialministeriumservice.gv.at</a>,{" "}
+        <a
+          href="https://www.sozialministeriumservice.gv.at/Marktueberwachung_digitale_Barrierefreiheit/Allgemeine_Informationen_zum_Barrierefreiheitsgesetz/Allgemeine-Informationen-zum-Barrierefreiheitsgesetz.de.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          hrefLang="de"
+        >
+          Information on the Accessibility Act (in German)<span className="sr-only"> (opens in a new tab)</span>
+        </a>
+        .
+      </p>
+      <p>
+        <strong>Germany:</strong> Joint market surveillance body of the federal states for the accessibility of products and services
+        (Marktüberwachungsstelle der Länder, MLBF), Magdeburg,{" "}
+        <a href="https://www.mlbf-barrierefrei.de" target="_blank" rel="noopener noreferrer" hrefLang="de">
+          www.mlbf-barrierefrei.de<span className="sr-only"> (opens in a new tab)</span>
+        </a>
+        .
+      </p>
+        </>
+      ) : (
+        <>
       <h2>Geltungsbereich</h2>
       <p>
         Diese Erklärung gilt für die Website <strong>{domain}</strong> der {G.name} einschließlich der dort angebotenen Online-Dienste:
@@ -228,6 +423,10 @@ export default function BarrierefreiheitPage() {
         </a>
         .
       </p>
+        </>
+      )}
     </LegalShell>
   );
 }
+
+export const generateMetadata = seitenMetadata("/barrierefreiheit", metadata, { en: metadataEn });

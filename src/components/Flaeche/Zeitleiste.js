@@ -1,6 +1,8 @@
 import { cn } from "@/components/ui/cn";
 import Reveal from "@/components/ui/Reveal";
 import Aufbau, { aufbau } from "@/components/Flaeche/Seite/Aufbau";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 /**
  * Projekt-Zeitleiste als Balkendiagramm (Server-Komponente, reines HTML/CSS).
@@ -19,7 +21,34 @@ export const PHASEN_SOLARPARK = [
   { titel: "Betrieb", text: "30 Jahre und mehr – Pacht fließt jährlich", von: 39, bis: 48, ton: "navy", offen: true },
 ];
 
-export default function Zeitleiste({ phasen = PHASEN_SOLARPARK, monate = 48, className }) {
+/** Sprachmodell: feste Texte und die Standard-Phasen (en nur Texte, je Index). */
+const TEXTE = {
+  de: { phasen: PHASEN_SOLARPARK, start: "Start", jahr: (j) => `${j} J.`, offen: "30+ Jahre", wochen: "Wochen", monate: (m) => `${m} Mon.` },
+  en: {
+    phasen: [
+      { titel: "Land check & preliminary review", text: "Desk review: protected areas, regional plan, grid, solar irradiation" },
+      { titel: "Lease agreement & land register", text: "Land use agreement, easement, reservation fee" },
+      { titel: "Grid request & reservation", text: "Grid compatibility study by the grid operator – runs in parallel" },
+      { titel: "Municipality & resolution to draw up a plan", text: "Presentation to the municipal council, urban development contract" },
+      { titel: "Expert reports & consultation", text: "Species protection survey over one growing season, environmental report, glare assessment, public display" },
+      { titel: "Adoption of the plan & building permit", text: "Weighing of interests, adoption of the development plan, land use plan, building application" },
+      { titel: "Tender award or PPA & financing", text: "EEG tender or power purchase agreement, bank due diligence" },
+      { titel: "Construction & grid connection", text: "Pile driving, installation, cable route, commissioning" },
+      { titel: "Operation", text: "30 years and more – lease paid annually" },
+    ],
+    start: "Start",
+    jahr: (j) => `Yr ${j}`,
+    offen: "30+ years",
+    wochen: "Weeks",
+    monate: (m) => `${m} mo.`,
+  },
+};
+
+export default function Zeitleiste({ phasen: phasenProp, monate = 48, className }) {
+  const sprache = spracheDerAnfrage();
+  const w = uebersetze(TEXTE, sprache);
+  const phasen = phasenProp ?? w.phasen;
+  const dauer = (p) => dauerText(p, w);
   const pct = (m) => `${(m / monate) * 100}%`;
   const jahre = Array.from({ length: Math.floor(monate / 12) + 1 }, (_, i) => i);
   return (
@@ -30,14 +59,14 @@ export default function Zeitleiste({ phasen = PHASEN_SOLARPARK, monate = 48, cla
         <div className="relative h-6 text-[12px] font-semibold text-ink-500">
           {jahre.map((j) => (
             <span key={j} className={cn("absolute whitespace-nowrap", j === 0 ? "" : j * 12 >= monate ? "-translate-x-full" : "-translate-x-1/2")} style={{ left: pct(j * 12) }}>
-              {j === 0 ? "Start" : `${j} J.`}
+              {j === 0 ? w.start : w.jahr(j)}
             </span>
           ))}
         </div>
       </div>
       <ol className="space-y-4 md:space-y-2.5">
         {phasen.map((p, i) => (
-          <Reveal as="li" key={p.titel} delay={i * 50} className="grid gap-2 md:grid-cols-[minmax(0,300px)_1fr] md:items-center md:gap-6">
+          <Reveal as="li" key={i} delay={i * 50} className="grid gap-2 md:grid-cols-[minmax(0,300px)_1fr] md:items-center md:gap-6">
             <div className="min-w-0">
               <p className="flex items-baseline gap-2 font-display text-[15.5px] font-bold leading-snug text-ink-900">
                 <span className="ov-num text-[12.5px] text-ov-700">{String(i + 1).padStart(2, "0")}</span>
@@ -81,14 +110,22 @@ export default function Zeitleiste({ phasen = PHASEN_SOLARPARK, monate = 48, cla
         ))}
       </ol>
       <p className="mt-6 border-t border-ink-100 pt-5 text-[13.5px] leading-relaxed text-ink-500">
+        {sprache === "en" ? (
+          <>
+            Typical course in Germany with a development plan (Bebauungsplan). To be honest: from signing to operation it usually takes <strong className="text-ink-800">2 to 4 years</strong> – the grid, the municipality and species protection set the pace. Privileged sites, Austria and Switzerland follow their own procedures.
+          </>
+        ) : (
+          <>
         Typischer Verlauf in Deutschland mit Bebauungsplan. Ehrlich gesagt: Von der Unterschrift bis zum Betrieb vergehen meist <strong className="text-ink-800">2 bis 4 Jahre</strong> – Netz, Gemeinde und Artenschutz geben den Takt vor. Privilegierte Flächen, Österreich und die Schweiz folgen eigenen Verfahren.
+          </>
+        )}
       </p>
     </div>
   );
 }
 
-function dauer(p) {
-  if (p.offen) return "30+ Jahre";
+function dauerText(p, w) {
+  if (p.offen) return w.offen;
   const m = Math.round(p.bis - p.von);
-  return m < 2 ? "Wochen" : `${m} Mon.`;
+  return m < 2 ? w.wochen : w.monate(m);
 }

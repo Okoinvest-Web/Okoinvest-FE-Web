@@ -2,6 +2,7 @@
 // Mobil: eine gruppierte Liste (kompakt, daumenfreundlich). Ab sm: Zielgruppen-Karten mit eigener Tönung.
 import { ArrowRight, ChevronRight, HandCoins, Landmark, Sun, Users } from "lucide-react";
 import { cn } from "@/components/ui/cn";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 /** Wegweiser nach Zielgruppe – Texte fassen nur Inhalte dieser Seite zusammen */
 const WEGE = [
@@ -19,20 +20,30 @@ const TON = {
   sonne: { icon: "bg-sun-50 text-sun-700 ring-sun-200", licht: "bg-sun-200/60", hover: "sm:group-hover:bg-sun-600" },
 };
 
+/* Sprachmodell: englische Fassung (gleiche Reihenfolge) */
+const WEGE_EN = [
+  { titel: "Board", text: "Overview, approvals, obligations under the ElWG" },
+  { titel: "Treasurer", text: "Billing with four-eyes approval" },
+  { titel: "Municipality & initiative", text: "Founding, social quota, own installations" },
+  { titel: "Member", text: "What do I save, how do I join?" },
+];
+
 export default function Wegweiser() {
+  const en = spracheDerAnfrage() === "en";
+  const wege = en ? WEGE.map((w, i) => ({ ...w, ...WEGE_EN[i] })) : WEGE;
   return (
     <nav data-abschnitt="wegweiser" aria-labelledby="wege-titel" className="bg-white pb-6 pt-14 md:pb-8 md:pt-20">
       <div className="ov-container">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-1 md:mb-7">
-          <h2 id="wege-titel" className="ov-h3 text-ink-900">Direkt zu Ihrem Thema</h2>
-          <p className="text-[14px] text-ink-500">Vier Einstiege – je nach Ihrer Rolle</p>
+          <h2 id="wege-titel" className="ov-h3 text-ink-900">{en ? "Straight to your topic" : "Direkt zu Ihrem Thema"}</h2>
+          <p className="text-[14px] text-ink-500">{en ? "Four entry points – depending on your role" : "Vier Einstiege – je nach Ihrer Rolle"}</p>
         </div>
 
         <ul className="overflow-hidden rounded-3xl bg-white ring-1 ring-ink-200/80 max-sm:divide-y max-sm:divide-ink-100 max-sm:shadow-e1 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:rounded-none sm:bg-transparent sm:ring-0 lg:grid-cols-4">
-          {WEGE.map((w) => {
+          {wege.map((w) => {
             const ton = TON[w.ton];
             return (
-              <li key={w.titel} className="flex">
+              <li key={w.href} className="flex">
                 <a
                   href={w.href}
                   className={cn(
@@ -54,7 +65,7 @@ export default function Wegweiser() {
 
                   <ChevronRight aria-hidden="true" className="h-5 w-5 shrink-0 text-ink-400 sm:hidden" />
                   <span aria-hidden="true" className="mt-6 hidden items-center gap-1.5 text-[13.5px] font-semibold text-ov-700 sm:mt-auto sm:inline-flex sm:pt-6">
-                    Zum Abschnitt
+                    {en ? "To the section" : "Zum Abschnitt"}
                     <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none" />
                   </span>
                 </a>

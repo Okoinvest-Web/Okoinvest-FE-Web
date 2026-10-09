@@ -5,7 +5,7 @@
 // Druck: bericht-druck.css (A4, ohne Navigation, Links ausgeschrieben). Enthält NIE Personendaten.
 // Weitere Zustände der Seite /bericht/[token]: BerichtBestaetigung (Double-Opt-in) und BerichtAbgelaufen.
 
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { CalendarClock, CircleAlert, FileText, Fingerprint, MailCheck, MapPin, Scale } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { SITE, abs } from "@/data/site";

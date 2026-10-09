@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/components/ui/cn";
-import { fmt } from "@/lib/rechner/annahmen";
+import { useFormate } from "@/components/Sprache/useFormate";
 
 /* ------------------------------------------------------------------
    Gemeinsame Bedienelemente aller Rechner unter /rechner
@@ -37,6 +37,7 @@ const vorzeichen = (text, d) => (d > 0 ? `+${text}` : `−${String(text).replace
  * deltaFormat  eigene Formatierung der Veränderung (Betrag), z. B. (d) => `${fmt(d, 1)} %-Pkt.`
  */
 export function Zahl({ wert, stellen = 0, prefix = "", suffix = "", format, className, dauer = 520, einlauf = false, delta, deltaFormat }) {
+  const { fmt } = useFormate(); // Zahlenformat der Seitensprache (de 1.234,5 · en 1,234.5)
   const ziel = Number.isFinite(wert) ? wert : 0;
   const [anzeige, setAnzeige] = useState(ziel);
   const aktuell = useRef(ziel);
@@ -169,6 +170,7 @@ const stellenVon = (step) => (String(step).split(".")[1] || "").length;
  */
 export function Regler({ label, wert, min, max, step = 1, einheit, onChange, hinweis, format, stellen = 0, dunkel = false, minLabel, maxLabel }) {
   const id = useId();
+  const { fmt } = useFormate();
   const hilfeId = `${id}-hilfe`;
   const [blase, setBlase] = useState(false);
   const anteil = Math.max(0, Math.min(100, ((wert - min) / (max - min || 1)) * 100));

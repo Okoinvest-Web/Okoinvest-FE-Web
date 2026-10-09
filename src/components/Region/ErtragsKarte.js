@@ -6,6 +6,10 @@ import { REGIONEN } from "@/data/regionen";
 import { fmt } from "@/lib/rechner/annahmen";
 import s from "./region.module.css";
 import { pfad, regionSchluessel } from "@/lib/land";
+import Link from "@/components/Land/Link";
+import { regionName } from "@/data/regionen";
+import { spracheDerAnfrage } from "@/lib/land/seite";
+import { fmtZahl } from "@/lib/sprache/format";
 
 const ZELLE = 72;
 const LUECKE = 6;
@@ -33,14 +37,19 @@ export function ertragStufe(v) {
 }
 
 const LAND_NAME = { DE: "Deutschland", AT: "Österreich", CH: "Schweiz" };
+const LAND_NAME_EN = { DE: "Germany", AT: "Austria", CH: "Switzerland" };
 
 export default function ErtragsKarte({ dunkel = true, einlauf = false, className }) {
+  const en = spracheDerAnfrage() === "en";
+  const fmt = (n) => fmtZahl(n, 0, en ? "en" : "de");
+  const name = (m) => (en ? regionName(m.slug, "en") : m.name);
+  const landName = en ? LAND_NAME_EN : LAND_NAME;
   const breite = SPALTEN * ZELLE;
   const hoehe = ZEILEN * ZELLE;
   return (
     <figure className={cn("w-full", className)}>
       {/* einlauf: Wärmebild baut sich beim Laden von kühl nach sonnig auf (reines CSS, region.module.css) */}
-      <svg viewBox={`0 0 ${breite} ${hoehe}`} role="group" aria-label="Spezifischer Ertrag je Region als Kachelkarte" className={cn("h-auto w-full select-none", einlauf && s.laden)} style={einlauf ? { "--ov-delay": "480ms" } : undefined}>
+      <svg viewBox={`0 0 ${breite} ${hoehe}`} role="group" aria-label={en ? "Specific yield per region as a tile map" : "Spezifischer Ertrag je Region als Kachelkarte"} className={cn("h-auto w-full select-none", einlauf && s.laden)} style={einlauf ? { "--ov-delay": "480ms" } : undefined}>
         <line x1={0} x2={breite} y1={5 * ZELLE - LUECKE / 2} y2={5 * ZELLE - LUECKE / 2} stroke={dunkel ? "rgba(255,255,255,0.18)" : "#d6dae2"} strokeDasharray="4 6" strokeWidth={1.5} />
         {META.map((m, i) => {
           const w = m.karte.w || 1;
@@ -52,15 +61,15 @@ export default function ErtragsKarte({ dunkel = true, einlauf = false, className
           const stufe = ertragStufe(v) ?? 0;
           const f = ERTRAG_STUFEN[stufe];
           return (
-            <a key={m.slug} href={pfad(regionSchluessel(m.slug))} aria-label={`${m.name} (${LAND_NAME[m.land]})${v ? `: ${fmt(v)} kWh/kWp` : ""}`} className={cn("group outline-none", s.kachel)} style={{ "--stufe": stufe, "--i": i % 6 }}>
-              <title>{`${m.name}${v ? ` · ${fmt(v)} kWh/kWp` : ""}`}</title>
+            <Link key={m.slug} href={pfad(regionSchluessel(m.slug))} aria-label={`${name(m)} (${landName[m.land]})${v ? `: ${fmt(v)} kWh/kWp` : ""}`} className={cn("group outline-none", s.kachel)} style={{ "--stufe": stufe, "--i": i % 6 }}>
+              <title>{`${name(m)}${v ? ` · ${fmt(v)} kWh/kWp` : ""}`}</title>
               <rect x={x} y={y} width={bw} height={bh} rx={14} fill={f.fill} className="transition-opacity duration-200 group-hover:opacity-85" />
               <rect x={x} y={y} width={bw} height={bh} rx={14} fill="none" strokeWidth={3} className="stroke-transparent group-hover:stroke-white/70 group-focus-visible:stroke-white" />
               <text x={x + bw / 2} y={y + bh / 2 + (v ? -2 : 7)} textAnchor="middle" fill={f.text} className="pointer-events-none font-display text-[19px] font-extrabold max-sm:[transform:translateY(9px)] max-sm:[transform-box:fill-box]">{m.kurz}</text>
               {v && (
                 <text x={x + bw / 2} y={y + bh / 2 + 16} textAnchor="middle" fill={f.text} opacity="0.8" className="ov-num pointer-events-none text-[11.5px] font-semibold max-sm:hidden">{fmt(v)}</text>
               )}
-            </a>
+            </Link>
           );
         })}
       </svg>
@@ -72,7 +81,7 @@ export default function ErtragsKarte({ dunkel = true, einlauf = false, className
           </span>
           <span className="ov-num">{fmt(ERTRAG_MAX)} kWh/kWp</span>
         </span>
-        <span>Schematisch, nicht maßstäblich · PVGIS</span>
+        <span>{en ? "Schematic, not to scale · PVGIS" : "Schematisch, nicht maßstäblich · PVGIS"}</span>
       </figcaption>
     </figure>
   );

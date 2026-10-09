@@ -2,7 +2,16 @@
  * Flache Illustration: Solarpark versorgt eine Gemeinschaft im Nahebereich
  * (Häuser, Rathaus, Betrieb). Rein dekorativ, Beschriftung im Text daneben.
  */
+import { spracheDerAnfrage } from "@/lib/land/seite";
+
+/* Sprachmodell: Beschriftungen je Sprache */
+const WORTE = {
+  de: { titel: "Ein Solarpark versorgt Haushalte, Gemeinde und Betriebe im Nahebereich", nahe: "NAHEBEREICH", park: "Solarpark", gemeinde: "Gemeinde", betrieb: "Betrieb", haushalte: "Haushalte" },
+  en: { titel: "A solar park supplies households, the municipality and businesses in the proximity area", nahe: "PROXIMITY AREA", park: "Solar park", gemeinde: "Municipality", betrieb: "Business", haushalte: "Households" },
+};
+
 export default function GemeinschaftSvg({ className }) {
+  const w = WORTE[spracheDerAnfrage() === "en" ? "en" : "de"];
   const haus = (x, y, s = 1) => (
     <g transform={`translate(${x} ${y}) scale(${s})`}>
       <path d="M0 22 L22 4 L44 22 V52 H0 Z" fill="#ffffff" stroke="#003473" strokeWidth="2" strokeLinejoin="round" />
@@ -13,11 +22,11 @@ export default function GemeinschaftSvg({ className }) {
   );
   return (
     <svg viewBox="0 0 520 400" className={className} role="img" aria-labelledby="gem-svg-t">
-      <title id="gem-svg-t">Ein Solarpark versorgt Haushalte, Gemeinde und Betriebe im Nahebereich</title>
+      <title id="gem-svg-t">{w.titel}</title>
       <rect width="520" height="400" rx="32" fill="#fbfaf6" />
       {/* Nahebereich */}
       <circle cx="330" cy="215" r="160" fill="#f4f9ee" stroke="#8cba58" strokeWidth="2" strokeDasharray="6 8" />
-      <text x="330" y="72" textAnchor="middle" fontSize="13" fontWeight="700" fill="#436621" letterSpacing="1.5">NAHEBEREICH</text>
+      <text x="330" y="72" textAnchor="middle" fontSize="13" fontWeight="700" fill="#436621" letterSpacing="1.5">{w.nahe}</text>
 
       {/* Solarpark */}
       <g transform="translate(34 250)">
@@ -28,7 +37,7 @@ export default function GemeinschaftSvg({ className }) {
             ))}
           </g>
         ))}
-        <text x="60" y="108" textAnchor="middle" fontSize="14" fontWeight="700" fill="#151a24">Solarpark</text>
+        <text x="60" y="108" textAnchor="middle" fontSize="14" fontWeight="700" fill="#151a24">{w.park}</text>
       </g>
       {/* Sonne */}
       <circle cx="78" cy="120" r="30" fill="#ffc53d" />
@@ -55,15 +64,15 @@ export default function GemeinschaftSvg({ className }) {
           <rect key={x} x={x} y="26" width="5" height="34" fill="#b2cbe9" />
         ))}
       </g>
-      <text x="331" y="342" textAnchor="middle" fontSize="13" fontWeight="600" fill="#394050" paintOrder="stroke" stroke="#f4f9ee" strokeWidth="5" strokeLinejoin="round">Gemeinde</text>
+      <text x="331" y="342" textAnchor="middle" fontSize="13" fontWeight="600" fill="#394050" paintOrder="stroke" stroke="#f4f9ee" strokeWidth="5" strokeLinejoin="round">{w.gemeinde}</text>
 
       {/* Betrieb */}
       <g transform="translate(248 196)">
         <path d="M0 50 V20 L16 30 V20 L32 30 V20 L48 30 V50 Z" fill="#ffffff" stroke="#003473" strokeWidth="2" strokeLinejoin="round" />
         <rect x="36" y="4" width="8" height="20" fill="#003473" />
       </g>
-      <text x="272" y="266" textAnchor="middle" fontSize="13" fontWeight="600" fill="#394050" paintOrder="stroke" stroke="#f4f9ee" strokeWidth="5" strokeLinejoin="round">Betrieb</text>
-      <text x="300" y="104" textAnchor="middle" fontSize="13" fontWeight="600" fill="#394050" paintOrder="stroke" stroke="#f4f9ee" strokeWidth="5" strokeLinejoin="round">Haushalte</text>
+      <text x="272" y="266" textAnchor="middle" fontSize="13" fontWeight="600" fill="#394050" paintOrder="stroke" stroke="#f4f9ee" strokeWidth="5" strokeLinejoin="round">{w.betrieb}</text>
+      <text x="300" y="104" textAnchor="middle" fontSize="13" fontWeight="600" fill="#394050" paintOrder="stroke" stroke="#f4f9ee" strokeWidth="5" strokeLinejoin="round">{w.haushalte}</text>
     </svg>
   );
 }

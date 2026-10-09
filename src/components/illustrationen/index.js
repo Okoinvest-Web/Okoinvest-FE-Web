@@ -35,13 +35,13 @@ export { MarkenMotiv };
  */
 export const MOTIVE = [
   // Hero-Szenen
-  { name: "SolarparkLandschaft", kategorie: "hero", Komponente: H.SolarparkLandschaft, text: "Freiflächen-Solarpark mit Weg, Trafostation, Netzanschluss und Windrad im Hintergrund.", einsatz: "/de/freiflaeche, /de/flaeche-verpachten, Startseite" },
-  { name: "AgriPvFeld", kategorie: "hero", Komponente: H.AgriPvFeld, text: "Hoch aufgeständerte Agri-PV über Ackerreihen, Hof mit PV-Dach.", einsatz: "/de/agri-pv, /de/landwirte, /de/rechner/agri-pv" },
-  { name: "Solarcarport", kategorie: "hero", Komponente: H.Solarcarport, text: "Parkplatz mit zwei Solardächern, Speicher und Ladepunkten.", einsatz: "/de/solarcarport, /de/rechner/solarcarport" },
-  { name: "Grossspeicher", kategorie: "hero", Komponente: H.Grossspeicher, text: "Batteriecontainer, Trafo, Zaun und Netzanschluss; schwebende Ladestandsanzeige.", einsatz: "/de/grossspeicher, /de/virtuelles-kraftwerk" },
-  { name: "EnergiegemeinschaftDorf", kategorie: "hero", Komponente: H.EnergiegemeinschaftDorf, text: "Dorf mit PV-Dächern, Gemeindehaus und Quartierspeicher; Energiefluss über die Straßen.", einsatz: "/de/energiegemeinschaften, /de/genossenschaft, /de/kommunen, EG-Portal" },
+  { name: "SolarparkLandschaft", kategorie: "hero", Komponente: H.SolarparkLandschaft, text: "Freiflächen-Solarpark mit Weg, Trafostation, Netzanschluss und Windrad im Hintergrund.", einsatz: "/freiflaeche, /flaeche-verpachten, Startseite" },
+  { name: "AgriPvFeld", kategorie: "hero", Komponente: H.AgriPvFeld, text: "Hoch aufgeständerte Agri-PV über Ackerreihen, Hof mit PV-Dach.", einsatz: "/agri-pv, /landwirte, /rechner/agri-pv" },
+  { name: "Solarcarport", kategorie: "hero", Komponente: H.Solarcarport, text: "Parkplatz mit zwei Solardächern, Speicher und Ladepunkten.", einsatz: "/solarcarport, /rechner/solarcarport" },
+  { name: "Grossspeicher", kategorie: "hero", Komponente: H.Grossspeicher, text: "Batteriecontainer, Trafo, Zaun und Netzanschluss; schwebende Ladestandsanzeige.", einsatz: "/grossspeicher, /virtuelles-kraftwerk" },
+  { name: "EnergiegemeinschaftDorf", kategorie: "hero", Komponente: H.EnergiegemeinschaftDorf, text: "Dorf mit PV-Dächern, Gemeindehaus und Quartierspeicher; Energiefluss über die Straßen.", einsatz: "/energiegemeinschaften, /genossenschaft, /kommunen, EG-Portal" },
   { name: "InvestorenDashboard", kategorie: "hero", Komponente: H.InvestorenDashboard, text: "Abstraktes Dashboard: schwebende Karten mit Balken, Verlauf und Quote über einer PV-Anlage.", einsatz: "/investoren, /projektboerse, Portal-Dashboard Investor" },
-  { name: "Netzanschluss", kategorie: "hero", Komponente: H.Netzanschluss, text: "Solarpark speist über Umspannwerk und Portal in die Hochspannungsleitung.", einsatz: "/de/prozess (Netzanschluss), Ratgeber Netzanschluss, Projektphasen" },
+  { name: "Netzanschluss", kategorie: "hero", Komponente: H.Netzanschluss, text: "Solarpark speist über Umspannwerk und Portal in die Hochspannungsleitung.", einsatz: "/prozess (Netzanschluss), Ratgeber Netzanschluss, Projektphasen" },
 
   // Leerzustände
   { name: "KeineNachrichten", kategorie: "leer", Komponente: L.KeineNachrichten, text: "Briefkasten mit schwebendem Umschlag.", einsatz: "/portal/nachrichten" },

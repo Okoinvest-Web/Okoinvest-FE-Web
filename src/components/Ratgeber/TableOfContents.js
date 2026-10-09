@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, List } from "lucide-react";
+import { useTexte } from "@/components/Sprache/SpracheKontext";
+
+const TEXTE = { de: { inhalt: "Inhalt", verzeichnis: "Inhaltsverzeichnis" }, en: { inhalt: "Contents", verzeichnis: "Table of contents" } };
 
 /**
  * Inhaltsverzeichnis mit Scrollspy.
@@ -17,6 +20,7 @@ import { ChevronDown, List } from "lucide-react";
  * @param {{items: {id: string, label: string}[], variant?: "mobile"|"desktop"}} props
  */
 export default function TableOfContents({ items, variant = "desktop" }) {
+  const t = useTexte(TEXTE);
   const [aktiv, setAktiv] = useState(items[0]?.id ?? "");
   const details = useRef(null);
 
@@ -73,7 +77,7 @@ export default function TableOfContents({ items, variant = "desktop" }) {
       <details ref={details} className="group sticky top-[68px] z-30 -mx-5 mb-10 border-y border-ink-200 bg-white/95 backdrop-blur-xl md:-mx-8 lg:hidden">
         <summary className="flex min-h-[52px] cursor-pointer list-none items-center gap-3 px-5 md:px-8 [&::-webkit-details-marker]:hidden">
           <List aria-hidden="true" className="h-4 w-4 shrink-0 text-ov-600" />
-          <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-ink-500">Inhalt</span>
+          <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-ink-500">{t.inhalt}</span>
           <span className="min-w-0 flex-1 truncate text-[14.5px] font-semibold text-ink-900">{items[aktivIndex]?.label}</span>
           <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0 text-ink-500 transition-transform group-open:rotate-180" />
         </summary>
@@ -86,11 +90,11 @@ export default function TableOfContents({ items, variant = "desktop" }) {
   }
 
   return (
-    <nav aria-label="Inhaltsverzeichnis">
+    <nav aria-label={t.verzeichnis}>
       <p className="mb-3 flex items-center justify-between gap-2 px-3 text-[12.5px] font-semibold uppercase tracking-[0.14em] text-ink-500">
         <span className="flex items-center gap-2">
           <List aria-hidden="true" className="h-4 w-4 text-ov-600" />
-          Inhalt
+          {t.inhalt}
         </span>
         <span className="ov-num text-ink-500">
           {aktivIndex + 1}/{items.length}

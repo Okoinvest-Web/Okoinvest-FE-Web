@@ -117,7 +117,7 @@ const artikel = {
         { typ: "h3", text: "Pay-as-produced, Baseload oder Profil" },
         {
           typ: "p",
-          text: "Beim **Pay-as-produced**-PPA nehmen Sie jede erzeugte Kilowattstunde zum Festpreis ab – egal, wann sie anfällt. Das ist die günstigste Struktur, lässt aber das Profilrisiko beim Abnehmer: An sonnigen Mittagen kommt mehr Strom, als Sie brauchen, abends fehlt er. Beim **Baseload**-PPA liefert der Erzeuger ein gleichmäßiges Band; die Differenz zur tatsächlichen Erzeugung muss er selbst beschaffen, was den Preis erhöht. Dazwischen liegen **Profil-PPAs**, die sich an Ihrem Lastgang orientieren. Solar-PPAs mit Speicher (Hybrid) gewinnen an Bedeutung, weil sie Mittagsstrom in den Abend verschieben können – mehr dazu im Ratgeber [Großspeicher-Erlöse](/wissen/ratgeber/grossspeicher-erloese).",
+          text: "Beim **Pay-as-produced**-PPA nehmen Sie jede erzeugte Kilowattstunde zum Festpreis ab – egal, wann sie anfällt. Das ist die günstigste Struktur, lässt aber das Profilrisiko beim Abnehmer: An sonnigen Mittagen kommt mehr Strom, als Sie brauchen, abends fehlt er. Beim **Baseload**-PPA liefert der Erzeuger ein gleichmäßiges Band; die Differenz zur tatsächlichen Erzeugung muss er selbst beschaffen, was den Preis erhöht. Dazwischen liegen **Profil-PPAs**, die sich an Ihrem Lastgang orientieren. Solar-PPAs mit Speicher (Hybrid) gewinnen an Bedeutung, weil sie Mittagsstrom in den Abend verschieben können – mehr dazu im Ratgeber [Großspeicher-Erlöse](/ratgeber/grossspeicher-erloese).",
         },
         {
           typ: "p",
@@ -166,7 +166,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die PPA-Preise in unseren Rechnern (${ctFmt(ERLOESE.ppaCt.min)} bis ${ctFmt(ERLOESE.ppaCt.max)}) liegen bewusst über den dena-Werten auf Erzeugerebene, weil kleinere Abnahmemengen und Lieferung über einen Versorger Aufschläge verursachen. Den eigenen Fall rechnen Sie mit dem [Reststrom-Rechner](/de/rechner/reststrom).`,
+          text: `Die PPA-Preise in unseren Rechnern (${ctFmt(ERLOESE.ppaCt.min)} bis ${ctFmt(ERLOESE.ppaCt.max)}) liegen bewusst über den dena-Werten auf Erzeugerebene, weil kleinere Abnahmemengen und Lieferung über einen Versorger Aufschläge verursachen. Den eigenen Fall rechnen Sie mit dem [Reststrom-Rechner](/rechner/reststrom).`,
         },
         {
           typ: "tool",
@@ -231,7 +231,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Genau dafür ist der [Reststrom-Pool](/de/reststrom) gedacht: Unternehmen, denen die ÖKOVOLT Gruppe Photovoltaik und Speicher baut, brauchen trotzdem Strom aus dem Netz – nachts, im Winter und bei Lastspitzen. Diesen Reststrom bündelt ÖkoInvest über ihr [virtuelles Kraftwerk](/de/virtuelles-kraftwerk). Die möglichen Hebel sind in der Tabelle vorsichtig beziffert; sie wirken ausschließlich auf die Beschaffungskomponente und sind keine Zusage.",
+          text: "Genau dafür ist der [Reststrom-Pool](/reststrom) gedacht: Unternehmen, denen die ÖKOVOLT Gruppe Photovoltaik und Speicher baut, brauchen trotzdem Strom aus dem Netz – nachts, im Winter und bei Lastspitzen. Diesen Reststrom bündelt ÖkoInvest über ihr [virtuelles Kraftwerk](/virtuelles-kraftwerk). Die möglichen Hebel sind in der Tabelle vorsichtig beziffert; sie wirken ausschließlich auf die Beschaffungskomponente und sind keine Zusage.",
         },
         {
           typ: "tabelle",
@@ -246,7 +246,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Wer lieber lokal teilt als bündelt, findet im Ratgeber [Energy Sharing und Energiegemeinschaften](/wissen/ratgeber/energy-sharing-energiegemeinschaften) die Modelle in Deutschland, Österreich und der Schweiz. Wie ein virtuelles Kraftwerk Erzeuger, Speicher und Verbraucher verbindet, erklärt der Ratgeber [Virtuelles Kraftwerk](/wissen/ratgeber/virtuelles-kraftwerk).",
+          text: "Wer lieber lokal teilt als bündelt, findet im Ratgeber [Energy Sharing und Energiegemeinschaften](/ratgeber/energy-sharing-energiegemeinschaften) die Modelle in Deutschland, Österreich und der Schweiz. Wie ein virtuelles Kraftwerk Erzeuger, Speicher und Verbraucher verbindet, erklärt der Ratgeber [Virtuelles Kraftwerk](/ratgeber/virtuelles-kraftwerk).",
         },
       ],
     },
@@ -260,7 +260,7 @@ const artikel = {
           schritte: [
             ["Lastgang auswerten", "Viertelstundenwerte eines Jahres vom Messstellenbetreiber anfordern. Daraus ergibt sich, wie viel Solarstrom Sie tatsächlich nutzen können."],
             ["Ziel festlegen", "Preisabsicherung, Grünstromnachweis für die Berichterstattung oder beides? Das bestimmt Modell, Laufzeit und Menge."],
-            ["Eigenerzeugung prüfen", "Dach, Parkplatz ([Solarcarport](/de/solarcarport)) und Speicher zuerst ausschöpfen – eigener Strom ist meist günstiger als jeder Liefervertrag."],
+            ["Eigenerzeugung prüfen", "Dach, Parkplatz ([Solarcarport](/solarcarport)) und Speicher zuerst ausschöpfen – eigener Strom ist meist günstiger als jeder Liefervertrag."],
             ["Angebote vergleichen", "Mehrere Angebote mit gleichen Annahmen einholen: Preis, Profil, Mengenkorridor, negative Preise, Herkunftsnachweise, Sicherheiten."],
             ["Vertrag prüfen lassen", "Laufzeit, Kündigung, Force Majeure und bilanzielle Behandlung mit Rechts- und Steuerberatung klären."],
           ],
@@ -299,8 +299,8 @@ const artikel = {
   passend: [
     { href: pfad("/reststrom"), titel: "Reststrom-Pool", text: "Gebündelter Stromeinkauf für Unternehmen." },
     { href: pfad("/rechner/reststrom"), titel: "Reststrom-Rechner", text: "Preisbestandteile und Sparpotenzial für Ihren Verbrauch." },
-    { href: "/wissen/ratgeber/virtuelles-kraftwerk", titel: "Virtuelles Kraftwerk", text: "Wie Erzeugung, Speicher und Verbrauch zusammen vermarktet werden." },
-    { href: "/wissen/ratgeber/grossspeicher-erloese", titel: "Großspeicher-Erlöse", text: "Warum Speicher Solar-PPAs wertvoller machen." },
+    { href: "/ratgeber/virtuelles-kraftwerk", titel: "Virtuelles Kraftwerk", text: "Wie Erzeugung, Speicher und Verbrauch zusammen vermarktet werden." },
+    { href: "/ratgeber/grossspeicher-erloese", titel: "Großspeicher-Erlöse", text: "Warum Speicher Solar-PPAs wertvoller machen." },
     { href: pfad("/rechner/ppa"), titel: "PPA-Rechner", text: "Ersparnis und Risiko eines Solar-PPA in drei Preisszenarien." },
     { href: pfad("/solarcarport"), titel: "Solarcarport für Unternehmen", text: "Solarstrom direkt auf dem Firmenparkplatz erzeugen." },
   ],

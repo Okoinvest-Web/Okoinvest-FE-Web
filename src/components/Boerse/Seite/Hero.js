@@ -3,11 +3,18 @@ import { ArrowDown, Check } from "lucide-react";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
+import Link from "@/components/Land/Link";
 import ExposeBuehne from "./ExposeBuehne";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 const VERSPRECHEN = ["Für Investoren kostenfrei", "Anonym bis zur NDA", "Datenraum mit Protokoll", "Provision nur bei Erfolg"];
+const VERSPRECHEN_EN = ["Free of charge for investors", "Anonymous until the NDA", "Data room with access log", "Commission only on success"];
 
-export default function Hero({ breadcrumbs, pill, titel, lead, aktionen, hinweis, unten, buehne, bildunterschrift = "Beispielansicht mit fiktiven Werten", versprechen = VERSPRECHEN }) {
+// Sprachmodell: Titel, Lead, Aktionen usw. übersetzt die aufrufende Seite; Standardtexte hier je Sprache.
+export default function Hero({ breadcrumbs, pill, titel, lead, aktionen, hinweis, unten, buehne, bildunterschrift: bildProp, versprechen: versprechenProp }) {
+  const en = spracheDerAnfrage() === "en";
+  const bildunterschrift = bildProp ?? (en ? "Example view with fictitious figures" : "Beispielansicht mit fiktiven Werten");
+  const versprechen = versprechenProp ?? (en ? VERSPRECHEN_EN : VERSPRECHEN);
   return (
     <section data-abschnitt="hero" aria-labelledby="hero-titel" className="ov-verlauf-nacht ov-noise relative isolate overflow-hidden text-white">
       <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10 opacity-50" />
@@ -21,7 +28,7 @@ export default function Hero({ breadcrumbs, pill, titel, lead, aktionen, hinweis
         <div className="grid grid-cols-1 items-center gap-y-14 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-x-12 xl:gap-x-16">
           <div className="max-w-[36rem]">
             {pill && (
-              <a
+              <Link
                 href={pill.href}
                 className="ov-hero-in group inline-flex max-w-full items-center gap-2.5 rounded-full bg-white/[0.06] py-1 pl-1 pr-3.5 text-[13px] text-white/85 ring-1 ring-inset ring-white/15 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300"
                 style={{ "--ov-delay": "40ms" }}
@@ -29,7 +36,7 @@ export default function Hero({ breadcrumbs, pill, titel, lead, aktionen, hinweis
                 <span className="shrink-0 rounded-full bg-ov-300 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-navy-950">{pill.marke}</span>
                 <span className="min-w-0 truncate">{pill.text}</span>
                 <ArrowDown aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-ov-300 transition-transform duration-200 group-hover:translate-y-0.5 motion-reduce:transition-none" />
-              </a>
+              </Link>
             )}
 
             <h1 id="hero-titel" className="ov-h1 ov-hero-in mt-6 text-balance md:mt-8" style={{ "--ov-delay": "100ms" }}>

@@ -3,6 +3,8 @@
 // rechts vorn ein hoch aufgeständertes Moduldach über Beerensträuchern (Kategorie I).
 // Schematisch – keine maßstäbliche Darstellung.
 
+import { spracheDerAnfrage } from "@/lib/land/seite";
+
 const VP = { x: 290, y: 196 }; // Fluchtpunkt auf dem Horizont
 const UNTEN = 440;
 
@@ -167,7 +169,13 @@ function Moduldach() {
   );
 }
 
-export default function AgriPanorama({ className, titel = "Schematische Agri-PV-Landschaft: links senkrechte, beidseitig aktive Modulzäune mit Getreidegassen und einem Traktor, rechts ein hoch aufgeständertes Moduldach mit mindestens 2,10 Metern lichter Höhe über Beerensträuchern." }) {
+const TITEL = {
+  de: "Schematische Agri-PV-Landschaft: links senkrechte, beidseitig aktive Modulzäune mit Getreidegassen und einem Traktor, rechts ein hoch aufgeständertes Moduldach mit mindestens 2,10 Metern lichter Höhe über Beerensträuchern.",
+  en: "Schematic agrivoltaic landscape: on the left, upright bifacial module fences with cereal lanes and a tractor; on the right, an elevated module roof with at least 2.10 metres of clearance above berry bushes.",
+};
+
+export default function AgriPanorama({ className, titel: titelProp }) {
+  const titel = titelProp ?? TITEL[spracheDerAnfrage() === "en" ? "en" : "de"];
   return (
     <svg viewBox="0 0 640 440" className={className} role="img" aria-label={titel} preserveAspectRatio="xMidYMid slice">
       <defs>

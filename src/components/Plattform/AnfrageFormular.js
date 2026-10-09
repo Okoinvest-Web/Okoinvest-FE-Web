@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Land/Link";
 import { usePathname } from "next/navigation";
 import { ArrowRight, CalendarDays, Clock, LockKeyhole, Send } from "lucide-react";
 import { cn } from "@/components/ui/cn";
@@ -18,6 +18,8 @@ import { FeldMeldung } from "@/components/formular/FeldRahmen";
 import { ErfolgsAnsicht, FormFehler } from "@/components/formular/Meldungen";
 import { checkboxKlasse } from "@/components/formular/stil";
 import AusfuellFortschritt, { pflichtErfuellt } from "@/components/formular/AusfuellFortschritt";
+import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 const PFLICHT = ["vorname", "nachname", "email"];
 const NIE_AUS_ENTWURF = new Set(["land", "rueckruf", "website", "einwilligung"]);
@@ -33,6 +35,60 @@ const NAECHSTE = [
   "Unser Team prüft sie und meldet sich bei Ihnen.",
   "Status, Dokumente und Nachrichten sehen Sie im Portal.",
 ];
+
+/** Beschriftungen (Sprachmodell): Props titel/text/button/erfolgText übersetzt die aufrufende Seite. */
+const TEXTE = {
+  de: {
+    button: "Anfrage senden",
+    erfolgText: "Danke! Ihre Anfrage ist eingegangen. Wir melden uns bei Ihnen.",
+    eingegangen: "Anfrage eingegangen",
+    vorgang: "Vorgangsnummer",
+    portal: "Status im Portal verfolgen",
+    portalText: "Name und E-Mail-Adresse übernehmen wir – Sie vergeben nur noch ein Passwort.",
+    termin: "Termin buchen",
+    jetzt: "Was jetzt passiert",
+    naechste: NAECHSTE,
+    vorname: "Vorname",
+    nachname: "Nachname",
+    firma: "Unternehmen / Betrieb",
+    email: "E-Mail",
+    telefon: "Telefon",
+    land: "Land",
+    laender: LAENDER_OPTIONEN.map(([, l]) => l),
+    plz: "PLZ",
+    ort: "Ort",
+    nachricht: "Ihre Nachricht",
+    freiwillig: "Freiwillig – nur wenn Sie möchten",
+    laedt: "Wird gesendet …",
+    gesendet: "Gesendet",
+    sicher: "Verschlüsselt übertragen · kostenlos & unverbindlich",
+  },
+  en: {
+    button: "Send enquiry",
+    erfolgText: "Thank you! Your enquiry has been received. We will get back to you.",
+    eingegangen: "Enquiry received",
+    vorgang: "Reference number",
+    portal: "Track the status in the portal",
+    portalText: "We will carry over your name and e-mail address – you only need to choose a password.",
+    termin: "Book an appointment",
+    jetzt: "What happens next",
+    naechste: ["Your enquiry is now on file with us.", "Our team will review it and get back to you.", "You can see status, documents and messages in the portal."],
+    vorname: "First name",
+    nachname: "Last name",
+    firma: "Company / business",
+    email: "E-mail",
+    telefon: "Phone",
+    land: "Country",
+    laender: ["Germany", "Austria", "Switzerland"],
+    plz: "Postcode",
+    ort: "Town / city",
+    nachricht: "Your message",
+    freiwillig: "Optional – only if you wish",
+    laedt: "Sending …",
+    gesendet: "Sent",
+    sicher: "Encrypted transmission · free of charge & without obligation",
+  },
+};
 
 /**
  * Einheitliches Anfrageformular aller Zielgruppen.
@@ -91,14 +147,19 @@ export default function AnfrageFormular({
   land: landProp,
   titel,
   text,
-  button = "Anfrage senden",
-  erfolgText = "Danke! Ihre Anfrage ist eingegangen. Wir melden uns bei Ihnen.",
+  button: buttonProp,
+  erfolgText: erfolgProp,
   rolle,
   className,
   dunkel = false,
   versprechen = "",
 }) {
   const id = useId();
+  const sprache = useSprache();
+  const en = sprache === "en";
+  const t = uebersetze(TEXTE, sprache);
+  const button = buttonProp ?? t.button;
+  const erfolgText = erfolgProp ?? t.erfolgText;
   const melden = useEreignis();
   const kontextLand = landNormal(landProp) || landAusDaten(daten);
   const routenLand = landAusPfad(usePathname() || "/").land;
@@ -155,7 +216,7 @@ export default function AnfrageFormular({
           body: JSON.stringify({
             typ,
             kontakt,
-            daten: { ...(routenLand && !landAusDaten(daten) ? { land: routenLand } : {}), ...daten, ...(nachricht ? { nachricht: String(nachricht) } : {}) },
+            daten: { ...(routenLand && !landAusDaten(daten) ? { land: routenLand } : {}), ...daten, ...(nachricht ? { nachricht: String(nachricht) } : {}), ...(en ? { sprache: "en" } : {}) },
             rueckruf,
             einwilligungen,
             herkunft: safeHerkunft(),
@@ -195,10 +256,10 @@ export default function AnfrageFormular({
     const registrieren = `/registrieren?${new URLSearchParams({ rolle: rolle || rolleFuerTyp(typ), vorgang: ergebnis?.id || "" })}`;
     return (
       <div className={cn("rounded-3xl p-7 md:p-9", dunkel ? "bg-white/[0.06] ring-1 ring-white/10" : "bg-ov-50 ring-1 ring-ov-200", className)}>
-        <ErfolgsAnsicht titel="Anfrage eingegangen" text={erfolgText} dunkel={dunkel}>
+        <ErfolgsAnsicht titel={t.eingegangen} text={erfolgText} dunkel={dunkel}>
           {ergebnis?.id && (
             <p className={cn("mt-3 text-[13.5px]", dunkel ? "text-white/75" : "text-ink-600")}>
-              Vorgangsnummer <span className="ov-num font-semibold">{ergebnis.id}</span>
+              {t.vorgang} <span className="ov-num font-semibold">{ergebnis.id}</span>
             </p>
           )}
           {/* Erfolgs-Choreografie: Haken zeichnet sich (ErfolgsAnsicht), danach erscheinen die nächsten Schritte
@@ -210,8 +271,8 @@ export default function AnfrageFormular({
               style={{ "--ov-delay": "420ms" }}
             >
               <span className="min-w-0">
-                <span className="block text-[15.5px] font-semibold">Status im Portal verfolgen</span>
-                <span className="mt-0.5 block text-[13px] leading-snug text-white">Name und E-Mail-Adresse übernehmen wir – Sie vergeben nur noch ein Passwort.</span>
+                <span className="block text-[15.5px] font-semibold">{t.portal}</span>
+                <span className="mt-0.5 block text-[13px] leading-snug text-white">{t.portalText}</span>
               </span>
               <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center self-end rounded-full bg-white/15 sm:self-auto">
                 <ArrowRight aria-hidden="true" className="ov-pfeil h-4 w-4" />
@@ -228,19 +289,19 @@ export default function AnfrageFormular({
               <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", dunkel ? "bg-ov-300/15 text-ov-300" : "bg-ov-50 text-ov-700")}>
                 <CalendarDays aria-hidden="true" className="h-5 w-5" />
               </span>
-              <span className="min-w-0 flex-1 text-[14.5px] font-semibold">Termin buchen</span>
+              <span className="min-w-0 flex-1 text-[14.5px] font-semibold">{t.termin}</span>
               <ArrowRight aria-hidden="true" className={cn("ov-pfeil h-4 w-4 shrink-0", dunkel ? "text-ov-300" : "text-ov-700")} />
             </Link>
             <div
               className={cn("ov-ein rounded-2xl p-4 ring-1 ring-inset", dunkel ? "bg-white/[0.04] ring-white/10" : "bg-white/70 ring-ink-200/80")}
               style={{ "--ov-delay": "620ms" }}
             >
-              <p className={cn("text-[12px] font-bold uppercase tracking-[0.12em]", dunkel ? "text-ov-300" : "text-ov-700")}>Was jetzt passiert</p>
+              <p className={cn("text-[12px] font-bold uppercase tracking-[0.12em]", dunkel ? "text-ov-300" : "text-ov-700")}>{t.jetzt}</p>
               <ol className={cn("mt-2 space-y-1.5 text-[13.5px] leading-snug", dunkel ? "text-white/80" : "text-ink-700")}>
-                {NAECHSTE.map((t, i) => (
-                  <li key={t} className="flex gap-2">
+                {t.naechste.map((schritt, i) => (
+                  <li key={schritt} className="flex gap-2">
                     <span aria-hidden="true" className={cn("ov-num font-bold", dunkel ? "text-ov-300" : "text-ov-700")}>{i + 1}</span>
-                    <span className="min-w-0">{t}</span>
+                    <span className="min-w-0">{schritt}</span>
                   </li>
                 ))}
               </ol>
@@ -263,14 +324,14 @@ export default function AnfrageFormular({
         </div>
       )}
       <div className="grid gap-4 sm:grid-cols-2">
-        <Textfeld id={`${id}-vn`} label="Vorname" pflicht autoComplete="given-name" maxLength={80} {...feldProps("vorname")} />
-        <Textfeld id={`${id}-nn`} label="Nachname" pflicht autoComplete="family-name" maxLength={80} {...feldProps("nachname")} />
-        {felder.includes("firma") && <Textfeld id={`${id}-fi`} label="Unternehmen / Betrieb" optional autoComplete="organization" maxLength={120} className="sm:col-span-2" {...feldProps("firma")} />}
-        <Textfeld id={`${id}-em`} label="E-Mail" pflicht type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} maxLength={190} className={mitTelefon ? "" : "sm:col-span-2"} {...feldProps("email")} />
+        <Textfeld id={`${id}-vn`} label={t.vorname} pflicht autoComplete="given-name" maxLength={80} {...feldProps("vorname")} />
+        <Textfeld id={`${id}-nn`} label={t.nachname} pflicht autoComplete="family-name" maxLength={80} {...feldProps("nachname")} />
+        {felder.includes("firma") && <Textfeld id={`${id}-fi`} label={t.firma} optional autoComplete="organization" maxLength={120} className="sm:col-span-2" {...feldProps("firma")} />}
+        <Textfeld id={`${id}-em`} label={t.email} pflicht type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} maxLength={190} className={mitTelefon ? "" : "sm:col-span-2"} {...feldProps("email")} />
         {mitTelefon && (
           <Textfeld
             id={`${id}-te`}
-            label="Telefon"
+            label={t.telefon}
             pflicht={!!w.rueckruf}
             optional={!w.rueckruf}
             type="tel"
@@ -281,15 +342,15 @@ export default function AnfrageFormular({
           />
         )}
         {landFeld && (
-          <Textfeld id={`${id}-la`} als="select" label="Land" className="sm:col-span-2" autoComplete="country" {...feldProps("land")}>
-            {LAENDER_OPTIONEN.map(([k, l]) => (
-              <option key={k} value={k}>{l}</option>
+          <Textfeld id={`${id}-la`} als="select" label={t.land} className="sm:col-span-2" autoComplete="country" {...feldProps("land")}>
+            {LAENDER_OPTIONEN.map(([k], i) => (
+              <option key={k} value={k}>{t.laender[i]}</option>
             ))}
           </Textfeld>
         )}
-        {felder.includes("plz") && <Textfeld id={`${id}-plz`} label="PLZ" optional inputMode="numeric" autoComplete="postal-code" maxLength={10} {...feldProps("plz")} />}
-        {felder.includes("ort") && <Textfeld id={`${id}-ort`} label="Ort" optional autoComplete="address-level2" maxLength={80} {...feldProps("ort")} />}
-        {felder.includes("nachricht") && <Textfeld id={`${id}-na`} als="textarea" label="Ihre Nachricht" optional rows={4} maxLength={5000} className="sm:col-span-2" {...feldProps("nachricht")} />}
+        {felder.includes("plz") && <Textfeld id={`${id}-plz`} label={t.plz} optional inputMode="numeric" autoComplete="postal-code" maxLength={10} {...feldProps("plz")} />}
+        {felder.includes("ort") && <Textfeld id={`${id}-ort`} label={t.ort} optional autoComplete="address-level2" maxLength={80} {...feldProps("ort")} />}
+        {felder.includes("nachricht") && <Textfeld id={`${id}-na`} als="textarea" label={t.nachricht} optional rows={4} maxLength={5000} className="sm:col-span-2" {...feldProps("nachricht")} />}
       </div>
       {/* Honeypot */}
       <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" value={w.website} onChange={(e) => form.setze("website", e.target.value)} />
@@ -307,25 +368,25 @@ export default function AnfrageFormular({
               aria-describedby={`${id}-rr-hinweis`}
               className={checkboxKlasse}
             />
-            <span>{RUECKRUF.text}</span>
+            <span>{en ? RUECKRUF.en.text : RUECKRUF.text}</span>
           </label>
-          <FeldMeldung id={`${id}-rr`} hinweis={RUECKRUF.zusatz} dunkel={dunkel} />
+          <FeldMeldung id={`${id}-rr`} hinweis={en ? RUECKRUF.en.zusatz : RUECKRUF.zusatz} dunkel={dunkel} />
         </div>
       )}
 
       {/* Paket C: Hinweis statt Pflicht-Einwilligung (Art. 6 Abs. 1 lit. b DSGVO). ENTWURF – Text aus Strang R folgt. */}
       <p className={cn("text-[13.5px] leading-relaxed", dunkel ? "text-white/75" : "text-ink-600")} data-hinweis-version={HINWEIS.version}>
-        {HINWEIS.kern} {HINWEIS.verweisVor}{" "}
-        <Link href="/datenschutz" className={cn("font-medium underline underline-offset-2", linkFarbe)}>{HINWEIS.verweisLink}</Link>.
+        {(en ? HINWEIS.en : HINWEIS).kern} {(en ? HINWEIS.en : HINWEIS).verweisVor}{" "}
+        <Link href="/datenschutz" className={cn("font-medium underline underline-offset-2", linkFarbe)}>{(en ? HINWEIS.en : HINWEIS).verweisLink}</Link>.
       </p>
 
       {optionen.length > 0 && (
         <fieldset className="space-y-2.5" data-einwilligung-version={optionen[0].version}>
-          <legend className={cn("mb-1 text-[13px] font-semibold", dunkel ? "text-white/85" : "text-ink-700")}>Freiwillig – nur wenn Sie möchten</legend>
+          <legend className={cn("mb-1 text-[13px] font-semibold", dunkel ? "text-white/85" : "text-ink-700")}>{t.freiwillig}</legend>
           {optionen.map((o) => (
             <label key={o.id} className={cn("flex cursor-pointer items-start gap-3 text-[13.5px] leading-relaxed", textFarbe)}>
               <input type="checkbox" name={o.id} data-feld={o.id} data-einwilligung={o.id} checked={w[o.id] === true} onChange={(e) => form.setze(o.id, e.target.checked)} className={checkboxKlasse} />
-              <span>{o.text}</span>
+              <span>{en && o.textEn ? o.textEn : o.text}</span>
             </label>
           ))}
         </fieldset>
@@ -334,7 +395,7 @@ export default function AnfrageFormular({
       <FormFehler dunkel={dunkel}>{a.fehler}</FormFehler>
       <AusfuellFortschritt erfuellt={erfuellt} gesamt={pflicht.length} dunkel={dunkel} />
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <AbsendeKnopf status={a.status} icon={Send} laedtText="Wird gesendet …" erfolgText="Gesendet" className="shrink-0 px-7" data-ov-cta="">
+        <AbsendeKnopf status={a.status} icon={Send} laedtText={t.laedt} erfolgText={t.gesendet} className="shrink-0 px-7" data-ov-cta="">
           {button}
         </AbsendeKnopf>
         <div className={cn("space-y-1 text-[13px]", dunkel ? "text-white/75" : "text-ink-600")}>
@@ -344,7 +405,7 @@ export default function AnfrageFormular({
             </p>
           )}
           <p className="flex items-start gap-1.5">
-            <LockKeyhole aria-hidden="true" className="mt-[3px] h-3.5 w-3.5 shrink-0" /> <span className="min-w-0">Verschlüsselt übertragen · kostenlos & unverbindlich</span>
+            <LockKeyhole aria-hidden="true" className="mt-[3px] h-3.5 w-3.5 shrink-0" /> <span className="min-w-0">{t.sicher}</span>
           </p>
         </div>
       </div>

@@ -6,6 +6,7 @@ import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
 import JsonLd from "@/components/JsonLd";
+import { spracheDerAnfrage } from "@/lib/land/seite";
 
 // kurz + " " + rest ergibt exakt die bisherige Antwort (auch im Schema).
 const FAQ = [
@@ -63,24 +64,78 @@ const FAQ = [
   },
 ];
 
-const SCHEMA = {
+/* Sprachmodell: englische Fassung (gleiche ids und Reihenfolge) */
+const FAQ_EN = {
+  "faq-modelle": {
+    thema: "Models",
+    q: "Which communities is the platform intended for?",
+    kurz: "For renewable energy communities (EEG, local and regional), citizens’ energy communities (BEG) and joint generation installations (GEA) in Austria under §§ 65–72 ElWG.",
+    rest: "The new peer-to-peer model is already provided for in the data model.",
+  },
+  "faq-wechsel": {
+    thema: "Switching",
+    q: "Do we have to re-register all metering points when switching?",
+    kurz: "No.",
+    rest: "The market partner ID belongs to the community; we receive access to the EDA user portal or a power of attorney. The members’ existing consents remain valid. For one month we calculate in parallel and reconcile with the grid operator’s values.",
+    mehr: { label: "How switching works" },
+  },
+  "faq-ersparnis": {
+    thema: "Savings",
+    q: "How much does a member save?",
+    kurz: "That depends on the model, the consumption profile and the price in the community.",
+    rest: "Publicly cited examples are around €50 to €200 a year per household. The calculator above shows your order of magnitude – the grid operator deducts the grid fee reduction directly on the grid bill.",
+    mehr: { label: "To the calculator" },
+  },
+  "faq-netzentgelte": {
+    thema: "Grid fees",
+    q: "What happens to grid fees from 2027?",
+    kurz: "Under the ElWG, reduced grid fees are in future to be calculated by proximity area (zone level) rather than by the type of community.",
+    rest: "The new ordinance was not yet final as of 1 October 2026; until then we calculate with a clearly marked working hypothesis and will adjust the values as soon as they are fixed.",
+    mehr: { label: "More on the ElWG" },
+  },
+  "faq-kosten": {
+    thema: "Costs",
+    q: "What does the platform cost?",
+    kurz: "We calculate per community by package and size and set out the offer openly.",
+    rest: "Enquire without obligation – with a few details about members and installations you will receive a specific offer.",
+    mehr: { label: "View packages" },
+  },
+  "faq-datenschutz": {
+    thema: "Data protection",
+    q: "Who sees the members’ quarter-hourly values?",
+    kurz: "Members see their own values.",
+    rest: "Board and treasurer see totals by default; individual access is only possible with a stated purpose and is logged. Operational management works on behalf of the community (data processing under Art. 28 GDPR).",
+  },
+};
+const faqFuer = (en) => (en ? FAQ.map((f) => ({ ...f, ...FAQ_EN[f.id], mehr: f.mehr ? { ...f.mehr, ...FAQ_EN[f.id].mehr } : undefined })) : FAQ);
+const schemaFuer = (faq) => ({
   "@context": "https://schema.org",
   "@type": "FAQPage",
-  mainEntity: FAQ.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: `${f.kurz} ${f.rest}` } })),
-};
+  mainEntity: faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: `${f.kurz} ${f.rest}` } })),
+});
 
 export default function Faq() {
+  const en = spracheDerAnfrage() === "en";
+  const faq = faqFuer(en);
   return (
     <Section data-abschnitt="faq" tone="sand" space="lg" aria-labelledby="faq-titel">
-      <JsonLd daten={SCHEMA} />
+      <JsonLd daten={schemaFuer(faq)} />
       <div className="grid gap-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-20">
         <div className="lg:sticky lg:top-28 lg:self-start">
-          <SectionHeading eyebrow="Häufige Fragen" title={<span id="faq-titel">Was Vorstände vor dem Start fragen</span>} lead="Sechs Antworten zu Modellen, Wechsel, Ersparnis, Netzentgelten, Kosten und Datenschutz – jeweils mit der Kurzantwort zuerst." />
+          <SectionHeading
+            eyebrow={en ? "Frequently asked questions" : "Häufige Fragen"}
+            title={<span id="faq-titel">{en ? "What boards ask before getting started" : "Was Vorstände vor dem Start fragen"}</span>}
+            lead={
+              en
+                ? "Six answers on models, switching, savings, grid fees, costs and data protection – each with the short answer first."
+                : "Sechs Antworten zu Modellen, Wechsel, Ersparnis, Netzentgelten, Kosten und Datenschutz – jeweils mit der Kurzantwort zuerst."
+            }
+          />
 
-          <Reveal as="nav" aria-label="Themen der häufigen Fragen" className="mt-8 hidden lg:block">
-            <p className="ov-overline text-ink-500">Direkt zum Thema</p>
+          <Reveal as="nav" aria-label={en ? "Topics of the frequently asked questions" : "Themen der häufigen Fragen"} className="mt-8 hidden lg:block">
+            <p className="ov-overline text-ink-500">{en ? "Straight to the topic" : "Direkt zum Thema"}</p>
             <ul className="mt-3 flex flex-wrap gap-1.5 sm:gap-2">
-              {FAQ.map(({ id, thema, icon: Icon }) => (
+              {faq.map(({ id, thema, icon: Icon }) => (
                 <li key={id}>
                   <a href={`#${id}`} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white px-3 text-[13.5px] sm:px-3.5 sm:text-[14px] font-medium text-ink-700 ring-1 ring-ink-200 transition-colors hover:bg-ov-50 hover:text-ov-800 hover:ring-ov-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
                     <Icon aria-hidden="true" className="h-4 w-4 text-ov-600" />
@@ -97,10 +152,12 @@ export default function Faq() {
                 <MessageCircleQuestion className="h-5 w-5" />
               </span>
               <div className="min-w-0">
-                <p className="font-display text-[18px] font-bold leading-snug">Ihre Frage ist nicht dabei?</p>
-                <p className="mt-1.5 text-[14.5px] leading-relaxed text-white/75">Stellen Sie sie direkt in der Anfrage – im Feld „Ihre Nachricht“ ist Platz dafür.</p>
+                <p className="font-display text-[18px] font-bold leading-snug">{en ? "Your question is not listed?" : "Ihre Frage ist nicht dabei?"}</p>
+                <p className="mt-1.5 text-[14.5px] leading-relaxed text-white/75">
+                  {en ? "Ask it directly in the enquiry – there is room for it in the message field." : "Stellen Sie sie direkt in der Anfrage – im Feld „Ihre Nachricht“ ist Platz dafür."}
+                </p>
                 <a href="#anfrage" className="group mt-4 inline-flex min-h-10 items-center gap-2 rounded-full bg-white px-4 text-[14px] font-semibold text-navy-950 transition-colors hover:bg-ov-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950">
-                  Zur Anfrage
+                  {en ? "To the enquiry" : "Zur Anfrage"}
                   <ArrowDown aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
                 </a>
               </div>
@@ -110,7 +167,7 @@ export default function Faq() {
 
         <div>
           <ul className="space-y-3">
-            {FAQ.map((f, i) => {
+            {faq.map((f, i) => {
               const Icon = f.icon;
               return (
                 <Reveal as="li" key={f.id} delay={i * 50}>
@@ -151,8 +208,8 @@ export default function Faq() {
           {/* Unter lg: Hinweis unter der Liste statt in der Seitenspalte */}
           <p className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] text-ink-600 lg:hidden">
             <MessageCircleQuestion aria-hidden="true" className="h-4 w-4 text-ov-600" />
-            Ihre Frage ist nicht dabei?
-            <a href="#anfrage" className="font-semibold text-ov-700 underline underline-offset-4 hover:text-ov-800">Stellen Sie sie in der Anfrage</a>
+            {en ? "Your question is not listed?" : "Ihre Frage ist nicht dabei?"}
+            <a href="#anfrage" className="font-semibold text-ov-700 underline underline-offset-4 hover:text-ov-800">{en ? "Ask it in the enquiry" : "Stellen Sie sie in der Anfrage"}</a>
           </p>
         </div>
       </div>

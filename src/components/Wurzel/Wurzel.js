@@ -1,9 +1,11 @@
 // Gemeinsamer Rahmen der Root-Layouts (Welle 2, Länderrouting).
 //
 // Die Website hat drei Root-Layouts, damit <html lang> serverseitig stimmt:
-//   src/app/(stamm)/layout.js          lang="de"     – Stamm, Portal, Login, Token-Strecken
-//   src/app/(laender)/[land]/layout.js lang="de-DE" | "de-AT" | "de-CH"
-//   src/app/(en)/layout.js             lang="en"
+//   src/app/(stamm)/layout.js          lang="de"     – gemeinsame Seiten, Portal, Login, Token-Strecken
+//   src/app/(laender)/[land]/layout.js lang="de-DE" | "de-AT" | "de-CH" – Länderfassungen derselben Seiten
+//   src/app/(en)/layout.js             lang="en"     – englische Fassungen derselben Seiten (/en, /en/at …)
+// Land (Ländermodell) und Sprache (Sprachmodell) gehen als Kontext an alle Client-Komponenten
+// (LandProvider, SpracheProvider).
 // plus src/app/global-not-found.js für Pfade außerhalb aller Layouts.
 // Ein Wechsel zwischen Root-Layouts lädt die Seite vollständig neu (Next.js) – gewollt.
 //
@@ -15,6 +17,11 @@ import { Inter, Manrope } from "next/font/google";
 import LayoutWrapper from "@/components/Reusable/LayoutWrapper";
 import { GESELLSCHAFT, INDEXIERBAR, SITE } from "@/data/site";
 import JsonLd from "@/components/JsonLd";
+import { LandProvider } from "@/components/Land/LandKontext";
+import { SpracheProvider } from "@/components/Sprache/SpracheKontext";
+import { LAND_AUS_PFAD } from "@/lib/land/laender";
+
+export { LAND_AUS_PFAD };
 
 // Zwei Schriften wie auf oekovolt.de: Inter für Fließtext, Manrope für
 // Überschriften. next/font hostet beide selbst (keine Verbindung zu Google).
@@ -95,12 +102,30 @@ export const viewport = {
   initialScale: 1,
 };
 
-const TITEL = "ÖkoInvest – Solarparks, Agri-PV & Projektbörse für DACH";
-const BESCHREIBUNG =
-  "Fläche verpachten, Agri-PV umsetzen, PV-Projekte kaufen oder verkaufen, Strom im Pool günstiger beziehen: ÖkoInvest entwickelt Solarkraftwerke in Deutschland, Österreich und der Schweiz.";
+const TEXTE = {
+  de: {
+    titel: "ÖkoInvest – Solarparks, Agri-PV & Projektbörse für DACH",
+    beschreibung:
+      "Fläche verpachten, Agri-PV umsetzen, PV-Projekte kaufen oder verkaufen, Strom im Pool günstiger beziehen: ÖkoInvest entwickelt Solarkraftwerke in Deutschland, Österreich und der Schweiz.",
+    kategorie: "Erneuerbare Energien",
+    bildAlt: "Solarpark unter blauem Himmel",
+    sprung: "Zum Hauptinhalt springen",
+  },
+  en: {
+    titel: "ÖkoInvest – solar parks, agrivoltaics & project exchange for the DACH region",
+    beschreibung:
+      "Lease your land, implement agrivoltaics, buy or sell PV projects, source power more cheaply in a pool: ÖkoInvest develops solar power plants in Germany, Austria and Switzerland.",
+    kategorie: "Renewable energy",
+    bildAlt: "Solar park under a blue sky",
+    sprung: "Skip to main content",
+  },
+};
 
 /** Basis-Metadaten aller Root-Layouts; ogLocale je Zone („de_DE“, „de_AT“, „de_CH“, „en_GB“). */
-export function basisMetadata({ ogLocale = "de_DE" } = {}) {
+export function basisMetadata({ ogLocale = "de_DE", sprache = "de" } = {}) {
+  const t = sprache === "en" ? TEXTE.en : TEXTE.de;
+  const TITEL = t.titel;
+  const BESCHREIBUNG = t.beschreibung;
   return {
     metadataBase: new URL(BASE_URL),
     title: { default: TITEL, template: "%s" },
@@ -109,7 +134,7 @@ export function basisMetadata({ ogLocale = "de_DE" } = {}) {
     authors: [{ name: GESELLSCHAFT.name, url: BASE_URL }],
     creator: GESELLSCHAFT.name,
     publisher: GESELLSCHAFT.name,
-    category: "Erneuerbare Energien",
+    category: t.kategorie,
     icons: {
       icon: [
         { url: "/icon.svg", type: "image/svg+xml" },
@@ -135,7 +160,7 @@ export function basisMetadata({ ogLocale = "de_DE" } = {}) {
       siteName: "ÖkoInvest",
       title: TITEL,
       description: BESCHREIBUNG,
-      images: [{ url: `${BASE_URL}/img/solarpark-himmel.jpg`, width: 1280, height: 852, alt: "Solarpark unter blauem Himmel" }],
+      images: [{ url: `${BASE_URL}/img/solarpark-himmel.jpg`, width: 1280, height: 852, alt: t.bildAlt }],
     },
     twitter: { card: "summary_large_image", title: TITEL, description: BESCHREIBUNG, images: [`${BASE_URL}/img/solarpark-himmel.jpg`] },
     // Paket I: Indexierung nur in der echten Produktion (INDEXIERBAR, src/data/site.js).
@@ -153,9 +178,10 @@ export function basisMetadata({ ogLocale = "de_DE" } = {}) {
 
 /**
  * <html>/<body> mit allem, was jede Seite braucht.
- * @param {{ lang: string, children: any }} p
+ * @param {{ lang: string, sprache?: "de"|"en", land?: "DE"|"AT"|"CH"|null|"pfad", children: any }} p
+ *   land = LAND_AUS_PFAD: Land im Browser aus dem Pfad (englische Seiten, ein Root-Layout für /en/**)
  */
-export default function Wurzel({ lang, children }) {
+export default function Wurzel({ lang, sprache = "de", land = null, children }) {
   return (
     <html lang={lang} dir="ltr" className={`${inter.variable} ${manrope.variable}`}>
       <body className="bg-white text-ink-900">
@@ -165,10 +191,14 @@ export default function Wurzel({ lang, children }) {
             robots-Angaben gilt für Suchmaschinen die strengere. */}
         {!INDEXIERBAR && <meta name="robots" content="noindex, nofollow" />}
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-ov-600 focus:text-white focus:rounded">
-          {lang === "en" ? "Skip to main content" : "Zum Hauptinhalt springen"}
+          {(sprache === "en" ? TEXTE.en : TEXTE.de).sprung}
         </a>
         <JsonLd daten={siteSchema(lang)} />
-        <LayoutWrapper>{children}</LayoutWrapper>
+        <SpracheProvider sprache={sprache}>
+          <LandProvider land={land}>
+            <LayoutWrapper>{children}</LayoutWrapper>
+          </LandProvider>
+        </SpracheProvider>
         <GoogleAnalytics />
       </body>
     </html>

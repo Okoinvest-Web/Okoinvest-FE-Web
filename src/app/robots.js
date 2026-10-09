@@ -18,13 +18,10 @@
 //
 // Nicht-Produktion (Staging, Vorschau, lokaler Build): "Disallow: /" für alle,
 // ohne Sitemap-Verweis. Domain kommt aus SITE.url (NEXT_PUBLIC_SITE_URL).
-// Produktion: Verweis auf alle Sitemaps (je Land und Stamm).
 
 import { INDEXIERBAR, SITE } from "@/data/site";
 import { robotsRegeln } from "@/lib/indexsteuerung";
-import { sitemapUrls } from "@/lib/land/sitemaps";
 
-// Welle 2: Sitemaps je Länderzone und für den Stamm (/sitemap/stamm.xml, /sitemap/de.xml, …)
 export default function robots() {
-  return robotsRegeln({ indexierbar: INDEXIERBAR, siteUrl: SITE.url, sitemaps: sitemapUrls(SITE.url) });
+  return robotsRegeln({ indexierbar: INDEXIERBAR, siteUrl: SITE.url });
 }

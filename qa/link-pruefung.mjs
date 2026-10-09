@@ -1,7 +1,9 @@
 #!/usr/bin/env node
-// qa/link-pruefung.mjs – interne Links aller öffentlichen Seiten gegen den Dev-Server (Welle 2, Länderrouting)
+// qa/link-pruefung.mjs – interne Links aller öffentlichen Seiten gegen den Dev-Server (Ländermodell)
 //
-//   node qa/link-pruefung.mjs                 alle Seiten aus /sitemap/{stamm,de,at,ch}.xml
+//   node qa/link-pruefung.mjs                 alle gemeinsamen Seiten aus /sitemap.xml
+//   node qa/link-pruefung.mjs --land at       dieselben Seiten als Länderfassung /at/…; zusätzlich Fehler,
+//                                             wenn ein Link das Land verlässt (außer Portal, Login, EN …)
 //   node qa/link-pruefung.mjs --max 40        nur die ersten 40 Seiten (Stichprobe)
 //   node qa/link-pruefung.mjs --json qa/out/links.json
 //
@@ -22,7 +24,12 @@ const maxIdx = args.indexOf("--max");
 const MAX = maxIdx >= 0 ? Number(args[maxIdx + 1]) : Infinity;
 const jsonIdx = args.indexOf("--json");
 const JSON_DATEI = jsonIdx >= 0 ? args[jsonIdx + 1] : null;
-const SITEMAPS = ["stamm", "de", "at", "ch"];
+const landIdx = args.indexOf("--land");
+const LAND = landIdx >= 0 ? String(args[landIdx + 1] || "").toLowerCase() : null;
+if (LAND && !["de", "at", "ch"].includes(LAND)) {
+  console.error("--land: de, at oder ch");
+  process.exit(2);
+}
 const IGNORIEREN = /^\/(_next|api|portal|login|registrieren|passwort-vergessen|einladung|angebot|bericht|p\/|img|geo|icon|apple-touch|manifest|sitemap|robots|llms\.txt|termin\/verwalten)/;
 
 async function hole(pfad) {
@@ -48,14 +55,19 @@ if (!(await serverErreichbar())) {
   process.exit(2);
 }
 
-// 1) Seiten aus den Sitemaps
+// 1) Seiten aus der Sitemap (gemeinsame Seiten; mit --land deren Länderfassung)
 const seiten = [];
-for (const id of SITEMAPS) {
-  const xml = await (await hole(`/sitemap/${id}.xml`)).text();
-  for (const m of xml.matchAll(/<loc>([^<]+)<\/loc>/g)) seiten.push(new URL(m[1]).pathname);
+const xml = await (await hole("/sitemap.xml")).text();
+for (const m of xml.matchAll(/<loc>([^<]+)<\/loc>/g)) {
+  const p = new URL(m[1]).pathname || "/";
+  if (/^\/(de|at|ch|en)(\/|$)/.test(p)) continue;
+  seiten.push(LAND ? `/${LAND}${p === "/" ? "" : p}` : p);
 }
 const zuPruefen = [...new Set(seiten)].slice(0, MAX);
-console.log(`Link-Prüfung: ${zuPruefen.length} Seiten aus ${SITEMAPS.length} Sitemaps gegen ${BASIS}`);
+console.log(`Link-Prüfung: ${zuPruefen.length} Seiten${LAND ? ` (Länderfassung /${LAND})` : ""} aus /sitemap.xml gegen ${BASIS}`);
+// Mit --land: jeder Link muss im Land bleiben (EN ist eine eigene Sprachebene)
+const imLand = (ziel) => !LAND || new RegExp(`^/${LAND}(/|$)`).test(ziel) || /^\/en(\/|$)/.test(ziel);
+const landFehler = new Map();
 
 // 2) Links je Seite sammeln
 const links = new Map(); // ziel → Set(quellen)
@@ -68,11 +80,16 @@ for (const [i, s] of zuPruefen.entries()) {
     continue;
   }
   const html = await r.text();
-  for (const m of html.matchAll(/<a\b[^>]*\bhref="([^"#]*)(#[^"]*)?"/g)) {
+  for (const tag of html.matchAll(/<a\b[^>]*>/g)) {
+    const m = /\bhref="([^"#]*)(#[^"]*)?"/.exec(tag[0]);
+    if (!m) continue;
+    // Länder- und Sprachwechsler (hreflang) führen bewusst in ein anderes Land
+    const wechsler = /\bhrefLang="/i.test(tag[0]);
     const roh = m[1].replace(/&amp;/g, "&");
     if (!roh.startsWith("/") || roh.startsWith("//")) continue;
     const ziel = roh.split("?")[0] || "/";
     if (IGNORIEREN.test(ziel)) continue;
+    if (!wechsler && !imLand(ziel)) landFehler.set(ziel, s);
     if (!links.has(ziel)) links.set(ziel, new Set());
     links.get(ziel).add(s);
   }
@@ -80,7 +97,7 @@ for (const [i, s] of zuPruefen.entries()) {
 }
 
 // 3) Ziele prüfen
-const fehler = [...seitenFehler];
+const fehler = [...seitenFehler, ...[...landFehler].map(([z, s]) => `${z}: verlässt das Land /${LAND} (verlinkt auf ${s})`)];
 let ok = 0;
 for (const [ziel, quellen] of links) {
   const r = await hole(ziel);

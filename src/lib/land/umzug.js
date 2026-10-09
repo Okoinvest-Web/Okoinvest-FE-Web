@@ -1,37 +1,49 @@
-// src/lib/land/umzug.js – Weiterleitungen der alten Pfade auf die Länderzonen (Welle 2)
+// src/lib/land/umzug.js – Weiterleitungen der Welle-2-Adressen auf das Ländermodell
 //
 // Eingebunden über redirects() in next.config.mjs. permanent: true → HTTP 308 (Methode bleibt
 // erhalten). Query-Parameter reicht Next.js unverändert weiter.
 //
-// Regeln (getestet in src/lib/land/umzug.test.mjs):
-//  - Jeder alte öffentliche Pfad (bisherige Sitemap) hat GENAU EINE Weiterleitung oder bleibt im Stamm.
-//  - Keine Ketten: Kein Ziel ist selbst wieder Quelle einer Weiterleitung.
-//  - Keine Schleifen, keine externen Ziele.
-//  - Ziel ist die Fassung des Landes, für das die Seite gilt (in der Regel /de/…); Regionsseiten
-//    gehen in ihr Land, nicht freigegebene (CH im gestuften Start) auf den Einstieg ihres Landes.
-// Der Middleware-Matcher bleibt unverändert (Masterplan Abschnitt 4).
+// Das Ländermodell nach Vorgabe des Inhabers kehrt zu den Pfaden von vor Welle 2 zurück: Jede
+// öffentliche Seite gibt es wieder ohne Präfix, dazu als Länderfassung unter /de, /at, /ch.
+// Die Adressen von vor Welle 2 brauchen deshalb KEINE Weiterleitung mehr. Weitergeleitet werden
+// nur Adressen, die es nur im Welle-2-Zwischenstand gab:
+//   /wissen/ratgeber[/…]            → /ratgeber[/…]         (Ratgeber wieder wie vor Welle 2)
+//   /ch/marktzugang-check           → /ch                    (Platzhalter „in Vorbereitung“ entfernt)
+//   /ch/parzellen-vorpruefung       → /ch
+// Sprachmodell (Entscheidung 2): Die englischen Seiten tragen dieselben Pfade wie die deutschen
+// (/en/investoren). Die alten englischen Adressen von vor Welle 2 leiten einmal per 308 um:
+//   /en/investors → /en/investoren, /en/project-exchange → /en/projektboerse,
+//   /en/sell-your-project → /en/projektboerse/anbieten, /en/contact → /en/kontakt
+// Regeln (getestet in src/lib/land/umzug.test.mjs): keine Ketten, keine Schleifen, keine
+// externen Ziele, kein Ziel ist selbst Quelle.
 //
 // Relative Importe mit Dateiendung: next.config.mjs lädt dieses Modul ohne Alias-Auflösung.
 
-import { ziel } from "./pfad.js";
-import { SEITEN, alleSchluessel } from "./stufen.js";
 import { UMBENANNT } from "./zonen.js";
 
-const ziel1 = (schluessel) => ziel(schluessel, "DE").href;
+/** Welle-2-Platzhalter „in Vorbereitung“ ohne Inhalt → Startseite des Landes. */
+export const ENTFERNT = Object.freeze([
+  { source: "/ch/marktzugang-check", destination: "/ch" },
+  { source: "/ch/parzellen-vorpruefung", destination: "/ch" },
+]);
 
-/** Feste Weiterleitungen alt → neu (eine Zeile je alter Seite). */
+/** Alte englische Adressen (eigene EN-Seiten vor dem Sprachmodell) → gleiche Seite unter /en mit deutschem Pfad. */
+export const EN_ALT = Object.freeze([
+  { source: "/en/investors", destination: "/en/investoren" },
+  { source: "/en/project-exchange", destination: "/en/projektboerse" },
+  { source: "/en/sell-your-project", destination: "/en/projektboerse/anbieten" },
+  { source: "/en/contact", destination: "/en/kontakt" },
+]);
+
+/** Feste Weiterleitungen alt → neu (eine Zeile je Quelle). */
 export function umzugsTabelle() {
   const zeilen = [];
-  for (const schluessel of alleSchluessel()) {
-    const muster = schluessel.startsWith("/regionen/") ? "/regionen/[slug]" : schluessel;
-    if (SEITEN[muster]?.neu) continue;
-    zeilen.push({ source: schluessel, destination: ziel1(schluessel), permanent: true });
-  }
-  // Umbenannt im Stamm: /ratgeber → /wissen/ratgeber, Artikel per Muster (ein Eintrag je Ebene)
   for (const u of UMBENANNT) {
     zeilen.push({ source: u.alt, destination: u.neu, permanent: true });
     zeilen.push({ source: `${u.alt}/:slug`, destination: `${u.neu}/:slug`, permanent: true });
   }
+  for (const e of ENTFERNT) zeilen.push({ ...e, permanent: true });
+  for (const e of EN_ALT) zeilen.push({ ...e, permanent: true });
   return zeilen;
 }
 

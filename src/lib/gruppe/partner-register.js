@@ -43,7 +43,7 @@ export const REGISTER_LAENDER = ["DE", "AT", "CH"];
 
 /**
  * Zielpfade als PFADSCHLÜSSEL (Pfad ohne Länderpräfix). zielPfad() löst sie über src/lib/land je Land auf
- * (Welle 2, Länderrouting). Nur diese Ziele sind über den Kurzlink erreichbar (kein offener Redirect).
+ * (Ländermodell: jede öffentliche Seite gibt es gemeinsam und unter /de, /at, /ch). Nur diese Ziele sind über den Kurzlink erreichbar (kein offener Redirect).
  */
 export const ZIELE = {
   start: { pfad: "/", label: "Startseite" },
@@ -58,9 +58,9 @@ export const ZIELE = {
 };
 
 /**
- * Länderrouting aktiv (Welle 2): Ziele werden je Land über src/lib/land aufgelöst. Fehlt eine Seite im Land, führt
- * der Link auf die Fassung des Landes, für das sie gilt (z. B. ("flaeche", "AT") → "/de/flaeche-verpachten",
- * solange es keine AT-Fassung gibt); "start" führt auf die Einstiegsseite des Landes (/de, /at, /ch).
+ * Länderpräfix aktiv (Ländermodell): Ziele werden je Land über src/lib/land aufgelöst, z. B. ("flaeche", "AT") →
+ * "/at/flaeche-verpachten" – dieselbe Seite, Inhalte für Österreich; "start" führt auf die Startseite des Landes
+ * (/de, /at, /ch). Ohne gültiges Land: die gemeinsame Seite ohne Präfix.
  */
 export const LAENDER_PRAEFIX_AKTIV = true;
 

@@ -706,7 +706,7 @@ def anreize_fuer(tarif=None, heute="", stunden=None, kennzahlen=None, zaehlpunkt
 	nutzung = (kennzahlen or {}).get("nutzungPct")
 	if erzeugt and not speicher:
 		niedrig = nutzung is not None and nutzung < 60
-		aus.append({"id": "speicher", "art": "speicher", "prio": 2 if niedrig else 3, "titel": "Speicher prüfen", "text": f"Nur {_de(nutzung)} % Ihrer Erzeugung werden in der Gemeinschaft genutzt. Ein Speicher verschiebt Mittagsstrom in den Abend – fürs eigene Haus und für Ihre Nachbarn." if niedrig else "Ein Batteriespeicher erhöht Ihren Eigenverbrauch. Für Gemeinschaftsspeicher sind die Messregeln (§ 111 ElWG) noch offen.", "link": "/de/rechner"})
+		aus.append({"id": "speicher", "art": "speicher", "prio": 2 if niedrig else 3, "titel": "Speicher prüfen", "text": f"Nur {_de(nutzung)} % Ihrer Erzeugung werden in der Gemeinschaft genutzt. Ein Speicher verschiebt Mittagsstrom in den Abend – fürs eigene Haus und für Ihre Nachbarn." if niedrig else "Ein Batteriespeicher erhöht Ihren Eigenverbrauch. Für Gemeinschaftsspeicher sind die Messregeln (§ 111 ElWG) noch offen.", "link": "/rechner"})
 	if verbraucht:
 		ap = (kennzahlen or {}).get("anteilPct")
 		aus.append({"id": "wallbox", "art": "wallbox", "prio": 2 if (ap is not None and ap < 25) else 3, "titel": "E-Auto und Wärmepumpe mittags laufen lassen", "text": "Ein Ladeplan für die Wallbox oder eine Zeitschaltung für Wärmepumpe und Boiler verschiebt Verbrauch in die Sonnenstunden – das erhöht Ihren Gemeinschaftsanteil ohne Komfortverlust."})

@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookieName, tokenPruefen } from "@/lib/plattform/sitzung";
+import { LAND_COOKIE } from "@/lib/land/vorschlag";
+import { SPRACH_COOKIE } from "@/lib/sprache/sprachen";
+import { startseitenZiel } from "@/lib/land/vorschlag";
 
 // Portal-Schutz: /portal/** nur mit gültig signiertem Sitzungscookie, sonst
 // Weiterleitung zu /login?weiter=… (nur interne Pfade). Die Middleware prüft
@@ -21,8 +24,22 @@ function sicherheitsKopf(res, pathname) {
   return res;
 }
 
+// Länder- und Sprachmodell: Die Startseite „/“ leitet NUR mit gesetztem Cookie „land“ bzw.
+// „sprache“ (entstehen erst nach aktiver Wahl in der Kopfleiste) auf die gespeicherte Wahl um:
+// land=AT → /at, sprache=en → /en, beides → /en/at. Ohne Cookie – auch für Suchmaschinen – nie.
+// Keine Auswertung von IP oder Browsersprache. Die Antwort auf „/“ wird nie zwischengespeichert
+// (private, no-store; Vary: Cookie), weder mit noch ohne Weiterleitung. Unterseiten leiten nie um.
+function startseite(request) {
+  const ziel = startseitenZiel(request.cookies.get(LAND_COOKIE)?.value, request.cookies.get(SPRACH_COOKIE)?.value);
+  const res = ziel ? NextResponse.redirect(new URL(ziel + request.nextUrl.search, request.url), 307) : NextResponse.next();
+  res.headers.set("Cache-Control", "private, no-store, max-age=0");
+  res.headers.set("Vary", "Cookie");
+  return res;
+}
+
 export async function middleware(request) {
   const { pathname, search } = request.nextUrl;
+  if (pathname === "/") return startseite(request);
   // Nicht-Portal-Pfade (Anmeldung, Einladung, APIs): nur Kopfzeilen, keine Sitzungsprüfung hier
   if (pathname !== "/portal" && !pathname.startsWith("/portal/")) return sicherheitsKopf(NextResponse.next(), pathname);
   const token = request.cookies.get(cookieName())?.value;
@@ -50,5 +67,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/portal", "/portal/:path*", "/login", "/login/:path*", "/registrieren", "/passwort-vergessen", "/einladung/:path*", "/api/auth/:path*", "/api/portal/:path*"],
+  matcher: ["/", "/portal", "/portal/:path*", "/login", "/login/:path*", "/registrieren", "/passwort-vergessen", "/einladung/:path*", "/api/auth/:path*", "/api/portal/:path*"],
 };

@@ -10,13 +10,14 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
 
-  // Länderrouting (Welle 2): alte Pfade → /de, /at, /ch bzw. /wissen/ratgeber, 308 ohne Ketten
-  // (Tabelle und Tests: src/lib/land/umzug.js). Keine IP-/Geo-Weiterleitung.
+  // Ländermodell: Welle-2-Adressen (/wissen/ratgeber, CH-Platzhalter) → 308 ohne Ketten
+  // (Tabelle und Tests: src/lib/land/umzug.js). Keine IP-/Geo-Weiterleitung; die Weiterleitung
+  // von „/“ auf das gewählte Land (nur mit Cookie) macht die Middleware.
   async redirects() {
     return UMZUG.map(({ source, destination, permanent }) => ({ source, destination, permanent }));
   },
 
-  // Mehrere Root-Layouts (Routengruppen je Zone, <html lang> je Land): globale 404-Seite
+  // Mehrere Root-Layouts (gemeinsam, Länderfassungen /de /at /ch, EN – <html lang> je Land): globale 404-Seite
   // für Pfade außerhalb aller Layouts (src/app/global-not-found.js).
   experimental: { globalNotFound: true },
 

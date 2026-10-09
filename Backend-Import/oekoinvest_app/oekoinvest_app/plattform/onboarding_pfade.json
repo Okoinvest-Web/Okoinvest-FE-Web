@@ -712,7 +712,7 @@
      "text": "Gemeinde, amtlicher Gemeindeschlüssel (DE AGS, AT Gemeindekennziffer, CH BFS-Nummer), gemeindeeigene Flächen, Planungsstand und Themen – strukturiert in einem Formular.",
      "links": [
       {
-       "href": "/de/kommunen#anfrage",
+       "href": "/kommunen#anfrage",
        "label": "Gemeindedaten erfassen",
        "primaer": true
       }
@@ -736,7 +736,7 @@
      ],
      "links": [
       {
-       "href": "/de/kommunen",
+       "href": "/kommunen",
        "label": "Leitfaden für Kommunen"
       }
      ],
@@ -761,11 +761,11 @@
      ],
      "links": [
       {
-       "href": "/de/rechner/kommune",
+       "href": "/rechner/kommune",
        "label": "Kommunal-Rechner"
       },
       {
-       "href": "/de/genossenschaft",
+       "href": "/genossenschaft",
        "label": "Genossenschaft"
       }
      ],
@@ -925,7 +925,7 @@
      "text": "Sie haben den kostenlosen Flächencheck schon genutzt? Dann liegt das Ergebnis als Anfrage in Ihrem Konto (zugeordnet über Ihre bestätigte E-Mail-Adresse) – im nächsten Schritt übernehmen Sie Größe, Region und Nutzung per Klick, statt sie neu einzugeben. Noch nicht? Der Check dauert zwei Minuten.",
      "links": [
       {
-       "href": "/de/flaechencheck",
+       "href": "/flaechencheck",
        "label": "Flächencheck starten"
       },
       {

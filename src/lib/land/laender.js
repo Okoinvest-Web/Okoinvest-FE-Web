@@ -48,3 +48,6 @@ export const einstiegPfad = (wert) => landInfo(wert)?.einstieg || null;
 
 /** Präfix-Muster am Pfadanfang: "/de", "/de/…", "/at…" */
 export const PRAEFIX_MUSTER = /^\/(de|at|ch)(?=\/|$|\?|#)/;
+
+/** Wert für LandProvider: Land im Browser aus dem Pfad lesen (/en/at/… → AT; englische Seiten). */
+export const LAND_AUS_PFAD = "pfad";

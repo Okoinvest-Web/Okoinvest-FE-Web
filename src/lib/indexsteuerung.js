@@ -84,7 +84,16 @@ export const GESPERRT_FUER_ALLE = ["/api/", "/portal", "/einladung/", "/angebot/
  * Bewusst NICHT enthalten: /energie-live (Datenlizenzen SMARD/aWATTar ungeklärt,
  * Masterplan S2), Rechner, Projektbörse, Formulare.
  */
-export const WISSENSSEITEN = ["/wissen/", "/de/regionen", "/at/regionen", "/de/faq", "/de/marktdaten", "/llms.txt"];
+export const WISSENSSEITEN = [
+  "/ratgeber",
+  "/wissen/",
+  "/regionen",
+  "/faq",
+  "/marktdaten",
+  // Ländermodell: dieselben Seiten in den Länderfassungen /de, /at, /ch
+  ...["de", "at", "ch"].flatMap((l) => [`/${l}/ratgeber`, `/${l}/wissen/`, `/${l}/regionen`, `/${l}/faq`, `/${l}/marktdaten`]),
+  "/llms.txt",
+];
 
 /** Trainingscrawler mit Wissensseiten-Freigabe (E5, Antwort 2 „Ja“). */
 export const TRAINING_WISSEN = ["GPTBot", "Google-Extended"];
@@ -110,8 +119,8 @@ export const GESPERRT = ["CCBot", "Bytespider", "Meta-ExternalAgent", "cohere-ai
  * Seite noindex (src/app/layout.js).
  *
  * @param {{ indexierbar: boolean, siteUrl: string, sitemaps?: string[] }} e
- *   sitemaps: absolute URLs der Sitemaps (Welle 2: je Land und Stamm, src/lib/land/sitemaps.js);
- *   ohne Angabe die eine Sitemap unter /sitemap.xml
+ *   sitemaps: optionale Liste absoluter Sitemap-URLs; ohne Angabe die eine Sitemap unter
+ *   /sitemap.xml (Ländermodell: eine Sitemap mit gemeinsamen Seiten und Länderfassungen)
  */
 export function robotsRegeln({ indexierbar, siteUrl, sitemaps }) {
   if (!indexierbar) {
@@ -147,8 +156,8 @@ export function ohneEntwuerfe(eintraege) {
 }
 
 /**
- * Sprache der Seite nach Pfad (wie <html lang> der Root-Layouts, Welle 2):
- * /en… → "en", /de… → "de-DE", /at… → "de-AT", /ch… → "de-CH", sonst (Stamm) "de".
+ * Sprache der Seite nach Pfad (wie <html lang> der Root-Layouts, Ländermodell):
+ * /en… → "en", /de… → "de-DE", /at… → "de-AT", /ch… → "de-CH", sonst (gemeinsame Seite) "de".
  * Die Root-Layouts setzen lang serverseitig (src/components/Wurzel/Wurzel.js); diese Funktion
  * spiegelt das für Prüfskripte und Tests.
  */

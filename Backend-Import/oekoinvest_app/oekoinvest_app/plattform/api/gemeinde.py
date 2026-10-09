@@ -111,12 +111,12 @@ def _projekte(g):
 def _angebote(g):
 	out = []
 	for x in frappe.get_all("Plattform Genossenschaft", filters={"land": g["land"]}, fields=["titel", "register_status"], limit_page_length=50):
-		out.append({"art": "genossenschaft", "titel": x.titel, "status": MK.GENO_REGISTER.get(x.register_status, x.register_status), "link": "/de/genossenschaft", "text": "Beitritt und Zeichnung von Geschäftsanteilen über das Portal." if x.register_status == "eingetragen" else "Unverbindliche Vormerkung möglich."})
+		out.append({"art": "genossenschaft", "titel": x.titel, "status": MK.GENO_REGISTER.get(x.register_status, x.register_status), "link": "/genossenschaft", "text": "Beitritt und Zeichnung von Geschäftsanteilen über das Portal." if x.register_status == "eingetragen" else "Unverbindliche Vormerkung möglich."})
 	for x in frappe.get_all("Plattform Energiegemeinschaft", filters={"land": g["land"], "status": ["!=", "geschlossen"]}, fields=["titel", "status", "daten"], limit_page_length=50):
 		d = aus_json(x.daten, {}) or {}
-		out.append({"art": "energiegemeinschaft", "titel": x.titel, "status": "aktiv" if x.status == "aktiv" else "in Gründung", "link": "/de/energiegemeinschaften", "text": f"{d.get('gebiet') or d.get('netzbetreiber') or ''} – Strom aus der Region teilen."})
+		out.append({"art": "energiegemeinschaft", "titel": x.titel, "status": "aktiv" if x.status == "aktiv" else "in Gründung", "link": "/energiegemeinschaften", "text": f"{d.get('gebiet') or d.get('netzbetreiber') or ''} – Strom aus der Region teilen."})
 	if g["land"] == "DE":
-		out.append({"art": "par6", "titel": "Kommunalbeteiligung nach § 6 EEG", "status": "gesetzlich möglich", "link": "/de/kommunen", "text": "Bis 0,2 ct/kWh an die Gemeinde – vertraglich, ab Inbetriebnahme."})
+		out.append({"art": "par6", "titel": "Kommunalbeteiligung nach § 6 EEG", "status": "gesetzlich möglich", "link": "/kommunen", "text": "Bis 0,2 ct/kWh an die Gemeinde – vertraglich, ab Inbetriebnahme."})
 	return out
 
 

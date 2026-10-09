@@ -45,14 +45,14 @@ test("Entwurf greift nur außerhalb der Produktion", () => {
 });
 
 test("Zielpfade als Schlüssel – Länderpräfix vorbereitet", () => {
-  // Welle 2: Länderrouting aktiv – Auflösung über src/lib/land (fehlt die Seite im Land → Fassung, für die sie gilt)
+  // Ländermodell: jede öffentliche Seite hat eine Länderfassung – Auflösung über src/lib/land
   assert.equal(zielPfad("flaeche", "AT", { praefix: false }), "/flaeche-verpachten");
-  assert.equal(zielPfad("flaeche", "AT"), "/de/flaeche-verpachten");
+  assert.equal(zielPfad("flaeche", "AT"), "/at/flaeche-verpachten");
   assert.equal(zielPfad("flaechencheck", "AT"), "/at/flaechencheck");
-  assert.equal(zielPfad("kontakt", "CH"), "/kontakt");
+  assert.equal(zielPfad("kontakt", "CH"), "/ch/kontakt");
   assert.equal(zielPfad("start", "CH", { praefix: true }), "/ch");
   assert.equal(zielPfad("start", "XX", { praefix: true }), "/");
-  assert.equal(zielPfad("flaeche", "XX"), "/de/flaeche-verpachten");
+  assert.equal(zielPfad("flaeche", "XX"), "/flaeche-verpachten", "ohne gültiges Land: gemeinsame Seite");
   assert.equal(zielPfad("gibtsnicht", "DE"), null);
   assert.equal(zielPfad("__proto__", "DE"), null);
   for (const z of Object.values(ZIELE)) assert.match(z.pfad, /^\/[a-z-]*$/);

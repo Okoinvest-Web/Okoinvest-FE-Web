@@ -8,8 +8,11 @@
 // (node scripts/ratgeber-index.mjs).
 
 import { INHALTE } from "@/content/ratgeber";
+import { META_EN, KATEGORIEN_EN } from "@/content/ratgeber/en/meta";
+import { VOLLTEXT_EN } from "@/content/ratgeber/en";
+import { zusammenfuehren } from "@/lib/sprache/woerterbuch";
 
-export const RATGEBER_BASE = "/wissen/ratgeber";
+export const RATGEBER_BASE = "/ratgeber";
 
 // Feste Themenbereiche – für Filter auf der Übersicht und thematische Cluster.
 export const KATEGORIEN = [
@@ -74,9 +77,70 @@ export function artikelPfad(slug) {
   return `${RATGEBER_BASE}/${slug}`;
 }
 
-/** Deutsches Datum: "2026-09-11" -> "11. September 2026" */
-export function datumLang(iso) {
-  return new Date(iso).toLocaleDateString("de-DE", {
+/* ------------------------------------------------------------------ */
+/* Sprachmodell: englische Fassung der Artikel                          */
+/* ------------------------------------------------------------------ */
+// Metadaten (Titel, Kurzfassung, Kennzahl) gibt es für alle Artikel englisch (content/ratgeber/en/meta.js),
+// den Volltext nur für die Artikel im Register content/ratgeber/en/index.js. Kategorie bleibt der
+// deutsche Schlüssel (Filter, Anker); angezeigt wird kategorieLabel.
+
+/** Gibt es den Artikeltext auf Englisch? */
+export const artikelVolltextEn = (slug) => Object.hasOwn(VOLLTEXT_EN, slug);
+
+/** Slugs mit englischem Volltext */
+export const ARTIKEL_EN = Object.freeze(Object.keys(VOLLTEXT_EN));
+
+/** Anzeigename eines Themenbereichs */
+export const kategorieName = (kategorie, sprache = "de") => (sprache === "en" && KATEGORIEN_EN[kategorie]) || kategorie;
+
+/**
+ * Deutsch formatierten Kennzahlwert ins Englische übertragen (eine Quelle für die Zahl):
+ * "1.500–4.500 €" → "€1,500–4,500", "5,2–11,9 ct" → "5.2–11.9 ct", "bis 60 %" → "up to 60%".
+ */
+export function wertEn(s) {
+  if (typeof s !== "string") return s;
+  let t = s
+    .replace(/(\d)\.(\d{3})/g, "$1\u0000$2")
+    .replace(/(\d),(\d)/g, "$1.$2")
+    .replace(/\u0000/g, ",")
+    .replace(/\s%/g, "%")
+    .replace(/\s‰/g, "‰")
+    .replace(/^ab /, "from ")
+    .replace(/^bis /, "up to ")
+    .replace(/^ca\. /, "approx. ")
+    .replace(/ Mio\. t$/, " million t")
+    .replace(/ Monate$/, " months")
+    .replace(/ Jahre$/, " years")
+    .replace(/(\d) von (\d)/, "$1 of $2");
+  t = t.replace(/^((?:approx\.|from|up to) )?(.*?)\s?T€$/, (m, p, z) => `${p || ""}€${z}k`);
+  t = t.replace(/^((?:approx\.|from|up to) )?([^€]*?)\s€(\/\S+)?$/, (m, p, z, e) => `${p || ""}€${z}${e || ""}`);
+  return t;
+}
+
+/** Artikel in der Sprache der Seite (Deutsch: unverändert) */
+export function artikelInSprache(a, sprache = "de") {
+  if (!a || sprache !== "en") return a ? { ...a, kategorieLabel: a.kategorie } : a;
+  const meta = META_EN[a.slug];
+  const voll = VOLLTEXT_EN[a.slug];
+  let x = { ...a, kategorieLabel: kategorieName(a.kategorie, "en"), englisch: !!voll };
+  if (meta) {
+    const { badge, keywords, ...texte } = meta;
+    x = {
+      ...x,
+      ...texte,
+      keywords: [...(keywords || []), ...(a.keywords || [])],
+      ...(a.badge ? { badge: { wert: badge?.wert || wertEn(a.badge.wert), text: badge?.text || a.badge.text } } : {}),
+    };
+  }
+  return voll ? zusammenfuehren(x, voll) : x;
+}
+
+/** Alle Artikel in der Sprache, neueste zuerst */
+export const alleArtikelIn = (sprache = "de") => alleArtikel().map((a) => artikelInSprache(a, sprache));
+
+/** Datum lang: "2026-09-11" → "11. September 2026" (de) bzw. "11 September 2026" (en) */
+export function datumLang(iso, sprache = "de") {
+  return new Date(iso).toLocaleDateString(sprache === "en" ? "en-GB" : "de-DE", {
     day: "numeric",
     month: "long",
     year: "numeric",

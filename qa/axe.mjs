@@ -23,8 +23,8 @@ const HIER = dirname(fileURLToPath(import.meta.url));
 const BASELINE = join(HIER, "axe-baseline.json");
 
 // 10 Kernseiten: Einstiege je Zielgruppe, Funnel, Rechner, Börse, Kontakt
-// Welle 2 (Länderrouting): Länderzonen-Seiten unter /de
-export const KERNSEITEN = ["/", "/de/flaechencheck", "/de/freiflaeche", "/de/landwirte", "/investoren", "/de/kommunen", "/de/reststrom", "/de/rechner/pacht", "/projektboerse", "/kontakt"];
+// Ländermodell: gemeinsame Seiten wie vor Welle 2 (Länderfassungen nutzen dieselben Komponenten)
+export const KERNSEITEN = ["/", "/flaechencheck", "/freiflaeche", "/landwirte", "/investoren", "/kommunen", "/reststrom", "/rechner/pacht", "/projektboerse", "/kontakt"];
 const BANNER_SEITE = "/ (Cookie-Banner offen)";
 const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const SCHWER = new Set(["serious", "critical"]);

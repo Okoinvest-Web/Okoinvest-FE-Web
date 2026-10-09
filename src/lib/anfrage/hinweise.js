@@ -17,7 +17,9 @@
 //  - Die Weitergabe an Partner setzt benannte Partner voraus; solange keine benannt sind, bleibt das
 //    Häkchen ausgeblendet (aktiv: false).
 
-export const HINWEIS_VERSION = "ENTWURF-2026-10-03";
+// 2026-10-08: englischer Verweis ohne „(in German)“ – die Datenschutzerklärung gibt es jetzt als englische
+// Übersetzung zur Information (/en/datenschutz; maßgeblich bleibt die deutsche Fassung).
+export const HINWEIS_VERSION = "ENTWURF-2026-10-08";
 
 /** Hinweis statt Pflicht-Einwilligung (der vollständige Text wird mit Version und Hash beim Vorgang gespeichert) */
 const HINWEIS_KERN = "Wir verarbeiten Ihre Angaben, um Ihre Anfrage zu beantworten. Eine Einwilligung ist dafür nicht nötig.";
@@ -35,8 +37,8 @@ export const HINWEIS = Object.freeze({
   en: Object.freeze({
     kern: "We process your details to answer your enquiry. No consent is needed for this.",
     verweisVor: "Details and your rights are set out in our",
-    verweisLink: "privacy policy (in German)",
-    text: "We process your details to answer your enquiry. No consent is needed for this. Details and your rights are set out in our privacy policy (in German).",
+    verweisLink: "privacy policy",
+    text: "We process your details to answer your enquiry. No consent is needed for this. Details and your rights are set out in our privacy policy.",
   }),
 });
 

@@ -9,8 +9,9 @@
 //   5. E2E (Glob qa/e2e/*.e2e.mjs, POSTs abgefangen)   – Gate, braucht Dev-Server
 //   6. Faktenregister-Check (qa/fakten-check.mjs)       – Gate (läuft vor 4/5): 0 Fakten ohne
 //      Quelle/Abruf, kein abgelaufener Klasse-A-Wert; zu_pruefen und abgelaufene B/C = Warnung
-//   7. Länderlinks (scripts/codemod-links.mjs --pruefen) – Gate (läuft vor 4/5): 0 harte Links auf Pfade,
-//      die mit dem Länderrouting (Welle 2) nach /de, /at, /ch bzw. /wissen/ratgeber umgezogen sind
+//   7. Ländermodell – Gate (läuft vor 4/5): Länderfassungen vollständig und reine Weiterleitungen
+//      (scripts/landfassungen.mjs --pruefen) und 0 feste Länderpräfixe/Welle-2-Namen in Links
+//      (scripts/codemod-links.mjs --pruefen; die Link-Komponente hängt das Land selbst an)
 //
 // Optionen:
 //   --ohne-browser   Schritte 4–5 auslassen (Ergebnis dann ausdrücklich „unvollständig“)
@@ -52,7 +53,7 @@ const SCHRITTE = [
   { nr: 3, name: "Claim-Lint", befehl: ["qa/claim-lint.mjs", "--json", claimJson, ...(streng ? ["--streng"] : [])], bericht: !streng },
   // Nr. 6 läuft bewusst vor den Browser-Schritten (schnell, ohne Dev-Server); die Nummern 4/5 bleiben stabil.
   { nr: 6, name: "Faktenregister-Check (Quelle, Stand, Klasse A)", befehl: ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "qa/fakten-check.mjs", "--json", faktenJson] },
-  { nr: 7, name: "Länderlinks: keine harten Links auf alte Pfade", befehl: ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "scripts/codemod-links.mjs", "--pruefen"] },
+  { nr: 7, name: "Ländermodell: Länderfassungen und Links ohne feste Präfixe", befehl: ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "scripts/codemod-links.mjs", "--pruefen"], danach: ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "scripts/landfassungen.mjs", "--pruefen"] },
   { nr: 4, name: "axe – 10 Kernseiten", befehl: ["qa/axe.mjs", "--json", axeJson], browser: true },
   { nr: 5, name: "E2E qa/e2e/*.e2e.mjs (POSTs abgefangen)", befehl: [...OHNE_WARNUNG, "--test", "--test-concurrency=1", "qa/e2e/*.e2e.mjs"], browser: true },
 ];
@@ -93,7 +94,8 @@ for (const s of SCHRITTE) {
     continue;
   }
   const t0 = Date.now();
-  const code = await laufe(s.befehl);
+  let code = await laufe(s.befehl);
+  if (code === 0 && s.danach) code = await laufe(s.danach);
   const sekunden = Math.round((Date.now() - t0) / 1000);
   ergebnis.push({ ...s, status: code === 0 ? "ok" : s.bericht ? "bericht" : "fehler", code, sekunden });
 }

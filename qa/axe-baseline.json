@@ -2,18 +2,18 @@
  "_hinweis": "Altlasten-Stand für die axe-Ratsche (qa/axe.mjs). Nur verkleinern; Ziel: leer.",
  "_stand": "2026-10-03",
  "/": {},
- "/de/flaechencheck": {},
- "/de/freiflaeche": {
+ "/flaechencheck": {},
+ "/freiflaeche": {
   "color-contrast": 3
  },
- "/de/landwirte": {
+ "/landwirte": {
   "definition-list": 4,
   "dlitem": 32
  },
  "/investoren": {},
- "/de/kommunen": {},
- "/de/reststrom": {},
- "/de/rechner/pacht": {},
+ "/kommunen": {},
+ "/reststrom": {},
+ "/rechner/pacht": {},
  "/projektboerse": {
   "color-contrast": 3
  },

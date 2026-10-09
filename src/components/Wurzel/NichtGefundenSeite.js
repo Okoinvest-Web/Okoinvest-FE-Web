@@ -1,20 +1,36 @@
-// Gemeinsamer Inhalt der 404-Seiten (Welle 2: je Root-Layout eine not-found.js).
-import Link from "next/link";
+// Gemeinsamer Inhalt der 404-Seiten (je Root-Layout eine not-found.js). Links bleiben über die
+// Link-Komponente im Land der Seite (Ländermodell).
+import Link from "@/components/Land/Link";
 import { ArrowRight, BookOpen, Calculator, Home, LayoutGrid, MapPinned } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { NichtGefunden } from "@/components/illustrationen";
-import { pfad } from "@/lib/land";
 
-const zieleFuer = (land) => [
-  { titel: "Flächencheck", text: "Eignung Ihrer Fläche prüfen", href: pfad("/flaechencheck", land), icon: MapPinned },
+const ZIELE = [
+  { titel: "Flächencheck", text: "Eignung Ihrer Fläche prüfen", href: "/flaechencheck", icon: MapPinned },
   { titel: "Projektbörse", text: "PV-Projekte in allen Phasen", href: "/projektboerse", icon: LayoutGrid },
-  { titel: "Rechner", text: "Pacht, Agri-PV, Solarpark, Reststrom", href: pfad("/rechner", land), icon: Calculator },
-  { titel: "Ratgeber", text: "Pacht, Genehmigung, Investment", href: "/wissen/ratgeber", icon: BookOpen },
+  { titel: "Rechner", text: "Pacht, Agri-PV, Solarpark, Reststrom", href: "/rechner", icon: Calculator },
+  { titel: "Ratgeber", text: "Pacht, Genehmigung, Investment", href: "/ratgeber", icon: BookOpen },
 ];
 
-/** Inhalt der 404-Seite (Stamm, Länderzonen, globale 404). land: Linkziele im Land der Zone. */
-export default function NichtGefundenSeite({ land = "DE" }) {
-  const ZIELE = zieleFuer(land);
+// Sprachmodell: englische Texte für die 404 unter /en (src/app/(en)/en/not-found.js)
+const TEXTE = {
+  de: { titel: "Diese Fläche ist noch nicht erschlossen.", lead: "Die gesuchte Seite existiert nicht oder wurde verschoben. Diese Wege führen weiter:", start: "Zur Startseite", ziele: ZIELE },
+  en: {
+    titel: "This site has not been developed yet.",
+    lead: "The page you are looking for does not exist or has moved. These routes lead on:",
+    start: "To the home page",
+    ziele: [
+      { ...ZIELE[0], titel: "Land check", text: "Check whether your land is suitable" },
+      { ...ZIELE[1], titel: "Project exchange", text: "PV projects in all phases" },
+      { ...ZIELE[2], titel: "Calculators", text: "Lease, agrivoltaics, solar park, residual power" },
+      { ...ZIELE[3], titel: "Guides", text: "Lease, permits, investment" },
+    ],
+  },
+};
+
+/** Inhalt der 404-Seite (gemeinsam, Länderfassungen, englisch, globale 404). */
+export default function NichtGefundenSeite({ sprache = "de" }) {
+  const t = TEXTE[sprache] || TEXTE.de;
   return (
     <section className="ov-noise relative isolate overflow-hidden bg-navy-950 text-white">
       <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10" />
@@ -27,13 +43,13 @@ export default function NichtGefundenSeite({ land = "DE" }) {
           <span className="ov-text-gradient-light">404</span>
         </p>
         <h1 className="ov-h2 ov-hero-in mt-4" style={{ "--ov-delay": "100ms" }}>
-          Diese Fläche ist noch nicht erschlossen.
+          {t.titel}
         </h1>
         <p className="ov-lead ov-hero-in mx-auto mt-5 max-w-xl text-white/75" style={{ "--ov-delay": "180ms" }}>
-          Die gesuchte Seite existiert nicht oder wurde verschoben. Diese Wege führen weiter:
+          {t.lead}
         </p>
         <ul className="ov-hero-in mt-10 grid w-full max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-4" style={{ "--ov-delay": "260ms" }}>
-          {ZIELE.map((z) => (
+          {t.ziele.map((z) => (
             <li key={z.href}>
               <Link href={z.href} className="group ov-glass ov-press flex h-full flex-col items-start rounded-3xl p-5 text-left transition-colors hover:bg-white/15">
                 <z.icon aria-hidden="true" className="h-6 w-6 text-ov-300" />
@@ -46,7 +62,7 @@ export default function NichtGefundenSeite({ land = "DE" }) {
         </ul>
         <div className="ov-hero-in mt-10" style={{ "--ov-delay": "320ms" }}>
           <Button href="/" size="lg" icon={Home}>
-            Zur Startseite
+            {t.start}
           </Button>
         </div>
       </div>

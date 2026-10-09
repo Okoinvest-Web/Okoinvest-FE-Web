@@ -35,7 +35,7 @@ function eintraege() {
     art: "ratgeber",
     id: a.slug,
     titel: a.kurzTitel || a.title,
-    href: `/wissen/ratgeber/${a.slug}`,
+    href: `/ratgeber/${a.slug}`,
     kurz: ohneMarkdown(a.excerpt || a.description),
     fazit: (a.kurzFazit || []).map(ohneMarkdown),
     faq: (a.faq || []).map((f) => ({ q: ohneMarkdown(f.q), a: ohneMarkdown(f.a) })),

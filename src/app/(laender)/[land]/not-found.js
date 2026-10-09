@@ -1,11 +1,12 @@
-// 404 in den Länderzonen, z. B. für Seiten, die im gestuften Start in diesem Land nicht
-// freigegeben sind (src/lib/land/stufen.js). Linkziele bleiben im Land der Zone.
-"use client";
-import { usePathname } from "next/navigation";
+// 404 in den Länderfassungen (/de, /at, /ch …). Linkziele bleiben im Land der Seite
+// (Link-Komponente src/components/Land/Link.js liest das Land aus dem Root-Layout).
 import NichtGefundenSeite from "@/components/Wurzel/NichtGefundenSeite";
-import { landAusPfad } from "@/lib/land";
+
+export const metadata = {
+  title: "Seite nicht gefunden | ÖkoInvest",
+  robots: { index: false, follow: true },
+};
 
 export default function NotFound() {
-  const { land } = landAusPfad(usePathname() || "/");
-  return <NichtGefundenSeite land={land || "DE"} />;
+  return <NichtGefundenSeite />;
 }

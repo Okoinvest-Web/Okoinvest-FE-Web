@@ -1,0 +1,54 @@
+{
+  "titel": "ÖkoInvest · Ländermodell „Eine Website, drei Länder, zwei Sprachen“",
+  "agenten": [
+    {
+      "label": "Ländermodell · Länder-Architekt",
+      "team": "Ländermodell · Umbau",
+      "rolle": "Länder-Architekt",
+      "auftrag": "Ein Design, Land aus Top-Bar/URL, Wahl gespeichert",
+      "art": "welle"
+    },
+    {
+      "label": "Ländermodell · Inhalte AT – Gruppe 1",
+      "team": "Ländermodell · Länderinhalte",
+      "rolle": "Inhalte AT – Gruppe 1",
+      "auftrag": "Österreich-Inhalte in den Seiten",
+      "art": "welle"
+    },
+    {
+      "label": "Ländermodell · Inhalte CH – Gruppe 1",
+      "team": "Ländermodell · Länderinhalte",
+      "rolle": "Inhalte CH – Gruppe 1",
+      "auftrag": "Schweiz-Inhalte in den Seiten",
+      "art": "welle"
+    },
+    {
+      "label": "Ländermodell · Inhalte AT/CH – Gruppe 2",
+      "team": "Ländermodell · Länderinhalte",
+      "rolle": "Inhalte AT/CH – Gruppe 2",
+      "auftrag": "Weitere Seiten",
+      "art": "welle"
+    },
+    {
+      "label": "Ländermodell · Sprach-Architekt EN",
+      "team": "Ländermodell · Sprache",
+      "rolle": "Sprach-Architekt EN",
+      "auftrag": "EN-Umschaltung dauerhaft für alle Seiten",
+      "art": "welle"
+    },
+    {
+      "label": "Ländermodell · Übersetzung EN",
+      "team": "Ländermodell · Sprache",
+      "rolle": "Übersetzung EN",
+      "auftrag": "Alle öffentlichen Seiten auf Englisch",
+      "art": "welle"
+    },
+    {
+      "label": "Ländermodell · Qualitätsmanager",
+      "team": "Ländermodell · Abnahme",
+      "rolle": "Qualitätsmanager",
+      "auftrag": "Design-Gleichheit, Länder, Sprache, Welle-2-Abnahme",
+      "art": "welle"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+import { chromium } from "playwright";
+const browser = await chromium.launch();
+const ctx = await browser.newContext({ viewport: { width: 820, height: 1024 }, hasTouch: true }); const page = await ctx.newPage();
+await page.goto("http://localhost:3100/energiegemeinschaften/software", { waitUntil: "load", timeout: 180000 });
+await page.waitForTimeout(1500);
+await page.evaluate(() => { window.__x = 0; setTimeout(() => (window.__x = performance.now()), 200); window.__t0 = performance.now(); });
+await page.waitForTimeout(1000);
+console.log(await page.evaluate(() => [window.__x ? Math.round(window.__x - window.__t0) : "nicht gefeuert", Math.round(performance.now() - window.__t0)]));
+await page.mouse.wheel(0, 400);
+await page.evaluate(() => { window.__y = 0; addEventListener("scroll", () => { clearTimeout(window.__tt); window.__tt = setTimeout(() => (window.__y = performance.now()), 220); }, { passive: true }); window.__t1 = performance.now(); });
+await page.mouse.wheel(0, 400);
+await page.waitForTimeout(1500);
+console.log(await page.evaluate(() => [window.__y ? Math.round(window.__y - window.__t1) : "nicht gefeuert", Math.round(performance.now() - window.__t1)]));
+await browser.close();

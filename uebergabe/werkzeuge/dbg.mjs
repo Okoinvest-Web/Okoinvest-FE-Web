@@ -1,0 +1,23 @@
+import { chromium } from "playwright";
+const browser = await chromium.launch();
+const ctx = await browser.newContext({ viewport: { width: 820, height: 1024 }, hasTouch: true });
+await ctx.addInitScript(() => { try { localStorage.setItem("cookie-consent", "necessary"); } catch {} });
+const page = await ctx.newPage();
+page.on("pageerror", (e) => console.log("PAGEERR", String(e)));
+page.on("console", (m) => console.log("CONSOLE", m.type(), m.text().slice(0, 200)));
+await ctx.addInitScript(() => { window.__sc = 0; addEventListener("scroll", () => { window.__sc++; window.__last = performance.now(); }, { passive: true }); });
+await page.goto("http://localhost:3100/energiegemeinschaften/software", { waitUntil: "load", timeout: 180000 });
+await page.waitForTimeout(1500);
+const ranges = await page.$$("main input[type=range]");
+console.log("ranges", ranges.length);
+const r = ranges[0];
+await r.evaluate((el) => { const b = el.getBoundingClientRect(); window.scrollTo(0, window.scrollY + b.top - 940); });
+await page.waitForTimeout(800);
+console.log(await page.evaluate(() => { const el = document.querySelector("main input[type=range]"); const b = el.getBoundingClientRect(); return { top: b.top, cta: document.body.classList.contains("ov-cta-sichtbar"), inMain: !!el.closest("main"), matches: el.matches('main :is(input:not([type="hidden"]))') }; }));
+await page.mouse.wheel(0, 3); await page.waitForTimeout(800);
+console.log(await page.evaluate(() => { const el = document.querySelector("main input[type=range]"); const b = el.getBoundingClientRect(); return { top: b.top, cta: document.body.classList.contains("ov-cta-sichtbar") }; }));
+console.log(JSON.stringify(await page.evaluate(() => [window.__fu, window.__sc, window.__os, Math.round(performance.now() - window.__last), Math.round(performance.now() - window.__set), Math.round(performance.now())])));
+for (let i = 0; i < 4; i++) { await page.waitForTimeout(700); console.log("t", JSON.stringify(await page.evaluate(() => [window.__sc, Math.round(performance.now() - window.__last), scrollY]))); }
+console.log(JSON.stringify(await page.evaluate(async () => { window.dispatchEvent(new Event("scroll")); await new Promise((r) => setTimeout(r, 600)); return [window.__fu, document.body.classList.contains("ov-cta-sichtbar")]; })));
+console.log(await page.evaluate(() => new Promise((res) => { const el = document.querySelector("main input[type=range]"); const io = new IntersectionObserver(([e]) => { res({ isI: e.isIntersecting, rb: e.rootBounds && [e.rootBounds.top, e.rootBounds.bottom], ir: [e.intersectionRect.top, e.intersectionRect.height], br: [e.boundingClientRect.top] }); io.disconnect(); }, { rootMargin: `-${innerHeight - 104}px 0px 0px 0px` }); io.observe(el); })));
+await browser.close();

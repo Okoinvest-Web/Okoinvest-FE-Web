@@ -1,0 +1,10 @@
+import { chromium } from "playwright";
+const [url, reduced, breite = "1440"] = process.argv.slice(2);
+const browser = await chromium.launch();
+const ctx = await browser.newContext({ viewport: { width: Number(breite), height: 900 }, reducedMotion: reduced === "r" ? "reduce" : "no-preference" });
+await ctx.addInitScript(() => { try { localStorage.setItem("cookie-consent", "necessary"); } catch {} window.__s = []; new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__s.push({ v: +e.value.toFixed(4), t: Math.round(e.startTime), src: e.sources?.map((s) => (s.node?.nodeName || "") + "." + (s.node?.className?.toString?.().slice(0, 60) || "") + " " + JSON.stringify([s.previousRect.y, s.currentRect.y, s.previousRect.height, s.currentRect.height])) }); }).observe({ type: "layout-shift", buffered: true }); });
+const page = await ctx.newPage();
+await page.goto(url, { waitUntil: "commit", timeout: 180000 });
+await page.waitForTimeout(2600); await page.locator("main a").first().hover().catch(() => {}); await page.waitForTimeout(800);
+console.log(JSON.stringify(await page.evaluate(() => window.__s), null, 1));
+await browser.close();

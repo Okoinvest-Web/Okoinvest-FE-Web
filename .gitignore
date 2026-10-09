@@ -60,3 +60,6 @@ __pycache__/
 
 # temporäre Skripte (z. B. Agenten-Läufe), W0-1
 *.tmp.js
+
+# Rohes Sitzungsprotokoll (groß, reist nur per Ordnerkopie mit)
+uebergabe/chatverlauf/*.jsonl

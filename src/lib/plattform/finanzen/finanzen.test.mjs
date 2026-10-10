@@ -219,7 +219,7 @@ test("Kleinbetragsrechnung: Grenzen AT 400 € / DE 250 €, nicht bei Reverse C
   assert.deepEqual(pflichtangabenPruefen(de), []);
   // DE über 250 €: keine Erleichterung
   assert.ok(pflichtangabenPruefen({ ...de, netto: 260, brutto: 309.4 }).includes("Leistungszeitraum"));
-  // Reverse Charge: nie Kleinbetrag (§ 33 Satz 2 UStDV) – UID des Empfängers bleibt Pflicht
+  // Reverse Charge: nie Kleinbetrag (§ 33 UStDV) – UID des Empfängers bleibt Pflicht
   const rc = basis({ aussteller: { name: "ÖkoInvest GmbH", anschrift: "Ostermiething", land: "DE", uid: "ATU76000505" }, netto: 100, brutto: 100, steuer: { vorlage: "DE-RC-13b", satz: 0, art: "reverse_charge", betrag: 0, text: "Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)." } });
   assert.equal(kleinbetragInfo(rc).kleinbetrag, false);
   assert.ok(pflichtangabenPruefen(rc).includes("UID des Leistungsempfängers (Reverse Charge)"));

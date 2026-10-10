@@ -80,7 +80,7 @@ export function steuerBerechnen(netto, vorlageId, vorlagen = STEUERVORLAGEN) {
 /**
  * Kleinbetragsrechnungen: erleichterte Pflichtangaben bis zur Bruttogrenze (DE § 33 UStDV 250 €,
  * AT § 11 Abs. 6 UStG 1994 400 €). Gilt NICHT bei Reverse Charge / nicht steuerbaren Leistungen
- * (DE § 33 Satz 2 UStDV; AT: Übergang der Steuerschuld verlangt die volle Rechnung) und nicht für
+ * (DE § 33 UStDV; AT: Übergang der Steuerschuld verlangt die volle Rechnung) und nicht für
  * Gutschriften (Gutschriftsverfahren). CH (Art. 26 Abs. 3 MWSTG, 400 CHF) ist nicht abgebildet.
  */
 export const KLEINBETRAG_GRENZEN = {

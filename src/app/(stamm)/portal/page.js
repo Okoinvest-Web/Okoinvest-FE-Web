@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  ArrowRight, CheckCircle2, Eye, FileSignature, FolderKanban, Heart, Inbox, KeyRound, LandPlot, MailWarning, MessagesSquare, Sparkles,
+  ArrowRight, CheckCircle2, ClipboardList, Eye, FileSignature, FileSpreadsheet, FolderKanban, HandHeart, Heart, Inbox, KeyRound, Landmark, LandPlot, MailWarning, MessagesSquare, Sparkles, SunMedium, Vote,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import KpiKachel from "@/components/ui/KpiKachel";
@@ -18,6 +18,13 @@ import ErsteSchritte from "@/components/Portal/Bedienung/Onboarding/ErsteSchritt
 import { pfad } from "@/lib/land";
 import { BriefcaseBusiness } from "lucide-react"; // Portfolio
 import { portfolioBackend } from "@/lib/plattform/backend/portfolio"; // Portfolio
+// Rollen-Analyse: Übersicht auch für Bank, Gutachter, Lieferant, Mitglied, Kommune und Unternehmen (eigene Kennzahlen und nächste Schritte)
+import { finanzierungBackend } from "@/lib/plattform/backend/finanzierung";
+import { gutachterBackend } from "@/lib/plattform/backend/gutachter";
+import { energieBackend } from "@/lib/plattform/backend/energie";
+import { mitgliedBackend } from "@/lib/plattform/backend/mitglied";
+import { fachBackend as kommuneBackend } from "@/lib/plattform/backend/kommune";
+import { anlagenBackend } from "@/lib/plattform/backend/anlagen";
 
 // Die Vorlage „%s | Portal ÖkoInvest“ greift nur für Unterseiten – hier daher absolut (einheitliche Tab-Titel)
 export const metadata = { title: { absolute: "Übersicht | Portal ÖkoInvest" } };
@@ -55,6 +62,13 @@ export default async function PortalStart({ searchParams }) {
   const anbieter = hat("anbieter");
   const investor = hat("investor");
   const admin = istAdmin(n);
+  // Rollen-Analyse: Rollen, die bisher nur die generische Übersicht sahen
+  const unternehmen = hat("unternehmen");
+  const mitglied = hat("mitglied");
+  const kommune = hat("kommune");
+  const bankRolle = hat("bank");
+  const gutachterRolle = hat("gutachter");
+  const lieferantRolle = hat("lieferant");
 
   const [vorgaenge, flaechen, projekte, interessen, boerse, threads, uebersicht] = await Promise.all([
     b.vorgaenge(n),
@@ -64,6 +78,16 @@ export default async function PortalStart({ searchParams }) {
     investor ? b.boerse(n) : null,
     b.nachrichtenThreads(n),
     admin ? b.adminUebersicht(n) : null,
+  ]);
+
+  // Rollen-Analyse: Kennzahlen der übrigen Rollen – Fehler dürfen die Übersicht nie blockieren
+  const [bankDaten, gaDaten, lfListe, mgDaten, koDaten, anlagenListe] = await Promise.all([
+    bankRolle ? finanzierungBackend().fzBankMeine(n).catch(() => null) : null,
+    gutachterRolle ? gutachterBackend().gaMeine(n).catch(() => null) : null,
+    lieferantRolle ? energieBackend().energieAusschreibungen(n, {}).catch(() => null) : null,
+    mitglied ? mitgliedBackend().mgUebersicht(n).catch(() => null) : null,
+    kommune ? kommuneBackend().kommuneUebersicht(n, {}).catch(() => null) : null,
+    unternehmen ? anlagenBackend().anlagen(n, {}).catch(() => null) : null,
   ]);
 
   const ungelesen = threads.reduce((s, t) => s + t.ungelesen, 0);
@@ -83,6 +107,15 @@ export default async function PortalStart({ searchParams }) {
   if (flaecheRolle && !flaechen.length) schritte.push({ prio: 2, icon: LandPlot, titel: "Erste Fläche hinzufügen", text: "Lage, Größe und Flurstücke genügen für eine kostenlose Vorprüfung.", href: "/portal/flaechen/neu", cta: "Fläche hinzufügen", dauer: "ca. 2 Min." });
   if (anbieter && !projekte.length) schritte.push({ prio: 2, icon: FolderKanban, titel: "Erstes Projekt anlegen", text: "Anonymer Teaser, vertraulicher Datenraum – Provision nur bei Abschluss.", href: "/portal/projekte/neu", cta: "Projekt anlegen" });
   if (investor && !n.suchprofil) schritte.push({ prio: 2, icon: Sparkles, titel: "Suchprofil anlegen", text: "Wir zeigen Ihnen passende Projekte mit Matching-Score.", href: "/portal/profil#suchprofil", cta: "Suchprofil anlegen", dauer: "ca. 2 Min." });
+  // Rollen-Analyse: nächste Schritte für Mitglied, Gutachter, Lieferant und Bank
+  const gvOffen = mgDaten?.versammlungen?.find((v) => v.darfAbstimmen);
+  if (gvOffen) schritte.push({ prio: 1, icon: Vote, titel: `Abstimmung offen: ${gvOffen.titel}`, text: "Sie können online abstimmen – bis zum Ende der Abstimmungsfrist.", href: `/portal/beteiligung/versammlung/${gvOffen.id}`, cta: "Jetzt abstimmen" });
+  const gaAnfragen = gaDaten?.kennzahlen?.anfragen || 0;
+  if (gaAnfragen) schritte.push({ prio: 1, icon: ClipboardList, titel: `${gaAnfragen} Angebotsanfrage${gaAnfragen === 1 ? "" : "n"} von ÖkoInvest`, text: "Honorar, Liefertermin und Bedingungen angeben – bitte vor der Angebotsfrist.", href: "/portal/gutachter", cta: "Angebot abgeben" });
+  const lfOffen = (lfListe || []).filter((a) => a.darfBieten);
+  if (lfOffen.length) schritte.push({ prio: 1, icon: FileSpreadsheet, titel: `Angebotsrunde offen: ${lfOffen[0].los}${lfOffen.length > 1 ? ` und ${lfOffen.length - 1} weitere` : ""}`, text: "Preisblatt ausfüllen und vor Fristablauf abgeben.", href: "/portal/ausschreibungen", cta: "Zur Angebotsanfrage" });
+  const bankLaufend = (bankDaten?.anfragen || []).filter((a) => ["offen", "in_pruefung", "termsheet"].includes(a.status));
+  if (bankLaufend.length) schritte.push({ prio: 2, icon: Landmark, titel: `${bankLaufend.length} laufende Finanzierungsanfrage${bankLaufend.length === 1 ? "" : "n"}`, text: "Bankenpaket einsehen, Unterlagen anfordern oder Term Sheet abgeben.", href: "/portal/bank", cta: "Anfragen öffnen" });
   if (!n.emailBestaetigt) schritte.push({ prio: 3, icon: MailWarning, titel: "E-Mail-Adresse bestätigen", text: "Danach ordnen wir frühere Anfragen mit Ihrer Adresse automatisch zu.", href: "/portal/profil", cta: "Mehr erfahren" });
   schritte.sort((a, c) => a.prio - c.prio);
   const [erster, ...weitere] = schritte;
@@ -100,6 +133,13 @@ export default async function PortalStart({ searchParams }) {
     const pf = await portfolioBackend().pfMeine(n).catch(() => null); // Portfolio: Positionen nach dem Kauf
     if (pf?.positionen.length) kacheln.push({ label: "Portfolio", wert: pf.kennzahlen.anzahl, hinweis: pf.kennzahlen.offeneAbrufe ? `${fmt(pf.kennzahlen.offeneAbrufe)} Kapitalabruf(e) offen` : `${fmt(pf.kennzahlen.mwp)} MWp anteilig`, icon: BriefcaseBusiness, href: "/portal/portfolio" });
   }
+  // Rollen-Analyse: Kennzahlen-Kacheln für Mitglied, Kommune, Bank, Gutachter, Lieferant und Unternehmen
+  if (mitglied && mgDaten) kacheln.push({ label: "Mitgliedschaften", wert: mgDaten.mitgliedschaften.filter((m) => m.status === "aktiv").length, hinweis: "Genossenschaft & Gemeinschaft", icon: HandHeart, href: "/portal/beteiligung" });
+  if (kommune && koDaten) kacheln.push({ label: "Gemeinde-Anliegen", wert: koDaten.gemeinden?.length || 0, hinweis: koDaten.geprueft ? "Gemeinde-Sicht freigeschaltet" : "Bestätigung durch ÖkoInvest läuft", icon: Landmark, href: "/portal/kommune" });
+  if (bankRolle && bankDaten) kacheln.push({ label: "Finanzierungsanfragen", wert: bankLaufend.length, hinweis: `${fmt(bankDaten.anfragen.filter((a) => a.status === "ausgewaehlt").length)} Finanzierungen Ihres Hauses`, icon: Landmark, href: "/portal/bank" });
+  if (gutachterRolle && gaDaten) kacheln.push({ label: "Laufende Aufträge", wert: gaDaten.kennzahlen.laufend, hinweis: `${fmt(gaAnfragen)} offene Angebotsanfragen`, icon: ClipboardList, href: "/portal/gutachter" });
+  if (lieferantRolle && lfListe) kacheln.push({ label: "Angebotsanfragen", wert: lfListe.length, hinweis: lfOffen.length ? `${fmt(lfOffen.length)} Runde${lfOffen.length === 1 ? "" : "n"} offen` : "keine offene Runde", icon: FileSpreadsheet, href: "/portal/ausschreibungen" });
+  if (unternehmen && anlagenListe) kacheln.push({ label: "Mein Solarstrom", wert: anlagenListe.length, hinweis: anlagenListe.length ? "Anlagen mit Live-Daten" : "noch keine Anlage", icon: SunMedium, href: "/portal/anlagen" });
   const anfragenVerlauf = vorgaenge.length >= 3 ? jeWoche(vorgaenge, "erstelltAm") : null;
   kacheln.push({ label: "Offene Anfragen", wert: offeneVorgaenge.length, hinweis: anfragenVerlauf ? `${fmt(vorgaenge.length)} gesamt · 8 Wochen` : `${fmt(vorgaenge.length)} gesamt`, icon: Inbox, href: "/portal/anfragen", verlauf: anfragenVerlauf?.some(Boolean) ? anfragenVerlauf : undefined });
   kacheln.push({ label: "Ungelesene Nachrichten", wert: ungelesen, hinweis: `${fmt(threads.length)} ${threads.length === 1 ? "Unterhaltung" : "Unterhaltungen"}`, icon: MessagesSquare, href: "/portal/nachrichten" });

@@ -31,8 +31,8 @@ const status = (fn) => {
   return 200;
 };
 
-test("Positivliste: genau die vier Rechner, alles andere → 422", () => {
-  assert.deepEqual([...RECHNER_IDS].sort(), ["flaechencheck", "kommune", "pacht", "pachtangebot"]);
+test("Positivliste: genau die freigegebenen Rechner, alles andere → 422", () => {
+  assert.deepEqual([...RECHNER_IDS].sort(), ["flaechencheck", "flaechenpass", "gewerbestrom", "kommune", "pacht", "pachtangebot", "ratsvorlage"]);
   for (const r of ["solarpark", "beteiligung", "__proto__", "constructor", "", null, 7, "PACHT"]) {
     assert.equal(status(() => rechnerVon(r)), 422, String(r));
     assert.equal(status(() => neuRechnen({ rechner: r, eingaben: {}, land: "DE" })), 422, String(r));

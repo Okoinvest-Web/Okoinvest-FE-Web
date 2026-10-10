@@ -23,8 +23,15 @@ import { annahmenbuchFuer } from "./annahmenbuch";
 import { BESTAETIGUNG_STUNDEN, berichtBis, bestaetigungBis, tokenErzeugen, tokenHash } from "./token";
 import { VERSAND_AUS_TEXT, bestaetigungsMail, versandErlaubt } from "./versand";
 import { einwilligungenPruefen, kontaktPruefen, sha256 } from "./anforderung";
+import { bundeslandFuer } from "@/lib/rechner/kommunePflichten";
 import { ANFORDERUNG, BERICHT_TEXT_VERSION, DOI } from "./texte";
 import { berichtZaehlen } from "./zaehler";
+
+/** Paket B8: Ratsvorlage → Gemeinde und Bundesland (Name wie src/lib/plattform/konstanten.js BUNDESLAENDER) */
+const ratsvorlageVorgang = (ein, land) => ({
+  ...(ein.gemeinde ? { gemeinde: ein.gemeinde } : {}),
+  ...(bundeslandFuer(land, ein.bundesland) ? { bundesland: bundeslandFuer(land, ein.bundesland).name } : {}),
+});
 
 const standard = (d = {}) => ({
   bericht: d.bericht || berichtBackend(),
@@ -103,6 +110,8 @@ export function vorgangDaten(e) {
     ...(Number.isFinite(ein.ha) ? { ha: ein.ha } : {}),
     ...(ein.regionId ? { regionId: ein.regionId } : {}),
     ...(e.rechner === "flaechencheck" && ein.nutzung ? { nutzung: ein.nutzung } : {}),
+    // Paket B8: Gemeinde und Bundesland (Name) oben, damit Kommunen-Positivliste und Routing je Gebiet sie lesen
+    ...(e.rechner === "ratsvorlage" ? ratsvorlageVorgang(ein, e.land) : {}),
     bericht: {
       rechner: e.rechner,
       pruefId: e.pruefId,

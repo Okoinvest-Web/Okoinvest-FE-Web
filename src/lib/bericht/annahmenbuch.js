@@ -15,6 +15,9 @@ import { annahmenPacht } from "@/lib/rechner/pacht";
 import { annahmenPachtangebot } from "@/lib/rechner/pachtangebot";
 import { annahmenFlaechencheck } from "@/lib/rechner/flaechencheck";
 import { annahmenKommune } from "@/lib/rechner/kommune";
+import { annahmenGewerbestrom } from "@/lib/rechner/gewerbestrom";
+import { annahmenFlaechenpass } from "./flaechenpass";
+import { annahmenRatsvorlage } from "./ratsvorlage";
 import { QUELLEN, STAND, STAND_RECHENLOGIK, AGRI, BAUART } from "@/lib/invest/markt";
 import { fmtFaktWert, STATUS_TEXT } from "@/lib/fakten";
 import { fmt } from "@/lib/rechner/annahmen";
@@ -53,12 +56,47 @@ export const BEZEICHNUNG = Object.freeze({
   "kommune.hinzurechnungZinsen": "Hinzurechnung der Zinsen",
   "kommune.hinzurechnungFreibetrag": "Freibetrag der Hinzurechnung",
   "kommune.laenderMitBeteiligungsgesetz": "Länder mit eigenem Beteiligungsgesetz",
+  // Paket B5 – Rechnungs-Check Gewerbestrom
+  "umlage.kwkg": "KWKG-Umlage",
+  "umlage.offshoreNetz": "Offshore-Netzumlage",
+  "umlage.besondereNetznutzung": "Aufschlag für besondere Netznutzung (erste 1.000.000 kWh)",
+  "umlage.besondereNetznutzung.ueber1Gwh": "Aufschlag für besondere Netznutzung über 1.000.000 kWh",
+  "umlage.besondereNetznutzung.ueber1GwhProduzierend": "Aufschlag über 1.000.000 kWh, produzierendes Gewerbe (Stromkosten > 4 % des Umsatzes)",
+  "steuer.strom.regelsatz": "Stromsteuer Regelsatz",
+  "steuer.strom.entlastung9b": "Stromsteuer-Entlastung § 9b StromStG",
+  "steuer.strom.entlastung9bSockel": "Sockelbetrag der Entlastung pro Jahr",
+  "kav.sondervertrag": "Konzessionsabgabe Sondervertragskunden (Höchstbetrag)",
+  "kav.tarif": "Konzessionsabgabe Tarifkunden nach Gemeindegröße (Höchstbeträge)",
+  "kav.tarifGrenze": "Grenze Tarif-/Sondervertragskunde in Niederspannung",
+  "boerse.dayAhead.monate": "Börsenpreis Day-Ahead DE/LU, Monatsmittel (SMARD)",
+  "boerse.dayAhead.profil": "Börsenpreis-Profil je Monat, Tagtyp und Stunde (SMARD)",
+  "gewerbestrom.lieferantenaufschlag": "Üblicher Lieferantenaufschlag über dem Börsenwert",
+  "gewerbestrom.toleranzUeberMarkt": "Abstand für „etwas über Markt“",
+  // Paket B8 – Kommunal 2.0 / Ratsvorlage
+  "kommune.landesregel.bayern.ctKwh": "Bayern (BayWiVG): Mindestbeteiligung je kWh",
+  "kommune.landesregel.bayern.ausgleichCtKwh": "Bayern (BayWiVG): Ausgleichsabgabe je kWh",
+  "kommune.landesregel.bayern.abMw": "Bayern (BayWiVG): Pflicht ab Leistung über",
+  "kommune.landesregel.brandenburg.eurMw": "Brandenburg (BbgEESG): Sonderabgabe je MW und Jahr",
+  "kommune.landesregel.brandenburg.abMw": "Brandenburg (BbgEESG): Pflicht ab Leistung über",
+  "kommune.landesregel.mecklenburg-vorpommern.eurMwGemeinde": "Mecklenburg-Vorpommern (BüGembeteilG): Angebot an die Gemeinde je MW",
+  "kommune.landesregel.mecklenburg-vorpommern.eurMwEinwohner": "Mecklenburg-Vorpommern (BüGembeteilG): Angebot an die Einwohner je MW",
+  "kommune.landesregel.mecklenburg-vorpommern.ersatzEurMw": "Mecklenburg-Vorpommern (BüGembeteilG): Ersatzzahlung je MW",
+  "kommune.landesregel.mecklenburg-vorpommern.abMw": "Mecklenburg-Vorpommern (BüGembeteilG): Pflicht ab Leistung",
+  "kommune.landesregel.niedersachsen.ctKwh": "Niedersachsen (NWindPVBetG): Akzeptanzabgabe je kWh",
+  "kommune.landesregel.niedersachsen.abMw": "Niedersachsen (NWindPVBetG): Pflicht ab Leistung",
+  "kommune.landesregel.saarland.ersatzCtKwh": "Saarland (SGBG): Ersatzzahlung je kWh ohne Vereinbarung",
+  "kommune.landesregel.sachsen.ctKwh": "Sachsen (EEErtrBetG): Betrag je kWh (geltende Fassung)",
+  "kommune.landesregel.sachsen.abMw": "Sachsen (EEErtrBetG): Pflicht ab Leistung",
+  "kommune.landesregel.sachsen-anhalt.ctKwh": "Sachsen-Anhalt (AuBG): Zahlung je kWh",
+  "kommune.landesregel.sachsen-anhalt.mindestEurKwp": "Sachsen-Anhalt (AuBG): Mindestbetrag je kWp",
+  "recht.elwg.gemeinschaftenAb": "ElWG: gemeinsame Energienutzung (Österreich)",
+  "recht.eag.abschlagLandwirtschaft": "EAG: Abschlag auf landwirtschaftlichen Flächen (Österreich)",
 });
 
-const FUNKTION = { pacht: annahmenPacht, pachtangebot: annahmenPachtangebot, flaechencheck: annahmenFlaechencheck, kommune: annahmenKommune };
+const FUNKTION = { pacht: annahmenPacht, pachtangebot: annahmenPachtangebot, flaechencheck: annahmenFlaechencheck, kommune: annahmenKommune, gewerbestrom: annahmenGewerbestrom, flaechenpass: annahmenFlaechenpass, ratsvorlage: annahmenRatsvorlage };
 
 /** Konstanten, die (noch) nicht im Register stehen – je Rechner, mit Wert aus markt.js */
-function rechenlogikZeilen(rechner) {
+function rechenlogikZeilen(rechner, eingaben = {}) {
   const z = (id, label, wert, einheit = "") => ({ id, label, wert, einheit });
   if (rechner === "flaechencheck") {
     return [
@@ -67,8 +105,20 @@ function rechenlogikZeilen(rechner) {
       z("flaechencheck.punkte", "Punktwerte der Heuristik (Größe, Nutzung, Besonderheiten, Netz, Eigentum)", "siehe Rechenweg"),
     ];
   }
+  if (rechner === "flaechenpass") {
+    return [
+      z("flaechenpass.bewertung", "Bewertungslogik der Eignung (Punkte je Kriterium, Ausschlussgründe, Ampel)", "siehe Rechenweg"),
+      z("flaechenpass.ertrag", "Spezifischer Ertrag je Region (PVGIS, Regionsdaten)", "siehe Rechenweg"),
+    ];
+  }
   if (rechner === "kommune") {
     return [z("solarpark.rechenlogik", "Investition, Betriebskosten und Finanzierung des Parks (Solarpark-Rechenlogik)", "siehe Rechenweg")];
+  }
+  // Paket B8: Ratsvorlage – DE wie der Kommunal-Rechner; AT ohne Rechnung (Prüfpunkte mit Quelle im Dokument)
+  if (rechner === "ratsvorlage") {
+    return annahmenRatsvorlage(eingaben).land === "DE"
+      ? [z("solarpark.rechenlogik", "Investition, Betriebskosten und Finanzierung des Parks (Solarpark-Rechenlogik)", "siehe Rechenweg")]
+      : [z("widmung.regionsdaten", "Widmungsschritte und Prüfpunkte des Bundeslands (Regionsdaten mit Quelle je Punkt)", "siehe Prüfpunkte")];
   }
   if (rechner === "pachtangebot") {
     return [z("pachtangebot.regeln", "Bewertungsregeln der Klauseln (marktüblich / prüfen / kritisch)", "siehe Klauseln")];
@@ -128,14 +178,15 @@ export function annahmenbuchFuer(rechner, eingaben = {}) {
       klasse: x.klasse || "",
     };
   });
-  const eintraege = [...register, ...rechenlogikZeilen(rechner).map(rechenlogikEintrag)];
+  const eintraege = [...register, ...rechenlogikZeilen(rechner, eingaben).map(rechenlogikEintrag)];
   return {
     land: buch?.land || eingaben.land || "DE",
     rechenbasis: buch?.rechenbasis || "DE",
     waehrung: buch?.waehrung || "EUR",
     eintraege,
     /** Allgemeine Quellen der Rechenlogik (markt.js QUELLEN) – für Zeilen mit „Stand laut Rechenlogik“ */
-    quellenRechenlogik: (QUELLEN || []).slice(0, 12).map((q) => ({ titel: q.titel || q.label || "", url: q.url || null })).filter((q) => q.titel),
+    // Paket B8: Ratsvorlage Österreich rechnet nicht – keine (deutschen) Quellen der Rechenlogik im Dokument
+    quellenRechenlogik: rechner === "ratsvorlage" && buch?.land === "AT" ? [] : (QUELLEN || []).slice(0, 12).map((q) => ({ titel: q.titel || q.label || "", url: q.url || null })).filter((q) => q.titel),
     hinweis: buch ? "" : `${HINWEIS_RECHENLOGIK} (${STAND}) – das Faktenregister lieferte für diesen Rechner keine Einträge.`,
   };
 }

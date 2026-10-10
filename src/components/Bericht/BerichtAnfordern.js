@@ -93,7 +93,9 @@ const herkunftSicher = () => {
   }
 };
 
-export default function BerichtAnfordern({ rechner, land: landProp, eingaben, className }) {
+// Paket B8: texte = { de: { titel, text, knopf }, en: { … } } ersetzt Überschrift, Satz und Knopf (z. B. „Ratsvorlage anfordern“);
+// Datenschutzhinweis, Einwilligungen und Ablauf bleiben unverändert.
+export default function BerichtAnfordern({ rechner, land: landProp, eingaben, className, texte, deaktiviert = false, deaktiviertHinweis }) {
   // Rechenland kommt vom Rechner (Eingaben); ohne Angabe das Land der Route (Welle 2), sonst DE
   const routenLand = landAusPfad(usePathname() || "/").land;
   const land = landProp || routenLand || "DE";
@@ -105,6 +107,7 @@ export default function BerichtAnfordern({ rechner, land: landProp, eingaben, cl
   const form = useFormular(LEER, en ? SCHEMA_EN : SCHEMA);
   const a = useAbsenden({ uebersetzen: (e) => (e instanceof TypeError || !e?.message ? (en ? EN.verbindung : "Die Verbindung ist gerade gestört. Bitte versuchen Sie es gleich noch einmal.") : en ? EN.fehlgeschlagen : e.message) });
   const w = form.werte;
+  const eigen = texte?.[en ? "en" : "de"] || null;
 
   useEffect(() => {
     let aktiv = true;
@@ -151,12 +154,12 @@ export default function BerichtAnfordern({ rechner, land: landProp, eingaben, cl
       </span>
       <div className="min-w-0 flex-1">
         <h3 id={`${id}-t`} className="font-display text-[17px] font-bold leading-snug text-ink-900">
-          {en ? EN.titel : "Ergebnis als Bericht"}
+          {eigen?.titel || (en ? EN.titel : "Ergebnis als Bericht")}
         </h3>
         <p className="mt-1 text-[14px] leading-relaxed text-ink-600">
           {versand === "aus"
             ? en ? EN.aus : AUS_TEXT
-            : en ? EN.text : "Mit Rechenweg und allen Annahmen samt Quelle und Stand – zum Ausdrucken oder Speichern. Ihr Ergebnis oben bleibt ohne Angaben sichtbar."}
+            : eigen?.text || (en ? EN.text : "Mit Rechenweg und allen Annahmen samt Quelle und Stand – zum Ausdrucken oder Speichern. Ihr Ergebnis oben bleibt ohne Angaben sichtbar.")}
         </p>
       </div>
     </div>
@@ -178,9 +181,10 @@ export default function BerichtAnfordern({ rechner, land: landProp, eingaben, cl
           {kopf}
           {versand === "an" && !offen && (
             <div className="mt-4 sm:pl-[3.375rem]">
-              <Button variant="secondary" size="sm" icon={FileText} onClick={() => setOffen(true)} aria-expanded="false" aria-controls={`${id}-f`}>
-                {en ? EN.anfordern : "Bericht anfordern"}
+              <Button variant="secondary" size="sm" icon={FileText} onClick={() => setOffen(true)} aria-expanded="false" aria-controls={`${id}-f`} disabled={deaktiviert}>
+                {eigen?.knopf || (en ? EN.anfordern : "Bericht anfordern")}
               </Button>
+              {deaktiviert && deaktiviertHinweis ? <p className="mt-2 text-[13px] text-ink-600">{deaktiviertHinweis}</p> : null}
             </div>
           )}
           {versand === "an" && offen && (

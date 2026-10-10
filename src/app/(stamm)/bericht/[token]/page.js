@@ -12,6 +12,7 @@ import { notFound } from "next/navigation";
 import { berichtLesen } from "@/lib/bericht/dienst";
 import { RECHNER } from "@/lib/bericht/neuRechnen";
 import BerichtSeite, { BerichtAbgelaufen, BerichtBestaetigung } from "@/components/Bericht/BerichtSeite";
+import RatsvorlageSeite from "@/components/Bericht/RatsvorlageSeite";
 import { pfad as seitenPfad } from "@/lib/land";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +43,11 @@ export default async function BerichtRoute({ params }) {
   if (!r?.zustand) notFound();
   if (r.zustand === "abgelaufen") return <BerichtAbgelaufen />;
   if (r.zustand === "offen" || r.zustand === "in_bestaetigung") {
-    return <BerichtBestaetigung token={token} titel={RECHNER[r.bericht?.rechner]?.titel ? `Bericht zum ${RECHNER[r.bericht.rechner].titel}` : ""} laeuft={r.zustand === "in_bestaetigung"} />;
+    // Paket B8: Ratsvorlage ist ein eigenes Dokument („Ratsvorlage Solarpark (Muster)“ statt „Bericht zum …“)
+    const titel = r.bericht?.rechner === "ratsvorlage" ? RECHNER.ratsvorlage.titel : RECHNER[r.bericht?.rechner]?.titel ? `Bericht zum ${RECHNER[r.bericht.rechner].titel}` : "";
+    return <BerichtBestaetigung token={token} titel={titel} laeuft={r.zustand === "in_bestaetigung"} />;
   }
+  // Paket B8: Ratsvorlage (Muster) als druckfertige Beschlussvorlage
+  if (r.bericht.rechner === "ratsvorlage") return <RatsvorlageSeite bericht={r.bericht} rechnerPfad={RECHNER.ratsvorlage.pfad} />;
   return <BerichtSeite bericht={r.bericht} rechnerPfad={RECHNER[r.bericht.rechner]?.pfad || seitenPfad("/rechner")} />;
 }

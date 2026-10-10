@@ -9,7 +9,7 @@ import { landNormal } from "@/lib/anfrage/laender";
 import { tagHeute } from "@/lib/anfrage/zaehler";
 
 export const BERICHT_EREIGNISSE = Object.freeze(["angefordert", "bestaetigt", "abgelehnt"]);
-const RECHNER = new Set(["pacht", "pachtangebot", "flaechencheck", "kommune"]);
+const RECHNER = new Set(["pacht", "pachtangebot", "flaechencheck", "kommune", "ratsvorlage" /* Paket B8 */]);
 
 const summen = (globalThis.__oiBerichtZaehler ||= new Map());
 

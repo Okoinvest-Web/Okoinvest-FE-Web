@@ -24,6 +24,9 @@ import { flaechencheck, NUTZUNGEN, BESONDERHEITEN, NETZ, EIGENTUM, regionenFuer 
 import { rechneKommune } from "@/lib/rechner/kommune";
 import { grundstueck } from "@/lib/anfrage/laender";
 import { pfad as seitenPfad } from "../land/index.js";
+import { regelnGewerbestrom, rechneGewerbestrom, zusammenfassungGewerbestrom } from "./gewerbestrom";
+import { landPruefenFlaechenpass, normalisierenFlaechenpass, rechneFlaechenpass, regelnFlaechenpass, zusammenfassungFlaechenpass } from "./flaechenpass";
+import { landPruefenRatsvorlage, normalisierenRatsvorlage, rechneRatsvorlage, regelnRatsvorlage, zusammenfassungRatsvorlage } from "./ratsvorlage";
 
 export const LAENDER = Object.freeze(["DE", "AT", "CH"]);
 export const LAND_NAME = Object.freeze({ DE: "Deutschland", AT: "Österreich", CH: "Schweiz" });
@@ -36,11 +39,14 @@ const zahl = (min, max, { ganz = false } = {}) => ({ art: "zahl", min, max, ganz
 const wahl = (liste) => ({ art: "wahl", liste });
 const jaNein = () => ({ art: "bool" });
 const mehrfach = (liste) => ({ art: "mehrfach", liste });
+/** Eigene Prüfung (Paket B6: Fläche als Zeichenkette) – pruefe(wert) liefert den normalisierten Wert oder wirft 422 */
+const eigen = (pruefe) => ({ art: "eigen", pruefe });
 const ids = (liste) => liste.map((x) => x.id);
 const REGION_IDS = REGIONEN.map((r) => r.id);
 
 function feldPruefen(name, regel, wert) {
   const fehler = () => new PlattformFehler(422, `Ungültige Eingabe „${name}“.`, "eingabe");
+  if (regel.art === "eigen") return regel.pruefe(wert);
   if (regel.art === "zahl") {
     if (typeof wert !== "number" || !Number.isFinite(wert) || wert < regel.min || wert > regel.max) throw fehler();
     if (regel.ganz && !Number.isInteger(wert)) throw fehler();
@@ -357,6 +363,45 @@ export const RECHNER = Object.freeze({
     zusammenfassen: zusammenfassungKommune,
     geldwerte: true,
   }),
+  // Welle 3, Paket B5: Rechnungs-Check Gewerbestrom – nur Deutschland, ohne Region (src/lib/bericht/gewerbestrom.js)
+  gewerbestrom: Object.freeze({
+    titel: "Rechnungs-Check Gewerbestrom",
+    pfad: seitenPfad("/rechner/gewerbestrom-check"),
+    vorgangTyp: "reststrom",
+    regeln: regelnGewerbestrom({ zahl, wahl, jaNein }),
+    landPruefen: (e, land) => {
+      if (land !== "DE") throw new PlattformFehler(422, "Den Rechnungs-Check Gewerbestrom gibt es bisher nur für Deutschland.", "land_gesperrt");
+    },
+    rechne: (e) => rechneGewerbestrom(e),
+    zusammenfassen: zusammenfassungGewerbestrom,
+    geldwerte: true,
+    ohneRegion: true,
+  }),
+  // Welle 3, Paket B6: Flächenpass Stufe 1 – DE, AT, CH, ohne Geldwerte; Fläche als Zeichenkette (src/lib/bericht/flaechenpass.js)
+  flaechenpass: Object.freeze({
+    titel: "Flächenpass",
+    pfad: seitenPfad("/rechner/flaechenpass"),
+    vorgangTyp: "flaeche",
+    regeln: regelnFlaechenpass({ zahl, wahl, eigen }),
+    landPruefen: landPruefenFlaechenpass,
+    normalisieren: normalisierenFlaechenpass,
+    rechne: rechneFlaechenpass,
+    zusammenfassen: zusammenfassungFlaechenpass,
+    geldwerte: false,
+  }),
+  // Welle 3, Paket B8: Ratsvorlage Solarpark (Muster) – DE mit Zahlen des Kommunal-Rechners und Landesregel,
+  // AT ohne Geldwerte (Widmungskit), CH 422 (src/lib/bericht/ratsvorlage.js)
+  ratsvorlage: Object.freeze({
+    titel: "Ratsvorlage Solarpark (Muster)",
+    pfad: seitenPfad("/kommunen/ratsvorlage"),
+    vorgangTyp: "kommune",
+    regeln: regelnRatsvorlage({ zahl, wahl, jaNein, eigen }),
+    landPruefen: landPruefenRatsvorlage,
+    normalisieren: normalisierenRatsvorlage,
+    rechne: rechneRatsvorlage,
+    zusammenfassen: zusammenfassungRatsvorlage,
+    geldwerte: false, // Länder-Sperre selbst geregelt: AT ohne Geldwerte, CH 422
+  }),
 });
 
 export const RECHNER_IDS = Object.freeze(Object.keys(RECHNER));
@@ -398,7 +443,7 @@ export function neuRechnen({ rechner, eingaben, land }) {
   const l = landPruefen(land);
   const e = eingabenPruefen(def.regeln, eingaben);
   def.landPruefen(e, l);
-  const eingabenNorm = rechner === "flaechencheck" ? { ...e, land: l } : { ...e, regionId: e.regionId ?? standardRegion(l) };
+  const eingabenNorm = rechner === "flaechencheck" ? { ...e, land: l } : def.normalisieren ? def.normalisieren(e, l) : def.ohneRegion ? { ...e } : { ...e, regionId: e.regionId ?? standardRegion(l) };
   if (def.geldwerte && laenderSperre(l)) throw new PlattformFehler(422, `Für ${LAND_NAME[l]} ist dieser Bericht noch nicht verfügbar – die Rechenlogik wird gerade fachlich geprüft.`, "land_gesperrt");
   const roh = def.rechne(eingabenNorm, l);
   const zusammenfassung = def.zusammenfassen(roh, eingabenNorm, l);

@@ -20,6 +20,7 @@ import JsonLd from "@/components/JsonLd";
 import { LandProvider } from "@/components/Land/LandKontext";
 import { SpracheProvider } from "@/components/Sprache/SpracheKontext";
 import { LAND_AUS_PFAD } from "@/lib/land/laender";
+import { verifizierungMetadaten } from "@/lib/verifizierung";
 
 export { LAND_AUS_PFAD };
 
@@ -71,19 +72,22 @@ const siteSchema = (inLanguage) => ({
         { "@type": "Country", name: "Österreich" },
         { "@type": "Country", name: "Schweiz" },
       ],
-      knowsAbout: [
-        "Freiflächen-Photovoltaik",
-        "Agri-Photovoltaik",
-        "Solarcarports",
-        "Projektentwicklung Solarpark",
-        "Flächenpacht Photovoltaik",
-        "Projektrechte Photovoltaik",
-        "Power Purchase Agreement",
-        "Virtuelles Kraftwerk",
-        "Energiegemeinschaften",
-        "Energiegenossenschaft",
-        "Batteriegroßspeicher",
-      ],
+      knowsAbout:
+        inLanguage === "en"
+          ? ["Ground-mounted photovoltaics", "Agrivoltaics", "Solar carports", "Solar park project development", "Land lease for photovoltaics", "Photovoltaic project rights", "Power purchase agreement", "Virtual power plant", "Energy communities", "Energy cooperative", "Utility-scale battery storage"]
+          : [
+              "Freiflächen-Photovoltaik",
+              "Agri-Photovoltaik",
+              "Solarcarports",
+              "Projektentwicklung Solarpark",
+              "Flächenpacht Photovoltaik",
+              "Projektrechte Photovoltaik",
+              "Power Purchase Agreement",
+              "Virtuelles Kraftwerk",
+              "Energiegemeinschaften",
+              "Energiegenossenschaft",
+              "Batteriegroßspeicher",
+            ],
     },
     {
       "@type": "WebSite",
@@ -144,15 +148,8 @@ export function basisMetadata({ ogLocale = "de_DE", sprache = "de" } = {}) {
       apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
     },
     // Bestätigungscodes für Google Search Console / Bing Webmaster Tools – erst
-    // nach Festlegung der Produktivdomain über Umgebungsvariablen setzen.
-    ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION || process.env.NEXT_PUBLIC_BING_VERIFICATION
-      ? {
-          verification: {
-            ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION ? { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } : {}),
-            ...(process.env.NEXT_PUBLIC_BING_VERIFICATION ? { other: { "msvalidate.01": process.env.NEXT_PUBLIC_BING_VERIFICATION } } : {}),
-          },
-        }
-      : {}),
+    // nach Festlegung der Produktivdomain über Umgebungsvariablen setzen (nur gültige Codes, src/lib/verifizierung.js).
+    ...verifizierungMetadaten({ google: process.env.NEXT_PUBLIC_GSC_VERIFICATION, bing: process.env.NEXT_PUBLIC_BING_VERIFICATION }),
     openGraph: {
       type: "website",
       locale: ogLocale,
@@ -193,7 +190,8 @@ export default function Wurzel({ lang, sprache = "de", land = null, children }) 
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-ov-600 focus:text-white focus:rounded">
           {(sprache === "en" ? TEXTE.en : TEXTE.de).sprung}
         </a>
-        <JsonLd daten={siteSchema(lang)} />
+        {/* Land aus dem Root-Layout: de-CH → strukturierte Daten ohne „ß“ (das Layout rendert vor der Seite) */}
+        <JsonLd daten={siteSchema(lang)} land={lang === "de-CH" ? "CH" : null} />
         <SpracheProvider sprache={sprache}>
           <LandProvider land={land}>
             <LayoutWrapper>{children}</LayoutWrapper>

@@ -6,11 +6,14 @@ import { ArrowUpRight, Building2, Clock, Mail, MapPin, Phone } from "lucide-reac
 
 import CookieBanner from "../Cookies/cookiecomponent";
 import { navigationFuer } from "@/data/navigation";
+import { useSeitenLand } from "@/components/Land/LandKontext";
+import { schreibweiseFuer } from "@/lib/land/schreibweise";
 import { useSprache, useTexte } from "@/components/Sprache/SpracheKontext";
 import { GESELLSCHAFT, KONTAKT, SITE } from "@/data/site";
 import LiveTicker from "@/components/ui/LiveTicker";
 import Logo from "@/components/ui/Logo";
 import Stagger from "@/components/ui/Stagger";
+import { NewsletterFussleiste } from "@/components/Newsletter/NewsletterAnmeldung";
 
 // Texte des Fußbereichs (Sprachmodell, src/lib/sprache/woerterbuch.js)
 const TEXTE = {
@@ -117,7 +120,7 @@ export default function Footer() {
   const jahr = new Date().getFullYear();
   const sprache = useSprache();
   const t = useTexte(TEXTE);
-  const SPALTEN = spalten(navigationFuer(sprache), t, sprache);
+  const SPALTEN = spalten(schreibweiseFuer(navigationFuer(sprache), useSeitenLand()), t, sprache); // Schweiz: ohne „ß“
 
   return (
     <footer role="contentinfo" aria-label={t.fuss} className="ov-noise relative isolate overflow-hidden bg-navy-950 text-white">
@@ -211,6 +214,9 @@ export default function Footer() {
             </nav>
           ))}
         </Stagger>
+
+        {/* Welle 3, Paket NL: Newsletter je Land – nur sichtbar, solange er Anmeldungen annimmt */}
+        <NewsletterFussleiste />
 
         {/* Live-Leiste */}
         <div className="flex flex-col gap-4 rounded-2xl bg-white/[0.04] px-5 py-4 ring-1 ring-white/10 md:flex-row md:items-center md:justify-between">

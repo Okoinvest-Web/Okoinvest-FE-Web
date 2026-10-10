@@ -98,6 +98,19 @@ export const KENNZAHLEN = {
 export const SOCIAL = [];
 
 /**
+ * Pressekontakt (Welle 3, Paket NL – Newsroom /newsroom). Bis der Inhaber eine eigene Ansprechperson bzw. ein
+ * Pressepostfach freigibt, gelten die allgemeinen Kontaktdaten. TODO-Inhaber: ansprechpartner/funktion/email
+ * (z. B. presse@…) festlegen; null-Werte blendet die Seite aus.
+ */
+export const PRESSE = {
+  ansprechpartner: null,
+  funktion: null,
+  email: KONTAKT.email,
+  telefon: KONTAKT.telefon,
+  telefonHref: KONTAKT.telefonHref,
+};
+
+/**
  * Länderangaben für das Länderrouting (Welle 2): einzige Quelle für Ländernamen und
  * länderbezogene Kontaktangaben. src/lib/land/laender.js setzt daraus Präfix, Sprache
  * und Währung zusammen.

@@ -39,13 +39,18 @@ import { PACHT, ERLOESE, FREIFLAECHE } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import { getEnergySnapshot } from "@/lib/energy";
 import JsonLd from "@/components/JsonLd";
+import { NewsletterBand } from "@/components/Newsletter/NewsletterAnmeldung";
 import { pfad as seitenPfad } from "@/lib/land";
-import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { seitenLand, seitenMetadata, spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
 import { formate } from "@/lib/sprache/zahlformat";
 import { datumText } from "@/lib/sprache/format";
 import { GiltFuer, LandHinweis } from "@/components/Land/LandHinweis";
 import { faqFuerLand } from "@/components/Land/Laenderteile";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 export const revalidate = 900;
 
@@ -320,7 +325,7 @@ const webPageSchema = {
 /* ------------------------------------------------------------------ */
 
 function Tabelle({ caption, kopf, zeilen, rechtsAb = 1, minBreite = 560, markiert }) {
-  return (
+  return chBaum(
     <div className="overflow-x-auto rounded-3xl bg-white ring-1 ring-ink-200/70" tabIndex={0} role="region" aria-label={`${caption} (horizontal scrollbar)`}>
       <table className="w-full border-collapse text-left text-[14px]" style={{ minWidth: minBreite }}>
         <caption className="px-5 pt-5 text-left text-[13px] font-semibold text-ink-600 md:px-6">{caption}</caption>
@@ -356,7 +361,7 @@ function Tabelle({ caption, kopf, zeilen, rechtsAb = 1, minBreite = 560, markier
 }
 
 function TextLink({ href, children }) {
-  return (
+  return chBaum(
     <Link href={href} className="font-medium text-ov-700 underline decoration-ov-300 underline-offset-2 hover:decoration-current">
       {children}
     </Link>
@@ -397,7 +402,7 @@ export default async function MarktdatenPage({ params }) {
     ...[...MARKTWERT_SOLAR_FRUEHER].reverse().map((m) => [`${m.jahr}*`, "–", fmt(m.solar, 2), "–"]),
   ];
 
-  return (
+  return chBaum(
     <div>
       <JsonLd daten={webPageSchema} />
       <JsonLd daten={datasetSchema} />
@@ -469,6 +474,9 @@ export default async function MarktdatenPage({ params }) {
                 <p>
                   For our calculators we currently assume {ct(ERLOESE.eegFreiflaecheCt, 1)}. How to prepare a bid and which land is eligible is explained in the guide <TextLink href="/ratgeber/eeg-ausschreibung-freiflaeche">EEG tender for ground-mounted PV</TextLink>. Next regular <TextLink href="/wissen/lexikon#gebotstermin">bidding date</TextLink>: {nGebot}.
                 </p>
+                <p>
+                  All dates and results for Germany, Austria and Switzerland – including the second segment, innovation tenders, EAG and Pronovo – are in the <TextLink href="/marktdaten/ausschreibungen">tender monitor</TextLink>.
+                </p>
                 <Link
                   href={seitenPfad("/rechner/solarpark")}
                   className="inline-flex items-center gap-2 rounded-2xl bg-ov-600 px-5 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-ov-700"
@@ -490,6 +498,10 @@ export default async function MarktdatenPage({ params }) {
               Für unsere Rechner setzen wir derzeit {ct(ERLOESE.eegFreiflaecheCt, 1)} an. Wie Sie ein Gebot vorbereiten und welche Flächen zugelassen
               sind, erklärt der Ratgeber <TextLink href="/ratgeber/eeg-ausschreibung-freiflaeche">EEG-Ausschreibung Freifläche</TextLink>. Nächster
               regulärer <TextLink href="/wissen/lexikon#gebotstermin">Gebotstermin</TextLink>: {NAECHSTER_GEBOTSTERMIN}.
+            </p>
+            <p>
+              Alle Termine und Ergebnisse für Deutschland, Österreich und die Schweiz – auch zweites Segment, Innovationsausschreibung, EAG und Pronovo – zeigt der{" "}
+              <TextLink href="/marktdaten/ausschreibungen">Ausschreibungs-Monitor</TextLink>.
             </p>
             <Link
               href={seitenPfad("/rechner/solarpark")}
@@ -834,6 +846,9 @@ export default async function MarktdatenPage({ params }) {
           <Faq items={faqFuerLand(uebersetze({ de: FAQ, en: EN.faq }, sprache), land, { markieren: true, sprache })} />
         </div>
       </Section>
+
+      {/* Welle 3, Paket NL: Newsletter je Land (nur sichtbar, solange er Anmeldungen annimmt) */}
+      <NewsletterBand quelle="marktdaten" tone="sand" />
 
       <Querverweise items={uebersetze({ de: QUERVERWEISE, en: EN.querverweise }, sprache)} />
       <CtaBand

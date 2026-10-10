@@ -41,6 +41,9 @@ export const SEITEN = Object.freeze({
   "/dachflaeche-verpachten": { titel: "Dachfläche verpachten", prio: 0.9, freq: "monthly" },
   "/landwirte": { titel: "Landwirte", prio: 0.8, freq: "monthly" },
   "/kommunen": { titel: "Kommunen", prio: 0.8, freq: "monthly" },
+  // Welle 3, Paket B8: Kommunal 2.0 – noindex bis zur Fachprüfung (Team Deutschland/Österreich, E6), nicht in der Sitemap
+  "/kommunen/ratsvorlage": { titel: "Ratsvorlage Solarpark", prio: 0.7, freq: "monthly", index: false },
+  "/kommunen/widmungskit": { titel: "Widmungskit Österreich", prio: 0.6, freq: "monthly", index: false },
   "/investoren": { titel: "Investoren", prio: 0.9, freq: "monthly" },
   "/bestandsanlagen": { titel: "Bestandsanlagen", prio: 0.8, freq: "monthly" },
   "/regionen": { titel: "Regionen", prio: 0.8, freq: "monthly" },
@@ -50,6 +53,9 @@ export const SEITEN = Object.freeze({
   "/projektboerse/anbieten": { titel: "Projekt anbieten", prio: 0.7, freq: "monthly" },
   "/projektboerse/karte": { titel: "Börse auf der Karte", prio: 0.7, freq: "daily" },
   "/projektboerse/[slug]": { titel: "Exposé", dynamisch: true, sitemap: false },
+  // Welle 3, Paket B10: Neutralität der Börse – noindex bis zur Prüfung (Rechtsabteilung je Land, E6), nicht in der Sitemap
+  "/projektboerse/neutralitaet": { titel: "Neutralität & Regeln", prio: 0.6, freq: "monthly", index: false },
+  "/projektboerse/muster-nda": { titel: "Muster-NDA für Projektanbieter", prio: 0.3, freq: "yearly", index: false },
   // Strom & Gemeinschaft
   "/virtuelles-kraftwerk": { titel: "Virtuelles Kraftwerk", prio: 0.8, freq: "monthly" },
   "/reststrom": { titel: "Reststrom-Pool", prio: 0.8, freq: "monthly" },
@@ -57,6 +63,10 @@ export const SEITEN = Object.freeze({
   "/energiegemeinschaften": { titel: "Energiegemeinschaften", prio: 0.8, freq: "monthly" },
   "/energiegemeinschaften/rechner": { titel: "Energiegemeinschaft-Rechner", prio: 0.7, freq: "monthly" },
   "/energiegemeinschaften/software": { titel: "Software für Energiegemeinschaften", prio: 0.8, freq: "monthly" },
+  // Welle 3, Paket B7: EG-Software Österreich – noindex bis zur Fachprüfung (Team Österreich, E6) und Preisfreigabe (Inhaber)
+  "/energiegemeinschaften/software/preise": { titel: "Preisblatt EG-Software", prio: 0.6, freq: "monthly", index: false },
+  "/energiegemeinschaften/software/wechsel-check": { titel: "Wechsel-Check Energiegemeinschaft", prio: 0.6, freq: "monthly", index: false },
+  "/energiegemeinschaften/software/white-label": { titel: "White-Label für Stadtwerke", prio: 0.6, freq: "monthly", index: false },
   "/genossenschaft": { titel: "Genossenschaft", prio: 0.7, freq: "monthly" },
   // Rechner & Werkzeuge
   "/flaechencheck": { titel: "Flächencheck", prio: 0.9, freq: "monthly" },
@@ -76,16 +86,27 @@ export const SEITEN = Object.freeze({
   "/rechner/energy-sharing": { titel: "Energy-Sharing-Rechner", prio: 0.6, freq: "monthly" },
   "/rechner/dachpacht": { titel: "Dachpacht-Rechner", prio: 0.8, freq: "monthly" },
   "/rechner/bestandsanlage": { titel: "Bestandsanlage bewerten", prio: 0.8, freq: "monthly" },
+  // Welle 3, Paket B5: noindex bis zur Fachprüfung (Team Deutschland, E6) – nicht in der Sitemap
+  "/rechner/gewerbestrom-check": { titel: "Rechnungs-Check Gewerbestrom", prio: 0.8, freq: "monthly", index: false },
+  // Welle 3, Paket B6: Flächenpass Stufe 1 – noindex bis zur Fachprüfung (E6), nicht in der Sitemap
+  "/rechner/flaechenpass": { titel: "Flächenpass", prio: 0.8, freq: "monthly", index: false },
   // Markt & Wissen
   "/marktdaten": { titel: "Marktdaten Solar", prio: 0.8, freq: "weekly" },
   "/marktdaten/fristen": { titel: "Fristen und Termine", prio: 0.6, freq: "weekly", index: false },
+  // Welle 3, Paket B9: noindex bis zur fachlichen Zweitprüfung (E6)
+  "/marktdaten/ausschreibungen": { titel: "Ausschreibungs-Monitor", prio: 0.6, freq: "weekly", index: false },
   "/ratgeber": { titel: "Ratgeber", prio: 0.8, freq: "weekly" },
   "/ratgeber/[slug]": { titel: "Ratgeber-Artikel", dynamisch: true, sitemap: false },
   "/wissen/lexikon": { titel: "Lexikon", prio: 0.7, freq: "monthly", lexikon: true },
   "/faq": { titel: "FAQ", prio: 0.6, freq: "monthly" },
+  // Welle 3, Paket NL: Newsletter je Land – noindex bis Strang R die Texte freigibt und der Versand (B0) steht
+  "/newsletter": { titel: "Newsletter", prio: 0.5, freq: "monthly", index: false },
   // Unternehmen & Kontakt
   "/unternehmen": { titel: "Über ÖkoInvest", prio: 0.6, freq: "monthly" },
   "/referenzen": { titel: "Referenzen", prio: 0.6, freq: "monthly" },
+  // Welle 3, Paket NL: Newsroom – keine Presse vor Freigabe durch den Inhaber (Masterplan Abschnitt 7): noindex, nicht in Navigation/Sitemap
+  "/newsroom": { titel: "Newsroom", prio: 0.5, freq: "weekly", index: false },
+  "/newsroom/[slug]": { titel: "Meldung", dynamisch: true, sitemap: false, index: false },
   "/kontakt": { titel: "Kontakt", prio: 0.6, freq: "yearly" },
   "/termin": { titel: "Termin", prio: 0.6, freq: "monthly" },
   // Rechtstexte (Entwürfe filtert die Sitemap über src/lib/indexsteuerung.js)

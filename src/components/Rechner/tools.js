@@ -1,5 +1,5 @@
-import { Calculator, BatteryCharging, Cable, Car, Factory, Gauge, Warehouse, FileSearch, HandCoins, Handshake, Landmark, LineChart, MapPinned, Scale, Share2, Sprout, Users } from "lucide-react";
-import { pfad } from "@/lib/land";
+import { Calculator, BatteryCharging, Cable, Car, Factory, Gauge, Warehouse, FileSearch, HandCoins, Handshake, Landmark, LineChart, MapPinned, Scale, Share2, Sprout, Users, Receipt, LandPlot, Repeat } from "lucide-react";
+import { pfad, schreibweiseFuer } from "@/lib/land";
 
 /**
  * Länder, in denen ein Rechner auf der Länderfassung (/de, /at, /ch) richtig reagiert: mit eigenen,
@@ -28,6 +28,15 @@ export const TOOLS = [
   { id: "eg-ersparnis", laender: ["AT"], href: pfad("/energiegemeinschaften/rechner"), titel: "Ersparnis-Rechner Energiegemeinschaft", kurz: "EEG, BEG oder GEA in Österreich", text: "Verbrauch, Netzgebiet und Erzeugung eingeben – Anteil Gemeinschaftsstrom, Netzentgelt-Ersparnis nach ElWG und Ersparnis je Mitglied.", icon: Calculator, zielgruppe: "Kommunen", tag: "Neu" },
   { id: "dachpacht", laender: DACH, href: pfad("/rechner/dachpacht"), titel: "Dachpacht-Rechner", kurz: "Pachtspanne und Ertrag Ihres Gewerbedachs", text: "Dachfläche, Dachart, Ausrichtung und Region eingeben – Leistung, Ertrag und Pachtspanne, dazu Dachpacht, Dachstrom-PPA und Eigeninvestition im Vergleich.", icon: Warehouse, zielgruppe: "Eigentümer", tag: "Neu" },
   { id: "bestandsanlage", laender: DACH, href: pfad("/rechner/bestandsanlage"), titel: "Bestandsanlagen-Bewertung", kurz: "Ertragswert laufender PV-Anlagen", text: "Förderrestlaufzeit, gemessener Ertrag, Betriebskosten, Pacht, Wechselrichtertausch und Marktpreis nach Förderende – Ertragswert mit Spanne, Wert je kWp und Sensitivität.", icon: Gauge, zielgruppe: "Investoren", tag: "Profi" },
+  // Welle 3, Paket B5 – nur DE; AT (SNE-VO 2027) und CH zeigen den Länderhinweis der Seite
+  { id: "gewerbestrom-check", laender: ["DE"], href: pfad("/rechner/gewerbestrom-check"), titel: "Rechnungs-Check Gewerbestrom", kurz: "Stromrechnung zerlegen, Energiepreis einordnen", text: "Arbeitspreis, Grundpreis und Verbrauch eingeben – amtliche Umlagen, Steuern und Börsenwert (SMARD) gegen Ihren Energieanteil. Lastgang optional, wird nur im Browser ausgewertet.", icon: Receipt, zielgruppe: "Unternehmen", tag: "Neu" },
+  // Welle 3, Paket B6 – Flächenpass Stufe 1 (DE, AT, CH; ohne Geldwerte)
+  { id: "flaechenpass", laender: DACH, href: pfad("/rechner/flaechenpass"), titel: "Flächenpass", kurz: "Fläche einzeichnen, Eignung und Restriktionen", text: "Fläche auf der Karte einzeichnen oder Größe angeben – Hektar, Leistung, Stromertrag, grobe Eignung und die Restriktionen Ihres Bundeslandes mit Quellen.", icon: LandPlot, zielgruppe: "Eigentümer", tag: "Neu" },
+  // Welle 3, Paket B7 – nur AT (EG-Software nach ElWG); DE und CH zeigen den Länderhinweis der Seite
+  { id: "eg-wechsel-check", laender: ["AT"], href: pfad("/energiegemeinschaften/software/wechsel-check"), titel: "Wechsel-Check Energiegemeinschaft", kurz: "Software-Anbieter wechseln: sinnvoll und möglich?", text: "Sieben Fragen für bestehende Gemeinschaften in Österreich – ob sich ein Anbieterwechsel lohnt, was vorher zu klären ist und was für alle Anbieter gilt.", icon: Repeat, zielgruppe: "Kommunen", tag: "Neu" },
+  // Welle 3, Paket B8 – Kommunal 2.0: Ratsvorlage für DE und AT (CH: Länderhinweis der Seite), Widmungskit nur AT
+  { id: "ratsvorlage", laender: ["DE", "AT"], href: pfad("/kommunen/ratsvorlage"), titel: "Ratsvorlage Solarpark", kurz: "Kommunal-Rechner 2.0 mit Landesrecht", text: "Einnahmen der Gemeinde, Beteiligungsgesetz Ihres Bundeslands mit Quelle – und eine druckfertige Ratsvorlage als Muster. Für Österreich mit den Widmungsschritten des Landes.", icon: Scale, zielgruppe: "Kommunen", tag: "Neu" },
+  { id: "widmungskit", laender: ["AT"], href: pfad("/kommunen/widmungskit"), titel: "Widmungskit Österreich", kurz: "Umwidmung für PV je Bundesland", text: "Ablauf, beteiligte Stellen und Prüfpunkte der Widmung für eine PV-Freiflächenanlage – je Bundesland, mit Quelle zu jedem Punkt, zum Abhaken und Drucken.", icon: MapPinned, zielgruppe: "Kommunen", tag: "Neu" },
 ];
 
 // Englisch (Sprachmodell): Texte je Rechner-id – hrefs, Icons, Länder und Zielgruppen-Schlüssel
@@ -50,6 +59,11 @@ export const TOOLS_EN = {
   "eg-ersparnis": { titel: "Energy community savings calculator", kurz: "EEG, BEG or GEA in Austria", text: "Enter consumption, grid area and generation – share of community power, grid fee savings under the ElWG and savings per member." },
   dachpacht: { titel: "Roof lease calculator", kurz: "Lease range and yield of your commercial roof", text: "Enter roof area, roof type, orientation and region – capacity, yield and lease range, plus roof lease, rooftop PPA and own investment compared." },
   bestandsanlage: { titel: "Operating asset valuation", kurz: "Income value of operating PV plants", text: "Remaining subsidy term, measured yield, operating costs, lease, inverter replacement and market price after the subsidy ends – income value with range, value per kWp and sensitivity." },
+  "gewerbestrom-check": { titel: "Commercial electricity bill check", kurz: "Break down your bill, place your energy price", text: "Enter energy price, standing charge and consumption – official levies, taxes and the exchange value (SMARD) against your energy component. Load profile optional, analysed in your browser only." },
+  "eg-wechsel-check": { titel: "Energy community switch check", kurz: "Switch software provider: worthwhile and possible?", text: "Seven questions for existing communities in Austria – whether switching provider pays off, what to clarify first and what applies to all providers." },
+  flaechenpass: { titel: "Land passport", kurz: "Draw your land, suitability and restrictions", text: "Draw your land on the map or enter its size – hectares, capacity, power yield, rough suitability and your federal state’s restrictions with sources." },
+  ratsvorlage: { titel: "Council paper for solar parks", kurz: "Municipal calculator 2.0 with state law", text: "Municipal income, the participation law of your federal state with source – and a ready-to-print council paper template. For Austria with the state’s zoning steps." },
+  widmungskit: { titel: "Zoning kit Austria", kurz: "Rezoning for PV per federal state", text: "Procedure, authorities involved and checkpoints for zoning a ground-mounted PV plant – per federal state, with a source for every point, to tick off and print." },
 };
 
 /** Zielgruppen und Markierungen auf Englisch (Schlüssel = deutscher Wert in TOOLS). */
@@ -59,7 +73,8 @@ export const TOOL_BEGRIFFE_EN = {
 };
 
 /** TOOLS in einer Sprache (gleiche Reihenfolge, gleiche ids; Rückfall Deutsch). */
-export function toolsFuer(sprache = "de") {
-  if (sprache !== "en") return TOOLS;
-  return TOOLS.map((t) => ({ ...t, ...(TOOLS_EN[t.id] || {}) }));
+export function toolsFuer(sprache = "de", land = null) {
+  // land "CH": Schweizer Schreibweise ohne „ß“ (src/lib/land/schreibweise.js)
+  if (sprache !== "en") return schreibweiseFuer(TOOLS, land);
+  return schreibweiseFuer(TOOLS.map((t) => ({ ...t, ...(TOOLS_EN[t.id] || {}) })), land);
 }

@@ -115,6 +115,7 @@ export default function RechnerSeite({
   faqTitel,
   querverweise = [],
   cta,
+  landHinweise,
 }) {
   // Ländermodell: Land der Seite (null = gemeinsam). Rechner, die im Land nicht richtig rechnen
   // (tools.js: laender), und die Annahmen mit deutschen Werten zeigen in AT/CH den LandHinweis.
@@ -134,6 +135,8 @@ export default function RechnerSeite({
       : undefined;
   const hinweisTextEn =
     hinweisText && en ? TEXTE.en.nurLand(LAENDER[tool.laender[0]].en.fuerLand, landHinweisTextEn(land)) : undefined;
+  // Eigener Länderhinweis der Seite (z. B. „für Österreich ab 2027 nach SNE-VO in Vorbereitung“): { AT: { de, en }, CH: { de, en } }
+  const eigenerHinweis = land && landHinweise?.[land];
   const url = `${BASE}${pfad}`;
   const schema = {
     "@context": "https://schema.org",
@@ -184,7 +187,7 @@ export default function RechnerSeite({
 
       {/* Rechner überlappt den Hero – sofort sichtbar */}
       <section id="rechner" aria-label={t.rechner} className="relative z-10 -mt-20 scroll-mt-24 pb-6 md:-mt-28 md:pb-10 print:mt-0">
-        <div className="ov-container">{rechnetImLand ? rechner : <LandHinweis land={land} thema={TEXTE.de.themaRechenwerte} themaEn={TEXTE.en.themaRechenwerte} text={hinweisText} textEn={hinweisTextEn} className="shadow-e2" />}</div>
+        <div className="ov-container">{rechnetImLand ? rechner : <LandHinweis land={land} thema={TEXTE.de.themaRechenwerte} themaEn={TEXTE.en.themaRechenwerte} text={eigenerHinweis?.de ?? hinweisText} textEn={eigenerHinweis ? eigenerHinweis.en : hinweisTextEn} className="shadow-e2" />}</div>
       </section>
 
       <Section tone="white" space="md">
@@ -305,7 +308,7 @@ const TAG_TON = {
 };
 
 function passendeTools(ohne, anzahl, ausser = [], sprache = "de") {
-  const alle = toolsFuer(sprache);
+  const alle = toolsFuer(sprache, landDerAnfrage());
   const aktuell = alle.find((t) => t.id === ohne);
   const andere = alle.filter((t) => t.id !== ohne && !ausser.includes(t.href));
   const sortiert = aktuell ? [...andere.filter((t) => t.zielgruppe === aktuell.zielgruppe), ...andere.filter((t) => t.zielgruppe !== aktuell.zielgruppe)] : andere;

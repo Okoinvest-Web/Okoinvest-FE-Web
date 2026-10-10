@@ -20,8 +20,14 @@ import umlagenCh from "./daten/umlagen-ch.js";
 import netzentgelteDe from "./daten/netzentgelte-de.js";
 import netzentgelteAt from "./daten/netzentgelte-at.js";
 import netzentgelteCh from "./daten/netzentgelte-ch.js";
+// Paket B5 (Rechnungs-Check Gewerbestrom DE: Umlagen 2026, Stromsteuer, KAV, Börse SMARD)
+import gewerbestromDe from "./daten/gewerbestrom-de.js";
+// Paket B7 (EG-Software AT: ElWG-Regeln für Preisblatt, Wechsel-Check, White-Label)
+import egAt from "./daten/eg-at.js";
+// Paket B8 (Kommunal 2.0: Landesgesetze zur Gemeindebeteiligung DE)
+import kommuneLaender from "./daten/kommune-laender.js";
 
-export const DATENMODULE = [de, at, ch, termineDe, termineAt, termineCh, umlagenDe, umlagenAt, umlagenCh, netzentgelteDe, netzentgelteAt, netzentgelteCh];
+export const DATENMODULE = [de, at, ch, termineDe, termineAt, termineCh, umlagenDe, umlagenAt, umlagenCh, netzentgelteDe, netzentgelteAt, netzentgelteCh, gewerbestromDe, egAt, kommuneLaender];
 
 export const REGISTER = erstelleRegister(DATENMODULE);
 

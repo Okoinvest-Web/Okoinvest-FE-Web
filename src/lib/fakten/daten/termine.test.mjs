@@ -189,7 +189,10 @@ test("BestandteileTabelle: offener Wert erscheint als „noch nicht veröffentli
   assert.match(html, new RegExp(TEXT_OFFEN));
   assert.match(html, /Veröffentlichung erwartet bis 25\.10\.2026/);
   assert.match(html, /01\.01\.2027 bis 31\.12\.2027/);
-  assert.doesNotMatch(html, /\d+,\d+\s*ct\/kWh/, "kein Schätzwert für offene Umlagen");
+  // Offene Zeilen (2027) ohne Zahl; die geprüften Werte 2026 (Paket B5, gültig bis 31.12.2026) stehen daneben mit Wert
+  const offen = html.split("<tr").filter((z) => z.includes("data-fakt-offen"));
+  assert.ok(offen.length >= 3);
+  for (const z of offen) assert.doesNotMatch(z, /\d+,\d+\s*ct\/kWh/, "kein Schätzwert für offene Umlagen");
 });
 
 test("BestandteileTabelle: abgelaufene Einträge erscheinen nicht; Länder getrennt", () => {

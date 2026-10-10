@@ -17,6 +17,7 @@ export const OHNE_LAND = Object.freeze([
   "/einladung",
   "/angebot",
   "/bericht",
+  "/newsletter/abo", // Welle 3, Paket NL: Token-Seite (Bestätigen/Abmelden), keine Länderfassung
   "/p",
   "/api",
   "/design",

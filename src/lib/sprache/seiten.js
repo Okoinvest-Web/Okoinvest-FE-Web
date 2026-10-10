@@ -69,11 +69,19 @@ export const UEBERSETZT = Object.freeze({
   "/projektboerse/anbieten": VERMERK_EN_G1,
   "/projektboerse/karte": VERMERK_EN_G1,
   "/projektboerse/[slug]": VERMERK_EN_G1,
+  // Welle 3, Paket B10: Inhalt englisch, aber noindex wie die deutsche Fassung (Prüfung Rechtsabteilung offen;
+  // Muster-NDA als Übersetzung zur Information, maßgeblich ist die deutsche Fassung)
+  "/projektboerse/neutralitaet": Object.freeze({ stand: "2026-10-09", grundlage: "Seite, Bühne und Badges mit englischen Texten (Paket B10); Rechtsrahmen je Land englisch in src/lib/boerse/neutralitaet.js", pruefer: "TODO-E6 + Rechtsabteilung", index: false }),
+  "/projektboerse/muster-nda": Object.freeze({ stand: "2026-10-09", grundlage: "Muster-NDA übersetzt (Paket B10) – Übersetzung zur Information, Prüfung Rechtsabteilung offen", pruefer: "TODO-E6 + Rechtsabteilung", index: false }),
   "/bestandsanlagen": VERMERK_EN_G1,
   "/kontakt": VERMERK_EN_G1,
   "/termin": VERMERK_EN_G1,
   "/unternehmen": VERMERK_EN_G1,
   "/referenzen": VERMERK_EN_G1,
+  // Welle 3, Paket NL: Inhalt englisch, aber noindex wie die deutschen Fassungen (Strang R / Freigabe Inhaber offen);
+  // /newsroom/[slug] bleibt „nicht übersetzt“ (Meldungen deutsch)
+  "/newsletter": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Newsletter-Baustein mit englischen Texten (Paket NL); Einwilligungswortlaut englisch mit eigenem Hash", pruefer: "TODO-E6 + Rechtsabteilung", index: false }),
+  "/newsroom": Object.freeze({ stand: "2026-10-09", grundlage: "Seite mit englischen Texten (Paket NL); Kurzprofil aus src/data/site.js", pruefer: "TODO-E6", index: false }),
   "/warum-oekoinvest": VERMERK_EN_G1,
   "/prozess": VERMERK_EN_G1,
   // Gruppe 1 – Recht (noindex bis Freigabe Rechtsabteilung)
@@ -94,6 +102,9 @@ export const UEBERSETZT = Object.freeze({
   "/dachflaeche-verpachten": VERMERK_EN_G2,
   "/landwirte": VERMERK_EN_G2,
   "/kommunen": VERMERK_EN_G2,
+  // Welle 3, Paket B8: Kommunal 2.0 – Inhalt englisch (Ratsvorlage selbst deutsch), noindex wie die deutsche Fassung (Fachprüfung offen)
+  "/kommunen/ratsvorlage": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Werkzeug englisch (Paket B8); Landesregeln und Widmung mit englischen Texten bzw. Regionsdaten aus src/data/regionen/en; Rechenlogik gemeinsam mit DE", pruefer: "TODO-E6", index: false }),
+  "/kommunen/widmungskit": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Checkliste englisch (Paket B8); Prüfpunkte aus src/data/regionen/en", pruefer: "TODO-E6", index: false }),
   "/flaechencheck": VERMERK_EN_G2,
   "/regionen": VERMERK_EN_G2,
   "/regionen/[slug]": VERMERK_EN_G2,
@@ -102,6 +113,10 @@ export const UEBERSETZT = Object.freeze({
   "/energie-live": VERMERK_EN_G2,
   "/energiegemeinschaften": VERMERK_EN_G2,
   "/energiegemeinschaften/software": VERMERK_EN_G2,
+  // Welle 3, Paket B7: Inhalt englisch, aber noindex wie die deutsche Fassung (Fachprüfung und Preisfreigabe offen)
+  "/energiegemeinschaften/software/preise": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Bausteine mit englischen Texten (Paket B7); keine Beträge", pruefer: "TODO-E6", index: false }),
+  "/energiegemeinschaften/software/wechsel-check": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Wechsel-Check mit englischen Texten (Paket B7); Fakten-Wortlaut englisch in src/lib/eg-angebot/fakten.js", pruefer: "TODO-E6", index: false }),
+  "/energiegemeinschaften/software/white-label": Object.freeze({ stand: "2026-10-09", grundlage: "Seite mit englischen Texten (Paket B7)", pruefer: "TODO-E6", index: false }),
   "/energiegemeinschaften/rechner": VERMERK_EN_G2,
   "/genossenschaft": VERMERK_EN_G2,
   // Gruppe 3 – Rechner und Marktdaten
@@ -121,6 +136,10 @@ export const UEBERSETZT = Object.freeze({
   "/rechner/bestandsanlage": VERMERK_EN_G3,
   "/rechner/reststrom": VERMERK_EN_G3,
   "/rechner/solarcarport": VERMERK_EN_G3,
+  // Welle 3, Paket B5: Inhalt englisch, aber noindex wie die deutsche Fassung (Fachprüfung offen)
+  "/rechner/gewerbestrom-check": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Rechner über Wörterbücher übersetzt (Paket B5); Rechenlogik gemeinsam mit DE", pruefer: "TODO-E6", index: false }),
+  // Welle 3, Paket B6: Flächenpass – Inhalt englisch, aber noindex wie die deutsche Fassung (Fachprüfung offen)
+  "/rechner/flaechenpass": Object.freeze({ stand: "2026-10-09", grundlage: "Seite, Assistent und Texte englisch (Paket B6); Regionsdaten aus src/data/regionen/en; Bewertungslogik gemeinsam mit DE", pruefer: "TODO-E6", index: false }),
   "/marktdaten": VERMERK_EN_G3,
   // Gruppe 3 – Wissen
   "/faq": VERMERK_EN_G3,
@@ -128,6 +147,8 @@ export const UEBERSETZT = Object.freeze({
   "/ratgeber": VERMERK_EN_G3,
   // Entwurf, Prüfung Rechtsabteilung offen: Inhalt englisch, aber nicht indexieren (wie die deutsche Fassung)
   "/marktdaten/fristen": Object.freeze({ ...VERMERK_EN_G3, index: false }),
+  // Welle 3, Paket B9: Ausschreibungs-Monitor – Inhalt englisch, aber noindex bis zur Fachprüfung (wie die deutsche Fassung)
+  "/marktdaten/ausschreibungen": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Monitor-Baustein mit englischen Texten (Paket B9); Daten unverändert", pruefer: "TODO-E6", index: false }),
 });
 
 /**

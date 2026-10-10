@@ -12,10 +12,15 @@ import { AGRI, KOMMUNE, PACHT, PROVISION, STAND } from "@/lib/invest/markt";
 import { formate } from "@/lib/sprache/zahlformat";
 import { SITE, abs } from "@/data/site";
 import JsonLd from "@/components/JsonLd";
+import { NewsletterBand } from "@/components/Newsletter/NewsletterAnmeldung";
 import { pfad } from "@/lib/land";
-import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { seitenLand, seitenMetadata, spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
 import { ertragFuerLand, foerderwegFuerLand } from "@/components/Land/Laenderteile";
 import { landHinweisText, landHinweisTextEn } from "@/lib/land";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 const PAGE_URL = abs("/ratgeber");
 
@@ -175,7 +180,7 @@ export default async function RatgeberPage({ params }) {
     provision,
   ];
 
-  return (
+  return chBaum(
     <>
       <JsonLd daten={jsonLd} />
 
@@ -223,6 +228,9 @@ export default async function RatgeberPage({ params }) {
           }))}
         />
       </Section>
+
+      {/* Welle 3, Paket NL: Newsletter je Land (nur sichtbar, solange er Anmeldungen annimmt) */}
+      <NewsletterBand quelle="ratgeber" tone="white" />
 
       <WeiterWissen begriffe={BEGRIFFE.length} />
 

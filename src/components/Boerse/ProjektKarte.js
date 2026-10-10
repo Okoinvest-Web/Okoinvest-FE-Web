@@ -4,6 +4,7 @@ import Link from "@/components/Land/Link";
 import { ArrowUpRight, MapPin, Zap } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import TypIllustration, { varianteAus } from "./TypIllustration";
+import BoerseBadges from "./Badges";
 import { QualitaetsBalken } from "@/components/Portal/ui";
 import { LAENDER, NETZANSCHLUSS, PROJEKT_TYPEN } from "@/lib/plattform/konstanten";
 import { mwp, preisText } from "@/lib/plattform/format";
@@ -56,6 +57,8 @@ export default function ProjektKarte({ projekt: p, href, extra, aktion, classNam
           <MapPin aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <T de={[p.region, p.bundesland, LAENDER[p.land]].filter(Boolean).join(" · ")} en={[p.region, p.bundesland, BEGRIFFE_EN.land[p.land]].filter(Boolean).join(" · ")} />
         </p>
+        {/* Welle 3, B10: Neutralitäts-Badges – nur wenn das Backend die Angabe ausdrücklich liefert */}
+        <BoerseBadges projekt={p} className="mt-3" />
         <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-ink-100 ring-1 ring-ink-100 transition-colors duration-300 group-hover:ring-ov-200">
           <div className="min-w-0 bg-sand-50 px-3.5 py-3">
             <dt className="text-[11.5px] text-ink-500"><T de="Leistung" en="Capacity" /></dt>

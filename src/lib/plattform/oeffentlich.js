@@ -8,6 +8,9 @@
 const OEFFENTLICH = [
   "id", "slug", "titel", "typ", "land", "bundesland", "region", "mwp", "mwhSpeicher", "flaecheHa", "phase", "netzanschluss",
   "codGeplant", "preisModus", "preis", "preisProKwp", "beschreibung", "highlights", "status", "veroeffentlichtAm", "demo",
+  // Welle 3, Paket B10 (Neutralität): Anbieter-Kennzeichnung und Backoffice-Vorprüfung – nur Booleans,
+  // keine Anbieterdaten. Badges entstehen daraus in src/lib/boerse/neutralitaet.js.
+  "eigenprojekt", "gruppeBeteiligt", "unterlagenVorgeprueft",
 ];
 
 /** Öffentlicher Teaser – für Liste und Exposé ohne NDA */
@@ -16,6 +19,7 @@ export function projektOeffentlich(p) {
   const o = {};
   for (const k of OEFFENTLICH) if (p[k] !== undefined) o[k] = p[k];
   o.highlights = Array.isArray(p.highlights) ? p.highlights : [];
+  for (const k of ["eigenprojekt", "gruppeBeteiligt", "unterlagenVorgeprueft"]) if (o[k] !== undefined && typeof o[k] !== "boolean") delete o[k];
   return o;
 }
 

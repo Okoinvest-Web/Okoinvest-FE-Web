@@ -9,6 +9,7 @@ import TypIllustration, { varianteAus } from "@/components/Boerse/TypIllustratio
 import Vertraulich from "@/components/Boerse/Expose/Vertraulich";
 import PhasenEinordnung from "@/components/Boerse/Expose/PhasenEinordnung";
 import { PhaseBadge } from "@/components/Boerse/ProjektKarte";
+import BoerseBadges from "@/components/Boerse/Badges";
 import { abs, SITE } from "@/data/site";
 import { phaseById } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
@@ -207,7 +208,8 @@ export default async function Expose({ params }) {
                 <PhaseBadge phase={p.phase} />
                 <span className="rounded-full bg-white px-2.5 py-1 text-[12px] font-semibold text-ink-700 ring-1 ring-ink-200/70">{typName}</span>
                 {p.status === "reserviert" && <span className="rounded-full bg-navy-900 px-2.5 py-1 text-[12px] font-semibold text-white">{en ? BEGRIFFE_EN.projektStatus.reserviert : statusLabel("projekt", "reserviert")}</span>}
-                {eigen && <span className="rounded-full bg-ov-600 px-2.5 py-1 text-[11.5px] font-bold uppercase tracking-wide text-white" title={t.eigenTitel}>{t.eigen}</span>}
+                {/* Welle 3, B10: Neutralitäts-Badges nur nach Kriterium (Gruppenprojekt, Fremdinserat, Gruppe interessiert, Unterlagen vorgeprüft) */}
+                <BoerseBadges projekt={p} ohneHuelle />
                 {p.demo && <span className="rounded-full bg-sun-400 px-2.5 py-1 text-[11.5px] font-bold uppercase tracking-wide text-navy-950">{t.demo}</span>}
               </div>
               <h1 id="expose-titel" lang={datenLang} className="ov-h1 ov-hero-in mt-5 text-balance text-ink-900" style={{ "--ov-delay": "100ms" }}>{p.titel}</h1>

@@ -1,5 +1,5 @@
 import Link from "@/components/Land/Link";
-import { BadgePercent, Coins, FolderLock, Info, Map as MapIcon, Search, ShieldCheck } from "lucide-react";
+import { BadgePercent, Coins, FileLock2, FolderLock, Info, Map as MapIcon, Scale, Search, ShieldCheck } from "lucide-react";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import Faq from "@/components/ui/Faq";
@@ -11,6 +11,9 @@ import BoerseListe from "@/components/Boerse/BoerseListe";
 import Hero from "@/components/Boerse/Seite/Hero";
 import Marktbild from "@/components/Boerse/Seite/Marktbild";
 import Ablauf from "@/components/Boerse/Seite/Ablauf";
+import LeererBestand from "@/components/Boerse/Seite/LeererBestand";
+import { Badge } from "@/components/Boerse/Badges";
+import { rechtsrahmenFuer } from "@/lib/boerse/neutralitaet";
 import { abs, SITE } from "@/data/site";
 import { PROVISION, PHASEN } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
@@ -146,6 +149,14 @@ const TEXTE = {
     ctaText: "Legen Sie ein Suchprofil an. Neue Projekte, die zu Ihren Kriterien passen, sehen Sie im Portal zuerst.",
     ctaPrimaer: "Suchprofil anlegen",
     ctaSekundaer: "Für Investoren",
+    neutralEyebrow: "Neutralität",
+    neutralTitel: "Neutral – auch gegenüber der eigenen Gruppe",
+    neutralText: "Die ÖKOVOLT Gruppe entwickelt selbst Projekte. Deshalb trennen wir Börse und eigene Projektentwicklung, kennzeichnen jedes Inserat und geben der Gruppe kein Vorkaufsrecht.",
+    neutralPunkte: ["Informationsbarriere zur eigenen Projektentwicklung", "Gleiche Informationen und Fristen für alle Interessenten", "Keine Börse im Sinne des Börsenrechts – Verträge direkt zwischen Anbieter und Käufer"],
+    neutralLink: "Neutralität & Regeln",
+    faqNeutralQ: "Wie neutral ist die Projektbörse?",
+    faqNeutralA: "Die ÖKOVOLT Gruppe entwickelt selbst Projekte. Vertrauliche Angaben aus Fremdinseraten erhält ihre Projektentwicklung nicht, jedes Inserat ist als Gruppenprojekt oder Fremdinserat gekennzeichnet, und die Gruppe hat kein Vorkaufsrecht. Ist sie interessiert, geht sie über die Börse wie jeder Investor. Alle Regeln stehen unter „Neutralität & Regeln“.",
+    faqRechtQ: "Ist die Projektbörse eine Börse im rechtlichen Sinn?",
   },
   en: {
     fehler: "The project exchange is temporarily unavailable.",
@@ -187,6 +198,14 @@ const TEXTE = {
     ctaText: "Create a search profile. You will see new projects that match your criteria first in the portal.",
     ctaPrimaer: "Create a search profile",
     ctaSekundaer: "For investors",
+    neutralEyebrow: "Neutrality",
+    neutralTitel: "Neutral – even towards our own Group",
+    neutralText: "The ÖKOVOLT Group develops projects itself. That is why we separate the exchange from our own project development, label every listing and give the Group no right of first refusal.",
+    neutralPunkte: ["Information barrier towards our own project development", "Same information and deadlines for all interested parties", "Not an exchange under stock exchange law – contracts directly between seller and buyer"],
+    neutralLink: "Neutrality & rules",
+    faqNeutralQ: "How neutral is the project exchange?",
+    faqNeutralA: "The ÖKOVOLT Group develops projects itself. Its project development does not receive confidential information from third-party listings, every listing is labelled as a group project or third-party listing, and the Group has no right of first refusal. If it is interested, it goes through the exchange like every investor. All rules are set out under “Neutrality & rules”.",
+    faqRechtQ: "Is the project exchange an exchange in the legal sense?",
   },
 };
 
@@ -216,6 +235,15 @@ export default async function Projektboerse({ params, searchParams }) {
     mwp: Math.round(projekte.reduce((s, p) => s + (Number(p.mwp) || 0), 0) * 10) / 10,
     laender: new Set(projekte.map((p) => p.land).filter(Boolean)).size,
   };
+  // B10 „ehrlicher Bestand“: außerhalb des Demo-Modus ohne veröffentlichte Projekte → Einladung statt leerer Liste
+  const leer = !!daten && !demo && projekte.length === 0;
+  // Rechtliche Einordnung je Land (Länderfassung nur ihr Land, gemeinsam DE/AT/CH beschriftet)
+  const recht = rechtsrahmenFuer(land, sprache);
+  const faqRecht = {
+    q: t.faqRechtQ,
+    a: recht.length === 1 ? `${recht[0].punkte[0]} ${recht[0].punkte[1]}` : recht.map((r) => `${r.land}: ${r.punkte[0]}`).join(" "),
+  };
+  const faq = [...(en ? FAQ_EN : FAQ), { q: t.faqNeutralQ, a: t.faqNeutralA }, faqRecht];
   const pillDe = boersePill(projekte, { demo });
   const pill = en ? { ...pillDe, text: PILL_EN[pillDe.marke]?.(projekte.length) ?? pillDe.text } : pillDe;
 
@@ -270,6 +298,8 @@ export default async function Projektboerse({ params, searchParams }) {
               <p className="font-display text-[20px] font-bold text-ink-900">{t.nichtVerfuegbar}</p>
               <p className="mt-2 text-[15px] text-ink-600">{fehler}</p>
             </div>
+          ) : leer ? (
+            <LeererBestand />
           ) : (
             <BoerseListe projekte={projekte} basisHref={`${PFAD}/`} start={start} />
           )}
@@ -309,6 +339,33 @@ export default async function Projektboerse({ params, searchParams }) {
             <div className="relative mt-auto pt-8"><Button href="/projektboerse/anbieten" variant="white" pfeil>{t.anbieten}</Button></div>
           </Reveal>
         </div>
+        {/* Welle 3, B10: Neutralitätsversprechen sichtbar, Details auf /projektboerse/neutralitaet */}
+        <Reveal className="mt-5 grid gap-6 rounded-[2rem] bg-white p-7 shadow-e1 ring-1 ring-ink-200/70 md:p-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-center lg:gap-12">
+          <div className="min-w-0">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-700">{t.neutralEyebrow}</p>
+            <h3 className="ov-h3 mt-3 text-ink-900">{t.neutralTitel}</h3>
+            <p className="mt-3 text-[16px] leading-relaxed text-ink-600">{t.neutralText}</p>
+            <div className="mt-5 flex flex-wrap gap-1.5" aria-hidden="true">
+              <Badge id="gruppenprojekt" />
+              <Badge id="fremdinserat" />
+              <Badge id="vorgeprueft" />
+            </div>
+          </div>
+          <div className="min-w-0">
+            <ul className="grid gap-3">
+              {t.neutralPunkte.map((x, i) => {
+                const Icon = [FileLock2, ShieldCheck, Scale][i];
+                return (
+                  <li key={x} className="flex gap-3 rounded-2xl bg-sand-50 px-4 py-3 text-[15px] leading-snug text-ink-700 ring-1 ring-ink-200/60">
+                    <Icon aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" />
+                    {x}
+                  </li>
+                );
+              })}
+            </ul>
+            <Button href="/projektboerse/neutralitaet" variant="secondary" pfeil className="mt-5">{t.neutralLink}</Button>
+          </div>
+        </Reveal>
       </Section>
 
       <Section tone="white" space="lg">
@@ -317,7 +374,7 @@ export default async function Projektboerse({ params, searchParams }) {
             <SectionHeading eyebrow={t.faqEyebrow} title={t.faqTitel} />
             <p className="mt-6 max-w-sm text-[15px] leading-relaxed text-ink-600">{t.vermarkten} <Link href="/projektboerse/anbieten" className="font-semibold text-ov-700 underline decoration-ov-300 underline-offset-4 hover:text-ov-800">{t.soGehts}</Link></p>
           </div>
-          <Faq items={en ? FAQ_EN : FAQ} />
+          <Faq items={faq} />
         </div>
       </Section>
 

@@ -1,4 +1,4 @@
-import { BadgePercent, BarChart3, Check, ClipboardCheck, EyeOff, FileCheck2, FolderLock, Handshake, LayoutList, Lock, Send, ShieldCheck, UserPlus, Users } from "lucide-react";
+import { BadgePercent, BarChart3, Check, ClipboardCheck, EyeOff, FileCheck2, FileLock2, FolderLock, Handshake, Info, LayoutList, Lock, MessageSquareText, Send, ShieldCheck, UserPlus, Users } from "lucide-react";
 import Section from "@/components/ui/Section";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { cn } from "@/components/ui/cn";
@@ -9,6 +9,8 @@ import Reveal from "@/components/ui/Reveal";
 import Querverweise from "@/components/Reusable/Querverweise";
 import Hero from "@/components/Boerse/Seite/Hero";
 import AnbieterBuehne from "@/components/Boerse/Seite/AnbieterBuehne";
+import AnfrageMitDaten from "@/components/Gemeinschaft/AnfrageMitDaten";
+import Link from "@/components/Land/Link";
 import { abs } from "@/data/site";
 import { PHASEN, PROVISION } from "@/lib/invest/markt";
 import { fmt, fmtEur } from "@/lib/rechner/annahmen";
@@ -17,6 +19,7 @@ import { uebersetze } from "@/lib/sprache/woerterbuch";
 import { fmtEuro, fmtZahl } from "@/lib/sprache/format";
 import { GiltFuer } from "@/components/Land/LandHinweis";
 import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
 
 const PFAD = "/projektboerse/anbieten";
 const TITEL = "Solarprojekt verkaufen: Projektbörse | ÖkoInvest";
@@ -66,7 +69,7 @@ const FAQ = [
   },
   {
     q: "Tritt ÖkoInvest selbst als Käufer auf?",
-    a: "Die ÖKOVOLT Gruppe entwickelt und betreibt selbst Solarparks und kann im Einzelfall Interesse an Projekten haben. Das legen wir offen; über die Börse gelten für alle Interessenten dieselben Regeln.",
+    a: "Die ÖKOVOLT Gruppe entwickelt und betreibt selbst Solarparks und kann im Einzelfall Interesse an Projekten haben. Dann geht sie über die Börse wie jeder Investor – mit NDA, denselben Informationen und Fristen, ohne Vorkaufsrecht –, und das Inserat wird gekennzeichnet. Die Regeln stehen unter „Neutralität & Regeln“ der Projektbörse.",
   },
 ];
 
@@ -131,7 +134,7 @@ const FAQ_EN = [
   },
   {
     q: "Does ÖkoInvest itself act as a buyer?",
-    a: "The ÖKOVOLT Group develops and operates solar parks itself and may in individual cases be interested in projects. We disclose this; on the exchange, the same rules apply to all interested parties.",
+    a: "The ÖKOVOLT Group develops and operates solar parks itself and may in individual cases be interested in projects. It then goes through the exchange like every investor – with an NDA, the same information and deadlines, without a right of first refusal –, and the listing is labelled. The rules are set out under “Neutrality & rules” of the project exchange.",
   },
 ];
 
@@ -161,6 +164,31 @@ const TEXTE = {
     starten: "Jetzt starten",
     schritte: SCHRITTE,
     schritt: (n) => `Schritt ${n}`,
+    fremd: {
+      eyebrow: "Für Fremdentwickler",
+      titel: "Vertraulich anbieten – mit NDA vor dem ersten Dokument",
+      lead: "Die ÖKOVOLT Gruppe entwickelt selbst. Deshalb trennen wir Börse und eigene Projektentwicklung – und schließen auf Wunsch eine Vertraulichkeitsvereinbarung mit Ihnen, bevor Sie uns die Lage nennen.",
+      schritte: [
+        { titel: "Eckdaten senden", text: "Typ, Stand und Leistung genügen – noch ohne Lage, Flurstücke oder Unterlagen." },
+        { titel: "NDA mit ÖkoInvest", text: "Wir senden Ihnen die Vertraulichkeitsvereinbarung mit Informationsbarriere. Erst danach geben Sie Details frei." },
+        { titel: "Prüfung durch das Backoffice", text: "Unterlagen auf Vollständigkeit und Plausibilität – keine Due Diligence, keine Weitergabe an die eigene Projektentwicklung." },
+        { titel: "Anonymes Inserat", text: "Öffentlich nur der Teaser, gekennzeichnet als Fremdinserat. Den Datenraum sehen nur Investoren mit freigegebener NDA." },
+      ],
+      regeln: "Neutralität & Regeln lesen",
+      muster: "Muster-NDA (Entwurf)",
+      legende: "Ihr Projekt",
+      typ: "Projekttyp",
+      typen: [{ id: "freiflaeche", label: "Freiflächen-PV" }, { id: "agri", label: "Agri-PV" }, { id: "carport", label: "Parkplatz / Carport" }, { id: "speicher", label: "Batteriegroßspeicher" }, { id: "hybrid", label: "PV mit Speicher" }, { id: "bestand", label: "Bestandsanlage" }],
+      stand: "Entwicklungsstand",
+      staende: [{ id: "flaeche", label: "Fläche gesichert" }, { id: "genehmigung", label: "Genehmigungsverfahren läuft" }, { id: "baureif", label: "Baureif" }, { id: "betrieb", label: "In Betrieb" }],
+      mwp: "Leistung (MWp, ca.)",
+      mwpPlatz: "z. B. 12",
+      nda: "Vertraulichkeit",
+      ndaOptionen: [{ id: "nda-zuerst", label: "Erst NDA mit ÖkoInvest" }, { id: "direkt", label: "NDA nicht nötig" }],
+      button: "Vertraulich anfragen",
+      erfolg: "Danke! Ihre Anfrage ist eingegangen. Wünschen Sie eine NDA, senden wir sie Ihnen vor dem ersten Upload.",
+      ohneLage: "Bitte noch keine Lage, Flurstücke oder Unterlagen in die Nachricht – die folgen erst nach der NDA.",
+    },
     provEyebrow: "Provision",
     provTitel: "Transparent – und nur bei Erfolg",
     provLead: "Keine Grundgebühr, keine Laufzeit, keine Exklusivbindung für das Inserat. Die Provision zahlt der Verkäufer nur, wenn ein über die Börse vermittelter Investor kauft.",
@@ -236,6 +264,31 @@ const TEXTE = {
       { title: "Publication & marketing", text: "Anonymous teaser on the exchange, data room after NDA, LOIs and closing in the portal." },
     ],
     schritt: (n) => `Step ${n}`,
+    fremd: {
+      eyebrow: "For third-party developers",
+      titel: "Offer confidentially – with an NDA before the first document",
+      lead: "The ÖKOVOLT Group develops projects itself. That is why we separate the exchange from our own project development – and, on request, conclude a confidentiality agreement with you before you tell us the location.",
+      schritte: [
+        { titel: "Send key data", text: "Type, stage and capacity are enough – without location, plots or documents yet." },
+        { titel: "NDA with ÖkoInvest", text: "We send you the confidentiality agreement with an information barrier. Only then do you release details." },
+        { titel: "Back-office review", text: "Documents checked for completeness and plausibility – no due diligence, no disclosure to our own project development." },
+        { titel: "Anonymous listing", text: "Publicly only the teaser, labelled as a third-party listing. Only investors with an approved NDA see the data room." },
+      ],
+      regeln: "Read neutrality & rules",
+      muster: "Model NDA (draft)",
+      legende: "Your project",
+      typ: "Project type",
+      typen: [{ id: "freiflaeche", label: "Ground-mounted PV" }, { id: "agri", label: "Agrivoltaics" }, { id: "carport", label: "Car park / carport" }, { id: "speicher", label: "Battery storage" }, { id: "hybrid", label: "PV with storage" }, { id: "bestand", label: "Operating plant" }],
+      stand: "Development stage",
+      staende: [{ id: "flaeche", label: "Land secured" }, { id: "genehmigung", label: "Permitting under way" }, { id: "baureif", label: "Ready to build" }, { id: "betrieb", label: "In operation" }],
+      mwp: "Capacity (MWp, approx.)",
+      mwpPlatz: "e.g. 12",
+      nda: "Confidentiality",
+      ndaOptionen: [{ id: "nda-zuerst", label: "NDA with ÖkoInvest first" }, { id: "direkt", label: "No NDA needed" }],
+      button: "Enquire confidentially",
+      erfolg: "Thank you! Your enquiry has been received. If you would like an NDA, we will send it to you before the first upload.",
+      ohneLage: "Please do not include the location, plots or documents in your message yet – they follow after the NDA.",
+    },
     provEyebrow: "Commission",
     provTitel: "Transparent – and only on success",
     provLead: "No basic fee, no minimum term, no exclusivity for the listing. The seller only pays the commission if an investor introduced via the exchange buys.",
@@ -296,7 +349,8 @@ export default async function Anbieten({ params }) {
   const spanne = en ? SPANNE_EN : SPANNE;
   const vorteile = VORTEILE.map((v, i) => ({ ...v, ...t.vorteile[i] }));
   const schritte = SCHRITTE.map((s, i) => ({ ...s, ...t.schritte[i] }));
-  return (
+  // Schweiz: Texte der Seite ohne „ß“ (W3-QM)
+  return schreibweiseBaum(
     <>
       <Hero
         breadcrumbs={[{ name: t.brotkrumen[0], href: "/projektboerse" }, { name: t.brotkrumen[1], href: PFAD }]}
@@ -439,6 +493,54 @@ export default async function Anbieten({ params }) {
         </div>
       </Section>
 
+      {/* Welle 3, B10: Ablauf für Fremdentwickler mit NDA-Schritt und Lead-Kette (POST /api/anfrage, typ projekt) */}
+      <Section tone="sand" space="lg" id="fremdentwickler" className="scroll-mt-20">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
+          <div className="min-w-0">
+            <SectionHeading eyebrow={t.fremd.eyebrow} title={t.fremd.titel} lead={t.fremd.lead} />
+            <ol className="mt-8 space-y-3">
+              {t.fremd.schritte.map((x, i) => {
+                const Icon = [MessageSquareText, FileLock2, ClipboardCheck, EyeOff][i] || Check;
+                const nda = i === 1;
+                return (
+                  <Reveal as="li" key={x.titel} delay={i * 60} className={cn("flex gap-4 rounded-[1.5rem] p-5 ring-1", nda ? "bg-navy-950 text-white ring-navy-900" : "bg-white ring-ink-200/60")}>
+                    <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", nda ? "bg-white/10 text-ov-300" : "bg-white text-ov-600 shadow-e1 ring-1 ring-ink-200/60")}>
+                      <Icon aria-hidden="true" className="h-5 w-5" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className={cn("ov-num block font-display text-[12.5px] font-bold", nda ? "text-ov-300" : "text-ov-700")}>{t.schritt(i + 1)}</span>
+                      <span className={cn("block font-display text-[17px] font-bold", nda ? "text-white" : "text-ink-900")}>{x.titel}</span>
+                      <span className={cn("mt-1 block text-[14.5px] leading-relaxed", nda ? "text-white/75" : "text-ink-600")}>{x.text}</span>
+                    </span>
+                  </Reveal>
+                );
+              })}
+            </ol>
+            <p className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-[14.5px]">
+              <Link href="/projektboerse/neutralitaet" className="font-semibold text-ov-700 underline decoration-ov-300 underline-offset-4 hover:text-ov-800">{t.fremd.regeln}</Link>
+              <Link href="/projektboerse/muster-nda" className="font-semibold text-ov-700 underline decoration-ov-300 underline-offset-4 hover:text-ov-800">{t.fremd.muster}</Link>
+            </p>
+          </div>
+          <Reveal className="min-w-0 rounded-[2rem] bg-white p-5 shadow-e3 ring-1 ring-ink-200/70 sm:p-8 md:p-10">
+            <p className="mb-6 flex items-start gap-3 rounded-2xl bg-ov-50 px-4 py-3 text-[14px] leading-relaxed text-ink-700 ring-1 ring-inset ring-ov-200">
+              <Info aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-700" />
+              {t.fremd.ohneLage}
+            </p>
+            <AnfrageMitDaten
+              legende={t.fremd.legende}
+              festeDaten={{ quelle: "boerse-fremdinserat", fremdinserat: true }}
+              zusatz={[
+                { name: "projekttyp", label: t.fremd.typ, art: "select", optionen: t.fremd.typen },
+                { name: "stand", label: t.fremd.stand, art: "select", optionen: t.fremd.staende },
+                { name: "mwp", label: t.fremd.mwp, art: "zahl", platzhalter: t.fremd.mwpPlatz, breit: true },
+                { name: "nda", label: t.fremd.nda, art: "chips", optionen: t.fremd.ndaOptionen },
+              ]}
+              formular={{ typ: "projekt", felder: ["firma", "telefon", "land", "nachricht"], button: t.fremd.button, erfolgText: t.fremd.erfolg }}
+            />
+          </Reveal>
+        </div>
+      </Section>
+
       <Section tone="navy" space="lg" className="ov-verlauf-nacht ov-noise overflow-hidden">
         <div aria-hidden="true" className="ov-grid-bg pointer-events-none absolute inset-0 opacity-40" />
         <div className="relative grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.2fr)] lg:gap-16">
@@ -487,7 +589,8 @@ export default async function Anbieten({ params }) {
         primary={{ label: t.registrieren, href: "/registrieren?rolle=anbieter" }}
         secondary={{ label: t.boerse, href: "/projektboerse" }}
       />
-    </>
+    </>,
+    land
   );
 }
 

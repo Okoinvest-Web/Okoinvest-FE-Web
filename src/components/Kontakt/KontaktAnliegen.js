@@ -1,5 +1,6 @@
 "use client";
 
+import { useSeitenLand } from "@/components/Land/LandKontext";
 import { useEffect, useId, useState } from "react";
 import Link from "@/components/Land/Link";
 import { ArrowUpRight, BatteryCharging, Car, Check, Factory, FolderUp, HandCoins, Landmark, LineChart, MapPinned, MessageSquare, Sprout, Users } from "lucide-react";
@@ -59,7 +60,7 @@ const ICON = {
 
 export default function KontaktAnliegen() {
   const sprache = useSprache();
-  const anliegen = uebersetze({ de: ANLIEGEN, en: ANLIEGEN_EN }, sprache);
+  const anliegen = uebersetze({ de: ANLIEGEN, en: ANLIEGEN_EN }, sprache, useSeitenLand()); // Schweiz: ohne „ß“
   const [typ, setTyp] = useState("kontakt");
   const name = useId();
 

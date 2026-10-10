@@ -2,11 +2,11 @@
 import Image from "next/image";
 import { ArrowDownRight, Wheat } from "lucide-react";
 import { wegeFuer } from "@/components/Agri/wege";
-import { spracheDerAnfrage } from "@/lib/land/seite";
+import { landDerAnfrage, spracheDerAnfrage } from "@/lib/land/seite";
 
 export default function WegeBuehne({ bild, notiz }) {
   const en = spracheDerAnfrage() === "en";
-  const WEGE = wegeFuer(en ? "en" : "de");
+  const WEGE = wegeFuer(en ? "en" : "de", landDerAnfrage());
   return (
     <div className="ov-hero-in relative mx-auto w-full max-w-[640px] lg:mx-0 lg:max-w-none xl:-mr-6" style={{ "--ov-delay": "220ms" }}>
       <div aria-hidden="true" className="pointer-events-none absolute -inset-x-8 -inset-y-12 -z-10 rounded-full bg-[radial-gradient(closest-side,rgba(140,186,88,0.22),transparent_70%)] blur-2xl" />

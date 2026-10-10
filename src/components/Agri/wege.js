@@ -1,6 +1,6 @@
 // Die vier Wege für Landwirte – eine Quelle für Vergleich, Entscheider und Rechner.
 import { HandCoins, Handshake, Tractor, Users } from "lucide-react";
-import { pfad } from "@/lib/land";
+import { pfad, schreibweiseFuer } from "@/lib/land";
 import { zusammenfuehren } from "@/lib/sprache/woerterbuch";
 
 export const WEGE = [
@@ -118,5 +118,37 @@ const WEGE_EN_TEXTE = [
 
 export const WEGE_EN = zusammenfuehren(WEGE, WEGE_EN_TEXTE);
 
-/** Die vier Wege in der Sprache der Seite ("de" | "en"). */
-export const wegeFuer = (sprache) => (sprache === "en" ? WEGE_EN : WEGE);
+/**
+ * Schweiz (Ländermodell, W3-0): Die GAP (EU-Agrarförderung) gilt dort nicht. Statt einer Zusage zu
+ * Direktzahlungen der neutrale Stand aus src/data/laender/ch/agri-pv.js (beitragsberechtigt nur bei
+ * rechtskräftiger Bewilligung als Agri-PV, vorab mit dem kantonalen Landwirtschaftsamt klären).
+ */
+const WEGE_CH = {
+  de: {
+    eigen: { einnahmen: "Stromerlöse abzgl. Kosten, plus Ernte" },
+    investor: {
+      text: "Ein Investor finanziert und betreibt die Agri-PV-Anlage. Sie erhalten eine Pacht und bewirtschaften die Fläche zwischen oder unter den Modulen weiter. Ob die Fläche beitragsberechtigt bleibt, hängt von der Bewilligung als Agri-PV ab – das klären wir vorab mit dem kantonalen Landwirtschaftsamt.",
+      einnahmen: "Agri-Pacht plus Ernte",
+    },
+    genossenschaft: { einnahmen: "Pacht plus Ausschüttung plus Ernte" },
+  },
+  en: {
+    eigen: { einnahmen: "Power revenue minus costs, plus harvest" },
+    investor: {
+      text: "An investor finances and operates the agrivoltaic installation. You receive a lease and continue to farm the land between or under the modules. Whether the land remains eligible for direct payments depends on the permit as agrivoltaics – we clarify this in advance with the cantonal agricultural office.",
+      einnahmen: "Agri lease plus harvest",
+    },
+    genossenschaft: { einnahmen: "Lease plus distribution plus harvest" },
+  },
+};
+
+/** Die vier Wege in der Sprache der Seite ("de" | "en"); land "CH": ohne GAP, ohne „ß“. */
+export const wegeFuer = (sprache, land = null) => {
+  const wege = sprache === "en" ? WEGE_EN : WEGE;
+  if (land !== "CH") return wege;
+  const ch = WEGE_CH[sprache === "en" ? "en" : "de"];
+  return schreibweiseFuer(
+    wege.map((w) => (ch[w.id] ? { ...w, ...ch[w.id] } : w)),
+    "CH",
+  );
+};

@@ -10,6 +10,8 @@ import { useEffect, useState } from "react";
 import { House, Sun, UsersRound } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { useSeitenLand } from "@/components/Land/LandKontext";
+import { schreibweiseFuer } from "@/lib/land/schreibweise";
 
 const minuten = (hhmm) => {
   const [h, m] = String(hhmm || "0:0").split(":").map(Number);
@@ -94,9 +96,11 @@ export default function EnergieFluss({ gemeinschaftName: nameProp, ausGemeinscha
   // Sprachmodell: im Portal immer Deutsch; auf der öffentlichen Produktseite (/en/…) englisch
   const en = useSprache() === "en";
   const gemeinschaftName = nameProp ?? (en ? "Community" : "Gemeinschaft");
-  const aria = en
+  const land = useSeitenLand(); // öffentliche Produktseite in der Schweiz: Beschreibung ohne „ß“
+  const ariaText = en
     ? `Energy flow${zeitraumText ? ` ${zeitraumText}` : ""}: solar power from the installations flows via ${gemeinschaftName} to you${ausGemeinschaft ? `, ${ausGemeinschaft} from the community` : ""}${eingebracht ? `; you contributed ${eingebracht}` : ""}.`
     : `Energiefluss${zeitraumText ? ` ${zeitraumText}` : ""}: Sonnenstrom der Anlagen fließt über ${gemeinschaftName} zu Ihnen${ausGemeinschaft ? `, ${ausGemeinschaft} aus der Gemeinschaft` : ""}${eingebracht ? `; Sie haben ${eingebracht} eingebracht` : ""}.`;
+  const aria = schreibweiseFuer(ariaText, land);
   return (
     <figure className="m-0" aria-label={aria} role="img">
       <div className="flex items-start justify-between">

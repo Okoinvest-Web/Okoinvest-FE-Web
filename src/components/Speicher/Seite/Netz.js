@@ -7,8 +7,12 @@ import Link from "@/components/Land/Link";
 import { GiltFuer } from "@/components/Land/LandHinweis";
 import { listeFuerLand } from "@/components/Land/Laenderteile";
 import { LAENDER, landCode, landHinweisText, landHinweisTextEn } from "@/lib/land";
-import { spracheDerAnfrage } from "@/lib/land/seite";
+import { spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 const PUNKTE = [
   { icon: Plug, title: "Überbauung nutzen", text: "Solarpark und Speicher teilen sich einen Anschluss: Die Summe der Leistungen darf größer sein als die Anschlussleistung, gesteuert über ein Energiemanagement." },
@@ -107,7 +111,7 @@ function SkizzeUeberbauung({ w }) {
   const flaeche = `M${x(ueber[0]).toFixed(1)},${grenze} ` + ueber.map((h) => `L${x(h).toFixed(1)},${y(solar(h)).toFixed(1)}`).join(" ") + ` L${x(ueber[ueber.length - 1]).toFixed(1)},${grenze} Z`;
   // abends: Speicher speist ein
   const abend = `M${x(18)},${basis} L${x(18)},${grenze + 26} Q${x(19.5)},${grenze + 14} ${x(21)},${grenze + 26} L${x(21)},${basis} Z`;
-  return (
+  return chBaum(
     <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={w.skizzeLabel}>
       <defs>
         <linearGradient id="gs-ue-solar" x1="0" x2="0" y1="0" y2="1">
@@ -139,10 +143,10 @@ export default function Netz({ land = null }) {
   const w = uebersetze(W, sprache);
   /** Kosten-Punkt in AT/CH: ohne deutsche Rechtsprechung, mit LandHinweis */
   const ersatz = (p, lc, thema) => ({ ...p, text: w.hinweis(lc, thema) });
-  const basis = sprache === "en" ? uebersetze({ de: PUNKTE, en: PUNKTE_EN }, "en") : PUNKTE;
+  const basis = uebersetze({ de: PUNKTE, en: PUNKTE_EN }, sprache); // Schweiz: ohne „ß“
   const punkte = listeFuerLand(basis, l, ersatz, (p) => ({ ...p, text: <>{p.text} <GiltFuer /></> }));
   const nurDe = !l || l === "DE";
-  return (
+  return chBaum(
     <Section tone="white" space="lg" id="netz" data-abschnitt="netz" aria-labelledby="netz-titel" className="scroll-mt-24">
       <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
         <div className="lg:sticky lg:top-28 lg:self-start">

@@ -15,8 +15,12 @@ import { PARKS, referenzenFuer } from "@/data/referenzen";
 import { KENNZAHLEN, SITE, abs } from "@/data/site";
 import JsonLd from "@/components/JsonLd";
 import { pfad as seitenPfad } from "@/lib/land";
-import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { seitenLand, seitenMetadata, spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 const PFAD = "/referenzen";
 
@@ -212,7 +216,7 @@ const TEXTE = {
 };
 
 function QuellenMarke({ ids, quelle = "Quelle" }) {
-  return (
+  return chBaum(
     <span className="ml-1 inline-flex gap-1 align-super text-[10.5px] font-semibold text-ov-700">
       {ids.map((id) => (
         <a key={id} href={`#quelle-${id}`} className="rounded px-0.5 hover:bg-ov-50" aria-label={`${quelle} ${id}`}>
@@ -229,7 +233,7 @@ export default async function ReferenzenSeite({ params }) {
   const en = sprache === "en";
   const t = uebersetze(TEXTE, sprache);
   const r = referenzenFuer(sprache);
-  return (
+  return chBaum(
     <div>
       <JsonLd daten={en ? { ...schema, name: t.schemaName, inLanguage: "en" } : schema} />
 

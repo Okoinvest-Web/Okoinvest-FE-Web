@@ -5,6 +5,7 @@ import Link from "@/components/Land/Link";
 import { ArrowRight, Clock, Factory, FileText, FolderUp, LayoutDashboard, LineChart, MapPinned, Tractor, User, Building2 } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { ZIELGRUPPEN as ALLE_WEGE, zielgruppenFuerSprache } from "./prozessDaten";
+import { schreibweiseFuer } from "@/lib/land/schreibweise";
 import { useSprache } from "@/components/Sprache/SpracheKontext";
 import useLand from "@/components/Land/useLand";
 import st from "@/components/Unternehmen/vertrauen.module.css";
@@ -26,7 +27,7 @@ export default function ProzessTabs() {
   const { land } = useLand();
   const sprache = useSprache();
   const en = sprache === "en";
-  const ZIELGRUPPEN = useMemo(() => zielgruppenFuerSprache(land, sprache), [land, sprache]);
+  const ZIELGRUPPEN = useMemo(() => schreibweiseFuer(zielgruppenFuerSprache(land, sprache), land), [land, sprache]); // Schweiz: ohne „ß“
   const [aktiv, setAktiv] = useState(ZIELGRUPPEN[0].id);
   const basis = useId();
   const refs = useRef({});

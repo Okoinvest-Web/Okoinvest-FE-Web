@@ -39,6 +39,23 @@
 
 import { inhaltFuer } from "../land/inhalte.js";
 import { landCode } from "../land/laender.js";
+import { schreibweiseFuer } from "../land/schreibweise.js";
+
+// Land der laufenden Anfrage für Server-Komponenten (Schweizer Schreibweise ohne „ß“, W3-0):
+// src/lib/land/seite.js meldet landDerAnfrage() an; Client-Komponenten geben das Land über
+// useTexte() selbst mit. Ohne Anmeldung (node:test, Client) → kein Land.
+let landQuelle = null;
+/** Nur für src/lib/land/seite.js: Funktion, die das Land der laufenden Anfrage liefert. */
+export function setzeLandQuelle(fn) {
+  landQuelle = typeof fn === "function" ? fn : null;
+}
+const landJetzt = () => {
+  try {
+    return landQuelle ? landQuelle() : null;
+  } catch {
+    return null;
+  }
+};
 
 const istObjekt = (x) => x !== null && typeof x === "object" && !Array.isArray(x) && !x.$$typeof && Object.getPrototypeOf(x) === Object.prototype;
 
@@ -60,12 +77,14 @@ export function zusammenfuehren(de, en) {
  * @template T
  * @param {{ de: T, en?: any }} texte
  * @param {string|null} sprache "de" | "en"
+ * @param {string|null} [land] Land der Seite; "CH" → Schweizer Schreibweise ohne „ß“. Ohne Angabe:
+ *   Land der laufenden Server-Anfrage (setzeLandQuelle), sonst keines.
  * @returns {T}
  */
-export function uebersetze(texte, sprache) {
+export function uebersetze(texte, sprache, land = landJetzt()) {
   if (!texte || !Object.hasOwn(texte, "de")) throw new Error("uebersetze: Eintrag „de“ fehlt");
-  if (sprache !== "en" || !Object.hasOwn(texte, "en")) return texte.de;
-  return zusammenfuehren(texte.de, texte.en);
+  if (sprache !== "en" || !Object.hasOwn(texte, "en")) return schreibweiseFuer(texte.de, land);
+  return schreibweiseFuer(zusammenfuehren(texte.de, texte.en), land);
 }
 
 /**
@@ -75,6 +94,10 @@ export function uebersetze(texte, sprache) {
  * @param {string|null} sprache
  */
 export function inhaltFuerSprache(inhalte, land, sprache) {
+  return schreibweiseFuer(inhaltFuerSpracheRoh(inhalte, land, sprache), land);
+}
+
+function inhaltFuerSpracheRoh(inhalte, land, sprache) {
   const de = inhaltFuer(inhalte.de, land);
   if (sprache !== "en" || !inhalte.en) return de;
   const l = landCode(land);

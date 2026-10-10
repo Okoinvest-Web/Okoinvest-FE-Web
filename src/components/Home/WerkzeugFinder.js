@@ -7,6 +7,7 @@ import { useId, useMemo, useState } from "react";
 import Link from "@/components/Land/Link";
 import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
 import { TOOL_BEGRIFFE_EN, toolsFuer } from "@/components/Rechner/tools";
+import { useSeitenLand } from "@/components/Land/LandKontext";
 import { useSprache } from "@/components/Sprache/SpracheKontext";
 import { cn } from "@/components/ui/cn";
 import { pfad } from "@/lib/land";
@@ -27,7 +28,8 @@ const TAG_TEXT = { Beliebt: "Guter Einstieg" };
 export default function WerkzeugFinder() {
   const sprache = useSprache();
   const en = sprache === "en";
-  const TOOLS = useMemo(() => toolsFuer(sprache), [sprache]);
+  const land = useSeitenLand();
+  const TOOLS = useMemo(() => toolsFuer(sprache, land), [sprache, land]);
   // Filterschlüssel bleiben die deutschen Zielgruppen aus tools.js; angezeigt wird die Sprache der Seite
   const name = (g) => (en ? TOOL_BEGRIFFE_EN.zielgruppe[g] || g : g);
   const tagText = (tag) => {

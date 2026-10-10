@@ -5,6 +5,8 @@ import { BatteryCharging, Car, Factory, Network, Pause, Play, Sprout, Store, Sun
 import { cn } from "@/components/ui/cn";
 import { useBreite } from "@/components/Rechner/bausteine";
 import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { useSeitenLand } from "@/components/Land/LandKontext";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
 import { zusammenfuehren } from "@/lib/sprache/woerterbuch";
 
 /**
@@ -155,6 +157,7 @@ const FARBE = {
 
 export default function EnergieflussGrafik() {
   const en = useSprache() === "en";
+  const seitenLand = useSeitenLand(); // Schweiz: ohne „ß“ (W3-0)
   const KNOTEN_S = en ? KNOTEN_EN : KNOTEN;
   const SZENARIEN_S = en ? SZENARIEN_EN : SZENARIEN;
   const KURZ_S = en ? KURZ_EN : KURZ;
@@ -186,7 +189,7 @@ export default function EnergieflussGrafik() {
     if (e.key === "ArrowLeft") setSzenarioId(SZENARIEN_S[(i - 1 + SZENARIEN_S.length) % SZENARIEN_S.length].id);
   };
 
-  return (
+  return schreibweiseBaum(
     <div ref={ref} className="rounded-[2rem] bg-white p-4 shadow-xl ring-1 ring-ink-200/70 sm:p-6 md:p-8">
       <style>{`
         @keyframes vpp-lauf { to { stroke-dashoffset: -36; } }
@@ -361,7 +364,7 @@ export default function EnergieflussGrafik() {
         </div>
       </div>
     </div>
-  );
+  , seitenLand);
 }
 
 function Legende({ farbe, children }) {

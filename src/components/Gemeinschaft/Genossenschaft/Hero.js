@@ -6,7 +6,11 @@ import Button from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import TextEnthuellung from "@/components/motion/TextEnthuellung";
 import f from "@/components/Energie/fluss.module.css";
-import { spracheDerAnfrage } from "@/lib/land/seite";
+import { spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 /* Sprachmodell: englische Fassung (gleiche Reihenfolge) */
 const PUNKTE_EN = ["Participation in parks in the region", "One member, one vote", "Farmers as members", "Register interest without obligation"];
@@ -32,7 +36,7 @@ function Stimmen() {
   const en = spracheDerAnfrage() === "en";
   const beispiel = en ? BEISPIEL.map((m, i) => ({ ...m, wer: BEISPIEL_EN[i] })) : BEISPIEL;
   const gruppen = en ? GRUPPEN.map((g, i) => ({ ...g, label: GRUPPEN_EN[i] })) : GRUPPEN;
-  return (
+  return chBaum(
     <div className="rounded-[1.75rem] bg-white p-5 text-ink-900 shadow-e4 ring-1 ring-white/20 sm:p-7">
       <p className="ov-overline text-ov-700">{en ? "Co-determination" : "Mitbestimmung"}</p>
       <p className="mt-2 font-display text-[22px] font-extrabold leading-tight tracking-[-0.02em] sm:text-[26px]">{en ? "One member, one vote" : "Ein Mitglied, eine Stimme"}</p>
@@ -79,7 +83,7 @@ function Stimmen() {
 export default function Hero() {
   const en = spracheDerAnfrage() === "en";
   const punkte = en ? PUNKTE_EN : PUNKTE;
-  return (
+  return chBaum(
     <section data-abschnitt="hero" aria-labelledby="hero-titel" className="ov-verlauf-nacht ov-noise relative isolate overflow-hidden text-white">
       <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10 opacity-50" />
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-ov-300/40 to-transparent" />

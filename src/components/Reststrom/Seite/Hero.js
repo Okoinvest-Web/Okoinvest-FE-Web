@@ -14,9 +14,13 @@ import { STROM } from "@/lib/invest/markt";
 import { FARBEN } from "@/components/Reststrom/PreisBalken";
 import s from "@/components/Reststrom/reststrom.module.css";
 import { pfad } from "@/lib/land";
-import { spracheDerAnfrage } from "@/lib/land/seite";
+import { spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
 import { fmtZahl } from "@/lib/sprache/format";
 import { stromTeilEn } from "@/lib/sprache/rechnerBegriffe";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 const PUNKTE = ["Bündelung statt Einzelvertrag", "Wir vermitteln – Vergütung offengelegt", "Solar-PPA als Option, wo verfügbar", "Offen auch ohne ÖKOVOLT-Anlage"];
 const HEBEL_ICONS = { buendelung: Handshake, ppa: Sun, flex: BatteryCharging };
@@ -32,7 +36,7 @@ const KARTE = {
 export default function Hero() {
   const en = spracheDerAnfrage() === "en";
   const punkte = en ? PUNKTE_EN : PUNKTE;
-  return (
+  return chBaum(
     <section data-abschnitt="hero" aria-labelledby="hero-titel" className="ov-verlauf-nacht ov-noise relative isolate overflow-hidden text-white">
       <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10 opacity-50" />
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-ov-300/40 to-transparent" />
@@ -119,7 +123,7 @@ function PreisKarte({ en = false }) {
   const hebelMax = STROM.poolHebel.reduce((s, h) => s + h.ct.max, 0);
   const pct = (v) => `${(v / summe) * 100}%`;
 
-  return (
+  return chBaum(
     <figure className="rounded-[1.75rem] bg-white p-5 text-ink-900 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)] ring-1 ring-white/20 sm:p-7">
       <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-500">{k.kopf}</span>

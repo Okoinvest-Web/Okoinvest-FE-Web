@@ -28,6 +28,7 @@ import { fmt } from "@/lib/rechner/annahmen";
 import { pfad } from "@/lib/land";
 import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
 import { GiltFuer, LandHinweis } from "@/components/Land/LandHinweis";
+import { faqFuerLand } from "@/components/Land/Laenderteile";
 import { FREIFLAECHE_CH, FREIFLAECHE_CH_EN } from "@/data/laender/ch/freiflaeche";
 import { FREIFLAECHE_AT, FREIFLAECHE_AT_EN } from "@/data/laender/at/freiflaeche";
 import { chTexte } from "@/data/laender/ch/schreibung";
@@ -144,6 +145,7 @@ const FAQ = [
   },
   {
     q: "Verdient auch die Gemeinde am Solarpark?",
+    nurDE: "Kommunalbeteiligung und Gewerbesteuer", // gemeinsame Seite: „(gilt für Deutschland)“ (W3-0)
     a: `Ja. Betreiber dürfen der Gemeinde nach § 6 EEG bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je erzeugter Kilowattstunde zahlen, und ${fmt(KOMMUNE.gewerbesteuerStandort * 100)} % der Gewerbesteuer aus Solarparks stehen der Standortgemeinde zu. Das erhöht die Akzeptanz im Gemeinderat erheblich.`,
   },
   {
@@ -602,7 +604,7 @@ export default async function FreiflaechePage({ params }) {
       <Section tone="white" space="lg">
         <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
           <SectionHeading eyebrow={w.faqKopf.eyebrow} title={w.faqKopf.titel} lead={w.faqKopf.lead} />
-          <Faq items={t.faq ?? w.faq} />
+          <Faq items={t.faq ?? faqFuerLand(w.faq, land, { sprache })} />
         </div>
       </Section>
 

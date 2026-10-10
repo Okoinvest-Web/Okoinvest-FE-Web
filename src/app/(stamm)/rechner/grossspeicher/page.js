@@ -9,11 +9,15 @@ import GrossspeicherRechner from "@/components/Rechner/GrossspeicherRechner";
 import { FREIFLAECHE, SPEICHER } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import { pfad as seitenPfad } from "@/lib/land";
-import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { seitenLand, seitenMetadata, spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
 import { faqFuerLand, NurDEBlock } from "@/components/Land/Laenderteile";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
 import { formate } from "@/lib/sprache/zahlformat";
 import { datumText } from "@/lib/sprache/format";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 const PFAD = seitenPfad("/rechner/grossspeicher");
 const S = SPEICHER;
@@ -197,7 +201,7 @@ export default async function Page({ params }) {
   const sprache = spracheDerAnfrage();
   const en = sprache === "en";
   const t = uebersetze({ de: DE, en: EN }, sprache);
-  return (
+  return chBaum(
     <RechnerSeite
       pfad={PFAD}
       toolId="grossspeicher"

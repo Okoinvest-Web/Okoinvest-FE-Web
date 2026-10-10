@@ -3,8 +3,12 @@ import { FileSignature, FolderLock, Handshake, ShieldCheck, UserPlus, Zap } from
 import Reveal from "@/components/ui/Reveal";
 import { Eyebrow } from "@/components/ui/SectionHeading";
 import { cn } from "@/components/ui/cn";
-import { spracheDerAnfrage } from "@/lib/land/seite";
+import { spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 const SCHRITTE = [
   { icon: UserPlus, title: "Suchprofil", text: "Ticketgröße, Phasen, Länder und Technologien festlegen – einmal registrieren, jederzeit anpassen." },
@@ -44,7 +48,7 @@ const TEXTE = {
 
 export default function Ablauf() {
   const t = uebersetze(TEXTE, spracheDerAnfrage());
-  return (
+  return chBaum(
     <section data-abschnitt="ablauf" aria-labelledby="ablauf-titel" className="ov-verlauf-nacht ov-noise relative isolate overflow-hidden py-20 text-white md:py-28">
       <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10 opacity-40" />
       <div className="ov-container">

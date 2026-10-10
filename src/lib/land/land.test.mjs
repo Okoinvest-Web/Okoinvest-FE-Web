@@ -35,7 +35,7 @@ test("pfad(): gemeinsam ohne Präfix, Land mit Präfix, Bereiche ohne Länderfas
   assert.equal(pfad("/regionen/tirol", "DE"), "/de/regionen/tirol");
   assert.equal(pfad("/ratgeber/moor-pv", "AT"), "/at/ratgeber/moor-pv");
   assert.equal(pfad("/projektboerse/solarpark-x", "CH"), "/ch/projektboerse/solarpark-x");
-  for (const p of ["/portal", "/portal/boerse", "/login", "/registrieren", "/einladung/abc", "/api/land", "/en/investors", "/angebot/x", "/termin/verwalten", "/design"]) {
+  for (const p of ["/portal", "/portal/boerse", "/login", "/registrieren", "/einladung/abc", "/api/rechner/bericht", "/en/investors", "/angebot/x", "/termin/verwalten", "/design"]) {
     assert.equal(pfad(p, "AT"), p, p);
   }
   assert.equal(pfad("https://example.org/de/x", "AT"), "https://example.org/de/x");

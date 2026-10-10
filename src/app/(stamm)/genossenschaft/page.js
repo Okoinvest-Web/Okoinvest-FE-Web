@@ -17,7 +17,11 @@ import { FAQ_GENOSSENSCHAFT_EN } from "@/data/faq-en";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
 import { abs } from "@/data/site";
 import { pfad as seitenPfad } from "@/lib/land";
-import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { seitenLand, seitenMetadata, spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 const PFAD = seitenPfad("/genossenschaft");
 
@@ -73,7 +77,7 @@ const schemaEn = {
 export default async function GenossenschaftPage({ params }) {
   await seitenLand(params);
   const en = spracheDerAnfrage() === "en";
-  return (
+  return chBaum(
     <div className="[&_.ov-lead]:hyphens-manual [&_h2]:hyphens-manual! lg:[&_p]:hyphens-manual">
       <JsonLd daten={en ? schemaEn : schema} />
 

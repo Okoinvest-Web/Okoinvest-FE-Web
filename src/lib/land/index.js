@@ -16,3 +16,4 @@ export * from "./seiten.js";
 export * from "./pfad.js";
 export * from "./inhalte.js";
 export * from "./vorschlag.js";
+export * from "./schreibweise.js";

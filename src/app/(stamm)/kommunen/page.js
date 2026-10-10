@@ -19,6 +19,7 @@ import { KOMMUNE } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import JsonLd from "@/components/JsonLd";
 import { pfad } from "@/lib/land";
+import { faqFuerLand } from "@/components/Land/Laenderteile";
 import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
 import { inhaltFuerSprache, uebersetze } from "@/lib/sprache/woerterbuch";
 import { fmtZahl } from "@/lib/sprache/format";
@@ -40,14 +41,17 @@ const metadata = {
 const FAQ = [
   {
     q: "Was bringt ein Solarpark einer Gemeinde konkret?",
+    nurDE: true, // deutsches Recht: gemeinsame Seite mit „(gilt für Deutschland)“ (W3-0)
     a: `Drei direkte Einnahmen: die freiwillige Zahlung nach § 6 EEG von bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct/kWh ab dem ersten Jahr, die Gewerbesteuer – bei Solaranlagen zu ${fmt(KOMMUNE.gewerbesteuerStandort * 100)} % an der Standortgemeinde – und Pacht, wenn Gemeindeflächen genutzt werden. Bei einem 20-MWp-Park kommen allein aus § 6 EEG rund ${tsd(beispiel.jahre[0].p6)} im Jahr zusammen. In mehreren Bundesländern – etwa Bayern (ab 5 MW), Brandenburg, Mecklenburg-Vorpommern, Niedersachsen, Saarland, Sachsen und Sachsen-Anhalt – schreiben Landesgesetze eine Beteiligung der Gemeinde vor; Details stehen im Ratgeber zur Kommunalbeteiligung. Dazu kommen Aufträge für regionale Betriebe und Beteiligungsmöglichkeiten für Bürger.`,
   },
   {
     q: "Wie läuft das Bauleitplanverfahren?",
+    nurDE: true, // deutsches Recht: gemeinsame Seite mit „(gilt für Deutschland)“ (W3-0)
     a: "In der Regel stellt die Gemeinde einen vorhabenbezogenen oder angebotsbezogenen Bebauungsplan auf und ändert parallel den Flächennutzungsplan. Nach dem Aufstellungsbeschluss folgen die frühzeitige Beteiligung von Öffentlichkeit und Behörden, der Entwurf mit Umweltbericht, die Veröffentlichung im Internet (§ 3 Abs. 2 BauGB), die Abwägung und der Satzungsbeschluss. Eine Vereinbarung über die § 6-Zahlung darf erst nach dem Satzungsbeschluss geschlossen werden (§ 6 Abs. 4 EEG). Die Planungskosten trägt üblicherweise der Projektentwickler über einen städtebaulichen Vertrag. Realistisch sind ein bis zwei Jahre.",
   },
   {
     q: "Braucht jeder Solarpark einen Bebauungsplan?",
+    nurDE: true, // deutsches Recht: gemeinsame Seite mit „(gilt für Deutschland)“ (W3-0)
     a: "Nicht jeder. Nach § 35 Abs. 1 Nr. 8 b BauGB sind Freiflächenanlagen in einem 200-Meter-Streifen entlang von Autobahnen und Schienenwegen des übergeordneten Netzes mit mindestens zwei Hauptgleisen privilegiert. Kleine Agri-PV-Anlagen bis 2,5 ha Grundfläche mit räumlich-funktionalem Bezug zu einem landwirtschaftlichen Betrieb sind ebenfalls privilegiert. Auch dann bleibt die Gemeinde über ihr Einvernehmen beteiligt – und viele Betreiber bieten die § 6-Zahlung trotzdem an.",
   },
   {
@@ -56,6 +60,7 @@ const FAQ = [
   },
   {
     q: "Wie können sich Bürger beteiligen?",
+    nurDE: true, // deutsches Recht: gemeinsame Seite mit „(gilt für Deutschland)“ (W3-0)
     a: "Über eine Genossenschaft mit kleinen Anteilen, über Nachrangdarlehen oder über vergünstigte Stromtarife. Mit Energy Sharing nach § 42c EnWG können Bürger und Gemeinde künftig Strom aus Anlagen in der Region gemeinsam nutzen. Einige Bundesländer verlangen inzwischen ausdrücklich Beteiligungsangebote für Bürger und Gemeinden.",
   },
   {
@@ -344,7 +349,7 @@ export default async function KommunenSeite({ params }) {
       <Section tone="white" space="lg">
         <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
           <SectionHeading eyebrow={w.faqKopf.eyebrow} title={w.faqKopf.titel} />
-          <Faq items={faq} />
+          <Faq items={faqFuerLand(faq, land, { sprache })} />
         </div>
       </Section>
 

@@ -20,6 +20,9 @@ import { Auswahl, Belege, Gruppe, Kennzahl, Regler, Zahl, eingabeMerken } from "
 import { Hinweis, MobilKurz, RechnerRahmen } from "@/components/Rechner/InvestTeile";
 import { RECHNER_DECKUNG, RECHNER_MODELLE, RECHNER_PROFILE, RECHNER_ROLLEN, RECHNER_STANDARD, rechnerOeffentlich } from "@/lib/plattform/eg/interesse";
 import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { useSeitenLand } from "@/components/Land/LandKontext";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+import { schreibweiseFuer } from "@/lib/land/schreibweise";
 import { useFormate } from "@/components/Sprache/useFormate";
 import { DECKUNG_EN, MODELLE_EN, PROFILE_EN, ROLLEN_EN, hinweisEn, quelleEn, regelTextEn, teilEn } from "./ersparnisEn";
 
@@ -79,7 +82,8 @@ const TEXTE = {
     fuss: (v) => `Initial estimate, net. What counts are the quarter-hourly values from ${v ? "the" : "your"} grid operator and the price sheet of ${v ? "the" : "your"} community.`,
   },
 };
-const useTexteEr = () => TEXTE[useSprache() === "en" ? "en" : "de"];
+// Schweiz (öffentliche Produktseite /ch): Texte ohne „ß“
+const useTexteEr = () => schreibweiseFuer(TEXTE[useSprache() === "en" ? "en" : "de"], useSeitenLand());
 
 /** Farbcodierung der Bestandteile – dieselbe Farbe für Punkt (Legende) und Balkensegment */
 const FARBE = { energie: "bg-ov-500", netz: "bg-navy-600", abgaben: "bg-ov-300", erzeuger: "bg-sun-400" };
@@ -258,7 +262,8 @@ export default function ErsparnisRechner({
 }) {
   const sprache = useSprache();
   const en = sprache === "en";
-  const w = TEXTE[en ? "en" : "de"];
+  const seitenLand = useSeitenLand();
+  const w = useTexteEr();
   const { fmt } = useFormate();
   const euro = useEuro();
   const ctaLabel = ctaLabelProp ?? w.ctaLabel;
@@ -315,7 +320,8 @@ export default function ErsparnisRechner({
     ? optEn(RECHNER_DECKUNG, true, DECKUNG_EN)
     : opt(RECHNER_DECKUNG).map((o) => ({ ...o, sub: o.sub?.replace(/^Erzeugung\s*/, "").replace(/\s*des Verbrauchs$/, "") }));
 
-  return (
+  // Schweiz: auch Texte aus Optionen und Hinweisen (Props) ohne „ß“
+  return schreibweiseBaum(
     <RechnerRahmen
       mitlaufend
       eingaben={
@@ -445,6 +451,7 @@ export default function ErsparnisRechner({
           </div>
         </>
       }
-    />
+    />,
+    seitenLand,
   );
 }

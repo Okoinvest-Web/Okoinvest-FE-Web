@@ -31,10 +31,14 @@ import { PACHT, STAND } from "@/lib/invest/markt";
 import { grundstueck } from "@/lib/anfrage/laender";
 import JsonLd from "@/components/JsonLd";
 import { LAENDER, REGION_LAND, linkFuer, pfad as seitenPfad, regionSchluessel } from "@/lib/land";
-import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { seitenLand, seitenMetadata, spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
 import { datumText, fmtZahl } from "@/lib/sprache/format";
 import { fakt } from "@/lib/fakten";
 import { faktEn, quelleTitelEn } from "@/lib/sprache/faktenEn";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 /* Sprachmodell: befristete Fristen-Einträge (src/data/regionen/fristen.js) stammen aus dem Faktenregister;
    englisch über FAKTEN_EN (src/lib/sprache/faktenEn.js) – erkannt am deutschen Titel des Termin-Fakts. */
@@ -211,7 +215,7 @@ export default async function RegionSeite({ params }) {
       ? { "@type": "Country", name: t.schweizLand }
       : { "@type": "State", name: r.name, containedInPlace: { "@type": "Country", name: land.name } };
 
-  return (
+  return chBaum(
     <div>
       <JsonLd
         daten={{
@@ -351,7 +355,11 @@ export default async function RegionSeite({ params }) {
                 <Fett>{r.ablauf.text}</Fett>
               </p>
             )}
-            <p className="mt-4 text-[14.5px] leading-relaxed text-ink-600">{land.schritteHinweis}</p>
+            <p className="mt-4 text-[14.5px] leading-relaxed text-ink-600">
+              {/* Ländermodell (W3-0): Rechtsrahmen eines anderen Landes als dem der Seite (z. B. Bayern in der österreichischen Fassung) ausdrücklich zuordnen */}
+              {zonenLand && zonenLand !== r.land && <strong className="font-semibold text-ink-800">{`${land.name}: `}</strong>}
+              {land.schritteHinweis}
+            </p>
           </div>
           {r.ablauf?.behoerden?.length > 0 && (
             <Reveal className="self-start rounded-3xl bg-white p-6 ring-1 ring-ov-100 md:p-7">
@@ -637,7 +645,7 @@ export default async function RegionSeite({ params }) {
 }
 
 function Zeile({ l, v }) {
-  return (
+  return chBaum(
     <div className="flex items-baseline justify-between gap-4 py-2.5">
       <dt className="text-ink-600">{l}</dt>
       <dd className="ov-num text-right font-semibold text-ink-900">{v}</dd>
@@ -648,7 +656,7 @@ function Zeile({ l, v }) {
 function Liste({ titel, icon: Icon, ton, punkte = [] }) {
   if (!punkte?.length) return null;
   const gut = ton === "gut";
-  return (
+  return chBaum(
     <Reveal className={gut ? "rounded-3xl bg-ov-50 p-6 ring-1 ring-ov-100" : "rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60"}>
       <p className="flex items-center gap-2 font-display text-[17px] font-bold text-ink-900">
         <Icon aria-hidden="true" className={gut ? "h-5 w-5 text-ov-600" : "h-5 w-5 text-ink-500"} />

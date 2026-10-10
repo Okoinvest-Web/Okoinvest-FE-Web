@@ -7,6 +7,7 @@ import { cn } from "@/components/ui/cn";
 import { wegeFuer } from "./wege";
 import { pfad } from "@/lib/land";
 import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { useSeitenLand } from "@/components/Land/LandKontext";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 /**
@@ -152,9 +153,10 @@ const W = {
 
 export default function WegeEntscheider() {
   const sprache = useSprache();
-  const WEGE = wegeFuer(sprache);
-  const FRAGEN_S = useMemo(() => uebersetze({ de: FRAGEN, en: FRAGEN_EN }, sprache), [sprache]);
-  const w = uebersetze(W, sprache);
+  const land = useSeitenLand(); // Schweiz: ohne GAP und ohne „ß“
+  const WEGE = wegeFuer(sprache, land);
+  const FRAGEN_S = useMemo(() => uebersetze({ de: FRAGEN, en: FRAGEN_EN }, sprache, land), [sprache, land]);
+  const w = uebersetze(W, sprache, land);
   const [antworten, setAntworten] = useState({});
   const [schritt, setSchritt] = useState(0);
   const [richtung, setRichtung] = useState("vor");

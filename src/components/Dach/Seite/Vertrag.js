@@ -5,6 +5,10 @@ import Reveal from "@/components/ui/Reveal";
 import Button from "@/components/ui/Button";
 import { landDerAnfrage, spracheDerAnfrage } from "@/lib/land/seite";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 /** Sprachmodell: Texte (en nur Texte; Länderunterschied AT bei der Dienstbarkeit). */
 const W = {
@@ -53,7 +57,7 @@ export default function Vertrag({ laufzeit, verlaengerung }) {
   ];
   const punkte = sprache === "en" ? punkteDe.map((k, i) => ({ ...k, ...punkteEn(laufzeit, verlaengerung, landDerAnfrage() === "AT")[i] })) : punkteDe;
 
-  return (
+  return chBaum(
     <section data-abschnitt="vertrag" aria-labelledby="vertrag-titel" className="relative overflow-clip bg-sand-50 py-20 md:py-28">
       <div className="ov-container grid gap-12 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] lg:gap-16">
         <div className="lg:sticky lg:top-28 lg:self-start">

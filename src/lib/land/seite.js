@@ -22,10 +22,16 @@ import { notFound } from "next/navigation";
 import { landAusPraefix } from "./laender.js";
 import { alternates, fassungIndexierbar, ogLocale } from "./pfad.js";
 import { spracheOder } from "../sprache/sprachen.js";
-import { uebersetze } from "../sprache/woerterbuch.js";
+import { setzeLandQuelle, uebersetze } from "../sprache/woerterbuch.js";
+import { schreibweiseFuer, setzeAusgabeLand } from "./schreibweise.js";
 
 /** Speicher je Anfrage (React cache): Land und Sprache der gerade gerenderten Seite. */
 const anfrage = cache(() => ({ land: null, sprache: "de", gesetzt: false }));
+
+// Server-Komponenten rufen uebersetze(TEXTE, sprache) ohne Land: Das Land der Anfrage kommt von
+// hier (Schweizer Schreibweise ohne „ß“ auf /ch und /en/ch, src/lib/land/schreibweise.js).
+setzeLandQuelle(() => anfrage().land);
+setzeAusgabeLand(() => anfrage().land); // JSON-LD auf /ch ohne „ß“ (src/components/JsonLd.js)
 
 /**
  * Sprache aus den Routenparametern: Die englischen Routen (src/app/(en)/en/…, erzeugt mit
@@ -91,11 +97,11 @@ export function seitenMetadata(schluessel, basis, woerterbuch = {}) {
     const a = alternates(konkret, land, { languages: b.alternates?.languages, sprache });
     const index = land || sprache !== "de" ? fassungIndexierbar(konkret, land, sprache) : null;
     const locale = land || sprache !== "de" ? { locale: ogLocale(land, sprache) } : {};
-    return {
+    return schreibweiseFuer({
       ...b,
       alternates: { ...(b.alternates || {}), ...a, ...(a.languages ? {} : { languages: undefined }) },
       ...(b.openGraph ? { openGraph: { ...b.openGraph, url: a.canonical, ...locale } } : {}),
       ...(index === false ? { robots: { index: false, follow: true } } : {}),
-    };
+    }, land);
   };
 }

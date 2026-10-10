@@ -4,14 +4,25 @@ import Section from "@/components/ui/Section";
 import SectionHeading, { Eyebrow } from "@/components/ui/SectionHeading";
 import Reveal from "@/components/ui/Reveal";
 import { cn } from "@/components/ui/cn";
-import { spracheDerAnfrage } from "@/lib/land/seite";
+import { landDerAnfrage, spracheDerAnfrage } from "@/lib/land/seite";
+import { schreibweiseFuer } from "@/lib/land/schreibweise";
+import { GiltFuer } from "@/components/Land/LandHinweis";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 const istEn = () => spracheDerAnfrage() === "en";
+
+// Ländermodell (W3-0): Aussagen nach deutschem Recht (§ 6 EEG, Gewerbesteuer, EEG-Vergütung) stehen
+// nur auf der gemeinsamen Seite (mit „gilt für Deutschland“) und unter /de. In AT/CH gilt eine
+// neutrale Fassung ohne Rechtsgrundlage (keine ungeprüften AT/CH-Rechtsaussagen).
+const fremdesLand = (l) => l === "AT" || l === "CH";
 
 /* ---------------- Wichtiger Hinweis (überlappt den Hero) ---------------- */
 export function Hinweis() {
   const en = istEn();
-  return (
+  return chBaum(
     <section aria-label={en ? "Important notice" : "Wichtiger Hinweis"} className="relative z-10 -mt-12 md:-mt-16">
       <div className="ov-container">
         <div className="relative flex flex-col gap-4 overflow-hidden rounded-[1.75rem] bg-white p-5 shadow-e4 ring-1 ring-ink-200/70 sm:flex-row sm:items-start sm:gap-5 md:rounded-[2rem] md:p-7">
@@ -38,21 +49,31 @@ export function Hinweis() {
 const MITGLIEDER = [
   { icon: Users, title: "Bürgerinnen und Bürger", text: "Aus den Standortregionen: am Park vor der eigenen Haustür beteiligt – statt nur daneben zu wohnen.", ton: "bg-ov-600 text-white" },
   { icon: Sprout, title: "Landwirte & Flächengeber", text: "Wer Flächen für einen Park zur Verfügung stellt, soll bevorzugt Mitglied werden können – zusätzlich zu Pacht oder Agri-PV-Ertrag.", ton: "bg-sun-400 text-navy-950" },
-  { icon: Landmark, title: "Gemeinden", text: "Kommunen können sich beteiligen und so Wertschöpfung über § 6 EEG und Gewerbesteuer hinaus vor Ort halten.", ton: "bg-navy-700 text-white" },
+  {
+    icon: Landmark,
+    title: "Gemeinden",
+    text: "Kommunen können sich beteiligen und so Wertschöpfung über § 6 EEG und Gewerbesteuer hinaus vor Ort halten.",
+    nurDE: "Kommunen können sich beteiligen und so Wertschöpfung aus dem Park zusätzlich vor Ort halten.",
+    ton: "bg-navy-700 text-white",
+  },
   { icon: Building2, title: "Unternehmen", text: "Betriebe aus der Region – etwa aus dem Reststrom-Pool – als Mitglieder mit Interesse an regionalem Strom.", ton: "bg-ink-800 text-white" },
 ];
 
 const MITGLIEDER_EN = [
   { title: "Citizens", text: "From the site regions: a stake in the park on their own doorstep – instead of just living next to it." },
   { title: "Farmers & landowners", text: "Those who make land available for a park should be able to become members on a preferential basis – in addition to lease or agrivoltaics income." },
-  { title: "Municipalities", text: "Municipalities can participate and so keep value creation local beyond § 6 EEG (the German municipal participation payment) and trade tax." },
+  { title: "Municipalities", text: "Municipalities can participate and so keep value creation local beyond § 6 EEG (the German municipal participation payment) and trade tax.", nurDE: "Municipalities can participate and so keep additional value creation from the park local." },
   { title: "Businesses", text: "Companies from the region – for example from the residual power pool – as members with an interest in regional power." },
 ];
 
 export function Mitglieder() {
   const en = istEn();
-  const mitglieder = en ? MITGLIEDER.map((m, i) => ({ ...m, ...MITGLIEDER_EN[i] })) : MITGLIEDER;
-  return (
+  const land = landDerAnfrage();
+  const mitglieder = schreibweiseFuer(
+    (en ? MITGLIEDER.map((m, i) => ({ ...m, ...MITGLIEDER_EN[i] })) : MITGLIEDER).map((m) => (m.nurDE && fremdesLand(land) ? { ...m, text: m.nurDE, nurDE: undefined } : m)),
+    land,
+  );
+  return chBaum(
     <Section tone="white" space="lg">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-end lg:gap-16">
         <SectionHeading eyebrow={en ? "Who it is for" : "Für wen"} title={en ? "Who can become a member" : "Wer Mitglied werden kann"} />
@@ -71,7 +92,15 @@ export function Mitglieder() {
               <m.icon className="h-[22px] w-[22px]" />
             </span>
             <h3 className="mt-6 font-display text-[18px] font-bold leading-snug text-ink-900">{m.title}</h3>
-            <p className="mt-2 text-[15px] leading-relaxed text-ink-600">{m.text}</p>
+            <p className="mt-2 text-[15px] leading-relaxed text-ink-600">
+              {m.text}
+              {m.nurDE && !land && (
+                <>
+                  {" "}
+                  <GiltFuer />
+                </>
+              )}
+            </p>
           </Reveal>
         ))}
       </ul>
@@ -83,21 +112,25 @@ export function Mitglieder() {
 const FLUSS = [
   { icon: Users, t: "Mitglieder zeichnen Anteile", s: "Die Einlagen bilden das Eigenkapital der Genossenschaft." },
   { icon: Factory, t: "Beteiligung an einer Parkgesellschaft", s: "Die Genossenschaft erwirbt einen Anteil an einer Betreibergesellschaft – neben ÖkoInvest und gegebenenfalls weiteren Investoren." },
-  { icon: Sun, t: "Park erzeugt und verkauft Strom", s: "Über EEG-Vergütung, PPA oder den Reststrom-Pool; der Park trägt Kredit, Betrieb und Pacht." },
+  { icon: Sun, t: "Park erzeugt und verkauft Strom", s: "Über EEG-Vergütung, PPA oder den Reststrom-Pool; der Park trägt Kredit, Betrieb und Pacht.", nurDE: "Über Förderung nach dem Recht des Landes, PPA oder den Reststrom-Pool; der Park trägt Kredit, Betrieb und Pacht." },
   { icon: Coins, t: "Überschuss an die Genossenschaft", s: "Ihr Anteil am Ergebnis fließt an die Genossenschaft; die Generalversammlung entscheidet über die Verwendung." },
 ];
 
 const FLUSS_EN = [
   { t: "Members subscribe to shares", s: "The contributions form the cooperative’s equity." },
   { t: "Stake in a park company", s: "The cooperative acquires a stake in an operating company – alongside ÖkoInvest and possibly other investors." },
-  { t: "The park generates and sells power", s: "Via EEG feed-in remuneration, PPA or the residual power pool; the park bears the loan, operation and lease." },
+  { t: "The park generates and sells power", s: "Via EEG feed-in remuneration, PPA or the residual power pool; the park bears the loan, operation and lease.", nurDE: "Via support under the law of the country, PPA or the residual power pool; the park bears the loan, operation and lease." },
   { t: "Surplus to the cooperative", s: "Its share of the result flows to the cooperative; the general meeting decides how it is used." },
 ];
 
 export function Geldfluss() {
   const en = istEn();
-  const fluss = en ? FLUSS.map((x, i) => ({ ...x, ...FLUSS_EN[i] })) : FLUSS;
-  return (
+  const land = landDerAnfrage();
+  const fluss = schreibweiseFuer(
+    (en ? FLUSS.map((x, i) => ({ ...x, ...FLUSS_EN[i] })) : FLUSS).map((x) => (x.nurDE && fremdesLand(land) ? { ...x, s: x.nurDE, nurDE: undefined } : x)),
+    land,
+  );
+  return chBaum(
     <Section tone="white" space="lg">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-end lg:gap-16">
         <SectionHeading eyebrow={en ? "Participation in parks" : "Beteiligung an Parks"} title={en ? "How the money gets into the parks" : "Wie das Geld in die Parks kommt"} />
@@ -124,7 +157,15 @@ export function Geldfluss() {
                   </span>
                 </div>
                 <p className={cn("mt-5 font-display text-[17px] font-bold leading-snug", i === 3 ? "text-white" : "text-ink-900")}>{f.t}</p>
-                <p className={cn("mt-2 text-[14.5px] leading-relaxed", i === 3 ? "text-white/80" : "text-ink-600")}>{f.s}</p>
+                <p className={cn("mt-2 text-[14.5px] leading-relaxed", i === 3 ? "text-white/80" : "text-ink-600")}>
+                  {f.s}
+                  {f.nurDE && !land && (
+                    <>
+                      {" "}
+                      <GiltFuer />
+                    </>
+                  )}
+                </p>
               </div>
               {i < fluss.length - 1 && (
                 <>
@@ -173,7 +214,7 @@ const RISIKEN_EN = [
 export function Risiken() {
   const en = istEn();
   const risiken = en ? RISIKEN.map((r, i) => ({ ...r, ...RISIKEN_EN[i] })) : RISIKEN;
-  return (
+  return chBaum(
     <section id="risiken" aria-labelledby="risiken-titel" className="ov-verlauf-nacht relative isolate scroll-mt-24 overflow-hidden py-20 text-white md:py-32">
       <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10 opacity-40" />
       <div aria-hidden="true" className="pointer-events-none absolute -right-40 top-1/4 -z-10 h-[460px] w-[460px] rounded-full bg-sun-500/10 blur-[120px]" />
@@ -221,7 +262,7 @@ const ABLAUF_EN = [
 export function Ablauf() {
   const en = istEn();
   const ablauf = en ? ABLAUF.map((s, i) => ({ ...s, ...ABLAUF_EN[i] })) : ABLAUF;
-  return (
+  return chBaum(
     <Section tone="white" space="lg">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-end lg:gap-16">
         <SectionHeading eyebrow={en ? "Process" : "Ablauf"} title={en ? "The path to membership" : "Der Weg zur Mitgliedschaft"} />

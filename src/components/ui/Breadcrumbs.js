@@ -8,6 +8,7 @@ import { cn } from "./cn";
 
 import { SITE } from "@/data/site";
 import JsonLd from "@/components/JsonLd";
+import { schreibweiseFuer } from "@/lib/land/schreibweise";
 
 const BASE = SITE.url;
 const absolut = (p) => (typeof p === "string" && p.startsWith("/") ? `${BASE}${p === "/" ? "" : p}` : p);
@@ -21,7 +22,8 @@ const absolut = (p) => (typeof p === "string" && p.startsWith("/") ? `${BASE}${p
 export default function Breadcrumbs({ items = [], dark = false, className, schema = true }) {
   const sprache = useSprache();
   const land = useSeitenLand();
-  const alle = [{ name: sprache === "en" ? "Home" : "Startseite", href: "/" }, ...items];
+  // Schweiz: Namen der Einträge ohne „ß“ (Verweise bleiben)
+  const alle = schreibweiseFuer([{ name: sprache === "en" ? "Home" : "Startseite", href: "/" }, ...items], land);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -36,7 +38,7 @@ export default function Breadcrumbs({ items = [], dark = false, className, schem
   return (
     <nav aria-label={sprache === "en" ? "Breadcrumb" : "Brotkrumen"} className={cn("text-[13px]", className)}>
       {schema && (
-        <JsonLd daten={jsonLd} />
+        <JsonLd daten={jsonLd} land={land} />
       )}
       <ol className="flex flex-wrap items-center gap-1.5">
         {alle.map((it, i) => {

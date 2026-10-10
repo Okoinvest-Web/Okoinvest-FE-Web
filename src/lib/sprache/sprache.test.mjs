@@ -134,11 +134,18 @@ test("englische Routen: jede Seite unter /en und /en/[land], reine Weiterleitung
       const d = join(basis, ...(k === "/" ? [] : k.slice(1).split("/")), "page.js");
       assert.ok(existsSync(d), `${relative(APP, d)} fehlt`);
       const q = readFileSync(d, "utf8");
-      assert.match(q, /export default englisch\(Seite\);/);
+      assert.match(q, basis === EN ? /^export default englisch\(Seite\);$/m : /^export default landSeite\(englisch\(Seite\)\);$/m); // Land: Schweiz ohne „ß“ (LandSeite.js)
       assert.match(q, new RegExp(`from "@/app/\\(stamm\\)${k === "/" ? "" : k.replace(/[[\]]/g, "\\$&")}/page";`));
     }
   }
-  assert.equal(seiten(EN).length, Object.keys(SEITEN).length * 2, "keine eigenen englischen Seiten außerhalb des Registers");
+  // Einzige Ausnahme: der 404-Fänger /en/[land]/[...unbekannt] (W3-0) – rendert nie Inhalt, nur notFound().
+  const faenger = join(EN, "[land]", "[...unbekannt]", "page.js");
+  const alle = seiten(EN);
+  assert.ok(alle.includes(faenger), "404-Fänger /en/[land]/[...unbekannt] fehlt");
+  const fq = readFileSync(faenger, "utf8");
+  assert.match(fq, /notFound\(\);/);
+  assert.doesNotMatch(fq, /englisch\(|from "@\/app\/\(stamm\)/, "404-Fänger darf keine Seite rendern");
+  assert.equal(alle.filter((p) => p !== faenger).length, Object.keys(SEITEN).length * 2, "keine eigenen englischen Seiten außerhalb des Registers");
   const layout = readFileSync(join(APP, "(en)", "layout.js"), "utf8");
   assert.match(layout, /<Wurzel lang="en" sprache="en" land=\{LAND_AUS_PFAD\}>/);
   assert.match(readFileSync(join(EN, "[land]", "layout.js"), "utf8"), /generateStaticParams\(\)[\s\S]*LAND_CODES/);

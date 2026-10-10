@@ -20,9 +20,13 @@ import { AGRI, PACHT, STAND } from "@/lib/invest/markt";
 import { fmt } from "@/lib/rechner/annahmen";
 import JsonLd from "@/components/JsonLd";
 import { LAENDER as LAND_INFO, eigenerInhalt, inhaltFuer, linkFuer, pfad, regionSchluessel } from "@/lib/land";
-import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { seitenLand, seitenMetadata, spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
 import { datumText, fmtZahl } from "@/lib/sprache/format";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 // Ländermodell: gemeinsame Seite wie vor Welle 2 (DACH, alle Länder gemischt); Länderfassungen mit
 // eigenem Inhalt (Register src/lib/land/seiten.js: DE, AT) beginnen Liste, Rechtsrahmen, Kennzahlen
@@ -245,7 +249,7 @@ export default async function RegionenHub({ params }) {
   const FAQ = faqInSprache(land, en).filter((f) => deWerte || !f.nurDe);
   const landInfo = (l) => (en ? { ...LAND_INFO[l], ...LAND_INFO[l].en } : LAND_INFO[l]);
   const PFAD = lp("/regionen");
-  return (
+  return chBaum(
     <div>
       <JsonLd
         daten={{

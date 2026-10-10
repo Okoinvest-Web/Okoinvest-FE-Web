@@ -8,8 +8,12 @@ import s from "./region.module.css";
 import { pfad, regionSchluessel } from "@/lib/land";
 import Link from "@/components/Land/Link";
 import { regionName } from "@/data/regionen";
-import { spracheDerAnfrage } from "@/lib/land/seite";
+import { spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
 import { fmtZahl } from "@/lib/sprache/format";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 const ZELLE = 72;
 const LUECKE = 6;
@@ -46,7 +50,7 @@ export default function ErtragsKarte({ dunkel = true, einlauf = false, className
   const landName = en ? LAND_NAME_EN : LAND_NAME;
   const breite = SPALTEN * ZELLE;
   const hoehe = ZEILEN * ZELLE;
-  return (
+  return chBaum(
     <figure className={cn("w-full", className)}>
       {/* einlauf: Wärmebild baut sich beim Laden von kühl nach sonnig auf (reines CSS, region.module.css) */}
       <svg viewBox={`0 0 ${breite} ${hoehe}`} role="group" aria-label={en ? "Specific yield per region as a tile map" : "Spezifischer Ertrag je Region als Kachelkarte"} className={cn("h-auto w-full select-none", einlauf && s.laden)} style={einlauf ? { "--ov-delay": "480ms" } : undefined}>

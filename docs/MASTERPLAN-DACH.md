@@ -240,7 +240,7 @@ Fehlende Länderseiten verlinken sichtbar auf die DE-Seite mit dem Hinweis „(g
 - `src/lib/land` ist die einzige Quelle für `pfad()`, `alternates()`, hreflang (bidirektional, getestet), Sitemaps je Land, Länderwechsler und Navigation.
 - **Länderhinweis:**
   - keine IP-Weiterleitung und kein `Vary` auf Geo
-  - `/api/land` liefert nur einen Vorschlag, daraus entsteht ein schließbares Banner
+  - kein Ländervorschlag per Kopfzeilen: `/api/land` und das Banner sind entfallen (Ländermodell, W3-0); das Land wählt der Besucher in der Kopfleiste oder über die Adresse
   - ein Cookie nur nach aktiver Wahl
 - Der Middleware-Matcher wird **nicht** erweitert (er setzt `no-store`).
 - **Migration:**

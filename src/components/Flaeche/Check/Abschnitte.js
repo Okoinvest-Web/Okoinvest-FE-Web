@@ -6,8 +6,12 @@ import { cn } from "@/components/ui/cn";
 import { TextEnthuellung } from "@/components/motion";
 import { HeroBuehne, HeroPille, Haken } from "@/components/Flaeche/Seite/teile";
 import { LAENDER, einstiegPfad, pfad } from "@/lib/land";
-import { spracheDerAnfrage } from "@/lib/land/seite";
+import { spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 /** Sprachmodell: Texte der Abschnitte (en nur Texte, Listen je Index). */
 const W = {
@@ -88,7 +92,7 @@ const W = {
 /** Skala 0–100 mit den Ampelgrenzen des Checks (gelb ab 40, grün ab 65) und dem Startwert 50 */
 export function Punkteskala({ dunkel = false, className }) {
   const w = uebersetze(W, spracheDerAnfrage());
-  return (
+  return chBaum(
     <div className={className}>
       <div className="relative">
         <div aria-hidden="true" className="flex h-3 overflow-hidden rounded-full">
@@ -126,7 +130,7 @@ export function CheckHero({ land = "DE" }) {
   const de = land === "DE";
   const krumen = de ? [{ name: w.krumenRechner, href: pfad("/rechner") }, { name: w.krumenCheck }] : [{ name: w.landName(land), href: einstiegPfad(land) }, { name: w.krumenCheck }];
   const ergebnis = ERGEBNIS.map((e, i) => ({ ...e, ...w.ergebnis[i] }));
-  return (
+  return chBaum(
     <HeroBuehne breadcrumbs={krumen} unten="pb-28 md:pb-32">
       <div className="grid grid-cols-[minmax(0,1fr)] items-center gap-y-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-x-16">
         <div className="max-w-[38rem]">
@@ -191,7 +195,7 @@ export function SoBewertenWir() {
   const sprache = spracheDerAnfrage();
   const w = uebersetze(W, sprache);
   const faktoren = sprache === "en" ? FAKTOREN.map((f, i) => ({ ...f, ...W.en.faktoren[i] })) : FAKTOREN;
-  return (
+  return chBaum(
     <div>
       <SectionHeading eyebrow={w.eyebrow} title={w.titel} lead={w.lead} />
       <Reveal className="mt-8 rounded-3xl bg-sand-50 p-5 ring-1 ring-ink-200/60 sm:p-6">

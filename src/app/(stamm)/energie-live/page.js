@@ -19,9 +19,13 @@ import { getEnergySnapshot } from "@/lib/energy";
 import { preisTage, zeitfenster, ct, formate } from "@/components/EnergieLive/berechnung";
 import JsonLd from "@/components/JsonLd";
 import { pfad } from "@/lib/land";
-import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { seitenLand, seitenMetadata, spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
 import { faqFuerLand } from "@/components/Land/Laenderteile";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 // Geprüft am 04.10.2026 an der Quelle: Seit 1. Oktober 2018 sind Deutschland(-Luxemburg) und Österreich getrennte
 // Gebotszonen (E-Control, Presseaussendung „Trennung der deutsch-österreichischen Strompreiszone“, 2018); die Schweiz
@@ -324,7 +328,7 @@ export default async function EnergieLivePage({ params }) {
     dateModified: s.stand,
   };
 
-  return (
+  return chBaum(
     <div>
       <JsonLd daten={webPageSchema} />
       <JsonLd daten={datasetSchema} />

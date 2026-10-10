@@ -14,7 +14,11 @@ import { begriffeEn, begriffeNachBuchstabeEn, kategorienEn } from "@/data/lexiko
 import { SITE, abs } from "@/data/site";
 import JsonLd from "@/components/JsonLd";
 import { pfad } from "@/lib/land";
-import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { seitenLand, seitenMetadata, spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 const PAGE_URL = abs("/wissen/lexikon");
 const ANZAHL = BEGRIFFE.length;
@@ -156,7 +160,7 @@ export default async function LexikonPage({ params }) {
     ],
   };
 
-  return (
+  return chBaum(
     <>
       <JsonLd daten={jsonLd} />
 

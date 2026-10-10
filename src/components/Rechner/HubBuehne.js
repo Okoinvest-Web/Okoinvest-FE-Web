@@ -2,7 +2,8 @@
 // Alle Zahlen stammen aus Beispielrechnungen mit den Standardannahmen der Rechner.
 import { LineChart, MapPinned, HandCoins } from "lucide-react";
 import { PACHT } from "@/lib/invest/markt";
-import { spracheDerAnfrage } from "@/lib/land/seite";
+import { landDerAnfrage, spracheDerAnfrage } from "@/lib/land/seite";
+import { schreibweiseFuer } from "@/lib/land/schreibweise";
 import { formate } from "@/lib/sprache/zahlformat";
 
 const TEXTE = {
@@ -25,7 +26,7 @@ function Kennzahl({ label, wert, einheit, betont = false }) {
 
 export default function HubBuehne({ park, cashflow }) {
   const sprache = spracheDerAnfrage();
-  const t = TEXTE[sprache] || TEXTE.de;
+  const t = schreibweiseFuer(TEXTE[sprache] || TEXTE.de, landDerAnfrage()); // Schweiz: ohne „ß“
   const f = formate(sprache);
   const { fmt } = f;
   const irr = park.projektIrr != null ? fmt(park.projektIrr * 100, 1) : "–";

@@ -4,10 +4,15 @@ import { useState } from "react";
 import { Check, FileSearch, Gauge, Landmark, MapPinned, PlugZap, Scale, Wrench } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { useTexte } from "@/components/Sprache/SpracheKontext";
+import useLand from "@/components/Land/useLand";
 
 /**
  * Interaktive Due-Diligence-Checkliste für Solarprojekte. Rein clientseitig,
  * speichert nichts – zum Abhaken beim Lesen eines Exposés.
+ *
+ * Ländermodell (W3-0): nurDE = Indizes der Prüfpunkte, die deutsches Recht bzw. deutsche Register
+ * und Normen nennen. In AT/CH stehen sie mit „In Deutschland:“ davor (keine ungeprüften AT/CH-
+ * Entsprechungen); die Seite zeigt darunter den Länderhinweis.
  */
 
 export const DD_BEREICHE = [
@@ -26,6 +31,7 @@ export const DD_BEREICHE = [
     id: "genehmigung",
     icon: Landmark,
     titel: "Genehmigung & Baurecht",
+    nurDE: [0, 2, 4],
     punkte: [
       "Bebauungsplan: Aufstellungsbeschluss, Beteiligung, Satzungsbeschluss, Bekanntmachung – bzw. Privilegierung nach § 35 BauGB",
       "Baugenehmigung mit Auflagen, Fristen und Nebenbestimmungen",
@@ -38,6 +44,7 @@ export const DD_BEREICHE = [
     id: "netz",
     icon: PlugZap,
     titel: "Netzanschluss",
+    nurDE: [3],
     punkte: [
       "Netzanschlusszusage mit Einspeisepunkt, Spannungsebene und Leistung",
       "Reservierung und deren Fristen, Baukostenzuschuss, Kostenschätzung des Netzbetreibers",
@@ -49,6 +56,7 @@ export const DD_BEREICHE = [
     id: "ertrag",
     icon: Gauge,
     titel: "Ertragsgutachten",
+    nurDE: [2],
     punkte: [
       "Unabhängiges Gutachten mit P50 und P90 (1 und 10 Jahre), Einstrahlungsdaten und Unsicherheiten",
       "Layout, Modul- und Wechselrichterwahl, Verschattung, Verluste, Degradation",
@@ -59,6 +67,7 @@ export const DD_BEREICHE = [
     id: "technik",
     icon: Wrench,
     titel: "Technik & Bau",
+    nurDE: [2],
     punkte: [
       "EPC-Angebot oder -Vertrag, Bauzeitenplan, Gewährleistung und Garantien",
       "Baugrund und Rammtests, Einfriedung, Zuwegung, Brandschutz",
@@ -70,6 +79,7 @@ export const DD_BEREICHE = [
     id: "recht",
     icon: Scale,
     titel: "Recht, Erlöse & Gesellschaft",
+    nurDE: [1, 2, 3],
     punkte: [
       "Projektgesellschaft: Handelsregister, Gesellschafter, keine Altlasten oder Nebenabreden",
       "EEG-Zuschlag (Gebotstermin, Fristen, Pönalen) oder PPA-Term-Sheet bzw. -Vertrag",
@@ -85,6 +95,7 @@ const TEXTE = {
     bereiche: DD_BEREICHE,
     hinweis: "Beim Lesen eines Exposés abhaken – nichts wird gespeichert.",
     fortschritt: "Fortschritt der Checkliste",
+    inDe: "In Deutschland: ",
   },
   en: {
     bereiche: [
@@ -145,11 +156,14 @@ const TEXTE = {
     ],
     hinweis: "Tick off while reading an exposé – nothing is saved.",
     fortschritt: "Checklist progress",
+    inDe: "In Germany: ",
   },
 };
 
 export default function DdCheckliste() {
   const t = useTexte(TEXTE);
+  const { land } = useLand();
+  const fremd = land === "AT" || land === "CH"; // deutsche Rechtsbegriffe kennzeichnen
   const [haken, setHaken] = useState({});
   const gesamt = t.bereiche.reduce((s, b) => s + b.punkte.length, 0);
   const erledigt = Object.values(haken).filter(Boolean).length;
@@ -204,7 +218,10 @@ export default function DdCheckliste() {
                         >
                           <Check className="h-3.5 w-3.5" strokeWidth={3} />
                         </span>
-                        <span className={an ? "text-ink-500 line-through decoration-ink-300" : undefined}>{p}</span>
+                        <span className={an ? "text-ink-500 line-through decoration-ink-300" : undefined}>
+                          {fremd && b.nurDE?.includes(i) && <span className="font-semibold text-ink-500">{t.inDe}</span>}
+                          {p}
+                        </span>
                       </label>
                     </li>
                   );

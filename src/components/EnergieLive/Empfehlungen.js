@@ -1,5 +1,7 @@
 "use client";
 
+import { useSeitenLand } from "@/components/Land/LandKontext";
+import { schreibweiseFuer } from "@/lib/land/schreibweise";
 import { useMemo } from "react";
 import Link from "@/components/Land/Link";
 import { ArrowRight, BatteryCharging, Factory, LineChart, Timer } from "lucide-react";
@@ -59,7 +61,7 @@ export default function Empfehlungen({ initial }) {
   const sprache = useSprache();
   const f = formate(sprache);
   const { ct, zahl, uhr } = f;
-  const w = TEXTE[sprache === "en" ? "en" : "de"];
+  const w = schreibweiseFuer(TEXTE[sprache === "en" ? "en" : "de"], useSeitenLand()); // Schweiz: ohne „ß“
 
   const horizont = tage.zukunft;
   const speicher = useMemo(() => bestesFenster(tage, horizont, 120), [tage, horizont]);

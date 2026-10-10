@@ -15,6 +15,8 @@ import {
   einwilligungLesen,
 } from "@/lib/ereignis/einwilligung";
 import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { useSeitenLand } from "@/components/Land/LandKontext";
+import { schreibweiseFuer } from "@/lib/land/schreibweise";
 
 // TEXTE: Entwurf (Paket B, Welle 1) – Freigabe durch Strang R (Rechtstexte) steht aus.
 // Fassung der Texte: EINWILLIGUNG_VERSION in src/lib/ereignis/einwilligung.js – bei jeder inhaltlichen Änderung
@@ -126,7 +128,8 @@ function zeitText(iso, locale = "de-DE") {
 export default function CookieBanner({ forceShow = false, onClose }) {
   const router = useRouter();
   const sprache = useSprache();
-  const t = sprache === "en" ? TEXTE.en : TEXTE.de;
+  // Schweiz (/ch): Texte ohne „ß“
+  const t = schreibweiseFuer(sprache === "en" ? TEXTE.en : TEXTE.de, useSeitenLand());
   const ga = sprache === "en" ? { ...cookieServices.statistics.googleAnalytics, ...DIENST_EN.googleAnalytics } : cookieServices.statistics.googleAnalytics;
   const [isShown, setIsShown] = useState(false);
   const [isCompact, setIsCompact] = useState(true);

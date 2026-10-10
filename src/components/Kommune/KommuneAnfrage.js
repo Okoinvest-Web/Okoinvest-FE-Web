@@ -148,7 +148,7 @@ function Etappe({ nr, titel, id }) {
 
 export default function KommuneAnfrage() {
   const id = useId();
-  const w = uebersetze(TEXTE, useSprache());
+  const w = uebersetze(TEXTE, useSprache(), useSeitenLand()); // Schweiz: ohne „ß“
   // Land aus der Länderfassung der Seite vorwählen (Länderfassung Österreich → Österreich), sonst Deutschland
   const seitenLand = useSeitenLand();
   const [d, setD] = useState({ land: seitenLand || "DE", absender: "gemeinde", gemeinde: "", gemeindeSchluessel: "", rolle: "", gemeindeFlaechenHa: "", interesse6: "", buergerbeteiligung: [], bauleitplanung: "", kriterienkatalog: "", themen: ["solarpark"] });

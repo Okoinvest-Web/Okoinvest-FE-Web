@@ -3,7 +3,11 @@ import { META } from "@/data/regionen/meta";
 import { regionName } from "@/data/regionen";
 import { pfad, regionSchluessel } from "@/lib/land";
 import Link from "@/components/Land/Link";
-import { spracheDerAnfrage } from "@/lib/land/seite";
+import { spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 const ZELLE = 72;
 const LUECKE = 6;
@@ -36,7 +40,7 @@ export default function RegionKarte({ aktiv, nachbarn = [], titel: titelProp, cl
   const hoehe = ZEILEN * ZELLE;
   const hervor = new Set(nachbarn);
 
-  return (
+  return chBaum(
     <figure className={cn("w-full", className)}>
       <svg viewBox={`0 0 ${breite} ${hoehe}`} role="group" aria-label={titel} className="h-auto w-full select-none">
         {/* Ländergrenze DE/AT-CH als dezente Linie */}

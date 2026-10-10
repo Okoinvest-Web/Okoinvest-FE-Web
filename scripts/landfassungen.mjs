@@ -19,7 +19,13 @@
 // Jede Seite aus SEITEN existiert gemeinsam unter src/app/(stamm)/<pfad>/page.js. Ihre
 // Länderfassung ist eine reine Weiterleitung auf DIESELBE Seitenkomponente – kein Kopieren:
 //
-//   export { default, generateMetadata } from "@/app/(stamm)/rechner/pacht/page";
+//   import Seite from "@/app/(stamm)/rechner/pacht/page";
+//   import { landSeite } from "@/components/Land/LandSeite";
+//   export default landSeite(Seite);
+//   export { generateMetadata } from "@/app/(stamm)/rechner/pacht/page";
+//
+// landSeite() (src/components/Land/LandSeite.js) gibt die Seite unverändert weiter; nur in der
+// Schweiz (/ch, /en/ch) schreibt es alle Texte der Seite ohne „ß“ (Schweizer Schreibweise).
 //
 // Next.js reicht params.land ("de" | "at" | "ch") an die Seite durch; die Seite liest es mit
 // seitenLand(params). Routen-Einstellungen (dynamic, revalidate, dynamicParams …) muss Next.js
@@ -53,14 +59,17 @@ const datei = (basis, k) => join(basis, ...(k === "/" ? [] : k.slice(1).split("/
 /** Inhalt der Länderroute für einen Schlüssel. */
 export function landRoute(k, quelle) {
   const modul = `@/app/(stamm)${k === "/" ? "" : k}/page`;
-  const namen = ["default"];
+  const namen = [];
   if (/export (const|async function|function) generateMetadata\b/.test(quelle)) namen.push("generateMetadata");
   if (/export (const|async function|function) generateStaticParams\b/.test(quelle)) namen.push("generateStaticParams");
   const konfig = [...quelle.matchAll(KONFIG)].filter((m) => !(NUR_GEMEINSAM[k] || []).includes(m[1])).map((m) => `export const ${m[1]} = ${m[2]};`);
   return [
     `// Länderfassung von ${k} (/de, /at, /ch) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.`,
     `// Dieselbe Seite wie src/app/(stamm)${k === "/" ? "" : k}/page.js; das Land kommt aus params.land.`,
-    `export { ${namen.join(", ")} } from "${modul}";`,
+    `import Seite from "${modul}";`,
+    `import { landSeite } from "@/components/Land/LandSeite";`,
+    `export default landSeite(Seite);`,
+    ...(namen.length ? [`export { ${namen.join(", ")} } from "${modul}";`] : []),
     ...konfig,
     "",
   ].join("\n");
@@ -76,7 +85,7 @@ export function enRoute(k, quelle, { land = false } = {}) {
     `// Dieselbe Seite wie src/app/(stamm)${k === "/" ? "" : k}/page.js; Sprache "en" über params.sprache${land ? ", das Land aus params.land" : ""}.`,
     `import Seite, { generateMetadata as metadaten } from "${modul}";`,
     `import { englisch, englischeMetadaten } from "@/lib/sprache/route";`,
-    `export default englisch(Seite);`,
+    ...(land ? [`import { landSeite } from "@/components/Land/LandSeite";`, `export default landSeite(englisch(Seite));`] : [`export default englisch(Seite);`]),
     `export const generateMetadata = englischeMetadaten(metadaten);`,
     ...(statisch ? [`export { generateStaticParams } from "${modul}";`] : []),
     ...konfig,
@@ -122,7 +131,10 @@ for (const k of Object.keys(SEITEN)) {
 }
 
 // Umgekehrt: keine Länder- oder Sprachroute ohne Registereintrag
-const bekannt = new Set(Object.keys(SEITEN).flatMap((k) => [datei(LAND, k), datei(EN, k), datei(EN_LAND, k)]));
+// Ausnahme: die 404-Fänger für unbekannte Unterseiten ([...unbekannt], rufen nur notFound() auf,
+// damit die 404 im Länder- bzw. englischen Root-Layout mit passendem lang erscheint).
+const FAENGER = [join(LAND, "[...unbekannt]", "page.js"), join(EN_LAND, "[...unbekannt]", "page.js")];
+const bekannt = new Set([...FAENGER, ...Object.keys(SEITEN).flatMap((k) => [datei(LAND, k), datei(EN, k), datei(EN_LAND, k)])]);
 for (const d of [...seiten(LAND), ...(existsSync(EN) ? seiten(EN) : [])]) if (!bekannt.has(d)) fehler.push(`Länder-/Sprachroute ohne Registereintrag: ${relative(WURZEL, d).split(sep).join("/")}`);
 
 if (fehler.length) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useSeitenLand } from "@/components/Land/LandKontext";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "@/components/Land/Link";
 import {
@@ -314,7 +315,7 @@ const spanne = (a, b) => (b >= 1e6 ? `${fmt(a / 1e6, 2)}–${fmt(b / 1e6, 2)} Mi
 export default function FlaechenWizard({ land: routenLand = null }) {
   const sprache = useSprache();
   const en = sprache === "en";
-  const w = uebersetze(TEXTE, sprache);
+  const w = uebersetze(TEXTE, sprache, useSeitenLand()); // Schweiz: ohne „ß“
   const az = anzeige(en);
   const [schritt, setSchritt] = useState(0);
   const [richtung, setRichtung] = useState("vor");

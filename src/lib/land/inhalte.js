@@ -36,6 +36,7 @@
 //    Vorher bleibt sie noindex – sie ist trotzdem erreichbar und sieht gleich aus.
 
 import { LAENDER, landCode } from "./laender.js";
+import { schreibweiseFuer } from "./schreibweise.js";
 
 const istObjekt = (x) => x !== null && typeof x === "object" && !Array.isArray(x) && !(x && x.$$typeof);
 
@@ -51,9 +52,9 @@ export function inhaltFuer(inhalte, land) {
   if (!inhalte || !Object.hasOwn(inhalte, "gemeinsam")) throw new Error("inhaltFuer: Eintrag „gemeinsam“ fehlt");
   const l = landCode(land);
   const basis = inhalte.gemeinsam;
-  if (!l || !Object.hasOwn(inhalte, l) || inhalte[l] === undefined) return basis;
+  if (!l || !Object.hasOwn(inhalte, l) || inhalte[l] === undefined) return schreibweiseFuer(basis, l);
   const eigen = inhalte[l];
-  return istObjekt(basis) && istObjekt(eigen) ? { ...basis, ...eigen } : eigen;
+  return schreibweiseFuer(istObjekt(basis) && istObjekt(eigen) ? { ...basis, ...eigen } : eigen, l);
 }
 
 /**

@@ -474,7 +474,7 @@ export default async function LandwirtePage({ params }) {
   const land = await seitenLand(params);
   const sprache = spracheDerAnfrage();
   const w = uebersetze(TEXTE, sprache);
-  const WEGE = wegeFuer(sprache);
+  const WEGE = wegeFuer(sprache, land);
   const t = inhaltFuerSprache(INHALT, land, sprache);
   return (
     <div>

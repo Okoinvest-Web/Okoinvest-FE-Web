@@ -10,6 +10,7 @@
 import { createContext, useCallback, useContext } from "react";
 import { sprachCookieZeile } from "@/lib/sprache/sprachen";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { useSeitenLand } from "@/components/Land/LandKontext";
 
 const SpracheKontext = createContext("de");
 
@@ -22,9 +23,10 @@ export function useSprache() {
   return useContext(SpracheKontext);
 }
 
-/** Wörterbuch { de, en } in der Sprache der Seite (Rückfall Deutsch). */
+/** Wörterbuch { de, en } in der Sprache der Seite (Rückfall Deutsch); Schweiz: ohne „ß“. */
 export function useTexte(texte) {
-  return uebersetze(texte, useContext(SpracheKontext));
+  const land = useSeitenLand();
+  return uebersetze(texte, useContext(SpracheKontext), land);
 }
 
 /** Aktive Sprachwahl speichern – nur aus einem Klick heraus aufrufen. */

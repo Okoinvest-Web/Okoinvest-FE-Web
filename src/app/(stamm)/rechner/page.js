@@ -226,7 +226,7 @@ export default async function RechnerHub({ params }) {
   const en = sprache === "en";
   const t = uebersetze({ de: DE, en: EN }, sprache);
   const f = formate(sprache);
-  const tools = toolsFuer(sprache);
+  const tools = toolsFuer(sprache, land);
   const toolById = (id) => tools.find((x) => x.id === id);
   const tagText = (tag) => (en ? TOOL_BEGRIFFE_EN.tag[tag] ?? tag : tag);
 

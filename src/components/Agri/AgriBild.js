@@ -4,6 +4,8 @@
 
 import { useSprache } from "@/components/Sprache/SpracheKontext";
 import T from "@/components/Sprache/T";
+import { useSeitenLand } from "@/components/Land/LandKontext";
+import { schreibweiseFuer } from "@/lib/land/schreibweise";
 
 /**
  * Flache Inline-SVG-Illustrationen der Agri-PV-Systeme.
@@ -81,7 +83,8 @@ function Modul({ x1, y1, x2, y2, dick = 4 }) {
 
 /** fuellen: true → Bild füllt einen höheren Rahmen (unten bündig, seitlich beschnitten) */
 export default function AgriBild({ typ = "vertikal", className, titel, fuellen = false }) {
-  const beschreibung = useSprache() === "en" ? BESCHREIBUNG_EN : BESCHREIBUNG;
+  // Schweiz: Bildbeschreibung ohne „ß“
+  const beschreibung = schreibweiseFuer(useSprache() === "en" ? BESCHREIBUNG_EN : BESCHREIBUNG, useSeitenLand());
   return (
     <svg viewBox="0 0 320 200" className={className} role="img" aria-label={titel || beschreibung[typ]} preserveAspectRatio={fuellen ? "xMidYMax slice" : undefined}>
       {/* Himmel: über den Rand hinaus, damit er beim Füllen nicht abreißt */}

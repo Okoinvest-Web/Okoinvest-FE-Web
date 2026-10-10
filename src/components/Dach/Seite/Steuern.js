@@ -5,6 +5,10 @@ import { cn } from "@/components/ui/cn";
 import { landDerAnfrage, spracheDerAnfrage } from "@/lib/land/seite";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
 import { datumText } from "@/lib/sprache/format";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 const LAENDER = [
   {
@@ -92,7 +96,7 @@ export default function Steuern({ stand }) {
   const w = uebersetze(W, sprache);
   const basis = sprache === "en" ? LAENDER.map((l, i) => ({ ...l, ...LAENDER_EN[i] })) : LAENDER;
   const laender = land ? [...basis].sort((a, b) => (a.kz === land ? -1 : b.kz === land ? 1 : 0)) : basis;
-  return (
+  return chBaum(
     <section data-abschnitt="steuern" aria-labelledby="steuern-titel" className="bg-white py-20 md:py-28">
       <div className="ov-container">
         <SectionHeading

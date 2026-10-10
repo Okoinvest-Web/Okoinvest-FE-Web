@@ -1,5 +1,6 @@
 "use client";
 
+import { useSeitenLand } from "@/components/Land/LandKontext";
 import { useEffect, useId, useState } from "react";
 import Link from "@/components/Land/Link";
 import { usePathname } from "next/navigation";
@@ -157,7 +158,7 @@ export default function AnfrageFormular({
   const id = useId();
   const sprache = useSprache();
   const en = sprache === "en";
-  const t = uebersetze(TEXTE, sprache);
+  const t = uebersetze(TEXTE, sprache, useSeitenLand()); // Schweiz: ohne „ß“
   const button = buttonProp ?? t.button;
   const erfolgText = erfolgProp ?? t.erfolgText;
   const melden = useEreignis();

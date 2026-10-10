@@ -22,9 +22,10 @@ export async function generateMetadata({ params }) {
 export default async function LaenderLayout({ children, params }) {
   const { land } = await params;
   const code = landAusPraefix(land);
-  const info = landInfo(code) || landInfo("DE");
+  // Unbekanntes Präfix (nur 404 über [...unbekannt], z. B. /rechner/xyz): gemeinsame Sprache "de"
+  const lang = landInfo(code)?.lang || "de";
   return (
-    <Wurzel lang={info.lang} land={code}>
+    <Wurzel lang={lang} land={code}>
       {children}
     </Wurzel>
   );

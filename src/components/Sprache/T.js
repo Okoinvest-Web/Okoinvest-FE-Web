@@ -6,7 +6,10 @@
 // Nur für sichtbaren Text; Attribute (aria-label …) brauchen eine Client-Komponente mit useTexte().
 
 import { useSprache } from "./SpracheKontext";
+import { useSeitenLand } from "@/components/Land/LandKontext";
+import { schreibweiseFuer } from "@/lib/land/schreibweise";
 
 export default function T({ de, en }) {
-  return useSprache() === "en" && en != null ? en : de;
+  const land = useSeitenLand();
+  return schreibweiseFuer(useSprache() === "en" && en != null ? en : de, land);
 }

@@ -9,6 +9,7 @@
 // Test: node --test src/components/JsonLd.test.mjs
 
 import { createElement } from "react";
+import { jsonLdFuer, landDerAusgabe } from "../lib/land/schreibweise.js";
 
 // Zeichen, die im HTML-Kontext eines <script>-Blocks gefährlich sind, als JSON-Unicode-Escapes.
 // Die Escapes sind gültiges JSON und ergeben nach JSON.parse exakt den Originaltext.
@@ -63,15 +64,17 @@ export function jsonLdText(daten) {
  * @param {object|object[]|null|undefined} props.daten  Inhalt; `null`/`undefined` rendert nichts.
  * @param {string} [props.id]     optionales id-Attribut des Script-Elements.
  * @param {string} [props.nonce]  optionaler CSP-Nonce.
+ * @param {string|null} [props.land]  Land der Seite ("CH" → Texte ohne „ß“). Ohne Angabe gilt in Server-Komponenten
+ *                                 das Land der laufenden Anfrage; Client-Komponenten geben es mit (useSeitenLand()).
  * @returns {import("react").ReactElement|null}
  */
-export default function JsonLd({ daten, id, nonce }) {
+export default function JsonLd({ daten, id, nonce, land }) {
   if (daten === null || daten === undefined) return null;
   return createElement("script", {
     type: "application/ld+json",
     id,
     nonce,
-    dangerouslySetInnerHTML: { __html: jsonLdText(daten) },
+    dangerouslySetInnerHTML: { __html: jsonLdText(jsonLdFuer(daten, land === undefined ? landDerAusgabe() : land)) },
   });
 }
 

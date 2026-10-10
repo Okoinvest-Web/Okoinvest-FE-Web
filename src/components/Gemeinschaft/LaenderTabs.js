@@ -1,17 +1,21 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { AlertCircle, Check, Handshake } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { laenderFuer } from "./laender";
 import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { useSeitenLand } from "@/components/Land/LandKontext";
+import { schreibweiseFuer } from "@/lib/land/schreibweise";
 
 /** Länder-Tabs mit Details: So funktioniert es, Grenzen, Rolle von ÖkoInvest. */
 /** start: zuerst geöffnetes Land ("de" | "at" | "ch") – in der Länderfassung das Land der Seite (Ländermodell). */
 export default function LaenderTabs({ start = "de" }) {
   const sprache = useSprache();
   const en = sprache === "en";
-  const { laender: LAENDER } = laenderFuer(sprache);
+  const seitenLand = useSeitenLand();
+  // Schweiz: Texte der Länderkarten ohne „ß“ (ids und Verweise bleiben)
+  const LAENDER = useMemo(() => schreibweiseFuer(laenderFuer(sprache).laender, seitenLand), [sprache, seitenLand]);
   const [aktiv, setAktiv] = useState(start);
   const basis = useId();
   const refs = useRef({});

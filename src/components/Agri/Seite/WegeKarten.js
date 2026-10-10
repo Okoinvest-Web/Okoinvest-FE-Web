@@ -5,7 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 import Reveal from "@/components/ui/Reveal";
 import { cn } from "@/components/ui/cn";
 import { wegeFuer } from "@/components/Agri/wege";
-import { spracheDerAnfrage } from "@/lib/land/seite";
+import { landDerAnfrage, spracheDerAnfrage } from "@/lib/land/seite";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 /** Stufen je Weg (1 = wenig, 4 = viel) – abgeleitet aus invest/risiko/aufwand/bewirtschaftung */
@@ -34,7 +34,7 @@ const W = {
 export default function WegeKarten() {
   const sprache = spracheDerAnfrage();
   const w2 = uebersetze(W, sprache);
-  const WEGE = wegeFuer(sprache);
+  const WEGE = wegeFuer(sprache, landDerAnfrage());
   const zeilen = ZEILEN.map(([key], i) => [key, w2.zeilen[i][1]]);
   return (
     <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

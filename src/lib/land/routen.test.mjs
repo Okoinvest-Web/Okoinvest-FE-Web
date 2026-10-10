@@ -40,14 +40,32 @@ test("Länderfassungen: jede Seite gemeinsam + Weiterleitung auf dieselbe Kompon
   assert.equal(r.status, 0, r.stderr || r.stdout);
 });
 
+// 404-Fänger für unbekannte Unterseiten (W3-0): keine Seite, nur notFound() im Länder- bzw. englischen
+// Root-Layout (lang und Land-Links der 404 stimmen). Ausnahme in scripts/landfassungen.mjs.
+const FAENGER = join(ZONE, "[...unbekannt]", "page.js");
+const istFaenger = (d) => d === FAENGER;
+
+test("404-Fänger der Länder- und englischen Fassungen rendern nie Inhalt", () => {
+  for (const d of [FAENGER, join(APP, "(en)", "en", "[land]", "[...unbekannt]", "page.js")]) {
+    const code = readFileSync(d, "utf8").split("\n").filter((z) => z.trim() && !z.trim().startsWith("//"));
+    assert.ok(code.some((z) => /^import \{ notFound \} from "next\/navigation";/.test(z.trim())), relative(APP, d));
+    assert.ok(code.some((z) => /^\s*notFound\(\);/.test(z)), relative(APP, d));
+    assert.ok(!code.some((z) => /return|<\w/.test(z)), `${relative(APP, d)}: rendert Inhalt`);
+  }
+});
+
 test("Länderrouten enthalten keinen eigenen Seiteninhalt (kein Kopieren von Seiten)", () => {
-  for (const d of seiten(ZONE)) {
+  for (const d of seiten(ZONE).filter((x) => !istFaenger(x))) {
     const q = readFileSync(d, "utf8");
     const code = q.split("\n").filter((z) => z.trim() && !z.trim().startsWith("//"));
-    assert.ok(code.length <= 4, `${relative(APP, d)}: mehr als eine Weiterleitung`);
-    assert.match(code[0], /^export \{ default(, \w+)* \} from "@\/app\/\(stamm\)[^"]*\/page";$/, relative(APP, d));
+    // Weiterleitung über landSeite() (src/components/Land/LandSeite.js): dieselbe Seite, in der Schweiz ohne „ß“
+    assert.ok(code.length <= 7, `${relative(APP, d)}: mehr als eine Weiterleitung`);
+    assert.match(code[0], /^import Seite from "@\/app\/\(stamm\)[^"]*\/page";$/, relative(APP, d));
+    assert.equal(code[1], 'import { landSeite } from "@/components/Land/LandSeite";', relative(APP, d));
+    assert.equal(code[2], "export default landSeite(Seite);", relative(APP, d));
+    for (const z of code.slice(3)) assert.match(z, /^export (\{ \w+(, \w+)* \} from "@\/app\/\(stamm\)[^"]*\/page"|const \w+ = ("[^"]*"|\d+|true|false));$/, `${relative(APP, d)}: ${z}`);
   }
-  const routen = seiten(ZONE).map((d) => route(d, ZONE));
+  const routen = seiten(ZONE).filter((x) => !istFaenger(x)).map((d) => route(d, ZONE));
   assert.deepEqual(new Set(routen), new Set(Object.keys(SEITEN)), "Länderrouten = Register");
 });
 
@@ -65,9 +83,10 @@ test("Root-Layouts: gleicher Rahmen, lang je Land, Land als Kontext; keine Länd
   assert.throws(() => statSync(join(APP, "layout.js")), "src/app/layout.js darf es nicht geben (ein Root-Layout je Routengruppe)");
   assert.match(readFileSync(join(APP, "(stamm)", "layout.js"), "utf8"), /<Wurzel lang="de">/);
   const land = readFileSync(join(ZONE, "layout.js"), "utf8");
-  assert.match(land, /<Wurzel lang=\{info\.lang\} land=\{code\}>/);
+  assert.match(land, /const lang = landInfo\(code\)\?\.lang \|\| "de";/);
+  assert.match(land, /<Wurzel lang=\{lang\} land=\{code\}>/);
   assert.match(land, /generateStaticParams\(\)[\s\S]*LAND_CODES/);
-  assert.match(readFileSync(join(ZONE, "page.js"), "utf8"), /export \{ default, generateMetadata \} from "@\/app\/\(stamm\)\/page";/, "/de, /at, /ch zeigen die echte Startseite");
+  assert.match(readFileSync(join(ZONE, "page.js"), "utf8"), /import Seite from "@\/app\/\(stamm\)\/page";\r?\nimport \{ landSeite \} from "@\/components\/Land\/LandSeite";\r?\nexport default landSeite\(Seite\);/, "/de, /at, /ch zeigen die echte Startseite");
   assert.match(readFileSync(join(WURZEL, "src", "components", "Wurzel", "Wurzel.js"), "utf8"), /<LandProvider land=\{land\}>/);
 });
 

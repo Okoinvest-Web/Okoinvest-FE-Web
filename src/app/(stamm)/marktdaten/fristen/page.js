@@ -16,7 +16,11 @@ import FristenListe from "@/components/Fakten/FristenListe";
 import BestandteileTabelle from "@/components/Fakten/BestandteileTabelle";
 import { abs } from "@/data/site";
 import { pfad } from "@/lib/land";
-import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { seitenLand, seitenMetadata, spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 // Ablauf wirkt ohne neuen Build: Seite wird höchstens stündlich neu erzeugt.
 export const revalidate = 3600;
@@ -116,7 +120,7 @@ export default async function FristenSeite({ params }) {
   const t = TEXTE[sprache] || TEXTE.de;
   const laender = en ? LAENDER.map((l) => ({ ...l, ...LAENDER_EN[l.land] })) : LAENDER;
   const heute = new Date();
-  return (
+  return chBaum(
     <>
       <Section tone="sand" space="none" className="pb-14 pt-6 sm:pt-8 md:pb-20 md:pt-10">
         <Breadcrumbs items={[{ name: t.wissen, href: "/ratgeber" }, { name: t.marktdaten, href: pfad("/marktdaten") }, { name: t.fristen }]} className="mb-8 md:mb-12" />

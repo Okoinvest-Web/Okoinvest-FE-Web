@@ -5,10 +5,14 @@ import { cn } from "@/components/ui/cn";
 import { zahlenModus } from "@/lib/land";
 import { landDerAnfrage, spracheDerAnfrage } from "@/lib/land/seite";
 import { fmtZahl } from "@/lib/sprache/format";
+import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
+
+// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
+const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 
 /** Variante der Faktenleiste. fakten: [{ icon, wert, einheit, text }] */
 export function FaktenLeiste({ titel, fakten }) {
-  return (
+  return chBaum(
     <section data-abschnitt="fakten" aria-label={titel} className="relative z-10 -mt-12 md:-mt-16">
       <div className="ov-container">
         <div className="relative rounded-[1.75rem] bg-white shadow-e4 ring-1 ring-ink-200/70 md:rounded-[2rem]">
@@ -64,7 +68,7 @@ export default function Fakten({ dach }) {
       />
     );
   }
-  return (
+  return chBaum(
     <FaktenLeiste
       titel="Dachpacht in Zahlen"
       fakten={[

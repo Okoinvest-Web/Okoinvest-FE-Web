@@ -14,7 +14,8 @@ import useFokusFalle from "@/components/ui/useFokusFalle";
 import Sprachwahl from "@/components/Sprache/Sprachwahl";
 import { useSprache, useTexte } from "@/components/Sprache/SpracheKontext";
 import Laenderwahl from "@/components/Land/Laenderwahl";
-import { landAusPfad } from "@/lib/land";
+import { landAusPfad, schreibweiseFuer } from "@/lib/land";
+import { useSeitenLand } from "@/components/Land/LandKontext";
 
 // Texte der Kopfleiste (Sprachmodell, src/lib/sprache/woerterbuch.js); Menüeinträge: navigationFuer()
 const TEXTE = {
@@ -95,7 +96,8 @@ export default function Navbar() {
   const angemeldet = useAngemeldet(pfad);
   const t = useTexte(TEXTE);
   const sprache = useSprache();
-  const NAVIGATION = navigationFuer(sprache);
+  const seitenLand = useSeitenLand();
+  const NAVIGATION = schreibweiseFuer(navigationFuer(sprache), seitenLand); // Schweiz: ohne „ß“
   const konto = angemeldet ? { href: "/portal", label: t.portal } : { href: "/login", label: t.login };
   const [offen, setOffen] = useState(null); // Titel des offenen Mega-Menüs
   const [mobil, setMobil] = useState(false);

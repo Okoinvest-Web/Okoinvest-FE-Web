@@ -3,6 +3,7 @@
 // Filter-Insel der Projektbörse: die Liste wird serverseitig vollständig gerendert
 // (SEO), Filter und Sortierung laufen im Browser und stehen in der URL.
 
+import { useSeitenLand } from "@/components/Land/LandKontext";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "@/components/Land/Link";
 import { Columns3, SlidersHorizontal, X, SearchX, List, Map as KarteIcon } from "lucide-react";
@@ -18,6 +19,7 @@ import Button from "@/components/ui/Button";
 import { useSprache } from "@/components/Sprache/SpracheKontext";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
 import { BEGRIFFE_EN } from "@/lib/sprache/begriffe";
+import { schreibweiseFuer } from "@/lib/land/schreibweise";
 
 const TEXTE = {
   de: {
@@ -153,7 +155,8 @@ function chipKlasse(aktiv) {
 export default function BoerseListe({ projekte = [], basisHref = "/projektboerse/", portal = false, start = {}, karte = true }) {
   const sprache = useSprache();
   const en = sprache === "en";
-  const t = uebersetze(TEXTE, sprache);
+  const seitenLand = useSeitenLand();
+  const t = uebersetze(TEXTE, sprache, seitenLand); // Schweiz: ohne „ß“
   const [f, setF] = useState({ ...LEER, ...start });
   const [offen, setOffen] = useState(false);
   const setze = (k, v) => setF((x) => ({ ...x, [k]: v }));
@@ -202,7 +205,7 @@ export default function BoerseListe({ projekte = [], basisHref = "/projektboerse
         <div className="flex flex-wrap gap-2">
           <button type="button" className={chipKlasse(!f.typ)} aria-pressed={!f.typ} onClick={() => setze("typ", "")}>{t.alle}</button>
           {Object.entries(PROJEKT_TYPEN).map(([k, v]) => (
-            <button key={k} type="button" className={chipKlasse(f.typ === k)} aria-pressed={f.typ === k} onClick={() => setze("typ", f.typ === k ? "" : k)}>{en ? BEGRIFFE_EN.projektTyp[k] ?? v : v}</button>
+            <button key={k} type="button" className={chipKlasse(f.typ === k)} aria-pressed={f.typ === k} onClick={() => setze("typ", f.typ === k ? "" : k)}>{en ? BEGRIFFE_EN.projektTyp[k] ?? v : schreibweiseFuer(v, seitenLand)}</button>
           ))}
         </div>
       </fieldset>

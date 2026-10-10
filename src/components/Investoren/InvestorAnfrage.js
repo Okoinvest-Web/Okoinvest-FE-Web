@@ -1,5 +1,6 @@
 "use client";
 
+import { useSeitenLand } from "@/components/Land/LandKontext";
 import { useState } from "react";
 import { cn } from "@/components/ui/cn";
 import AnfrageFormular from "@/components/Plattform/AnfrageFormular";
@@ -47,7 +48,7 @@ const TEXTE = {
 
 export default function InvestorAnfrage({ phasen, dunkel = false }) {
   const sprache = useSprache();
-  const t = uebersetze(TEXTE, sprache);
+  const t = uebersetze(TEXTE, sprache, useSeitenLand()); // Schweiz: ohne „ß“
   const [ticket, setTicket] = useState("5-20");
   const [gewaehltePhasen, setPhasen] = useState(["satzung", "rtb"]);
   const [laender, setLaender] = useState(["DE"]);

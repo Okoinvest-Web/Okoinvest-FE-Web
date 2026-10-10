@@ -81,6 +81,10 @@ Workflow „Ländermodell“ (`uebergabe/workflows/laendermodell.workflow.js`), 
 
 Alle vier Phasen sind abgeschlossen und committet (siehe Abschnitt 6).
 
+**Welle 3 ABGESCHLOSSEN und committet am 10.10.2026** (11 Commits `c801fea` … `bf12ce4`): QM-Abnahme grün (`qa/out/verify-2026-10-10T16-43-29.json`, 834 Tests, 195 Charakterisierung, 27 E2E). 12 neue Seiten, alle noindex bis zur fachlichen Freigabe (E6): /rechner/gewerbestrom-check, /rechner/flaechenpass, /marktdaten/ausschreibungen, /energiegemeinschaften/software/preise + /wechsel-check + /white-label, /kommunen/ratsvorlage + /widmungskit, /projektboerse/neutralitaet + /muster-nda, /newsletter, /newsroom. Offene Inhaberpunkte: siehe Abnahmeprotokoll `werkzeuge/armee/welle3-abnahme.md` (A: E6 benennen, Rechtsabteilung NDA/Beschlussmuster/Newsletter-Texte/Karten-Datenschutz, B7-Preise eintragen, Newsletter-Versanddienst; B: B5-Aufschlag, Sachsen-Wert, BNetzA-Rückfrage, CH-Ertragswert; C: Berichtsseite ohne CH-Schreibweise, Menüaufnahme, Pressekontakt, Demo-Testdaten). **Nächster Schritt laut Auftragsbuch: Plattform-Armee, danach Welle 4.**
+
+**Ursprünglicher Welle-3-Start am 09.10.2026** (Skript `uebergabe/workflows/welle3.workflow.js`): Pakete W3-0 (QM-Reste Ländermodell), B5 Rechnungs-Check Gewerbestrom DE, B9 Ausschreibungs-Monitor, B6 Flächenpass, B7 EG-Software AT, B8 Kommunal 2.0, B10 neutrale Börse, NL Newsletter/Newsroom; je Paket Bau + Prüfung, dann QM mit Commit-Vorschlag. Inhaberentscheidung dazu: deutsche Beispielwerte auf AT/CH-Seiten bleiben, aber gekennzeichnet. Falls beim Rechnerwechsel unterbrochen: `git status` prüfen, fertige Pakete stehen im Code; Skript mit einem Hinweis auf den Stand neu starten.
+
 **Nächste Schritte:**
 - Die offenen QM-Punkte mit dem Inhaber klären (Abschnitt 6).
 - Welle 3 und 4 laut Masterplan (`docs/MASTERPLAN-DACH.md`), danach sofort die Plattform-Armee (`werkzeuge/armee/auftragsbuch.md`).

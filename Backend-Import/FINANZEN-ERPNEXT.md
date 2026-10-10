@@ -116,8 +116,14 @@ Geprüft beim Erzeugen jedes Belegs (`steuer.pflichtangaben_pruefen`); Fehlendes
 | Bezeichnung „Gutschrift“ | ✔ (§ 14 Abs. 4 Nr. 10) | § 11 Abs. 7–8 (Vereinbarung, Widerspruchsrecht) | Titel „Gutschrift – Pachtabrechnung“; Gutschriftsverfahren im Pachtvertrag vereinbaren |
 | Kleinunternehmer-Hinweis | § 19 UStG | § 6 Abs. 1 Z 27 | Vorlagen „Kleinunternehmer“ |
 
-Kleinbetragsrechnungen und Sonderfälle (z. B. Anzahlungen) sind nicht abgebildet. CH (MWSTG Art. 26) sinngemäß – Registrierung
-in der Schweiz prüfen.
+**Kleinbetragsrechnungen** sind abgebildet (AT bis 400 € brutto § 11 Abs. 6 UStG 1994, DE bis 250 € brutto § 33 UStDV):
+Empfängerangaben entfallen, in DE auch der Leistungszeitraum; nicht bei Reverse Charge/nicht steuerbar und nicht für
+Gutschriften (`steuer.kleinbetrag_info`). Sonderfälle (z. B. Anzahlungen) sind nicht abgebildet. CH (MWSTG Art. 26,
+Kleinbetrag 400 CHF Art. 26 Abs. 3) sinngemäß – Registrierung in der Schweiz prüfen.
+
+Der Monatsabschluss zeigt eine **USt-Verprobung** (Netto/USt je Steuervorlage, Stornos negativ, nach Rechnungsdatum =
+Soll-Besteuerung) als Vorbereitung von UVA/UStVA/MWST-Abrechnung (`buchhaltung_kern.ust_verprobung`); sie ist keine
+Steuermeldung und enthält keine Vorsteuer.
 
 ## Steuervorlagen (Vorschlag – mit Steuerberatung abstimmen)
 

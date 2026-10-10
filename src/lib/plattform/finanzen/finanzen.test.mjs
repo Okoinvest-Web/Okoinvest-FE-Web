@@ -202,3 +202,55 @@ test("Zahlungsaufteilung: je Eigentümer eigener Beleg, centgenau", () => {
   assert.equal(aufteilungGilt({ empfaenger: [{}], ab: "2026-07-01" }, { bis: "2026-06-30" }), false);
   assert.equal(aufteilungGilt({ empfaenger: [{}], ab: "2026-07-01" }, { bis: "2026-07-31" }), true);
 });
+
+test("Kleinbetragsrechnung: Grenzen AT 400 € / DE 250 €, nicht bei Reverse Charge und Gutschrift", async () => {
+  const { kleinbetragInfo } = await import("./steuer.js");
+  const basis = (x = {}) => ({ beleg: "rechnung", art: "contracting", nummer: "CR-2026-00001", rechnungsdatum: "2026-09-30", positionen: [{}], zeitraum: { von: "2026-09-01", bis: "2026-09-30" }, ...x });
+  // AT: 360 € brutto ohne Empfängerangaben und ohne UID des Ausstellers vollständig (§ 11 Abs. 6 UStG 1994)
+  const at = basis({ aussteller: { name: "ÖkoInvest GmbH", anschrift: "Ostermiething", land: "AT" }, netto: 300, brutto: 360, steuer: { vorlage: "AT-USt-20", satz: 0.2, art: "ust", betrag: 60 } });
+  assert.equal(kleinbetragInfo(at).kleinbetrag, true);
+  assert.deepEqual(pflichtangabenPruefen(at), []);
+  // AT über 400 € brutto: Empfängerangaben fehlen wieder
+  const atGross = { ...at, netto: 400, brutto: 480, steuer: { ...at.steuer, betrag: 80 } };
+  assert.equal(kleinbetragInfo(atGross).kleinbetrag, false);
+  assert.ok(pflichtangabenPruefen(atGross).includes("Name des Leistungsempfängers"));
+  // DE: 238 € brutto, auch ohne Leistungszeitraum vollständig (§ 33 UStDV)
+  const de = basis({ aussteller: { name: "SPV GmbH", anschrift: "München", land: "DE" }, zeitraum: null, netto: 200, brutto: 238, steuer: { vorlage: "DE-USt-19", satz: 0.19, art: "ust", betrag: 38 } });
+  assert.deepEqual(pflichtangabenPruefen(de), []);
+  // DE über 250 €: keine Erleichterung
+  assert.ok(pflichtangabenPruefen({ ...de, netto: 260, brutto: 309.4 }).includes("Leistungszeitraum"));
+  // Reverse Charge: nie Kleinbetrag (§ 33 Satz 2 UStDV) – UID des Empfängers bleibt Pflicht
+  const rc = basis({ aussteller: { name: "ÖkoInvest GmbH", anschrift: "Ostermiething", land: "DE", uid: "ATU76000505" }, netto: 100, brutto: 100, steuer: { vorlage: "DE-RC-13b", satz: 0, art: "reverse_charge", betrag: 0, text: "Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)." } });
+  assert.equal(kleinbetragInfo(rc).kleinbetrag, false);
+  assert.ok(pflichtangabenPruefen(rc).includes("UID des Leistungsempfängers (Reverse Charge)"));
+  // Gutschrift: nie Kleinbetrag (Gutschriftsverfahren)
+  assert.equal(kleinbetragInfo(basis({ beleg: "gutschrift", aussteller: { land: "AT" }, brutto: 100 })).kleinbetrag, false);
+});
+
+test("Demo-Beleg je Steuervorlage: Pflichtangaben vollständig, Steuer rechnet", async () => {
+  const { STEUERVORLAGEN } = await import("./steuer.js");
+  for (const [id, v] of Object.entries(STEUERVORLAGEN)) {
+    const s = steuerBerechnen(1000, id);
+    assert.equal(s.brutto, rundErwartet(1000, v.satz), id);
+    assert.equal(s.betrag === 0 ? 0 : s.satz, s.betrag === 0 ? 0 : v.satz, id);
+    const beleg = {
+      beleg: "rechnung", art: "contracting", titel: "Rechnung", nummer: "CR-2026-00042", rechnungsdatum: "2026-09-30",
+      zeitraum: { von: "2026-09-01", bis: "2026-09-30" }, positionen: [{ text: "Strom", menge: 1000, preis: 1, betrag: 1000 }],
+      netto: s.netto, brutto: s.brutto, steuer: s,
+      aussteller: { name: "ÖkoInvest GmbH", anschrift: "Gewerbegebiet 10, 5121 Ostermiething", land: v.land, uid: "ATU76000505" },
+      empfaenger: { name: "Kunde GmbH", anschrift: "Musterweg 1", uid: "ATU00000000" },
+    };
+    assert.deepEqual(pflichtangabenPruefen(beleg), [], `Pflichtangaben ${id}`);
+    // Steuerfreie/RC-Vorlagen tragen den Befreiungs- bzw. Übergangshinweis
+    if (s.satz === 0) assert.ok(s.text.length > 0, `Hinweistext ${id}`);
+  }
+  function rundErwartet(netto, satz) {
+    return Math.round((netto + netto * satz) * 100) / 100;
+  }
+});
+
+test("CH-MWST 8,1 % centgenau", () => {
+  const s = steuerBerechnen(1234.56, "CH-MWST-81");
+  assert.equal(s.betrag, 100);
+  assert.equal(s.brutto, 1334.56);
+});

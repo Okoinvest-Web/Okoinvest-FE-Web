@@ -10,7 +10,8 @@
 //   DE  UStVA bis 10. des Folgemonats (§ 18 Abs. 1 UStG; Dauerfristverlängerung + 1 Monat); ZM bis 25. des Folgemonats (§ 18a UStG)
 //   CH  MWST-Abrechnung in der Regel quartalsweise, 60 Tage nach Periodenende (Art. 71 MWSTG)
 
-import { monatsZeitraum, plusTage, datumDe } from "../finanzen/basis.js";
+import { monatsZeitraum, plusTage, datumDe, rund2 } from "../finanzen/basis.js";
+import { STEUERVORLAGEN } from "../finanzen/steuer.js";
 
 export const ABSCHLUSS_PUNKTE = [
   { id: "contracting_lauf", titel: "Contracting-Abrechnung des Monats erstellt", auto: true, pflicht: true, text: "Abrechnungslauf Contracting für den Monat ausgeführt (Monatswerte der Messpunkte)." },
@@ -75,4 +76,41 @@ export function abschlussBewerten(monat, fakten = {}, manuell = {}) {
   });
   const offen = punkte.filter((p) => p.pflicht && !p.erledigt);
   return { monat, punkte, offen: offen.map((p) => p.titel), bereit: offen.length === 0, erledigt: punkte.filter((p) => p.erledigt).length, gesamt: punkte.length, fristen };
+}
+
+// ------------------------------------------------------------------ USt-Verprobung
+
+/**
+ * Umsatzsteuer-Verprobung eines Monats als Vorbereitung von UVA/UStVA/MWST-Abrechnung: Summen Netto/Steuer/Brutto
+ * je Steuervorlage aus Belegen (nach Rechnungsdatum, auch später stornierte – der Storno zählt in seinem Monat
+ * negativ). KEINE Steuermeldung, nur die Zahlen für die Steuerberatung (Soll-Besteuerung nach Rechnungsdatum).
+ */
+export function ustVerprobung(monat, belege = [], stornos = []) {
+  const { von, bis } = monatsZeitraum(monat);
+  const im = (d) => d && String(d).slice(0, 10) >= von && String(d).slice(0, 10) <= bis;
+  const je = {};
+  const zaehle = (vorlageId, netto, steuer, storno) => {
+    const id = vorlageId || "ohne";
+    const v = STEUERVORLAGEN[id];
+    const z = (je[id] ||= { vorlage: id, label: v?.label || "Ohne Steuervorlage", land: v?.land || "", satz: v?.satz ?? null, art: v?.art || "unbekannt", anzahl: 0, stornos: 0, netto: 0, steuer: 0, brutto: 0 });
+    z[storno ? "stornos" : "anzahl"]++;
+    z.netto = rund2(z.netto + (Number(netto) || 0));
+    z.steuer = rund2(z.steuer + (Number(steuer) || 0));
+    z.brutto = rund2(z.netto + z.steuer);
+  };
+  for (const b of belege) if (im(b.rechnungsdatum)) zaehle(b.steuer?.vorlage, b.netto, b.steuer?.betrag, false);
+  for (const s of stornos) if (im(s.datum)) zaehle(s.steuer?.vorlage, s.netto, s.steuer?.betrag, true);
+  const zeilen = Object.values(je).sort((a, b) => String(a.vorlage).localeCompare(String(b.vorlage)));
+  return {
+    monat,
+    zeilen,
+    summen: {
+      netto: rund2(zeilen.reduce((s, z) => s + z.netto, 0)),
+      steuer: rund2(zeilen.reduce((s, z) => s + z.steuer, 0)),
+      brutto: rund2(zeilen.reduce((s, z) => s + z.brutto, 0)),
+      belege: zeilen.reduce((s, z) => s + z.anzahl + z.stornos, 0),
+    },
+    ohneVorlage: je.ohne ? je.ohne.anzahl + je.ohne.stornos : 0,
+    hinweis: "Verprobung nach Rechnungsdatum (Soll-Besteuerung) – Grundlage für UVA/UStVA/MWST, keine Steuermeldung. Mit der Steuerberatung abstimmen (Ist-Besteuerung, Vorsteuer und Sonderfälle sind nicht enthalten).",
+  };
 }

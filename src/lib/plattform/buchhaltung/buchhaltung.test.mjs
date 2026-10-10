@@ -183,3 +183,29 @@ test("Monatsabschluss: Pflichtpunkte, Übersteuerung, Steuerfristen", () => {
   assert.match(f[0].text, /31\.01\.2027/);
   assert.match(f[1].text, /10\.01\.2027/);
 });
+
+test("USt-Verprobung: Summen je Vorlage, Storno negativ, ohne Vorlage gezählt", async () => {
+  const { ustVerprobung } = await import("./abschluss.js");
+  const belege = [
+    { rechnungsdatum: "2026-09-05", netto: 1000, steuer: { vorlage: "AT-USt-20", betrag: 200 } },
+    { rechnungsdatum: "2026-09-20", netto: 500, steuer: { vorlage: "AT-USt-20", betrag: 100 } },
+    { rechnungsdatum: "2026-09-21", netto: 400, steuer: { vorlage: "DE-RC-13b", betrag: 0 } },
+    { rechnungsdatum: "2026-08-31", netto: 999, steuer: { vorlage: "AT-USt-20", betrag: 199.8 } }, // Vormonat: zählt nicht
+    { rechnungsdatum: "2026-09-22", netto: 50, steuer: {} }, // ohne Vorlage
+  ];
+  const stornos = [{ datum: "2026-09-25", netto: -500, steuer: { vorlage: "AT-USt-20", betrag: -100 } }];
+  const u = ustVerprobung("2026-09", belege, stornos);
+  const at = u.zeilen.find((z) => z.vorlage === "AT-USt-20");
+  assert.equal(at.netto, 1000);
+  assert.equal(at.steuer, 200);
+  assert.equal(at.anzahl, 2);
+  assert.equal(at.stornos, 1);
+  const rc = u.zeilen.find((z) => z.vorlage === "DE-RC-13b");
+  assert.equal(rc.steuer, 0);
+  assert.equal(rc.art, "reverse_charge");
+  assert.equal(u.ohneVorlage, 1);
+  assert.equal(u.summen.netto, 1450);
+  assert.equal(u.summen.steuer, 200);
+  assert.equal(u.summen.belege, 5);
+  assert.ok(u.hinweis.includes("keine Steuermeldung"));
+});

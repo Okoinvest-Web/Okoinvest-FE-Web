@@ -478,7 +478,8 @@ function fakten(db, monat, heute) {
 function abschlussAusgabe(db, monat, heute) {
   const a = db.buchhaltung.abschluesse.find((x) => x.monat === monat) || { monat, status: "offen", manuell: {}, verlauf: [] };
   const bewertung = a.status === "abgeschlossen" && a.snapshot ? a.snapshot : B.abschlussBewerten(monat, fakten(db, monat, heute), a.manuell || {});
-  return { ...bewertung, status: a.status, statusLabel: B.ABSCHLUSS_STATUS[a.status] || a.status, am: a.am || null, vonName: a.vonName || "", verlauf: a.verlauf || [] };
+  const ust = B.ustVerprobung(monat, db.finanzen.belege, db.buchhaltung.stornos);
+  return { ...bewertung, ust, status: a.status, statusLabel: B.ABSCHLUSS_STATUS[a.status] || a.status, am: a.am || null, vonName: a.vonName || "", verlauf: a.verlauf || [] };
 }
 
 export async function bhAbschluss(n, monat) {

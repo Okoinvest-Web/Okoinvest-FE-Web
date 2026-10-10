@@ -190,6 +190,27 @@ export default async function BuchhaltungSeite({ searchParams }) {
           <Karte titel="Steuerfristen (Orientierung)" untertitel="Nach aktuellem Stand – mit der Steuerberatung abstimmen">
             <ul className="space-y-2 text-[13.5px] text-ink-700">{a.fristen.map((f) => <li key={f.land}><strong>{f.land}</strong> · {f.text}</li>)}</ul>
           </Karte>
+          {a.ust && (
+            <Karte titel="USt-Verprobung des Monats" untertitel={`${a.ust.summen.belege} Belege nach Rechnungsdatum – Vorbereitung UVA/UStVA/MWST`} innen="p-0">
+              {a.ust.zeilen.length === 0 ? <p className="p-4 text-[13.5px] text-ink-600">Keine Belege im Monat.</p> : (
+                <table className="w-full text-[13px]">
+                  <thead><tr className="border-b border-ink-100 text-left text-ink-500"><th className="px-4 py-2 font-semibold">Steuervorlage</th><th className="px-2 py-2 text-right font-semibold">Belege</th><th className="px-2 py-2 text-right font-semibold">Netto</th><th className="px-4 py-2 text-right font-semibold">USt</th></tr></thead>
+                  <tbody>
+                    {a.ust.zeilen.map((z) => (
+                      <tr key={z.vorlage} className="border-b border-ink-100/60 text-ink-700">
+                        <td className="px-4 py-1.5">{z.label}{z.stornos > 0 && <span className="text-ink-400"> · {z.stornos} Storno{z.stornos > 1 ? "s" : ""}</span>}</td>
+                        <td className="px-2 py-1.5 text-right">{z.anzahl + z.stornos}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums">{euro(z.netto)}</td>
+                        <td className="px-4 py-1.5 text-right tabular-nums">{euro(z.steuer)}</td>
+                      </tr>
+                    ))}
+                    <tr className="font-semibold text-ink-800"><td className="px-4 py-2">Summe</td><td className="px-2 py-2 text-right">{a.ust.summen.belege}</td><td className="px-2 py-2 text-right tabular-nums">{euro(a.ust.summen.netto)}</td><td className="px-4 py-2 text-right tabular-nums">{euro(a.ust.summen.steuer)}</td></tr>
+                  </tbody>
+                </table>
+              )}
+              <p className="px-4 pb-3 pt-2 text-[12.5px] text-ink-500">{a.ust.hinweis}</p>
+            </Karte>
+          )}
           {a.verlauf.length > 0 && <Karte titel="Verlauf"><ul className="space-y-1 text-[13px] text-ink-600">{a.verlauf.slice().reverse().map((x, i) => <li key={i}>{tag(x.am.slice(0, 10))} · {x.vonName}: {x.text}</li>)}</ul></Karte>}
         </div>
       </div>

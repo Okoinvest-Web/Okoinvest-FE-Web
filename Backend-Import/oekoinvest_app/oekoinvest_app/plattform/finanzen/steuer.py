@@ -68,26 +68,48 @@ def steuer_berechnen(netto, vorlage_id):
 	return {"vorlage": vorlage_id, "label": label, "satz": satz, "art": art, "betrag": betrag, "netto": n, "brutto": rund2(n + betrag), "text": text, "rechtsgrundlage": grundlage}
 
 
+# Kleinbetragsrechnungen: erleichterte Pflichtangaben bis zur Bruttogrenze (DE § 33 UStDV, AT § 11 Abs. 6
+# UStG 1994). Nicht bei Reverse Charge / nicht steuerbar und nicht für Gutschriften. CH nicht abgebildet.
+KLEINBETRAG_GRENZEN = {"AT": (400, "§ 11 Abs. 6 UStG 1994"), "DE": (250, "§ 33 UStDV")}
+
+
+def kleinbetrag_info(beleg):
+	"""{kleinbetrag, grenze, norm} – ob der Beleg als Kleinbetragsrechnung gilt (Spiegel von steuer.js)."""
+	a = beleg.get("aussteller") or {}
+	g = KLEINBETRAG_GRENZEN.get(a.get("land"))
+	try:
+		brutto = float(beleg.get("brutto"))
+	except (TypeError, ValueError):
+		brutto = 0
+	art = (beleg.get("steuer") or {}).get("art")
+	klein = bool(g) and beleg.get("beleg") != "gutschrift" and 0 < brutto <= (g[0] if g else 0) and art not in ("reverse_charge", "nicht_steuerbar")
+	return {"kleinbetrag": klein, "grenze": g[0] if g else None, "norm": g[1] if g else ""}
+
+
 def pflichtangaben_pruefen(beleg):
-	"""§ 14 Abs. 4 UStG DE / § 11 Abs. 1 UStG 1994 AT; Gutschrift § 14 Abs. 2 UStG bzw. § 11 Abs. 7 UStG 1994."""
+	"""§ 14 Abs. 4 UStG DE / § 11 Abs. 1 UStG 1994 AT; Gutschrift § 14 Abs. 2 UStG bzw. § 11 Abs. 7 UStG 1994.
+
+	Kleinbetragsrechnungen (KLEINBETRAG_GRENZEN) brauchen keine Empfängerangaben, in DE keinen Leistungszeitraum.
+	"""
 	f = []
 	a = beleg.get("aussteller") or {}
 	e = beleg.get("empfaenger") or beleg.get("partei") or {}
 	st = beleg.get("steuer") or {}
+	klein = kleinbetrag_info(beleg)["kleinbetrag"]
 	if not a.get("name") or not a.get("anschrift"):
 		f.append("Name und Anschrift des leistenden Unternehmers")
-	if not e.get("name"):
+	if not klein and not e.get("name"):
 		f.append("Name des Leistungsempfängers")
-	if not e.get("anschrift"):
+	if not klein and not e.get("anschrift"):
 		f.append("Anschrift des Leistungsempfängers")
-	if not a.get("uid") and not a.get("steuernummer") and beleg.get("art") != "pacht":
+	if not klein and not a.get("uid") and not a.get("steuernummer") and beleg.get("art") != "pacht":
 		f.append("UID bzw. Steuernummer des Ausstellers")
 	if not beleg.get("nummer"):
 		f.append("Fortlaufende Rechnungsnummer")
 	if not beleg.get("rechnungsdatum"):
 		f.append("Ausstellungsdatum")
 	z = beleg.get("zeitraum") or {}
-	if not z.get("von") or not z.get("bis"):
+	if not (klein and a.get("land") == "DE") and (not z.get("von") or not z.get("bis")):
 		f.append("Leistungszeitraum")
 	if not beleg.get("positionen"):
 		f.append("Menge und Art der Leistung")

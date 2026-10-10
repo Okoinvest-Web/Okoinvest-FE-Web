@@ -78,20 +78,43 @@ export function steuerBerechnen(netto, vorlageId, vorlagen = STEUERVORLAGEN) {
 }
 
 /**
+ * Kleinbetragsrechnungen: erleichterte Pflichtangaben bis zur Bruttogrenze (DE § 33 UStDV 250 €,
+ * AT § 11 Abs. 6 UStG 1994 400 €). Gilt NICHT bei Reverse Charge / nicht steuerbaren Leistungen
+ * (DE § 33 Satz 2 UStDV; AT: Übergang der Steuerschuld verlangt die volle Rechnung) und nicht für
+ * Gutschriften (Gutschriftsverfahren). CH (Art. 26 Abs. 3 MWSTG, 400 CHF) ist nicht abgebildet.
+ */
+export const KLEINBETRAG_GRENZEN = {
+  AT: { betrag: 400, norm: "§ 11 Abs. 6 UStG 1994" },
+  DE: { betrag: 250, norm: "§ 33 UStDV" },
+};
+
+/** { kleinbetrag, grenze, norm } – ob der Beleg als Kleinbetragsrechnung gilt */
+export function kleinbetragInfo(beleg = {}) {
+  const g = KLEINBETRAG_GRENZEN[beleg.aussteller?.land];
+  const brutto = Number(beleg.brutto);
+  const art = beleg.steuer?.art;
+  const kleinbetrag = !!g && beleg.beleg !== "gutschrift" && Number.isFinite(brutto) && brutto > 0 && brutto <= g.betrag
+    && !["reverse_charge", "nicht_steuerbar"].includes(art);
+  return { kleinbetrag, grenze: g?.betrag ?? null, norm: g?.norm ?? "" };
+}
+
+/**
  * Pflichtangaben einer Rechnung/Gutschrift (§ 14 Abs. 4 UStG DE, § 11 Abs. 1 UStG 1994 AT; Gutschrift § 14 Abs. 2
  * UStG bzw. § 11 Abs. 7 UStG 1994) – prüft einen Beleg und liefert fehlende Punkte (leere Liste = vollständig).
+ * Kleinbetragsrechnungen (siehe KLEINBETRAG_GRENZEN) brauchen keine Empfängerangaben, in DE keinen Leistungszeitraum.
  */
 export function pflichtangabenPruefen(beleg) {
   const fehlt = [];
   const a = beleg.aussteller || {};
   const e = beleg.empfaenger || {};
+  const { kleinbetrag } = kleinbetragInfo(beleg);
   if (!a.name || !a.anschrift) fehlt.push("Name und Anschrift des leistenden Unternehmers");
-  if (!e.name) fehlt.push("Name des Leistungsempfängers");
-  if (!e.anschrift) fehlt.push("Anschrift des Leistungsempfängers");
-  if (!a.uid && !a.steuernummer && beleg.art !== "pacht") fehlt.push("UID bzw. Steuernummer des Ausstellers");
+  if (!kleinbetrag && !e.name) fehlt.push("Name des Leistungsempfängers");
+  if (!kleinbetrag && !e.anschrift) fehlt.push("Anschrift des Leistungsempfängers");
+  if (!kleinbetrag && !a.uid && !a.steuernummer && beleg.art !== "pacht") fehlt.push("UID bzw. Steuernummer des Ausstellers");
   if (!beleg.nummer) fehlt.push("Fortlaufende Rechnungsnummer");
   if (!beleg.rechnungsdatum) fehlt.push("Ausstellungsdatum");
-  if (!beleg.zeitraum?.von || !beleg.zeitraum?.bis) fehlt.push("Leistungszeitraum");
+  if (!(kleinbetrag && a.land === "DE") && (!beleg.zeitraum?.von || !beleg.zeitraum?.bis)) fehlt.push("Leistungszeitraum");
   if (!beleg.positionen?.length) fehlt.push("Menge und Art der Leistung");
   if (!Number.isFinite(Number(beleg.netto))) fehlt.push("Entgelt (netto)");
   if (!beleg.steuer?.vorlage) fehlt.push("Steuersatz bzw. Hinweis auf Steuerbefreiung");

@@ -132,7 +132,11 @@ export default function Wechsel() {
             ? "Planning a switch? Choose “Switch provider” in the enquiry – we will set the cut-over date and parallel run together."
             : "Sie planen einen Wechsel? Wählen Sie in der Anfrage „Anbieter wechseln“ – Stichtag und Parallellauf legen wir gemeinsam fest."}
         </p>
-        <Button href="#anfrage" pfeil className="shrink-0">{en ? "Discuss a switch" : "Wechsel besprechen"}</Button>
+        <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
+          {/* Paket B7: Wechsel-Check – sinnvoll und möglich? */}
+          <Button href="/energiegemeinschaften/software/wechsel-check" variant="secondary" className="shrink-0">{en ? "Take the switch check" : "Wechsel-Check starten"}</Button>
+          <Button href="#anfrage" pfeil className="shrink-0">{en ? "Discuss a switch" : "Wechsel besprechen"}</Button>
+        </div>
       </Reveal>
     </Section>
   );

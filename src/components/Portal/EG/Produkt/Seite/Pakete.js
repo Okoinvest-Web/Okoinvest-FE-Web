@@ -9,6 +9,7 @@ import Reveal from "@/components/ui/Reveal";
 import { cn } from "@/components/ui/cn";
 import { Haken } from "./teile";
 import { spracheDerAnfrage } from "@/lib/land/seite";
+import Link from "@/components/Land/Link";
 
 const PAKETE = [
   {
@@ -90,13 +91,13 @@ const WORTE = {
     gemeinschaft: "Ihre Gemeinschaft", teilung: "Arbeitsteilung: ", eyebrow: "Pakete", titel: "So viel Unterstützung, wie Ihre Gemeinschaft braucht",
     lead: "Vom Werkzeug für selbstverwaltete Gemeinschaften bis zum kompletten Betrieb. Preise auf Anfrage – wir kalkulieren je Gemeinschaft nach Größe und Leistungsumfang und legen das Angebot transparent dar.",
     welches: "Welches Paket passt?", schwerpunkte: "Schwerpunkte", preis: "Preis nach Größe", aufAnfrage: "auf Anfrage", anfragen: (t) => `${t} anfragen`,
-    unsicher: "Noch unsicher?", unsicherText: "Schildern Sie kurz Ihre Lage – wir schlagen Ihnen das passende Paket vor und kalkulieren es offen.", anbieter: "Sie haben schon einen Anbieter?",
+    unsicher: "Noch unsicher?", unsicherText: "Schildern Sie kurz Ihre Lage – wir schlagen Ihnen das passende Paket vor und kalkulieren es offen.", anbieter: "Sie haben schon einen Anbieter?", preisblatt: "Zum Preisblatt",
   },
   en: {
     gemeinschaft: "Your community", teilung: "Division of work: ", eyebrow: "Packages", titel: "As much support as your community needs",
     lead: "From a tool for self-managed communities to complete operation. Prices on request – we calculate per community by size and scope of services and set out the offer transparently.",
     welches: "Which package fits?", schwerpunkte: "Focus areas", preis: "Price by size", aufAnfrage: "on request", anfragen: null,
-    unsicher: "Still unsure?", unsicherText: "Briefly describe your situation – we will suggest the right package and calculate it openly.", anbieter: "Already have a provider?",
+    unsicher: "Still unsure?", unsicherText: "Briefly describe your situation – we will suggest the right package and calculate it openly.", anbieter: "Already have a provider?", preisblatt: "View the price sheet",
   },
 };
 const worte = () => WORTE[spracheDerAnfrage() === "en" ? "en" : "de"];
@@ -252,6 +253,15 @@ export default function Pakete() {
         <p className="ov-klein max-w-2xl text-ink-700">
           <span className="font-semibold text-ink-900">{w.unsicher}</span> {w.unsicherText}
         </p>
+        {/* Paket B7: Preisblatt mit Aufbau Einrichtung, Grundgebühr, je Zählpunkt */}
+        <div className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2">
+        <Link
+          href="/energiegemeinschaften/software/preise"
+          className="group inline-flex shrink-0 items-center gap-1.5 rounded-full text-[15px] font-semibold text-ov-700 underline-offset-4 hover:text-ov-800 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ov-600"
+        >
+          {w.preisblatt}
+          <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+        </Link>
         <a
           href="#wechsel"
           className="group inline-flex shrink-0 items-center gap-1.5 rounded-full text-[15px] font-semibold text-ov-700 underline-offset-4 hover:text-ov-800 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ov-600"
@@ -259,6 +269,7 @@ export default function Pakete() {
           {w.anbieter}
           <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
         </a>
+        </div>
       </Reveal>
     </Section>
   );

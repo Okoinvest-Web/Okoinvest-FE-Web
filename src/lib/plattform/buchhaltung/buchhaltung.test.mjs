@@ -192,8 +192,12 @@ test("USt-Verprobung: Summen je Vorlage, Storno negativ, ohne Vorlage gezählt",
     { rechnungsdatum: "2026-09-21", netto: 400, steuer: { vorlage: "DE-RC-13b", betrag: 0 } },
     { rechnungsdatum: "2026-08-31", netto: 999, steuer: { vorlage: "AT-USt-20", betrag: 199.8 } }, // Vormonat: zählt nicht
     { rechnungsdatum: "2026-09-22", netto: 50, steuer: {} }, // ohne Vorlage
+    { rechnungsdatum: "2026-09-10", beleg: "gutschrift", netto: 800, steuer: { vorlage: "AT-Pacht-frei", betrag: 0 } }, // Pacht-Gutschrift: Eingangsseite
   ];
-  const stornos = [{ datum: "2026-09-25", netto: -500, steuer: { vorlage: "AT-USt-20", betrag: -100 } }];
+  const stornos = [
+    { datum: "2026-09-25", netto: -500, steuer: { vorlage: "AT-USt-20", betrag: -100 } },
+    { datum: "2026-09-26", ursprung: "gutschrift", netto: -800, steuer: { vorlage: "AT-Pacht-frei", betrag: 0 } }, // Storno der Gutschrift: ebenfalls Eingangsseite
+  ];
   const u = ustVerprobung("2026-09", belege, stornos);
   const at = u.zeilen.find((z) => z.vorlage === "AT-USt-20");
   assert.equal(at.netto, 1000);
@@ -207,5 +211,12 @@ test("USt-Verprobung: Summen je Vorlage, Storno negativ, ohne Vorlage gezählt",
   assert.equal(u.summen.netto, 1450);
   assert.equal(u.summen.steuer, 200);
   assert.equal(u.summen.belege, 5);
+  // Gutschriften (Gutschriftsverfahren) zählen nicht in die Ausgangsumsätze, sondern separat
+  assert.ok(!u.zeilen.some((z) => z.vorlage === "AT-Pacht-frei"));
+  assert.equal(u.gutschriften.summen.belege, 2);
+  assert.equal(u.gutschriften.summen.netto, 0); // 800 − 800 (Storno)
+  const pf = u.gutschriften.zeilen.find((z) => z.vorlage === "AT-Pacht-frei");
+  assert.equal(pf.anzahl, 1);
+  assert.equal(pf.stornos, 1);
   assert.ok(u.hinweis.includes("keine Steuermeldung"));
 });

@@ -122,8 +122,9 @@ Gutschriften (`steuer.kleinbetrag_info`). Sonderfälle (z. B. Anzahlungen) sind 
 Kleinbetrag 400 CHF Art. 26 Abs. 3) sinngemäß – Registrierung in der Schweiz prüfen.
 
 Der Monatsabschluss zeigt eine **USt-Verprobung** (Netto/USt je Steuervorlage, Stornos negativ, nach Rechnungsdatum =
-Soll-Besteuerung) als Vorbereitung von UVA/UStVA/MWST-Abrechnung (`buchhaltung_kern.ust_verprobung`); sie ist keine
-Steuermeldung und enthält keine Vorsteuer.
+Soll-Besteuerung) als Vorbereitung von UVA/UStVA/MWST-Abrechnung (`buchhaltung_kern.ust_verprobung`); sie zählt nur
+Ausgangsumsätze – Gutschriften (Gutschriftsverfahren Pacht, Eingangsseite) stehen separat unter `gutschriften` –
+und ist keine Steuermeldung, Vorsteuer ist nicht enthalten.
 
 ## Steuervorlagen (Vorschlag – mit Steuerberatung abstimmen)
 

@@ -642,12 +642,17 @@ def steuer_fristen(monat):
 
 
 def ust_verprobung(monat, belege=None, stornos=None):
-	"""USt-Verprobung des Monats je Steuervorlage (Spiegel von buchhaltung/abschluss.js, ustVerprobung)."""
+	"""USt-Verprobung des Monats je Steuervorlage (Spiegel von buchhaltung/abschluss.js, ustVerprobung).
+
+	Gutschriften (Gutschriftsverfahren, z. B. Pacht: Verpächter ist leistender Unternehmer, für uns
+	Eingangsseite/Vorsteuer) zählen nicht in die Ausgangsumsätze, sondern separat unter "gutschriften".
+	"""
 	zr = monats_zeitraum(monat)
 	von, bis = zr["von"], zr["bis"]
-	je = {}
+	ausgang = {}
+	eingang = {}
 
-	def zaehle(vorlage_id, netto, steuer, storno):
+	def zaehle(je, vorlage_id, netto, steuer, storno):
 		vid = vorlage_id or "ohne"
 		v = STEUERVORLAGEN.get(vid)
 		z = je.setdefault(vid, {"vorlage": vid, "label": v[3] if v else "Ohne Steuervorlage", "land": v[0] if v else "", "satz": v[1] if v else None, "art": v[2] if v else "unbekannt", "anzahl": 0, "stornos": 0, "netto": 0, "steuer": 0, "brutto": 0})
@@ -659,23 +664,35 @@ def ust_verprobung(monat, belege=None, stornos=None):
 	for b in belege or []:
 		d = str(b.get("rechnungsdatum") or "")[:10]
 		if von <= d <= bis:
-			zaehle((b.get("steuer") or {}).get("vorlage"), b.get("netto"), (b.get("steuer") or {}).get("betrag"), False)
+			je = eingang if b.get("beleg") == "gutschrift" else ausgang
+			zaehle(je, (b.get("steuer") or {}).get("vorlage"), b.get("netto"), (b.get("steuer") or {}).get("betrag"), False)
 	for s in stornos or []:
 		d = str(s.get("datum") or "")[:10]
 		if von <= d <= bis:
-			zaehle((s.get("steuer") or {}).get("vorlage"), s.get("netto"), (s.get("steuer") or {}).get("betrag"), True)
-	zeilen = sorted(je.values(), key=lambda z: str(z["vorlage"]))
+			je = eingang if s.get("ursprung") == "gutschrift" else ausgang
+			zaehle(je, (s.get("steuer") or {}).get("vorlage"), s.get("netto"), (s.get("steuer") or {}).get("betrag"), True)
+
+	def block(je):
+		zeilen = sorted(je.values(), key=lambda z: str(z["vorlage"]))
+		return {
+			"zeilen": zeilen,
+			"summen": {
+				"netto": rund2(sum(z["netto"] for z in zeilen)),
+				"steuer": rund2(sum(z["steuer"] for z in zeilen)),
+				"brutto": rund2(sum(z["brutto"] for z in zeilen)),
+				"belege": sum(z["anzahl"] + z["stornos"] for z in zeilen),
+			},
+		}
+
+	a = block(ausgang)
+	ohne = (ausgang["ohne"]["anzahl"] + ausgang["ohne"]["stornos"] if "ohne" in ausgang else 0) + (eingang["ohne"]["anzahl"] + eingang["ohne"]["stornos"] if "ohne" in eingang else 0)
 	return {
 		"monat": monat,
-		"zeilen": zeilen,
-		"summen": {
-			"netto": rund2(sum(z["netto"] for z in zeilen)),
-			"steuer": rund2(sum(z["steuer"] for z in zeilen)),
-			"brutto": rund2(sum(z["brutto"] for z in zeilen)),
-			"belege": sum(z["anzahl"] + z["stornos"] for z in zeilen),
-		},
-		"ohneVorlage": (je["ohne"]["anzahl"] + je["ohne"]["stornos"]) if "ohne" in je else 0,
-		"hinweis": "Verprobung nach Rechnungsdatum (Soll-Besteuerung) – Grundlage für UVA/UStVA/MWST, keine Steuermeldung. Mit der Steuerberatung abstimmen (Ist-Besteuerung, Vorsteuer und Sonderfälle sind nicht enthalten).",
+		"zeilen": a["zeilen"],
+		"summen": a["summen"],
+		"gutschriften": block(eingang),
+		"ohneVorlage": ohne,
+		"hinweis": "Verprobung nach Rechnungsdatum (Soll-Besteuerung) – Grundlage für UVA/UStVA/MWST, keine Steuermeldung. Gutschriften (Gutschriftsverfahren, z. B. Pacht) sind Eingangsseite und separat ausgewiesen. Mit der Steuerberatung abstimmen (Ist-Besteuerung, Vorsteuer und Sonderfälle sind nicht enthalten).",
 	}
 
 

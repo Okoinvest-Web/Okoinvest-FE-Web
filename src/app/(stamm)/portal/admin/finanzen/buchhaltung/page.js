@@ -191,7 +191,7 @@ export default async function BuchhaltungSeite({ searchParams }) {
             <ul className="space-y-2 text-[13.5px] text-ink-700">{a.fristen.map((f) => <li key={f.land}><strong>{f.land}</strong> · {f.text}</li>)}</ul>
           </Karte>
           {a.ust && (
-            <Karte titel="USt-Verprobung des Monats" untertitel={`${a.ust.summen.belege} Belege nach Rechnungsdatum – Vorbereitung UVA/UStVA/MWST`} innen="p-0">
+            <Karte titel="USt-Verprobung des Monats (Ausgangsumsätze)" untertitel={`${a.ust.summen.belege} Belege nach Rechnungsdatum – Vorbereitung UVA/UStVA/MWST`} innen="p-0">
               {a.ust.zeilen.length === 0 ? <p className="p-4 text-[13.5px] text-ink-600">Keine Belege im Monat.</p> : (
                 <table className="w-full text-[13px]">
                   <thead><tr className="border-b border-ink-100 text-left text-ink-500"><th className="px-4 py-2 font-semibold">Steuervorlage</th><th className="px-2 py-2 text-right font-semibold">Belege</th><th className="px-2 py-2 text-right font-semibold">Netto</th><th className="px-4 py-2 text-right font-semibold">USt</th></tr></thead>
@@ -207,6 +207,12 @@ export default async function BuchhaltungSeite({ searchParams }) {
                     <tr className="font-semibold text-ink-800"><td className="px-4 py-2">Summe</td><td className="px-2 py-2 text-right">{a.ust.summen.belege}</td><td className="px-2 py-2 text-right tabular-nums">{euro(a.ust.summen.netto)}</td><td className="px-4 py-2 text-right tabular-nums">{euro(a.ust.summen.steuer)}</td></tr>
                   </tbody>
                 </table>
+              )}
+              {a.ust.gutschriften?.summen?.belege > 0 && (
+                <div className="border-t border-ink-100 px-4 py-2 text-[13px] text-ink-700">
+                  <strong>Gutschriften (Eingangsseite, Gutschriftsverfahren):</strong>{" "}
+                  {a.ust.gutschriften.zeilen.map((z) => `${z.label}: ${z.anzahl + z.stornos} Belege, Netto ${euro(z.netto)}, USt ${euro(z.steuer)}`).join(" · ")}
+                </div>
               )}
               <p className="px-4 pb-3 pt-2 text-[12.5px] text-ink-500">{a.ust.hinweis}</p>
             </Karte>

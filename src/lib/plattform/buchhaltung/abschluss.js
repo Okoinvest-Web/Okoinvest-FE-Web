@@ -83,13 +83,16 @@ export function abschlussBewerten(monat, fakten = {}, manuell = {}) {
 /**
  * Umsatzsteuer-Verprobung eines Monats als Vorbereitung von UVA/UStVA/MWST-Abrechnung: Summen Netto/Steuer/Brutto
  * je Steuervorlage aus Belegen (nach Rechnungsdatum, auch später stornierte – der Storno zählt in seinem Monat
- * negativ). KEINE Steuermeldung, nur die Zahlen für die Steuerberatung (Soll-Besteuerung nach Rechnungsdatum).
+ * negativ). Gutschriften (Gutschriftsverfahren, z. B. Pacht: der Verpächter ist leistender Unternehmer, für uns
+ * Eingangsseite/Vorsteuer) zählen NICHT in die Ausgangsumsätze, sondern stehen separat unter `gutschriften`.
+ * KEINE Steuermeldung, nur die Zahlen für die Steuerberatung (Soll-Besteuerung nach Rechnungsdatum).
  */
 export function ustVerprobung(monat, belege = [], stornos = []) {
   const { von, bis } = monatsZeitraum(monat);
   const im = (d) => d && String(d).slice(0, 10) >= von && String(d).slice(0, 10) <= bis;
-  const je = {};
-  const zaehle = (vorlageId, netto, steuer, storno) => {
+  const ausgang = {};
+  const eingang = {};
+  const zaehle = (je, vorlageId, netto, steuer, storno) => {
     const id = vorlageId || "ohne";
     const v = STEUERVORLAGEN[id];
     const z = (je[id] ||= { vorlage: id, label: v?.label || "Ohne Steuervorlage", land: v?.land || "", satz: v?.satz ?? null, art: v?.art || "unbekannt", anzahl: 0, stornos: 0, netto: 0, steuer: 0, brutto: 0 });
@@ -98,19 +101,27 @@ export function ustVerprobung(monat, belege = [], stornos = []) {
     z.steuer = rund2(z.steuer + (Number(steuer) || 0));
     z.brutto = rund2(z.netto + z.steuer);
   };
-  for (const b of belege) if (im(b.rechnungsdatum)) zaehle(b.steuer?.vorlage, b.netto, b.steuer?.betrag, false);
-  for (const s of stornos) if (im(s.datum)) zaehle(s.steuer?.vorlage, s.netto, s.steuer?.betrag, true);
-  const zeilen = Object.values(je).sort((a, b) => String(a.vorlage).localeCompare(String(b.vorlage)));
+  for (const b of belege) if (im(b.rechnungsdatum)) zaehle(b.beleg === "gutschrift" ? eingang : ausgang, b.steuer?.vorlage, b.netto, b.steuer?.betrag, false);
+  for (const s of stornos) if (im(s.datum)) zaehle(s.ursprung === "gutschrift" ? eingang : ausgang, s.steuer?.vorlage, s.netto, s.steuer?.betrag, true);
+  const block = (je) => {
+    const zeilen = Object.values(je).sort((a, b) => String(a.vorlage).localeCompare(String(b.vorlage)));
+    return {
+      zeilen,
+      summen: {
+        netto: rund2(zeilen.reduce((s, z) => s + z.netto, 0)),
+        steuer: rund2(zeilen.reduce((s, z) => s + z.steuer, 0)),
+        brutto: rund2(zeilen.reduce((s, z) => s + z.brutto, 0)),
+        belege: zeilen.reduce((s, z) => s + z.anzahl + z.stornos, 0),
+      },
+    };
+  };
+  const a = block(ausgang);
   return {
     monat,
-    zeilen,
-    summen: {
-      netto: rund2(zeilen.reduce((s, z) => s + z.netto, 0)),
-      steuer: rund2(zeilen.reduce((s, z) => s + z.steuer, 0)),
-      brutto: rund2(zeilen.reduce((s, z) => s + z.brutto, 0)),
-      belege: zeilen.reduce((s, z) => s + z.anzahl + z.stornos, 0),
-    },
-    ohneVorlage: je.ohne ? je.ohne.anzahl + je.ohne.stornos : 0,
-    hinweis: "Verprobung nach Rechnungsdatum (Soll-Besteuerung) – Grundlage für UVA/UStVA/MWST, keine Steuermeldung. Mit der Steuerberatung abstimmen (Ist-Besteuerung, Vorsteuer und Sonderfälle sind nicht enthalten).",
+    zeilen: a.zeilen,
+    summen: a.summen,
+    gutschriften: block(eingang),
+    ohneVorlage: (ausgang.ohne ? ausgang.ohne.anzahl + ausgang.ohne.stornos : 0) + (eingang.ohne ? eingang.ohne.anzahl + eingang.ohne.stornos : 0),
+    hinweis: "Verprobung nach Rechnungsdatum (Soll-Besteuerung) – Grundlage für UVA/UStVA/MWST, keine Steuermeldung. Gutschriften (Gutschriftsverfahren, z. B. Pacht) sind Eingangsseite und separat ausgewiesen. Mit der Steuerberatung abstimmen (Ist-Besteuerung, Vorsteuer und Sonderfälle sind nicht enthalten).",
   };
 }

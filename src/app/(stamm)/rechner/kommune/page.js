@@ -153,6 +153,8 @@ const DE = {
     { href: seitenPfad("/genossenschaft"), titel: "Genossenschaft", text: "Bürger und Landwirte beteiligen sich am Solarpark vor Ort." },
     { href: seitenPfad("/energiegemeinschaften"), titel: "Energiegemeinschaften", text: "Energy Sharing, EEG in Österreich und LEG in der Schweiz." },
     { href: seitenPfad("/rechner/pacht"), titel: "Pachtrechner", text: "Solarpacht über 30 Jahre im Vergleich zu Ackerpacht und Deckungsbeitrag." },
+    // Welle 3, Paket B8: Kommunal 2.0
+    { href: seitenPfad("/kommunen/ratsvorlage"), titel: "Ratsvorlage Solarpark", text: "Kommunal-Rechner 2.0: Landesrecht je Bundesland und druckfertige Ratsvorlage als Muster." },
   ],
   cta: {
     eyebrow: "Für Kommunen",
@@ -192,6 +194,7 @@ const EN = {
     { titel: "Cooperative", text: "Citizens and farmers participate in the local solar park." },
     { titel: "Energy communities", text: "Energy sharing, EEG in Austria and LEG in Switzerland." },
     { titel: "Lease calculator", text: "Solar lease over 30 years compared with arable lease and gross margin." },
+    { titel: "Council paper for solar parks", text: "Municipal calculator 2.0: state law per federal state and a ready-to-print council paper template." },
   ],
   cta: {
     eyebrow: "For municipalities",

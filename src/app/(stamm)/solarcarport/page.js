@@ -118,7 +118,7 @@ const eurEn = (n) => `€${z(Math.round(n))}`;
 
 const TITEL_EN = "Solar carports & car park PV for businesses | ÖkoInvest";
 const BESCHREIBUNG_EN =
-  "Solar carports for businesses and municipalities: solar obligation by German federal state, designs, charging points under the GEIG, contracting – we build, you use the power.";
+  "Solar carports for businesses and municipalities: solar obligation by federal state, designs, GEIG charging points, contracting – we build, you use the power.";
 
 const metadataEn = {
   title: TITEL_EN,
@@ -249,6 +249,7 @@ const TEXTE = {
         { titel: "Carport-Rechner", text: "Leistung, Ertrag, Investition und Amortisation – Kauf vs. Contracting." },
         { titel: "Reststrom-Pool", text: "Den Strom, den Sie trotz Carport noch kaufen, gebündelt günstiger beziehen." },
         { titel: "Ratgeber Solarpflicht", text: "Alle Bundesländer mit Rechtsgrundlage, Stichtag und Ausnahmen." },
+        { titel: "Parkplatz-PV", text: "Solarpflicht je Bundesland im Schnell-Check, Potenzial in kWp und Ladepunkte nach GEIG." },
         { titel: "Speicher", text: "Mehr Eigenverbrauch und Lastspitzen kappen – vom Gewerbe- bis zum Großspeicher." },
       ],
     },
@@ -331,6 +332,7 @@ const TEXTE = {
         { titel: "Carport calculator", text: "Capacity, yield, investment and payback – purchase vs. contracting." },
         { titel: "Residual power pool", text: "Buy the power you still need despite the carport more cheaply as part of a pool." },
         { titel: "Solar obligation guide", text: "All federal states with legal basis, effective date and exemptions." },
+        { titel: "Car park PV", text: "Quick check of the solar obligation by federal state, potential in kWp and charging points under GEIG." },
         { titel: "Storage", text: "More self-consumption and peak shaving – from commercial to large-scale storage." },
       ],
     },
@@ -516,7 +518,8 @@ export default async function SolarcarportSeite({ params }) {
           { href: pfad("/rechner/solarcarport"), icon: Calculator, ...w.weiter.items[0] },
           { href: pfad("/reststrom"), icon: Building2, ...w.weiter.items[1] },
           { href: "/ratgeber/parkplatz-solarpflicht-bundeslaender", icon: BookOpen, ...w.weiter.items[2] },
-          { href: pfad("/grossspeicher"), icon: Zap, ...w.weiter.items[3] },
+          { href: pfad("/parkplatz"), icon: Building2, ...w.weiter.items[3] },
+          { href: pfad("/grossspeicher"), icon: Zap, ...w.weiter.items[4] },
         ]}
       />
     </div>

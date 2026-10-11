@@ -841,6 +841,19 @@ export default async function MarktdatenPage({ params }) {
                   ? "Values taken unchanged from the sources; annual totals, volume-weighted annual averages and the capture rate are our own calculations. No investment or legal advice; all information without guarantee."
                   : "Werte unverändert aus den Quellen übernommen, Jahressummen, mengengewichtete Jahresmittel und Capture Rate eigene Berechnung. Keine Anlage- oder Rechtsberatung, alle Angaben ohne Gewähr."}
               </p>
+              <p className="mt-3 text-[13px] leading-relaxed text-ink-500">
+                {en ? (
+                  <>
+                    Every figure with source, retrieval date and review status: <TextLink href="/quellen">fact register</TextLink>. Swiss grid and energy tariffs by municipality:{" "}
+                    <TextLink href="/marktdaten/strompreise-schweiz">Swiss electricity price atlas</TextLink>.
+                  </>
+                ) : (
+                  <>
+                    Jede Zahl mit Quelle, Abrufdatum und Prüfstand: <TextLink href="/quellen">Faktenregister</TextLink>. Schweizer Netz- und Energietarife je Gemeinde:{" "}
+                    <TextLink href="/marktdaten/strompreise-schweiz">Strompreis-Atlas Schweiz</TextLink>.
+                  </>
+                )}
+              </p>
             </Reveal>
           </div>
           <Faq items={faqFuerLand(uebersetze({ de: FAQ, en: EN.faq }, sprache), land, { markieren: true, sprache })} />

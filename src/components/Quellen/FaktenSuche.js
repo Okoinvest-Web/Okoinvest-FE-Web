@@ -41,6 +41,7 @@ const TEXTE = {
     versionen: "Weitere zeitliche Versionen",
     link: "Zitierlink kopieren",
     kopiert: "Link kopiert",
+    ergebnisse: "Suchergebnisse",
     neuesFenster: "(öffnet in neuem Fenster)",
     klassen: { A: "A – Recht, Förderung, Abgaben, Fristen", B: "B – Markt-/Statistikwert mit Quelle", C: "C – eigene Einschätzung" },
     status_: { geprueft: "am Original geprüft", zu_pruefen: "Prüfung ausstehend", abgelaufen: "abgelaufen" },
@@ -70,6 +71,7 @@ const TEXTE = {
     versionen: "Other time versions",
     link: "Copy citation link",
     kopiert: "Link copied",
+    ergebnisse: "Search results",
     neuesFenster: "(opens in a new window)",
     klassen: { A: "A – law, funding, levies, deadlines", B: "B – market/statistical value with source", C: "C – own estimate" },
     status_: { geprueft: "checked against the original", zu_pruefen: "review pending", abgelaufen: "expired" },
@@ -227,6 +229,18 @@ export default function FaktenSuche({ eintraege, sprache = "de" }) {
   const [klasse, setKlasse] = useState("");
   const [status, setStatus] = useState("");
 
+  // Suchbegriff aus der URL (?q=…): Ziel der SearchAction im WebSite-Schema
+  // (src/components/Wurzel/Wurzel.js) und teilbarer Einstieg in eine Suche.
+  // Erst nach dem Hydrieren lesen (kein Server/Client-Unterschied beim ersten Rendern).
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search).get("q");
+      if (q) setText(q);
+    } catch {
+      // ohne URL-Zugriff bleibt die Suche leer
+    }
+  }, []);
+
   // Anker in der URL (#fakt-…): alles bleibt ungefiltert gerendert, der Browser springt selbst.
   const themen = useMemo(() => [...new Set(eintraege.map((e) => e.thema))].sort((a, b) => themaName(a, sprache).localeCompare(themaName(b, sprache), "de")), [eintraege, sprache]);
   const laender = useMemo(() => ["DE", "AT", "CH", "DACH"].filter((l) => eintraege.some((e) => e.land === l)), [eintraege]);
@@ -329,6 +343,9 @@ export default function FaktenSuche({ eintraege, sprache = "de" }) {
         </div>
       </div>
 
+      {/* Unsichtbare Zwischenüberschrift: Die Faktenkarten tragen h3, ohne h2 entstünde
+          ein Sprung h1→h3 in der Gliederung (technisches SEO / Screenreader-Gliederung). */}
+      <h2 className="sr-only">{t.ergebnisse}</h2>
       {treffer.length ? (
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           {treffer.map((e) => (

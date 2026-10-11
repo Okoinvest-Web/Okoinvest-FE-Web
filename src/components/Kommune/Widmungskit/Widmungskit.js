@@ -101,10 +101,12 @@ export default function Widmungskit({ kits, gemeinsam }) {
           <Gruppe titel={t.gemeindeGruppe}>
             <Textfeld id={`${id}-gm`} label={t.gemeinde} hinweis={t.gemeindeHinweis} maxLength={80} autoComplete="off" value={gemeinde} onChange={(e) => setGemeinde(e.target.value)} gueltig={gemeindeOk} />
           </Gruppe>
+          {/* Überschriften h2/h3 (nicht h3/h4): Auf der Seite steht vor diesem Block nur die h1,
+              sonst entstünde ein Gliederungssprung h1→h3 (technisches SEO, Screenreader). */}
           <section aria-labelledby={`${id}-gs`} className="rounded-2xl bg-white/70 p-4 ring-1 ring-ink-200">
-            <h3 id={`${id}-gs`} className="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-ink-500">
+            <h2 id={`${id}-gs`} className="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-ink-500">
               {t.gemeinsam}
-            </h3>
+            </h2>
             <ul className="mt-3 space-y-3">
               {gemeinsam.map((g) => (
                 <li key={g.titel} className="text-[13.5px] leading-relaxed text-ink-700">
@@ -125,15 +127,15 @@ export default function Widmungskit({ kits, gemeinsam }) {
             </p>
           )}
           <section aria-labelledby={`${id}-ab`} className="mt-5 rounded-3xl bg-ink-50 p-5 md:p-6">
-            <h3 id={`${id}-ab`} className="flex items-center gap-2 font-display text-[17px] font-bold text-ink-900">
+            <h2 id={`${id}-ab`} className="flex items-center gap-2 font-display text-[17px] font-bold text-ink-900">
               <Route aria-hidden="true" className="h-4 w-4 text-ov-700" />
               {t.ablauf}
-            </h3>
+            </h2>
             <p className="mt-2 text-[14px] leading-relaxed text-ink-700">{kit.ablauf}</p>
-            <h4 className="mt-5 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-ink-500">
+            <h3 className="mt-5 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-ink-500">
               <Users aria-hidden="true" className="h-3.5 w-3.5" />
               {t.stellen}
-            </h4>
+            </h3>
             <ol className="mt-2 space-y-2">
               {kit.stellen.map((s, i) => (
                 <li key={s.name} className="flex gap-3 text-[14px] leading-relaxed">
@@ -157,10 +159,10 @@ export default function Widmungskit({ kits, gemeinsam }) {
 
           <section aria-labelledby={`${id}-pp`} className="mt-5 rounded-3xl bg-white p-5 shadow-e1 ring-1 ring-ink-200/70 md:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 id={`${id}-pp`} className="flex items-center gap-2 font-display text-[17px] font-bold text-ink-900">
+              <h2 id={`${id}-pp`} className="flex items-center gap-2 font-display text-[17px] font-bold text-ink-900">
                 <ListChecks aria-hidden="true" className="h-4 w-4 text-ov-700" />
                 {t.pruefpunkte}
-              </h3>
+              </h2>
               <Button type="button" variant="secondary" size="sm" icon={Printer} className="print:hidden" onClick={() => window.print()}>
                 {t.drucken}
               </Button>

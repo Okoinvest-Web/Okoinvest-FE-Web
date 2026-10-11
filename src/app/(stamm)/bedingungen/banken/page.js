@@ -40,7 +40,7 @@ export default async function VertraulichkeitBankenPage({ params }) {
       titel={en ? "Confidentiality terms for banks" : "Vertraulichkeitsbedingungen für Banken"}
       pfad={PFAD}
       stand={STAND_BEDINGUNGEN}
-      lead={en ? "Rules for banks and financing partners that review financing requests from the ÖkoInvest group in the bank portal and retrieve the bank package." : "Regeln für Banken und Finanzierungspartner, die im Bank-Portal Finanzierungsanfragen der ÖkoInvest-Gruppe prüfen und das Bankenpaket abrufen."}
+      lead={en ? "Rules for banks and financing partners that review financing requests from ÖkoInvest and its project companies in the bank portal and retrieve the bank package." : "Regeln für Banken und Finanzierungspartner, die im Bank-Portal Finanzierungsanfragen von ÖkoInvest und ihren Projektgesellschaften prüfen und das Bankenpaket abrufen."}
     >
       <EntwurfHinweis />
       {en ? (

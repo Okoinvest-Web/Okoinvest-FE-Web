@@ -362,6 +362,57 @@ Alle Antworten JSON mit `Cache-Control: no-store`. Fehler: `{ ok: false, error, 
 
 Statuscodes: 401 nicht angemeldet · 403 Rolle/Eigentum/Herkunft · 404 · 409 Konflikt/Übergang nicht vorgesehen · 413 zu groß · 415 falscher Typ · 422 Validierung/Pflichtangabe · 429 Rate-Limit · 502 Backend nicht erreichbar · 503 Backend nicht konfiguriert.
 
+### Einheitliche Fehlerstruktur (`src/lib/plattform/fehler.js`)
+
+Jeder Fehler aller `/api/...`-Routen hat die Form `{ ok: false, error, code }` mit dem Status als HTTP-Status;
+`error` ist deutsch und für Endnutzer (nie Interna, Tracebacks nur ins Server-Log). `code` je Status:
+`400 ungueltig` · `401 nicht_angemeldet` · `403 verboten` · `404 nicht_gefunden` · `409 konflikt` · `413 zu_gross` ·
+`415 typ` · `422 validierung` · `429 zu_viele` · `502 backend` · `503 nicht_konfiguriert` · sonst `fehler` (500).
+Abweichende, gezielt abfragbare Codes: `herkunft` (403, Origin/Upload-Kopfzeile), `zwei_faktor_pflicht` (403),
+`kyc` und `bonitaet` (409, Freigabe-Sperren), `gesperrt` (429, Konto-/Frappe-Sperre), `kontingent` (429, KI),
+`newsletter_aus` (503). Unerwartete Fehler → 500 mit generischem Text. Neue Routen verwenden `PlattformFehler`
+bzw. die Helfer (`ungueltig`, `verboten`, …) – keine eigenen Fehlerformate.
+
+### Rate-Limits (`src/lib/plattform/server/rateLimit.js`)
+
+Gleitendes Fenster je Schlüssel im Arbeitsspeicher eines Node-Prozesses (bei mehreren Instanzen zusätzlich am
+Reverse-Proxy begrenzen, siehe docs/PLATTFORM.md). Überschreitung → **429** `{ ok: false, error, code: "zu_viele" }`,
+kein `Retry-After`-Header. Schlüssel ist `<grenze>:<ip>` (Routen setzen `limit: <name>`); Ausnahmen: `loginEmail`
+zählt je E-Mail-Adresse, `/api/portal/suche` je Nutzer (120 / min, eigener Aufruf). Grenzen (Anzahl / Fenster):
+
+| Name | Grenze | Gilt u. a. für |
+|---|---|---|
+| `login` | 10 / 15 min | `/api/auth/login` (je IP) |
+| `loginEmail` | 8 / 15 min | `/api/auth/login` (je E-Mail) |
+| `registrieren` | 5 / h | `/api/auth/registrieren` |
+| `anfrage` | 10 / h | `/api/anfrage`, `/api/eg/interesse`, Angebotsseite |
+| `passwort` | 5 / h | Passwort vergessen/setzen |
+| `upload` | 60 / h | Dokument-/Datei-Uploads |
+| `nachricht` | 120 / h | Nachrichten, öffentliche Rechner |
+| `magicLink` | 5 / h | Anmeldelink per E-Mail |
+| `zweiFaktor` | 10 / 15 min | 2FA-Codes |
+| `einladung` | 30 / h | Team-/Bank-/Ausschreibungs-Einladungen |
+| `export` | 10 / h | CSV-/GeoJSON-Exporte |
+
+In der Entwicklung gelten die Grenzen 10-fach (über `PLATTFORM_RATE_FAKTOR` einstellbar); in Produktion immer Faktor 1.
+Zusätzlich drosselt Frappe eigene Fehler als `TooManyRequestsError` → 429 `code: "gesperrt"`.
+
+### Versionierung & Kompatibilität
+
+- Die HTTP-APIs der Website sind **unversioniert** (kein `/v1/`): Browser-Client und Server werden immer zusammen
+  ausgeliefert. Der stabile Vertrag ist die **Backend-Schnittstelle** (Operationen in `backend/index.js` und den
+  Themen-Modulen) sowie die whitelisted **Frappe-Methoden** – beide ändern sich nur abwärtskompatibel:
+  neue Felder und neue optionale Argumente sind erlaubt; Felder entfernen, umbenennen oder Bedeutungen ändern nicht
+  (stattdessen neues Feld einführen, altes weiter befüllen und im passenden Doc als veraltet markieren).
+- Demo- und Frappe-Backend sind **signaturgleich** (gleiche Operationen, Felder, Fehlerbilder, Statuscodes);
+  Referenz ist das Demo-Backend. Abweichungen sind Fehler – Ausnahme: bewusst spätere Frappe-Spiegel
+  (derzeit Newsletter, siehe `backend/newsletter.js`) antworten mit 503.
+- Gleichlauf wird geprüft durch `node --test src/lib/plattform/api-vertrag.test.mjs` (Routen, Methoden,
+  Operationen, Fehlerstruktur, Rate-Limits) und die Paritätstests `scripts/plattform-test-*.mjs`.
+- **Vollständiges Routen- und Methodenregister:** [`docs/API-REGISTER.md`](./API-REGISTER.md) (automatisch erzeugt
+  mit `node scripts/api-register.mjs`; der Test oben schlägt fehl, wenn es veraltet ist). Dieses Dokument hier
+  beschreibt Semantik und Regeln – das Register ist die erschöpfende Liste.
+
 ## 7. Deal-Room & Investoren (Q&A, Bieterverfahren, Datenraum 2.0, Pipeline, Cockpit)
 
 Referenz: `src/lib/plattform/backend/demo/dealroom.js` (Schnittstelle `backend/dealroom.js`, Frappe-Adapter `backend/frappe/dealroom.js`), Regeln `src/lib/plattform/dealroom.js` = `plattform/dealroom_kern.py`. Frappe-Methoden in `plattform/api/{qa,bieter,dealroom}.py`.
@@ -376,7 +427,7 @@ Referenz: `src/lib/plattform/backend/demo/dealroom.js` (Schnittstelle `backend/d
 
 **Q&A-Status:** `eingereicht` (Moderation) → `freigegeben` (beim Anbieter, `fristAm`, Standard 5 Tage) → `beantwortet` (Antwort in Prüfung) → `veroeffentlicht` (`oeffentlich`: für alle NDA-Investoren) · `abgelehnt` (`ablehnGrund`) · Rückgabe `beantwortet → freigegeben` mit `rueckfrage`. Investoren sehen nur `offen|beantwortet|abgelehnt`, eigene Fragen und freigegebene Antworten „für alle“ (Fragender: „Anderer Interessent“).
 
-**Bieterverfahren:** `laufend` → (Frist abgelaufen oder `beenden`) `auswertung` → `zuschlag` → (Projekt verkauft) `abgeschlossen` · `abgebrochen`. Runden `indikativ|verbindlich` mit `frist` und `teilnehmer` (Interesse-Kennungen); verbindliche Runden verlangen Finanzierung und Zeitplan. Gebote verdeckt: ein Gebot je Runde und Bieter (Aktualisierung = neue `version`, `historie`), nach Fristende 409, Zuschlag erst nach Rundenende.
+**Bieterverfahren:** `laufend` → (Frist abgelaufen oder `beenden`) `auswertung` → `zuschlag` → (Projekt verkauft) `abgeschlossen` · `abgebrochen`. Runden `indikativ|verbindlich` mit `frist` und `teilnehmer` (Interesse-Kennungen); verbindliche Runden verlangen Finanzierung und Zeitplan. Gebote verdeckt: ein Gebot je Runde und Bieter (Aktualisierung = neue `version`, `historie`), nach Fristende 409, Zuschlag erst nach Rundenende; Zuschlag auf ein Gebot mit abgelaufener Bindefrist (`gueltigBis`) → 409 (Verlängerung einholen).
 
 | Methode | Argumente | Ergebnis | Recht |
 |---|---|---|---|
@@ -1010,7 +1061,7 @@ Recherche und Rechtsgrundlagen: [`docs/GRUNDBUCH-CLOSING.md`](./GRUNDBUCH-CLOSIN
 
 ### Frappe (whitelisted, `oekoinvest_app.plattform.api.closing.*`, jeweils mit `als_benutzer`)
 - Grundbuch: `gb_liste(status, land, q)` · `gb_meine()` · `gb_zu_bezug(bezugArt, bezugId)` · `gb_akte(id)` · `gb_auswahl()` · `gb_anlegen(daten)` · `gb_aendern(id, daten)` · `gb_schritt(id, daten{schluessel,status,datum,nachweisWert,notiz,frist})` · `gb_signatur(id, pdfBase64, dateiname, ip)` (legt über `api/signatur.vorgang_anlegen` einen Signaturvorgang an) · `gb_dokument_speichern(id, schritt, name, mime, inhalt)` · `gb_dokument_lesen(id, dokId, ip)` · `gb_muster_daten(id, vorlage, ip)` · `gb_fristen_lauf()`; Scheduler täglich `fristen_taeglich`.
-- Closing: `cl_liste(status)` · `cl_meine()` · `cl_akte(id)` · `cl_anlegen(daten{projektId,interesseId,struktur,spvName,spvGesellschaftId,anteilProzent,kaufpreis})` · `cl_aendern(id, daten)` · `cl_aktion(id, daten{aktion: signing_punkt|signing|cp|cp_neu|zahlung_eingang|closing|uebergabe|abbrechen, …})` · `cl_portal_aktion(id, daten{aktion:"cp_melden", schluessel, nachweis})` · `cl_dokument_daten(id, art: spa|bericht, ip)` · `cl_termin(id)`.
+- Closing: `cl_liste(status)` · `cl_meine()` · `cl_akte(id)` · `cl_anlegen(daten{projektId,interesseId,struktur,spvName,spvGesellschaftId,anteilProzent,kaufpreis})` · `cl_aendern(id, daten)` · `cl_aktion(id, daten{aktion: signing_punkt|signing|cp|cp_neu|zahlung_eingang|closing|uebergabe|abbrechen, …})` · `cl_portal_aktion(id, daten{aktion:"cp_melden", schluessel, nachweis})` · `cl_dokument_daten(id, art: spa|bericht, ip)` · `cl_termin(id)` · `cl_fristen_lauf()`; der tägliche Scheduler `fristen_taeglich` meldet neben Grundbuch-Schritten auch überfällige Closing Conditions (Ausgabe: `cpsUeberfaellig` je Raum, `ueberfaellig` je CP, Kennzahl `ueberfaellig` in `cl_liste`).
 - DocTypes: `Plattform Grundbuch Vorgang` (+ Kindtabelle `Plattform Grundbuch Schritt`), `Plattform Closing` (+ `Plattform Closing Bedingung`). Druckformate (Jinja, Muster): „Dienstbarkeitsvertrag Freiflaeche Muster“, „Dachnutzungsvertrag Servitut Muster“, „Rangruecktritt Ersuchen Muster“, „Loeschungsbewilligung Hinweis Muster“ (Grundbuch-Vorgang), „Kaufvertrag SPA Muster“, „Closing Abschlussbericht“ (Closing); Jinja `oekoinvest_grundbuch(name)`, `oekoinvest_closing(name)`. Bericht „Offene Grundbuch Eintragungen“. Notifications „ÖkoInvest: Grundbuch eingetragen“, „ÖkoInvest: Closing vollzogen“.
 
 ### Regeln
@@ -1021,7 +1072,7 @@ Recherche und Rechtsgrundlagen: [`docs/GRUNDBUCH-CLOSING.md`](./GRUNDBUCH-CLOSIN
 ### HTTP-APIs der Website (Mutationen JSON + Origin)
 - Backoffice Grundbuch: `GET, POST (201) /api/admin/grundbuch` · `GET /api/admin/grundbuch/auswahl` · `GET /api/admin/grundbuch/fristen` · `GET, PATCH /api/admin/grundbuch/[id]` · `POST /api/admin/grundbuch/[id]/schritt` · `POST /api/admin/grundbuch/[id]/signatur` (Bereiche `grundbuch` + `signatur` schreiben) · `POST /api/admin/grundbuch/[id]/dokumente` (multipart, `X-Plattform-Upload: 1`, PDF/JPG/PNG ≤ 10 MB)
 - Portal Grundbuch (Eigentümer bzw. Backoffice): `GET /api/portal/grundbuch[?bezugArt=flaeche|anlage&bezugId=]` · `GET /api/portal/grundbuch/[id]` · `GET /api/portal/grundbuch/[id]/muster?vorlage=dienstbarkeit_freiflaeche|dachnutzung_servitut|rangruecktritt|loeschung_hinweis` (PDF) · `GET /api/portal/grundbuch/[id]/dokumente/[dok]`
-- Backoffice Closing: `GET, POST (201) /api/admin/closing` · `GET, PATCH /api/admin/closing/[id]` · `POST /api/admin/closing/[id]/aktion`
+- Backoffice Closing: `GET, POST (201) /api/admin/closing` · `GET /api/admin/closing/fristen` · `GET, PATCH /api/admin/closing/[id]` · `POST /api/admin/closing/[id]/aktion`
 - Portal Closing (Käufer/Verkäufer bzw. Backoffice): `GET /api/portal/closing` · `GET, POST /api/portal/closing/[id]` (`cp_melden`) · `GET /api/portal/closing/[id]/pdf?art=spa|bericht` · `GET /api/portal/closing/[id]/termin` (.ics)
 - Seiten: `/portal/admin/grundbuch[?status=&land=]`, `/portal/admin/grundbuch/[id]`, `/portal/grundbuch[/id]`, `/portal/admin/closing[?status=]`, `/portal/admin/closing/[id]`, `/portal/closing[/id]`; Kurzanzeige an `/portal/flaechen/[id]`.
 
@@ -1216,7 +1267,7 @@ Backend: `src/lib/plattform/backend/werkzeuge.js` (Demo `demo/{buchhaltung,daten
 - `GET /belege/[id]/dokument?art=mahnung&nr=|art=storno` – PDF (Backoffice); Empfänger: `GET /api/portal/finanzen/[id]/dokument?…`, Liste `GET /api/portal/finanzen/dokumente`.
 - `POST /zahlungen` `{inhalt, dateiname, format?}` – Kontoauszug CAMT.053/.054 oder CSV (≤ 3 MB, ≤ 2.000 Buchungen, gleiche Datei → 409, Dubletten je Buchung übersprungen, IBAN maskiert) mit Vorschlag `sicher|nummer|betrag|keiner`. `POST /zahlungen/[id]` `{aktion: zuordnen {belegId} | ignorieren {grund} | zuruecksetzen}`; `POST /zahlungen/alle` übernimmt alle sicheren Treffer. Eingang → Rechnung (voll → „bezahlt“ inkl. Provision, sonst Teilzahlung), Ausgang → angewiesene Gutschrift (SEPA-EndToEndId = Belegnummer; KYC-Sperre gilt).
 - `GET /export?format=datev|bmd|op&von=&bis=` – DATEV-Buchungsstapel (EXTF 700/21, ISO-8859-1), BMD-Buchungsimport (CSV UTF-8), OP-Liste; ≤ 1 Jahr; Nachweis mit SHA-256. **Konten/BU-Schlüssel/Steuercodes vor Echtimport mit der Steuerberatung festlegen.**
-- `GET|POST /abschluss/[JJJJ-MM]` – Monatsabschluss-Checkliste (Läufe, Klärfälle, Zahlungseingänge, Zahlungsläufe, Mahnlauf, Pflichtangaben, Export automatisch; OP-Abstimmung, AfA, UVA/ZM manuell), `aktion: punkt | abschliessen | wiedereroeffnen {grund}`; offene Pflichtpunkte → 409, laufender Monat → 409, automatische Punkte nur mit Begründung manuell bestätigen (422).
+- `GET|POST /abschluss/[JJJJ-MM]` – Monatsabschluss-Checkliste (Läufe, Klärfälle, Zahlungseingänge, Zahlungsläufe, Mahnlauf, Pflichtangaben, Export automatisch; OP-Abstimmung, AfA, UVA/ZM manuell), `aktion: punkt | abschliessen | wiedereroeffnen {grund}`; offene Pflichtpunkte → 409, laufender Monat → 409, automatische Punkte nur mit Begründung manuell bestätigen (422). Antwort enthält `ust` (USt-Verprobung des Monats: Netto/USt/Brutto je Steuervorlage nach Rechnungsdatum, Stornos negativ, nur Ausgangsumsätze; Gutschriften (Gutschriftsverfahren Pacht) separat unter `ust.gutschriften` – Vorbereitung UVA/UStVA/MWST, keine Steuermeldung).
 
 **Datenschutz** (Bereich `compliance`: lesen ≥ 1 Leitung/Compliance, schreiben = 2 Compliance): `GET|POST /api/admin/compliance/datenschutz` (Anfrage Art. 15–21 DSGVO, Frist 1 Monat nach VO 1182/71, CH 30 Tage), `POST /api/admin/compliance/datenschutz/[id]` `{aktion: identitaet_anfordern|identitaet_bestaetigen|verlaengern (einmal, innerhalb der ersten Frist, + 2 Monate)|erledigen|ablehnen|konto_verknuepfen|anonymisieren}`, `GET …/[id]/export` (Datenauskunft JSON inkl. Art.-15-Informationen, Pflicht vor „erledigen“ bei Auskunft/Übertragbarkeit), `GET /api/admin/compliance/vvt?format=csv|json` (Verzeichnis der Verarbeitungstätigkeiten, Entwurf), `GET /api/admin/compliance/sla` (KYC 3 / KYB 5 / Zweitprüfung 2 Werktage).
 

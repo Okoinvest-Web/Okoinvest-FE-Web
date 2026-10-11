@@ -54,7 +54,8 @@ const nextConfig = {
       `img-src 'self' data: blob: ${ga} ${gaDaten} ${karten}`,
       "font-src 'self' data:",
       `connect-src 'self' ${ga} ${gaDaten}${produktion ? "" : " ws: wss:"}`,
-      "frame-src 'none'",
+      // 'self' statt 'none': /partner/widgets zeigt die eigenen Embed-Routen /widgets/<name> als Live-Vorschau im iframe (Paket WIDGETS)
+      "frame-src 'self'",
       "worker-src 'self' blob:",
       "manifest-src 'self'",
       "media-src 'self'",
@@ -77,8 +78,22 @@ const nextConfig = {
       // QM Welle 1 (Empfehlung Paket I): außerhalb der echten Produktion auch PDFs, Bilder und APIs auf noindex
       ...(indexierbar ? [] : [{ key: "X-Robots-Tag", value: "noindex, nofollow" }]),
     ];
+    // Partner-Widgets (Welle 4, Paket WIDGETS): /widgets/<name> wird von Partnern per <iframe>
+    // eingebettet. Die Embed-Routen setzen ihre EIGENE CSP (frame-ancestors konfigurierbar über
+    // WIDGET_FRAME_ANCESTORS, Standard *; src/lib/widgets/register.js → widgetKopfzeilen) – deshalb
+    // nimmt der globale Block sie aus (mehrere CSP-Kopfzeilen würden sonst auf 'self' verschärfen,
+    // X-Frame-Options: SAMEORIGIN würde das Einbetten blockieren). Alle übrigen Schutz-Kopfzeilen
+    // bekommen die Widgets hier bzw. in der Route weiterhin.
+    const widgets = [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "X-Robots-Tag", value: "noindex, nofollow" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+      ...(produktion ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" }] : []),
+    ];
     return [
-      { source: "/:path*", headers: sicherheit },
+      { source: "/((?!widgets/).*)", headers: sicherheit },
+      { source: "/widgets/:path*", headers: widgets },
       // Portal und Login nie in Suchmaschinen, nie zwischenspeichern
       { source: "/portal/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "no-store" }] },
       ...["/login", "/registrieren", "/passwort-vergessen"].map((source) => ({ source, headers: [{ key: "X-Robots-Tag", value: "noindex, follow" }] })),

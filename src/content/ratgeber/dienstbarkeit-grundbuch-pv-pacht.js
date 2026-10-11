@@ -252,7 +252,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: "Für Eigentümer ist wichtig, dass die Vormerkung wieder verschwindet, wenn das Projekt scheitert. Lange Reservierungen mit Vormerkung, aber ohne Entgelt, binden die Fläche ohne Gegenleistung. Faire Verträge sehen ein Reservierungsentgelt von etwa " + fmt(PACHT.reservierungProHa.min) + " bis " + fmt(PACHT.reservierungProHa.max) + " € je Hektar vor und verpflichten den Entwickler, die Löschung der Vormerkung zu bewilligen, sobald er vom Vertrag zurücktritt oder eine Frist verstreicht. Wie der Weg bis zur Baureife abläuft, zeigt der [Projektablauf](/prozess).",
+          text: "Für Eigentümer ist wichtig, dass die Vormerkung wieder verschwindet, wenn das Projekt scheitert. Lange Reservierungen mit Vormerkung, aber ohne Entgelt, binden die Fläche ohne Gegenleistung. Faire Verträge sehen ein Reservierungsentgelt von etwa [" + fmt(PACHT.reservierungProHa.min) + " bis " + fmt(PACHT.reservierungProHa.max) + " € je Hektar](/quellen#fakt-de-pacht.reservierungProHa) vor und verpflichten den Entwickler, die Löschung der Vormerkung zu bewilligen, sobald er vom Vertrag zurücktritt oder eine Frist verstreicht. Wie der Weg bis zur Baureife abläuft, zeigt der [Projektablauf](/prozess).",
         },
       ],
     },

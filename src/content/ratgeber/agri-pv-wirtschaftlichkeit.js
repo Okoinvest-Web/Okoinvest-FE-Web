@@ -194,7 +194,7 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: `**Mit mittleren Kosten und einem Erlös von ${ct2(ERLOESE.eegBesondereCt)} über 20 Jahre erreicht eine vertikale 5-MWp-Anlage in Süddeutschland eine Projektrendite von ${pct(V.projektIrr)}, eine hoch aufgeständerte bleibt ${H.projektIrr != null && H.projektIrr > 0 ? `bei ${pct(H.projektIrr)}` : "im negativen Bereich"}.** Beide liegen damit unter den Kapitalkosten von ${pct(V.wacc)}, die wir ansetzen. Zum Vergleich: Selbst ein klassischer Solarpark dieser Größe erreicht beim heutigen Zuschlagsniveau nur ${pct(F.projektIrr)} – Anlagen um 5 MWp sind generell knapp kalkuliert, weil Netzanschluss und Entwicklung stärker ins Gewicht fallen. Agri-PV liegt aber noch einmal deutlich darunter.`,
+          text: `**Mit mittleren Kosten und einem Erlös von [${ct2(ERLOESE.eegBesondereCt)}](/quellen#fakt-de-erloese.eegBesondereCt) über 20 Jahre erreicht eine vertikale 5-MWp-Anlage in Süddeutschland eine Projektrendite von ${pct(V.projektIrr)}, eine hoch aufgeständerte bleibt ${H.projektIrr != null && H.projektIrr > 0 ? `bei ${pct(H.projektIrr)}` : "im negativen Bereich"}.** Beide liegen damit unter den Kapitalkosten von ${pct(V.wacc)}, die wir ansetzen. Zum Vergleich: Selbst ein klassischer Solarpark dieser Größe erreicht beim heutigen Zuschlagsniveau nur ${pct(F.projektIrr)} – Anlagen um 5 MWp sind generell knapp kalkuliert, weil Netzanschluss und Entwicklung stärker ins Gewicht fallen. Agri-PV liegt aber noch einmal deutlich darunter.`,
         },
         {
           typ: "tabelle",

@@ -142,7 +142,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Zur Einordnung: Der Jahresmarktwert Solar lag 2024 bei ${fmtCt(JW_SOLAR[2024], 3)} und 2025 bei ${fmtCt(JW_SOLAR[2025], 3)}. Der durchschnittliche Day-Ahead-Preis betrug laut Bundesnetzagentur ${fmtCt(BASE_CT[2024], 2)} (2024) und ${fmtCt(BASE_CT[2025], 2)} (2025). Solarstrom erlöste also nur rund ${fmtPct(CR[2024], 0)} bzw. ${fmtPct(CR[2025], 0)} des Durchschnittspreises – die [Capture Rate](/wissen/lexikon#capture-rate) sinkt mit jedem Gigawatt Zubau. Liegt der Zuschlagswert eines Parks bei rund ${fmtCt(AW, 1)}, fließt die Prämie deshalb heute in den meisten Jahren tatsächlich. Aktuelle Werte zeigen die [Marktdaten](/marktdaten).`,
+          text: `Zur Einordnung: Der Jahresmarktwert Solar lag 2024 bei ${fmtCt(JW_SOLAR[2024], 3)} und 2025 bei ${fmtCt(JW_SOLAR[2025], 3)}. Der durchschnittliche Day-Ahead-Preis betrug laut Bundesnetzagentur ${fmtCt(BASE_CT[2024], 2)} (2024) und ${fmtCt(BASE_CT[2025], 2)} (2025). Solarstrom erlöste also nur rund ${fmtPct(CR[2024], 0)} bzw. ${fmtPct(CR[2025], 0)} des Durchschnittspreises – die [Capture Rate](/wissen/lexikon#capture-rate) sinkt mit jedem Gigawatt Zubau. Liegt der Zuschlagswert eines Parks bei rund [${fmtCt(AW, 1)}](/quellen#fakt-de-erloese.eegFreiflaecheCt), fließt die Prämie deshalb heute in den meisten Jahren tatsächlich. Aktuelle Werte zeigen die [Marktdaten](/marktdaten).`,
         },
       ],
     },

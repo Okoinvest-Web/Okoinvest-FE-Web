@@ -124,7 +124,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Pacht erhöht Ihr zu versteuerndes Einkommen voll. Bei ${fmt(BSP_HA)} ha und einer Pacht von ${fmt(PACHT.freiflaecheProHa.mittel)} € je Hektar kommen ${fmtEur(PACHT_BSP)} im Jahr hinzu – im Vergleich zur Ackerpacht von rund ${fmt(PACHT.ackerProHa)} € je Hektar ein spürbarer Sprung in der Progression. Einmalzahlungen wie ein Reservierungsentgelt oder eine Vorauszahlung für mehrere Jahre können unter bestimmten Voraussetzungen auf die Laufzeit verteilt werden (bei Überschussrechnung nach § 11 EStG, bei Bilanzierung über einen passiven Rechnungsabgrenzungsposten). Wie hoch die Pacht realistisch ist, zeigt der [Pachtrechner](/rechner/pacht).`,
+          text: `Die Pacht erhöht Ihr zu versteuerndes Einkommen voll. Bei ${fmt(BSP_HA)} ha und einer Pacht von ${fmt(PACHT.freiflaecheProHa.mittel)} € je Hektar kommen ${fmtEur(PACHT_BSP)} im Jahr hinzu – im Vergleich zur Ackerpacht von rund [${fmt(PACHT.ackerProHa)} € je Hektar](/quellen#fakt-de-pacht.ackerProHa) ein spürbarer Sprung in der Progression. Einmalzahlungen wie ein Reservierungsentgelt oder eine Vorauszahlung für mehrere Jahre können unter bestimmten Voraussetzungen auf die Laufzeit verteilt werden (bei Überschussrechnung nach § 11 EStG, bei Bilanzierung über einen passiven Rechnungsabgrenzungsposten). Wie hoch die Pacht realistisch ist, zeigt der [Pachtrechner](/rechner/pacht).`,
         },
       ],
     },

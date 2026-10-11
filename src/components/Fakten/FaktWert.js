@@ -11,7 +11,9 @@
 //   <FaktWert id="erloese.negativAnteilSolar" variante="inline" />     im Fließtext
 //   <FaktWert id="…" format={(f) => "…"} />                             eigene Formatierung
 
+import Link from "@/components/Land/Link";
 import { fakt as faktAusRegister, anzeigeStatus, fmtFaktWert, KLASSEN } from "@/lib/fakten";
+import { ankerFuer } from "@/lib/quellen/fakten";
 import { cn } from "@/components/ui/cn";
 import StandHinweis from "./StandHinweis";
 import Quellenzeile from "./Quellenzeile";
@@ -52,7 +54,10 @@ export default function FaktWert({ id, land = "DE", fakt, titel, heute, format, 
     return (
       <span className={className} data-fakt={f.id} data-fakt-land={f.land} data-fakt-status={status}>
         {abgelaufen ? <span className="whitespace-nowrap text-ink-500">zuletzt belegt {text}</span> : <span className="whitespace-nowrap font-semibold text-ink-900">{text}</span>}
-        <StandHinweis fakt={f} heute={jetzt} className="ml-1.5 align-[1px]" />
+        {/* GEO/Zitierfähigkeit: der Stand-Chip führt zum stabilen Zitier-Anker des Fakts im Faktenregister */}
+        <Link href={`/quellen#${ankerFuer(f.id, f.land)}`} title="Quelle, Stand und Zitier-Link im Faktenregister" className="no-underline">
+          <StandHinweis fakt={f} heute={jetzt} className="ml-1.5 align-[1px]" />
+        </Link>
       </span>
     );
   }

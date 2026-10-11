@@ -136,7 +136,7 @@ const artikel = {
           typ: "kasten",
           variant: "info",
           titel: "Unsere Rechenannahme",
-          text: `In den Rechnern dieser Website setzen wir für Freiflächenanlagen einen [Zuschlagswert](/wissen/lexikon#zuschlagswert) von ${fmtCt(ERLOESE.eegFreiflaecheCt)} an – das entspricht dem Mittel der letzten Runden. Für ein konkretes Gebot zählen Standort, Kosten und Wettbewerb am jeweiligen Termin.`,
+          text: `In den Rechnern dieser Website setzen wir für Freiflächenanlagen einen [Zuschlagswert](/wissen/lexikon#zuschlagswert) von [${fmtCt(ERLOESE.eegFreiflaecheCt)}](/quellen#fakt-de-erloese.eegFreiflaecheCt) an – das entspricht dem Mittel der letzten Runden. Für ein konkretes Gebot zählen Standort, Kosten und Wettbewerb am jeweiligen Termin.`,
         },
       ],
     },

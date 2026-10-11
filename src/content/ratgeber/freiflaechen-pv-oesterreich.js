@@ -227,7 +227,7 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: `**Die Pacht für Freiflächen-PV liegt im DACH-Raum aktuell meist zwischen ${fmtEur(PACHT.freiflaecheProHa.min)} und ${fmtEur(PACHT.freiflaecheProHa.max)} je Hektar und Jahr.** In Österreich drücken der Grünland-Abschlag und die kleineren zulässigen Flächen je Widmung eher auf die Obergrenze; auf Deponien, Schottergruben oder in Zonen mit guter Netzanbindung sind höhere Werte möglich. Für die ${fmt(FLAECHE_HA, 1)} ha unseres ${fmt(BEISPIEL_MWP)}-MWp-Beispiels ergäbe ein mittlerer Wert rund **${fmtEur(PACHT_MITTEL)}** pro Jahr. Details und Vertragsgestaltung erklären die Ratgeber [Solarpark-Pacht pro Hektar](/ratgeber/solarpark-pacht-pro-hektar) und [Pachtvertrag Solarpark](/ratgeber/pachtvertrag-solarpark).`,
+          text: `**Die Pacht für Freiflächen-PV liegt im DACH-Raum aktuell meist zwischen [${fmtEur(PACHT.freiflaecheProHa.min)} und ${fmtEur(PACHT.freiflaecheProHa.max)} je Hektar und Jahr](/quellen#fakt-de-pacht.freiflaecheProHa).** In Österreich drücken der Grünland-Abschlag und die kleineren zulässigen Flächen je Widmung eher auf die Obergrenze; auf Deponien, Schottergruben oder in Zonen mit guter Netzanbindung sind höhere Werte möglich. Für die ${fmt(FLAECHE_HA, 1)} ha unseres ${fmt(BEISPIEL_MWP)}-MWp-Beispiels ergäbe ein mittlerer Wert rund **${fmtEur(PACHT_MITTEL)}** pro Jahr. Details und Vertragsgestaltung erklären die Ratgeber [Solarpark-Pacht pro Hektar](/ratgeber/solarpark-pacht-pro-hektar) und [Pachtvertrag Solarpark](/ratgeber/pachtvertrag-solarpark).`,
         },
         {
           typ: "p",

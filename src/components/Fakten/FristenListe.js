@@ -16,6 +16,7 @@
 import { createElement as h } from "react";
 import { CalendarDays, CircleCheck, Clock, ExternalLink, PencilRuler, TriangleAlert } from "lucide-react";
 import { fakten as faktenAusRegister, anzeigeStatus, istAbgelaufen, datumDe, datumLang, HINWEIS_ABGELAUFEN } from "@/lib/fakten";
+import { ankerFuer } from "@/lib/quellen/fakten";
 import { cn } from "@/components/ui/cn";
 import { datumKurzEn, faktEn, LAND_NAME_EN, quelleTitelEn, terminTextEn } from "@/lib/sprache/faktenEn";
 
@@ -121,7 +122,18 @@ export function QuelleZeile({ fakt, className, sprache = "de" }) {
       : h("span", null, en ? quelleTitelEn(q) : q.titel),
     fakt.abruf
       ? h("span", null, en ? ` · ${eigen ? "as at" : "retrieved"} ${datumKurzEn(fakt.abruf)}` : ` · ${eigen ? "Stand" : "abgerufen"} ${datumDe(fakt.abruf)}`)
-      : null
+      : null,
+    // GEO/Zitierfähigkeit: stabiler Zitier-Anker des Fakts im Faktenregister (/quellen#fakt-<land>-<id>).
+    // Bewusst ein einfaches <a> (kein Land-Link mit Hooks), damit die Datei mit node --test renderbar bleibt.
+    h("span", null, " · "),
+    h(
+      "a",
+      {
+        href: `/quellen#${ankerFuer(fakt.id, fakt.land)}`,
+        className: "text-ink-700 underline decoration-ink-300 underline-offset-2 transition-colors hover:text-navy-700 hover:decoration-navy-400",
+      },
+      en ? "in the fact register" : "im Faktenregister"
+    )
   );
 }
 

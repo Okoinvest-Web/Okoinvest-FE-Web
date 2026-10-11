@@ -224,7 +224,7 @@ const artikel = {
           typ: "kasten",
           variant: "info",
           titel: "Der größere Effekt: die sinkende Capture Rate",
-          text: `Wichtiger als der Prämienverlust ist, dass negative und sehr niedrige Mittagspreise den Marktwert Solar selbst drücken. 2025 erlöste Solarstrom im Jahresmittel nur rund die Hälfte des durchschnittlichen Börsenpreises. Diese [Capture Rate](/wissen/lexikon#capture-rate) bestimmt, was ein Park nach Förderende, im PPA oder als Merchant-Anlage verdient. Wer mit ${fmtCt(ERLOESE.merchantCt, 1)} Merchant-Erlös rechnet, sollte Sensitivitäten nach unten prüfen – etwa im [Solarpark-Rechner](/rechner/solarpark).`,
+          text: `Wichtiger als der Prämienverlust ist, dass negative und sehr niedrige Mittagspreise den Marktwert Solar selbst drücken. 2025 erlöste Solarstrom im Jahresmittel nur rund die Hälfte des durchschnittlichen Börsenpreises. Diese [Capture Rate](/wissen/lexikon#capture-rate) bestimmt, was ein Park nach Förderende, im PPA oder als Merchant-Anlage verdient. Wer mit [${fmtCt(ERLOESE.merchantCt, 1)}](/quellen#fakt-de-erloese.merchantCt) Merchant-Erlös rechnet, sollte Sensitivitäten nach unten prüfen – etwa im [Solarpark-Rechner](/rechner/solarpark).`,
         },
       ],
     },

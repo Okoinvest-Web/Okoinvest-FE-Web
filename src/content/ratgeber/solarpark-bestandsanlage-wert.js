@@ -160,7 +160,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Tabelle zeigt, warum Käufer so genau auf Diskontsatz und Ertrag schauen: Anderthalb Prozentpunkte mehr oder weniger Renditeerwartung verschieben den Wert um ${fmtPct(1 - W_NIEDRIG / W_MITTE, 0)} bis ${fmtPct(W_HOCH / W_MITTE - 1, 0)}. Bemerkenswert ist auch, dass ein Park mit einem Zuschlag von ${fmtCt(ERLOESE.eegFreiflaecheCt)} selbst bei ${fmtPct(DISKONT.niedrig, 0)} unter dem unteren Ende des Marktkorridors bleibt. Der Korridor bildet einen Mix ab – viele gehandelte Bestandsparks haben höhere Alttarife oder gut bepreiste PPA. Wie Erlöse, Kosten und Finanzierung zusammenspielen, erläutert der Ratgeber [Solarpark als Investment](/ratgeber/solarpark-investment-rendite).`,
+          text: `Die Tabelle zeigt, warum Käufer so genau auf Diskontsatz und Ertrag schauen: Anderthalb Prozentpunkte mehr oder weniger Renditeerwartung verschieben den Wert um ${fmtPct(1 - W_NIEDRIG / W_MITTE, 0)} bis ${fmtPct(W_HOCH / W_MITTE - 1, 0)}. Bemerkenswert ist auch, dass ein Park mit einem Zuschlag von [${fmtCt(ERLOESE.eegFreiflaecheCt)}](/quellen#fakt-de-erloese.eegFreiflaecheCt) selbst bei ${fmtPct(DISKONT.niedrig, 0)} unter dem unteren Ende des Marktkorridors bleibt. Der Korridor bildet einen Mix ab – viele gehandelte Bestandsparks haben höhere Alttarife oder gut bepreiste PPA. Wie Erlöse, Kosten und Finanzierung zusammenspielen, erläutert der Ratgeber [Solarpark als Investment](/ratgeber/solarpark-investment-rendite).`,
         },
       ],
     },

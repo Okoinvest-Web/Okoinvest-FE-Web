@@ -283,7 +283,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Der Unterschied im Preis je Kilowattstunde wirkt klein. Entscheidend ist die **Sicherheit über die Laufzeit**: Eine Bank finanziert einen Zuschlag über 20 Jahre mit höherem Fremdkapitalanteil als einen zehnjährigen PPA mit anschließendem Marktpreisrisiko. Deshalb liegen Pachtangebote für Flächen in der Kulisse eher im mittleren bis oberen Bereich der Spanne von ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} €/ha, während Flächen ohne Kulisse häufiger am unteren Ende um ${fmtEur(PACHT_MIN / HA)} je Hektar starten – oder gar kein Angebot erhalten. Die Details zur Pachthöhe finden Sie im Ratgeber [Solarpark-Pacht pro Hektar](/ratgeber/solarpark-pacht-pro-hektar), eine eigene Rechnung im [Pachtrechner](/rechner/pacht).`,
+          text: `Der Unterschied im Preis je Kilowattstunde wirkt klein. Entscheidend ist die **Sicherheit über die Laufzeit**: Eine Bank finanziert einen Zuschlag über 20 Jahre mit höherem Fremdkapitalanteil als einen zehnjährigen PPA mit anschließendem Marktpreisrisiko. Deshalb liegen Pachtangebote für Flächen in der Kulisse eher im mittleren bis oberen Bereich der Spanne von [${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} €/ha](/quellen#fakt-de-pacht.freiflaecheProHa), während Flächen ohne Kulisse häufiger am unteren Ende um ${fmtEur(PACHT_MIN / HA)} je Hektar starten – oder gar kein Angebot erhalten. Die Details zur Pachthöhe finden Sie im Ratgeber [Solarpark-Pacht pro Hektar](/ratgeber/solarpark-pacht-pro-hektar), eine eigene Rechnung im [Pachtrechner](/rechner/pacht).`,
         },
         {
           typ: "kasten",

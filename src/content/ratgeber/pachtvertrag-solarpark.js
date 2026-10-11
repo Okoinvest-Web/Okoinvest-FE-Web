@@ -59,7 +59,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die Vertragsbezeichnungen variieren: Nutzungsvertrag, Gestattungsvertrag, Pachtvertrag. Rechtlich handelt es sich in Deutschland meist um einen Pacht- oder Mietvertrag nach BGB, in der Regel aber **nicht um einen Landpachtvertrag**, weil die Fläche nicht mehr landwirtschaftlich genutzt wird. Welche Pacht marktüblich ist, zeigt der Ratgeber [Pacht pro Hektar für Solarparks](/ratgeber/solarpark-pacht-pro-hektar); die übliche Spanne liegt derzeit bei ${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr.`,
+          text: `Die Vertragsbezeichnungen variieren: Nutzungsvertrag, Gestattungsvertrag, Pachtvertrag. Rechtlich handelt es sich in Deutschland meist um einen Pacht- oder Mietvertrag nach BGB, in der Regel aber **nicht um einen Landpachtvertrag**, weil die Fläche nicht mehr landwirtschaftlich genutzt wird. Welche Pacht marktüblich ist, zeigt der Ratgeber [Pacht pro Hektar für Solarparks](/ratgeber/solarpark-pacht-pro-hektar); die übliche Spanne liegt derzeit bei [${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr](/quellen#fakt-de-pacht.freiflaecheProHa).`,
         },
         {
           typ: "kasten",

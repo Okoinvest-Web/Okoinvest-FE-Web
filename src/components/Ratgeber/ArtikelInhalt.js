@@ -8,8 +8,29 @@ import { Ablauf, Abschnitt, Checkliste, KartenRaster, Kennzahlband, KurzFazit, L
 import { spracheDerAnfrage } from "@/lib/land/seite";
 
 const TEXTE = {
-  de: { kurz: "Das Wichtigste in Kürze", faq: "Häufige Fragen", passend: "Passend dazu", quellen: "Quellen", abgerufen: "abgerufen", berechnen: "Jetzt berechnen" },
-  en: { kurz: "Key points at a glance", faq: "Frequently asked questions", passend: "Related", quellen: "Sources", abgerufen: "retrieved", berechnen: "Calculate now" },
+  de: {
+    kurz: "Das Wichtigste in Kürze",
+    faq: "Häufige Fragen",
+    passend: "Passend dazu",
+    quellen: "Quellen",
+    abgerufen: "abgerufen",
+    berechnen: "Jetzt berechnen",
+    // GEO/Zitierfähigkeit: Hinweis auf das Faktenregister (nur echte Angaben – Quelle, Abrufdatum, Prüfstand stehen dort je Zahl)
+    registerVor: "Die Marktzahlen dieser Website stehen im ",
+    registerLink: "Faktenregister",
+    registerNach: " – jede Zahl mit Primärquelle, Abrufdatum, Prüfstand und festem Zitier-Link.",
+  },
+  en: {
+    kurz: "Key points at a glance",
+    faq: "Frequently asked questions",
+    passend: "Related",
+    quellen: "Sources",
+    abgerufen: "retrieved",
+    berechnen: "Calculate now",
+    registerVor: "The market figures on this website are kept in the ",
+    registerLink: "fact register",
+    registerNach: " – every figure with its primary source, retrieval date, review status and a stable citation link.",
+  },
 };
 
 /**
@@ -61,6 +82,13 @@ export default function ArtikelInhalt({ artikel }) {
               </li>
             ))}
           </ol>
+          <p className="mt-4 text-[13.5px] leading-relaxed text-ink-500">
+            {t.registerVor}
+            <Link href="/quellen" className="text-ink-700 underline decoration-ink-300 underline-offset-2 hover:text-ov-700">
+              {t.registerLink}
+            </Link>
+            {t.registerNach}
+          </p>
         </Abschnitt>
       )}
     </>

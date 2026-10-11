@@ -8,7 +8,9 @@
 //   <Quellenzeile fakt={f} />
 
 import { ExternalLink } from "lucide-react";
+import Link from "@/components/Land/Link";
 import { fakt as faktAusRegister, datumDe } from "@/lib/fakten";
+import { ankerFuer } from "@/lib/quellen/fakten";
 import { cn } from "@/components/ui/cn";
 
 export default function Quellenzeile({ id, land = "DE", fakt, className, dunkel = false }) {
@@ -31,6 +33,11 @@ export default function Quellenzeile({ id, land = "DE", fakt, className, dunkel 
         <span>{titel}</span>
       )}
       {f.abruf ? <span> · {eigen ? "Stand" : "abgerufen"} {datumDe(f.abruf)}</span> : null}
+      {/* GEO/Zitierfähigkeit: stabiler Anker des Fakts im Faktenregister (/quellen#fakt-<land>-<id>) */}
+      <span> · </span>
+      <Link href={`/quellen#${ankerFuer(f.id, f.land)}`} className={cn("underline underline-offset-2 transition-colors", link)}>
+        im Faktenregister
+      </Link>
     </p>
   );
 }

@@ -166,7 +166,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Die PPA-Preise in unseren Rechnern (${ctFmt(ERLOESE.ppaCt.min)} bis ${ctFmt(ERLOESE.ppaCt.max)}) liegen bewusst über den dena-Werten auf Erzeugerebene, weil kleinere Abnahmemengen und Lieferung über einen Versorger Aufschläge verursachen. Den eigenen Fall rechnen Sie mit dem [Reststrom-Rechner](/rechner/reststrom).`,
+          text: `Die PPA-Preise in unseren Rechnern ([${ctFmt(ERLOESE.ppaCt.min)} bis ${ctFmt(ERLOESE.ppaCt.max)}](/quellen#fakt-de-erloese.ppaCt)) liegen bewusst über den dena-Werten auf Erzeugerebene, weil kleinere Abnahmemengen und Lieferung über einen Versorger Aufschläge verursachen. Den eigenen Fall rechnen Sie mit dem [Reststrom-Rechner](/rechner/reststrom).`,
         },
         {
           typ: "tool",

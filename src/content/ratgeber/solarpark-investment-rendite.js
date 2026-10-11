@@ -128,7 +128,7 @@ const artikel = {
           cols: 3,
           items: [
             { titel: "EEG-Zuschlag", text: `Wer in der [EEG-Ausschreibung](/ratgeber/eeg-ausschreibung-freiflaeche) einen Zuschlag erhält, bekommt 20 Jahre lang mindestens den [anzulegenden Wert](/wissen/lexikon#anzulegender-wert) – zuletzt rund ${fmtCt(ERLOESE.eegFreiflaecheCt)} im ersten Segment. Liegt der Marktwert darüber, bleibt der Marktwert.` },
-            { titel: "PPA", text: `Ein [Power Purchase Agreement](/ratgeber/ppa-fuer-unternehmen) mit einem Unternehmen oder Versorger sichert einen festen Preis, aktuell etwa ${fmt(ERLOESE.ppaCt.min, 1)}–${fmtCt(ERLOESE.ppaCt.max)} für 10 Jahre. Das Risiko liegt dann bei der Bonität des Abnehmers.` },
+            { titel: "PPA", text: `Ein [Power Purchase Agreement](/ratgeber/ppa-fuer-unternehmen) mit einem Unternehmen oder Versorger sichert einen festen Preis, aktuell etwa [${fmt(ERLOESE.ppaCt.min, 1)}–${fmtCt(ERLOESE.ppaCt.max)}](/quellen#fakt-de-erloese.ppaCt) für 10 Jahre. Das Risiko liegt dann bei der Bonität des Abnehmers.` },
             { titel: "Merchant", text: `Ohne Vertrag erlöst der Park den Marktwert Solar. Wir rechnen konservativ mit ${fmtCt(ERLOESE.merchantCt)}, leicht steigend. Merchant-Erlöse schwanken stark und sind kaum finanzierbar.` },
           ],
         },

@@ -83,6 +83,16 @@ export const GESPERRT_FUER_ALLE = ["/api/", "/portal", "/einladung/", "/angebot/
  * Öffentliche Wissensseiten, die GPTBot und Google-Extended nutzen dürfen (E5).
  * Bewusst NICHT enthalten: /energie-live (Datenlizenzen SMARD/aWATTar ungeklärt,
  * Masterplan S2), Rechner, Projektbörse, Formulare.
+ *
+ * Offener Inhaberpunkt (SEO-Finale, Paket GEOKI – E5-Erweiterung, NICHT ohne
+ * Freigabe ändern): /quellen (Faktenregister, Export ausdrücklich CC BY 4.0 und
+ * als Zitierquelle für KI-Systeme gedacht) fehlt in dieser Trainings-Freigabe.
+ * Die Such-/Abrufcrawler der KI-Dienste (OAI-SearchBot, PerplexityBot, Claude-
+ * SearchBot …) erreichen /quellen bereits über "*"; nur GPTBot und
+ * Google-Extended (Training) sind dort gesperrt. Wenn der Inhaber die Freigabe
+ * erteilt: "/quellen" (plus Länderfassungen) in diese Liste aufnehmen.
+ * /marktdaten deckt als Präfix auch /marktdaten/ausschreibungen, /fristen und
+ * /strompreise-schweiz ab.
  */
 export const WISSENSSEITEN = [
   "/ratgeber",

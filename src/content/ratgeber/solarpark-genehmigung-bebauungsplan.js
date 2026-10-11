@@ -207,7 +207,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Davon zu trennen ist die **Kommunalbeteiligung nach § 6 EEG**: Betreiber dürfen der Gemeinde bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je eingespeister Kilowattstunde zahlen. Bei einem 10-MWp-Park in Süddeutschland mit rund ${fmt(REGION.ertrag)} kWh/kWp wären das etwa **${fmtEur(KOMMUNAL_EUR)} pro Jahr**. Hinzu kommt die Gewerbesteuer, die bei Solaranlagen zu ${fmt(KOMMUNE.gewerbesteuerStandort * 100)} % der Standortgemeinde zusteht. Wie Gemeinden profitieren, zeigt die Seite für [Kommunen](/kommunen) und der [Kommunal-Rechner](/rechner/kommune).`,
+          text: `Davon zu trennen ist die **Kommunalbeteiligung nach § 6 EEG**: Betreiber dürfen der Gemeinde bis zu [${fmt(KOMMUNE.beteiligungCt, 1)} ct je eingespeister Kilowattstunde](/quellen#fakt-de-kommune.beteiligungCt) zahlen. Bei einem 10-MWp-Park in Süddeutschland mit rund ${fmt(REGION.ertrag)} kWh/kWp wären das etwa **${fmtEur(KOMMUNAL_EUR)} pro Jahr**. Hinzu kommt die Gewerbesteuer, die bei Solaranlagen zu ${fmt(KOMMUNE.gewerbesteuerStandort * 100)} % der Standortgemeinde zusteht. Wie Gemeinden profitieren, zeigt die Seite für [Kommunen](/kommunen) und der [Kommunal-Rechner](/rechner/kommune).`,
         },
       ],
     },

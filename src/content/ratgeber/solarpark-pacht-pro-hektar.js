@@ -106,7 +106,7 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: `**Für eine gut geeignete Fläche zahlen Solarparkbetreiber im DACH-Raum nach aktuellem Stand (${STAND}) meist zwischen ${fmt(PACHT.freiflaecheProHa.min)} und ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr.** Der Großteil der Verträge liegt im mittleren Bereich um ${eurHa(PACHT.freiflaecheProHa.mittel)}. Die Pacht wird in der Regel ab Baubeginn oder Inbetriebnahme gezahlt, über eine Laufzeit von ${JAHRE} Jahren mit Verlängerungsoptionen (häufig ${PACHT.verlaengerung}), und jährlich an die Inflation angepasst.`,
+          text: `**Für eine gut geeignete Fläche zahlen Solarparkbetreiber im DACH-Raum nach aktuellem Stand (${STAND}) meist zwischen [${fmt(PACHT.freiflaecheProHa.min)} und ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr](/quellen#fakt-de-pacht.freiflaecheProHa).** Der Großteil der Verträge liegt im mittleren Bereich um ${eurHa(PACHT.freiflaecheProHa.mittel)}. Die Pacht wird in der Regel ab Baubeginn oder Inbetriebnahme gezahlt, über eine Laufzeit von ${JAHRE} Jahren mit Verlängerungsoptionen (häufig ${PACHT.verlaengerung}), und jährlich an die Inflation angepasst.`,
         },
         {
           typ: "p",

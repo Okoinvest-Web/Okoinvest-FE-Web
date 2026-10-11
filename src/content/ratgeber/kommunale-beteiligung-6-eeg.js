@@ -82,7 +82,7 @@ const artikel = {
       bloecke: [
         {
           typ: "p",
-          text: `**Empfänger ist bei Freiflächenanlagen die Gemeinde, auf deren Gebiet die Anlage steht; sie kann insgesamt bis zu ${fmt(KOMMUNE.beteiligungCt, 1)} ct je tatsächlich eingespeister Kilowattstunde erhalten.** Liegt die Anlage in einem gemeindefreien Gebiet, tritt der Landkreis an die Stelle der Gemeinde. Verteilt sich ein Park auf mehrere Gemeinden, wird der Betrag aufgeteilt.`,
+          text: `**Empfänger ist bei Freiflächenanlagen die Gemeinde, auf deren Gebiet die Anlage steht; sie kann insgesamt bis zu [${fmt(KOMMUNE.beteiligungCt, 1)} ct je tatsächlich eingespeister Kilowattstunde](/quellen#fakt-de-kommune.beteiligungCt) erhalten.** Liegt die Anlage in einem gemeindefreien Gebiet, tritt der Landkreis an die Stelle der Gemeinde. Verteilt sich ein Park auf mehrere Gemeinden, wird der Betrag aufgeteilt.`,
         },
         {
           typ: "p",

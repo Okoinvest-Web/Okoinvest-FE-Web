@@ -165,7 +165,7 @@ const artikel = {
         },
         {
           typ: "p",
-          text: `Auf ${fmt(HA)} ha verliert der Betrieb durch die Agri-PV-Anlage also rund ${fmtEur(GAP_VERLUST_AGRI)} Direktzahlungen im Jahr – ein kleiner Betrag im Vergleich zur Pacht, die ein Investor für Agri-PV typischerweise zahlt (Orientierung: ${fmtEur(PACHT.agriProHa.min)} bis ${fmtEur(PACHT.agriProHa.max)} je Hektar, auf ${fmt(HA)} ha also etwa ${fmtEur(PACHT_AGRI)} im Mittel). Bei einem klassischen Solarpark wären die vollen ${fmtEur(GAP_OHNE_ANLAGE)} weg. Wie sich Pacht, Direktzahlungen und Deckungsbeitrag zusammen entwickeln, zeigt der [Agri-PV-Rechner](/rechner/agri-pv).`,
+          text: `Auf ${fmt(HA)} ha verliert der Betrieb durch die Agri-PV-Anlage also rund ${fmtEur(GAP_VERLUST_AGRI)} Direktzahlungen im Jahr – ein kleiner Betrag im Vergleich zur Pacht, die ein Investor für Agri-PV typischerweise zahlt (Orientierung: [${fmtEur(PACHT.agriProHa.min)} bis ${fmtEur(PACHT.agriProHa.max)} je Hektar](/quellen#fakt-de-pacht.agriProHa), auf ${fmt(HA)} ha also etwa ${fmtEur(PACHT_AGRI)} im Mittel). Bei einem klassischen Solarpark wären die vollen ${fmtEur(GAP_OHNE_ANLAGE)} weg. Wie sich Pacht, Direktzahlungen und Deckungsbeitrag zusammen entwickeln, zeigt der [Agri-PV-Rechner](/rechner/agri-pv).`,
         },
         { typ: "h3", text: "Worauf Sie beim Sammelantrag achten sollten" },
         {

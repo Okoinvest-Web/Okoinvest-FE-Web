@@ -1,0 +1,202 @@
+src\data\lexikon.js:70:    text: `Bei ausschreibungspflichtigen Anlagen entspricht er dem eigenen Zuschlagswert; bei kleineren Anlagen ist er gesetzlich festgelegt. Die Marktprämie ergibt sich aus der Differenz zwischen anzulegendem Wert und Marktwert Solar und wird in der Regel 20 Jahre gezahlt. Zur Orientierung: Im ersten Segment lagen die durchschnittlichen Zuschlagswerte zuletzt bei rund ${fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh.`,
+src\data\lexikon.js:377:[Omitted long matching line]
+src\data\lexikon.js:877:    text: `Die Bundesnetzagentur veröffentlicht nach jedem Gebotstermin den niedrigsten, höchsten und mengengewichteten durchschnittlichen Zuschlagswert. Für Freiflächenanlagen lagen die Durchschnittswerte zuletzt bei rund ${fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh, für besondere Solaranlagen höher. Der Zuschlag ist in der Regel an den Standort gebunden und nur eingeschränkt übertragbar.`,
+src\data\faq.js:219:    a: `Für Freiflächen-Photovoltaik werden im DACH-Raum derzeit meist ${spanne(PACHT.freiflaecheProHa, " € je Hektar und Jahr")} gezahlt, in vielen Fällen um ${fmt(PACHT.freiflaecheProHa.mittel)} €. Die Höhe hängt vor allem von Netzanschluss, Einstrahlung, Flächengröße und Vergütungsmodell ab. Üblich sind eine jährliche Indexierung und bis zum Baubeginn eine Reservierungsprämie.`,
+src\data\unternehmen.js:171:    "Bevorzugter PV-Errichter des Salzburg AG Konzerns",
+src\components\Agri\AgriPvRechner.js:102:                    { id: "eeg", label: "EEG-Zuschlag", sub: `${fmt(system === "hoch" ? ERLOESE.eegBesondereCt : ERLOESE.eegFreiflaecheCt, 1)} ct/kWh` },
+src\lib\rechner\solarpark.js:23:  eeg: { label: "EEG-Zuschlag", kurz: "EEG", vertragJahre: 20, preisCt: ERLOESE.eegFreiflaecheCt },
+src\lib\rechner\solarpark.js:36:  preisCt: ERLOESE.eegFreiflaecheCt,
+src\lib\rechner\solarpark.js:40:  pachtHa: PACHT.freiflaecheProHa.mittel,
+src\lib\rechner\projektbewertung.js:135:    hinweise.push(`Noch ohne Vermarktung: Zuletzt lagen EEG-Zuschläge um ${String(ERLOESE.eegFreiflaecheCt).replace(".", ",")} ct/kWh, PPA-Preise grob zwischen ${String(ERLOESE.ppaCt.min).replace(".", ",")} und ${String(ERLOESE.ppaCt.max).replace(".", ",")} ct/kWh.`);
+src\app\landwirte\page.js:209:                      {fmt(PACHT.freiflaecheProHa.min)}–{fmt(PACHT.freiflaecheProHa.max)} €/ha
+src\content\ratgeber\solarpark-versicherung.js:139:[Omitted long matching line]
+src\lib\rechner\pachtangebot.js:117:  return flaechenart === "agri" ? PACHT.agriProHa : PACHT.freiflaecheProHa;
+src\lib\rechner\pachtangebot.js:130:const preisCt = (t) => (t < 20 ? ERLOESE.eegFreiflaecheCt : ERLOESE.merchantCt * Math.pow(1 + ERLOESE.merchantSteigerung, t));
+src\lib\rechner\pachtangebot.js:484:  const erwartet = (10 / FREIFLAECHE.haProMwp) * 1000 * 1100 * (ERLOESE.eegFreiflaecheCt / 100) * 0.06;
+src\lib\rechner\pacht.js:30: *  ackerProHa (heutige Ackerpacht €/ha·a), dbProHa (Deckungsbeitrag Eigenbewirtschaftung €/ha·a),
+src\lib\rechner\pacht.js:39:  proHa = PACHT.freiflaecheProHa.mittel,
+src\lib\rechner\pacht.js:41:  mindestProHa = PACHT.freiflaecheProHa.min,
+src\lib\rechner\pacht.js:43:  ackerProHa = PACHT.ackerProHa,
+src\lib\rechner\pacht.js:64:      const ct = t < 20 ? ERLOESE.eegFreiflaecheCt : ERLOESE.merchantCt * Math.pow(1 + (ERLOESE.merchantSteigerung || 0), t);
+src\lib\rechner\pacht.js:74:    const acker = ha * ackerProHa * f;
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:40:  const ct = t < EEG_JAHRE ? ERLOESE.eegFreiflaecheCt : ERLOESE.merchantCt;
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:47:  festMin: summeIndexiert(PACHT.freiflaecheProHa.min * HA, JAHRE, PACHT.indexierung),
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:48:  festMittel: summeIndexiert(PACHT.freiflaecheProHa.mittel * HA, JAHRE, PACHT.indexierung),
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:49:  festMax: summeIndexiert(PACHT.freiflaecheProHa.max * HA, JAHRE, PACHT.indexierung),
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:54:  acker: summeIndexiert(PACHT.ackerProHa * HA, JAHRE, PACHT.indexierung),
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:56:  festJahr1: PACHT.freiflaecheProHa.mittel * HA,
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:57:  festJahr30: PACHT.freiflaecheProHa.mittel * HA * Math.pow(1 + PACHT.indexierung, JAHRE - 1),
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:59:const faktorAcker = PACHT.freiflaecheProHa.mittel / PACHT.ackerProHa;
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:87:  badge: { wert: `${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} €`, text: "Pacht je Hektar und Jahr, Freiflächen-PV" },
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:90:    `**Für Freiflächen-Solarparks werden 2026 in der Regel ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr gezahlt**, ein typischer Mittelwert liegt um ${eurHa(PACHT.freiflaecheProHa.mittel)}.`,
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:91:    `Das ist rund das **${fmt(faktorAcker, 0)}-Fache der üblichen Ackerpacht** von etwa ${eurHa(PACHT.ackerProHa)} – dafür ist die Fläche rund ${JAHRE} Jahre gebunden.`,
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:105:[Omitted long matching line]
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:113:          wert: eurHa(PACHT.freiflaecheProHa.mittel),
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:115:          text: `Spanne ${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} €/ha. Zum Vergleich: Ackerpacht im Schnitt etwa ${eurHa(PACHT.ackerProHa)}, Agri-PV ${fmt(PACHT.agriProHa.min)}–${fmt(PACHT.agriProHa.max)} €/ha.`,
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:140:            ["Freiflächen-PV Deutschland", `**${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} €**`, `Mittelwert um ${eurHa(PACHT.freiflaecheProHa.mittel)}; Spitzen an sehr guten Netzpunkten`],
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:144:            ["Ackerpacht Deutschland (Durchschnitt)", `rund ${fmt(PACHT.ackerProHa)} €`, `Destatis 2023: ${eurHa(DESTATIS_PACHT_LF_2023)} im Schnitt aller Agrarflächen, Neupachten deutlich höher`],
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:163:[Omitted long matching line]
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:245:          text: `**Auf 10 Hektar passen bei fester Süd-Aufständerung rund ${fmt(mwp, 1)} MWp; in Süddeutschland erzeugt die Anlage im ersten Jahr etwa ${fmt(ertragJahr1 / 1e6, 1)} Mio. kWh.** Wir unterstellen ${EEG_JAHRE} Jahre einen Zuschlagswert von ${fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh und danach einen vorsichtigen Marktwert von ${fmt(ERLOESE.merchantCt, 1)} ct/kWh, Moduldegradation ${fmtPct(FREIFLAECHE.degradation)} pro Jahr.`,
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:252:            [`Festpacht Minimum (${eurHa(PACHT.freiflaecheProHa.min)})`, eur(PACHT.freiflaecheProHa.min * HA), eur(R.festMin)],
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:253:            [`**Festpacht Mittelwert (${eurHa(PACHT.freiflaecheProHa.mittel)})**`, `**${eur(R.festJahr1)}**`, `**${eur(R.festMittel)}**`],
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:254:            [`Festpacht Maximum (${eurHa(PACHT.freiflaecheProHa.max)})`, eur(PACHT.freiflaecheProHa.max * HA), eur(R.festMax)],
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:257:            [`Zum Vergleich: Ackerpacht (${eurHa(PACHT.ackerProHa)})`, eur(PACHT.ackerProHa * HA), eur(R.acker)],
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:304:          text: `**Ein Angebot deutlich über ${eurHa(PACHT.freiflaecheProHa.max)} ist nicht automatisch unseriös – aber es sollte Sie zu besonders genauer Prüfung veranlassen.** Oft steckt hinter einer hohen Zahl ein Vertrag, der die Risiken beim Eigentümer lässt:`,
+src\content\ratgeber\solarpark-pacht-pro-hektar.js:346:      a: `Nach aktuellem Stand meist zwischen ${fmt(PACHT.freiflaecheProHa.min)} und ${fmt(PACHT.freiflaecheProHa.max)} € je Jahr, im Mittel um ${eurHa(PACHT.freiflaecheProHa.mittel)}. Die Höhe hängt vor allem vom Netzanschluss, der Förderkulisse und der Flächengröße ab. Eine erste Schätzung liefert der [Pachtrechner](/rechner/pacht).`,
+src\lib\rechner\netzanschluss.js:117:  const verlustEurJahr = (verlustKwh * ERLOESE.eegFreiflaecheCt) / 100;
+src\content\ratgeber\solarpark-investment-rendite.js:129:            { titel: "EEG-Zuschlag", text: `Wer in der [EEG-Ausschreibung](/ratgeber/eeg-ausschreibung-freiflaeche) einen Zuschlag erhält, bekommt 20 Jahre lang mindestens den [anzulegenden Wert](/wissen/lexikon#anzulegender-wert) – zuletzt rund ${fmtCt(ERLOESE.eegFreiflaecheCt)} im ersten Segment. Liegt der Marktwert darüber, bleibt der Marktwert.` },
+src\content\ratgeber\solarpark-investment-rendite.js:151:            ["Pacht", `${fmtEur(PACHT.freiflaecheProHa.min)}–${fmtEur(PACHT.freiflaecheProHa.max)} je ha und Jahr`, `rund ${fmt(FREIFLAECHE.haProMwp, 1)} ha je MWp; Details im Ratgeber [Pacht pro Hektar](/ratgeber/solarpark-pacht-pro-hektar)`],
+src\content\ratgeber\solarpark-investment-rendite.js:193:          fussnote: `Annahmen: 10 MWp Süd, fest, ${fmt(BASIS.spezErtrag)} kWh/kWp, Degradation ${fmtPct(FREIFLAECHE.degradation, 1)} p. a., Pacht ${fmtEur(PACHT.freiflaecheProHa.mittel)}/ha, Zins ${fmtPct(FINANZIERUNG.zins, 1)}, Tilgung ${fmt(FINANZIERUNG.tilgungJahre)} Jahre, Mindest-DSCR ${fmt(FINANZIERUNG.dscrZiel, 2)}, Laufzeit ${fmt(FREIFLAECHE.laufzeit)} Jahre, Renditen vor Steuern. Rechenkern identisch mit dem Solarpark-Rechner.`,
+src\lib\rechner\kommune.js:26:  pachtHa: PACHT.freiflaecheProHa.mittel,
+src\lib\rechner\kommune.js:29:  preisCt: ERLOESE.eegFreiflaecheCt,
+src\content\ratgeber\solarpark-beweidung-schafe.js:80:[Omitted long matching line]
+src\content\ratgeber\solarpark-beweidung-schafe.js:273:            ["Typische Pacht", `${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} €/ha`, `${fmt(PACHT.agriProHa.min)}–${fmt(PACHT.agriProHa.max)} €/ha`],
+src\lib\rechner\flaechencheck.js:83:    konversion: [15, "Konversionsflächen sind politisch erwünscht und in Deutschland EEG-förderfähig."],
+src\lib\rechner\flaechencheck.js:97:    if (land === "DE") add(8, "Benachteiligtes Gebiet: Acker- und Grünland ist dort grundsätzlich EEG-förderfähig, sofern das Land nicht ausgeschlossen hat.");
+src\lib\rechner\flaechencheck.js:145:  const p = PACHT.freiflaecheProHa;
+src\lib\rechner\energySharing.js:84:    { id: "abgaben", label: "Entfallende Abgaben", ct: l.abgabenCt },
+src\content\ratgeber\solarpark-bestandsanlage-wert.js:47:  { label: `Zuschlag ${fmtCt(ERLOESE.eegBesondereCt)} statt ${fmtCt(ERLOESE.eegFreiflaecheCt)}`, w: wert(cfA(rechneSolarpark({ preisCt: ERLOESE.eegBesondereCt })), FINANZIERUNG.diskont) },
+src\content\ratgeber\solarpark-bestandsanlage-wert.js:58:    const kosten = ALT_KWP * FREIFLAECHE.opexProKwp * Math.pow(1 + FREIFLAECHE.inflation, t - 1) + ALT_HA * PACHT.freiflaecheProHa.mittel * Math.pow(1 + PACHT.indexierung, t - 1);
+src\content\ratgeber\solarpark-bestandsanlage-wert.js:103:    `**Beispiel junger Park (${fmt(STANDARD.mwp)} MWp, Zuschlag ${fmtCt(ERLOESE.eegFreiflaecheCt)}, ${fmt(REST)} Restjahre):** Bei ${fmtPct(DISKONT.hoch, 0)} bis ${fmtPct(DISKONT.niedrig, 0)} Diskontsatz ergibt sich ein Wert von **${kwpWert(W_NIEDRIG)} bis ${kwpWert(W_HOCH)}** – unter dem Marktkorridor.`,
+src\content\ratgeber\solarpark-bestandsanlage-wert.js:127:          text: `${fmt(STANDARD.mwp)} MWp in Süddeutschland, Zuschlag ${fmtCt(ERLOESE.eegFreiflaecheCt)}, ${fmt(REST)} Restjahre; gesamt ${fmtMio(W_MITTE)} vor Steuern und Schulden.`,
+src\content\ratgeber\solarpark-bestandsanlage-wert.js:158:          fussnote: `Cashflows aus dem Rechenkern des Solarpark-Rechners (Jahre ${ALTER + 1}–${LEBEN}): ${fmt(BASIS.spezErtrag)} kWh/kWp, EEG-Zuschlag bis Jahr 20, danach Marktwert; Betriebskosten, Pacht (${fmt(PACHT.freiflaecheProHa.mittel)} €/ha) und Rückbaurücklage abgezogen. Vor Steuern, ohne Schulden. Kein Wertgutachten.`,
+src\content\ratgeber\solarpark-bestandsanlage-wert.js:162:[Omitted long matching line]
+src\content\ratgeber\solarpark-bestandsanlage-wert.js:288:      a: `Die Website nennt für Bestandsparks eine Marktspanne von ${fmt(COD.preisProKwp.min)}–${fmt(COD.preisProKwp.max)} €/kWp. Der konkrete Wert ergibt sich aus dem Barwert der Cashflows: Im Beispiel liegt ein junger Park mit ${fmtCt(ERLOESE.eegFreiflaecheCt)} bei ${kwpWert(W_NIEDRIG)} bis ${kwpWert(W_HOCH)}, ein Altpark mit ${fmtCt(ALT_TARIF_CT, 2)} bei rund ${kwpWert(WB, ALT_KWP)}.`,
+src\content\ratgeber\solarpark-autobahn-bahn-privilegierung.js:34:    erloes: (kwh * ERLOESE.eegFreiflaecheCt) / 100,
+src\content\ratgeber\solarpark-autobahn-bahn-privilegierung.js:36:    pacht: ha * PACHT.freiflaecheProHa.mittel,
+src\content\ratgeber\solarpark-autobahn-bahn-privilegierung.js:165:            [`Erlös bei ${fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh Zuschlagswert`, `${fmtEur(S200.erloes)} pro Jahr`, `${fmtEur(S500.erloes)} pro Jahr`],
+src\content\ratgeber\solarpark-autobahn-bahn-privilegierung.js:167:            [`Pacht bei ${fmt(PACHT.freiflaecheProHa.mittel)} €/ha`, `${fmtEur(S200.pacht)} pro Jahr`, `${fmtEur(S500.pacht)} pro Jahr`],
+src\content\ratgeber\solarpark-autobahn-bahn-privilegierung.js:313:      a: `Häufig ja, weil Baurecht und Förderung dort leichter zu erreichen sind. Entscheidend bleibt aber der Netzanschluss. Die übliche Spanne liegt bei ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr; Details im [Pachtrechner](/rechner/pacht).`,
+src\content\ratgeber\repowering-solarpark.js:43:    const kosten = kwp * FREIFLAECHE.opexProKwp * Math.pow(1 + FREIFLAECHE.inflation, t - 1) + HA * PACHT.freiflaecheProHa.mittel * Math.pow(1 + PACHT.indexierung, t - 1);
+src\content\ratgeber\repowering-solarpark.js:64:    const kosten = kwp * FREIFLAECHE.opexProKwp * Math.pow(1 + FREIFLAECHE.inflation, t - 1) + HA * PACHT.freiflaecheProHa.mittel * Math.pow(1 + PACHT.indexierung, t - 1);
+src\content\ratgeber\repowering-solarpark.js:110:    `**Freiflächenanlagen aus 2009 bis 2012 erhalten noch bis Ende 2029 bis 2032 Vergütungen von rund ${fmt(VERGUETUNG_ALT[3].ct, 0)} bis ${fmt(VERGUETUNG_ALT[0].ct, 0)} ct/kWh** – ein Vielfaches heutiger Zuschläge von rund ${fmtCt(ERLOESE.eegFreiflaecheCt)}.`,
+src\content\ratgeber\repowering-solarpark.js:260:[Omitted long matching line]
+src\lib\rechner\agriPv.js:52:  const ctFoerder = eeg ? (sys === "hoch" ? ERLOESE.eegBesondereCt : ERLOESE.eegFreiflaecheCt) : ERLOESE.ppaCt.mittel;
+src\content\ratgeber\pv-pacht-erbschaftsteuer-grundsteuer.js:26:const PACHT_30_JAHRE = PACHT.freiflaecheProHa.mittel * HA * PACHT.laufzeit;
+src\content\ratgeber\pv-pacht-erbschaftsteuer-grundsteuer.js:155:[Omitted long matching line]
+src\content\ratgeber\pv-pacht-erbschaftsteuer-grundsteuer.js:170:[Omitted long matching line]
+src\app\flaechencheck\page.js:101:                ["Pacht Freifläche", `${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} €/ha·a`],
+src\app\flaeche-verpachten\page.js:40:  { icon: Wallet, wert: `${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)}`, einheit: "€ je Hektar und Jahr", text: `übliche Solarpacht im DACH-Raum, typisch um ${fmt(PACHT.freiflaecheProHa.mittel)} €` },
+src\app\flaeche-verpachten\page.js:49:    a: `Für Freiflächen-PV liegen die Pachten im DACH-Raum derzeit meist zwischen ${fmt(PACHT.freiflaecheProHa.min)} und ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr, typisch um ${fmt(PACHT.freiflaecheProHa.mittel)} €. Entscheidend sind Netzanschluss, Größe, Einstrahlung und ob die Fläche in der EEG-Kulisse liegt. Das ist ein Vielfaches der üblichen Ackerpacht von durchschnittlich rund ${fmt(PACHT.ackerProHa)} € je Hektar.`,
+src\content\ratgeber\photovoltaik-landwirt-steuern.js:42:const PACHT_BSP = PACHT.freiflaecheProHa.mittel * BSP_HA;
+src\content\ratgeber\photovoltaik-landwirt-steuern.js:126:[Omitted long matching line]
+src\content\ratgeber\pachtvertrag-solarpark.js:61:[Omitted long matching line]
+src\content\ratgeber\pachtvertrag-solarpark.js:243:            `Pacht marktüblich (${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} €/ha) und wertgesichert`,
+src\app\regionen\[slug]\page.js:343:              <div className="mt-3" role="img" aria-label={`Spanne ${fmt(k.spanne.min)} bis ${fmt(k.spanne.max)} Euro innerhalb der DACH-Spanne ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} Euro`}>
+src\app\regionen\[slug]\page.js:348:                      left: `${((k.spanne.min - PACHT.freiflaecheProHa.min) / (PACHT.freiflaecheProHa.max - PACHT.freiflaecheProHa.min)) * 100}%`,
+src\app\regionen\[slug]\page.js:349:                      width: `${((k.spanne.max - k.spanne.min) / (PACHT.freiflaecheProHa.max - PACHT.freiflaecheProHa.min)) * 100}%`,
+src\app\regionen\[slug]\page.js:353:                <div aria-hidden="true" className="ov-num mt-1 flex justify-between text-[11px] text-ink-500"><span>{fmt(PACHT.freiflaecheProHa.min)} €</span><span>DACH-Spanne</span><span>{fmt(PACHT.freiflaecheProHa.max)} €</span></div>
+src\app\regionen\page.js:90:    a: `Im DACH-Raum liegen die Pachten für Freiflächen-PV derzeit meist zwischen ${fmt(PACHT.freiflaecheProHa.min)} und ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr. Auf jeder Regionalseite ordnen wir ein, ob die Region eher im unteren, mittleren oder oberen Band liegt – und warum. Den Ausschlag geben am Ende Netz, Größe und Förderfähigkeit Ihrer Fläche.`,
+src\app\regionen\page.js:145:          { wert: `${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)}`, einheit: "€/ha", text: "übliche Pacht Freiflächen-PV im DACH-Raum je Jahr" },
+src\content\ratgeber\negative-strompreise-solarspitzengesetz.js:40:const AW = ERLOESE.eegFreiflaecheCt;
+src\app\energiegemeinschaften\rechner\page.js:32:  { icon: Landmark, ton: "bg-sun-50 text-sun-700 ring-1 ring-sun-200", titel: "Elektrizitätsabgabe", text: "Entfällt auf Gemeinschaftsstrom – nur bei Erneuerbare-Energie-Gemeinschaften.", wert: `${fmt(RECHNER_STANDARD.abgabenCt, 2)} ct/kWh` },
+src\app\energiegemeinschaften\rechner\page.js:109:        ["Elektrizitätsabgabe (nur EEG befreit)", `${fmt(RECHNER_STANDARD.abgabenCt, 2)} ct/kWh`],
+src\content\ratgeber\moor-pv.js:171:            ["EEG-Ausschreibung (erstes Segment)", "über 1 MW", `Zuschlag zum eigenen Gebotswert; Freifläche zuletzt um ${fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh`, "höhere Kosten der Moor-PV müssen im Wettbewerb getragen werden"],
+src\content\ratgeber\moor-pv.js:246:          text: `**Für Moor-PV gibt es noch keinen etablierten Pachtmarkt; als Orientierung dienen die Spannen für Freiflächen von ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} €/ha, wobei höhere Bau- und Wasserbaukosten den Spielraum eher begrenzen.** Wichtiger als die Zahl je Hektar ist die Frage, was nach der Wiedervernässung mit der Fläche geschieht.`,
+src\content\ratgeber\moor-pv.js:318:      a: `Belastbare Marktwerte gibt es noch nicht. Als Orientierung dienen die Freiflächen-Spannen von ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} €/ha; höhere Baukosten und die dauerhafte Wiedervernässung sollten in Vertrag und Bewertung einfließen.`,
+src\app\page.js:67:    a: `Für Freiflächen-Photovoltaik werden im DACH-Raum heute meist etwa ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr gezahlt – ein Vielfaches der landwirtschaftlichen Pacht. Entscheidend sind Netzanschluss, Größe, Lage in der EEG-Flächenkulisse und das Pachtmodell (fest, indexiert oder mit Umsatzbeteiligung). Der Flächencheck zeigt Ihnen die Spanne für Ihre Fläche.`,
+src\content\ratgeber\kommunale-beteiligung-6-eeg.js:226:          text: `Wie viel tatsächlich fließt, hängt am Gewinn. Ein fremdfinanzierter Park schreibt in den ersten Jahren durch Abschreibung und Zinsen oft kaum Gewinne; Verlustvorträge verschieben die Steuer weiter nach hinten. Der Kommunal-Rechner bildet das vereinfacht ab. Das Beispiel: ${MWP} MWp in Süddeutschland, Erlös ${fmtCt(ERLOESE.eegFreiflaecheCt, 1)} aus der Ausschreibung, Hebesatz ${fmt(KOMMUNE.hebesatz * 100)} %.`,
+src\app\marktdaten\page.js:76:const faktorAcker = PACHT.freiflaecheProHa.mittel / LANDPACHT_DESTATIS.schnitt;
+src\app\marktdaten\page.js:311:              Für unsere Rechner setzen wir derzeit {ct(ERLOESE.eegFreiflaecheCt, 1)} an. Wie Sie ein Gebot vorbereiten und welche Flächen zugelassen
+src\app\marktdaten\page.js:440:              lead={`Für Freiflächen-Solarparks werden nach aktuellem Stand meist ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr gezahlt – im Mittel rund das ${fmt(faktorAcker, 0)}-Fache der durchschnittlichen Landpacht.`}
+src\app\marktdaten\page.js:444:              entspricht die mittlere Pacht etwa {fmt((PACHT.freiflaecheProHa.mittel * FREIFLAECHE.haProMwp) / 1000, 1)} € je kWp und Jahr. Details im
+src\app\marktdaten\page.js:460:                { label: "Freiflächen-PV", min: PACHT.freiflaecheProHa.min, max: PACHT.freiflaecheProHa.max, farbe: "from-ov-400 to-ov-600" },
+src\app\marktdaten\page.js:464:                const skala = Math.max(PACHT.freiflaecheProHa.max, PACHT.agriProHa.max);
+src\app\marktdaten\page.js:483:              ["Freiflächen-PV (DACH)", `${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)}, Mittel ${fmt(PACHT.freiflaecheProHa.mittel)}`],
+src\app\rechner\ppa\page.js:88:            Bilanzierung und dem höheren Terminmarkt 2026 darüber. Der EEG-Zuschlag für neue Freiflächenanlagen lag 2025 um {fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh. Mehr zu Verträgen und
+src\app\rechner\beteiligung\page.js:71:            Grundlage ist unser <Link href="/rechner/solarpark">Solarpark-Renditerechner</Link> mit seinen vorsichtigen Standardwerten – EEG-Zuschlag {fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh für
+src\app\rechner\beteiligung\page.js:92:        ["Park: EEG / Laufzeit", `${fmt(ERLOESE.eegFreiflaecheCt, 1)} ct · ${FREIFLAECHE.laufzeit} Jahre`],
+src\app\rechner\kommune\page.js:87:        ["Pacht Freifläche", `${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} €/ha`],
+src\app\rechner\energy-sharing\page.js:93:        ["AT: Elektrizitätsabgabe 2026", `${fmt(R.at.abgabenCt, 2)} ct/kWh entfällt`],
+src\app\rechner\pacht\page.js:26:    a: `Im DACH-Raum liegen Solarpachten derzeit meist zwischen ${fmt(PACHT.freiflaecheProHa.min)} und ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr. Hohe Werte gibt es für große Flächen mit nahem Netzanschluss in der EEG-Kulisse, niedrigere bei langen Kabeltrassen, kleinen Flächen oder schwierigem Baurecht.`,
+src\app\rechner\pacht\page.js:100:              Bei der <strong>Festpacht</strong> bleibt der Betrag über die Laufzeit gleich, bei der <strong>indexierten Pacht</strong> steigt er mit {fmt(PACHT.indexierung * 100, 1)} % pro Jahr. Die <strong>Umsatzbeteiligung</strong> rechnen wir auf den erwarteten Stromertrag Ihrer Region – die ersten 20 Jahre mit dem durchschnittlichen EEG-Zuschlagswert von {fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh, danach vorsichtig mit {fmt(ERLOESE.merchantCt, 1)} ct/kWh Marktwert.
+src\app\rechner\pacht\page.js:109:        ["Pacht Freifläche (Spanne)", `${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} €/ha·a`],
+src\app\rechner\pacht\page.js:113:        ["Strompreis Jahr 1–20 / danach", `${fmt(ERLOESE.eegFreiflaecheCt, 1)} / ${fmt(ERLOESE.merchantCt, 1)} ct/kWh`],
+src\app\rechner\pacht\page.js:115:        ["Ackerpacht Ø Deutschland", `${fmt(PACHT.ackerProHa)} €/ha·a`],
+src\app\rechner\pachtangebot-check\page.js:23:[Omitted long matching line]
+src\app\rechner\pachtangebot-check\page.js:109:        ["Pacht Freifläche (Spanne)", `${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} €/ha·a`],
+src\app\rechner\agri-pv\page.js:46:[Omitted long matching line]
+src\app\rechner\agri-pv\page.js:110:        ["EEG vertikal / hoch / PPA", `${fmt(ERLOESE.eegFreiflaecheCt, 1)} / ${fmt(ERLOESE.eegBesondereCt, 1)} / ${fmt(ERLOESE.ppaCt.mittel, 1)} ct/kWh`],
+src\content\ratgeber\freiflaechen-pv-oesterreich.js:31:const PACHT_MITTEL = FLAECHE_HA * PACHT.freiflaecheProHa.mittel;
+src\content\ratgeber\freiflaechen-pv-oesterreich.js:219:[Omitted long matching line]
+src\content\ratgeber\freiflaechen-pv-oesterreich.js:298:      a: `Als Orientierung gelten im DACH-Raum ${fmtEur(PACHT.freiflaecheProHa.min)} bis ${fmtEur(PACHT.freiflaecheProHa.max)} je Hektar und Jahr. Entscheidend sind Widmungsfähigkeit, Netzanschluss und Förderfähigkeit der Fläche. Mit dem [Pachtrechner](/rechner/pacht) können Sie Ihre Fläche durchrechnen.`,
+src\content\ratgeber\floating-pv.js:149:[Omitted long matching line]
+src\content\ratgeber\floating-pv.js:193:          text: `Die Tabelle zeigt, warum Floating-PV im Wettbewerb mit Ackerparks um ${fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh schwer mithalten kann, solange kein eigenes Untersegment mit höherem Höchstwert greift – und warum der Eigenverbrauch im Kieswerk so wichtig ist. Mit eigenen Annahmen rechnen Sie im [Solarpark-Rechner](/rechner/solarpark); den Einfluss der Anbindung ans Netz erklärt der Ratgeber [Netzanschluss für Solarparks](/ratgeber/netzanschluss-solarpark).`,
+src\content\ratgeber\floating-pv.js:233:[Omitted long matching line]
+src\content\ratgeber\ertragsgutachten-p50-p90.js:248:[Omitted long matching line]
+src\content\ratgeber\ertragsgutachten-p50-p90.js:273:          fussnote: `Investition ${fmtMio(INV)} inkl. Netzanschluss und Entwicklung; Erlöse, Betriebskosten und Pacht wie im Solarpark-Rechner (EEG ${fmtCt(ERLOESE.eegFreiflaecheCt)}, danach Marktwert). Maßgeblich ist das schwächste Jahr der Tilgungsphase. Vereinfachte Rechnung vor Steuern, keine Finanzierungszusage.`,
+src\app\ratgeber\page.js:80:      wert: `${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} €`,
+src\content\ratgeber\eeg-ausschreibung-freiflaeche.js:138:          text: `In den Rechnern dieser Website setzen wir für Freiflächenanlagen einen [Zuschlagswert](/wissen/lexikon#zuschlagswert) von ${fmtCt(ERLOESE.eegFreiflaecheCt)} an – das entspricht dem Mittel der letzten Runden. Für ein konkretes Gebot zählen Standort, Kosten und Wettbewerb am jeweiligen Termin.`,
+src\content\ratgeber\eeg-ausschreibung-freiflaeche.js:248:            ["Erlös (ct/kWh)", `~${fmt(ERLOESE.eegFreiflaecheCt, 1)} als Untergrenze`, `${fmt(ERLOESE.ppaCt.min, 1)}–${fmt(ERLOESE.ppaCt.max, 1)} fest`, `~${fmt(ERLOESE.merchantCt, 1)}, schwankend`],
+src\content\ratgeber\direktvermarktung-solarpark.js:36:const AW = ERLOESE.eegFreiflaecheCt;
+src\content\ratgeber\dienstbarkeit-grundbuch-pv-pacht.js:25:const JAHRESWERT = PACHT.freiflaecheProHa.mittel * HA;
+src\content\ratgeber\dienstbarkeit-grundbuch-pv-pacht.js:269:[Omitted long matching line]
+src\content\ratgeber\benachteiligte-gebiete-pv-freiflaeche.js:30:const ERLOES_EEG = erloesJahr(ERLOESE.eegFreiflaecheCt);
+src\content\ratgeber\benachteiligte-gebiete-pv-freiflaeche.js:33:const PACHT_MITTEL = PACHT.freiflaecheProHa.mittel * HA;
+src\content\ratgeber\benachteiligte-gebiete-pv-freiflaeche.js:34:const PACHT_MIN = PACHT.freiflaecheProHa.min * HA;
+src\content\ratgeber\benachteiligte-gebiete-pv-freiflaeche.js:274:            ["EEG-Zuschlag (benachteiligtes Gebiet)", `${fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh für 20 Jahre`, fmtEur(ERLOES_EEG), fmtPct(PACHT_MITTEL / ERLOES_EEG)],
+src\content\ratgeber\benachteiligte-gebiete-pv-freiflaeche.js:281:          fussnote: `Ertrag ${fmt(REGION.ertrag)} kWh/kWp, ${fmt(FREIFLAECHE.haProMwp, 1)} ha je MWp, Pacht ${eurHa(PACHT.freiflaecheProHa.mittel)} (= ${fmtEur(PACHT_MITTEL)} im Jahr). Orientierungswerte aus der ÖkoInvest-Marktübersicht, keine Angebote; negative Preise, Direktvermarktungskosten und Degradation nicht berücksichtigt.`,
+src\content\ratgeber\benachteiligte-gebiete-pv-freiflaeche.js:285:[Omitted long matching line]
+src\content\ratgeber\benachteiligte-gebiete-pv-freiflaeche.js:355:      a: `Nicht automatisch, aber die Fläche ist für mehr Betreiber interessant, weil sie mit EEG-Zuschlag finanziert werden kann. Übliche Pachten liegen bei ${fmt(PACHT.freiflaecheProHa.min)} bis ${fmt(PACHT.freiflaecheProHa.max)} €/ha; die Netzanbindung beeinflusst die Höhe oft stärker als die Kulisse.`,
+src\content\ratgeber\agri-pv-wirtschaftlichkeit.js:137:            ["Übliche Pacht, €/ha und Jahr", `${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)}`, `${fmt(PACHT.agriProHa.min)}–${fmt(PACHT.agriProHa.max)}`, `${fmt(PACHT.agriProHa.min)}–${fmt(PACHT.agriProHa.max)}`],
+src\content\ratgeber\agri-pv-wirtschaftlichkeit.js:216:[Omitted long matching line]
+src\lib\plattform\fach\marktWerte.js:15:    erloese: { eegFreiflaecheCt: ERLOESE.eegFreiflaecheCt, eegBesondereCt: ERLOESE.eegBesondereCt, ppaCt: { min: ERLOESE.ppaCt.min, max: ERLOESE.ppaCt.max } },
+src\lib\plattform\fach\marktWerte.js:21:    pacht: { freiflaeche: { min: PACHT.freiflaecheProHa.min, max: PACHT.freiflaecheProHa.max }, agri: { min: PACHT.agriProHa.min, max: PACHT.agriProHa.max } },
+src\components\Region\rechnung.js:15: * Pachtspanne je ha und Jahr innerhalb von PACHT.freiflaecheProHa.
+src\components\Region\rechnung.js:21:  const p = PACHT.freiflaecheProHa;
+src\lib\plattform\fach\datenblatt.js:245:    const sp = p?.typ === "agri" ? PACHT.agriProHa : PACHT.freiflaecheProHa;
+src\lib\plattform\fach\datenblatt.js:259:    if (db.eegZuschlagCt > hoechst) add("warnung", "eegZuschlagCt", "kaufmaennisch", `Zuschlagswert ${db.eegZuschlagCt} ct/kWh ungewöhnlich hoch (Zuschläge zuletzt um ${ERLOESE.eegFreiflaecheCt} ct/kWh) – Segment und Bescheid prüfen.`);
+src\lib\plattform\fach\bewertung.js:91:    eingaben.pachtJahr = db.pachtEurHa ? setze("pachtJahr", Math.round(db.pachtEurHa * ha), "Datenblatt") : setze("pachtJahr", Math.round(PACHT.freiflaecheProHa.mittel * ha), "Markt");
+src\lib\plattform\fach\bewertung.js:126:    eingaben.preisCt = setze("preisCt", ERLOESE.eegFreiflaecheCt, "Markt");
+src\lib\plattform\fach\bewertung.js:131:  const pachtBasis = db.pachtEurHa || (p?.typ === "agri" ? PACHT.agriProHa.mittel : PACHT.freiflaecheProHa.mittel);
+src\components\Rechner\ToolVorschau.js:61:        { label: "Ackerpacht", wert: PACHT.ackerProHa, anzeige: `${fmt(PACHT.ackerProHa)} €/ha`, farbe: GRAU },
+src\components\Rechner\ToolVorschau.js:62:        { label: "Solarpacht (Mitte)", wert: PACHT.freiflaecheProHa.mittel, anzeige: `${fmt(PACHT.freiflaecheProHa.mittel)} €/ha`, farbe: GRUEN },
+src\components\Rechner\KommuneRechner.js:77:                hinweis={`EEG-Zuschlag oder PPA. Bestimmt den Gewinn und damit die Gewerbesteuer. Zuletzt um ${fmt(ERLOESE.eegFreiflaecheCt, 1)} ct/kWh.`}
+src\components\Rechner\KommuneRechner.js:96:                  <Regler label="Pacht" wert={pachtHa} min={PACHT.freiflaecheProHa.min} max={PACHT.freiflaecheProHa.max + 500} step={100} format={(v) => `${fmt(v)} €/ha`} onChange={setPachtHa} />
+src\components\Rechner\HubBuehne.js:23:  const maxPacht = PACHT.freiflaecheProHa.mittel;
+src\components\Rechner\HubBuehne.js:79:            { label: "Ackerpacht", wert: PACHT.ackerProHa, farbe: "bg-ink-300" },
+src\components\Rechner\HubBuehne.js:80:            { label: "Solarpacht (Mitte)", wert: PACHT.freiflaecheProHa.mittel, farbe: "bg-ov-500" },
+src\components\Prozess\prozessDaten.js:40:        wir: `Pachtangebot (Orientierung ${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} €/ha und Jahr), Vertragsentwurf, Rückbausicherheit.`,
+src\lib\plattform\akquise-kampagne.js:145:  const p = PACHT.freiflaecheProHa;
+src\lib\invest\markt.js:131:  eegFreiflaecheCt: 4.8,
+src\lib\invest\markt.js:232:  freiflaecheProHa: { min: 1500, mittel: 2800, max: 4500 },
+src\lib\invest\markt.js:239:  ackerProHa: 380,
+src\lib\invest\markt.js:524:   *  abgabenCt      Entfall von Abgaben auf geteilten Strom – AT: Elektrizitätsabgabe 2026 0,82 ct/kWh (ab 2027 1,5 ct)
+src\lib\invest\markt.js:530:    de: { waehrung: "€", ct: "ct", energiepreis: 14, netzAp: 9, rabatte: [{ id: "keiner", label: "Energy Sharing", sub: "§ 42c EnWG", anteil: 0 }], abgabenCt: 0, ueberschussCt: 6, gemeinschaftCt: 11, verwaltung: 30 },
+src\lib\invest\markt.js:541:      abgabenCt: 0.82,
+src\lib\invest\markt.js:555:      abgabenCt: 0,
+src\app\portal\flaechen\neu\page.js:27:              <li className="flex gap-3"><Coins aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-300" /> Pachtangebot im Portal – übliche Spanne für Freiflächen-PV {fmt(PACHT.freiflaecheProHa.min)}–{fmt(PACHT.freiflaecheProHa.max)} € je ha und Jahr, abhängig von Standort und Netz.</li>
+src\lib\plattform\mitglied\gemeinschaft.js:150:  const vorteilCt = r.energiepreis + r.netzAp * rabatt + r.abgabenCt - eg.tarifBezugCt; // je geteilter kWh gegenüber Lieferant
+src\lib\plattform\eg\testdaten\portal\faelle.json:434:        "abgabenCt": 0.82,
+src\lib\plattform\backend\demo\seed.js:290:      pachtangebot: { euroProHaJahr: PACHT.freiflaecheProHa.mittel, laufzeitJahre: PACHT.laufzeit, verlaengerung: PACHT.verlaengerung, text: "Indexierte Pacht, Reservierungsprämie bis Baubeginn. Rückbauverpflichtung mit Sicherheitsleistung. (Demo)", am: vorTagen(3) },
+src\lib\plattform\backend\demo\seed.js:391:  await doc("flaeche", f1.id, "Demo-Pachtangebot.pdf", "vertrag", "Pachtangebot (Demo)", [`Pacht: ${PACHT.freiflaecheProHa.mittel} € je ha und Jahr`, `Laufzeit: ${PACHT.laufzeit} Jahre, ${PACHT.verlaengerung}`], admin, 3);
+src\lib\plattform\ki\regeln.js:190:    teile.push(`Es liegt ein Pachtangebot über ${fmt(pa.euroProHaUndJahr)} € je Hektar und Jahr für ${pa.laufzeitJahre} Jahre vor. Zur Einordnung: Für Freiflächen-PV liegen Pachten im DACH-Raum in der Regel zwischen ${fmt(PACHT.freiflaecheProHa.min)} und ${fmt(PACHT.freiflaecheProHa.max)} € je Hektar und Jahr. Verbindlich ist allein der Vertrag.`);
+src\lib\plattform\backend\demo\entwicklung-seed.js:172:    nvp: "UW Demo-Stadt Nord, 110 kV (fiktiv)", netzbetreiber: "Demo Netz GmbH (fiktiv)", vermarktung: "ppa", beschreibung: "Konversionsfläche (ehemaliges Depot) – EEG-förderfähig, PPA mit Industriekunden in Verhandlung.",
+src\lib\plattform\backend\demo\eg-portal.js:119:  return { bezugspreisCt: t?.bezugspreisCt ?? AT.gemeinschaftCt, einspeisepreisCt: t?.einspeisepreisCt ?? 0, lieferantCt: AT.energiepreis, netzApCt: ap ?? AT.netzAp, reduktionPct: regel.reduktionPct, abgabenBefreit: regel.abgabenBefreit, abgabenCt: AT.abgabenCt, co2KgJeKwh: RECHNER_STANDARD.co2KgJeKwh, regelText: regel.text, regelStatus: regel.status };
+src\lib\plattform\geodaten\scoring.js:354:  const p = agri ? PACHT.agriProHa : PACHT.freiflaecheProHa;
+src\lib\plattform\eg\interesse.js:275:  lieferantCt: AT.energiepreis, gemeinschaftCt: AT.gemeinschaftCt, netzApCt: AT.netzAp, abgabenCt: AT.abgabenCt,
+src\lib\plattform\eg\interesse.js:303:    abgaben: z(e.abgabenCt, 0, 10, AT.abgabenCt), einspeise: z(e.einspeiseEgCt, 0, 100, 8), markt: z(e.marktCt, 0, 100, AT.ueberschussCt),
+src\lib\plattform\eg\interesse.js:311:  const abgabenCt = regel.abgabenBefreit ? p.abgaben : 0;
+src\lib\plattform\eg\interesse.js:319:    if (abgabenCt > 0) teile.push({ id: "abgaben", label: "Elektrizitätsabgabe entfällt", eur: r2((bezugKwh * abgabenCt) / 100), ct: abgabenCt });
+src\lib\plattform\flaecheFach.js:797:  const spanne = f?.agri ? PACHT.agriProHa : PACHT.freiflaecheProHa;
+src\lib\plattform\finanzierung\kern.js:102:    modell: "eeg", preisCt: ERLOESE.eegFreiflaecheCt, vertragJahre: 20, lieferAnteil: 1, indexierung: 0, merchantCt: ERLOESE.merchantCt,
+src\lib\plattform\finanzierung\kern.js:103:    opexKwp: FREIFLAECHE.opexProKwp, pachtJahr: Math.round(mwp * 1.1 * PACHT.freiflaecheProHa.mittel), laufzeit: FREIFLAECHE.laufzeit, diskontEk: FINANZIERUNG.diskont,
+src\lib\plattform\finanzierung\geschaeftsmodell.js:32:    nutzungsentgeltJahr: Math.round((e?.mwp || 10) * 1.1 * PACHT.freiflaecheProHa.max),
+src\lib\plattform\eg\dashboard.js:43: * @param {{bezugspreisCt?:number, einspeisepreisCt?:number, lieferantCt?:number, netzApCt?:number, reduktionPct?:number, abgabenBefreit?:boolean, abgabenCt?:number, co2KgJeKwh?:number}} p
+src\lib\plattform\eg\dashboard.js:58:  const abgaben = p.abgabenBefreit ? (ed * (Number(p.abgabenCt) || 0)) / 100 : 0;
+src\app\agri-pv\page.js:143:  { icon: Sun, t: "EEG: besondere Solaranlagen", x: `Agri-PV gilt im EEG als besondere Solaranlage und ist – anders als ein Solarpark – auch auf Ackerflächen außerhalb der Kulisse förderfähig. Ein eigenes Untersegment mit höherem Höchstwert ist vorgesehen, war nach aktuellem Stand aber noch nicht beihilferechtlich freigegeben; Agri-PV bietet daher im ersten Segment mit. Hoch aufgeständerte Anlagen erhalten einen Bonus von ${fmt(ERLOESE.eegBesondereCt - ERLOESE.eegFreiflaecheCt, 1)} ct/kWh.` },
+src\app\agri-pv\page.js:175:[Omitted long matching line]
+src\app\agri-pv\page.js:212:        punkte={["Kategorie I & II nach DIN SPEC 91434", `GAP-förderfähig – rechnerisch ${pct(AGRI.gapFoerderfaehig)} der Fläche`, "EEG-förderfähig, auch auf Ackerflächen", "Rahmen für Deutschland, Österreich und Schweiz"]}
+src\components\Flaeche\Verpachten\Pachtmodelle.js:38:    { icon: Lock, t: "Festpacht", k: `${fmt(PACHT.freiflaecheProHa.mittel)} €/ha`, x: "Ein fester Betrag je Hektar und Jahr. Maximal planbar, aber ohne Inflationsausgleich.", s: tsd(fest.summeSolar), r: fest, ton: "fill-ov-400" },
+src\components\Flaeche\Verpachten\Pachtmodelle.js:157:              Nominal, vor Steuern; Ackerpacht {fmt(PACHT.ackerProHa)} €/ha und Deckungsbeitrag {fmt(PACHT.deckungsbeitragAcker.mittel)} €/ha jeweils mit {fmt(PACHT.indexierung * 100, 1)} % p. a. fortgeschrieben. Stand {STAND}.
+src\components\Flaeche\Verpachten\Hero.js:68:              <p className="text-[12.5px] font-medium text-ink-600">{BEISPIEL_HA} ha · {REGION_KURZ["de-sued"]} · Festpacht {fmt(PACHT.freiflaecheProHa.mittel)} €/ha</p>
+src\components\Flaeche\PachtRechner.js:21:  const [proHa, setProHa] = useState(Number(start.proHa) > 0 ? Number(start.proHa) : PACHT.freiflaecheProHa.mittel);
+src\components\Flaeche\PachtRechner.js:23:  const [mindestProHa, setMindestProHa] = useState(PACHT.freiflaecheProHa.min);
+src\components\Flaeche\PachtRechner.js:25:  const [ackerProHa, setAckerProHa] = useState(PACHT.ackerProHa);
+src\components\Flaeche\PachtRechner.js:40:        ackerProHa,
+src\components\Flaeche\PachtRechner.js:45:    [ha, regionId, modell, proHa, umsatzPct, mindestProHa, laufzeit, ackerProHa, dbProHa, vorlauf, vorlaufJahre]
+src\components\Flaeche\PachtRechner.js:51:    laufzeit: setLaufzeit, ackerProHa: setAckerProHa, dbProHa: setDbProHa, vorlauf: setVorlauf, vorlaufJahre: setVorlaufJahre,
+src\components\Flaeche\PachtRechner.js:54:    { ha, regionId, modell, proHa, umsatzPct, mindestProHa, laufzeit, ackerProHa, dbProHa, vorlauf, vorlaufJahre },
+src\components\Flaeche\PachtRechner.js:58:      grenzen: { ha: [1, 100], proHa: [1000, 5000], umsatzPct: [3, 10], mindestProHa: [0, 3000], laufzeit: [20, 40], ackerProHa: [100, 1200], dbProHa: [0, 1500], vorlaufJahre: [1, 4] },
+src\components\Flaeche\PachtRechner.js:98:                  hinweis={`Übliche Spanne ${fmt(PACHT.freiflaecheProHa.min)}–${fmt(PACHT.freiflaecheProHa.max)} €/ha${modell === "index" ? `, danach +${fmt(PACHT.indexierung * 100, 1)} % pro Jahr` : ""}`}
+src\components\Flaeche\PachtRechner.js:113:              <Regler label="Heutige Ackerpacht" wert={ackerProHa} min={100} max={1200} step={10} format={(v) => `${fmt(v)} €/ha`} onChange={setAckerProHa} hinweis={`Durchschnitt Deutschland rund ${fmt(PACHT.ackerProHa)} €/ha`} />

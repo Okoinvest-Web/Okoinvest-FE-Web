@@ -1,0 +1,845 @@
+=== src/components/Speicher/Seite/Erloese.js
+// Erlösquellen: Tagesprofil, vier Erlöstöpfe, Größenordnung als Spannen-Balken (Annahmen aus lib/invest/markt)
+import { Activity, Gauge, Sun, TrendingUp } from "lucide-react";
+import Section from "@/components/ui/Section";
+import Reveal from "@/components/ui/Reveal";
+import Kopf from "@/components/Energie/Seite/Kopf";
+import TagesprofilGrafik, { TagesprofilLegende } from "@/components/Speicher/TagesprofilGrafik";
+import { SPEICHER, STAND } from "@/lib/invest/markt";
+import { fmt } from "@/lib/rechner/annahmen";
+import Link from "@/components/Land/Link";
+import { GiltFuer } from "@/components/Land/LandHinweis";
+import { landCode, landHinweisText } from "@/lib/land";
+
+const QUELLEN = [
+  { icon: TrendingUp, titel: "Arbitrage", markt: "Day-Ahead & Intraday", text: "Laden bei niedrigen oder negativen Preisen, entladen in den Abend- und Morgenspitzen – am Day-Ahead- und Intraday-Markt." },
+  { icon: Activity, titel: "Regelenergie", markt: "FCR & aFRR", text: "Primärregelleistung (FCR) und Sekundärregelleistung (aFRR). FCR ist durch den Speicherzubau unter Druck, aFRR war 2025 einer der größten Erlöstöpfe.", textLand: "Primärregelleistung (FCR) und Sekundärregelleistung (aFRR), ausgeschrieben vom Übertragungsnetzbetreiber." },
+  { icon: Sun, titel: "Solarverschiebung", markt: "nur Co-Location", text: "Am Solarpark: Strom aus Stunden mit Abregelung oder negativen Preisen wird zu besseren Preisen verkauft." },
+  { icon: Gauge, titel: "Netzdienlichkeit", markt: "im Aufbau", text: "Flexible Netzanschlussvereinbarungen und künftige Flexibilitätsmärkte können zusätzlichen Wert schaffen – noch im Aufbau." },
+];
+
+const mio = (v) => `${fmt(v / 1e6, 1)} Mio. €`;
+
+/** Spanne min–max auf einer Skala 0..skala, Marke bei „mittel“ */
+function Spanne({ titel, min, mittel, max, skala, fuss, ton = "gruen" }) {
+  const pct = (v) => `${((v / skala) * 100).toFixed(1)}%`;
+  const farbe = ton === "gruen" ? "from-ov-500 to-ov-300" : "from-navy-400 to-navy-200";
+  return (
+    <div className="min-w-0">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <p className="text-[14px] font-semibold text-white/85">{titel}</p>
+        <p className="ov-num font-display text-[22px] font-extrabold tracking-tight text-white md:text-[26px]">
+          {mio(min)} – {mio(max)}
+        </p>
+      </div>
+      <div className="relative mt-4 h-3 rounded-full bg-white/[0.08]" aria-hidden="true">
+        <div className={`absolute inset-y-0 rounded-full bg-gradient-to-r ${farbe}`} style={{ left: pct(min), width: `calc(${pct(max)} - ${pct(min)})` }} />
+        <div className="absolute -top-1.5 h-6 w-1 -translate-x-1/2 rounded-full bg-white shadow-[0_0_0_3px_rgba(3,18,43,0.9)]" style={{ left: pct(mittel) }} />
+      </div>
+      <div className="relative mt-2 h-5 text-[12px] text-white/55" aria-hidden="true">
+        <span className="absolute left-0">0</span>
+        <span className="ov-num absolute -translate-x-1/2 whitespace-nowrap font-semibold text-white/80" style={{ left: pct(mittel) }}>
+          mittel {mio(mittel)}
+        </span>
+      </div>
+      <p className="sr-only">Mittlere Annahme {mio(mittel)}.</p>
+      <p className="mt-2 text-[13px] text-white/60">{fuss}</p>
+    </div>
+  );
+}
+
+export default function Erloese({ mw, mwh, invest, erloes, land = null }) {
+  // Investitions- und Erlöswerte sind Annahmen für den deutschen Markt (lib/invest/markt):
+  // gemeinsam mit Vermerk, in AT/CH LandHinweis statt Werten.
+  const l = landCode(land);
+  const werte = !l || l === "DE";
+  return (
+    <Section tone="navy" space="lg" bare data-abschnitt="erloese" aria-labelledby="erloese-titel" className="ov-verlauf-nacht ov-noise overflow-hidden">
+      <div aria-hidden="true" className="ov-grid-bg pointer-events-none absolute inset-0 opacity-60 [mask-image:radial-gradient(60%_50%_at_75%_20%,#000,transparent)]" />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-40 top-10 h-[460px] w-[460px] rounded-full bg-ov-500/15 blur-[130px]" />
+      <div className="ov-container relative">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:gap-16">
+          <Kopf
+            dark
+            id="erloese-titel"
+            eyebrow="Erlösquellen"
+            titel={
+              <>
+                Günstig laden, teuer entladen – <span className="ov-text-gradient-light">und Netzstabilität verkaufen.</span>
+              </>
+            }
+            lead="Ein Speicher verdient an mehreren Märkten gleichzeitig. Ein Vermarkter optimiert die Fahrweise täglich zwischen Börse und Regelenergie."
+          />
+          <Reveal dir="scale" className="min-w-0 rounded-[2rem] bg-white/[0.04] p-4 shadow-e5 ring-1 ring-white/10 backdrop-blur-sm sm:p-6 md:p-7">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 px-1">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ov-300">Ein sonniger Tag</p>
+              <span className="rounded-full bg-white/[0.06] px-2.5 py-0.5 text-[11px] font-semibold text-white/65 ring-1 ring-white/10">schematisch, keine Messdaten</span>
+            </div>
+            <div tabIndex={0} role="region" aria-label="Schematischer Tagesverlauf eines Speichers" className="overflow-x-auto rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
+              <div className="min-w-[520px] px-1">
+                <TagesprofilGrafik legende={false} />
+              </div>
+            </div>
+            <TagesprofilLegende className="mt-4 px-1" />
+            <p className="mt-3 px-1 text-[12px] text-white/50 sm:hidden">Grafik seitlich wischen</p>
+          </Reveal>
+        </div>
+
+        <ol className="mt-14 grid gap-4 sm:grid-cols-2 lg:mt-20 lg:grid-cols-4">
+          {QUELLEN.map((q, i) => (
+            <Reveal as="li" key={q.titel} delay={i * 60} className="group relative flex flex-col rounded-3xl bg-white/[0.04] p-6 ring-1 ring-white/10 transition-colors hover:bg-white/[0.07]">
+              <div className="flex items-center justify-between">
+                <span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-2xl bg-ov-400/15 text-ov-300 ring-1 ring-ov-300/30">
+                  <q.icon className="h-5 w-5" />
+                </span>
+                <span aria-hidden="true" className="ov-num font-display text-[28px] font-extrabold text-white/10">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+              </div>
+              <h3 className="mt-5 font-display text-[19px] font-bold text-white">{q.titel}</h3>
+              <p className="mt-1 text-[12.5px] font-semibold uppercase tracking-[0.12em] text-sun-300">{q.markt}</p>
+              <p className="mt-3 text-[15px] leading-relaxed text-white/70">{werte ? q.text : q.textLand || q.text}</p>
+            </Reveal>
+          ))}
+        </ol>
+
+        <Reveal className="mt-6 overflow-hidden rounded-[2rem] bg-navy-900/60 ring-1 ring-white/10">
+          <div className="grid lg:grid-cols-[0.75fr_1.25fr]">
+            <div className="border-b border-white/10 p-6 sm:p-8 lg:border-b-0 lg:border-r">
+              <p className="ov-overline text-ov-300">Größenordnung</p>
+              <h3 className="mt-3 font-display text-[22px] font-bold leading-snug text-white md:text-[26px]">
+                Beispiel {mw} MW / {mwh} MWh
+              </h3>
+              <p className="mt-2 text-[15px] text-white/65">2-Stunden-System nach unseren Marktannahmen</p>
+              <dl className="mt-6 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-white/[0.05] p-4 ring-1 ring-white/10">
+                  <dt className="text-[12.5px] text-white/60">Vollzyklen pro Jahr</dt>
+                  <dd className="ov-num mt-1 font-display text-[24px] font-extrabold text-white">{fmt(SPEICHER.zyklenProJahr)}</dd>
+                </div>
+                <div className="rounded-2xl bg-white/[0.05] p-4 ring-1 ring-white/10">
+                  <dt className="text-[12.5px] text-white/60">Wirkungsgrad (AC)</dt>
+                  <dd className="ov-num mt-1 font-display text-[24px] font-extrabold text-white">{fmt(SPEICHER.wirkungsgrad * 100)} %</dd>
+                </div>
+              </dl>
+            </div>
+            {werte ? (
+              <div className="grid gap-9 p-6 sm:p-8">
+                <Spanne
+                  titel="Investition"
+                  min={invest.min}
+                  mittel={invest.mittel}
+                  max={invest.max}
+                  skala={invest.max * 1.15}
+                  fuss={`${fmt(SPEICHER.capexProKwh.min)}–${fmt(SPEICHER.capexProKwh.max)} €/kWh schlüsselfertig`}
+                  ton="navy"
+                />
+                <Spanne
+                  titel="Erlöse pro Jahr"
+                  min={erloes.min}
+                  mittel={erloes.mittel}
+                  max={erloes.max}
+                  skala={erloes.max * 1.15}
+                  fuss="Arbitrage + Regelenergie, stark marktabhängig"
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col justify-center gap-4 p-6 sm:p-8" data-land-hinweis={l}>
+                <p className="text-[15.5px] leading-relaxed text-white/75">{landHinweisText(l, "Investitions- und Erlöswerte")}.</p>
+                <Link href="/kontakt" className="text-[15px] font-semibold text-ov-300 underline underline-offset-2 hover:text-white">
+                  Persönlich anfragen
+                </Link>
+              </div>
+            )}
+          </div>
+          {werte && (
+            <p className="border-t border-white/10 px-6 py-5 text-[12.5px] leading-relaxed text-white/55 sm:px-8">
+              Vor Betriebskosten, Vermarktungsentgelt, Degradation, Baukostenzuschuss und Steuern. Die Spanne zeigt, wie stark das Ergebnis vom Markt abhängt – für eine Investitionsentscheidung
+              brauchen Sie ein Erlösgutachten und ein Vermarktungsangebot. Stand {STAND}.{!l && (
+                <>
+                  {" "}
+                  <GiltFuer dunkel />
+                </>
+              )}
+            </p>
+          )}
+        </Reveal>
+      </div>
+    </Section>
+  );
+}
+=== src/components/Speicher/Seite/HeroBuehne.js
+// Hero-Bühne /grossspeicher: isometrischer Speicherpark am Solarpark + zwei Leitstand-Karten (fiktive Beispielwerte)
+// Bewegung (einmalig beim Laden, ov-sofort): Mittagsstrom fließt vom Solarpark in die Container, der Fahrplan
+// zeichnet sich, der Ladezustand füllt sich auf 72 %. Danach Ruhe; reduziert: alles sofort im Endzustand.
+import { BatteryCharging, Sun } from "lucide-react";
+import { isoProjektion, quader } from "@/components/Energie/Seite/iso";
+import Zaehler from "@/components/motion/Zaehler";
+import f from "@/components/Energie/fluss.module.css";
+
+const { p, pts } = isoProjektion({ s: 36, ox: 214, oy: 118 });
+
+const CONTAINER = [
+  [1.2, 1.0],
+  [4.9, 1.0],
+  [1.2, 3.0],
+  [4.9, 3.0],
+];
+const PCS = [
+  [8.8, 1.15],
+  [8.8, 3.15],
+];
+
+function Container({ x, y, i }) {
+  const w = 3.2;
+  const d = 1.15;
+  const h = 1.15;
+  const f = quader(pts, x, y, 0, w, d, h);
+  const rippen = Array.from({ length: 9 }, (_, k) => x + 0.25 + k * 0.34);
+  return (
+    <g>
+      <polygon points={f.links} fill="#c4cfdc" />
+      <polygon points={f.rechts} fill="#9fb0c4" />
+      <polygon points={f.oben} fill="#eef2f7" />
+      {rippen.map((rx) => (
+        <line key={rx} x1={p(rx, y + d, 0.08)[0]} y1={p(rx, y + d, 0.08)[1]} x2={p(rx, y + d, h - 0.08)[0]} y2={p(rx, y + d, h - 0.08)[1]} stroke="#aebbcb" strokeWidth="1" />
+      ))}
+      {/* Statusleiste */}
+      <polygon points={pts([x + 0.2, y + d, h - 0.22], [x + 1.4, y + d, h - 0.22], [x + 1.4, y + d, h - 0.3], [x + 0.2, y + d, h - 0.3])} fill={i === 1 ? "#ffc53d" : "#8cba58"} />
+      {/* Lüfter oben */}
+      <polygon points={pts([x + 2.3, y + 0.25, h], [x + 2.9, y + 0.25, h], [x + 2.9, y + 0.85, h], [x + 2.3, y + 0.85, h])} fill="#d3dbe6" />
+    </g>
+  );
+}
+
+function Kasten({ x, y, w, d, h, farben = ["#5b6b82", "#43526a", "#7b8aa0"] }) {
+  const f = quader(pts, x, y, 0, w, d, h);
+  return (
+    <g>
+      <polygon points={f.links} fill={farben[0]} />
+      <polygon points={f.rechts} fill={farben[1]} />
+      <polygon points={f.oben} fill={farben[2]} />
+    </g>
+  );
+}
+
+function Modulreihe({ x0, x1, y }) {
+  const felder = [];
+  for (let x = x0; x < x1 - 0.1; x += 0.9) felder.push(x);
+  return (
+    <g>
+      {felder.map((x) => (
+        <polygon key={x} points={pts([x, y + 0.7, 0.25], [x + 0.82, y + 0.7, 0.25], [x + 0.82, y, 0.75], [x, y, 0.75])} fill="#1f5aa1" stroke="#4a7cbd" strokeWidth="0.8" />
+      ))}
+    </g>
+  );
+}
+
+function Szene() {
+  const boden = pts([0, 0, 0], [12.4, 0, 0], [12.4, 5.2, 0], [0, 5.2, 0]);
+  const zaun = [
+    [0, 0],
+    [12.4, 0],
+    [12.4, 5.2],
+    [0, 5.2],
+  ];
+  // Kabelweg: Container → PCS → Trafo → Netz
+  const kabel = [p(8.1, 2.6, 0.02), p(10.6, 2.6, 0.02), p(10.6, 4.4, 0.02)];
+  const mast = p(13.4, 4.4, 0);
+  // Wege für die Lade-Impulse: von den Modulreihen hinunter zu den Containern
+  const sonnenwege = [
+    [p(2.6, -1.1, 0.5), p(2.8, 1.0, 1.15)],
+    [p(6.3, -1.1, 0.5), p(6.5, 1.0, 1.15)],
+  ].map(([a, b]) => `M${a[0].toFixed(1)} ${a[1].toFixed(1)} L${b[0].toFixed(1)} ${b[1].toFixed(1)}`);
+  const mastSpitze = p(13.4, 4.4, 3.2);
+  return (
+    <svg viewBox="0 0 640 450" className="h-auto w-full" aria-hidden="true">
+      <defs>
+        <radialGradient id="gs-sonne" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0%" stopColor="#ffd873" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#ffd873" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id="gs-boden" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stopColor="#13305a" />
+          <stop offset="100%" stopColor="#0a2146" />
+        </linearGradient>
+      </defs>
+      <circle cx="104" cy="92" r="78" fill="url(#gs-sonne)" />
+      <circle cx="104" cy="92" r="15" fill="#ffd873" opacity="0.9" />
+
+      {/* Solarpark dahinter (Co-Location) */}
+      <polygon points={pts([-0.6, -3.7, 0], [9.6, -3.7, 0], [9.6, -0.5, 0], [-0.6, -0.5, 0])} fill="#0d2850" opacity="0.8" />
+      {[-3.4, -2.4, -1.4].map((y) => (
+        <Modulreihe key={y} x0={-0.3} x1={9.4} y={y} />
+      ))}
+
+      {/* Betriebsfläche */}
+      <polygon points={boden} fill="url(#gs-boden)" stroke="rgba(174,208,131,0.35)" strokeWidth="1" />
+      {zaun.map(([x, y], i) => {
+        const [nx, ny] = zaun[(i + 1) % zaun.length];
+        const a = p(x, y, 0.45);
+        const b = p(nx, ny, 0.45);
+        return <line key={i} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="rgba(255,255,255,0.18)" strokeDasharray="2 4" />;
+      })}
+
+      {/* Kabelweg mit Fluss */}
+      <polyline points={kabel.map((k) => k.join(",")).join(" ")} fill="none" stroke="#8cba58" strokeWidth="2" strokeOpacity="0.5" />
+      {/* Impulse: Mittagsstrom vom Solarpark in die Container (laden) */}
+      <g className="ov-sofort" style={{ "--fluss-start": "650ms", "--fluss-schritt": "260ms", "--fluss-dauer": "1700ms" }}>
+        {sonnenwege.map((d, i) => (
+          <path key={i} d={d} pathLength="1" className={f.impuls} stroke="#ffd873" strokeWidth="3.2" style={{ "--i": i }} />
+        ))}
+      </g>
+      <polyline points={[p(10.6, 4.4, 0.02), p(13.4, 4.4, 0.02)].map((k) => k.join(",")).join(" ")} fill="none" stroke="#8cba58" strokeWidth="2" strokeOpacity="0.35" strokeDasharray="4 5" />
+
+      {CONTAINER.map(([x, y], i) => (
+        <Container key={i} x={x} y={y} i={i} />
+      ))}
+      {PCS.map(([x, y]) => (
+        <Kasten key={y} x={x} y={y} w={1.1} d={0.9} h={0.95} />
+      ))}
+      {/* Transformator */}
+      <Kasten x={10.1} y={3.9} w={1.3} d={1} h={1.25} farben={["#3f6a2a", "#2f5220", "#669933"]} />
+      {[0.3, 0.65, 1.0].map((dx) => {
+        const a = p(10.1 + dx, 4.4, 1.25);
+        return <rect key={dx} x={a[0] - 2} y={a[1] - 12} width="4" height="12" rx="2" fill="#cde3b1" />;
+      })}
+
+      {/* Netz: Mast */}
+      <line x1={mast[0]} y1={mast[1]} x2={mastSpitze[0]} y2={mastSpitze[1]} stroke="#7fa7d6" strokeWidth="2.5" />
+      <line x1={mastSpitze[0] - 18} y1={mastSpitze[1] + 14} x2={mastSpitze[0] + 18} y2={mastSpitze[1] + 14} stroke="#7fa7d6" strokeWidth="2" />
+      <line x1={mastSpitze[0] - 12} y1={mastSpitze[1] + 30} x2={mastSpitze[0] + 12} y2={mastSpitze[1] + 30} stroke="#7fa7d6" strokeWidth="2" />
+      <path d={`M${mastSpitze[0] + 18},${mastSpitze[1] + 14} q 30 14 60 4`} fill="none" stroke="#7fa7d6" strokeOpacity="0.6" />
+    </svg>
+  );
+}
+
+function Fahrplan() {
+  const W = 300;
+  const H = 104;
+  const x = (h) => 6 + (h / 24) * (W - 12);
+  const preis = [0.45, 0.42, 0.4, 0.4, 0.42, 0.52, 0.7, 0.82, 0.74, 0.55, 0.36, 0.22, 0.12, 0.1, 0.14, 0.26, 0.45, 0.72, 0.95, 1.0, 0.88, 0.7, 0.58, 0.5, 0.46];
+  const y = (v) => 10 + (1 - v) * 58;
+  const pfad = preis.map((v, h) => `${h ? "L" : "M"}${x(h).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="ov-sofort h-auto w-full" aria-hidden="true" style={{ "--ov-delay": "420ms" }}>
+      <rect x={x(11)} y="6" width={x(15) - x(11)} height="68" rx="6" fill="#4a7cbd" fillOpacity="0.18" />
+      <rect x={x(18)} y="6" width={x(21) - x(18)} height="68" rx="6" fill="#8cba58" fillOpacity="0.2" />
+      <line x1="6" x2={W - 6} y1="74" y2="74" stroke="rgba(255,255,255,0.15)" />
+      <path d={`${pfad} L${x(24)},74 L${x(0)},74 Z`} fill="#aed083" fillOpacity="0.08" className="ov-flaeche-ein" />
+      <path d={pfad} pathLength="1" className="ov-linie" fill="none" stroke="#aed083" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={x(19)} cy={y(1)} r="4" fill="#aed083" stroke="#03122b" strokeWidth="2" className={f.pop} style={{ "--ov-delay": "1250ms", transformBox: "fill-box", transformOrigin: "center" }} />
+      {[0, 6, 12, 18, 24].map((h) => (
+        <text key={h} x={x(h)} y="94" textAnchor={h === 0 ? "start" : h === 24 ? "end" : "middle"} fill="rgba(255,255,255,0.55)" fontSize="10">
+          {String(h).padStart(2, "0")}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
+export default function HeroBuehne() {
+  return (
+    <div className="relative">
+      <div className="relative sm:pr-6 sm:pt-16 lg:pt-20">
+        <Szene />
+      </div>
+
+      {/* Karte: Fahrplan heute */}
+      <div className="relative -mt-6 rounded-2xl bg-navy-900/80 p-4 shadow-e4 ring-1 ring-white/15 backdrop-blur-md sm:absolute sm:right-0 sm:top-0 sm:mt-0 sm:w-[54%] sm:p-5">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ov-300">Fahrplan heute</p>
+          <span className="rounded-full bg-sun-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-sun-300 ring-1 ring-sun-400/30">Beispiel</span>
+        </div>
+        <p className="mt-1 text-[13px] text-white/70">Börsenpreis und Fahrweise, schematisch</p>
+        <div className="mt-3">
+          <Fahrplan />
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2 text-[12px]">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-navy-400/20 px-2.5 py-1 text-navy-100 ring-1 ring-navy-300/30">
+            <span aria-hidden="true" className="h-2 w-2 rounded-sm bg-navy-400" /> Laden 11–15 Uhr
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-ov-500/20 px-2.5 py-1 text-ov-100 ring-1 ring-ov-400/30">
+            <span aria-hidden="true" className="h-2 w-2 rounded-sm bg-ov-400" /> Entladen 18–21 Uhr
+          </span>
+        </div>
+      </div>
+
+      {/* Karte: Ladezustand */}
+      <div className="relative mt-3 flex items-center gap-4 rounded-2xl bg-white p-4 text-ink-900 shadow-e4 ring-1 ring-ink-200/70 sm:absolute sm:bottom-2 sm:left-0 sm:mt-0 sm:w-[46%]">
+        <svg viewBox="0 0 48 48" className="ov-sofort h-14 w-14 shrink-0 -rotate-90" aria-hidden="true" style={{ "--ov-delay": "700ms" }}>
+          <circle cx="24" cy="24" r="20" fill="none" stroke="#e6f1d8" strokeWidth="5" />
+          <circle cx="24" cy="24" r="20" pathLength="1" className="ov-ring-wert" fill="none" stroke="#669933" strokeWidth="5" strokeLinecap="round" style={{ "--ov-p": 0.72 }} />
+        </svg>
+        <div className="min-w-0">
+          <p className="flex items-center gap-1.5 text-[12px] font-semibold text-ink-500">
+            <BatteryCharging aria-hidden="true" className="h-3.5 w-3.5 text-ov-600" /> Ladezustand
+          </p>
+          <p className="ov-num font-display text-[24px] font-extrabold leading-none tracking-tight">
+            <Zaehler wert={72} nach=" %" verzoegerung={700} dauer={1100} className="[&>span:last-child]:text-left" />
+          </p>
+          <p className="mt-1 flex items-center gap-1 text-[12px] text-ink-600">
+            <Sun aria-hidden="true" className="h-3.5 w-3.5 text-sun-500" /> lädt aus der Mittagsspitze
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+=== src/components/Speicher/Seite/Modelle.js
+// Zwei Modelle: Co-Location am Solarpark (hell) und Stand-alone am Netzknoten (dunkel) – je mit Prinzipskizze
+import { Network, Sun } from "lucide-react";
+import Section from "@/components/ui/Section";
+import Kopf from "@/components/Energie/Seite/Kopf";
+import Reveal from "@/components/ui/Reveal";
+import { cn } from "@/components/ui/cn";
+import { landCode, landHinweisText } from "@/lib/land";
+
+const MODELLE = [
+  {
+    id: "colocation",
+    icon: Sun,
+    marke: "Modell A",
+    titel: "Co-Location am Solarpark",
+    kurz: "Ein Anschluss, zwei Anlagen",
+    dunkel: false,
+    fluss: [["Solarpark + Speicher", "teilen sich die Leistung"], ["Ein Anschluss", "mit Energiemanagement"], ["Netz", "Summe der Leistung > Anschlussleistung"]],
+    punkte: [
+      "nutzt den vorhandenen Netzanschluss mit – Überbauung statt neuer Anschlussleistung",
+      "nimmt Mittagsspitzen auf, die sonst abgeregelt oder zu negativen Preisen verkauft würden",
+      "speist abends ein, wenn Preise und Bedarf hoch sind",
+      { nurDE: true, text: "Regeln für gemischt genutzte Speicher (Grünstrom und Netzstrom) wurden 2025 gelockert; die Umsetzung läuft" },
+    ],
+  },
+  {
+    id: "standalone",
+    icon: Network,
+    marke: "Modell B",
+    titel: "Stand-alone am Netzknoten",
+    kurz: "Eigener Anschluss, freie Fahrweise",
+    dunkel: true,
+    fluss: [["Speicher", "lädt und entlädt rund um die Uhr"], ["Eigener Netzanschluss", "oft knapp · Baukostenzuschuss"], ["Umspannwerk", "Börse und Regelenergie"]],
+    punkte: [
+      "frei in der Fahrweise: Arbitrage und Regelenergie rund um die Uhr",
+      "skalierbar auf viele Megawattstunden am Umspannwerk",
+      "eigener Netzanschluss nötig – oft knapp, mit langen Wartezeiten",
+      { nurDE: "Regeln zu Anschlusskosten und Netzentgelten", text: "in der Regel Baukostenzuschuss; Netzentgeltbefreiung nach § 118 Abs. 6 EnWG bis 2029" },
+    ],
+  },
+];
+
+/* Prinzipskizzen: Knoten + Flusslinien, Beschriftung im SVG (aria-hidden, Text steht daneben) */
+function Knoten({ x, y, w = 92, label, sub, ton }) {
+  const farben = {
+    sonne: ["#fff7df", "#f5a70f", "#8a5a00"],
+    gruen: ["#eef6e4", "#669933", "#37521e"],
+    navy: ["#eef4fb", "#1f5aa1", "#03285a"],
+    dunkelGruen: ["rgba(140,186,88,0.16)", "#8cba58", "#e6f1d8"],
+    dunkelNavy: ["rgba(127,167,214,0.14)", "#7fa7d6", "#d9e6f5"],
+    dunkelSonne: ["rgba(255,197,61,0.14)", "#ffc53d", "#fff1c9"],
+  }[ton];
+  return (
+    <g>
+      <rect x={x - w / 2} y={y - 24} width={w} height="48" rx="14" fill={farben[0]} stroke={farben[1]} strokeWidth="1.5" />
+      <text x={x} y={sub ? y - 3 : y + 5} textAnchor="middle" fontSize="13" fontWeight="700" fill={farben[2]}>
+        {label}
+      </text>
+      {sub && (
+        <text x={x} y={y + 13} textAnchor="middle" fontSize="10.5" fill={farben[2]} opacity="0.75">
+          {sub}
+        </text>
+      )}
+    </g>
+  );
+}
+
+function SkizzeColocation() {
+  return (
+    <svg viewBox="0 0 440 170" className="h-auto w-full" aria-hidden="true">
+      <path d="M100 48 C 140 48, 140 85, 172 85" fill="none" stroke="#f5a70f" strokeWidth="2.5" strokeDasharray="5 5" />
+      <path d="M100 122 C 140 122, 140 85, 172 85" fill="none" stroke="#669933" strokeWidth="2.5" />
+      <path d="M296 85 L 344 85" fill="none" stroke="#1f5aa1" strokeWidth="2.5" />
+            <Knoten x={56} y={48} w={88} label="Solarpark" sub="mittags viel" ton="sonne" />
+      <Knoten x={56} y={122} w={88} label="Speicher" sub="lädt / entlädt" ton="gruen" />
+      <Knoten x={234} y={85} w={124} label="Ein Anschluss" sub="+ Energiemanagement" ton="gruen" />
+      <Knoten x={392} y={85} w={84} label="Netz" ton="navy" />
+      <text x="234" y="148" textAnchor="middle" fontSize="11" fill="#558227" fontWeight="600">
+        Summe der Leistung &gt; Anschlussleistung
+      </text>
+    </svg>
+  );
+}
+
+function SkizzeStandalone() {
+  return (
+    <svg viewBox="0 0 440 170" className="h-auto w-full" aria-hidden="true">
+      <path d="M104 72 L 182 72" fill="none" stroke="#8cba58" strokeWidth="2.5" />
+      <path d="M182 98 L 104 98" fill="none" stroke="#7fa7d6" strokeWidth="2.5" />
+      <path d="M176 66 l8 6 -8 6" fill="none" stroke="#8cba58" strokeWidth="2" />
+      <path d="M110 92 l-8 6 8 6" fill="none" stroke="#7fa7d6" strokeWidth="2" />
+      <path d="M276 85 L 330 85" fill="none" stroke="#7fa7d6" strokeWidth="2.5" />
+      <Knoten x={56} y={85} w={92} label="Speicher" sub="rund um die Uhr" ton="dunkelGruen" />
+      <Knoten x={230} y={85} w={92} label="Eigener" sub="Netzanschluss" ton="dunkelSonne" />
+      <Knoten x={384} y={85} w={104} label="Umspann-" sub="werk" ton="dunkelNavy" />
+      <text x="143" y="60" textAnchor="middle" fontSize="10.5" fill="#cde3b1">entladen</text>
+      <text x="143" y="120" textAnchor="middle" fontSize="10.5" fill="#b2cbe9">laden</text>
+      <text x="230" y="148" textAnchor="middle" fontSize="11" fill="#ffd873" fontWeight="600">
+        oft knapp · Baukostenzuschuss
+      </text>
+    </svg>
+  );
+}
+
+/**
+ * Stichpunkte je Land: { nurDE, text } gilt nur für Deutschland (gemeinsam mit Vermerk);
+ * in AT/CH entfällt der Punkt (nurDE: true) oder zeigt den LandHinweis (nurDE: "Thema").
+ */
+function punkteFuer(punkte, l) {
+  return punkte
+    .map((p) => {
+      if (typeof p === "string") return p;
+      if (!l) return `${p.text} (gilt für Deutschland)`;
+      if (l === "DE") return p.text;
+      return p.nurDE === true ? null : landHinweisText(l, p.nurDE);
+    })
+    .filter(Boolean);
+}
+
+export default function Modelle({ land = null }) {
+  const l = landCode(land);
+  return (
+    <Section tone="white" space="lg" data-abschnitt="modelle" aria-labelledby="modelle-titel">
+      <Kopf
+        id="modelle-titel"
+        eyebrow="Zwei Modelle"
+        titel="Am Solarpark oder am Netzknoten."
+        lead="Der Netzanschluss ist der knappste Faktor – er entscheidet, welches Modell sich rechnet."
+        className="mb-12 md:mb-16"
+      />
+      <div className="grid gap-5 lg:grid-cols-2 lg:gap-6">
+        {MODELLE.map((m, i) => (
+          <Reveal
+            key={m.id}
+            delay={i * 80}
+            as="article"
+            aria-labelledby={`modell-${m.id}`}
+            className={cn(
+              "relative flex flex-col overflow-hidden rounded-[2rem] p-6 sm:p-8 md:p-10",
+              m.dunkel ? "ov-verlauf-nacht text-white shadow-e3" : "bg-sand-50 ring-1 ring-ink-200/70"
+            )}
+          >
+            {m.dunkel && <div aria-hidden="true" className="ov-grid-bg pointer-events-none absolute inset-0 opacity-40 [mask-image:radial-gradient(70%_60%_at_80%_10%,#000,transparent)]" />}
+            <div className="relative flex items-start justify-between gap-4">
+              <div>
+                <p className={cn("ov-overline", m.dunkel ? "text-ov-300" : "text-ov-700")}>{m.marke}</p>
+                <h3 id={`modell-${m.id}`} className={cn("ov-h3 mt-2", m.dunkel ? "text-white" : "text-ink-900")}>
+                  {m.titel}
+                </h3>
+                <p className={cn("mt-1 text-[15px]", m.dunkel ? "text-white/65" : "text-ink-600")}>{m.kurz}</p>
+              </div>
+              <span aria-hidden="true" className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl", m.dunkel ? "bg-white/[0.08] text-ov-300 ring-1 ring-white/15" : "bg-white text-sun-500 shadow-e1 ring-1 ring-ink-200/70")}>
+                <m.icon className="h-6 w-6" />
+              </span>
+            </div>
+
+            <div className={cn("relative mt-7 rounded-2xl p-3 sm:p-4", m.dunkel ? "bg-white/[0.04] ring-1 ring-white/10" : "bg-white ring-1 ring-ink-200/60")}>
+              <div className="hidden sm:block">{m.dunkel ? <SkizzeStandalone /> : <SkizzeColocation />}</div>
+              <ol className="sm:hidden" aria-hidden="true">
+                {m.fluss.map(([t, s], k) => (
+                  <li key={t} className="relative flex items-start gap-3 pb-4 last:pb-0">
+                    {k < m.fluss.length - 1 && <span className={cn("absolute bottom-0 left-[11px] top-7 w-0.5 rounded-full", m.dunkel ? "bg-ov-300/40" : "bg-ov-300")} />}
+                    <span className={cn("mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold", m.dunkel ? "bg-ov-400/20 text-ov-200 ring-1 ring-ov-300/40" : "bg-ov-100 text-ov-800 ring-1 ring-ov-200")}>{k + 1}</span>
+                    <div className="min-w-0">
+                      <p className={cn("text-[15px] font-bold", m.dunkel ? "text-white" : "text-ink-900")}>{t}</p>
+                      <p className={cn("text-[13px]", m.dunkel ? "text-white/60" : "text-ink-500")}>{s}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            <ul className="relative mt-7 space-y-3.5">
+              {punkteFuer(m.punkte, l).map((p) => (
+                <li key={p} className={cn("flex gap-3 text-[15.5px] leading-relaxed", m.dunkel ? "text-white/80" : "text-ink-700")}>
+                  <span aria-hidden="true" className={cn("mt-[0.6rem] h-1.5 w-1.5 shrink-0 rounded-full", m.dunkel ? "bg-ov-300" : "bg-ov-500")} />
+                  {p}
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+        ))}
+      </div>
+    </Section>
+  );
+}
+=== src/components/Speicher/Seite/Netz.js
+// Netzanschluss: Prinzip Überbauung (Skizze), BGH-Hinweis und sechs Stellschrauben
+import { Building2, Cable, Clock, Gavel, MapPinned, Plug, Zap } from "lucide-react";
+import Section from "@/components/ui/Section";
+import Reveal from "@/components/ui/Reveal";
+import Kopf from "@/components/Energie/Seite/Kopf";
+import Link from "@/components/Land/Link";
+import { GiltFuer } from "@/components/Land/LandHinweis";
+import { listeFuerLand } from "@/components/Land/Laenderteile";
+import { LAENDER, landCode, landHinweisText } from "@/lib/land";
+
+const PUNKTE = [
+  { icon: Plug, title: "Überbauung nutzen", text: "Solarpark und Speicher teilen sich einen Anschluss: Die Summe der Leistungen darf größer sein als die Anschlussleistung, gesteuert über ein Energiemanagement." },
+  { icon: Cable, title: "Baukostenzuschuss", text: "Seit dem BGH-Beschluss vom 15.07.2025 zulässig auch für Speicher. Höhe je nach Netzebene und Netzbetreiber – früh anfragen und einpreisen.", nurDE: "Anschlusskosten" },
+  { icon: Clock, title: "Reifegrad zählt", text: "Netzbetreiber priorisieren zunehmend Projekte mit gesicherter Fläche, Planung und Finanzierung. Spekulative Anfragen verlieren an Bedeutung." },
+  { icon: Zap, title: "Flexible Anschlüsse", text: "Flexible Netzanschlussvereinbarungen erlauben einen schnelleren Anschluss gegen zeitweise begrenzte Einspeisung oder Bezug." },
+  { icon: MapPinned, title: "Standort", text: "Nähe zu Umspannwerk oder Solarpark, Zuwegung für Schwerlast, Abstand zu Wohnbebauung, Lärm und Brandschutz." },
+  {
+    icon: Building2,
+    title: "Genehmigung",
+    text: "Je nach Standort Bauantrag im Außenbereich oder B-Plan. Die Gemeinde früh einbinden – auch zu Brandschutz und Feuerwehr.",
+    nurDE: "Genehmigung",
+    AT: { text: "Bau- und Raumordnungsrecht regeln in Österreich die Bundesländer. Die Gemeinde früh einbinden – auch zu Brandschutz und Feuerwehr." },
+    CH: { text: "Bau- und Planungsrecht regeln in der Schweiz die Kantone. Die Gemeinde früh einbinden – auch zu Brandschutz und Feuerwehr." },
+  },
+];
+
+/** Prinzip Überbauung: Solar über den Tag, Speicher kappt die Spitze, Linie = Anschlussleistung (qualitativ, ohne Werte) */
+function SkizzeUeberbauung() {
+  const W = 520;
+  const H = 260;
+  const x = (h) => 20 + ((h - 4) / 18) * (W - 40);
+  const basis = 210;
+  const grenze = 112;
+  const solar = (h) => (h < 6 || h > 20 ? 0 : Math.pow(Math.sin(((h - 6) / 14) * Math.PI), 1.4));
+  const y = (v) => basis - v * 160;
+  const pkt = Array.from({ length: 73 }, (_, i) => 4 + i * 0.25);
+  const kurve = pkt.map((h, i) => `${i ? "L" : "M"}${x(h).toFixed(1)},${y(solar(h)).toFixed(1)}`).join(" ");
+  const gekappt = pkt.map((h, i) => `${i ? "L" : "M"}${x(h).toFixed(1)},${Math.max(y(solar(h)), grenze).toFixed(1)}`).join(" ");
+  // Fläche oberhalb der Grenze = geht in den Speicher
+  const ueber = pkt.filter((h) => y(solar(h)) < grenze);
+  const flaeche = `M${x(ueber[0]).toFixed(1)},${grenze} ` + ueber.map((h) => `L${x(h).toFixed(1)},${y(solar(h)).toFixed(1)}`).join(" ") + ` L${x(ueber[ueber.length - 1]).toFixed(1)},${grenze} Z`;
+  // abends: Speicher speist ein
+  const abend = `M${x(18)},${basis} L${x(18)},${grenze + 26} Q${x(19.5)},${grenze + 14} ${x(21)},${grenze + 26} L${x(21)},${basis} Z`;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Prinzip Überbauung: Die Solarspitze über der Anschlussleistung lädt den Speicher, abends speist der Speicher über denselben Anschluss ein.">
+      <defs>
+        <linearGradient id="gs-ue-solar" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#ffd873" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#ffd873" stopOpacity="0.05" />
+        </linearGradient>
+      </defs>
+      <path d={`${gekappt} L${x(22)},${basis} L${x(4)},${basis} Z`} fill="url(#gs-ue-solar)" />
+      <path d={flaeche} fill="#4a7cbd" fillOpacity="0.35" stroke="#1f5aa1" strokeWidth="1.5" strokeDasharray="4 3" />
+      <path d={abend} fill="#8cba58" fillOpacity="0.45" stroke="#558227" strokeWidth="1.5" />
+      <path d={kurve} fill="none" stroke="#f5a70f" strokeWidth="2.5" strokeDasharray="1 0" />
+      <line x1="14" x2={W - 14} y1={grenze} y2={grenze} stroke="#03285a" strokeWidth="2" strokeDasharray="7 5" />
+      <rect x="14" y={grenze - 34} width="160" height="26" rx="13" fill="#03285a" />
+      <text x="94" y={grenze - 16} textAnchor="middle" fontSize="14" fontWeight="700" fill="#fff">Anschlussleistung</text>
+      <line x1="14" x2={W - 14} y1={basis} y2={basis} stroke="#c9d1dc" />
+      <text x={(x(11) + x(15)) / 2} y={grenze + 20} textAnchor="middle" fontSize="14" fontWeight="700" fill="#03285a">→ Speicher</text>
+      <text x={x(19.5)} y={grenze + 50} textAnchor="middle" fontSize="13" fontWeight="700" fill="#37521e">abends</text>
+      <text x={x(19.5)} y={grenze + 66} textAnchor="middle" fontSize="13" fontWeight="700" fill="#37521e">einspeisen</text>
+      {[6, 12, 18].map((h) => (
+        <text key={h} x={x(h)} y={basis + 22} textAnchor="middle" fontSize="13" fill="#6b7587">{`${h}:00`}</text>
+      ))}
+    </svg>
+  );
+}
+
+/** Kosten-Punkt in AT/CH: ohne deutsche Rechtsprechung, mit LandHinweis */
+const ersatz = (p, l, thema) => ({ ...p, text: `${landHinweisText(l, thema)}.` });
+
+export default function Netz({ land = null }) {
+  const l = landCode(land);
+  const punkte = listeFuerLand(PUNKTE, l, ersatz, (p) => ({ ...p, text: <>{p.text} <GiltFuer /></> }));
+  const nurDe = !l || l === "DE";
+  return (
+    <Section tone="white" space="lg" id="netz" data-abschnitt="netz" aria-labelledby="netz-titel" className="scroll-mt-24">
+      <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
+        <div className="lg:sticky lg:top-28 lg:self-start">
+          <Kopf
+            id="netz-titel"
+            eyebrow="Netzanschluss"
+            titel="Der Engpass heißt Netz – nicht Batterie."
+            lead={
+              nurDe
+                ? "Bei Netzbetreibern liegen Anschlussanfragen für Speicher in einem Vielfachen der tatsächlich möglichen Leistung. Wer Speicher entwickeln will, braucht eine Strategie für den Anschluss."
+                : "Wer Speicher entwickeln will, braucht eine Strategie für den Anschluss."
+            }
+          />
+          <Reveal className="mt-10 rounded-[2rem] bg-sand-50 p-5 ring-1 ring-ink-200/70 sm:p-7">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="ov-overline text-ov-700">Prinzip Überbauung</p>
+              <span className="text-[12px] text-ink-500">schematisch</span>
+            </div>
+            <div className="mt-4">
+              <SkizzeUeberbauung />
+            </div>
+            <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[12.5px] text-ink-600">
+              <li className="inline-flex items-center gap-2">
+                <span aria-hidden="true" className="h-[3px] w-5 rounded-full bg-sun-500" /> Solarerzeugung
+              </li>
+              <li className="inline-flex items-center gap-2">
+                <span aria-hidden="true" className="h-3 w-3 rounded-[3px] bg-navy-400/60 ring-1 ring-navy-500" /> lädt Speicher
+              </li>
+              <li className="inline-flex items-center gap-2">
+                <span aria-hidden="true" className="h-3 w-3 rounded-[3px] bg-ov-400/70 ring-1 ring-ov-600" /> Speicher speist ein
+              </li>
+            </ul>
+          </Reveal>
+        </div>
+
+        <div className="min-w-0">
+          <Reveal className="relative overflow-hidden rounded-[2rem] bg-navy-950 p-6 text-white shadow-e4 sm:p-8">
+            <div aria-hidden="true" className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-sun-400/15 blur-3xl" />
+            <div className="relative flex items-start gap-4">
+              <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sun-400/15 text-sun-300 ring-1 ring-sun-400/30">
+                <Gavel className="h-6 w-6" />
+              </span>
+              <div className="min-w-0">
+                {nurDe ? (
+                  <>
+                    <p className="ov-overline text-sun-300">BGH, 15. Juli 2025 · EnVR 1/24</p>
+                    <h3 className="mt-2 font-display text-[20px] font-bold leading-snug md:text-[22px]">Baukostenzuschuss auch für Batteriespeicher</h3>
+                    <p className="mt-2 text-[15px] leading-relaxed text-white/75">
+                      Netzbetreiber dürfen von Speichern einen Baukostenzuschuss nach dem Leistungspreismodell verlangen. Bei Co-Location am bestehenden Anschluss eines Solarparks fällt er für die
+                      gemeinsam genutzte Leistung in der Regel nicht erneut an – das ist im Einzelfall mit dem Netzbetreiber zu klären.{!l && (
+                        <>
+                          {" "}
+                          <GiltFuer dunkel />
+                        </>
+                      )}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="ov-overline text-sun-300">Netzanschluss {LAENDER[l].inLand}</p>
+                    <h3 className="mt-2 font-display text-[20px] font-bold leading-snug md:text-[22px]">Anschlusskosten für Batteriespeicher</h3>
+                    <p className="mt-2 text-[15px] leading-relaxed text-white/75">
+                      {landHinweisText(l, "Regeln zu Anschlusskosten und Netzentgelten")}.{" "}
+                      <Link href="/kontakt" className="font-semibold text-sun-300 underline underline-offset-2 hover:text-white">
+                        Persönlich anfragen
+                      </Link>
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          </Reveal>
+
+          <ul className="mt-5 grid gap-4 sm:grid-cols-2">
+            {punkte.map((p, i) => (
+              <Reveal as="li" key={p.title} delay={(i % 2) * 60} className="ov-card-hover rounded-3xl bg-white p-6 ring-1 ring-ink-200/70">
+                <span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-2xl bg-ov-50 text-ov-600 ring-1 ring-ov-200">
+                  <p.icon className="h-5 w-5" />
+                </span>
+                <h3 className="mt-4 font-display text-[18px] font-bold text-ink-900">{p.title}</h3>
+                <p className="mt-1.5 text-[15px] leading-relaxed text-ink-600">{p.text}</p>
+              </Reveal>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </Section>
+  );
+}
+=== src/components/Speicher/Seite/Technik.js
+// Technik & Sicherheit: Systemkette (Container → PCS → Trafo → Netz, darüber EMS/Vermarkter), Kennzeichen, Schutzebenen
+import { BatteryCharging, Cpu, Flame, LineChart, ShieldCheck, Thermometer, Waves, Zap } from "lucide-react";
+import Section from "@/components/ui/Section";
+import Reveal from "@/components/ui/Reveal";
+import Kopf from "@/components/Energie/Seite/Kopf";
+import { SPEICHER } from "@/lib/invest/markt";
+import { fmt } from "@/lib/rechner/annahmen";
+
+const KETTE = [
+  { icon: BatteryCharging, t: "Batterie-Container", s: "LFP-Zellen" },
+  { icon: Waves, t: "Wechselrichter", s: "PCS" },
+  { icon: Zap, t: "Transformator", s: "Mittel-/Hochspannung" },
+  { icon: LineChart, t: "Netz & Markt", s: "Börse, Regelenergie" },
+];
+
+const SCHUTZ = [
+  { icon: Thermometer, t: "Überwachung", x: "Temperatur, Spannung und Gas je Modul, automatische Abschaltung." },
+  { icon: ShieldCheck, t: "Abstände & Normen", x: "Container-Abstände und Prüfungen nach anerkannten Normen für Batteriesysteme." },
+  { icon: Flame, t: "Löschkonzept", x: "Abgestimmt mit der Feuerwehr, inkl. Zufahrt, Löschwasser und Einsatzplan." },
+  { icon: BatteryCharging, t: "Betrieb", x: "Fernüberwachung rund um die Uhr, Wartung und klare Zuständigkeiten." },
+];
+
+export default function Technik() {
+  const DATEN = [
+    ["Zellchemie", "LFP", "Lithium-Eisenphosphat (LFP): langlebig, thermisch stabil, ohne Kobalt."],
+    ["Dauer", "2 h · 4 h", "2-Stunden-Systeme für Regelenergie und Tagesarbitrage; 4-Stunden-Systeme verschieben mehr Solarstrom in den Abend und gewinnen an Bedeutung."],
+    ["Aufbau", "PCS + Trafo", "Batterie-Container, Wechselrichter (PCS), Transformatoren, Energiemanagement und Anbindung an den Vermarkter."],
+    ["Lebensdauer", `${fmt(SPEICHER.zyklenProJahr)} / Jahr`, `Rund ${fmt(SPEICHER.zyklenProJahr)} Vollzyklen pro Jahr; Kapazitätsverlust wird über Erweiterung (Augmentation) oder Garantie ausgeglichen.`],
+  ];
+
+  return (
+    <Section tone="sand" space="lg" data-abschnitt="technik" aria-labelledby="technik-titel">
+      <Kopf id="technik-titel" eyebrow="Technik & Sicherheit" titel="LFP, 2 oder 4 Stunden – und Brandschutz von Anfang an." className="mb-12 md:mb-16" />
+
+      {/* Systemkette */}
+      <Reveal className="relative overflow-hidden rounded-[2rem] bg-white p-5 shadow-e2 ring-1 ring-ink-200/70 sm:p-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="ov-overline text-ov-700">So ist ein Großspeicher aufgebaut</p>
+          <p className="inline-flex items-center gap-2 rounded-full bg-navy-50 px-3 py-1 text-[12.5px] font-semibold text-navy-700 ring-1 ring-navy-100">
+            <Cpu aria-hidden="true" className="h-3.5 w-3.5" /> Energiemanagement & Vermarkter steuern alles
+          </p>
+        </div>
+        <ol className="relative mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0">
+          <span aria-hidden="true" className="absolute left-[12%] right-[12%] top-[2.1rem] hidden h-0.5 bg-gradient-to-r from-ov-300 via-navy-300 to-navy-500 lg:block" />
+          {KETTE.map((k, i) => (
+            <li key={k.t} className="relative flex items-center gap-4 rounded-2xl bg-sand-50 p-4 ring-1 ring-ink-200/60 lg:flex-col lg:bg-transparent lg:p-0 lg:text-center lg:ring-0">
+              <span aria-hidden="true" className="relative flex h-[4.25rem] w-[4.25rem] shrink-0 items-center justify-center rounded-2xl bg-white text-ov-600 shadow-e3 ring-1 ring-ink-200/70">
+                <k.icon className="h-7 w-7" />
+                <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-navy-950 text-[11px] font-bold text-white">{i + 1}</span>
+              </span>
+              <div className="min-w-0">
+                <p className="font-display text-[17px] font-bold text-ink-900">{k.t}</p>
+                <p className="text-[14px] text-ink-500">{k.s}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </Reveal>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <Reveal>
+          <dl className="grid h-full gap-px overflow-hidden rounded-[2rem] bg-ink-200/70 ring-1 ring-ink-200/70 sm:grid-cols-2">
+            {DATEN.map(([k, gross, v]) => (
+              <div key={k} className="flex flex-col bg-white p-6 md:p-7">
+                <dt className="ov-overline text-ov-700">{k}</dt>
+                <dd className="mt-3">
+                  <span className="ov-num block font-display text-[26px] font-extrabold leading-none tracking-tight text-ink-900 md:text-[30px]">{gross}</span>
+                  <span className="mt-3 block text-[15px] leading-relaxed text-ink-600">{v}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </Reveal>
+
+        <Reveal delay={80} className="relative overflow-hidden rounded-[2rem] bg-navy-950 p-6 text-white sm:p-8">
+          <svg aria-hidden="true" viewBox="0 0 200 200" className="pointer-events-none absolute -right-14 -top-14 h-56 w-56 text-ov-300 opacity-30">
+            {[90, 70, 50, 30].map((r) => (
+              <circle key={r} cx="100" cy="100" r={r} fill="none" stroke="currentColor" strokeWidth="1.2" strokeDasharray={r === 90 ? "3 5" : undefined} />
+            ))}
+            <circle cx="100" cy="100" r="12" fill="currentColor" />
+          </svg>
+          <p className="ov-overline relative text-ov-300">Sicherheit in Schichten</p>
+          <h3 className="relative mt-3 font-display text-[22px] font-bold leading-snug">Ein Brandschutzkonzept ist Teil jeder Genehmigung.</h3>
+          <ol className="relative mt-6 space-y-4">
+            {SCHUTZ.map((s, i) => (
+              <li key={s.t} className="flex gap-4">
+                <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.07] text-ov-300 ring-1 ring-white/15">
+                  <s.icon className="h-[18px] w-[18px]" />
+                </span>
+                <div className="min-w-0">
+                  <p className="font-semibold text-white">
+                    <span className="sr-only">Ebene {i + 1}: </span>
+                    {s.t}
+                  </p>
+                  <p className="mt-0.5 text-[14.5px] leading-relaxed text-white/70">{s.x}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </Reveal>
+      </div>
+    </Section>
+  );
+}

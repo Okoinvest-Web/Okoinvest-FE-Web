@@ -1,0 +1,927 @@
+=== src/app/(stamm)/energiegemeinschaften/software/preise/page.js
+// /energiegemeinschaften/software/preise – öffentliches Preisblatt der EG-Software Österreich (Welle 3, Paket B7).
+//
+// Transparente Struktur je Paket (Einrichtung einmalig, Grundgebühr je Gemeinschaft, Betrag je Zählpunkt).
+// Es gibt noch keine freigegebenen Beträge (Inhaberpunkt): src/lib/eg-angebot/preisblatt.js zeigt dann überall
+// „Preis auf Anfrage“ und den Freigabe-Vermerk. Länder: /at voll, gemeinsame Seite mit Kennzeichnung „Österreich“,
+// /de und /ch Länderhinweis (keine EG-Software für DE/CH). Lead: Preisanfrage über POST /api/anfrage
+// (typ energiegemeinschaft, Land AT, Einwilligungsprotokoll im Backend). noindex bis Fachprüfung und Preisfreigabe.
+
+import { BadgeEuro, FileText, Layers, Receipt, Scale } from "lucide-react";
+import Section from "@/components/ui/Section";
+import SectionHeading from "@/components/ui/SectionHeading";
+import Reveal from "@/components/ui/Reveal";
+import CtaBand from "@/components/ui/CtaBand";
+import Faq from "@/components/ui/Faq";
+import Querverweise from "@/components/Reusable/Querverweise";
+import AnfrageMitDaten from "@/components/Gemeinschaft/AnfrageMitDaten";
+import JsonLd from "@/components/JsonLd";
+import Kopf from "@/components/Portal/EG/Angebot/Kopf";
+import Preisblatt, { FreigabeVermerk } from "@/components/Portal/EG/Angebot/Preisblatt";
+import { FaktKasten, NurOesterreich } from "@/components/Portal/EG/Angebot/Teile";
+import { egFakt } from "@/lib/eg-angebot/fakten";
+import { FREIGABE } from "@/lib/eg-angebot/preisblatt";
+import { rechnerMetadata, rechnerMetadataEn } from "@/components/Rechner/RechnerSeite";
+import { abs } from "@/data/site";
+import { pfad as seitenPfad } from "@/lib/land";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+
+const SCHLUESSEL = "/energiegemeinschaften/software/preise";
+const PFAD = seitenPfad(SCHLUESSEL);
+
+const metadata = rechnerMetadata({
+  pfad: PFAD,
+  title: "Preisblatt Software für Energiegemeinschaften (Österreich) | ÖkoInvest",
+  description: "Was die Software für Energiegemeinschaften kostet: Einrichtung, Grundgebühr je Gemeinschaft und Betrag je Zählpunkt – offen aufgeschlüsselt für Software, Betriebsführung und Gründung.",
+  keywords: ["Energiegemeinschaft Software Preis", "EEG Abrechnung Kosten", "Energiegemeinschaft Kosten je Zählpunkt", "Betriebsführung Energiegemeinschaft Preis"],
+});
+metadata.robots = { index: false, follow: true }; // Fachprüfung und Preisfreigabe offen (Register index: false)
+
+const metadataEn = rechnerMetadataEn({
+  title: "Price sheet: software for energy communities (Austria) | ÖkoInvest",
+  description: "What the software for energy communities costs: set-up, base fee per community and amount per metering point – openly broken down for Software, Operational management and Founding.",
+  keywords: ["energy community software price Austria", "EEG billing costs", "cost per metering point energy community", "energy community operational management price"],
+});
+
+const TEXTE = {
+  de: {
+    brot: ["Energiegemeinschaften", "Software", "Preisblatt"],
+    marke: "Österreich",
+    eyebrow: "Software für Energiegemeinschaften · Preisblatt",
+    titel: (
+      <>
+        Was die Software kostet – <span className="ov-text-gradient-light">offen aufgeschlüsselt.</span>
+      </>
+    ),
+    lead: "Der Preis setzt sich aus drei Teilen zusammen: einer einmaligen Einrichtung, einer Grundgebühr je Gemeinschaft und einem Betrag je Zählpunkt. So sehen Sie vorab, wofür Sie zahlen – und wie sich die Kosten mit der Größe Ihrer Gemeinschaft entwickeln.",
+    aktionen: [{ label: "Preis für Ihre Gemeinschaft anfragen", href: "#anfrage" }, { label: "Preisblatt ansehen", href: "#preisblatt" }],
+    fussnote: "Unverbindlich · schriftliches Angebot · auch für bestehende Gemeinschaften",
+    karte: {
+      titel: "So ist der Preis aufgebaut",
+      zeilen: [
+        ["Einrichtung", "einmalig"],
+        ["Grundgebühr", "je Gemeinschaft und Monat"],
+        ["Betrag je Zählpunkt", "je Monat"],
+        ["Kosten Dritter", "gesondert ausgewiesen"],
+      ],
+    },
+    blattEyebrow: "Preisblatt",
+    blattTitel: "Drei Pakete, gleich aufgebaut",
+    blattLead: "Jedes Paket hat dieselben Preisposten. Die Gründung ist eine einmalige Leistung; danach läuft der Betrieb über Software oder Betriebsführung.",
+    vermerkTitel: "Stand der Beträge",
+    grundsaetzeEyebrow: "Grundsätze",
+    grundsaetzeTitel: "Woran Sie uns messen können",
+    grundsaetze: [
+      { icon: Layers, titel: "Nach Zählpunkten aufgebaut", text: "Der laufende Preis richtet sich nach der Zahl der Zählpunkte, nicht nach der Strommenge, die in der Gemeinschaft geteilt wird." },
+      { icon: Receipt, titel: "Kosten Dritter getrennt", text: "Gebühren Dritter, etwa für den EDA-Zugang oder Bankeinzüge, sind nicht enthalten. Wir nennen sie im Angebot gesondert." },
+      { icon: BadgeEuro, titel: "Netto und brutto", text: "Jeder Betrag steht netto und mit Umsatzsteuer da – Sie müssen nichts selbst umrechnen." },
+      { icon: FileText, titel: "Schriftlich vor dem Vertrag", text: "Sie erhalten vor jedem Vertrag ein schriftliches Angebot mit denselben Posten wie in diesem Preisblatt." },
+    ],
+    elwgTitel: "Rechtlicher Rahmen in Österreich",
+    anfrageEyebrow: "Preisanfrage",
+    anfrageTitel: "Preis für Ihre Gemeinschaft",
+    anfrageLead: "Nennen Sie Paket, Modell und ungefähre Zahl der Zählpunkte. Wir schicken Ihnen ein schriftliches Angebot, aufgeschlüsselt wie dieses Preisblatt.",
+    legende: "Ihre Gemeinschaft",
+    paket: "Paket",
+    pakete: [{ id: "offen", label: "Noch offen" }, { id: "software", label: "Software" }, { id: "betrieb", label: "Betriebsführung" }, { id: "gruendung", label: "Gründung" }],
+    modell: "Modell",
+    modelle: [{ id: "offen", label: "Noch offen" }, { id: "eeg_lokal", label: "EEG lokal" }, { id: "eeg_regional", label: "EEG regional" }, { id: "beg", label: "BEG" }, { id: "gea", label: "GEA" }],
+    zp: "Wie viele Zählpunkte? (Schätzung genügt)",
+    zpPlatz: "z. B. 60",
+    button: "Preis anfragen",
+    faqEyebrow: "Häufige Fragen",
+    faqTitel: "Fragen zum Preis",
+    faq: [
+      { q: "Warum stehen noch keine Beträge im Preisblatt?", a: "Die Beträge sind noch nicht freigegeben. Wir veröffentlichen sie hier, sobald das geschehen ist. Bis dahin erhalten Sie den Preis für Ihre Gemeinschaft auf Anfrage – schriftlich und mit denselben Posten." },
+      { q: "Was zählt als Zählpunkt?", a: "Jeder Zählpunkt, der an der Gemeinschaft teilnimmt – Bezug und Einspeisung jeweils für sich. Ein Mitglied mit PV-Anlage hat also meist zwei Zählpunkte." },
+      { q: "Ist der Wechsel von einem anderen Anbieter im Preis enthalten?", a: "Was beim Wechsel anfällt – Datenübernahme, Abgleich mit dem Netzbetreiber, Parallellauf –, steht im Angebot unter Einrichtung. Ob sich ein Wechsel für Ihre Gemeinschaft lohnt, zeigt der Wechsel-Check." },
+      { q: "Welche Kosten kommen von Dritten?", a: "Je nach Gemeinschaft etwa Gebühren für den EDA-Zugang, Bankgebühren für SEPA-Einzüge oder Kosten für die Vereinsgründung. Wir führen sie im Angebot getrennt auf." },
+    ],
+    querverweise: [
+      { href: "/energiegemeinschaften/software", titel: "Plattform & Betrieb", text: "Was die Software kann und wie die Pakete aufgebaut sind." },
+      { href: "/energiegemeinschaften/software/wechsel-check", titel: "Wechsel-Check", text: "Ob sich ein Anbieterwechsel lohnt und was vorher zu klären ist." },
+      { href: "/energiegemeinschaften/software/white-label", titel: "White-Label für Stadtwerke", text: "Energiegemeinschaften unter Ihrer Marke betreiben." },
+      { href: "/energiegemeinschaften/rechner", titel: "Energiegemeinschaft-Rechner", text: "Ersparnis aus Energiepreis, Netzentgelt und Abgabe." },
+    ],
+    cta: { eyebrow: "Preisanfrage", title: "Ein Angebot, das Sie nachrechnen können.", text: "Paket, Modell und Zählpunkte genügen – wir schicken Ihnen ein schriftliches Angebot mit allen Posten.", primary: { label: "Preis anfragen", href: "#anfrage" }, secondary: { label: "Zum Wechsel-Check", href: "/energiegemeinschaften/software/wechsel-check" } },
+    landTitel: "Preisblatt für Österreich",
+  },
+  en: {
+    brot: ["Energy communities", "Software", "Price sheet"],
+    marke: "Austria",
+    eyebrow: "Software for energy communities · Price sheet",
+    titel: (
+      <>
+        What the software costs – <span className="ov-text-gradient-light">openly broken down.</span>
+      </>
+    ),
+    lead: "The price consists of three parts: a one-off set-up, a base fee per community and an amount per metering point. So you can see in advance what you pay for – and how the costs develop with the size of your community.",
+    aktionen: [{ label: "Request a price for your community", href: "#anfrage" }, { label: "View price sheet", href: "#preisblatt" }],
+    fussnote: "Without obligation · written offer · also for existing communities",
+    karte: {
+      titel: "How the price is structured",
+      zeilen: [
+        ["Set-up", "one-off"],
+        ["Base fee", "per community and month"],
+        ["Amount per metering point", "per month"],
+        ["Third-party costs", "shown separately"],
+      ],
+    },
+    blattEyebrow: "Price sheet",
+    blattTitel: "Three packages, structured the same way",
+    blattLead: "Every package has the same price items. Founding is a one-off service; afterwards, operation continues via Software or Operational management.",
+    vermerkTitel: "Status of the amounts",
+    grundsaetzeEyebrow: "Principles",
+    grundsaetzeTitel: "What you can hold us to",
+    grundsaetze: [
+      { icon: Layers, titel: "Based on metering points", text: "The ongoing price depends on the number of metering points, not on the amount of power shared in the community." },
+      { icon: Receipt, titel: "Third-party costs separate", text: "Third-party fees, for example for EDA access or direct debits, are not included. We list them separately in the offer." },
+      { icon: BadgeEuro, titel: "Net and gross", text: "Every amount is shown net and including VAT – you do not have to convert anything yourself." },
+      { icon: FileText, titel: "In writing before the contract", text: "Before any contract, you receive a written offer with the same items as this price sheet." },
+    ],
+    elwgTitel: "Legal framework in Austria",
+    anfrageEyebrow: "Price enquiry",
+    anfrageTitel: "Price for your community",
+    anfrageLead: "Tell us the package, model and approximate number of metering points. We will send you a written offer, broken down like this price sheet.",
+    legende: "Your community",
+    paket: "Package",
+    pakete: [{ id: "offen", label: "Still open" }, { id: "software", label: "Software" }, { id: "betrieb", label: "Operational management" }, { id: "gruendung", label: "Founding" }],
+    modell: "Model",
+    modelle: [{ id: "offen", label: "Still open" }, { id: "eeg_lokal", label: "EEG local" }, { id: "eeg_regional", label: "EEG regional" }, { id: "beg", label: "BEG" }, { id: "gea", label: "GEA" }],
+    zp: "How many metering points? (an estimate is enough)",
+    zpPlatz: "e.g. 60",
+    button: "Request price",
+    faqEyebrow: "Frequently asked questions",
+    faqTitel: "Questions about the price",
+    faq: [
+      { q: "Why are there no amounts in the price sheet yet?", a: "The amounts have not yet been released. We will publish them here as soon as that has happened. Until then, you will receive the price for your community on request – in writing and with the same items." },
+      { q: "What counts as a metering point?", a: "Every metering point that participates in the community – consumption and feed-in each count separately. A member with a PV installation therefore usually has two metering points." },
+      { q: "Is switching from another provider included in the price?", a: "What a switch involves – data takeover, reconciliation with the grid operator, parallel run – is listed in the offer under set-up. The switch check shows whether switching is worthwhile for your community." },
+      { q: "Which costs come from third parties?", a: "Depending on the community, for example fees for EDA access, bank charges for direct debits or costs of founding an association. We list them separately in the offer." },
+    ],
+    querverweise: [
+      { href: "/energiegemeinschaften/software", titel: "Platform & operation", text: "What the software does and how the packages are structured." },
+      { href: "/energiegemeinschaften/software/wechsel-check", titel: "Switch check", text: "Whether switching provider is worthwhile and what to clarify first." },
+      { href: "/energiegemeinschaften/software/white-label", titel: "White label for municipal utilities", text: "Run energy communities under your own brand." },
+      { href: "/energiegemeinschaften/rechner", titel: "Energy community calculator", text: "Savings from energy price, grid fee and levy." },
+    ],
+    cta: { eyebrow: "Price enquiry", title: "An offer you can check for yourself.", text: "Package, model and metering points are enough – we will send you a written offer with all items.", primary: { label: "Request price", href: "#anfrage" }, secondary: { label: "To the switch check", href: "/energiegemeinschaften/software/wechsel-check" } },
+    landTitel: "Price sheet for Austria",
+  },
+};
+
+const schema = (en) => ({
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "@id": `${abs(PFAD)}/#service`,
+  name: en ? "Software and operational management for energy communities" : "Software und Betriebsführung für Energiegemeinschaften",
+  serviceType: en ? "Software and services for energy communities" : "Software und Dienstleistung für Energiegemeinschaften",
+  provider: { "@id": `${abs("/")}/#organization` },
+  areaServed: { "@type": "Country", name: en ? "Austria" : "Österreich" },
+  url: abs(PFAD),
+  // Keine Offer-Preise im Schema, solange keine Beträge freigegeben sind
+});
+
+export default async function PreisblattSeite({ params }) {
+  const land = await seitenLand(params);
+  const en = spracheDerAnfrage() === "en";
+  const t = TEXTE[en ? "en" : "de"];
+  const nurAt = !land || land === "AT";
+  const elwg = egFakt("elwg", { sprache: en ? "en" : "de" });
+  const netz = egFakt("netzgebiet", { sprache: en ? "en" : "de" });
+  const vermerk = FreigabeVermerk({ en });
+
+  return (
+    <div className="[&_.ov-lead]:hyphens-manual [&_h2]:hyphens-manual! lg:[&_p]:hyphens-manual">
+      {nurAt && <JsonLd daten={schema(en)} />}
+      <Kopf
+        brotkrumen={[{ name: t.brot[0], href: "/energiegemeinschaften" }, { name: t.brot[1], href: "/energiegemeinschaften/software" }, { name: t.brot[2] }]}
+        marke={t.marke}
+        eyebrow={t.eyebrow}
+        titel={t.titel}
+        lead={t.lead}
+        aktionen={nurAt ? t.aktionen : []}
+        fussnote={nurAt ? t.fussnote : undefined}
+        karte={{ ...t.karte, hinweis: vermerk || undefined }}
+      />
+
+      {!nurAt ? (
+        <Section tone="white" space="lg">
+          <NurOesterreich land={land} pfad={SCHLUESSEL} en={en} />
+        </Section>
+      ) : (
+        <>
+          <Section tone="sand" space="lg" id="preisblatt" className="scroll-mt-24">
+            <SectionHeading eyebrow={t.blattEyebrow} title={t.blattTitel} lead={t.blattLead} className="max-w-3xl" />
+            {vermerk && (
+              <Reveal className="mt-8 flex gap-3 rounded-2xl bg-white p-5 text-[14.5px] leading-relaxed text-ink-700 ring-1 ring-sun-200" data-preis-freigabe={FREIGABE.freigegeben ? "ja" : "ausstehend"}>
+                <Scale aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-sun-600" />
+                <p>
+                  <strong className="text-ink-900">{t.vermerkTitel}:</strong> {vermerk}
+                </p>
+              </Reveal>
+            )}
+            <div className="mt-12 md:mt-14">
+              <Preisblatt en={en} />
+            </div>
+          </Section>
+
+          <Section tone="white" space="lg">
+            <SectionHeading eyebrow={t.grundsaetzeEyebrow} title={t.grundsaetzeTitel} className="max-w-3xl" />
+            <ul role="list" className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {t.grundsaetze.map((g, i) => (
+                <Reveal as="li" key={g.titel} delay={i * 70} className="rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/70">
+                  <span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-2xl bg-ov-50 text-ov-700 ring-1 ring-ov-100">
+                    <g.icon className="h-5 w-5" />
+                  </span>
+                  <h3 className="mt-4 font-display text-[17px] font-bold leading-snug text-ink-900">{g.titel}</h3>
+                  <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-600">{g.text}</p>
+                </Reveal>
+              ))}
+            </ul>
+            <div className="mt-12 grid gap-3 lg:grid-cols-2">
+              <p className="font-display text-[18px] font-bold text-ink-900 lg:col-span-2">{t.elwgTitel}</p>
+              <FaktKasten fakt={elwg} en={en} />
+              <FaktKasten fakt={netz} en={en} />
+            </div>
+          </Section>
+
+          <Section tone="sand" space="lg" id="anfrage" className="scroll-mt-24">
+            <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+              <SectionHeading className="lg:sticky lg:top-28 lg:self-start" eyebrow={t.anfrageEyebrow} title={t.anfrageTitel} lead={t.anfrageLead} />
+              <Reveal className="rounded-[2rem] bg-white p-5 shadow-e3 ring-1 ring-ink-200/70 sm:p-8 md:p-10">
+                <AnfrageMitDaten
+                  legende={t.legende}
+                  festeDaten={{ quelle: "eg-preisblatt", land: "AT", anliegen: "software" }}
+                  zusatz={[
+                    { name: "paket", label: t.paket, art: "select", optionen: t.pakete },
+                    { name: "modell", label: t.modell, art: "select", optionen: t.modelle },
+                    { name: "zaehlpunkte", label: t.zp, art: "zahl", platzhalter: t.zpPlatz, breit: true },
+                  ]}
+                  formular={{ typ: "energiegemeinschaft", felder: ["firma", "telefon", "plz", "nachricht"], button: t.button }}
+                />
+              </Reveal>
+            </div>
+          </Section>
+
+          <Section tone="white" space="lg">
+            <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+              <SectionHeading eyebrow={t.faqEyebrow} title={t.faqTitel} />
+              <Faq items={t.faq} />
+            </div>
+          </Section>
+
+          <Querverweise items={t.querverweise} />
+          <CtaBand {...t.cta} />
+        </>
+      )}
+    </div>
+  );
+}
+
+export const generateMetadata = seitenMetadata(SCHLUESSEL, metadata, { en: metadataEn });
+=== src/app/(stamm)/energiegemeinschaften/software/wechsel-check/page.js
+// /energiegemeinschaften/software/wechsel-check – Wechsel-Check für bestehende Energiegemeinschaften in
+// Österreich (Welle 3, Paket B7; Masterplan Abschnitt 5 „ElWG-Wechsel-Check“).
+//
+// Nur Österreich (TOOLS: laender ["AT"]): /at und die gemeinsame Seite zeigen den Check, /de und /ch den
+// eigenen Länderhinweis (keine EG-Software für DE und CH). Logik: src/lib/eg-angebot/wechselCheck.js,
+// Rechts- und Prozessaussagen aus dem Faktenregister (src/lib/fakten/daten/eg-at.js) mit Quelle und Stand.
+// Lead: Wechselplan anfordern (POST /api/anfrage, typ energiegemeinschaft, Land AT).
+// noindex bis zur Fachprüfung (Register src/lib/land/seiten.js index: false, englisch src/lib/sprache/seiten.js).
+
+import Link from "@/components/Land/Link";
+import { ArrowRight } from "lucide-react";
+import RechnerSeite, { rechnerMetadata, rechnerMetadataEn } from "@/components/Rechner/RechnerSeite";
+import WechselCheck from "@/components/Portal/EG/Angebot/WechselCheck";
+import { FaktKasten } from "@/components/Portal/EG/Angebot/Teile";
+import { egFakten } from "@/lib/eg-angebot/fakten";
+import { pfad as seitenPfad } from "@/lib/land";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+
+const SCHLUESSEL = "/energiegemeinschaften/software/wechsel-check";
+const PFAD = seitenPfad(SCHLUESSEL);
+
+const metadata = rechnerMetadata({
+  pfad: PFAD,
+  title: "Wechsel-Check Energiegemeinschaft Österreich | ÖkoInvest",
+  description:
+    "Software-Anbieter der Energiegemeinschaft wechseln? Sieben Fragen: ob sich ein Wechsel lohnt, was vorher zu klären ist und was nach ElWG für alle Anbieter gilt – mit Quellen.",
+  keywords: ["Energiegemeinschaft Anbieter wechseln", "EEG Software wechseln", "Energiegemeinschaft ElWG Wechsel", "Marktpartner-ID Energiegemeinschaft", "Energiegemeinschaft Betriebsführung"],
+});
+// Fachprüfung offen (Register index: false): auch die gemeinsame Seite trägt noindex
+metadata.robots = { index: false, follow: true };
+
+const metadataEn = rechnerMetadataEn({
+  title: "Energy community switch check for Austria | ÖkoInvest",
+  description:
+    "Switch your energy community’s software provider? Seven questions: whether switching is worthwhile, what to clarify first and what applies to all providers under the ElWG – with sources.",
+  keywords: ["switch energy community provider Austria", "EEG software switch", "ElWG energy community", "market partner ID energy community", "energy community operational management"],
+});
+
+const LAND_HINWEISE = {
+  DE: {
+    de: "Den Wechsel-Check gibt es nur für Österreich: Er beruht auf dem österreichischen ElWG und dem Datenaustausch über EDA. Für Deutschland bieten wir keine Software für Energiegemeinschaften an.",
+    en: "The switch check is available for Austria only: it is based on Austria’s ElWG and data exchange via EDA. We do not offer software for energy communities in Germany.",
+  },
+  CH: {
+    de: "Den Wechsel-Check gibt es nur für Österreich. Für die Schweiz bieten wir keine Software für Energiegemeinschaften an – was für LEG und vZEV gilt, steht auf unserer Seite zu Energiegemeinschaften.",
+    en: "The switch check is available for Austria only. We do not offer software for energy communities in Switzerland – what applies to LEGs and vZEVs is explained on our energy communities page.",
+  },
+};
+
+const FAQ = [
+  { q: "Müssen beim Anbieterwechsel alle Zählpunkte neu angemeldet werden?", a: "Nein, wenn nur der Software- oder Betriebsanbieter wechselt. Die Marktpartner-ID gehört der Gemeinschaft; der neue Anbieter erhält einen Zugang bzw. eine Bevollmächtigung, die Zustimmungen der Mitglieder bleiben bestehen. Anders ist es, wenn sich das Modell ändert, etwa von lokal auf regional – dann braucht es eine Neuanmeldung, egal bei welchem Anbieter." },
+  { q: "Können wir jetzt Mitglieder aus anderen Netzgebieten aufnehmen?", a: (f) => `Laut Koordinationsstelle für Energiegemeinschaften (Stand ${f.stand}): ${f.text} Das gilt für alle Anbieter. Der Check weist darauf hin, wenn Sie das vorhaben.` },
+  { q: "Wann ist der beste Zeitpunkt für einen Wechsel?", a: "Am Ende einer Abrechnungsperiode und – bei fester Laufzeit – zum Vertragsende. Vorher rechnen wir einen Monat parallel und vergleichen mit den Werten des Netzbetreibers. Die Anpassung der Verträge an das ElWG lässt sich gut mit dem Wechsel verbinden." },
+  { q: "Was passiert mit meinen Antworten?", a: "Die Auswertung läuft in Ihrem Browser. Nur wenn Sie einen Wechselplan anfordern, gehen Ihre Antworten und das Ergebnis zusammen mit Ihren Kontaktdaten an uns – damit Sie nichts doppelt eingeben müssen." },
+];
+
+const FAQ_EN = [
+  { q: "Do all metering points have to be re-registered when switching provider?", a: "No, if only the software or operations provider changes. The market partner ID belongs to the community; the new provider receives access or a power of attorney, and the members’ consents remain in place. It is different if the model changes, for example from local to regional – then re-registration is needed, whichever provider you use." },
+  { q: "Can we admit members from other grid areas now?", a: (f) => `According to the Coordination Office for Energy Communities (as of ${f.stand}): ${f.text} This applies to all providers. The check points this out if you are planning it.` },
+  { q: "When is the best time to switch?", a: "At the end of a billing period and – with a fixed term – at the end of the contract. Beforehand, we calculate in parallel for one month and compare with the grid operator’s values. Adapting the contracts to the ElWG can easily be combined with the switch." },
+  { q: "What happens to my answers?", a: "The evaluation runs in your browser. Only if you request a switching plan are your answers and the result sent to us together with your contact details – so you do not have to enter anything twice." },
+];
+
+/** FAQ mit Antworten aus dem Faktenregister (Funktion → Text) */
+const faqMit = (liste, fakt) => liste.map((x) => (typeof x.a === "function" ? { ...x, a: x.a(fakt) } : x));
+
+export default async function Page({ params }) {
+  const land = await seitenLand(params);
+  const en = spracheDerAnfrage() === "en";
+  const fakten = egFakten({ sprache: en ? "en" : "de" });
+  // Österreich-Inhalte nur auf /at und der gemeinsamen Seite (dort als „Österreich“ gekennzeichnet); DE/CH: Länderhinweis
+  const nurAt = !land || land === "AT";
+  const netzgebiet = fakten.netzgebiet?.abgelaufen ? (en ? "outdated, being reviewed" : "Stand abgelaufen, wird geprüft") : en ? "probably from April 2027" : "voraussichtlich ab April 2027";
+  return (
+    <RechnerSeite
+      pfad={PFAD}
+      toolId="eg-wechsel-check"
+      breadcrumb={en ? "Switch check" : "Wechsel-Check"}
+      eyebrow={en ? "For existing energy communities · Austria" : "Für bestehende Energiegemeinschaften · Österreich"}
+      title={
+        en ? (
+          <>
+            Switch provider: <span className="ov-text-gradient-light">worthwhile and possible?</span>
+          </>
+        ) : (
+          <>
+            Anbieter wechseln: <span className="ov-text-gradient-light">sinnvoll und möglich?</span>
+          </>
+        )
+      }
+      lead={
+        en
+          ? "Seven questions for boards of existing communities. The result says honestly whether a switch pays off, what to clarify first – and what applies to every provider under the ElWG."
+          : "Sieben Fragen für Vorstände bestehender Gemeinschaften. Das Ergebnis sagt ehrlich, ob sich ein Wechsel lohnt, was vorher zu klären ist – und was nach ElWG für jeden Anbieter gilt."
+      }
+      chips={en ? ["EEG, BEG and GEA", "With sources", "No registration"] : ["EEG, BEG und GEA", "Mit Quellen", "Ohne Anmeldung"]}
+      app={
+        en
+          ? { name: "Energy community switch check", description: "Whether switching the software or operations provider of an energy community in Austria is worthwhile and possible.", featureList: ["Assessment: worthwhile and possible", "What to clarify before switching", "ElWG notes with sources"] }
+          : { name: "Wechsel-Check Energiegemeinschaft", description: "Ob sich der Wechsel des Software- oder Betriebsanbieters einer Energiegemeinschaft in Österreich lohnt und möglich ist.", featureList: ["Einschätzung: sinnvoll und möglich", "Was vor dem Wechsel zu klären ist", "ElWG-Hinweise mit Quellen"] }
+      }
+      landHinweise={LAND_HINWEISE}
+      rechner={<WechselCheck fakten={fakten} />}
+      erklaerung={
+        !nurAt ? (
+          <div>
+            <h2 className="ov-h2 text-ink-900">{en ? "Energy communities in your country" : "Energiegemeinschaften in Ihrem Land"}</h2>
+            <p className="mt-4 text-[16.5px] leading-relaxed text-ink-600">
+              {land === "CH"
+                ? en
+                  ? "In Switzerland, local electricity communities (LEG) and self-consumption groupings (vZEV) apply. What that means and what we contribute is explained on our energy communities page."
+                  : "In der Schweiz gelten lokale Elektrizitätsgemeinschaften (LEG) und virtuelle Zusammenschlüsse zum Eigenverbrauch (vZEV). Was das bedeutet und was wir beitragen, steht auf unserer Seite zu Energiegemeinschaften."
+                : en
+                  ? "In Germany, energy sharing follows its own rules. What that means and what we contribute is explained on our energy communities page."
+                  : "In Deutschland gelten für Energy Sharing eigene Regeln. Was das bedeutet und was wir beitragen, steht auf unserer Seite zu Energiegemeinschaften."}
+            </p>
+            <Link href="/energiegemeinschaften" className="group mt-6 inline-flex min-h-11 items-center gap-1.5 text-[15px] font-semibold text-ov-700 underline-offset-4 hover:text-ov-800 hover:underline">
+              {en ? "To energy communities" : "Zu den Energiegemeinschaften"}
+              <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+        ) : (
+        <div>
+          <h2 className="ov-h2 text-ink-900">{en ? "How the check works" : "So prüfen wir"}</h2>
+          <p className="mt-4 text-[16.5px] leading-relaxed text-ink-600">
+            {en
+              ? "We answer two questions separately. Worthwhile: only your answers about what is not working count – if everything works, the result is “probably not”. Possible: what needs to be clarified before a switch (contract, access to the EDA portal, model). The notes below apply to every provider, not only to us."
+              : "Wir beantworten zwei Fragen getrennt. Sinnvoll: Es zählen nur Ihre Angaben zu dem, was nicht gut läuft – läuft alles, heißt das Ergebnis „eher nicht“. Möglich: Was vor einem Wechsel zu klären ist (Vertrag, Zugang zum EDA-Portal, Modell). Die Hinweise unten gelten für jeden Anbieter, nicht nur für uns."}
+          </p>
+          <div className="mt-8 grid gap-3">
+            <FaktKasten fakt={fakten.netzgebiet} titel={en ? "Grid operator restriction" : "Netzbetreiber-Einschränkung"} en={en} className="bg-white" />
+            <FaktKasten fakt={fakten.ohneNeuanmeldung} titel={en ? "Switching provider without re-registration" : "Anbieterwechsel ohne Neuanmeldung"} en={en} className="bg-white" />
+            <FaktKasten fakt={fakten.modellwechsel} titel={en ? "Changing the model means re-registration" : "Modellwechsel heißt Neuanmeldung"} en={en} className="bg-white" />
+          </div>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            <Link href="/energiegemeinschaften/software/preise" className="ov-lift group flex flex-col rounded-2xl bg-navy-950 p-5 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2">
+              <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ov-300">{en ? "What does it cost?" : "Was kostet es?"}</span>
+              <span className="mt-1.5 inline-flex items-center gap-1.5 font-display text-[16.5px] font-bold">
+                {en ? "Price sheet" : "Zum Preisblatt"}
+                <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
+              </span>
+            </Link>
+            <Link href="/energiegemeinschaften/software" className="ov-lift group flex flex-col rounded-2xl bg-white p-5 ring-1 ring-ink-200/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2">
+              <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ov-700">{en ? "For boards and municipalities" : "Für Vorstände und Gemeinden"}</span>
+              <span className="mt-1.5 inline-flex items-center gap-1.5 font-display text-[16.5px] font-bold text-ink-900">
+                {en ? "Platform and operational management" : "Plattform und Betriebsführung"}
+                <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0 text-ov-600 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
+              </span>
+            </Link>
+          </div>
+        </div>
+        )
+      }
+      annahmen={
+        en
+          ? [
+              ["Assessment", "rule-based, from your answers"],
+              ["Prices and fees", "not part of the check"],
+              ["Switching provider", "without re-registration"],
+              ["Model change", "re-registration of all metering points"],
+              ["Across grid operators", netzgebiet],
+              ["Parallel run before cut-over", "one month"],
+            ]
+          : [
+              ["Einschätzung", "regelbasiert, aus Ihren Angaben"],
+              ["Preise und Gebühren", "nicht Teil des Checks"],
+              ["Anbieterwechsel", "ohne Neuanmeldung"],
+              ["Modellwechsel", "Neuanmeldung aller Zählpunkte"],
+              ["Netzbetreiberübergreifend", netzgebiet],
+              ["Parallellauf vor dem Stichtag", "ein Monat"],
+            ]
+      }
+      quellen={[
+        { name: en ? "Coordination Office for Energy Communities – FAQs on the ElWG" : "Koordinationsstelle für Energiegemeinschaften – FAQs zum ElWG", url: "https://energiegemeinschaften.gv.at/faqs-zum-elwg/" },
+        { name: en ? "EDA – energy community handbook (HA II)" : "EDA – Handbuch Energiegemeinschaften (HA II)" },
+      ]}
+      faq={nurAt ? faqMit(en ? FAQ_EN : FAQ, fakten.netzgebiet) : []}
+      querverweise={
+        !nurAt
+          ? en
+            ? [
+                { href: seitenPfad("/energiegemeinschaften"), titel: "Energy communities", text: "Models in DE, AT and CH compared." },
+                { href: seitenPfad("/rechner/energy-sharing"), titel: "Energy sharing calculator", text: "Calculate the benefit per participant in DE, AT and CH." },
+              ]
+            : [
+                { href: seitenPfad("/energiegemeinschaften"), titel: "Energiegemeinschaften", text: "Modelle in DE, AT und CH im Vergleich." },
+                { href: seitenPfad("/rechner/energy-sharing"), titel: "Energy-Sharing-Rechner", text: "Vorteil je Teilnehmer in DE, AT und CH berechnen." },
+              ]
+          : en
+          ? [
+              { href: seitenPfad("/energiegemeinschaften/software"), titel: "Platform & operation", text: "Software, operational management and founding for communities." },
+              { href: seitenPfad("/energiegemeinschaften/software/preise"), titel: "Price sheet", text: "Set-up, base fee and amount per metering point." },
+              { href: seitenPfad("/energiegemeinschaften/rechner"), titel: "Energy community calculator", text: "Savings from energy price, grid fee and levy." },
+            ]
+          : [
+              { href: seitenPfad("/energiegemeinschaften/software"), titel: "Plattform & Betrieb", text: "Software, Betriebsführung und Gründung für Gemeinschaften." },
+              { href: seitenPfad("/energiegemeinschaften/software/preise"), titel: "Preisblatt", text: "Einrichtung, Grundgebühr und Betrag je Zählpunkt." },
+              { href: seitenPfad("/energiegemeinschaften/rechner"), titel: "Energiegemeinschaft-Rechner", text: "Ersparnis aus Energiepreis, Netzentgelt und Abgabe." },
+            ]
+      }
+      cta={
+        !nurAt
+          ? en
+            ? { eyebrow: "Together instead of alone", title: "Power from the region for your community.", text: "We check which installation is in the proximity area and which model fits in your country.", primary: { label: "To energy communities", href: seitenPfad("/energiegemeinschaften") }, secondary: { label: "Contact", href: seitenPfad("/kontakt") } }
+            : { eyebrow: "Gemeinsam statt allein", title: "Strom aus der Region für Ihre Gemeinschaft.", text: "Wir prüfen, welche Anlage im Nahebereich liegt und welches Modell in Ihrem Land passt.", primary: { label: "Zu den Energiegemeinschaften", href: seitenPfad("/energiegemeinschaften") }, secondary: { label: "Kontakt", href: seitenPfad("/kontakt") } }
+          : en
+          ? { eyebrow: "Switching", title: "Switch without the power faltering.", text: "Cut-over date, parallel run and an offer for your community – we plan the switch with you.", primary: { label: "Request switching plan", href: "#rechner" }, secondary: { label: "Platform & operation", href: seitenPfad("/energiegemeinschaften/software") } }
+          : { eyebrow: "Wechsel", title: "Wechseln, ohne dass der Strom stockt.", text: "Stichtag, Parallellauf und Angebot für Ihre Gemeinschaft – wir planen den Wechsel mit Ihnen.", primary: { label: "Wechselplan anfordern", href: "#rechner" }, secondary: { label: "Plattform & Betrieb", href: seitenPfad("/energiegemeinschaften/software") } }
+      }
+    />
+  );
+}
+
+export const generateMetadata = seitenMetadata(SCHLUESSEL, metadata, { en: metadataEn });
+=== src/app/(stamm)/energiegemeinschaften/software/white-label/page.js
+// /energiegemeinschaften/software/white-label – EG-Software als White-Label für Stadtwerke, Gemeindewerke und
+// regionale Energieversorger in Österreich (Welle 3, Paket B7; Masterplan B7 und B11 „Stadtwerke als Partner“).
+//
+// Ehrlich: Das White-Label richten wir mit den ersten Partnern ein – keine erfundenen Referenzen, keine fremden
+// Marken, Partner werden nur nach schriftlicher Freigabe genannt. Länder: /at voll, gemeinsame Seite mit
+// Kennzeichnung „Österreich“, /de und /ch Länderhinweis. Lead: Partneranfrage über POST /api/anfrage
+// (typ energiegemeinschaft, Land AT → Lead-Desk AT, Einwilligungsprotokoll im Backend). noindex bis zur Fachprüfung.
+
+import { Building2, Handshake, KeyRound, LayoutDashboard, MapPinned, Palette, ShieldCheck, Users, Wrench } from "lucide-react";
+import Section from "@/components/ui/Section";
+import SectionHeading, { Eyebrow } from "@/components/ui/SectionHeading";
+import Reveal from "@/components/ui/Reveal";
+import CtaBand from "@/components/ui/CtaBand";
+import Faq from "@/components/ui/Faq";
+import Querverweise from "@/components/Reusable/Querverweise";
+import AnfrageMitDaten from "@/components/Gemeinschaft/AnfrageMitDaten";
+import JsonLd from "@/components/JsonLd";
+import Kopf from "@/components/Portal/EG/Angebot/Kopf";
+import { FaktKasten, NurOesterreich } from "@/components/Portal/EG/Angebot/Teile";
+import { Haken } from "@/components/Portal/EG/Produkt/Seite/teile";
+import { egFakt } from "@/lib/eg-angebot/fakten";
+import { rechnerMetadata, rechnerMetadataEn } from "@/components/Rechner/RechnerSeite";
+import { abs } from "@/data/site";
+import { pfad as seitenPfad } from "@/lib/land";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+
+const SCHLUESSEL = "/energiegemeinschaften/software/white-label";
+const PFAD = seitenPfad(SCHLUESSEL);
+
+const metadata = rechnerMetadata({
+  pfad: PFAD,
+  title: "White-Label für Energiegemeinschaften – für Stadtwerke in Österreich | ÖkoInvest",
+  description: "Energiegemeinschaften unter Ihrer Marke: Plattform, EDA-Prozesse und Abrechnung für Stadtwerke, Gemeindewerke und regionale Energieversorger in Österreich – auf Wunsch mit Betriebsführung.",
+  keywords: ["White Label Energiegemeinschaft", "Energiegemeinschaft Software Stadtwerke", "EEG Plattform Energieversorger", "Energiegemeinschaft Gemeindewerk"],
+});
+metadata.robots = { index: false, follow: true }; // Fachprüfung offen (Register index: false)
+
+const metadataEn = rechnerMetadataEn({
+  title: "White label for energy communities – for municipal utilities in Austria | ÖkoInvest",
+  description: "Energy communities under your brand: platform, EDA processes and billing for municipal utilities and regional energy suppliers in Austria – with operational management if desired.",
+  keywords: ["white label energy community Austria", "energy community software utilities", "EEG platform energy supplier"],
+});
+
+const BUNDESLAENDER = ["Burgenland", "Kärnten", "Niederösterreich", "Oberösterreich", "Salzburg", "Steiermark", "Tirol", "Vorarlberg", "Wien"];
+const BUNDESLAENDER_EN = { "Kärnten": "Carinthia", "Niederösterreich": "Lower Austria", "Oberösterreich": "Upper Austria", Steiermark: "Styria", Tirol: "Tyrol", Wien: "Vienna" };
+
+const RAHMEN_ICONS = [MapPinned, Handshake, ShieldCheck];
+function RahmenIcon({ i }) {
+  const I = RAHMEN_ICONS[i] || ShieldCheck;
+  return <I aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-ov-600" />;
+}
+
+const TEXTE = {
+  de: {
+    brot: ["Energiegemeinschaften", "Software", "White-Label"],
+    marke: "Österreich",
+    eyebrow: "Für Stadtwerke, Gemeindewerke und Energieversorger",
+    titel: (
+      <>
+        Energiegemeinschaften <span className="ov-text-gradient-light">unter Ihrer Marke.</span>
+      </>
+    ),
+    lead: "Ihre Kundinnen und Kunden wollen Strom in der Region teilen. Sie bieten die Gemeinschaft an – unter Ihrem Namen, mit Ihrem Kundenkontakt. Plattform, EDA-Prozesse und Abrechnung kommen von uns, auf Wunsch auch der laufende Betrieb.",
+    aktionen: [{ label: "Partnergespräch anfragen", href: "#anfrage" }, { label: "So läuft es ab", href: "#ablauf" }],
+    fussnote: "Unverbindlich · Umfang und Zeitplan legen wir gemeinsam fest",
+    karte: {
+      titel: "Auf einen Blick",
+      zeilen: [
+        ["Erscheinungsbild", "Ihr Logo, Ihre Farben"],
+        ["Kundenkontakt", "bei Ihnen"],
+        ["Plattform und EDA", "von ÖkoInvest"],
+        ["Betriebsführung", "auf Wunsch"],
+      ],
+      hinweis: "Das White-Label richten wir mit den ersten Partnern ein. Was im Einzelnen dazugehört, steht im Angebot.",
+    },
+    nutzenEyebrow: "Nutzen",
+    nutzenTitel: "Was Ihr Haus davon hat",
+    nutzen: [
+      { icon: Users, titel: "Kundenbindung in der Region", text: "Sie bieten Ihren Kundinnen und Kunden, Gemeinden und Betrieben selbst eine Energiegemeinschaft an, statt sie an Dritte zu verweisen." },
+      { icon: Palette, titel: "Ihre Marke im Vordergrund", text: "Portal, Beitritt und Belege tragen Ihr Erscheinungsbild. Wir bleiben im Hintergrund." },
+      { icon: Wrench, titel: "Ohne eigene Entwicklung", text: "Mitgliederportal, EDA-Prozesse und Abrechnung mit Vier-Augen-Freigabe nutzen Sie aus unserer Plattform." },
+      { icon: LayoutDashboard, titel: "Betrieb, wie es Ihnen passt", text: "Sie betreuen selbst – oder wir übernehmen als Organisator Anmeldungen, Datenqualität und Abrechnung." },
+    ],
+    rollenEyebrow: "Rollen",
+    rollenTitel: "Wer macht was",
+    rollenLead: "Klare Aufgaben, vertraglich festgehalten – auch beim Datenschutz.",
+    rollen: [
+      { icon: Building2, titel: "Ihr Haus", punkte: ["Marke und Kundenkontakt", "Vertrieb in Ihrer Region", "Erste Anlaufstelle für Mitglieder"] },
+      { icon: LayoutDashboard, titel: "ÖkoInvest", punkte: ["Plattform und EDA-Prozesse", "Abrechnung und Belege", "Auf Wunsch Betriebsführung als Organisator"] },
+      { icon: KeyRound, titel: "Die Gemeinschaft", punkte: ["Behält ihre Marktpartner-ID", "Entscheidet über Tarife und Mitglieder", "Wechselt ohne Neuanmeldung, wenn sie will"] },
+    ],
+    ablaufEyebrow: "Ablauf",
+    ablaufTitel: "Von der ersten Idee zur ersten Gemeinschaft",
+    ablauf: [
+      { titel: "Erstgespräch", text: "Ziele, Region, Zielgruppen und wie viel Betrieb Sie selbst übernehmen möchten." },
+      { titel: "Konzept und Angebot", text: "Umfang, Rollen, Datenschutz-Vereinbarung und Preis – schriftlich und aufgeschlüsselt." },
+      { titel: "Einrichtung", text: "Erscheinungsbild, Vorlagen für Verträge und Mitgliederkommunikation, Schulung Ihres Teams." },
+      { titel: "Start mit einer ersten Gemeinschaft", text: "Gemeinsamer Start und Auswertung, danach weitere Gemeinschaften in Ihrer Region." },
+    ],
+    rahmenEyebrow: "Ehrlicher Rahmen",
+    rahmenTitel: "Was Sie vorab wissen sollten",
+    rahmen: [
+      "Das Angebot gilt für Österreich. Für Deutschland und die Schweiz bieten wir die Software derzeit nicht an.",
+      "Partner nennen wir öffentlich nur nach schriftlicher Freigabe. Referenzen erfinden wir nicht.",
+      "Wer welche Daten verarbeitet, regelt der Vertrag (Auftragsverarbeitung nach Art. 28 DSGVO oder gemeinsame Verantwortlichkeit nach Art. 26 DSGVO).",
+    ],
+    netzTitel: "Gilt auch für Gemeinschaften unter Ihrer Marke",
+    anfrageEyebrow: "Partneranfrage",
+    anfrageTitel: "Sprechen wir über Ihre Region",
+    anfrageLead: "Ein paar Angaben genügen. Wir melden uns mit einem Terminvorschlag für ein Erstgespräch.",
+    legende: "Ihr Haus",
+    organisation: "Sie sind",
+    organisationen: [{ id: "stadtwerk", label: "Stadtwerk" }, { id: "gemeindewerk", label: "Gemeindewerk" }, { id: "versorger", label: "Regionaler Energieversorger" }, { id: "region", label: "Klima- und Energie-Modellregion" }, { id: "sonstige", label: "Sonstige" }],
+    bundesland: "Bundesland",
+    interesse: "Woran haben Sie Interesse?",
+    interessen: [{ id: "software", label: "Software unter eigener Marke" }, { id: "betrieb", label: "Mit Betriebsführung" }, { id: "information", label: "Zunächst Information" }],
+    gemeinschaften: "Wie viele Gemeinschaften planen oder betreuen Sie?",
+    gemeinschaftenPlatz: "z. B. 5",
+    button: "Partnergespräch anfragen",
+    faqEyebrow: "Häufige Fragen",
+    faqTitel: "Fragen von Stadtwerken",
+    faq: [
+      { q: "Brauchen wir eigene IT oder Entwickler?", a: "Nein. Sie nutzen unsere Plattform in Ihrem Erscheinungsbild. Ihr Team braucht eine Schulung für Vertrieb und Mitgliederfragen; die Technik betreiben wir." },
+      { q: "Wem gehören die Daten?", a: "Die Gemeinschaft behält ihre Marktpartner-ID und ihre Mitgliederdaten. Wer welche Daten in wessen Auftrag verarbeitet, legen wir im Vertrag fest – als Auftragsverarbeitung oder gemeinsame Verantwortlichkeit nach DSGVO." },
+      { q: "Können Gemeinschaften später wechseln?", a: "Ja. Die Marktpartner-ID gehört der Gemeinschaft; ein Wechsel des Dienstleisters braucht keine Neuanmeldung der Zählpunkte. Das gilt in beide Richtungen." },
+      { q: "Was kostet das White-Label?", a: "Das hängt von Umfang und Betriebsmodell ab. Wir kalkulieren es nach demselben Aufbau wie unser Preisblatt – Einrichtung, Grundgebühr und Betrag je Zählpunkt – und legen es schriftlich dar." },
+      { q: "Gilt das auch in Deutschland oder der Schweiz?", a: "Derzeit nicht. Die Software ist auf das österreichische ElWG und den Datenaustausch über EDA ausgelegt." },
+    ],
+    querverweise: [
+      { href: "/energiegemeinschaften/software", titel: "Plattform & Betrieb", text: "Was die Software kann – Mitgliederportal, Abrechnung, Zustimmung." },
+      { href: "/energiegemeinschaften/software/preise", titel: "Preisblatt", text: "Einrichtung, Grundgebühr und Betrag je Zählpunkt." },
+      { href: "/kommunen", titel: "Kommunen", text: "Wertschöpfung und Beteiligung vor Ort." },
+    ],
+    cta: { eyebrow: "Partnerschaft", title: "Ihre Region, Ihre Marke, unsere Plattform.", text: "Lassen Sie uns besprechen, wie Energiegemeinschaften unter Ihrem Namen aussehen können.", primary: { label: "Partnergespräch anfragen", href: "#anfrage" }, secondary: { label: "Plattform ansehen", href: "/energiegemeinschaften/software" } },
+  },
+  en: {
+    brot: ["Energy communities", "Software", "White label"],
+    marke: "Austria",
+    eyebrow: "For municipal utilities and energy suppliers",
+    titel: (
+      <>
+        Energy communities <span className="ov-text-gradient-light">under your brand.</span>
+      </>
+    ),
+    lead: "Your customers want to share power in the region. You offer the community – under your name, with your customer contact. Platform, EDA processes and billing come from us, and day-to-day operation too if you wish.",
+    aktionen: [{ label: "Request a partner meeting", href: "#anfrage" }, { label: "How it works", href: "#ablauf" }],
+    fussnote: "Without obligation · we agree scope and schedule together",
+    karte: {
+      titel: "At a glance",
+      zeilen: [
+        ["Look and feel", "your logo, your colours"],
+        ["Customer contact", "with you"],
+        ["Platform and EDA", "from ÖkoInvest"],
+        ["Operational management", "if desired"],
+      ],
+      hinweis: "We are setting up the white label with our first partners. What exactly is included is set out in the offer.",
+    },
+    nutzenEyebrow: "Benefits",
+    nutzenTitel: "What your company gains",
+    nutzen: [
+      { icon: Users, titel: "Customer loyalty in the region", text: "You offer your customers, municipalities and businesses an energy community yourself instead of referring them to third parties." },
+      { icon: Palette, titel: "Your brand in front", text: "Portal, joining and receipts carry your look and feel. We stay in the background." },
+      { icon: Wrench, titel: "No development of your own", text: "You use member portal, EDA processes and billing with four-eyes approval from our platform." },
+      { icon: LayoutDashboard, titel: "Operation the way you want", text: "You look after it yourself – or we take over registrations, data quality and billing as organiser." },
+    ],
+    rollenEyebrow: "Roles",
+    rollenTitel: "Who does what",
+    rollenLead: "Clear tasks, set out in the contract – including data protection.",
+    rollen: [
+      { icon: Building2, titel: "Your company", punkte: ["Brand and customer contact", "Sales in your region", "First point of contact for members"] },
+      { icon: LayoutDashboard, titel: "ÖkoInvest", punkte: ["Platform and EDA processes", "Billing and receipts", "Operational management as organiser if desired"] },
+      { icon: KeyRound, titel: "The community", punkte: ["Keeps its market partner ID", "Decides on tariffs and members", "Can switch without re-registration if it wants"] },
+    ],
+    ablaufEyebrow: "Process",
+    ablaufTitel: "From the first idea to the first community",
+    ablauf: [
+      { titel: "Initial meeting", text: "Goals, region, target groups and how much operation you want to handle yourself." },
+      { titel: "Concept and offer", text: "Scope, roles, data protection agreement and price – in writing and broken down." },
+      { titel: "Set-up", text: "Look and feel, templates for contracts and member communication, training for your team." },
+      { titel: "Start with a first community", text: "Joint start and review, then further communities in your region." },
+    ],
+    rahmenEyebrow: "Honest framework",
+    rahmenTitel: "What you should know in advance",
+    rahmen: [
+      "The offer applies to Austria. We do not currently offer the software for Germany or Switzerland.",
+      "We only name partners publicly with written approval. We do not invent references.",
+      "The contract governs who processes which data (processing on behalf under Art. 28 GDPR or joint controllership under Art. 26 GDPR).",
+    ],
+    netzTitel: "Also applies to communities under your brand",
+    anfrageEyebrow: "Partner enquiry",
+    anfrageTitel: "Let’s talk about your region",
+    anfrageLead: "A few details are enough. We will get back to you with a proposed date for an initial meeting.",
+    legende: "Your company",
+    organisation: "You are",
+    organisationen: [{ id: "stadtwerk", label: "Municipal utility" }, { id: "gemeindewerk", label: "Local municipal works" }, { id: "versorger", label: "Regional energy supplier" }, { id: "region", label: "Climate and energy model region" }, { id: "sonstige", label: "Other" }],
+    bundesland: "Federal state",
+    interesse: "What are you interested in?",
+    interessen: [{ id: "software", label: "Software under own brand" }, { id: "betrieb", label: "With operational management" }, { id: "information", label: "Information first" }],
+    gemeinschaften: "How many communities are you planning or looking after?",
+    gemeinschaftenPlatz: "e.g. 5",
+    button: "Request partner meeting",
+    faqEyebrow: "Frequently asked questions",
+    faqTitel: "Questions from municipal utilities",
+    faq: [
+      { q: "Do we need our own IT or developers?", a: "No. You use our platform in your look and feel. Your team needs training for sales and member questions; we run the technology." },
+      { q: "Who owns the data?", a: "The community keeps its market partner ID and its member data. Who processes which data on whose behalf is set out in the contract – as processing on behalf or joint controllership under the GDPR." },
+      { q: "Can communities switch later?", a: "Yes. The market partner ID belongs to the community; changing the service provider does not require re-registering the metering points. That applies in both directions." },
+      { q: "What does the white label cost?", a: "That depends on scope and operating model. We calculate it using the same structure as our price sheet – set-up, base fee and amount per metering point – and set it out in writing." },
+      { q: "Does this also apply in Germany or Switzerland?", a: "Not at present. The software is built for Austria’s ElWG and data exchange via EDA." },
+    ],
+    querverweise: [
+      { href: "/energiegemeinschaften/software", titel: "Platform & operation", text: "What the software does – member portal, billing, consent." },
+      { href: "/energiegemeinschaften/software/preise", titel: "Price sheet", text: "Set-up, base fee and amount per metering point." },
+      { href: "/kommunen", titel: "Municipalities", text: "Local value creation and participation." },
+    ],
+    cta: { eyebrow: "Partnership", title: "Your region, your brand, our platform.", text: "Let’s discuss what energy communities under your name could look like.", primary: { label: "Request partner meeting", href: "#anfrage" }, secondary: { label: "View the platform", href: "/energiegemeinschaften/software" } },
+  },
+};
+
+const schema = (en) => ({
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "@id": `${abs(PFAD)}/#service`,
+  name: en ? "White label for energy communities" : "White-Label für Energiegemeinschaften",
+  serviceType: en ? "Software for energy communities under a partner brand" : "Software für Energiegemeinschaften unter Partnermarke",
+  audience: { "@type": "BusinessAudience", name: en ? "Municipal utilities and regional energy suppliers" : "Stadtwerke und regionale Energieversorger" },
+  provider: { "@id": `${abs("/")}/#organization` },
+  areaServed: { "@type": "Country", name: en ? "Austria" : "Österreich" },
+  url: abs(PFAD),
+});
+
+export default async function WhiteLabelSeite({ params }) {
+  const land = await seitenLand(params);
+  const en = spracheDerAnfrage() === "en";
+  const t = TEXTE[en ? "en" : "de"];
+  const nurAt = !land || land === "AT";
+  const netz = egFakt("netzgebiet", { sprache: en ? "en" : "de" });
+  const bundeslaender = [{ id: "offen", label: en ? "Please choose" : "Bitte wählen" }, ...BUNDESLAENDER.map((b) => ({ id: b, label: en ? BUNDESLAENDER_EN[b] || b : b }))];
+
+  return (
+    <div className="[&_.ov-lead]:hyphens-manual [&_h2]:hyphens-manual! lg:[&_p]:hyphens-manual">
+      {nurAt && <JsonLd daten={schema(en)} />}
+      <Kopf
+        brotkrumen={[{ name: t.brot[0], href: "/energiegemeinschaften" }, { name: t.brot[1], href: "/energiegemeinschaften/software" }, { name: t.brot[2] }]}
+        marke={t.marke}
+        eyebrow={t.eyebrow}
+        titel={t.titel}
+        lead={t.lead}
+        aktionen={nurAt ? t.aktionen : []}
+        fussnote={nurAt ? t.fussnote : undefined}
+        karte={t.karte}
+      />
+
+      {!nurAt ? (
+        <Section tone="white" space="lg">
+          <NurOesterreich land={land} pfad={SCHLUESSEL} en={en} />
+        </Section>
+      ) : (
+        <>
+          <Section tone="white" space="lg">
+            <SectionHeading eyebrow={t.nutzenEyebrow} title={t.nutzenTitel} className="max-w-3xl" />
+            <ul role="list" className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {t.nutzen.map((n, i) => (
+                <Reveal as="li" key={n.titel} delay={i * 70} className="ov-lift rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/70">
+                  <span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-2xl bg-ov-50 text-ov-700 ring-1 ring-ov-100">
+                    <n.icon className="h-5 w-5" />
+                  </span>
+                  <h3 className="mt-4 font-display text-[17px] font-bold leading-snug text-ink-900">{n.titel}</h3>
+                  <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-600">{n.text}</p>
+                </Reveal>
+              ))}
+            </ul>
+          </Section>
+
+          <Section tone="sand" space="lg">
+            <SectionHeading eyebrow={t.rollenEyebrow} title={t.rollenTitel} lead={t.rollenLead} className="max-w-3xl" />
+            <ul role="list" className="mt-10 grid gap-5 lg:grid-cols-3">
+              {t.rollen.map((r, i) => {
+                const mitte = i === 1;
+                return (
+                  <Reveal as="li" key={r.titel} delay={i * 90} className={mitte ? "ov-verlauf-nacht rounded-[2rem] p-6 text-white shadow-e3 ring-2 ring-ov-500/60 sm:p-8" : "rounded-[2rem] bg-white p-6 shadow-e1 ring-1 ring-ink-200/70 sm:p-8"}>
+                    <span aria-hidden="true" className={mitte ? "flex h-12 w-12 items-center justify-center rounded-2xl bg-ov-500 text-white" : "flex h-12 w-12 items-center justify-center rounded-2xl bg-ov-50 text-ov-600 ring-1 ring-ov-100"}>
+                      <r.icon className="h-6 w-6" />
+                    </span>
+                    <h3 className={mitte ? "ov-h3 mt-5 text-white" : "ov-h3 mt-5 text-ink-900"}>{r.titel}</h3>
+                    <ul role="list" className="mt-4 space-y-2.5">
+                      {r.punkte.map((p) => (
+                        <li key={p} className={mitte ? "flex gap-2.5 text-[15px] leading-snug text-white/90" : "flex gap-2.5 text-[15px] leading-snug text-ink-800"}>
+                          <Haken dunkel={mitte} />
+                          {p}
+                        </li>
+                      ))}
+                    </ul>
+                  </Reveal>
+                );
+              })}
+            </ul>
+          </Section>
+
+          <Section tone="white" space="lg" id="ablauf" className="scroll-mt-24">
+            <SectionHeading eyebrow={t.ablaufEyebrow} title={t.ablaufTitel} className="max-w-3xl" />
+            <Reveal className="mt-10 rounded-[2rem] bg-gradient-to-b from-ov-50/80 to-white p-6 shadow-e1 ring-1 ring-ov-200/70 sm:p-8 lg:p-10">
+              <ol role="list" className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+                {t.ablauf.map((s, i) => (
+                  <li key={s.titel} className="flex gap-4 lg:flex-col">
+                    <span aria-hidden="true" className={i === t.ablauf.length - 1 ? "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-ov-600 font-display text-[18px] font-extrabold text-white" : "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white font-display text-[18px] font-extrabold text-ov-700 shadow-e1 ring-1 ring-ov-200"}>
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-[18px] font-semibold leading-snug text-ink-900">
+                        <span className="sr-only">{en ? `Step ${i + 1}: ` : `Schritt ${i + 1}: `}</span>
+                        {s.titel}
+                      </h3>
+                      <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-600">{s.text}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </Reveal>
+
+            <div className="mt-14 grid gap-8 lg:grid-cols-2 lg:gap-12">
+              <div>
+                <Eyebrow>{t.rahmenEyebrow}</Eyebrow>
+                <h2 className="ov-h3 mt-3 text-ink-900">{t.rahmenTitel}</h2>
+                <ul role="list" className="mt-5 space-y-3">
+                  {t.rahmen.map((x, i) => (
+                    <li key={i} className="flex gap-3 text-[15px] leading-relaxed text-ink-700">
+                      <RahmenIcon i={i} />
+                      {x}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="mb-3 font-display text-[17px] font-bold text-ink-900">{t.netzTitel}</p>
+                <FaktKasten fakt={netz} en={en} />
+              </div>
+            </div>
+          </Section>
+
+          <Section tone="sand" space="lg" id="anfrage" className="scroll-mt-24">
+            <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+              <SectionHeading className="lg:sticky lg:top-28 lg:self-start" eyebrow={t.anfrageEyebrow} title={t.anfrageTitel} lead={t.anfrageLead} />
+              <Reveal className="rounded-[2rem] bg-white p-5 shadow-e3 ring-1 ring-ink-200/70 sm:p-8 md:p-10">
+                <AnfrageMitDaten
+                  legende={t.legende}
+                  festeDaten={{ quelle: "eg-white-label", land: "AT", segment: "white-label" }}
+                  zusatz={[
+                    { name: "organisation", label: t.organisation, art: "select", optionen: t.organisationen },
+                    { name: "bundesland", label: t.bundesland, art: "select", optionen: bundeslaender },
+                    { name: "anliegen", label: t.interesse, art: "chips", optionen: t.interessen },
+                    { name: "gemeinschaften", label: t.gemeinschaften, art: "zahl", platzhalter: t.gemeinschaftenPlatz, breit: true },
+                  ]}
+                  formular={{ typ: "energiegemeinschaft", felder: ["firma", "telefon", "plz", "nachricht"], button: t.button }}
+                />
+              </Reveal>
+            </div>
+          </Section>
+
+          <Section tone="white" space="lg">
+            <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+              <SectionHeading eyebrow={t.faqEyebrow} title={t.faqTitel} />
+              <Faq items={t.faq} />
+            </div>
+          </Section>
+
+          <Querverweise items={t.querverweise} />
+          <CtaBand {...t.cta} />
+        </>
+      )}
+    </div>
+  );
+}
+
+export const generateMetadata = seitenMetadata(SCHLUESSEL, metadata, { en: metadataEn });
+--- (laender)/[land]/preise
+// Länderfassung von /energiegemeinschaften/software/preise (/de, /at, /ch) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/energiegemeinschaften/software/preise/page.js; das Land kommt aus params.land.
+export { default, generateMetadata } from "@/app/(stamm)/energiegemeinschaften/software/preise/page";
+--- (laender)/[land]/wechsel-check
+// Länderfassung von /energiegemeinschaften/software/wechsel-check (/de, /at, /ch) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/energiegemeinschaften/software/wechsel-check/page.js; das Land kommt aus params.land.
+export { default, generateMetadata } from "@/app/(stamm)/energiegemeinschaften/software/wechsel-check/page";
+--- (laender)/[land]/white-label
+// Länderfassung von /energiegemeinschaften/software/white-label (/de, /at, /ch) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/energiegemeinschaften/software/white-label/page.js; das Land kommt aus params.land.
+export { default, generateMetadata } from "@/app/(stamm)/energiegemeinschaften/software/white-label/page";
+--- (en)/en/preise
+// Englische Fassung von /energiegemeinschaften/software/preise (/en) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/energiegemeinschaften/software/preise/page.js; Sprache "en" über params.sprache.
+import Seite, { generateMetadata as metadaten } from "@/app/(stamm)/energiegemeinschaften/software/preise/page";
+import { englisch, englischeMetadaten } from "@/lib/sprache/route";
+export default englisch(Seite);
+export const generateMetadata = englischeMetadaten(metadaten);
+--- (en)/en/wechsel-check
+// Englische Fassung von /energiegemeinschaften/software/wechsel-check (/en) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/energiegemeinschaften/software/wechsel-check/page.js; Sprache "en" über params.sprache.
+import Seite, { generateMetadata as metadaten } from "@/app/(stamm)/energiegemeinschaften/software/wechsel-check/page";
+import { englisch, englischeMetadaten } from "@/lib/sprache/route";
+export default englisch(Seite);
+export const generateMetadata = englischeMetadaten(metadaten);
+--- (en)/en/white-label
+// Englische Fassung von /energiegemeinschaften/software/white-label (/en) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/energiegemeinschaften/software/white-label/page.js; Sprache "en" über params.sprache.
+import Seite, { generateMetadata as metadaten } from "@/app/(stamm)/energiegemeinschaften/software/white-label/page";
+import { englisch, englischeMetadaten } from "@/lib/sprache/route";
+export default englisch(Seite);
+export const generateMetadata = englischeMetadaten(metadaten);
+--- (en)/en/[land]/preise
+// Englische Fassung von /energiegemeinschaften/software/preise (/en/de, /en/at, /en/ch) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/energiegemeinschaften/software/preise/page.js; Sprache "en" über params.sprache, das Land aus params.land.
+import Seite, { generateMetadata as metadaten } from "@/app/(stamm)/energiegemeinschaften/software/preise/page";
+import { englisch, englischeMetadaten } from "@/lib/sprache/route";
+export default englisch(Seite);
+export const generateMetadata = englischeMetadaten(metadaten);
+--- (en)/en/[land]/wechsel-check
+// Englische Fassung von /energiegemeinschaften/software/wechsel-check (/en/de, /en/at, /en/ch) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/energiegemeinschaften/software/wechsel-check/page.js; Sprache "en" über params.sprache, das Land aus params.land.
+import Seite, { generateMetadata as metadaten } from "@/app/(stamm)/energiegemeinschaften/software/wechsel-check/page";
+import { englisch, englischeMetadaten } from "@/lib/sprache/route";
+export default englisch(Seite);
+export const generateMetadata = englischeMetadaten(metadaten);
+--- (en)/en/[land]/white-label
+// Englische Fassung von /energiegemeinschaften/software/white-label (/en/de, /en/at, /en/ch) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/energiegemeinschaften/software/white-label/page.js; Sprache "en" über params.sprache, das Land aus params.land.
+import Seite, { generateMetadata as metadaten } from "@/app/(stamm)/energiegemeinschaften/software/white-label/page";
+import { englisch, englischeMetadaten } from "@/lib/sprache/route";
+export default englisch(Seite);
+export const generateMetadata = englischeMetadaten(metadaten);

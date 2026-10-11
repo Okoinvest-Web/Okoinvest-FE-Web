@@ -1,0 +1,233 @@
+=== niederoesterreich
+2:// raumordnung-noe.at (SekRop PV, LGBl. Nr. 94/2022), naturland-noe.at (RED III), Netz NÖ (Kapazitätskarte 02/2025),
+3:// Statistik Austria (Agrarstrukturerhebung 2023, Bevölkerung 01.01.2026), BEV/WKO (Fläche 01.01.2025), PVGIS v5.3, RIS (§ 33 EAG)
+10:  seoTitel: "Solarpark & Agri-PV Niederösterreich: Pacht | ÖkoInvest",
+12:    "Solarpark Pacht in Niederösterreich: Widmung Grünland-Photovoltaik, 116 PV-Zonen, 2-ha-Grenze, Ökologiekonzept, Netz NÖ und Agri-PV – für Flächeneigentümer.",
+14:    "Niederösterreich hat die meiste Agrarfläche Österreichs und ein eigenes Zonenprogramm für Freiflächen-PV. Ob Ihre Fläche passt, entscheidet sich an Zone, Größe und Umspannwerk.",
+15:  akzent: "mit Zonen und Grenzen.",
+36:    "Gleichzeitig ist Niederösterreich das Land mit den ausdifferenziertesten Regeln für Freiflächenanlagen. **Wer im Grünland mehr als 50 kW errichten will, braucht die Widmung „Grünland-Photovoltaikanlagen“ (Gpv).** Außerhalb der vom Land verordneten Zonen ist eine solche Widmung auf 2 Hektar begrenzt, innerhalb der 116 Zonen des Sektoralen Raumordnungsprogramms sind bis zu 10 Hekta
+37:    "Hinzu kommt die Netzfrage. Netz Niederösterreich veröffentlicht die freien Einspeisekapazitäten tagesaktuell; einzelne Umspannwerke sind bereits ausgebucht. Ein seriöser Projektentwickler prüft deshalb Zone, Bodenverhältnisse und Netzanschluss, bevor ein Pachtvertrag unterschrieben wird.",
+41:      titel: "Widmung Gpv ab mehr als 50 kW im Grünland",
+42:      text: "Nach § 20 Abs. 2 Z 21 NÖ ROG 2014 brauchen Photovoltaikanlagen im Grünland (außer auf Bauwerken) die Widmung Grünland-Photovoltaikanlagen, wenn sie allein oder mit räumlich zusammenhängenden Anlagen mehr als 50 kW Engpassleistung erreichen. Die Widmung beschließt der Gemeinderat im örtlichen Raumordnungsprogramm; das Land prüft als Aufsichtsbehörde.",
+46:      titel: "Außerhalb der Zonen: 2 ha und Zusammenrechnung im 200-m-Umkreis",
+47:      text: "Außerhalb der Zonen darf eine Gpv-Widmung höchstens 2 Hektar umfassen. Flächen, die weniger als 200 Meter voneinander entfernt liegen, werden zusammengerechnet (§ 20 Abs. 3d NÖ ROG 2014). Eine bis zu 2 ha große Fläche darf zusätzlich direkt an eine Zone anschließen. Größere Widmungen außerhalb von Zonen sind nur in Sonderfällen nach § 20 Abs. 3e möglich, etwa auf ste
+51:      titel: "116 PV-Zonen: 5 ha, mit Ökologiekonzept bis 10 ha",
+52:      text: "Das Sektorale Raumordnungsprogramm über Photovoltaikanlagen im Grünland (LGBl. Nr. 94/2022) legt 116 Zonen fest, in denen Widmungen über 2 ha zulässig sind. Je Zone dürfen insgesamt 5 ha gewidmet werden, eine Erweiterung auf bis zu 10 ha setzt für den Teil über 5 ha ein Ökologiekonzept voraus – mit Erhalt der Bodenqualität, ökologischem Begrünungsanteil, Durchgängigke
+56:      titel: "Vorbelastete Flächen zählen als Zone",
+57:      text: "Als Zonen gelten nach § 2 Abs. 2 SekRop PV auch Altlasten, genehmigte Deponien mit tatsächlich erfolgten Ablagerungen (ohne landwirtschaftlich genutzte Bodenaushubdeponien) und Materialgewinnungsstätten. Liegt eine Kiesgrube nicht in einer der 116 Zonen, muss der Abbau abgeschlossen und die Abbausohle erreicht sein, bevor dort PV gewidmet werden kann.",
+62:      text: "Anlagen bis 1 MWp, die von befugten Unternehmen errichtet werden, brauchen nach § 5 Abs. 2 Z 3 NÖ ElWG 2005 keine Anlagengenehmigung; darüber ist eine elektrizitätsrechtliche Genehmigung des Landes nötig. Außerhalb des Ortsgebiets ist nach dem NÖ Naturschutzgesetz 2000 unabhängig von der Größe eine naturschutzrechtliche Bewilligung erforderlich, in Natura-2000-Gebieten re
+66:      titel: "EAG: 25 % Abschlag auf Grünland, Ausnahme Agri-PV",
+67:      text: "Wer eine EAG-Marktprämie anstrebt, muss auf landwirtschaftlich genutzten Flächen und im Grünland mit einem Abschlag von 25 % auf den Zuschlagswert rechnen (§ 33 EAG). Der Abschlag entfällt unter anderem für Deponien, Altlasten, Bergbau- und Infrastrukturstandorte sowie für Agri-PV-Anlagen, die die landwirtschaftliche Hauptnutzung nicht oder nur gering beeinträchtigen – f�
+68:      quelle: { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790" },
+72:    text: "Die Flächenkulisse in Niederösterreich wird vor allem durch die 116 Zonen und die 2-ha-Grenze bestimmt. Wer eine größere Ackerfläche außerhalb einer Zone besitzt, kann in der Regel nur einen Teil davon für PV nutzen. Chancen bieten Flächen in oder direkt neben einer Zone, vorbelastete Standorte und Kombinationen mit landwirtschaftlicher Nutzung.",
+74:      "Flächen innerhalb einer der 116 Zonen des SekRop PV (bis 5 + 5 ha)",
+75:      "bis 2 ha große Flächen direkt im Anschluss an eine Zone",
+80:      "Flächen im 30-jährlichen Hochwasserabflussbereich oder in roten Gefahrenzonen (Gpv nach § 15 Abs. 7 NÖ ROG unzulässig)",
+81:      "Pflegezonen des Biosphärenparks Wienerwald",
+=== oberoesterreich
+2:// OÖ PV-Strategie 2030 (259164.htm), Netz OÖ Netzentwicklungsplan 2026, tips.at (12/2023), RIS (§ 33 EAG),
+10:  seoTitel: "Solarpark & Agri-PV Oberösterreich: Pacht | ÖkoInvest",
+12:    "Solarpark Pacht in Oberösterreich: Sonderausweisung im Grünland ab 50 m², Kriterienkatalog zur Bodenfruchtbarkeit, Agri-PV-Pflicht und Netz OÖ im Überblick.",
+36:    "Das Land hat seine Linie in der **Oö. Photovoltaik-Strategie 2030** festgelegt: Dächer und vorbelastete Flächen haben oberste Priorität. Freiflächenanlagen auf land- und forstwirtschaftlichen Flächen sind möglich, werden im Widmungsverfahren aber nach einem Kriterienkatalog geprüft, der sich vor allem an der natürlichen Bodenfruchtbarkeit und der Entfernung zum nächsten Umspannwe
+37:    "Für Grundeigentümer heißt das: Nicht jede ebene, sonnige Wiese ist widmungsfähig. Wer die Bodenfruchtbarkeitsstufe seiner Fläche und die Lage zum Umspannwerk kennt, kann die Chancen gut einschätzen – die Daten dazu stellt das Land im Geoinformationssystem DORIS bereit.",
+42:      text: "Frei stehende PV-Anlagen mit mehr als 50 m² Modulfläche dürfen im Grünland nur errichtet werden, wenn der Flächenwidmungsplan eine Sonderausweisung vorsieht (§ 30a Abs. 3 Oö. ROG 1994). Ausgenommen sind Anlagen für den landwirtschaftlichen Eigenbedarf. Bis 50 m² sind frei stehende Anlagen im Grünland und in allen Baulandkategorien zulässig.",
+47:      text: "Der Kriterienkatalog der Oö. PV-Strategie 2030 gilt vorrangig im Widmungsverfahren. Böden mit hoher bis sehr hoher natürlicher Bodenfruchtbarkeit (Stufe 4 und 5) sowie die beiden höchsten Kategorien je Gemeinde scheiden aus. Reine Freiflächenanlagen ohne landwirtschaftliche Doppelnutzung sollen nur auf Böden der niedrigsten Stufe 1 entstehen; auf den Stufen 2 und 3 ist Agri-P
+52:      text: "Im Radius von 5 km um bestehende Umspannwerke gilt „energiewirtschaftliche Priorität 1“, bis 7,5 km „Priorität 2“. In diesen Bereichen ist Doppelnutzung auch auf Böden der Stufen 3 und 4 möglich; Böden der höchsten Stufe 5 bleiben ausgeschlossen. Nähe zum Netz verbessert in Oberösterreich also nicht nur die Anschlusskosten, sondern auch die Widmungschancen.",
+57:      text: "Anlagen über 1.000 kW Engpassleistung, die nicht auf künstlichen Strukturen stehen, brauchen eine Bewilligung nach § 6 Oö. ElWOG 2006 beim Amt der Landesregierung. Naturschutzrechtlich sind frei stehende Anlagen im Grünland außerhalb geschlossener Ortschaften ab mehr als 500 m² Kollektorfläche bewilligungspflichtig (§ 5 Z 21 Oö. NSchG 2001), von 2 bis 500 m² anzeigepflic
+61:      titel: "Beschleunigungsgebiete: Widmung entfällt, Verordnung in Arbeit",
+62:      text: "Oberösterreich hat bereits gesetzlich geregelt, dass frei stehende PV-Anlagen samt Nebenanlagen und Batteriespeichern in verordneten Beschleunigungsgebieten (§ 11 Abs. 3b Oö. ROG) als widmungsneutrale Bauwerke gelten – das Widmungserfordernis entfällt. Die Verordnungen für Beschleunigungsgebiete und für PV-Ausschlusszonen wurden laut Land im Juni 2026 noch erarbeitet, ein B
+66:      titel: "EAG-Abschlag 25 % – Agri-PV kann ausgenommen sein",
+67:      text: "Für Freiflächenanlagen auf landwirtschaftlich genutzten Flächen oder im Grünland sinkt der Zuschlagswert der EAG-Marktprämie um 25 % (§ 33 EAG), beim Investitionszuschuss ebenso. Für bestimmte Agri-PV-Anlagen, Deponien, Altlasten und Infrastrukturstandorte entfällt der Abschlag; beim Investitionszuschuss gibt es für bestimmte Agri-PV-Anlagen zusätzlich 30 % Zuschlag.",
+68:      quelle: { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790" },
+72:    text: "Die Flächenkulisse in Oberösterreich ergibt sich weniger aus festen Zonen als aus dem Zusammenspiel von Bodenfruchtbarkeit, Landschaftssensibilität und Netznähe. Das Land stellt die Kriterien als Kartenebenen im DORIS-System bereit, sodass sich eine erste Einschätzung für jedes Grundstück machen lässt.",
+81:      "regionale Grünzonen in den Raumordnungsprogrammen Eferding und Linz-Umland",
+84:      "500-m-Seeuferschutzzone im Salzkammergut und an den übrigen Seen",
+88:    text: "In Oberösterreich widmet die Gemeinde eine Grünland-Sonderausweisung für PV im Flächenwidmungsplan; das Land prüft als Aufsichtsbehörde nach dem Kriterienkatalog. Vorher lohnt ein Blick auf Fruchtbarkeitsstufe, Landschaftsbewertung, Wald- und Gewässerabstände und die Entfernung zum Umspannwerk. Anschließend folgen die naturschutzrechtliche Bewilligung bei der Bezirkshauptman
+90:      { name: "Gemeinde (Gemeinderat)", rolle: "Grünland-Sonderausweisung für PV im Flächenwidmungsplan" },
+91:      { name: "Amt der Oö. Landesregierung – Abteilung Raumordnung", rolle: "Aufsicht über die Widmung, Anwendung des Kriterienkatalogs", url: "https://www.land-oberoesterreich.gv.at/259165.htm" },
+94:      { name: "Netz Oberösterreich / Linz Netz", rolle: "Netzzugang und Stellungnahme im Bewilligungsverfahren" },
+99:    "Für die Förderung gelten zusätzlich die EAG-Vorgaben: Anlagen auf Agrarflächen müssen rückstandslos rückbaubar sein, die Modulunterkante muss mindestens 80 cm über dem Boden liegen und die Reihenabstände müssen mindestens zwei Meter betragen (außer bei innovativen und nachgeführten Anlagen). Für Grünland- und Ackerbaubetriebe im Innviertel und Hausruckviertel kommen damit vor
+101:  netz: {
+103:    vnb: ["Netz Oberösterreich", "Linz Netz"],
+105:      "Ende 2023 konnte Netz OÖ in sieben Umspannwerksbereichen vorübergehend keinen zusätzlichen Solarstrom aufnehmen; seither wird ausgebaut. Die verfügbaren Kapazitäten je Umspannwerk werden quartalsweise veröffentlicht, das Netz umfasst 62 Umspann- und Schaltwerke (Stand 10/2025).",
+=== burgenland
+1:// Recherche: 29.09.2026 – RIS: Bgld. RPG 2019 §§ 22d, 22e, 22g (Fassung 29.09.2026), Bgld. Eignungszonenverordnung
+2:// PV/Solar (LGBl. Nr. 60/2021 idF LGBl. Nr. 55/2026, Anlage 1 mit 95 Zonen), VO Bemessungsgrundlage Windkraft- und
+3:// Photovoltaikabgabe (LGBl. Nr. 47/2023 idF 58/2026), Bgld. ElWG 2006 § 5; Land Burgenland FAQ Eignungszonen;
+4:// energynewsmagazine (13.02.2026); Statistik Austria Agrarstrukturerhebung 2023; WKO Fläche 2025; RIS EAG § 33; PVGIS v5.3.
+11:  seoTitel: "Solarpark & Agri-PV Burgenland: Pacht, Recht | ÖkoInvest",
+13:    "Solarpark Pacht Burgenland: Freiflächen-PV nur in Eignungszonen, 19 Beschleunigungsgebiete, Photovoltaikabgabe, Agri-PV-Auflagen und Netz Burgenland.",
+14:  lead: "Im Burgenland sind Freiflächenanlagen jenseits kleiner Hausanlagen nur in Eignungszonen zulässig, die das Land per Verordnung festlegt – derzeit 95 Zonen, 19 davon gelten zusätzlich als Beschleunigungsgebiete.",
+15:  akzent: "nur in der Eignungszone.",
+33:    "Das Burgenland steuert Freiflächen-PV strenger über die Landesebene als jedes andere Bundesland. Nach § 22d des Burgenländischen Raumplanungsgesetzes 2019 (Bgld. RPG 2019) sind Photovoltaikanlagen vorrangig auf Dächern oder gebäudeintegriert zu errichten. Ohne Eignungszone sind auf Freiflächen nur kleine Anlagen für den Eigenbedarf eines Gebäudes zulässig – bis 35 m² Modulflä
+34:    "Diese Zonen stehen in der Burgenländischen Eignungszonenverordnung für Photovoltaik- und Solar-Freiflächenanlagen. Seit ihrer Erlassung 2021 wurde sie mehrfach erweitert; in der Fassung LGBl. Nr. 55/2026 (seit 11.07.2026) umfasst Anlage 1 **95 Eignungszonen** in Gemeinden vom Seewinkel über die Parndorfer Platte bis ins Südburgenland. Jede Zone hat eigene Auflagen, etwa zu Biodiversit
+35:    "Mit rund 177.000 ha landwirtschaftlich genutzter Fläche (Agrarstrukturerhebung 2023) ist das Burgenland zugleich ein Land des Acker- und Weinbaus. Dazu kommen die Windparks im Norden – das Raumplanungsgesetz nennt die kombinierte Netznutzung mit Windkraft ausdrücklich als Kriterium für eine „qualifizierte Nutzung“ von PV-Flächen.",
+39:      titel: "Freiflächen-PV nur in Eignungszonen",
+40:      text: "Anlagen, die die Grenzen von 35 m² (bzw. 200 m² auf Betriebs- und Industriegebieten) übersteigen, sind nur in Eignungszonen zulässig. Bei der Festlegung berücksichtigt das Land Ausschluss- und Konfliktkriterien, meteorologische Gegebenheiten und die Netzeinspeisung. Bevorzugt werden Konzepte mit „qualifizierter Nutzung“: Betrieb durch eine Bürger- oder Erneuerbare-Energie
+41:      quelle: { titel: "RIS – Bgld. RPG 2019 § 22d", url: "https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=LrBgld&Gesetzesnummer=20001224&Paragraf=22d" },
+44:      titel: "Widmung zusätzlich unter 10 ha",
+45:      text: "Die Eignungszone wird im Flächenwidmungsplan ersichtlich gemacht. Anlagen mit mehr als 10 ha Flächeninanspruchnahme dürfen nur bewilligt werden, wenn sie der Verordnung nicht widersprechen. Anlagen unter 10 ha brauchen innerhalb der Zone zusätzlich eine Widmung als Grünfläche mit gesonderter Ausweisung für Photovoltaik (§ 40 Abs. 2 Bgld. RPG 2019). Das Land zoniert nach eig
+46:      quelle: { titel: "Land Burgenland – Häufig gestellte Fragen Eignungszonen PV-Freiflächenanlagen", url: "https://www.burgenland.at/verwaltung/landesverwaltung-im-ueberblick/gruppe-3/abteilung-2-landesplanung-gemeinden-und-wirtschaft/hauptreferat-landesplanung/referat-ueberoertliche-raumplanung/haeufig-gestellte-fragen-eignungszonen-pv-freiflaechenanlagen-1/" },
+49:      titel: "19 Eignungszonen sind Beschleunigungsgebiete",
+50:      text: "Mit der Novelle LGBl. Nr. 106/2025 hat das Land Beschleunigungsgebiete nach der EU-Richtlinie RED III in das Raumplanungsgesetz aufgenommen (§ 22g). Seit der Verordnungsänderung LGBl. Nr. 26/2026 (März 2026) gelten die Eignungszonen Nr. 5, 31 bis 34, 41, 64, 73, 76, 81, 82 und 85 bis 92 als Beschleunigungsgebiete – ohne Änderung der Zonengrenzen oder Auflagen.",
+51:      quelle: { titel: "RIS – Bgld. Eignungszonenverordnung PV/Solar, § 3a", url: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrBgld&Gesetzesnummer=20001332" },
+54:      titel: "Photovoltaikabgabe je Megawatt",
+55:      text: "Als Ausgleich für die Belastung des Landschaftsbildes erhebt das Land eine jährliche **Photovoltaikabgabe**, bemessen nach der installierten Leistung (Euro je Megawatt), nicht nach der Fläche. Der Grundbetrag steht in der Verordnung über die Bemessungsgrundlage und wird marktpreisabhängig erhöht, für 2025 etwa um 36,61 %. Ein fester Anteil je Megawatt fließt der Standortgem
+56:      quelle: { titel: "RIS – Bgld. RPG 2019 § 22e und VO Bemessungsgrundlage Windkraft- und Photovoltaikabgabe", url: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=LrBgld&Gesetzesnummer=20001418" },
+60:      text: "Nach § 5 des Burgenländischen Elektrizitätswesengesetzes 2006 bedürfen Photovoltaikanlagen mit mehr als 500 kWpeak einer elektrizitätsrechtlichen Anlagengenehmigung, Energiespeicher ab mehr als 1 MWh Kapazität ebenso.",
+61:      quelle: { titel: "RIS – Bgld. ElWG 2006 § 5", url: "https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=LrBgld&Gesetzesnummer=20000597&Paragraf=5" },
+=== steiermark
+4:// ORF Steiermark (Agri-PV Haidegg, 17.03.2024), RIS EAG § 33, Parlament EABG, PVGIS v5.3.
+11:  seoTitel: "Solarpark & Agri-PV Steiermark: Pacht, Recht | ÖkoInvest",
+13:    "Solarpark Pacht Steiermark: Vorrangzonen des Sachprogramms Solarenergie, Widmung im Freiland, Agri-PV-Regeln und Netz – Freiflächen-PV für Flächeneigentümer.",
+14:  lead: "In der Steiermark entscheidet das Sachprogramm Solarenergie, wo große Freiflächenanlagen entstehen dürfen: 36 Vorrangzonen für Parks über 10 ha, außerhalb davon deutlich kleinere Widmungen durch die Gemeinde.",
+15:  akzent: "mit Vorrangzone und Widmung.",
+33:    "Die Steiermark hat als eines der ersten Bundesländer die Standortfrage für große Solarparks landesweit vorab entschieden. Mit dem **Entwicklungsprogramm für den Sachbereich Erneuerbare Energie – Solarenergie** (kurz SAPRO Solarenergie, LGBl. Nr. 52/2023, wirksam seit 07.06.2023) hat das Land 36 Vorrangzonen für Photovoltaik-Freiflächenanlagen mit mehr als 10 ha Flächenbedarf festg
+34:    "Für Flächeneigentümer heißt das: Liegt Ihre Fläche in einer Vorrangzone, ist sie für einen großen Park bereits „reserviert“, ein eigenes Widmungsverfahren der Gemeinde entfällt. Außerhalb der Vorrangzonen bleibt die Gemeinde zuständig – und sie darf nur deutlich kleinere Flächen ausweisen, in der Regel bis 2 ha und höchstens 10 ha. Das ist der wichtigste Unterschied zu Bu
+39:      titel: "Sachprogramm Solarenergie: 36 Vorrangzonen, Ausschlusszonen",
+40:      text: "Für Freiflächenanlagen mit mehr als 10 ha Flächenbedarf legt das SAPRO Solarenergie landesweit 36 Vorrangzonen im öffentlichen Interesse fest, nach Angaben des Landes rund 780 ha. In den Vorrangzonen dürfen PV-Freiflächenanlagen ohne eigenes örtliches Raumordnungsverfahren errichtet werden; eine Pflicht zur Umsetzung besteht nicht. In Ausschlusszonen sind Festlegungen im Fl�
+44:      titel: "Widmung außerhalb der Zonen: ab 400 m² Sondernutzung",
+45:      text: "Nach dem Steiermärkischen Raumordnungsgesetz (StROG) dürfen Anlagen bis 400 m² Brutto-Modulfläche im Freiland ohne eigene Widmung errichtet werden (nicht in Freihaltegebieten). Darüber ist eine **Sondernutzung im Freiland für Energieerzeugungsanlagen** nötig. Ab einer Widmungsfläche von mehr als 3.000 m² braucht es zusätzlich eine Festlegung als Eignungszone im örtlichen
+50:      text: "Anlagen mit mehr als 1.000 kW brauchen eine Genehmigung der Landesregierung nach § 5 Stmk. ElWOG 2005; ein eigenes Bauverfahren bei der Gemeinde entfällt dann. Darunter ist das Steiermärkische Baugesetz maßgeblich: je nach Größe Meldung, vereinfachtes oder ordentliches Baubewilligungsverfahren bei der Gemeinde. In Vorrangzonen läuft das Verfahren nach Angaben des Landes konz
+60:      text: "Mit der Novelle LGBl. Nr. 20/2026 (in Kraft seit 28.02.2026) hat die Steiermark Beschleunigungsgebiete nach der EU-Richtlinie RED III in das Raumordnungsgesetz aufgenommen (§ 13b StROG). Natura-2000- und Naturschutzgebiete, Nationalparke und Hauptvogelzugrouten sind ausgeschlossen, künstliche und versiegelte Flächen sind vorrangig zu berücksichtigen. Das Land sieht die Vorrangz
+64:      titel: "EAG: 25 % Abschlag auf Agrar- und Grünlandflächen",
+65:      text: "Wie in ganz Österreich verringert sich der Zuschlagswert der EAG-Marktprämie für Anlagen auf landwirtschaftlich genutzten Flächen oder im Grünland um 25 %. Ausgenommen sein können unter anderem Agri-PV-Anlagen, bei denen die landwirtschaftliche Hauptnutzung nicht oder nur gering beeinträchtigt wird, sowie vorbelastete Flächen.",
+66:      quelle: { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790" },
+70:    text: "Beispiele, die das Land selbst nennt, sind die Vorrangzone Dornau in Halbenrain und der Solarpark Dobl-Zwaring südwestlich von Graz; die Zonen umfassen nach Angaben des Landes weitgehend homogene Gebiete. Kriterien bei der Auswahl waren unter anderem eine Mindestgröße von 10 ha und die Nähe zu einem Netzanschlusspunkt. Außerhalb der Zonen entscheidet die Gemeinde im Rahmen von 2
+72:      "Flächen innerhalb einer der 36 Vorrangzonen",
+75:      "Flächen bis 2 ha in Gemeinden mit ÖEK-Eignungszone für Energieerzeugung",
+79:      "Ausschlusszonen für hochwertige Agrarböden und Landschaftsräume",
+80:      "Freihaltegebiete im Flächenwidmungsplan",
+87:    text: "In einer Vorrangzone läuft ein großer Park ohne örtliches Widmungsverfahren direkt in die elektrizitätsrechtliche Genehmigung beim Land, das Naturschutz- und Artenschutzaspekte mitprüft. Außerhalb der Zonen braucht es zuerst die Gemeinde: Ab 3.000 m² ist eine Eignungszone im ÖEK festzulegen und der Flächenwidmungsplan um die Sondernutzung zu ändern, beides mit Gemeinderatsb
+89:      { name: "Gemeinde (Gemeinderat, Bürgermeister)", rolle: "ÖEK-Eignungszone, Sondernutzung im Flächenwidmungsplan, Baubewilligung bis 1.000 kW" },
+90:      { name: "Amt der Steiermärkischen Landesregierung, A17 Landes- und Regionalentwicklung", rolle: "Sachprogramm Solarenergie, Vorrangzonen, Beschleunigungsgebiete", url: "https://www.landesentwicklung.steiermark.at/cms/beitrag/12916430/145230171/" },
+96:    "Das StROG definiert Agri-PV eigenständig: Die landwirtschaftliche Produktion muss Hauptnutzung bleiben, die Module sind gleichmäßig über die Fläche zu verteilen, und mindestens 75 % der Gesamtfläche müssen weiter der pflanzlichen oder tierischen Produktion dienen. Ein land- und forstwirtschaftlicher Betrieb darf eine Agri-PV-Anlage auf bis zu 0,5 ha bewirtschafteter Fläche **einmal
+=== kaernten
+1:// Recherche: 29.09.2026 – Kärntner Photovoltaikanlagen-Verordnung 2024 (LGBl. Nr. 58/2024, Volltext), K-ElWOG § 6
+4:// Agrarstrukturerhebung 2023, WKO Fläche 2025, RIS EAG § 33, PVGIS v5.3.
+11:  seoTitel: "Solarpark & Agri-PV Kärnten: Pacht, Recht | ÖkoInvest",
+13:    "Solarpark Pacht Kärnten: 4-ha-Grenze der Photovoltaikanlagen-Verordnung 2024, Widmung Grünland-PV, Agri-PV mit Beweidung oder Obstbau, Netz und Verfahren.",
+14:  lead: "Kärnten hat die Freiflächen-PV mit der Photovoltaikanlagen-Verordnung 2024 eng gefasst: Widmungen im Grünland sind grundsätzlich auf 4 ha je zusammenhängender Fläche begrenzt, dafür hat Agri-PV erstmals eigene Regeln.",
+33:    "In Kärnten regelt seit 15. August 2024 die **Kärntner Photovoltaikanlagen-Verordnung 2024 (K-PhV 2024)**, wo und wie groß Photovoltaikanlagen sein dürfen. Sie ersetzt die Verordnung aus 2013 und setzt zugleich Vorgaben der EU-Richtlinie RED III um. Das Land verfolgt damit ausdrücklich einen schrittweisen, netzverträglichen Ausbau, der die Landschaftsstruktur schont: Viele Anlagen auf
+34:    "Für Flächeneigentümer ist die zentrale Zahl die **4-ha-Grenze**: Eine zusammenhängende Widmungsfläche „Grünland – Photovoltaikanlage“ darf grundsätzlich höchstens 4 ha groß sein, zwischen zwei Widmungsflächen ist ein Abstand von 1.000 m einzuhalten. Auf vorbelasteten oder versiegelten Flächen und für Pilotanlagen sind bis zu 10 ha möglich, in besonders begründeten Einze
+39:      titel: "Widmung „Grünland – Photovoltaikanlage“, max. 4 ha",
+40:      text: "Freiflächenanlagen, die nicht unter die Ausnahmen fallen, dürfen nur auf Flächen errichtet werden, die im Flächenwidmungsplan als „Grünland – Photovoltaikanlage“ gewidmet sind. Die zusammenhängende Widmungsfläche darf 4 ha nicht überschreiten; für Pilot- und Forschungsanlagen sowie auf vorbelasteten oder versiegelten Flächen sind bis zu 10 ha zulässig, in besonders
+45:      text: "Standorte sind so zu wählen, dass keine erheblichen Umweltauswirkungen zu erwarten sind; hochwertige Böden sollen möglichst geschützt werden. Zum Schutz der freien Landschaft sind Parks – ausgenommen Agri-PV mit Beweidung – im Nahebereich bestehender Infrastruktur vorzusehen, etwa bei Kläranlagen, Abfallbehandlungs-, Fernwärme- und Wasserkraftanlagen, Umspannwerken oder A
+50:      text: "Nach § 6 K-ElWOG in der seit 15.08.2024 geltenden Fassung bedürfen Erzeugungsanlagen mit mehr als 500 kW Engpassleistung einer elektrizitätswirtschaftsrechtlichen Genehmigung der Landesregierung; PV-Anlagen auf bestehenden baulichen Anlagen sind ausgenommen. Dem Antrag ist unter anderem eine Stellungnahme der Gemeinde beizulegen, dass das Vorhaben dem Flächenwidmungsplan bzw. d
+51:      quelle: { titel: "RIS – K-ElWOG § 6 und § 7", url: "https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=LrK&Gesetzesnummer=20000239&Paragraf=6" },
+60:      text: "Nach Angaben des Landes vom Februar 2026 ist in Kärnten für Photovoltaik keine weitere Ausweisung von Beschleunigungsgebieten geplant; entsprechende Flächen seien bereits über die Photovoltaikanlagen-Verordnung von Widmungspflichten ausgenommen. Die Verordnung selbst ist spätestens drei Jahre nach Inkrafttreten, also bis August 2027, zu evaluieren.",
+61:      quelle: { titel: "energynewsmagazine – Beschleunigungszonen für erneuerbare Energie: Länder spät (13.02.2026)", url: "https://www.energynewsmagazine.at/2026/02/13/beschleunigungszonen-fuer-erneuerbare-energie-laender-spaet/" },
+64:      titel: "EAG: 25 % Abschlag, Ausnahme für Agri-PV",
+65:      text: "Für Anlagen auf landwirtschaftlich genutzten Flächen oder im Grünland verringert sich der Zuschlagswert der EAG-Marktprämie um 25 %. Agri-PV-Anlagen, bei denen die landwirtschaftliche Hauptnutzung nicht oder nur gering beeinträchtigt wird, können ausgenommen sein – in Kärnten ein zusätzliches Argument für Agri-PV.",
+66:      quelle: { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790" },
+70:    text: "Weil die Widmungsfläche auf 4 ha begrenzt ist, geht es in Kärnten weniger um die große Fläche als um den richtigen Standort: nahe an bestehender Infrastruktur, außerhalb der Schutz- und Gefahrenzonen und nicht auf den besten Böden. Vorbelastete Flächen haben einen doppelten Vorteil, weil dort bis 10 ha möglich sind. Für Agri-PV mit Beweidung gilt die Pflicht zur Infrastruktu
+73:      "vorbelastete oder versiegelte Flächen (bis 10 ha Widmungsfläche)",
+75:      "Intensivobstanlagen mit Stein- oder Kernobst, Geflügelhaltung oder Fischzucht (Agri-PV ohne eigene Widmung)",
+80:      "Wildtierkorridore sowie rote Gefahrenzonen der Wildbach- und Flussgebietsplanung",
+82:      "Flächen innerhalb von 1.000 m zu einer bestehenden PV-Widmung",
+86:    text: "Am Anfang steht die Gemeinde: Sie muss die Fläche als „Grünland – Photovoltaikanlage“ oder „Grünland – Agri-Photovoltaikanlage“ widmen, das Land prüft die Widmung als Aufsichtsbehörde. Parallel sollte die Netzanfrage bei KNG-Kärnten Netz gestellt werden. Über 500 kW folgt die Genehmigung nach dem K-ElWOG bei der Landesregierung, dazu in der Regel die naturschutzrec
+88:      { name: "Gemeinde (Gemeinderat)", rolle: "Widmung Grünland-PV bzw. Grünland-Agri-PV, Stellungnahme zum ElWOG-Antrag, Raumordnungsverträge" },
+89:      { name: "Amt der Kärntner Landesregierung (Raumordnung)", rolle: "Aufsicht über Widmungen, Photovoltaikanlagen-Verordnung" },
+=== salzburg
+3:// RIS (§ 33 EAG), Statistik Austria (Agrarstrukturerhebung 2023, Bevölkerung 01.01.2026), BEV/WKO (Fläche 01.01.2025), PVGIS v5.3
+10:  seoTitel: "Solarpark & Agri-PV Salzburg: Pacht, Recht | ÖkoInvest",
+12:    "Solarpark Pacht in Salzburg: Kennzeichnung ab 200 m², Punktesystem nach Bodengüte, vorbelastete Flächen, Beschleunigungsgebiete an A1 und A10, Agri-PV-Pflicht.",
+42:      text: "Nach § 36 Abs. 7 ROG 2009 sind frei stehende Solaranlagen mit mehr als 200 m² Kollektorfläche im Grünland nur zulässig, wenn für den Standort eine Kennzeichnung nach § 39b vorliegt. Die Kollektorflächen mehrerer Anlagen in räumlichem Naheverhältnis werden zusammengerechnet. Voraussetzung ist unter anderem, dass das räumliche Entwicklungskonzept nicht entgegensteht und ei
+52:      text: "Als vorbelastet gelten nach § 5 Z 15a ROG unter anderem Materialgewinnungsstätten, Lager- und Ablagerungsplätze, Immissionsschutzstreifen, Sportanlagen, Campingplätze und Schipisten im Bereich der Aufstiegshilfen. Dort gelten dieselben Kriterien wie im Bauland, und die Kennzeichnung braucht keine aufsichtsbehördliche Kenntnisnahme, sondern nur eine Mitteilung an das Land.",
+57:      text: "PV-Anlagen sind nach § 45 Abs. 3 Landeselektrizitätsgesetz 1999 unabhängig von ihrer Leistung weder anzeige- noch bewilligungspflichtig, wenn sie von einem befugten Unternehmen errichtet werden. Nur sonst gilt die Staffel: unter 150 kW frei, 150 bis 500 kW Anzeige, über 500 kW Bewilligung.",
+62:      text: "Das Salzburger Naturschutzgesetz kennt keine allgemeine Bewilligungspflicht für PV. Bewilligungspflichtig sind Anlagen in Schutzgebieten und geschützten Lebensräumen nach § 24 (etwa Moore, Feuchtwiesen, Magerstandorte über 2.000 m², Uferbereiche) sowie Geländeveränderungen über 5.000 m². PV-Anlagen samt Zufahrt, Netzanschluss und Speicher liegen nach § 50a im besonderen 
+89:    text: "In Salzburg läuft ein Solarpark über die Gemeinde: Steht das räumliche Entwicklungskonzept (REK) der Kennzeichnung entgegen, muss es zuerst geändert werden – mit Umwelterheblichkeitsprüfung, sechswöchiger Auflage und aufsichtsbehördlicher Genehmigung durch die Landesregierung. Danach beschließt die Gemeinde die Kennzeichnung im Flächenwidmungsplan; auf vorbelasteten Fläch
+91:      { name: "Gemeinde (Gemeindevertretung)", rolle: "räumliches Entwicklungskonzept, Kennzeichnung für frei stehende Solaranlagen nach § 39b ROG" },
+95:      { name: "Salzburg Netz", rolle: "Netzzugang und Anschlusspunkt" },
+100:    "Da Salzburg ein Grünlandland ist, geht es meist um Anlagen, unter denen gemäht oder beweidet werden kann – etwa vertikale Modulreihen oder hoch aufgeständerte Systeme. Im Punktesystem der Kennzeichnungsverordnung zählt die Art der Anlage mit; eine echte Doppelnutzung verbessert die Chancen. Förderrechtlich kann bei qualifizierter Agri-PV der 25-%-Abschlag der EAG-Marktprämie entfa
+102:  netz: {
+104:    vnb: ["Salzburg Netz"],
+106:      "Wie alle österreichischen Netzbetreiber veröffentlicht auch Salzburg Netz die verfügbaren Einspeisekapazitäten je Umspannwerk quartalsweise auf ebutilities.at.",
+107:    quelle: { titel: "EbUtilities – Verfügbare Netzanschlusskapazitäten", url: "https://www.ebutilities.at/verfuegbare-netzanschlusskapazitaeten" },
+112:      text: "Die geplanten Beschleunigungsgebiete liegen in Eugendorf, Wals-Siezenheim und Hallwang (Flachgau), Golling und Kuchl (Tennengau), Flachau und Werfen (Pongau) sowie Zederhaus (Lungau) – rund 0,18 Prozent der Landesfläche. Ausgenommen sind unter anderem Schutzgebiete, der Nationalpark Hohe Tauern, Vogelzugkorridore, Wald, Moore, hochwertige Böden und Naturgefahrenzonen. Die PV-B
+123:  pacht: {
+130:      q: "Wie viel Pacht bekomme ich in Salzburg für einen Solarpark?",
+131:      a: "In Salzburg bestimmen vor allem Kennzeichnungsfähigkeit, Anlagengröße und die Frage, ob nur Agri-PV zulässig ist, was ein Projekt tragen kann. Da viele Anlagen kleiner und aufwendiger sind als im Flachland, liegt die Pacht eher im unteren Bereich; den Rahmen zeigt der Pachtrechner.",
+135:      a: "Ab mehr als 200 m² Kollektorfläche, wobei benachbarte Anlagen zusammengerechnet werden. Die Kennzeichnung beschließt die Gemeinde im Flächenwidmungsplan.",
+161:    { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790", stand: "09/2026" },
+169:    "Ratgeber nennt „auf vorbelasteten Flächen seit 12/2022 keine eigene Widmung“; der Landes-Leitfaden (03/2025) beschreibt dagegen eine Kennzeichnung im vereinfachten Verfahren – im Text nach Leitfaden formuliert.",
+171:    "Punktevergabe im Detail (§§ 2–4 PKV 2023), insbesondere Punkte für Agri-PV, nicht geprüft – nur allgemein erwähnt.",
+172:    "Keine Netzengpass-Informationen für Salzburg Netz gefunden; keine Landesförderung für Agri-PV gefunden.",
+=== tirol
+3:// Kundmachung Entwurf TBVO-PV (Auflage 06–07/2026), RIS (§ 33 EAG), Statistik Austria (Agrarstrukturerhebung 2023,
+11:  seoTitel: "Solarpark & Agri-PV Tirol: Pacht, Recht | ÖkoInvest",
+13:    "Solarpark Pacht in Tirol: Freiflächen-PV über 250 kW per TEG-Bewilligung, Naturschutz ab 2.500 m², Agri-PV als Maßstab, Parkplätze und Deponien.",
+47:      titel: "Sonderfläche bis 250 kWp, darüber kein Widmungserfordernis",
+48:      text: "Frei stehende Anlagen im Freiland brauchen ab mehr als 100 m² Kollektorfläche eine Sonderflächenwidmung, etwa „Sonderfläche Photovoltaikanlage“ – allerdings nur bis 250 kWp. Größere Anlagen, die dem TEG unterliegen, fallen nach dem Verfahrenshandbuch des Landes nicht unter Bauordnung und Raumordnungsgesetz; ein Widmungserfordernis besteht dann nicht.",
+53:      text: "Für Freiflächenanlagen sind zwei Voraussetzungen des § 5 TEG 2012 entscheidend: Natur, Landschafts- und Ortsbild dürfen nicht wesentlich beeinträchtigt werden, und es darf kein Widerspruch zu einem Raumordnungsprogramm bestehen. Relevant sind vor allem die Regionalprogramme mit landwirtschaftlichen Vorsorgeflächen, die in Tirol auf Ebene der Planungsverbände landesweit beste
+58:      text: "Außerhalb geschlossener Ortschaften ist eine PV-Anlage mit mehr als 2.500 m² zusammenhängend bebauter Fläche nach § 6 lit. a TNSchG 2005 bewilligungspflichtig. Unabhängig von der Größe gilt die Bewilligungspflicht an natürlichen Fließgewässern (inklusive 5-m-Uferstreifen), im 500-m-Streifen um stehende Gewässer über 2.000 m², in Auwäldern, Feuchtgebieten und Schutzge
+67:      titel: "EAG-Abschlag 25 % auf Grünland",
+68:      text: "Für Anlagen auf landwirtschaftlich genutzten Flächen oder im Grünland verringert sich der Zuschlagswert der EAG-Marktprämie um 25 % (§ 33 EAG). Deponien, Infrastrukturstandorte und qualifizierte Agri-PV-Anlagen sind ausgenommen – für die Tiroler Standortlogik ein zusätzliches Argument für vorbelastete Flächen.",
+69:      quelle: { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790" },
+89:    text: "Das Verfahren in Tirol hängt an der Leistung. Bis 250 kWp braucht eine Freiflächenanlage die Sonderflächenwidmung der Gemeinde; die Zulässigkeit wird nach den Zielen des TROG 2022 beurteilt, gegebenenfalls mit Gutachten der Energie Tirol und Prüfung von Alternativstandorten. Über 250 kWp wird die Anlage im elektrizitätsrechtlichen Verfahren nach dem TEG 2012 bewilligt, das die
+91:      { name: "Gemeinde", rolle: "Sonderflächenwidmung für Anlagen bis 250 kWp" },
+94:      { name: "TINETZ – Tiroler Netze", rolle: "Netzzugang und Nachweis der netzverträglichen Anbindung" },
+98:    "Agri-PV hat in Tirol eine besondere Rolle im Bewilligungsverfahren: Die Energiebehörde verwendet eine Agri-PV-Anlage als Referenzanlage, bei der sie annimmt, dass sie nicht im Widerspruch zu den Regionalprogrammen mit landwirtschaftlichen Vorsorgeflächen steht. Abweichungen davon werden einzeln bewertet. Maßgeblich sind die Förderkriterien der EAG-Investitionszuschüsseverordnung: rüc
+101:  netz: {
+103:    vnb: ["TINETZ – Tiroler Netze"],
+105:      "Die Tiroler Verteilernetzbetreiber veröffentlichen wie alle österreichischen Netzbetreiber ihre freien Einspeisekapazitäten je Umspannwerk quartalsweise; im TEG-Verfahren ist eine Netzanbindung ohne nachteilige Rückwirkungen nachzuweisen.",
+106:    quelle: { titel: "EbUtilities – Verfügbare Netzanschlusskapazitäten", url: "https://www.ebutilities.at/verfuegbare-netzanschlusskapazitaeten" },
+122:  pacht: {
+125:      "Kleine verfügbare Flächen, Agri-PV als Maßstab und höhere Bau- und Anschlusskosten in Hang- und Tallagen begrenzen, was ein Projekt an Pacht tragen kann. Vorbelastete Flächen mit gutem Netzanschluss im Inntal können darüber liegen.",
+129:      q: "Kann ich in Tirol meine Wiese für einen Solarpark verpachten?",
+133:      q: "Wie viel Pacht ist in Tirol für eine PV-Fläche möglich?",
+134:      a: "Wegen der kleinen Flächen und der Agri-PV-Anforderungen liegt die Pacht eher im unteren Bereich der üblichen Spanne; gut angebundene, vorbelastete Flächen im Inntal können mehr erzielen. Eine erste Einschätzung liefert der Pachtrechner.",
+137:      q: "Braucht ein Solarpark in Tirol eine Flächenwidmung?",
+138:      a: "Bis 250 kWp ist im Freiland ab mehr als 100 m² Kollektorfläche eine Sonderflächenwidmung nötig. Größere Anlagen werden nach dem Verfahrenshandbuch des Landes im elektrizitätsrechtlichen Verfahren bewilligt und brauchen keine eigene Widmung – die Behörde prüft dort aber Raumordnungsprogramme und Landschaftsbild.",
+=== vorarlberg
+1:// Recherche: 29.09.2026 – RIS Landesrecht Vorarlberg: Raumplanungsgesetz (§§ 9, 10, 18; LGBl. Nr. 21/2025),
+2:// Elektrizitätswirtschaftsgesetz (§§ 5, 19b), Gesetz über Naturschutz und Landschaftsentwicklung (§§ 24, 33, 56d, 56g),
+3:// VO überörtliche Freiflächen Rheintal/Walgau, Studie PV-Freiflächenpotenzial Tirol 2022 (Länderüberblick), RIS (§ 33 EAG),
+11:  seoTitel: "Solarpark & Agri-PV Vorarlberg: Pacht, Recht | ÖkoInvest",
+13:    "Solarpark Pacht in Vorarlberg: Freiflächen-PV nur als Sondergebiet, Landesgrünzone Rheintal/Walgau, Bewilligung über 500 kWp, Beschleunigungsgebiete.",
+15:    "Vorarlberg hat wenig freien Talboden und schützt ihn mit Landesgrünzonen. Freiflächen-PV ist deshalb die Ausnahme – mit Chancen auf vorbelasteten Flächen und an Infrastruktur.",
+16:  akzent: "mit Grünzone und Grenzen.",
+37:    "Seit den 1970er-Jahren schützt das Land die verbliebenen Freiräume in den Talsohlen mit **überörtlichen Freiflächen**, der sogenannten Landesgrünzone im Rheintal und im Walgau. Die Landesregierung hatte in ihrem Arbeitsprogramm 2019–2024 zudem festgehalten, dass auf Grün- und Ackerflächen auch weiterhin keine PV-Anlagen errichtet werden sollen. **Klassische Solarparks auf landwir
+42:      titel: "Widmung als Sondergebiet in der Freifläche",
+43:      text: "Das Vorarlberger Raumplanungsgesetz kennt keine eigene PV-Widmung. Nach § 18 Abs. 4 RPG können als Sondergebiete unter anderem Flächen für Anlagen zur Erzeugung von Energie aus erneuerbaren Quellen, Umspannwerke und Trafostationen gewidmet werden. Im Landwirtschaftsgebiet ist eine Bebauung dagegen nur zulässig, soweit sie für die bodenabhängige land- und forstwirtschaftliche
+44:      quelle: { titel: "RIS – Raumplanungsgesetz Vorarlberg § 18", url: "https://www.ris.bka.gv.at/Dokumente/Landesnormen/LVB40043688/LVB40043688.html" },
+47:      titel: "Landesgrünzone in Rheintal und Walgau",
+49:      quelle: { titel: "RIS – VO über überörtliche Freiflächen in der Talsohle des Rheintales § 2", url: "https://www.ris.bka.gv.at/Dokumente/Landesnormen/LVB40009150/LVB40009150.html" },
+53:      text: "Nach § 5 Elektrizitätswirtschaftsgesetz sind Erzeugungsanlagen über 100 kW bewilligungspflichtig, für Photovoltaik gilt eine höhere Schwelle von mehr als 500 kWpeak. Bei Vorhaben der Energiewende muss die Behörde die Vollständigkeit des Antrags innerhalb von 30 Tagen bestätigen, außerhalb von Beschleunigungsgebieten innerhalb von 45 Tagen (§ 19b).",
+54:      quelle: { titel: "RIS – Elektrizitätswirtschaftsgesetz Vorarlberg § 5", url: "https://www.ris.bka.gv.at/eli/lgbl/VO/2003/59/P5/LVB40044973" },
+58:      text: "Nach § 33 des Gesetzes über Naturschutz und Landschaftsentwicklung sind in der freien Landschaft unter anderem Bauwerke mit mehr als 800 m² überbauter Fläche bewilligungspflichtig. Der Uferschutz nach § 24 umfasst am Bodensee einen 500 m breiten Uferstreifen, an anderen stehenden Gewässern 50 m und an Fließgewässern außerhalb bebauter Bereiche 20 m.",
+59:      quelle: { titel: "RIS – Gesetz über Naturschutz und Landschaftsentwicklung § 24", url: "https://www.ris.bka.gv.at/eli/lgbl/VO/1997/22/P24/LVB40006432" },
+63:      text: "Seit 3. April 2025 kann die Landesregierung nach § 9 RPG in einem Landesraumplan Beschleunigungsgebiete für erneuerbare Energien ausweisen – vorrangig auf künstlichen, versiegelten oder vorbelasteten Flächen, ohne Schutzgebiete und Vogelzugrouten. Dort gelten naturschutzrechtliche Verfahrenserleichterungen (§ 56d). Für PV auf Bauwerken und künstlichen Strukturen gelten Ent
+64:      quelle: { titel: "RIS – Raumplanungsgesetz Vorarlberg § 9 (Beschleunigungsgebiete)", url: "https://www.ris.bka.gv.at/Dokumente/Landesnormen/LVB40045013/LVB40045013.html" },
+67:      titel: "EAG-Abschlag 25 % auf Grünland",
+68:      text: "Auf landwirtschaftlich genutzten Flächen und im Grünland sinkt der Zuschlagswert der EAG-Marktprämie um 25 % (§ 33 EAG). Ausgenommen sind unter anderem Deponien, Altlasten, Bergbau- und Infrastrukturstandorte sowie qualifizierte Agri-PV-Anlagen – das passt zur Vorarlberger Linie, Freiflächen-PV auf vorbelastete Flächen zu lenken.",
+69:      quelle: { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790" },
+73:    text: "Die Vorarlberger Kulisse für Freiflächen-PV ist sehr eng. In den Talsohlen von Rheintal und Walgau liegt ein großer Teil der ebenen Flächen in der Landesgrünzone, dazu kommen Hochwasser-Freiflächen, Riedflächen und Schutzgebiete. Außerhalb der Täler sind Hanglagen, Wald und Alpen prägend. Realistisch sind vor allem Standorte mit Vorbelastung.",
+75:      "Deponien, Abbau- und Lagerflächen außerhalb der Grünzone",
+78:      "künftige Beschleunigungsgebiete nach § 9 RPG",
+=== wien
+2:// MA 37 Richtlinie PV-Anlagen (10.07.2026, BO-Novelle 2023, WElWG 2005), RIS Bauordnung für Wien § 6,
+4:// Statistik Austria Agrarstrukturerhebung 2023, WKO Fläche 2025, RIS EAG § 33, PVGIS v5.3.
+11:  seoTitel: "Solarpark & Agri-PV Wien: Pacht, Recht | ÖkoInvest",
+13:    "Solarpark Pacht Wien: Warum große Freiflächen-PV in Wien selten ist, was Bauordnung und WElWG verlangen und wo Agri-PV auf Wiener Äckern möglich wird.",
+39:      titel: "Widmung: ländliche Gebiete sind für die Landwirtschaft bestimmt",
+40:      text: "In Wien legt der Gemeinderat die Nutzung im Flächenwidmungs- und Bebauungsplan fest. Nach § 6 der Bauordnung für Wien sind ländliche Gebiete für land- und forstwirtschaftliche oder berufsgärtnerische Nutzung bestimmt; zulässig sind dort Bauwerke für diese Zwecke und für öffentliche Zwecke. Eine eigene Widmungskategorie für Freiflächen-PV, wie sie andere Bundesländer ke
+41:      quelle: { titel: "RIS – Bauordnung für Wien § 6", url: "https://www.ris.bka.gv.at/NormDokument.wxe?Abfrage=LrW&Gesetzesnummer=20000006&Paragraf=6" },
+45:      text: "Seit der Bauordnungsnovelle 2023 (in Kraft 14.12.2023) sind PV-Anlagen grundsätzlich bewilligungsfrei nach § 62a BO. Eine Baubewilligung ist aber jedenfalls nötig im **Grünland-Schutzgebiet** und in Gebieten mit Bausperre, außerdem in bestimmten Fällen in Schutzzonen und für Anlagen über 15 kW, die weder nach dem Elektrizitätsrecht noch nach anderen Materiengesetzen geprü
+50:      text: "Nach dem Wiener Elektrizitätswirtschaftsgesetz 2005 (WElWG 2005) sind PV-Anlagen mit mehr als 15 kW bis 50 kW anzuzeigen, über 50 kW bis 250 kW gilt ein vereinfachtes Verfahren, über 250 kW ist eine Genehmigung nötig. Zuständig ist die MA 64. Die Schwelle liegt damit deutlich niedriger als in den Flächenländern, wo die Landesgenehmigung meist erst ab 500 oder 1.000 kW greift
+55:      text: "Die Stadt will bis 2030 PV-Anlagen mit insgesamt 800 MWp installiert haben, was jährlich einen Zubau in der Größenordnung von rund 200 Fußballfeldern erfordert. Die Stadt errichtet selbst Anlagen auf eigenen Gebäuden und Flächen und baut Beratung und Förderung für private Eigentümer, Bauträger und Betriebe aus. Der Schwerpunkt liegt klar auf bereits genutzten Flächen.",
+59:      titel: "EAG: 25 % Abschlag auch in Wien",
+60:      text: "Auch in Wien verringert sich der Zuschlagswert der EAG-Marktprämie für Anlagen auf landwirtschaftlich genutzten Flächen oder im Grünland um 25 %. Ausgenommen sein können Agri-PV-Anlagen mit nicht oder nur gering beeinträchtigter Hauptnutzung sowie vorbelastete Flächen wie Deponien – in Wien die naheliegenden Fälle.",
+61:      quelle: { titel: "RIS – Erneuerbaren-Ausbau-Gesetz § 33", url: "https://www.ris.bka.gv.at/eli/bgbl/i/2021/150/P33/NOR40236790" },
+76:      "Flächen in Stadtentwicklungsgebieten mit absehbarer Umwidmung",
+81:    text: "Weil Wien Land und Gemeinde zugleich ist, laufen Widmung und Landesverfahren in einer Hand: Die Stadtplanung prüft, ob die Nutzung mit dem Flächenwidmungs- und Bebauungsplan vereinbar ist, Änderungen beschließt der Gemeinderat. Für Anlagen über 250 kW folgt die elektrizitätsrechtliche Genehmigung durch die MA 64, im Grünland-Schutzgebiet zusätzlich eine Baubewilligung durch 
+83:      { name: "Gemeinderat und Stadtplanung (Flächenwidmung)", rolle: "Flächenwidmungs- und Bebauungsplan, Prüfung der Zulässigkeit", url: "https://www.wien.gv.at/stadtplanung/flaechenwidmung" },
+84:      { name: "MA 64 (Energierecht)", rolle: "Anzeige und Genehmigung nach WElWG 2005" },
+86:      { name: "Wiener Netze", rolle: "Netzzugang und Netzanschluss" },
+91:    "Für Wiener Landwirte mit Ackerflächen am Südrand, in Floridsdorf oder der Donaustadt sind vertikale Anlagen oder hoch aufgeständerte Systeme die naheliegende Form, weil Getreide-, Zuckerrüben- und Gemüsebau weiterlaufen können. Förderrechtlich kann eine echte Agri-PV-Nutzung den 25-%-Abschlag beim EAG vermeiden. Wie sich Agri-PV-Anlagen mit der Widmung „ländliches Gebiet“ vert
+93:  netz: {
+95:    vnb: ["Wiener Netze"],
+96:    hinweis: "Belastbare Angaben zu Netzengpässen in Wien lagen nicht vor; Anschlusspunkt und freie Kapazität sind im Einzelfall bei Wiener Netze anzufragen.",
+99:    { titel: "Deponie statt Acker", text: "Die größte Freiflächenanlage Wiens steht auf einer ehemaligen Schotterdeponie der Stadt. Vorbelastete Flächen sind in Wien der wichtigste Flächentyp für Freiflächen-PV – und förderrechtlich vom EAG-Abschlag ausgenommen." },
+103:  pacht: {
+105:    begruendung: "Wenige geeignete Flächen, kurze Netzwege und hohe Nachfrage nach Sonnenstrom stehen der Konkurrenz durch Stadtentwicklung und Naturschutz sowie dem EAG-Abschlag gegenüber; in Wien hängt fast alles vom Einzelfall ab.",

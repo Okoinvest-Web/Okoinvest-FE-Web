@@ -1,0 +1,616 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { GitCompareArrows, Info, Link2, Printer, RotateCcw, Share2, X } from "lucide-react";
+import { cn } from "@/components/ui/cn";
+import { toast } from "@/components/ui/Toast";
+import { mitUebergang } from "@/components/ui/motion";
+import { useRahmen } from "./kontext";
+
+/* ------------------------------------------------------------------
+   Werkzeugleiste unter jedem Ergebnis: Szenario merken und nebeneinander
+   vergleichen, Ergebnis als Link teilen (mit Eingaben), Druckansicht/PDF,
+   Sprung zu den Annahmen. Der Vergleich braucht Kurzwerte aus <MobilKurz>.
+   ------------------------------------------------------------------ */
+
+const knopf =
+  "ov-press inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-[13.5px] font-semibold text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors duration-150 hover:bg-ink-50 hover:ring-ink-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500";
+
+export default function ErgebnisWerkzeuge() {
+  const rahmen = useRahmen();
+  const [a, setA] = useState(null); // { werte, zustand }
+  const [annahmen, setAnnahmen] = useState(false);
+  const [teilbar, setTeilbar] = useState(true);
+  const [nativ, setNativ] = useState(false);
+
+  useEffect(() => {
+    setAnnahmen(!!document.getElementById("annahmen"));
+    // Im Portal (angemeldeter Bereich) keine öffentlichen Links teilen
+    setTeilbar(!window.location.pathname.startsWith("/portal"));
+    setNativ(typeof navigator.share === "function" && !!window.matchMedia?.("(pointer: coarse)").matches);
+  }, []);
+
+  // Leiste steht schon im Server-HTML (kein Layout-Sprung); „Szenario merken“ erscheint, sobald Kurzwerte da sind
+  if (!rahmen) return null;
+  const kurz = rahmen.kurz || [];
+
+  const merken = () => {
+    const zustand = rahmen.zustand.current?.lesen?.() || null;
+    mitUebergang(() => setA({ werte: kurz, zustand }));
+  };
+
+  const wiederherstellen = () => {
+    if (!a?.zustand || !rahmen.zustand.current) return;
+    rahmen.zustand.current.setzen(a.zustand);
+    toast.info("Szenario A wiederhergestellt", "Die Eingaben stehen wieder auf dem gemerkten Stand.");
+  };
+
+  const teilen = async () => {
+    const url = window.location.href;
+    const mobil = window.matchMedia?.("(pointer: coarse)").matches;
+    if (mobil && typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: document.title, url });
+        return;
+      } catch (e) {
+        if (e?.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.erfolg("Link kopiert", "Der Link enthält Ihre Eingaben – wer ihn öffnet, sieht dasselbe Ergebnis.");
+    } catch {
+      toast.fehler("Kopieren nicht möglich", "Bitte kopieren Sie die Adresse aus der Adresszeile Ihres Browsers.");
+    }
+  };
+
+  const geaendert = a ? kurz.some(([, v], i) => a.werte[i]?.[1] !== v) : false;
+
+  return (
+    <div className="mt-7 border-t border-ink-100 pt-5 print:hidden">
+      {a && (
+        <section aria-labelledby="szenario-vergleich" className="animate-ov-einblenden mb-4 overflow-hidden rounded-2xl ring-1 ring-ink-200/70" style={{ viewTransitionName: "ov-szenario" }}>
+          <div className="flex items-center justify-between gap-3 bg-sand-50 py-2 pl-4 pr-2">
+            <h3 id="szenario-vergleich" className="flex items-center gap-2 text-[13.5px] font-semibold text-ink-900">
+              <GitCompareArrows aria-hidden="true" className="h-4 w-4 text-ov-600" />
+              Szenario-Vergleich
+            </h3>
+            <button type="button" onClick={() => mitUebergang(() => setA(null))} aria-label="Vergleich schließen" className="flex h-10 w-10 items-center justify-center rounded-full text-ink-500 transition-colors hover:bg-white hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
+              <X aria-hidden="true" className="h-4 w-4" />
+            </button>
+          </div>
+          <table className="w-full text-[13.5px]">
+            <caption className="sr-only">Gemerktes Szenario A im Vergleich zum aktuellen Ergebnis</caption>
+            <thead className="text-[11.5px] uppercase tracking-[0.1em] text-ink-500">
+              <tr className="border-b border-ink-100">
+                <th scope="col" className="px-4 py-2 text-left font-semibold">Kennzahl</th>
+                <th scope="col" className="px-4 py-2 text-right font-semibold">A · gemerkt</th>
+                <th scope="col" className="px-4 py-2 text-right font-semibold">Aktuell</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-ink-100">
+              {kurz.map(([label, v], i) => {
+                const alt = a.werte[i]?.[1];
+                const anders = alt !== v;
+                return (
+                  <tr key={i} className={cn("transition-colors duration-300", anders && "bg-ov-50/70")}>
+                    <th scope="row" className="px-4 py-2.5 text-left font-medium text-ink-700">{label}</th>
+                    <td className="ov-num px-4 py-2.5 text-right text-ink-600">{alt ?? "–"}</td>
+                    <td className={cn("ov-num px-4 py-2.5 text-right", anders ? "font-bold text-ink-900" : "text-ink-600")}>
+                      {v}
+                      {anders && <span className="sr-only"> (geändert)</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-ink-100 px-4 py-2.5">
+            <p className="text-[12.5px] leading-snug text-ink-500" aria-live="polite">
+              {geaendert ? "Grün markiert: Werte, die sich gegenüber A verändert haben." : "Ändern Sie jetzt Eingaben – die rechte Spalte rechnet live mit."}
+            </p>
+            {a.zustand && rahmen.zustand.current && (
+              <button type="button" onClick={wiederherstellen} className="inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-ov-700 transition-colors hover:bg-ov-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
+                <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" />
+                A wiederherstellen
+              </button>
+            )}
+          </div>
+        </section>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        {kurz.length > 0 && (
+          <button type="button" onClick={merken} className={knopf} aria-describedby={a ? "szenario-vergleich" : undefined}>
+            <GitCompareArrows aria-hidden="true" className="h-4 w-4 text-ov-600" />
+            {a ? "Aktuelles als A merken" : "Szenario merken & vergleichen"}
+          </button>
+        )}
+        {teilbar && (
+          <button type="button" onClick={teilen} className={knopf}>
+            {nativ ? (
+              <Share2 aria-hidden="true" className="h-4 w-4 text-ink-500" />
+            ) : (
+              <Link2 aria-hidden="true" className="h-4 w-4 text-ink-500" />
+            )}
+            Ergebnis teilen
+          </button>
+        )}
+        <button type="button" onClick={() => window.print()} className={knopf}>
+          <Printer aria-hidden="true" className="h-4 w-4 text-ink-500" />
+          Drucken / PDF
+        </button>
+        {annahmen && (
+          <a href="#annahmen" className="inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-[13.5px] font-semibold text-ink-600 underline-offset-4 transition-colors hover:text-ink-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
+            <Info aria-hidden="true" className="h-4 w-4" />
+            Annahmen
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+"use client";
+
+import { useState } from "react";
+import { CheckCircle2, CircleAlert, OctagonAlert, Printer } from "lucide-react";
+import { cn } from "@/components/ui/cn";
+import { Legende } from "./InvestTeile";
+import { Tooltip, eingabeMerken, useBreite } from "./bausteine";
+import { fmt } from "@/lib/rechner/annahmen";
+
+/* ------------------------------------------------------------------
+   Ergänzende Bausteine der Tools aus Ausbaustufe 2 (Pachtangebot-Check,
+   PPA, Großspeicher, Beteiligung, Energy Sharing, Netzanschluss):
+   Ampel-Marke, Balken- und Liniendiagramm, Druckknopf.
+   ------------------------------------------------------------------ */
+
+export const FARBEN = { gruen: "#669933", gruenHell: "#aed083", navy: "#1f5aa1", navyDunkel: "#03285a", sun: "#f5a70f", sunHell: "#ffc53d", grau: "#c4cad5", ink: "#151a24", raster: "#eef0f4", null: "#97a0b0" };
+
+export const AMPEL = {
+  gut: { label: "Marktüblich", kurz: "Gut", icon: CheckCircle2, klasse: "bg-ov-50 text-ov-800 ring-ov-200", punkt: "bg-ov-500", iconKlasse: "text-ov-600" },
+  pruefen: { label: "Nachfragen", kurz: "Prüfen", icon: CircleAlert, klasse: "bg-sun-300/30 text-ink-900 ring-sun-400/60", punkt: "bg-sun-400", iconKlasse: "text-sun-500" },
+  kritisch: { label: "Kritisch", kurz: "Kritisch", icon: OctagonAlert, klasse: "bg-ink-900 text-white ring-ink-900", punkt: "bg-ink-900", iconKlasse: "text-sun-400" },
+};
+
+/** Ampel-Plakette mit Icon und Text (nie nur Farbe) */
+export function AmpelMarke({ ampel, klein = false, className }) {
+  const a = AMPEL[ampel] || AMPEL.pruefen;
+  const Icon = a.icon;
+  return (
+    <span className={cn("inline-flex shrink-0 items-center gap-1.5 rounded-full font-semibold ring-1", klein ? "px-2 py-0.5 text-[11.5px]" : "px-2.5 py-1 text-[12.5px]", a.klasse, className)}>
+      <Icon aria-hidden="true" className={cn(klein ? "h-3 w-3" : "h-3.5 w-3.5", ampel === "kritisch" ? "text-sun-300" : a.iconKlasse)} />
+      {a.label}
+    </span>
+  );
+}
+
+/** Druckknopf (öffnet die Druckansicht des Browsers) */
+export function Druckknopf({ children = "Druckansicht / PDF", className }) {
+  return (
+    <button
+      type="button"
+      onClick={() => window.print()}
+      className={cn(
+        "inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-5 text-[15px] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 transition-colors hover:bg-ink-50 hover:ring-ink-300 print:hidden",
+        className
+      )}
+    >
+      <Printer aria-hidden="true" className="h-4 w-4" />
+      {children}
+    </button>
+  );
+}
+
+/** Runde Achsenschritte */
+export function achse(min, max, ziel = 5) {
+  const spanne = max - min || 1;
+  const roh = spanne / ziel;
+  const pot = Math.pow(10, Math.floor(Math.log10(roh)));
+  const s = [1, 2, 2.5, 5, 10].map((f) => f * pot).find((v) => spanne / v <= ziel + 1) || pot * 10;
+  const out = [];
+  for (let v = Math.ceil(min / s) * s; v <= max + 1e-9; v += s) out.push(Math.round(v * 1e6) / 1e6);
+  return out;
+}
+
+/** Kompakte €-Beschriftung für Achsen */
+export const achsenEur = (v, waehrung = "") => {
+  const a = Math.abs(v);
+  const vz = v < 0 ? "−" : "";
+  const w = waehrung ? ` ${waehrung}` : "";
+  if (a >= 1e6) return `${vz}${fmt(a / 1e6, a >= 1e7 ? 0 : 1)} Mio.${w}`;
+  if (a >= 1e3) return `${vz}${fmt(a / 1e3)} Tsd.${w}`;
+  return `${vz}${fmt(a)}${w}`;
+};
+
+/**
+ * Tastatur für Diagramme: Pfeile wandern durch die Punkte, Pos1/Ende springen,
+ * Esc schließt den Tooltip. Fokus per Tastatur zeigt sofort den ersten Punkt.
+ */
+export function useDiagrammTastatur(n, setHover) {
+  return {
+    tabIndex: 0,
+    onKeyDown: (e) => {
+      const schritt = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[e.key];
+      if (schritt) {
+        e.preventDefault();
+        setHover((h) => Math.max(0, Math.min(n - 1, (h ?? (schritt > 0 ? -1 : n)) + schritt)));
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        setHover(0);
+      } else if (e.key === "End") {
+        e.preventDefault();
+        setHover(n - 1);
+      } else if (e.key === "Escape") {
+        setHover(null);
+      }
+    },
+    onFocus: (e) => {
+      try {
+        if (e.currentTarget.matches(":focus-visible")) setHover((h) => h ?? 0);
+      } catch {
+        /* ältere Browser */
+      }
+    },
+    onBlur: () => setHover(null),
+  };
+}
+
+const diagrammFokus = "rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2";
+
+/**
+ * Balkendiagramm je Jahr: positive Serien nach oben gestapelt, negative nach
+ * unten; optional eine Linie (z. B. kumuliert oder Cashflow) auf derselben Skala.
+ * Balken wachsen beim Einscrollen (ov-balken-y), Wertänderungen gleiten per
+ * transform; per Tastatur (Pfeile) durch die Jahre.
+ * zeilen: [{ label, werte: { key: zahl } }]
+ */
+export function BalkenJahre({ zeilen, serien, linie, ariaLabel, tooltip, hoehe, markierung, achsenFormat = achsenEur }) {
+  const [ref, W] = useBreite(720);
+  const [hover, setHover] = useState(null);
+  const schmal = W < 520;
+  const H = hoehe || (schmal ? 240 : 290);
+  const P = { l: schmal ? 54 : 62, r: 12, t: 16, b: 28 };
+  const n = zeilen.length;
+  const tastatur = useDiagrammTastatur(n, setHover);
+  const oben = zeilen.map((z) => serien.reduce((s, x) => s + Math.max(0, z.werte[x.key] || 0), 0));
+  const unten = zeilen.map((z) => serien.reduce((s, x) => s + Math.min(0, z.werte[x.key] || 0), 0));
+  const linienWerte = linie ? zeilen.map((z) => z.werte[linie.key] || 0) : [];
+  const max = Math.max(0, ...oben, ...linienWerte) * 1.08 || 1;
+  const min = Math.min(0, ...unten, ...linienWerte) * 1.08;
+  const y = (v) => Math.round((P.t + ((max - v) / (max - min || 1)) * (H - P.t - P.b)) * 10) / 10;
+  const band = (W - P.l - P.r) / n;
+  const bw = Math.max(2, Math.min(34, band * 0.66));
+  const x = (i) => P.l + i * band + (band - bw) / 2;
+  const ticks = achse(min, max, schmal ? 4 : 5);
+  const aus = (e) => {
+    const box = e.currentTarget.getBoundingClientRect();
+    const px = ((e.clientX - box.left) / box.width) * W;
+    return Math.max(0, Math.min(n - 1, Math.floor((px - P.l) / band)));
+  };
+  const labelJeder = n > 24 ? 5 : n > 12 ? (schmal ? 5 : 2) : schmal && n > 8 ? 2 : 1;
+  // Balken als Einheitsrechteck, Lage und Höhe per transform (gleitet bei neuen Werten)
+  const balken = (key, x0, yTop, h, farbe) => (
+    <rect key={key} x={0} y={0} width={1} height={1} fill={farbe} className="ov-rechner-balken" style={{ transform: `translate(${x0}px, ${yTop}px) scale(${bw}, ${Math.max(0, h)})` }} />
+  );
+
+  return (
+    <div ref={ref} className="ov-reveal relative px-2 pb-4 pt-2 md:px-3" data-dir="ohne" suppressHydrationWarning>
+      <div {...tastatur} role="group" aria-label={`${ariaLabel} Mit den Pfeiltasten durch die Werte.`} className={diagrammFokus}>
+        <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} className="block touch-pan-y select-none" role="img" aria-label={ariaLabel}>
+          {ticks.map((v) => (
+            <g key={v}>
+              <line x1={P.l} x2={W - P.r} y1={y(v)} y2={y(v)} stroke={Math.abs(v) < 1e-9 ? FARBEN.null : FARBEN.raster} />
+              <text x={P.l - 6} y={y(v) + 4} textAnchor="end" className="fill-ink-500 text-[10.5px]">
+                {achsenFormat(v)}
+              </text>
+            </g>
+          ))}
+          {markierung && markierung.index > 0 && markierung.index < n && (
+            <g>
+              <line x1={P.l + markierung.index * band} x2={P.l + markierung.index * band} y1={P.t - 4} y2={H - P.b} stroke={FARBEN.sun} strokeDasharray="3 4" />
+              <text x={P.l + markierung.index * band + 4} y={P.t + 8} className="fill-sun-700 text-[10.5px] font-semibold">
+                {markierung.text}
+              </text>
+            </g>
+          )}
+          {hover != null && <rect x={P.l + hover * band} y={P.t} width={band} height={H - P.t - P.b} fill={FARBEN.raster} opacity="0.7" pointerEvents="none" />}
+          {zeilen.map((z, i) => {
+            let yo = 0;
+            let yu = 0;
+            return (
+              <g key={i} opacity={hover == null || hover === i ? 1 : 0.55} className="transition-opacity duration-150">
+                <g className="ov-balken-y" style={{ "--i": Math.min(i, 30) * 0.5 }}>
+                  {serien.map((s) => {
+                    const v = z.werte[s.key] || 0;
+                    if (v === 0) return null;
+                    if (v > 0) {
+                      const y1 = y(yo + v);
+                      const y0 = y(yo);
+                      yo += v;
+                      return balken(s.key, x(i), y1, y0 - y1, s.farbe);
+                    }
+                    const y0 = y(yu);
+                    const y1 = y(yu + v);
+                    yu += v;
+                    return balken(s.key, x(i), y0, y1 - y0, s.farbe);
+                  })}
+                </g>
+              </g>
+            );
+          })}
+          {linie && (
+            <path
+              d={linienWerte.map((v, i) => `${i ? "L" : "M"}${(x(i) + bw / 2).toFixed(1)},${y(v).toFixed(1)}`).join(" ")}
+              fill="none"
+              stroke={linie.farbe}
+              strokeWidth="2.25"
+              strokeLinejoin="round"
+              pathLength="1"
+              className="ov-linie"
+              style={{ "--ov-delay": "300ms" }}
+            />
+          )}
+          {zeilen.map((z, i) =>
+            i % labelJeder === 0 || i === n - 1 ? (
+              <text key={i} x={x(i) + bw / 2} y={H - P.b + 17} textAnchor="middle" className="fill-ink-500 text-[10.5px]">
+                {z.label}
+              </text>
+            ) : null
+          )}
+          <rect x={0} y={0} width={W} height={H} fill="transparent" onPointerMove={(e) => setHover(aus(e))} onPointerDown={(e) => setHover(aus(e))} onPointerLeave={() => setHover(null)} />
+        </svg>
+      </div>
+      {hover != null && tooltip && (
+        <Tooltip x={x(hover) + bw / 2} y={Math.max(y(oben[hover]) - 30, 0)} breite={W}>
+          {tooltip(zeilen[hover], hover)}
+        </Tooltip>
+      )}
+      <div className="mt-1 px-3">
+        <Legende items={[...serien.map((s) => ({ label: s.label, farbe: s.farbe })), ...(linie ? [{ label: linie.label, farbe: linie.farbe, linie: true }] : [])]} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Liniendiagramm mit mehreren Serien über gemeinsame x-Werte.
+ * Durchgezogene Linien zeichnen sich beim Einscrollen (ov-linie),
+ * gestrichelte blenden ein; per Tastatur (Pfeile) durch die Punkte.
+ * serien: [{ key, label, farbe, werte: [..], dick?, gestrichelt? }]
+ */
+export function Linien({ xLabels, serien, ariaLabel, tooltip, hoehe, achsenFormat = achsenEur, nullLinie = true }) {
+  const [ref, W] = useBreite(720);
+  const [hover, setHover] = useState(null);
+  const schmal = W < 520;
+  const H = hoehe || (schmal ? 240 : 280);
+  const P = { l: schmal ? 54 : 62, r: 14, t: 16, b: 28 };
+  const n = xLabels.length;
+  const tastatur = useDiagrammTastatur(n, setHover);
+  const alle = serien.flatMap((s) => s.werte);
+  const max = Math.max(nullLinie ? 0 : -Infinity, ...alle);
+  const min = Math.min(nullLinie ? 0 : Infinity, ...alle);
+  const pad = (max - min) * 0.08 || 1;
+  const hi = max + pad;
+  const lo = min < 0 || !nullLinie ? min - pad : 0;
+  const x = (i) => Math.round((P.l + (n > 1 ? i / (n - 1) : 0.5) * (W - P.l - P.r)) * 10) / 10;
+  const y = (v) => Math.round((P.t + ((hi - v) / (hi - lo || 1)) * (H - P.t - P.b)) * 10) / 10;
+  const ticks = achse(lo, hi, schmal ? 4 : 5);
+  const aus = (e) => {
+    const box = e.currentTarget.getBoundingClientRect();
+    const px = ((e.clientX - box.left) / box.width) * W;
+    return Math.max(0, Math.min(n - 1, Math.round(((px - P.l) / (W - P.l - P.r)) * (n - 1))));
+  };
+  const labelJeder = n > 24 ? 5 : n > 12 ? (schmal ? 5 : 2) : schmal && n > 8 ? 2 : 1;
+
+  return (
+    <div ref={ref} className="ov-reveal relative px-2 pb-4 pt-2 md:px-3" data-dir="ohne" suppressHydrationWarning>
+      <div {...tastatur} role="group" aria-label={`${ariaLabel} Mit den Pfeiltasten durch die Werte.`} className={diagrammFokus}>
+        <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} className="block touch-pan-y select-none" role="img" aria-label={ariaLabel}>
+          {ticks.map((v) => (
+            <g key={v}>
+              <line x1={P.l} x2={W - P.r} y1={y(v)} y2={y(v)} stroke={Math.abs(v) < 1e-9 ? FARBEN.null : FARBEN.raster} />
+              <text x={P.l - 6} y={y(v) + 4} textAnchor="end" className="fill-ink-500 text-[10.5px]">
+                {achsenFormat(v)}
+              </text>
+            </g>
+          ))}
+          {xLabels.map((l, i) =>
+            i % labelJeder === 0 || i === n - 1 ? (
+              <text key={i} x={x(i)} y={H - P.b + 17} textAnchor={i === n - 1 && n > 1 ? "end" : "middle"} className="fill-ink-500 text-[10.5px]">
+                {l}
+              </text>
+            ) : null
+          )}
+          {serien.map((s, si) => (
+            <path
+              key={s.key}
+              d={s.werte.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ")}
+              fill="none"
+              stroke={s.farbe}
+              strokeWidth={s.dick ? 3 : 2}
+              strokeDasharray={s.gestrichelt ? "5 5" : undefined}
+              strokeLinejoin="round"
+              // pathLength nur bei durchgezogenen Linien – sonst verzerrt es das Strichmuster
+              pathLength={s.gestrichelt ? undefined : 1}
+              className={s.gestrichelt ? "ov-flaeche-ein" : "ov-linie"}
+              style={{ "--ov-delay": `${si * 120}ms` }}
+            />
+          ))}
+          {hover != null && (
+            <g pointerEvents="none">
+              <line x1={x(hover)} x2={x(hover)} y1={P.t} y2={H - P.b} stroke={FARBEN.null} strokeDasharray="2 3" />
+              {serien.map((s) => (
+                <circle key={s.key} cx={x(hover)} cy={y(s.werte[hover])} r="4.5" fill="#fff" stroke={s.farbe} strokeWidth="2.5" />
+              ))}
+            </g>
+          )}
+          <rect x={0} y={0} width={W} height={H} fill="transparent" onPointerMove={(e) => setHover(aus(e))} onPointerDown={(e) => setHover(aus(e))} onPointerLeave={() => setHover(null)} />
+        </svg>
+      </div>
+      {hover != null && tooltip && (
+        <Tooltip x={x(hover)} y={Math.max(Math.min(...serien.map((s) => y(s.werte[hover]))) - 40, 0)} breite={W}>
+          {tooltip(hover)}
+        </Tooltip>
+      )}
+      <div className="mt-1 px-3">
+        <Legende items={serien.map((s) => ({ label: s.label, farbe: s.farbe, linie: true, gestrichelt: s.gestrichelt }))} />
+      </div>
+    </div>
+  );
+}
+
+/** Rahmen für ein Diagramm mit Titel und optionalem Umschalter */
+export function DiagrammKarte({ titel, zusatz, rechts, children, className }) {
+  return (
+    <div className={cn("rounded-3xl bg-white shadow-e1 ring-1 ring-ink-200/70", className)}>
+      <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 md:px-6">
+        <div className="min-w-0">
+          <h3 className="font-display text-[17px] font-bold text-ink-900">{titel}</h3>
+          {zusatz && <p className="text-[12.5px] text-ink-500">{zusatz}</p>}
+        </div>
+        {rechts}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/** Zahlenfeld (für exakte Eingaben, z. B. aus einem Angebot) */
+export function ZahlFeld({ label, wert, onChange, min = 0, max, step = 1, einheit, hinweis, id }) {
+  return (
+    <div>
+      <label htmlFor={id} className="mb-2 block text-[14.5px] font-semibold text-ink-800">
+        {label}
+      </label>
+      <div className="flex items-center overflow-hidden rounded-2xl bg-white ring-1 ring-ink-200 focus-within:ring-2 focus-within:ring-ov-500">
+        <input
+          id={id}
+          type="number"
+          inputMode="decimal"
+          min={min}
+          max={max}
+          step={step}
+          value={Number.isFinite(wert) ? wert : ""}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            eingabeMerken();
+            if (Number.isFinite(v)) onChange(max != null ? Math.min(max, Math.max(min, v)) : Math.max(min, v));
+          }}
+          className="ov-num h-12 w-full min-w-0 bg-transparent px-4 font-display text-[17px] font-bold text-ink-900 outline-none"
+        />
+        {einheit && <span className="shrink-0 pr-4 text-[13.5px] font-medium text-ink-500">{einheit}</span>}
+      </div>
+      {hinweis && <p className="mt-2 text-[13px] leading-relaxed text-ink-500">{hinweis}</p>}
+    </div>
+  );
+}
+// Seitenkopf aller Rechnerseiten (Server-Komponente)
+// Aufbau: Brotkrumen → Werkzeug-Pill → Headline → Lead → Kurzversprechen | Ergebnis-Steckbrief (ab lg)
+// Unten bleibt Luft, weil der Rechner den Kopf überlappt.
+import { ArrowDown, Check, Lock, Sparkles } from "lucide-react";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import { cn } from "@/components/ui/cn";
+import { TOOLS } from "./tools";
+import { STAND } from "@/lib/rechner/annahmen";
+
+export default function RechnerKopf({ toolId, breadcrumb, eyebrow, title, lead, chips = [], app }) {
+  const tool = TOOLS.find((t) => t.id === toolId);
+  const Icon = tool?.icon || Sparkles;
+  const leistungen = (app?.featureList || []).slice(0, 6);
+
+  return (
+    <section aria-labelledby="rechner-titel" className="ov-verlauf-nacht ov-noise relative isolate overflow-hidden text-white">
+      {/* Bühne: Raster, Lichtkante, Lichtschein, weicher Übergang nach unten */}
+      <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10 opacity-50" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-ov-300/40 to-transparent" />
+      <div aria-hidden="true" className="pointer-events-none absolute -left-40 -top-40 -z-10 h-[520px] w-[520px] rounded-full bg-ov-500/20 blur-[120px]" />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-32 top-10 -z-10 h-[420px] w-[420px] rounded-full bg-navy-400/25 blur-[120px]" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-b from-transparent to-navy-950/50" />
+
+      <div className="ov-container pb-28 pt-6 sm:pt-8 md:pb-36 md:pt-10">
+        <Breadcrumbs items={[{ name: "Rechner & Tools", href: "/rechner" }, { name: breadcrumb }]} dark className="ov-hero-in mb-8 md:mb-10" />
+
+        <div className="grid items-end gap-y-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:gap-x-14 xl:gap-x-20">
+          <div className="max-w-[42rem]">
+            {eyebrow && (
+              <p
+                className="ov-hero-in inline-flex max-w-full items-center gap-2.5 rounded-full bg-white/[0.06] py-1 pl-1 pr-3.5 text-[13px] font-medium text-white/85 ring-1 ring-inset ring-white/15"
+                style={{ "--ov-delay": "40ms" }}
+              >
+                <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ov-300 text-navy-950">
+                  <Icon className="h-3.5 w-3.5" strokeWidth={2.4} />
+                </span>
+                <span className="min-w-0 truncate">{eyebrow}</span>
+              </p>
+            )}
+
+            <h1 id="rechner-titel" className="ov-h1 ov-hero-in mt-6 text-balance md:mt-7" style={{ "--ov-delay": "100ms" }}>
+              {title}
+            </h1>
+
+            {lead && (
+              <p className="ov-lead ov-hero-in mt-5 max-w-[38rem] text-pretty text-white/75 md:mt-6" style={{ "--ov-delay": "180ms" }}>
+                {lead}
+              </p>
+            )}
+
+            {chips.length > 0 && (
+              <ul className="ov-hero-in mt-7 grid gap-x-6 gap-y-2.5 border-t border-white/10 pt-5 sm:grid-cols-2 md:pt-6" style={{ "--ov-delay": "260ms" }}>
+                {chips.map((x, i) => (
+                  <li key={x} className={cn("flex items-start gap-2.5 text-[14px] leading-snug text-white/85", i > 1 && "max-sm:hidden")}>
+                    <span aria-hidden="true" className="mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-ov-400/15 ring-1 ring-inset ring-ov-300/40">
+                      <Check className="h-2.5 w-2.5 text-ov-300" strokeWidth={3.5} />
+                    </span>
+                    {x}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Steckbrief: was der Rechner liefert – nur ab lg, mobil steht der Rechner direkt darunter */}
+          {leistungen.length > 0 && (
+            <aside aria-label={`${app.name}: Ergebnisse auf einen Blick`} className="ov-hero-in relative hidden lg:block" style={{ "--ov-delay": "220ms" }}>
+              <div aria-hidden="true" className="pointer-events-none absolute -inset-6 -z-10 rounded-[2.5rem] bg-[radial-gradient(closest-side,rgba(140,186,88,0.18),transparent_75%)] blur-2xl" />
+              <div className="ov-glass rounded-[1.75rem] p-6 shadow-kante xl:p-7">
+                <div className="flex items-center gap-3.5">
+                  <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-ov-300 to-ov-500 text-navy-950 shadow-[0_8px_24px_-10px_rgba(140,186,88,0.8)]">
+                    <Icon className="h-5 w-5" strokeWidth={2.2} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ov-300">Das Ergebnis</p>
+                    <p className="line-clamp-2 font-display text-[17px] font-bold leading-snug text-white">{app.name}</p>
+                  </div>
+                </div>
+                <ol className="mt-5 divide-y divide-white/10 border-y border-white/10">
+                  {leistungen.map((x, i) => (
+                    <li key={x} className="flex items-baseline gap-3.5 py-2.5 text-[14px] leading-snug text-white/85">
+                      <span aria-hidden="true" className="ov-num w-5 shrink-0 text-[11.5px] font-bold text-white/40">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      {x}
+                    </li>
+                  ))}
+                </ol>
+                <div className="mt-5 flex items-center justify-between gap-4">
+                  <p className="flex items-center gap-1.5 text-[12.5px] text-white/60">
+                    <Lock aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+                    Kostenlos · Stand {STAND}
+                  </p>
+                  <a
+                    href="#rechner"
+                    className="group inline-flex shrink-0 items-center gap-1.5 rounded-full text-[13.5px] font-semibold text-white transition-colors hover:text-ov-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950"
+                  >
+                    Zum Rechner
+                    <ArrowDown aria-hidden="true" className="h-3.5 w-3.5 text-ov-300 transition-transform duration-200 group-hover:translate-y-0.5 motion-reduce:transition-none" />
+                  </a>
+                </div>
+              </div>
+            </aside>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}

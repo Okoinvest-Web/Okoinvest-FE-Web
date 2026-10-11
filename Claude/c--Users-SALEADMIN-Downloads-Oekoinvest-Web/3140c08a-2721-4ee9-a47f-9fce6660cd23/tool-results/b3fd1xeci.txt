@@ -1,0 +1,619 @@
+ok src/components/Portal/EG/Produkt/Seite/Tour.js (12)
+// Stilisierte Produkt-Screens der EG-Plattform für die öffentliche Produktseite /energiegemeinschaften/software (T6).
+// Reine Darstellung mit fiktiven, sichtbar als „Beispiel“ gekennzeichneten Werten – Aufbau wie im echten Portal
+// (/portal/eg/[id], /portal/eg/[id]/abrechnung). Server-Komponenten ohne Hooks.
+//
+// Barrierefreiheit: Jeder Mock ist in sich geschlossen. Ohne `beschreibung` ist er rein dekorativ (aria-hidden),
+// mit `beschreibung` ein Bild mit Alternativtext (role="img" + aria-label, Innenleben aria-hidden).
+// Bewegung: keine Endlos-Animationen per Standard (WCAG 2.2.2). MockEnergieHeute bewegt sich nur mit `bewegt`;
+// alle Effekte nutzen ausschließlich transform/opacity und sind unter prefers-reduced-motion still.
+//
+// Bildsprache 2.0: Geräte mit echter Hardware-Anmutung (Statusleiste, Dynamic-Island-Pille, Seitentasten, Glanzkante),
+// Browserfenster mit App-Navigation, Daten-Visualisierungen als präzises Inline-SVG (Tageskurve, Abweichungsbalken,
+// Frist-Segmente). Die Hero-Komposition ist so gebaut, dass keine Ebene wichtige Inhalte einer anderen verdeckt.
+
+import {
+  ArrowRight,
+  BadgeCheck,
+  BellRing,
+  Check,
+  Download,
+  FileCheck2,
+  FileText,
+  GitCompareArrows,
+  LayoutGrid,
+  Lock,
+  PiggyBank,
+  ReceiptText,
+  Settings,
+  Sun,
+  UsersRound,
+} from "lucide-react";
+import { cn } from "@/components/ui/cn";
+import fluss from "@/components/Energie/fluss.module.css";
+import FortschrittsRing from "@/components/ui/FortschrittsRing";
+import EnergieFluss from "@/components/Portal/EG/Mitglied/EnergieFluss";
+
+/** Hülle: dekorativ (aria-hidden) oder – mit Beschreibung – ein Bild mit Alternativtext */
+function BeispielBild({ beschreibung, className, children }) {
+  if (beschreibung) {
+    return (
+      <div role="img" aria-label={beschreibung} className={className}>
+        <div aria-hidden="true">{children}</div>
+      </div>
+    );
+  }
+  return <div aria-hidden="true" className={className}>{children}</div>;
+}
+
+/** Sichtbare Kennzeichnung fiktiver Werte (sun-700 auf sun-50 ≈ 6,4:1) */
+function BeispielPlakette({ hell = false, className }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center rounded-full font-semibold uppercase leading-none",
+        hell
+          ? "bg-white/10 px-1.5 py-[3px] text-[8.5px] tracking-[0.14em] text-white/80 ring-1 ring-white/15"
+          : "bg-sun-50 px-2 py-[3px] text-[9.5px] tracking-[0.12em] text-sun-700 ring-1 ring-sun-200",
+        className
+      )}
+    >
+      Beispiel
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ Rahmen */
+
+/** Browserfenster-Rahmen (ohne echte Adresse) */
+export function FensterRahmen({ titel = "Plattform", beispiel = true, className, children }) {
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-[14px] bg-white ring-1 ring-ink-900/10",
+        "shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_2px_4px_-1px_rgba(3,18,43,0.08),0_18px_40px_-14px_rgba(3,18,43,0.28),0_50px_90px_-30px_rgba(3,18,43,0.45)]",
+        className
+      )}
+    >
+      <div className="flex h-9 items-center gap-2 border-b border-ink-200/70 bg-gradient-to-b from-ink-50 to-[#f3f5f8] px-3">
+        <span className="flex w-[52px] shrink-0 gap-[6px]" aria-hidden="true">
+          <span className="h-[9px] w-[9px] rounded-full bg-[#f2a29b] ring-1 ring-inset ring-black/5" />
+          <span className="h-[9px] w-[9px] rounded-full bg-[#f3d08c] ring-1 ring-inset ring-black/5" />
+          <span className="h-[9px] w-[9px] rounded-full bg-[#a9d39a] ring-1 ring-inset ring-black/5" />
+        </span>
+        <span className="mx-auto inline-flex min-w-0 max-w-[60%] items-center gap-1.5 truncate rounded-md bg-white px-2.5 py-[3px] text-[10.5px] font-medium text-ink-600 shadow-e1 ring-1 ring-ink-200/80">
+          <Lock aria-hidden="true" className="h-2.5 w-2.5 shrink-0 text-ink-400" strokeWidth={2.5} />
+          <span className="truncate">{titel}</span>
+        </span>
+        <span className="flex w-[52px] shrink-0 justify-end">{beispiel ? <BeispielPlakette /> : null}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/** Statusleiste eines Telefons (Uhrzeit passend zur Jetzt-Marke im Mock) */
+function StatusLeiste({ zeit = "12:30" }) {
+  return (
+    <div className="relative z-20 flex h-[30px] items-center justify-between px-[22px] pt-1 text-white">
+      <span className="ov-num text-[11px] font-semibold tracking-tight">{zeit}</span>
+      <span className="flex items-center gap-[5px]">
+        {/* Empfang */}
+        <svg width="15" height="10" viewBox="0 0 15 10" fill="currentColor" aria-hidden="true">
+          <rect x="0" y="7" width="2.6" height="3" rx=".7" />
+          <rect x="4" y="5" width="2.6" height="5" rx=".7" />
+          <rect x="8" y="2.6" width="2.6" height="7.4" rx=".7" />
+          <rect x="12" y="0" width="2.6" height="10" rx=".7" opacity=".4" />
+        </svg>
+        {/* WLAN */}
+        <svg width="13" height="10" viewBox="0 0 13 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+          <path d="M1 3.6a8 8 0 0 1 11 0" />
+          <path d="M3 5.9a5 5 0 0 1 7 0" />
+          <circle cx="6.5" cy="8.4" r=".9" fill="currentColor" stroke="none" />
+        </svg>
+        {/* Akku */}
+        <svg width="22" height="11" viewBox="0 0 22 11" fill="none" aria-hidden="true">
+          <rect x=".6" y=".6" width="18.4" height="9.8" rx="2.6" stroke="currentColor" strokeOpacity=".45" strokeWidth="1.1" />
+          <rect x="2.2" y="2.2" width="13.2" height="6.6" rx="1.4" fill="currentColor" />
+          <path d="M20.4 3.7v3.6a1.9 1.9 0 0 0 0-3.6Z" fill="currentColor" fillOpacity=".45" />
+        </svg>
+      </span>
+    </div>
+  );
+}
+
+/** Telefon-Rahmen mit Hardware-Details: Metallkante, Seitentasten, Insel, Glanz, Home-Indikator */
+export function TelefonRahmen({ beispiel = true, className, children }) {
+  return (
+    <div
+      className={cn(
+        "relative rounded-[2.5rem] bg-gradient-to-b from-[#33435f] via-[#121c30] to-[#26344d] p-[3px]",
+        "shadow-[0_2px_3px_rgba(3,18,43,0.35),0_30px_60px_-20px_rgba(3,18,43,0.65),0_60px_100px_-40px_rgba(3,18,43,0.7)]",
+        className
+      )}
+    >
+      {/* Seitentasten */}
+      <span aria-hidden="true" className="absolute -left-[2px] top-[18%] h-[6%] w-[3px] rounded-l-sm bg-[#2b3a55]" />
+      <span aria-hidden="true" className="absolute -left-[2px] top-[27%] h-[10%] w-[3px] rounded-l-sm bg-[#2b3a55]" />
+      <span aria-hidden="true" className="absolute -right-[2px] top-[24%] h-[13%] w-[3px] rounded-r-sm bg-[#2b3a55]" />
+      <div className="rounded-[2.35rem] bg-[#050b17] p-[6px] ring-1 ring-inset ring-white/10">
+        <div className="relative overflow-hidden rounded-[1.95rem] bg-navy-950">
+          {/* Insel */}
+          <span aria-hidden="true" className="absolute left-1/2 top-[7px] z-30 h-[18px] w-[30%] max-w-[78px] -translate-x-1/2 rounded-full bg-black" />
+          <StatusLeiste />
+          {beispiel ? <BeispielPlakette hell className="absolute right-4 top-[38px] z-20" /> : null}
+          {children}
+          {/* Glanz über dem Glas */}
+          <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 bg-[linear-gradient(118deg,rgba(255,255,255,0.09)_0%,rgba(255,255,255,0.02)_28%,transparent_42%)]" />
+          {/* Home-Indikator */}
+          <span aria-hidden="true" className="absolute bottom-[6px] left-1/2 z-30 h-[4px] w-[34%] -translate-x-1/2 rounded-full bg-white/45" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------- Mitglied: Energie heute */
+
+const GRUEN = [
+  { von: 10, bis: 15, stark: true },
+  { von: 8.5, bis: 10, stark: false },
+];
+const JETZT = 12.5; // Uhrzeit der Jetzt-Marke (Beispiel), passt zur Statusleiste 12:30
+const prozent = (h) => `${(h / 24) * 100}%`;
+
+// Tageskurve „Gemeinschaftsstrom laut Prognose“ (rein illustrativ, ohne Achsenwerte): Glockenform um die Mittagszeit
+const KURVE_B = 240;
+const KURVE_H = 44;
+const kx = (h) => (h / 24) * KURVE_B;
+const ky = (h) => {
+  const a = Math.exp(-(((h - 12.8) / 3.1) ** 2));
+  return +(KURVE_H - 3 - a * (KURVE_H - 9)).toFixed(2);
+};
+const KURVE_PUNKTE = Array.from({ length: 97 }, (_, i) => i / 4).map((h) => [+kx(h).toFixed(2), ky(h)]);
+const KURVE_LINIE = "M" + KURVE_PUNKTE.map(([x, y]) => `${x} ${y}`).join(" L");
+const KURVE_FLAECHE = `${KURVE_LINIE} L${KURVE_B} ${KURVE_H} L0 ${KURVE_H} Z`;
+
+/** Tageskurve mit grünen Fenstern und Jetzt-Marke – Inline-SVG, skaliert scharf */
+function GrueneStundenKurve() {
+  return (
+    <div>
+      <div className="relative">
+        <svg viewBox={`0 0 ${KURVE_B} ${KURVE_H}`} preserveAspectRatio="none" className="block h-[46px] w-full overflow-visible" aria-hidden="true">
+          {GRUEN.map((g) => (
+            <rect key={g.von} x={kx(g.von)} y="0" width={kx(g.bis) - kx(g.von)} height={KURVE_H} fill="#aed083" fillOpacity={g.stark ? 0.16 : 0.07} />
+          ))}
+          {[6, 12, 18].map((h) => (
+            <line key={h} x1={kx(h)} x2={kx(h)} y1="0" y2={KURVE_H} stroke="#fff" strokeOpacity=".08" vectorEffect="non-scaling-stroke" />
+          ))}
+          <path d={KURVE_FLAECHE} fill="#aed083" fillOpacity=".2" />
+          <path d={KURVE_LINIE} fill="none" stroke="#aed083" strokeWidth="1.6" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          <line x1="0" x2={KURVE_B} y1={KURVE_H - 0.5} y2={KURVE_H - 0.5} stroke="#fff" strokeOpacity=".18" vectorEffect="non-scaling-stroke" />
+          <line x1={kx(JETZT)} x2={kx(JETZT)} y1="0" y2={KURVE_H} stroke="#fff" strokeOpacity=".75" strokeDasharray="2 2" vectorEffect="non-scaling-stroke" />
+        </svg>
+        {/* Punkt auf der Kurve als HTML, damit er trotz preserveAspectRatio="none" rund bleibt */}
+        <span
+          className="absolute h-[7px] w-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_0_3px_rgba(174,208,131,0.35),0_0_10px_2px_rgba(255,255,255,0.45)]"
+          style={{ left: prozent(JETZT), top: `${(ky(JETZT) / KURVE_H) * 100}%` }}
+        />
+        <span className="absolute -top-[15px] -translate-x-1/2 rounded bg-white px-1 py-px text-[8.5px] font-bold leading-none text-navy-900" style={{ left: prozent(JETZT) }}>
+          jetzt
+        </span>
+      </div>
+      <div className="ov-num relative mt-1 h-3 text-[9px] font-medium text-white/65">
+        <span className="absolute left-0">0</span>
+        {[6, 12, 18].map((h) => <span key={h} className="absolute -translate-x-1/2" style={{ left: prozent(h) }}>{h}</span>)}
+        <span className="absolute right-0">24 Uhr</span>
+      </div>
+    </div>
+  );
+}
+
+/** Mitglied: „Energie heute“ auf dem Handy */
+export function MockEnergieHeute({ className, beschreibung, bewegt = false }) {
+  return (
+    <BeispielBild beschreibung={beschreibung} className={className}>
+      <TelefonRahmen beispiel={false}>
+        <div className="ov-verlauf-nacht px-4 pb-6 pt-2.5 text-white">
+          <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ov-300">
+            {bewegt ? <span className="ov-live-punkt" /> : <span className="inline-block h-1.5 w-1.5 rounded-full bg-ov-400 shadow-[0_0_0_3px_rgba(140,186,88,0.25)]" />}
+            Energie heute
+            <BeispielPlakette hell className="ml-auto" />
+          </p>
+          <p className="mt-1.5 font-display text-[17px] font-extrabold leading-[1.15] tracking-tight">Jetzt viel Gemeinschaftsstrom</p>
+          <p className="mt-1 text-[11px] text-white/70">laut Prognose bis 15:00 Uhr</p>
+
+          <div className="mt-3.5">
+            <EnergieFluss gemeinschaftName="Sonnenland" ausGemeinschaft="212 kWh" aktiv={bewegt} kompakt />
+          </div>
+
+          <div className="mt-3.5 rounded-[18px] bg-gradient-to-b from-white/[0.09] to-white/[0.04] p-3.5 ring-1 ring-inset ring-white/10">
+            <p className="flex items-center gap-1.5 text-[10.5px] text-white/70">
+              <PiggyBank aria-hidden="true" className="h-3.5 w-3.5 text-ov-300" />Ihre Ersparnis · dieses Jahr
+            </p>
+            <p className="ov-num mt-0.5 font-display text-[30px] font-extrabold leading-none tracking-tight">
+              71,40<span className="ml-1 align-[0.32em] text-[15px] font-bold text-white/70">€</span>
+            </p>
+            <div className="mt-3 flex items-center gap-3 border-t border-white/10 pt-3">
+              <FortschrittsRing wert={38} groesse={44} staerke={5} ton="hell" dunkel sofort label="38 Prozent aus der Gemeinschaft" />
+              <p className="text-[10.5px] leading-snug text-white/75">
+                <span className="ov-num block text-[12px] font-bold text-white">1.180 kWh</span>kamen aus der Gemeinschaft
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-3.5 rounded-[18px] bg-white/[0.03] px-3 pb-2.5 pt-2.5 ring-1 ring-inset ring-white/[0.07]">
+            <p className="mb-4 flex items-center gap-1.5 text-[10.5px] font-semibold text-white/85">
+              <Sun aria-hidden="true" className="h-3 w-3 shrink-0 text-sun-300" /><span className="whitespace-nowrap">Grüne Stunden heute</span>
+              <span className="ml-auto whitespace-nowrap rounded-full bg-ov-300/15 px-1.5 py-px text-[9.5px] font-semibold text-ov-200 ring-1 ring-inset ring-ov-300/25">10–15 Uhr</span>
+            </p>
+            <GrueneStundenKurve />
+          </div>
+        </div>
+      </TelefonRahmen>
+    </BeispielBild>
+  );
+}
+
+/* ---------------------------------------------- Mitglied: Zustimmung beim Netzbetreiber */
+
+/** Zehn Werktage als Segmente: verbrauchte Tage gedeckt, verbleibende in Sonne (dringend ab sieben) */
+function FristSegmente({ rest = 6, gesamt = 10 }) {
+  const verbraucht = gesamt - rest;
+  return (
+    <div>
+      <div className="flex gap-[3px]">
+        {Array.from({ length: gesamt }, (_, i) => (
+          <span key={i} className={cn("h-1.5 flex-1 rounded-full", i < verbraucht ? "bg-ink-200" : "bg-sun-500")} />
+        ))}
+      </div>
+      <p className="ov-num mt-1.5 flex justify-between text-[10.5px] text-ink-500">
+        <span>{verbraucht} Werktage vergangen</span>
+        <span className="font-semibold text-sun-700">noch {rest} von {gesamt}</span>
+      </p>
+    </div>
+  );
+}
+
+/** Mitglied: Zustimmung beim Netzbetreiber mit Fristring (dringend ab sieben Werktagen) und Anleitung */
+export function MockZustimmung({ className, beschreibung, beispiel = true }) {
+  const schritte = ["Kundenportal öffnen", "Bereich „Energiegemeinschaften“ wählen", "Anfrage der Gemeinschaft finden", "Teilnahmefaktor prüfen", "Zustimmen – erledigt"];
+  const aktuell = 2;
+  return (
+    <BeispielBild beschreibung={beschreibung} className={className}>
+      <FensterRahmen titel="Mein Beitritt · Zustimmung" beispiel={beispiel}>
+        <div className="relative border-b border-sun-200/80 bg-gradient-to-br from-sun-50 via-sun-50 to-white px-5 pb-4 pt-5">
+          <div className="flex items-center gap-4">
+            <FortschrittsRing wert={6} max={10} groesse={78} staerke={7} ton="warn" label="Noch 6 Werktage für die Zustimmung" className="drop-shadow-[0_6px_14px_rgba(201,133,0,0.18)]">
+              <span className="flex flex-col items-center leading-none">
+                <span className="ov-num font-display text-[24px] font-extrabold text-ink-900">6</span>
+                <span className="mt-0.5 text-[10px] font-semibold text-ink-600">Werktage</span>
+              </span>
+            </FortschrittsRing>
+            <div className="min-w-0">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[10.5px] font-bold text-sun-700 shadow-e1 ring-1 ring-sun-200">
+                <BellRing aria-hidden="true" className="h-3 w-3" />Dringend
+              </span>
+              <p className="mt-1.5 font-display text-[15.5px] font-bold leading-snug text-ink-900">Jetzt zustimmen – damit „Sonnenland“ Sie versorgen kann</p>
+              <p className="mt-0.5 text-[12px] text-ink-600">Frist bis 14.10. · Anleitung für Ihren Netzbetreiber</p>
+            </div>
+          </div>
+          <div className="mt-4">
+            <FristSegmente rest={6} gesamt={10} />
+          </div>
+        </div>
+        <ol className="relative px-5 pb-5 pt-4">
+          {/* Verbindungslinie der Schritte */}
+          <span aria-hidden="true" className="absolute bottom-8 left-[31px] top-7 w-px bg-ink-200" />
+          <span aria-hidden="true" className="absolute left-[31px] top-7 h-[52px] w-px bg-ov-500" />
+          {schritte.map((s, i) => {
+            const erledigt = i < aktuell;
+            const jetzt = i === aktuell;
+            return (
+              <li
+                key={s}
+                className={cn(
+                  "relative flex items-center gap-3 text-[12.5px]",
+                  jetzt ? "-mx-2 my-1 rounded-xl bg-navy-50 px-2 py-2 font-semibold text-ink-900 ring-1 ring-inset ring-navy-100" : "py-[7px] text-ink-700"
+                )}
+              >
+                <span
+                  className={cn(
+                    "relative z-10 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full text-[10.5px] font-bold",
+                    erledigt ? "bg-ov-600 text-white shadow-[0_0_0_3px_#fff]" : jetzt ? "bg-white text-navy-700 ring-2 ring-navy-700 shadow-[0_0_0_3px_#eef4fb]" : "bg-white text-ink-500 ring-1 ring-ink-200 shadow-[0_0_0_3px_#fff]"
+                  )}
+                >
+                  {erledigt ? <Check aria-hidden="true" className="h-3 w-3" strokeWidth={3.2} /> : i + 1}
+                </span>
+                <span className={cn("min-w-0", erledigt && "text-ink-500")}>{s}</span>
+                {erledigt && <span className="ml-auto shrink-0 text-[10.5px] font-semibold text-ov-700">erledigt</span>}
+                {jetzt && (
+                  <span className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-navy-700 px-2.5 py-1 text-[10.5px] font-semibold text-white shadow-navy">
+                    Jetzt<ArrowRight aria-hidden="true" className="h-3 w-3" />
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </FensterRahmen>
+    </BeispielBild>
+  );
+}
+
+/** Kurzmeldung „Zustimmung offen“ – für die Hero-Komposition */
+function MockZustimmungKarte({ className }) {
+  return (
+    <div className={cn("flex items-center gap-3 rounded-2xl bg-white p-3 pr-4 ring-1 ring-ink-900/10 shadow-[0_2px_4px_-1px_rgba(3,18,43,0.1),0_22px_40px_-16px_rgba(3,18,43,0.5)]", className)}>
+      <FortschrittsRing wert={6} max={10} groesse={42} staerke={4.5} ton="warn" sofort label="Noch 6 von 10 Werktagen">
+        <span className="ov-num font-display text-[14px] font-extrabold text-ink-900">6</span>
+      </FortschrittsRing>
+      <p className="min-w-0 text-[11.5px] leading-snug text-ink-600">
+        <strong className="flex items-center gap-1.5 text-[12.5px] text-ink-900">
+          Zustimmung offen
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-sun-50 px-1.5 py-px text-[9.5px] font-bold text-sun-700 ring-1 ring-sun-200"><BellRing aria-hidden="true" className="h-2.5 w-2.5" />Dringend</span>
+        </strong>
+        noch 6 von 10 Werktagen · Frist bis 14.10.
+      </p>
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------- Kassier */
+
+const PIPELINE = ["Angelegt", "Vorschau", "1. Freigabe", "2. Freigabe", "Versendet", "Abschluss"];
+const AUFFAELLIG = [
+  { name: "Hofer, Landwirt", grund: "neuer Zählpunkt", delta: 18, text: "+18 %" },
+  { name: "Gemeindeamt", grund: "Saison", delta: -12, text: "−12 %" },
+  { name: "Familie Brandl", grund: "", delta: null, text: "neu dabei" },
+];
+const NAV = [
+  { icon: LayoutGrid, aktiv: false },
+  { icon: UsersRound, aktiv: false },
+  { icon: ReceiptText, aktiv: true },
+  { icon: FileText, aktiv: false },
+];
+
+/** Schmale App-Navigation links im Fenster (ab md sichtbar) */
+function AppLeiste() {
+  return (
+    <div className="hidden w-11 shrink-0 flex-col items-center gap-1.5 border-r border-ink-100 bg-[#fafbfc] py-3 md:flex">
+      <span className="mb-2 flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-ov-500 to-ov-700 text-white shadow-gruen">
+        <Sun className="h-3.5 w-3.5" strokeWidth={2.5} />
+      </span>
+      {NAV.map(({ icon: Icon, aktiv }, i) => (
+        <span key={i} className={cn("flex h-7 w-7 items-center justify-center rounded-lg", aktiv ? "bg-ov-50 text-ov-700 ring-1 ring-inset ring-ov-200" : "text-ink-400")}>
+          <Icon className="h-[15px] w-[15px]" strokeWidth={2} />
+        </span>
+      ))}
+      <span className="mt-auto flex h-7 w-7 items-center justify-center rounded-lg text-ink-400"><Settings className="h-[15px] w-[15px]" /></span>
+    </div>
+  );
+}
+
+/** Abweichung als zentrierter Balken (Skala ±20 %) */
+function AbweichungsBalken({ delta }) {
+  if (delta == null) {
+    return (
+      <span className="relative block h-2 w-full">
+        <span className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-navy-400" />
+      </span>
+    );
+  }
+  const breite = `${(Math.min(Math.abs(delta), 20) / 20) * 50}%`;
+  return (
+    <span className="relative block h-2 w-full rounded-full bg-ink-100">
+      <span className="absolute inset-y-0 left-1/2 w-px bg-ink-300" />
+      <span className={cn("absolute inset-y-0 rounded-full", delta > 0 ? "left-1/2 bg-sun-500" : "right-1/2 bg-sun-400")} style={{ width: breite }} />
+    </span>
+  );
+}
+
+/**
+ * Kassier: Abrechnungsperiode mit Status-Pipeline, Vergleich zum Vormonat und Vier-Augen-Freigabe.
+ * Stand „Versendet“: beide Freigaben erteilt – passt zur Abschlussmeldung (MockAbschluss), die daneben gezeigt wird.
+ * `kompakt`: ohne Vergleichsliste. `hero`: mit Liste, ohne Tour-Fußzeile (SEPA-Export, Landefläche für die Meldung). `freiRechts`: Innenabstand rechts in Prozent der Fensterbreite,
+ * damit ein überlappendes Gerät in der Komposition keine Inhalte verdeckt.
+ */
+export function MockKassier({ className, beschreibung, kompakt = false, freiRechts = 0, hero = false }) {
+  const stand = 4;
+  const mitListe = !kompakt || hero;
+  const tourFuss = !kompakt && !hero;
+  return (
+    <BeispielBild beschreibung={beschreibung} className={className}>
+      <FensterRahmen titel="Abrechnung · Oktober">
+        <div className="flex">
+          <AppLeiste />
+          <div
+            className={cn("min-w-0 flex-1 space-y-4 p-4 md:p-5", tourFuss && "sm:pb-12")}
+            style={freiRechts ? { paddingRight: `calc(${freiRechts}% + 16px)` } : undefined}
+          >
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10.5px] font-medium text-ink-500">Abrechnung <span className="text-ink-300">/</span> Oktober</p>
+                <p className="ov-num font-display text-[15px] font-bold leading-tight text-ink-900">Monat 01.10. – 31.10.</p>
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-navy-50 px-2.5 py-1 text-[10.5px] font-semibold text-navy-700 ring-1 ring-inset ring-navy-100">
+                <UsersRound aria-hidden="true" className="h-3 w-3" />Vier-Augen-Prinzip
+              </span>
+            </div>
+
+            <div className="rounded-xl bg-[#fafbfc] px-1 pb-2.5 pt-3 ring-1 ring-inset ring-ink-100">
+              {/* Hero: Die Pipeline läuft einmal durch – Verbindungen füllen sich Schritt für Schritt bis „Versendet“ */}
+              <ol className={cn("flex items-start", hero && "ov-sofort")} style={hero ? { "--ov-delay": "700ms" } : undefined}>
+                {PIPELINE.map((s, j) => (
+                  <li key={s} className="relative flex min-w-0 flex-1 flex-col items-center text-center">
+                    {j > 0 && <span className={cn("absolute right-1/2 top-[10px] h-[2px] w-full", j <= stand && !hero ? "bg-ov-500" : "bg-ink-200")} />}
+                    {hero && j > 0 && j <= stand && <span aria-hidden="true" className="absolute right-1/2 top-[10px] h-[2px] w-full bg-ov-500 ov-balken-x" style={{ "--i": j * 5 }} />}
+                    <span
+                      className={cn(
+                        hero && j <= stand && fluss.pop,
+                        "relative z-10 flex h-[22px] w-[22px] items-center justify-center rounded-full text-[10.5px] font-bold",
+                        j < stand ? "bg-ov-600 text-white" : j === stand ? "bg-white text-navy-700 ring-2 ring-navy-700 shadow-[0_0_0_4px_rgba(0,52,115,0.12)]" : "bg-white text-ink-500 ring-1 ring-ink-200"
+                      )}
+                      style={hero && j <= stand ? { "--i": j, "--pop-schritt": "200ms", "--ov-delay": "820ms" } : undefined}
+                    >
+                      {j < stand ? <Check aria-hidden="true" className="h-3 w-3" strokeWidth={3.2} /> : j + 1}
+                    </span>
+                    <span className={cn("mt-1.5 hidden whitespace-nowrap text-[10px] leading-tight sm:block", j === stand ? "font-bold text-ink-900" : "text-ink-500")}>{s}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-2 text-center text-[11px] text-ink-600 sm:hidden">
+                Schritt {stand + 1} von {PIPELINE.length} · <span className="font-semibold text-ink-900">{PIPELINE[stand]}</span>
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                ["Rechnungen", "4.212,80 €", "58 Belege"],
+                ["Gutschriften", "1.906,30 €", "14 Belege"],
+                ["Vorteil Mitglieder", "1.084,10 €", "gesamt"],
+              ].map(([l, w, n], i) => (
+                <div key={l} className={cn("min-w-0 rounded-xl p-2.5 ring-1 ring-inset", i === 2 ? "bg-ov-50 ring-ov-200" : "bg-white ring-ink-200/80")}>
+                  <p className={cn("text-[10px] font-medium leading-tight", i === 2 ? "text-ov-800" : "text-ink-500")}>{l}</p>
+                  <p className="ov-num mt-1 whitespace-nowrap text-[13px] font-bold leading-none tracking-tight text-ink-900">{w}</p>
+                  <p className="ov-num mt-1 text-[10px] leading-none text-ink-500">{n}</p>
+                </div>
+              ))}
+            </div>
+
+            {mitListe && (
+              <div className="overflow-hidden rounded-xl ring-1 ring-inset ring-ink-200/80">
+                <p className="flex items-center gap-1.5 border-b border-ink-100 bg-[#fafbfc] px-3 py-2 text-[11px] font-semibold text-ink-800">
+                  <GitCompareArrows aria-hidden="true" className="h-3.5 w-3.5 text-ov-600" />Veränderung zum September
+                  <span className="ml-auto rounded-full bg-sun-50 px-1.5 py-px text-[10px] font-bold text-sun-700 ring-1 ring-sun-200">3 auffällig</span>
+                </p>
+                {AUFFAELLIG.map((z) => (
+                  <div key={z.name} className="grid grid-cols-[minmax(0,1fr)_56px_auto] items-center gap-3 border-t border-ink-100 px-3 py-[7px] text-[11px] first-of-type:border-t-0">
+                    <span className="truncate text-ink-800">{z.name}{z.grund ? <span className="text-ink-500"> · {z.grund}</span> : null}</span>
+                    <AbweichungsBalken delta={z.delta} />
+                    <span className="ov-num min-w-[54px] text-right font-semibold text-sun-700">{z.text}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[["K", "Geprüft · Kassier"], ["V", "Freigegeben · Vorstand"]].map(([k, t]) => (
+                <span key={t} className="inline-flex items-center gap-1.5 rounded-full bg-ov-50 py-[3px] pl-[3px] pr-2.5 text-[10.5px] font-semibold text-ov-800 ring-1 ring-inset ring-ov-200">
+                  <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-ov-600 text-[9px] font-bold text-white">{k}</span>
+                  {t}
+                  <BadgeCheck aria-hidden="true" className="h-3 w-3 text-ov-600" />
+                </span>
+              ))}
+              {tourFuss && (
+                <span className="ml-auto inline-flex h-7 items-center gap-1.5 rounded-full bg-white px-3 text-[10.5px] font-semibold text-ink-700 ring-1 ring-inset ring-ink-200">
+                  <Download aria-hidden="true" className="h-3 w-3" />SEPA-Export
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </FensterRahmen>
+    </BeispielBild>
+  );
+}
+
+/** Abschlussmeldung des Kassier-Ablaufs */
+export function MockAbschluss({ className, beschreibung }) {
+  return (
+    <BeispielBild beschreibung={beschreibung} className={className}>
+      <div className="relative flex items-center gap-3 overflow-hidden rounded-2xl bg-white p-3 pr-4 ring-1 ring-ink-900/10 shadow-[0_2px_4px_-1px_rgba(3,18,43,0.1),0_22px_40px_-16px_rgba(3,18,43,0.5)]">
+        <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-ov-500 to-ov-700 text-white shadow-gruen">
+          <FileCheck2 aria-hidden="true" className="h-5 w-5" />
+        </span>
+        <p className="min-w-0 text-[11.5px] leading-snug text-ink-600">
+          <strong className="block text-[12.5px] text-ink-900">72 Belege versendet</strong>
+          Lastschrift am 05.11. – alles erledigt für Oktober
+        </p>
+        <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-ov-400 to-ov-600" />
+      </div>
+    </BeispielBild>
+  );
+}
+
+/* ---------------------------------------------------------- Hero-Komposition */
+
+/** Abgedunkeltes Fenster ganz hinten (Mitgliederliste als Andeutung) – schafft Tiefe, trägt keine Information */
+function HinteresFenster() {
+  return (
+    <div className="pointer-events-none absolute -left-7 -top-6 w-[360px] overflow-hidden rounded-[14px] bg-white/[0.05] ring-1 ring-inset ring-white/10 [mask-image:linear-gradient(160deg,#000_35%,transparent_85%)]">
+      <div className="flex h-7 items-center gap-[5px] border-b border-white/[0.07] px-3">
+        {[0, 1, 2].map((i) => <span key={i} className="h-[7px] w-[7px] rounded-full bg-white/15" />)}
+      </div>
+      <div className="space-y-2.5 p-4">
+        {[72, 58, 64, 48, 60].map((b, i) => (
+          <div key={i} className="flex items-center gap-2.5">
+            <span className="h-5 w-5 rounded-full bg-white/10" />
+            <span className="h-2 rounded-full bg-white/10" style={{ width: `${b}%` }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Hero-Komposition in drei Ebenen:
+ *   hinten  – Kassier-Fenster, dezent perspektivisch geneigt (ab lg), rechts mit freiem Streifen für das Handy
+ *   Mitte   – Meldungen „72 Belege versendet“ und „Zustimmung offen“ unter dem Fenster
+ *   vorn    – Handy „Energie heute“
+ * Mobil: Abrechnungsfenster mit Zustimmungs-Meldung (das Handy folgt mobil direkt danach in der Tour). Ohne Endlos-Bewegung.
+ */
+export function HeroKomposition({ className }) {
+  return (
+    <div
+      role="img"
+      aria-label="Beispielansicht der Plattform mit fiktiven Werten: Mitglied sieht auf dem Handy den Energiefluss und 71,40 € Ersparnis, die Oktober-Abrechnung ist im Vier-Augen-Prinzip freigegeben, 72 Belege sind versendet und eine Zustimmung beim Netzbetreiber ist mit noch 6 von 10 Werktagen offen."
+      className={cn("relative isolate mx-auto w-full max-w-[680px]", className)}
+    >
+      {/* Licht: Schlüssellicht links oben, warmes Gegenlicht rechts unten (statisch) */}
+      <div aria-hidden="true" className="pointer-events-none absolute -left-10 top-0 -z-10 h-2/3 w-2/3 rounded-full bg-ov-400/20 blur-[90px]" />
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-6 right-0 -z-10 h-56 w-56 rounded-full bg-sun-400/[0.12] blur-[80px]" />
+
+      {/* Mobil: Abrechnungsfenster (ohne Liste) mit Zustimmungs-Meldung am unteren Rand. Bewusst nicht das Handy:
+          „Energie heute“ steht mobil gleich danach als erstes Tour-Kapitel – zweimal dasselbe Bild hintereinander. */}
+      <div aria-hidden="true" className="relative pb-2 sm:hidden">
+        <div className="ov-hero-in relative" style={{ "--ov-delay": "200ms" }}>
+          <MockKassier kompakt />
+          <span className="absolute inset-x-[10%] -bottom-6 -z-10 h-10 rounded-[50%] bg-black/50 blur-xl" />
+        </div>
+        <div className="ov-hero-in relative z-10 mx-auto -mt-3 w-[92%] max-w-[330px]" style={{ "--ov-delay": "380ms" }}>
+          <MockZustimmungKarte />
+        </div>
+      </div>
+
+      {/* Ab sm: Bühne mit fester Entwurfsbreite (760 px), per zoom passend zur Spalte skaliert – Inhalte brechen
+          dadurch nie anders um als im Entwurf, und nichts Wichtiges wird verdeckt. */}
+      <div aria-hidden="true" className="relative mx-auto hidden w-[760px] sm:block sm:[zoom:.78] md:[zoom:.84] lg:[zoom:.67] min-[1150px]:[zoom:.76] xl:[zoom:.84]">
+        <HinteresFenster />
+        <div className="grid grid-cols-1">
+          <div className="col-start-1 row-start-1 w-[520px] self-start pt-4">
+            <div className="ov-hero-in" style={{ "--ov-delay": "200ms" }}>
+              <div className="origin-right lg:[transform:perspective(2400px)_rotateY(-6deg)_rotateX(2deg)]">
+                <MockKassier hero freiRechts={9} />
+              </div>
+            </div>
+            <div className="relative z-20 -mt-4 ml-[26px] w-[420px] space-y-3">
+              <div className="ov-hero-in" style={{ "--ov-delay": "460ms" }}>
+                <MockAbschluss />
+              </div>
+              <div className="ov-hero-in ml-[44px]" style={{ "--ov-delay": "560ms" }}>
+                <MockZustimmungKarte />
+              </div>
+            </div>
+          </div>
+
+          <div className="relative z-10 col-start-1 row-start-1 w-[280px] justify-self-end pt-[72px]">
+            <div className="ov-hero-in" style={{ "--ov-delay": "340ms" }}>
+              <MockEnergieHeute />
+            </div>
+            {/* Kontaktschatten */}
+            <span className="absolute inset-x-[8%] -bottom-5 -z-10 h-10 rounded-[50%] bg-black/55 blur-xl" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,356 @@
+src\app\api\admin\berichte\route.js:route({ admin: true }
+src\app\api\admin\aufgaben\[id]\route.js:route({ admin: true }
+src\app\api\admin\aktivitaeten\route.js:route({ admin: true }
+src\app\api\admin\bieter\[id]\route.js:route({ admin: true }
+src\app\api\admin\zuweisen\route.js:route({ admin: true }
+src\app\api\admin\aufgaben\route.js:route({ admin: true }
+src\app\api\admin\aufgaben\route.js:route({ admin: true }
+src\app\api\admin\anlagen\[id]\route.js:route({ admin: true }
+src\app\api\admin\closing\[id]\route.js:route({ admin: true }
+src\app\api\admin\closing\[id]\route.js:route({ admin: true }
+src\app\api\admin\berichte\pdf\route.js:route({ admin: true }
+src\app\api\admin\anlagen\[id]\geraete\route.js:route({ admin: true }
+src\app\api\admin\berichte\csv\route.js:route({ admin: true }
+src\app\api\admin\closing\[id]\aktion\route.js:route({ admin: true }
+src\app\api\admin\wissen\[id]\route.js:route({ admin: true }
+src\app\api\admin\wissen\[id]\route.js:route({ admin: true, maxBytes: 96 * 1024 }
+src\app\api\admin\wissen\[id]\route.js:route({ admin: true, json: false }
+src\app\api\admin\bieter\route.js:route({ admin: true }
+src\app\api\admin\bieter\route.js:route({ admin: true }
+src\app\api\admin\closing\route.js:route({ admin: true }
+src\app\api\admin\closing\route.js:route({ admin: true }
+src\app\api\admin\wissen\route.js:route({ admin: true }
+src\app\api\admin\wissen\route.js:route({ admin: true, maxBytes: 96 * 1024 }
+src\app\api\admin\bonitaet\[id]\route.js:route({ admin: true }
+src\app\api\admin\bonitaet\[id]\route.js:route({ admin: true }
+src\app\api\admin\akquise\route.js:route({ admin: true }
+src\app\api\admin\akquise\route.js:route({ admin: true }
+src\app\api\admin\akquise\gebiete\route.js:route({ admin: true }
+src\app\api\admin\akquise\gebiete\route.js:route({ admin: true }
+src\app\api\admin\anlagen\[id]\eintraege\route.js:route({ admin: true }
+src\app\api\admin\anlagen\[id]\eintraege\route.js:route({ admin: true, json: false }
+src\app\api\admin\akquise\[id]\route.js:route({ admin: true }
+src\app\api\admin\anlagen\geraete\[gid]\route.js:route({ admin: true }
+src\app\api\admin\anlagen\geraete\[gid]\route.js:route({ admin: true }
+src\app\api\admin\bonitaet\status\route.js:route({ admin: true, recht: [{ bereich: "interessen", stufe: 1 }
+src\app\api\admin\anlagen\stoerungen\route.js:route({ admin: true }
+src\app\api\admin\bonitaet\route.js:route({ admin: true }
+src\app\api\admin\bonitaet\route.js:route({ admin: true }
+src\app\api\admin\anlagen\route.js:route({ admin: true }
+src\app\api\admin\anlagen\route.js:route({ admin: true }
+src\app\api\admin\vorlagen\[id]\wiederherstellen\route.js:route({ admin: true }
+src\app\api\admin\vorlagen\[id]\route.js:route({ admin: true }
+src\app\api\admin\provisionen\route.js:route({ admin: true }
+src\app\api\admin\anlagen\kunden\route.js:route({ admin: true }
+src\app\api\admin\bonitaet\einstellungen\route.js:route({ admin: true }
+src\app\api\admin\automationen\[id]\route.js:route({ admin: true }
+src\app\api\admin\automationen\[id]\route.js:route({ admin: true, json: false }
+src\app\api\admin\automationen\route.js:route({ admin: true }
+src\app\api\admin\automationen\route.js:route({ admin: true }
+src\app\api\admin\vorlagen\vorschau\route.js:route({ admin: true }
+src\app\api\admin\hr\zeiten\[id]\route.js:route({ admin: true, json: false, recht: [{ bereich: "team", stufe: 1 }
+src\app\api\admin\anlagen\betrieb\bericht\route.js:route({ admin: true }
+src\app\api\admin\automationen\testlauf\route.js:route({ admin: true }
+src\app\api\admin\automationen\fristen\route.js:route({ admin: true }
+src\app\api\admin\hr\zeiten\route.js:route({ admin: true }
+src\app\api\admin\hr\zeiten\route.js:route({ admin: true, recht: [{ bereich: "team", stufe: 1 }
+src\app\api\admin\anlagen\betrieb\versicherungen\[id]\route.js:route({ admin: true }
+src\app\api\admin\protokoll\suche\route.js:route({ admin: true }
+src\app\api\admin\vorlagen\senden\route.js:route({ admin: true, recht: [{ bereich: "vorlagen", stufe: 1 }
+src\app\api\admin\protokoll\route.js:route({ admin: true }
+src\app\api\admin\anlagen\betrieb\versicherungen\route.js:route({ admin: true }
+src\app\api\admin\vorlagen\route.js:route({ admin: true }
+src\app\api\admin\vorlagen\route.js:route({ admin: true }
+src\app\api\admin\automationen\tags\route.js:route({ admin: true, recht: [{ bereich: "cockpit", stufe: 1 }
+src\app\api\admin\hr\route.js:route({ admin: true }
+src\app\api\admin\energiegemeinschaften\route.js:route({ admin: true }
+src\app\api\admin\energiegemeinschaften\route.js:route({ admin: true, maxBytes: 96 * 1024 }
+src\app\api\admin\anlagen\betrieb\auftraege\[id]\route.js:route({ admin: true }
+src\app\api\admin\anlagen\betrieb\auftraege\[id]\route.js:route({ admin: true }
+src\app\api\admin\projekte\route.js:route({ admin: true }
+src\app\api\admin\vorgaenge\route.js:route({ admin: true }
+src\app\api\admin\anlagen\betrieb\auftraege\route.js:route({ admin: true }
+src\app\api\admin\anlagen\betrieb\stoerung\[id]\route.js:route({ admin: true }
+src\app\api\admin\anlagen\betrieb\stoerung\[id]\route.js:route({ admin: true }
+src\app\api\admin\finanzen\abrechnungen\[id]\route.js:route({ admin: true }
+src\app\api\admin\finanzen\abrechnungen\[id]\route.js:route({ admin: true }
+src\app\api\admin\anlagen\betrieb\route.js:route({ admin: true }
+src\app\api\admin\anlagen\betrieb\route.js:route({ admin: true }
+src\app\api\admin\uebersicht\route.js:route({ admin: true }
+src\app\api\admin\finanzen\abrechnungen\route.js:route({ admin: true }
+src\app\api\admin\hr\mitarbeiter\[id]\route.js:route({ admin: true }
+src\app\api\admin\anlagen\betrieb\anlage\[id]\route.js:route({ admin: true }
+src\app\api\admin\anlagen\betrieb\anlage\[id]\route.js:route({ admin: true, maxBytes: 256 * 1024 }
+src\app\api\admin\anlagen\betrieb\protokolle\[id]\route.js:route({ admin: true }
+src\app\api\admin\hr\integrationen\route.js:route({ admin: true }
+src\app\api\admin\export\[art]\route.js:route({ admin: true }
+src\app\api\admin\energie\wechsel\[id]\route.js:route({ admin: true }
+src\app\api\admin\termine\verfuegbarkeit\route.js:route({ admin: true }
+src\app\api\admin\termine\verfuegbarkeit\route.js:route({ admin: true }
+src\app\api\admin\energie\wechsel\route.js:route({ admin: true }
+src\app\api\admin\termine\route.js:route({ admin: true }
+src\app\api\admin\termine\route.js:route({ admin: true }
+src\app\api\admin\anbieter\[projektId]\route.js:route({ admin: true, recht: "projekte" }
+src\app\api\admin\hr\auswertung\route.js:route({ admin: true, recht: [{ bereich: "cockpit", stufe: 1 }
+src\app\api\admin\energie\termin\route.js:route({ admin: true }
+src\app\api\admin\energie\termin\route.js:route({ admin: true, maxBytes: 450 * 1024 }
+src\app\api\admin\energie\termin\route.js:route({ admin: true, json: false }
+src\app\api\admin\support\route.js:route({ admin: true }
+src\app\api\admin\support\route.js:route({ admin: true }
+src\app\api\admin\anlagen\betrieb\ersatzteile\[id]\route.js:route({ admin: true }
+src\app\api\admin\anbieter\fristen\route.js:route({ admin: true, recht: "projekte" }
+src\app\api\admin\energie\route.js:route({ admin: true }
+src\app\api\admin\energie\route.js:route({ admin: true }
+src\app\api\admin\anlagen\betrieb\ersatzteile\route.js:route({ admin: true }
+src\app\api\admin\status\route.js:route({ admin: true }
+src\app\api\admin\hr\abwesenheiten\[id]\route.js:route({ admin: true, json: false, recht: [{ bereich: "team", stufe: 1 }
+src\app\api\admin\energie\portfolio\route.js:route({ admin: true }
+src\app\api\admin\energie\portfolio\route.js:route({ admin: true }
+src\app\api\admin\energie\einstellungen\route.js:route({ admin: true }
+src\app\api\admin\energie\einstellungen\route.js:route({ admin: true }
+src\app\api\admin\hr\abwesenheiten\route.js:route({ admin: true }
+src\app\api\admin\hr\abwesenheiten\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\entwicklung\[id]\steuerung\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\[id]\steuerung\route.js:route({ admin: true }
+src\app\api\admin\signatur\route.js:route({ admin: true }
+src\app\api\admin\signatur\route.js:route({ admin: true, upload: true }
+src\app\api\admin\hinweis\route.js:route({ admin: true, recht: { bereich: "cockpit", stufe: 1 }
+src\app\api\admin\eg\[id]\route.js:route({ admin: true }
+src\app\api\admin\eg\[id]\route.js:route({ admin: true, maxBytes: 2_200_000 }
+src\app\api\admin\entwicklung\[id]\rueckfrage\route.js:route({ admin: true, limit: "nachricht" }
+src\app\api\admin\energie\lieferanten\[id]\route.js:route({ admin: true }
+src\app\api\admin\energie\lieferanten\[id]\route.js:route({ admin: true }
+src\app\api\admin\signatur\einstellungen\route.js:route({ admin: true }
+src\app\api\admin\signatur\einstellungen\route.js:route({ admin: true }
+src\app\api\admin\energie\ausschreibungen\[id]\route.js:route({ admin: true }
+src\app\api\admin\energie\ausschreibungen\[id]\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\[id]\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\[id]\route.js:route({ admin: true }
+src\app\api\admin\energie\lieferanten\route.js:route({ admin: true }
+src\app\api\admin\energie\lieferanten\route.js:route({ admin: true }
+src\app\api\admin\energie\ausschreibungen\route.js:route({ admin: true }
+src\app\api\admin\energie\ausschreibungen\route.js:route({ admin: true }
+src\app\api\admin\eg\[id]\energiedaten\route.js:route({ admin: true }
+src\app\api\admin\eg\[id]\energiedaten\route.js:route({ admin: true, maxBytes: 6_500_000 }
+src\app\api\admin\eg\[id]\eda\route.js:route({ admin: true }
+src\app\api\admin\eg\[id]\eda\route.js:route({ admin: true, maxBytes: 4.5 * 1024 * 1024 }
+src\app\api\admin\entwicklung\steuerung\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\steuerung\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\[id]\planung\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\[id]\planung\route.js:route({ admin: true }
+src\app\api\admin\register\[id]\route.js:route({ admin: true }
+src\app\api\admin\eg\simulation\route.js:route({ admin: true }
+src\app\api\admin\eg\simulation\route.js:route({ admin: true, maxBytes: 4_000_000 }
+src\app\api\admin\entwicklung\steuerung\export\route.js:route({ admin: true }
+src\app\api\admin\eg\route.js:route({ admin: true }
+src\app\api\admin\eg\route.js:route({ admin: true, maxBytes: 64 * 1024 }
+src\app\api\admin\entwicklung\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\[id]\kalkulation\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\[id]\kalkulation\route.js:route({ admin: true, maxBytes: 256 * 1024 }
+src\app\api\admin\energie\kunden\[id]\vollmacht-signatur\route.js:route({ admin: true, recht: [{ bereich: "energie", stufe: 2 }
+src\app\api\admin\gutachter\[id]\zahlung\route.js:route({ admin: true, recht: [{ bereich: "finanzen", stufe: 2 }
+src\app\api\admin\register\[id]\pdf\route.js:route({ admin: true }
+src\app\api\admin\energie\kunden\[id]\route.js:route({ admin: true }
+src\app\api\admin\energie\kunden\[id]\route.js:route({ admin: true }
+src\app\api\admin\gutachter\[id]\route.js:route({ admin: true }
+src\app\api\admin\gutachter\[id]\route.js:route({ admin: true }
+src\app\api\admin\register\route.js:route({ admin: true }
+src\app\api\admin\register\route.js:route({ admin: true }
+src\app\api\admin\energie\kunden\route.js:route({ admin: true }
+src\app\api\admin\eg\netzbetreiber\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\fristen\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\[id]\kalkulation\export\route.js:route({ admin: true }
+src\app\api\admin\register\auskuenfte\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\[id]\eintraege\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\[id]\eintraege\route.js:route({ admin: true, json: false }
+src\app\api\admin\demo-links\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\auswahl\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\[id]\kalkulation\aktion\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\[id]\aktion\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\assistent\route.js:route({ admin: true }
+src\app\api\admin\dealroom\route.js:route({ admin: true }
+src\app\api\admin\projekte\pipeline\[id]\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\[id]\gutachter\route.js:route({ admin: true }
+src\app\api\admin\projekte\pipeline\route.js:route({ admin: true }
+src\app\api\admin\rechte\[id]\route.js:route({ admin: true }
+src\app\api\admin\dealroom\freigabe\route.js:route({ admin: true }
+src\app\api\admin\rechte\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\vorlagen\[vid]\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\vorlagen\[vid]\route.js:route({ admin: true }
+src\app\api\admin\finanzen\anliegen\[id]\route.js:route({ admin: true }
+src\app\api\admin\finanzen\anliegen\route.js:route({ admin: true }
+src\app\api\admin\postausgang\route.js:route({ admin: true }
+src\app\api\admin\entwicklung\vorlagen\[vid]\pdf\route.js:route({ admin: true }
+src\app\api\admin\finanzen\buchhaltung\zahlungen\[id]\route.js:route({ admin: true }
+src\app\api\admin\finanzen\buchhaltung\export\route.js:route({ admin: true }
+src\app\api\admin\finanzen\buchhaltung\zahlungen\route.js:route({ admin: true, maxBytes: 3_500_000 }
+src\app\api\admin\crm\organisationen\[id]\route.js:route({ admin: true }
+src\app\api\admin\crm\organisationen\[id]\route.js:route({ admin: true }
+src\app\api\admin\finanzen\anlagen\[id]\route.js:route({ admin: true }
+src\app\api\admin\crm\organisationen\route.js:route({ admin: true }
+src\app\api\admin\crm\organisationen\route.js:route({ admin: true }
+src\app\api\admin\finanzen\anlagen\route.js:route({ admin: true }
+src\app\api\admin\finanzen\buchhaltung\einstellungen\route.js:route({ admin: true }
+src\app\api\admin\compliance\[id]\video\route.js:route({ admin: true, maxBytes: 8 * 1024 }
+src\app\api\admin\compliance\[id]\video\route.js:route({ admin: true }
+src\app\api\admin\crm\massenaktion\route.js:route({ admin: true }
+src\app\api\admin\compliance\[id]\route.js:route({ admin: true }
+src\app\api\admin\compliance\[id]\route.js:route({ admin: true, maxBytes: 16 * 1024 }
+src\app\api\admin\portfolio\[id]\route.js:route({ admin: true }
+src\app\api\admin\portfolio\[id]\route.js:route({ admin: true }
+src\app\api\admin\finanzen\buchhaltung\route.js:route({ admin: true }
+src\app\api\admin\finanzen\buchhaltung\mahnlauf\route.js:route({ admin: true }
+src\app\api\admin\compliance\vvt\route.js:route({ admin: true }
+src\app\api\admin\portfolio\[id]\dokumente\route.js:route({ admin: true, upload: true }
+src\app\api\admin\flaechen\route.js:route({ admin: true }
+src\app\api\admin\crm\kontakte\[id]\route.js:route({ admin: true }
+src\app\api\admin\crm\kontakte\[id]\route.js:route({ admin: true }
+src\app\api\admin\finanzen\buchhaltung\belege\[id]\route.js:route({ admin: true }
+src\app\api\admin\crm\kontakte\[id]\beziehung\route.js:route({ admin: true }
+src\app\api\admin\compliance\verdacht\[id]\route.js:route({ admin: true }
+src\app\api\admin\crm\kontakte\route.js:route({ admin: true }
+src\app\api\admin\crm\kontakte\route.js:route({ admin: true }
+src\app\api\admin\compliance\verdacht\route.js:route({ admin: true }
+src\app\api\admin\compliance\verdacht\route.js:route({ admin: true }
+src\app\api\admin\finanzen\buchhaltung\belege\[id]\dokument\route.js:route({ admin: true }
+src\app\api\admin\geodaten\ziele\route.js:route({ admin: true }
+src\app\api\admin\geodaten\ziele\route.js:route({ admin: true, recht: [{ bereich: "geodaten", stufe: 2 }
+src\app\api\admin\crm\dubletten\route.js:route({ admin: true }
+src\app\api\admin\crm\dubletten\route.js:route({ admin: true }
+src\app\api\admin\compliance\sla\route.js:route({ admin: true }
+src\app\api\admin\geodaten\umkreis\route.js:route({ admin: true }
+src\app\api\admin\finanzierung\[id]\route.js:route({ admin: true }
+src\app\api\admin\finanzierung\[id]\route.js:route({ admin: true }
+src\app\api\admin\finanzen\buchhaltung\abschluss\[monat]\route.js:route({ admin: true }
+src\app\api\admin\finanzen\buchhaltung\abschluss\[monat]\route.js:route({ admin: true }
+src\app\api\admin\crm\aktivitaeten\route.js:route({ admin: true }
+src\app\api\admin\compliance\sanktionen\route.js:route({ admin: true }
+src\app\api\admin\compliance\sanktionen\route.js:route({ admin: true }
+src\app\api\admin\compliance\route.js:route({ admin: true }
+src\app\api\admin\geodaten\suche\route.js:route({ admin: true }
+src\app\api\admin\finanzierung\geschaeftsmodell\route.js:route({ admin: true, recht: [{ bereich: "finanzierung", stufe: 1 }
+src\app\api\admin\finanzierung\[id]\reporting\route.js:route({ admin: true }
+src\app\api\admin\compliance\fristen\route.js:route({ admin: true }
+src\app\api\admin\finanzierung\bankakte\[anfrageId]\route.js:route({ admin: true }
+src\app\api\admin\finanzierung\bankakte\[anfrageId]\route.js:route({ admin: true }
+src\app\api\admin\finanzierung\covenants\route.js:route({ admin: true }
+src\app\api\admin\finanzierung\[id]\modell\route.js:route({ admin: true }
+src\app\api\admin\geodaten\sperrliste\[id]\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\compliance\freigabe\route.js:route({ admin: true, recht: { bereich: "cockpit", stufe: 1 }
+src\app\api\admin\finanzierung\banken\route.js:route({ admin: true }
+src\app\api\admin\geodaten\sperrliste\route.js:route({ admin: true }
+src\app\api\admin\geodaten\sperrliste\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\geodaten\route.js:route({ admin: true }
+src\app\api\admin\finanzierung\route.js:route({ admin: true }
+src\app\api\admin\finanzierung\route.js:route({ admin: true }
+src\app\api\admin\finanzierung\bankakte\[anfrageId]\dateien\[did]\route.js:route({ admin: true }
+src\app\api\admin\compliance\einstellungen\route.js:route({ admin: true }
+src\app\api\admin\compliance\einstellungen\route.js:route({ admin: true }
+src\app\api\admin\finanzierung\bankakte\[anfrageId]\dateien\route.js:route({ admin: true, upload: true }
+src\app\api\admin\finanzierung\[id]\aktion\route.js:route({ admin: true }
+src\app\api\admin\geodaten\netz\route.js:route({ admin: true }
+src\app\api\admin\finanzierung\[id]\dokumente\route.js:route({ admin: true, upload: true }
+src\app\api\admin\finanzierung\[id]\dokumente\[dok]\route.js:route({ admin: true }
+src\app\api\admin\geodaten\kapazitaet\route.js:route({ admin: true }
+src\app\api\admin\compliance\dokumente\[id]\route.js:route({ admin: true }
+src\app\api\admin\finanzierung\bankakte\[anfrageId]\berichte\[bid]\route.js:route({ admin: true }
+src\app\api\admin\geodaten\ebenen\[ebene]\route.js:route({ admin: true }
+src\app\api\admin\finanzierung\auswahl\route.js:route({ admin: true }
+src\app\api\admin\geodaten\gemeinden\uebergabe\route.js:route({ admin: true, recht: [{ bereich: "geodaten", stufe: 2 }
+src\app\api\admin\geodaten\gemeinden\uebergabe\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\geodaten\gemeinden\route.js:route({ admin: true }
+src\app\api\admin\geodaten\gemeinden\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\geodaten\gemeinden\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\geodaten\kandidaten\[id]\route.js:route({ admin: true }
+src\app\api\admin\geodaten\anschreiben\route.js:route({ admin: true }
+src\app\api\admin\geodaten\kandidaten\route.js:route({ admin: true }
+src\app\api\admin\compliance\datenschutz\[id]\route.js:route({ admin: true }
+src\app\api\admin\fristen\erinnerungen\route.js:route({ admin: true }
+src\app\api\admin\genossenschaft\route.js:route({ admin: true }
+src\app\api\admin\genossenschaft\route.js:route({ admin: true, maxBytes: 96 * 1024 }
+src\app\api\admin\geodaten\gemeinden\konkurrenz\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\geodaten\gemeinden\konkurrenz\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\compliance\datenschutz\[id]\export\route.js:route({ admin: true }
+src\app\api\admin\compliance\datenschutz\route.js:route({ admin: true }
+src\app\api\admin\compliance\datenschutz\route.js:route({ admin: true }
+src\app\api\admin\geodaten\export\route.js:route({ admin: true, limit: "export" }
+src\app\api\admin\geodaten\kampagnen\nachfassen\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\finanzen\lauf\route.js:route({ admin: true }
+src\app\api\admin\finanzen\pachtvertraege\[id]\route.js:route({ admin: true }
+src\app\api\admin\finanzen\pachtvertraege\[id]\route.js:route({ admin: true }
+src\app\api\admin\finanzen\pachtvertraege\auswahl\route.js:route({ admin: true }
+src\app\api\admin\finanzen\pachtvertraege\route.js:route({ admin: true }
+src\app\api\admin\finanzen\pachtvertraege\route.js:route({ admin: true }
+src\app\api\admin\geodaten\kampagnen\[id]\route.js:route({ admin: true }
+src\app\api\admin\geodaten\kampagnen\[id]\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\geodaten\kampagnen\[id]\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\geodaten\kampagnen\route.js:route({ admin: true }
+src\app\api\admin\geodaten\kampagnen\route.js:route({ admin: true, maxBytes: 64 * 1024, recht: RECHT }
+src\app\api\admin\geodaten\kampagnen\[id]\versandliste\route.js:route({ admin: true, recht: [{ bereich: "geodaten", stufe: 1 }
+src\app\api\admin\finanzen\klaerfaelle\[id]\route.js:route({ admin: true }
+src\app\api\admin\finanzen\klaerfaelle\route.js:route({ admin: true }
+src\app\api\admin\geodaten\kampagnen\[id]\serienbrief\route.js:route({ admin: true, recht: [{ bereich: "geodaten", stufe: 1 }
+src\app\api\admin\geodaten\kampagnen\[id]\starten\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\geodaten\kampagnen\[id]\versand\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\finanzen\zahlungen\route.js:route({ admin: true }
+src\app\api\admin\finanzen\route.js:route({ admin: true }
+src\app\api\admin\geodaten\kampagnen\ziele\[zielId]\grundbuch\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\finanzen\vpi\route.js:route({ admin: true }
+src\app\api\admin\finanzen\vpi\route.js:route({ admin: true }
+src\app\api\admin\finanzen\zahlungen\[id]\route.js:route({ admin: true }
+src\app\api\admin\finanzen\zahlungen\sepa\route.js:route({ admin: true }
+src\app\api\admin\gutachter\route.js:route({ admin: true }
+src\app\api\admin\gutachter\route.js:route({ admin: true }
+src\app\api\admin\finanzen\entwicklung\[id]\route.js:route({ admin: true, recht: [{ bereich: "entwicklung", stufe: 1 }
+src\app\api\admin\gutachter\fristen\route.js:route({ admin: true, recht: [{ bereich: "entwicklung", stufe: 1 }
+src\app\api\admin\finanzen\entwicklung\route.js:route({ admin: true, recht: [{ bereich: "entwicklung", stufe: 1 }
+src\app\api\admin\finanzen\entwicklung\route.js:route({ admin: true, recht: [{ bereich: "finanzen", stufe: 2 }
+src\app\api\admin\geodaten\kampagnen\ziele\[zielId]\empfaenger\[empfaengerId]\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\geodaten\kampagnen\ziele\[zielId]\empfaenger\[empfaengerId]\route.js:route({ admin: true, recht: RECHT }
+src\app\api\admin\onboarding\route.js:route({ admin: true }
+src\app\api\admin\grundbuch\fristen\route.js:route({ admin: true }
+src\app\api\admin\onboarding\lauf\route.js:route({ admin: true, maxBytes: 1024 }
+src\app\api\admin\leads\widerruf\route.js:route({ admin: true, recht: "vorgaenge", maxBytes: 2048 }
+src\app\api\admin\grundbuch\auswahl\route.js:route({ admin: true }
+src\app\api\admin\grundbuch\[id]\signatur\route.js:route({ admin: true, recht: [{ bereich: "grundbuch", stufe: 2 }
+src\app\api\admin\leads\sla\route.js:route({ admin: true, recht: "vorgaenge" }
+src\app\api\admin\leads\route.js:route({ admin: true, recht: "vorgaenge" }
+src\app\api\admin\gesellschaften\[id]\schritt\route.js:route({ admin: true }
+src\app\api\admin\nutzer\[id]\route.js:route({ admin: true }
+src\app\api\admin\grundbuch\[id]\dokumente\route.js:route({ admin: true, upload: true }
+src\app\api\admin\gesellschaften\[id]\route.js:route({ admin: true }
+src\app\api\admin\gesellschaften\[id]\route.js:route({ admin: true }
+src\app\api\admin\nutzer\route.js:route({ admin: true }
+src\app\api\admin\grundbuch\[id]\schritt\route.js:route({ admin: true }
+src\app\api\admin\grundbuch\route.js:route({ admin: true }
+src\app\api\admin\grundbuch\route.js:route({ admin: true }
+src\app\api\admin\grundbuch\[id]\route.js:route({ admin: true }
+src\app\api\admin\grundbuch\[id]\route.js:route({ admin: true }
+src\app\api\admin\leads\loeschung\route.js:route({ admin: true, recht: "vorgaenge", maxBytes: 2048 }
+src\app\api\admin\gutachter\[id]\pdf\route.js:route({ admin: true }
+src\app\api\admin\gesellschaften\[id]\erp\route.js:route({ admin: true }
+src\app\api\admin\kanaele\route.js:route({ admin: true, recht: "berichte" }
+src\app\api\admin\leads\kette\route.js:route({ admin: true, recht: "vorgaenge" }
+src\app\api\admin\leitung\digest\route.js:route({ admin: true }
+src\app\api\admin\leads\absage\route.js:route({ admin: true, recht: "vorgaenge", maxBytes: 4096 }
+src\app\api\admin\interessen\route.js:route({ admin: true }
+src\app\api\admin\leitung\bericht\route.js:route({ admin: true }
+src\app\api\admin\portfolio\dokumente\[id]\route.js:route({ admin: true }
+src\app\api\admin\portfolio\route.js:route({ admin: true }
+src\app\api\admin\portfolio\route.js:route({ admin: true }
+src\app\api\admin\portfolio\auswahl\route.js:route({ admin: true }
+src\app\api\admin\pachtakte\route.js:route({ admin: true }
+src\app\api\admin\pachtakte\agri\[id]\route.js:route({ admin: true }
+src\app\api\admin\portfolio\fristen\route.js:route({ admin: true }
+src\app\api\admin\pachtakte\anliegen\[id]\route.js:route({ admin: true }
+src\app\api\admin\portfolio\[id]\aktion\route.js:route({ admin: true }
+src\app\api\admin\pachtakte\rueckbau\[vertragId]\route.js:route({ admin: true }
+src\app\api\admin\gutachter\[id]\dateien\[did]\route.js:route({ admin: true }
+src\app\api\admin\gesellschaften\route.js:route({ admin: true }
+src\app\api\admin\gesellschaften\route.js:route({ admin: true }
+src\app\api\admin\gesellschaften\namenspruefung\route.js:route({ admin: true, recht: [{ bereich: "gesellschaften", stufe: 1 }
+src\app\api\admin\gesellschaften\fristen\route.js:route({ admin: true }
+src\app\api\admin\gesellschaften\[id]\dokumente\route.js:route({ admin: true }
+src\app\api\admin\gesellschaften\auswahl\route.js:route({ admin: true }
+src\app\api\admin\portfolio\[id]\bericht\route.js:route({ admin: true }

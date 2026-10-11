@@ -1,0 +1,302 @@
+  218 src/data/regionen/schweiz.js
+  317 src/content/ratgeber/freiflaechen-pv-schweiz.js
+  535 total
+// Recherche: 29.09.2026 – RPG (Stand 01.01.2026, Art. 8b, 24ter), Kanton Luzern Merkblatt Solaranlagen (gültig ab 01.01.2026),
+// BFE Faktenblatt Neuerungen Energierecht 2025 (Art. 9a EnV: 5 GWh Winter), SBV Positionspapier Solaranlagen auf Kulturland
+// (LBV/DZV, 09.01.2025), Pronovo PV-Auktionen Q4/2026, Swissolar „2026: Was gilt neu“, Kanton Graubünden Leitfaden
+// Solarexpress (Ergänzung 01.04.2025), Stromzeit Solarexpress-Stand 10/2025, energeiaplus (BFE) Agri-PV 28.05.2026,
+// Appenzell Ausserrhoden Erläuterungsbericht Richtplan Energie (17.10.2025), BFS Strukturerhebung 2025, PVGIS v5.3.
+const region = {
+  slug: "schweiz",
+  land: "CH",
+  name: "Schweiz",
+  inName: "in der Schweiz",
+  kurz: "CH",
+  seoTitel: "Solarpark & Agri-PV Schweiz: Recht, Pacht | ÖkoInvest",
+  beschreibung:
+    "Solarpark Pacht in der Schweiz: Wann Freiflächen-PV und Agri-PV nach Art. 24ter RPG bewilligt werden, Solarexpress, HEIV-Auktionen und Kantone im Überblick.",
+  lead:
+    "In der Schweiz ist eine Solaranlage auf der grünen Wiese die Ausnahme: Sie muss als standortgebunden gelten. Seit 1. Januar 2026 regelt Art. 24ter RPG, wann das für freistehende Anlagen und für Agri-PV zutrifft.",
+  akzent: "mit Standortnachweis und Kanton.",
+  ertrag: {
+    kwhProKwp: 1230,
+    ort: "im Berner Mittelland nördlich von Bern",
+    spanne: "rund 1.150 bis 1.420 kWh/kWp",
+    hinweis:
+      "PVGIS-Werte (optimale Neigung, 14 % Verluste): rund 1.150 kWh/kWp im Thurgauer Mittelland, rund 1.420 kWh/kWp im Walliser Rhonetal bei Sion; alpine Hochlagen liegen darüber, wurden hier aber nicht abgefragt.",
+  },
+  eckdaten: {
+    hauptstadt: "Bern",
+    flaecheKm2: 41285,
+    lfHa: 1040000,
+    lfJahr: 2025,
+    quelle: {
+      titel: "Schweizer Bauer – Landwirtschaftliche Strukturerhebung 2025 des BFS (Nutzfläche 1'040'000 ha)",
+      url: "https://www.schweizerbauer.ch/artikel/politik-wirtschaft/agrarpolitik/805-betriebe-weniger-schweizer-landwirtschaft-weiter-im-umbruch",
+    },
+  },
+  einleitung: [
+    "Die Schweiz trennt Baugebiet und Nichtbaugebiet streng. Wer ausserhalb der Bauzone bauen will, braucht eine Ausnahmebewilligung, und die gibt es für Solaranlagen nur, wenn sie als **standortgebunden** gelten. Klassische Solarparks auf Ackerland, wie sie in Deutschland über einen Bebauungsplan entstehen, gibt es deshalb kaum. Der Ausbau findet vor allem auf Dächern, Fassaden und Infrastruktur statt. Der Kanton Luzern nennt in seinem Merkblatt das Ziel des Bundes: Die Photovoltaik soll bis 2050 auf 34 TWh pro Jahr wachsen, rund zwölfmal so viel wie 2021.",
+    "Mit dem Stromgesetz (Mantelerlass), das die Stimmberechtigten am 9. Juni 2024 angenommen haben, hat sich der Spielraum für Freiflächen erweitert. Heute gibt es drei Wege: **freistehende Anlagen in wenig empfindlichen oder vorbelasteten Gebieten**, **Agri-PV mit Vorteil für die Landwirtschaft** und **grosse Anlagen von nationalem Interesse** in Eignungsgebieten des kantonalen Richtplans. Dazu kommen die alpinen Grossanlagen des befristeten Solarexpress.",
+    "Die landwirtschaftliche Nutzfläche umfasst rund 1,04 Millionen Hektaren, davon nach BFS knapp 40 % Ackerland; der Rest sind überwiegend Wiesen und Weiden. Für Eigentümer bedeutet das: Eine Fläche ist nicht schon deshalb geeignet, weil sie gross und besonnt ist. Entscheidend sind Vorbelastung, Schutzinteressen, Fruchtfolgeflächen und der Nutzen für die Landwirtschaft.",
+  ],
+  recht: [
+    {
+      titel: "Art. 24ter RPG: freistehende Anlagen seit 01.01.2026",
+      text: "Solaranlagen, die nicht von nationalem Interesse sind und auf freien Flächen ausserhalb der Bauzone und ausserhalb der landwirtschaftlichen Nutzfläche liegen, gelten als standortgebunden, wenn sie in **wenig empfindlichen oder bereits mit Bauten und Anlagen belasteten Gebieten** stehen und der Aufwand für Erschliessung und Netzanschluss im Verhältnis zur Leistung angemessen ist. Die Bestimmung kam mit dem Stromgesetz und ist nach dem geltenden RPG seit 1. Januar 2026 in Kraft. Bei endgültiger Ausserbetriebnahme muss die Anlage zurückgebaut und die Ausgangslage wiederhergestellt werden.",
+      quelle: { titel: "Raumplanungsgesetz RPG, Stand 01.01.2026 (Art. 24ter)", url: "https://www.lexfind.ch/tolv/257906/de" },
+    },
+    {
+      titel: "Agri-PV nur mit Vorteil für die Landwirtschaft",
+      text: "Auf landwirtschaftlicher Nutzfläche ist eine Solaranlage nach Art. 24ter Abs. 2 RPG nur standortgebunden, wenn sie die landwirtschaftlichen Interessen nicht beeinträchtigt **und** der Produktion Vorteile bringt – oder wenn sie landwirtschaftlichen Versuchs- und Forschungszwecken dient. In jedem Fall ist eine umfassende Interessenabwägung nötig, unter anderem zu Landschaft, Bodenschutz und Fruchtfolgeflächen.",
+      quelle: { titel: "Kanton Luzern – Merkblatt Solaranlagen, gültig ab 01.01.2026", url: "https://rawi.lu.ch/-/media/RAWI/Dokumente/Downloads/baubewilligungen/Merkblatt_Solaranlagen.pdf" },
+    },
+    {
+      titel: "Nicht freistehende Anlagen: Art. 32c RPV",
+      text: "Solaranlagen ausserhalb der Bauzone, die optisch eine Einheit mit rechtmässigen, voraussichtlich längerfristig bestehenden Bauten oder Anlagen bilden – etwa auf Lärmschutzwänden, Staumauern, Parkplätzen oder Böschungen – können nach Art. 32c RPV als standortgebunden bewilligt werden. Für Flächeneigentümer ist das oft der realistischste Weg ausserhalb der Bauzone.",
+      quelle: { titel: "Kanton Luzern – Merkblatt Solaranlagen, gültig ab 01.01.2026", url: "https://rawi.lu.ch/-/media/RAWI/Dokumente/Downloads/baubewilligungen/Merkblatt_Solaranlagen.pdf" },
+    },
+    {
+      titel: "Nationales Interesse ab 5 GWh Winterstrom",
+      text: "Seit 2025 sind neue Solaranlagen von nationalem Interesse, wenn ihre mittlere erwartete Produktion von Oktober bis März mindestens **5 GWh** beträgt (Art. 9a EnV). Die Kantone müssen dafür Eignungsgebiete im Richtplan festlegen und dabei Landschaft, Wald und Landwirtschaft, insbesondere Fruchtfolgeflächen, berücksichtigen. In diesen Gebieten geniessen Solaranlagen einen grundsätzlichen Vorrang in der Interessenabwägung, eine Einzelfallprüfung bleibt aber.",
+      quelle: { titel: "BFE – Faktenblatt Neuerungen im Energierecht ab 2025 (20.11.2024)", url: "https://pubdb.bfe.admin.ch/de/publication/download/11913" },
+    },
+    {
+      titel: "Solarexpress: nur noch Altprojekte",
+      text: "Art. 71a EnG erleichterte alpine Grossanlagen ab 10 GWh Jahresproduktion und mindestens 500 kWh/kW im Winterhalbjahr; Fruchtfolgeflächen waren ausgeschlossen, Gemeinde und Grundeigentümer mussten zustimmen. Nach der Lockerung vom 21. März 2025 profitieren nur Projekte, deren Baugesuch bis 31. Dezember 2025 öffentlich aufgelegt wurde. Neue Projekte fallen unter die ordentlichen Regeln.",
+      quelle: { titel: "Kanton Graubünden – Leitfaden Bewilligungsverfahren PV-Grossanlagen nach Art. 71a EnG", url: "https://www.gr.ch/DE/institutionen/verwaltung/dvs/are/BAB/Leitfaden%20Solarexpress_de.pdf" },
+    },
+    {
+      titel: "Förderung: HEIV-Auktion ab 150 kW",
+      text: "Anlagen ab 150 kW ohne Eigenverbrauch bewerben sich bei Pronovo um die hohe Einmalvergütung (HEIV) oder die gleitende Marktprämie. In der Runde vom 18. Oktober bis 1. November 2026 werden 50 MW HEIV (Höchstgebot CHF 620/kW) und 10 MW Marktprämie (Höchstgebot 10 Rp./kWh) vergeben. Das Projekt muss baureif sein; nach Zuschlag bleiben 24 Monate für die Realisierung. Für Anlagen mit Eigenverbrauch gibt es die Einmalvergütung (KLEIV/GREIV).",
+      quelle: { titel: "Pronovo – PV-Auktionen 2026", url: "https://pronovo.ch/de/foerderung/photovoltaik/auktionen/" },
+    },
+  ],
+  kulisse: {
+    text: "Eine landesweite Flächenkulisse für Freiflächen-PV gibt es nicht. Die Eignung ergibt sich aus Bundesrecht, dem kantonalen Richtplan (Teil Energie) und der Interessenabwägung im Einzelfall. Nach Bundesrecht und kantonalen Merkblättern sind vor allem vorbelastete Standorte und Agri-PV mit klarem landwirtschaftlichem Nutzen aussichtsreich. Anlagen über 5 MW, die nicht an Gebäuden angebracht sind, brauchen zudem eine Umweltverträglichkeitsprüfung.",
+    gut: [
+      "Vorbelastete Flächen an Verkehrswegen, Kiesgruben, Deponien, Staudämmen oder Skigebieten",
+      "Nicht freistehende Anlagen auf Infrastruktur: Lärmschutzwände, Parkplätze, Böschungen, künstliche Gewässer",
+      "Agri-PV über Sonder- und Dauerkulturen wie Beeren oder Obst mit Hagel- und Witterungsschutz",
+      "Eignungsgebiete für Solaranlagen von nationalem Interesse im kantonalen Richtplan, wo festgelegt",
+    ],
+    schwierig: [
+      "Fruchtfolgeflächen: Ertragspotenzial und maschinelle Bewirtschaftbarkeit müssen voll erhalten bleiben",
+      "Moorlandschaften, Biotope von nationaler Bedeutung und Wasser- und Zugvogelreservate (Ausschlussgebiete)",
+      "BLN-Landschaften, Waldareal und Ortsbilder von nationaler Bedeutung (ISOS)",
+      "Offenes Acker- und Grünland ohne belegten Vorteil für die Produktion",
+      "Abgelegene Lagen mit langem Netzanschluss und hohem Erschliessungsaufwand",
+    ],
+  },
+  ablauf: {
+    text: "Das Baugesuch wird bei der Gemeinde eingereicht, dort öffentlich aufgelegt und nach Einsprachen an den Kanton weitergeleitet. Die kantonale Behörde für Bauten ausserhalb der Bauzonen (Art. 25 Abs. 2 RPG) entscheidet über die Standortgebundenheit und erteilt die Ausnahmebewilligung. Grössere Anlagen können je nach Kanton eine Nutzungsplanung oder eine Grundlage im Richtplan brauchen; Appenzell Ausserrhoden setzt die Planungspflicht zum Beispiel bei 1 MW an. Elektrische Anlagen wie Leitungen und Trafostationen laufen parallel über das Plangenehmigungsverfahren des ESTI.",
+    behoerden: [
+      { name: "Gemeinde (Baubehörde)", rolle: "Entgegennahme und vorläufige Prüfung des Baugesuchs, öffentliche Auflage, Einsprachen; bei Solarexpress-Anlagen Zustimmung der Standortgemeinde" },
+      { name: "Kantonale Stelle für Bauten ausserhalb der Bauzonen (z. B. rawi Luzern, ARE Graubünden)", rolle: "Ausnahmebewilligung, Prüfung der Standortgebundenheit und Interessenabwägung" },
+      { name: "Kanton (Richtplanung, Teil Energie)", rolle: "Eignungsgebiete für Solaranlagen von nationalem Interesse, Schwellen für die Planungspflicht" },
+      { name: "Eidgenössisches Starkstrominspektorat ESTI", rolle: "Plangenehmigung für Anschlussleitungen und elektrische Anlagen", url: "https://www.esti.admin.ch" },
+      { name: "Pronovo", rolle: "Vollzugsstelle für Einmalvergütung, HEIV-Auktionen und gleitende Marktprämie", url: "https://pronovo.ch" },
+    ],
+  },
+  agri: [
+    "Die Schweiz legt bei Agri-PV einen strengeren Massstab an als Deutschland: Es reicht nicht, dass Landwirtschaft unter den Modulen möglich bleibt. Die Anlage muss der Produktion einen **Vorteil** bringen, etwa Wetterschutz, Ertrags- oder Qualitätssteigerung, oder der Forschung dienen. Auf Fruchtfolgeflächen verlangen die Erläuterungen des Bundes, dass Ertragspotenzial und maschinelle Bewirtschaftbarkeit voll erhalten bleiben; ein rein finanzieller Vorteil genügt nicht. Der Schweizer Bauernverband sieht vor allem Sonder- und Dauerkulturen als Agri-PV, Anlagen auf Acker- und Grünland dagegen nicht.",
+    "Wichtig für Bewirtschafter sind die Direktzahlungen: Flächen mit Solaranlagen zählen grundsätzlich nicht zur landwirtschaftlichen Nutzfläche (Art. 16 LBV). Ausgenommen sind nach dem Positionspapier des Bauernverbands Anlagen mit Vorteil für die Produktion oder für Forschungszwecke, für die eine rechtskräftige Baubewilligung vorliegt; die Fläche muss im Eigentum oder schriftlich gepachtet sein. Solarexpress-Flächen sind von der Nutzfläche ausgeschlossen. Praxisbeispiele laut BFE: Versuche von Agroscope in Conthey (VS) mit Beeren und seit Herbst 2025 Obstbäumen, eine Himbeeranlage auf über 7.000 m² in Gelfingen (LU) und eine 2-MWp-Anlage über Bio-Heidelbeeren im Kanton Waadt.",
+  ],
+  netz: {
+    uenb: ["Swissgrid"],
+    vnb: ["BKW", "CKW", "EKZ", "Groupe E", "Repower"],
+    hinweis:
+      "Seit 2025 werden Kosten für Netzverstärkungen, die der Anschluss erneuerbarer Anlagen auf Mittelspannung auslöst, mit Bewilligung der ElCom über Swissgrid auf alle Netznutzer verteilt. Im Gebirge treiben lange Anschlussleitungen die Kosten dennoch stark.",
+    quelle: { titel: "BFE – Faktenblatt Neuerungen im Energierecht ab 2025", url: "https://pubdb.bfe.admin.ch/de/publication/download/11913" },
+  },
+  besonderheiten: [
+    {
+      titel: "Winterstrom statt Jahresertrag",
+      text: "Die Schweizer Energiepolitik misst grosse Solaranlagen am Winterstrom. Das nationale Interesse hängt an 5 GWh von Oktober bis März, der Solarexpress verlangte 500 kWh/kW im Winterhalbjahr. Diese Winterschwelle erreichen vor allem hoch gelegene Anlagen, weshalb sich die Solarexpress-Projekte auf die Alpen konzentrierten.",
+    },
+    {
+      titel: "Solarexpress: Ziel deutlich verfehlt",
+      text: "Nach einer Auswertung vom Oktober 2025 wurden von 53 angekündigten alpinen Projekten 23 aufgegeben; vier waren im Bau oder teilweise in Betrieb (Madrisa Solar, NalpSolar, Sedrun Solar in Graubünden, Sidenplangg in Uri). Die übrigen Projekte kämen zusammen auf rund 0,74 TWh pro Jahr, weit unter dem Ziel von 2 TWh. Genannt werden Baukosten von rund CHF 4.000 je kW, Netzanschlüsse und Einsprachen.",
+    },
+    {
+      titel: "Landschaftsschutz und Mitsprache",
+      text: "Umweltverbände wie Pro Natura, WWF oder Mountain Wilderness können Einsprache erheben, und Gemeinden stimmen über Projekte ab. Im Wallis lehnten die Stimmberechtigten am 10. September 2023 mit 53,94 % ein Dekret zur Beschleunigung der Verfahren für alpine Anlagen ab.",
+    },
+    {
+      titel: "Lokale Vermarktung über LEG und vZEV",
+      text: "Seit 1. Januar 2026 können Produzenten und Verbraucher in derselben Gemeinde und Netzebene eine lokale Elektrizitätsgemeinschaft (LEG) bilden; das Netznutzungsentgelt für intern geteilten Strom sinkt um 40 %, bei Nutzung der Transformationsebene um 20 %. Der virtuelle ZEV erlaubt seit 2025 die Nutzung der Anschlussleitungen. Für Anlagen am Siedlungsrand kann das die Wirtschaftlichkeit verbessern.",
+    },
+  ],
+  pacht: {
+    tendenz: "mitte",
+    begruendung:
+      "Für Solarpacht in der Schweiz gibt es mangels Freiflächenanlagen keine belastbaren Vergleichswerte, und die in Euro gerechnete DACH-Spanne lässt sich wegen Franken, Bodenrecht (BGBB, Pachtrecht) und Einzelfallbewilligung nicht direkt übertragen. Hohe Bodenwerte und die HEIV von bis zu 60 % sprechen eher für höhere, kleine Flächen, lange Anschlüsse und bei Agri-PV die Doppelnutzung eher für tiefere Entgelte – daher neutral eingeordnet; massgeblich bleibt das konkrete Projekt.",
+  },
+  faq: [
+    {
+      q: "Darf man in der Schweiz einen Solarpark auf einer Wiese bauen?",
+      a: "Nur ausnahmsweise. Ausserhalb der Bauzone muss die Anlage standortgebunden sein. Nach Art. 24ter RPG gilt das für freistehende Anlagen ausserhalb der landwirtschaftlichen Nutzfläche in wenig empfindlichen oder vorbelasteten Gebieten mit angemessenem Erschliessungsaufwand. Auf landwirtschaftlicher Nutzfläche braucht es zusätzlich einen Vorteil für die Produktion oder einen Forschungszweck.",
+    },
+    {
+      q: "Wie viel Pacht zahlt ein Solarpark in der Schweiz?",
+      a: "Veröffentlichte Vergleichswerte gibt es kaum, weil nur wenige Freiflächenanlagen bestehen. Das Entgelt hängt von Standort, Anlagentyp, Förderung (HEIV oder Marktprämie) und davon ab, ob die Fläche weiter landwirtschaftlich genutzt wird. Landwirtschaftliche Grundstücke unterliegen dem bäuerlichen Bodenrecht und dem Pachtrecht; lassen Sie den Vertrag rechtlich prüfen.",
+    },
+    {
+      q: "Verliere ich mit Agri-PV die Direktzahlungen?",
+      a: "Nicht zwingend. Flächen mit Solaranlagen zählen grundsätzlich nicht zur landwirtschaftlichen Nutzfläche. Nach dem Positionspapier des Schweizer Bauernverbands bleiben sie aber beitragsberechtigt, wenn die Anlage als Agri-PV mit Vorteil für die Produktion oder zu Forschungszwecken rechtskräftig bewilligt ist und Sie die Fläche als Eigentümer oder mit schriftlichem Pachtvertrag bewirtschaften. Klären Sie das vorab mit dem kantonalen Landwirtschaftsamt.",
+    },
+    {
+      q: "Ab wann ist eine Solaranlage von nationalem Interesse?",
+      a: "Wenn ihre mittlere erwartete Produktion von Oktober bis März mindestens 5 GWh beträgt. Das entspricht je nach Standort grob 10 bis 20 Hektaren. In den Eignungsgebieten des kantonalen Richtplans hat eine solche Anlage einen grundsätzlichen Vorrang in der Interessenabwägung.",
+    },
+    {
+      q: "Kann ein neues Projekt den Solarexpress noch nutzen?",
+      a: "Nein. Begünstigt sind nur alpine Projekte, deren Baugesuch bis 31. Dezember 2025 öffentlich aufgelegt wurde. Neue Grossanlagen laufen über die Regeln für Anlagen von nationalem Interesse oder Art. 24ter RPG und werden über HEIV oder Marktprämie gefördert.",
+    },
+    {
+      q: "Welcher Kanton ist für Freiflächen-PV am offensten?",
+      a: "Pauschal lässt sich das nicht sagen. Das BFE stellt fest, dass einige Kantone Agri-PV eher offen, andere sehr restriktiv beurteilen. Bei alpinen Grossanlagen waren Graubünden und Uri bisher am weitesten; im Mittelland stehen Agri-PV über Sonderkulturen und vorbelastete Standorte im Vordergrund.",
+    },
+  ],
+  kantone: [
+    {
+      name: "Bern",
+      text: "Auch im Kanton Bern gibt es alpine Solarexpress-Projekte; Morgeten Solar ist nach der Auswertung vom Oktober 2025 erstinstanzlich bewilligt. Der Kanton hat ein eigenes Merkblatt zu alpinen Photovoltaik-Grossanlagen veröffentlicht. Im Mittelland gelten die Bundesregeln für vorbelastete Flächen und Agri-PV.",
+    },
+    {
+      name: "Luzern",
+      text: "Luzern hat ein Merkblatt Solaranlagen (gültig ab 1. Januar 2026) mit Ablaufschema: Freiflächenanlagen sollen vor allem auf Nebenflächen, auf Infrastruktur und als Witterungsschutz oder zur Ertragssteigerung in der Landwirtschaft entstehen, Dächer und Fassaden haben Vorrang. In Gelfingen testet ein Betrieb auf über 7.000 m² Himbeeren drei Agri-PV-Systeme über drei Jahre.",
+    },
+    {
+      name: "Graubünden",
+      text: "Graubünden ist beim Solarexpress am weitesten: Madrisa Solar (Klosters) liefert seit September 2025 teilweise Strom, NalpSolar und Sedrun Solar (Tujetsch) sind im Bau, Solar Magriel ist rechtskräftig bewilligt. Zuständig ist die Regierung; der Kanton hat dazu einen eigenen Leitfaden zum Bewilligungsverfahren herausgegeben (Ergänzung April 2025).",
+    },
+    {
+      name: "Wallis",
+      text: "Im Wallis, dem Ausgangspunkt des Solarexpress, lagen im Oktober 2025 noch keine rechtskräftigen Bewilligungen vor; Gondo Solar und Hohsaas waren erstinstanzlich bewilligt. 2023 scheiterte ein kantonales Beschleunigungsdekret an der Urne. Im Rhonetal forscht Agroscope in Conthey zu Agri-PV über Beeren und Obst.",
+    },
+    {
+      name: "Uri und Zentralschweiz",
+      text: "Mit Sidenplangg ist in Uri eine der vier alpinen Solarexpress-Anlagen im Bau oder teilweise in Betrieb, die einzige ausserhalb Graubündens. Ansonsten gelten auch hier die Bundesregeln nach Art. 24ter RPG und die Vorgaben des kantonalen Richtplans.",
+    },
+    {
+      name: "Waadt und Westschweiz",
+      text: "Im Kanton Waadt steht laut BFE eine 2-MWp-Agri-PV-Anlage über Bio-Heidelbeeren mit semitransparenten Modulen, die die Kultur nach schweren Verlusten vor Hagel schützt. Im Jura (Saint-Brais) gibt es laut Bauernverband Pläne für eine Grossanlage von nationalem Interesse auf landwirtschaftlicher Nutzfläche.",
+    },
+    {
+      name: "Appenzell Ausserrhoden und Ostschweiz",
+      text: "Appenzell Ausserrhoden sieht wegen kleinräumiger Topografie und Viehwirtschaft kein grosses Potenzial für Anlagen von nationalem Interesse und legt dafür vorerst keine Eignungsgebiete fest. Der Richtplanentwurf (Stand Oktober 2025) setzt Dächer und Infrastruktur an erste Stelle und verlangt für freistehende Anlagen über 1 MW eine kantonale Energiezone mit Sondernutzungsplan, über 5 MW zusätzlich eine Grundlage im Richtplan.",
+    },
+  ],
+  quellen: [
+    { titel: "Raumplanungsgesetz RPG, Stand 01.01.2026 (Art. 8b, 24ter)", url: "https://www.lexfind.ch/tolv/257906/de", stand: "09/2026" },
+    { titel: "Kanton Luzern – Merkblatt Solaranlagen, gültig ab 01.01.2026", url: "https://rawi.lu.ch/-/media/RAWI/Dokumente/Downloads/baubewilligungen/Merkblatt_Solaranlagen.pdf", stand: "09/2026" },
+    { titel: "BFE – Faktenblatt Neuerungen im Energierecht ab 2025", url: "https://pubdb.bfe.admin.ch/de/publication/download/11913", stand: "09/2026" },
+    { titel: "Schweizer Bauernverband – Solaranlagen auf Kulturland, rechtlicher Rahmen und Position (09.01.2025)", url: "https://www.sbv-usp.ch/fileadmin/sbvuspch/05_Themen/Solaranlagen/250423_Positionspapier_de.pdf", stand: "09/2026" },
+    { titel: "Pronovo – PV-Auktionen Photovoltaik 2026", url: "https://pronovo.ch/de/foerderung/photovoltaik/auktionen/", stand: "09/2026" },
+    { titel: "Swissolar – 2026: Was gilt neu für Photovoltaikanlagen?", url: "https://www.swissolar.ch/de/news/detail/2026-was-gilt-neu-fuer-photovoltaikanlagen-80786", stand: "09/2026" },
+    { titel: "Kanton Graubünden – Leitfaden Bewilligungsverfahren PV-Grossanlagen nach Art. 71a EnG (Ergänzung 01.04.2025)", url: "https://www.gr.ch/DE/institutionen/verwaltung/dvs/are/BAB/Leitfaden%20Solarexpress_de.pdf", stand: "09/2026" },
+    { titel: "Stromzeit – Aktueller Stand Solarexpress alpine Solaranlagen (10/2025)", url: "https://www.stromzeit.ch/blog/strom-7/solarexpress-aktueller-stand-beim-ausbau-der-alpinen-solaranlagen-schweiz-forderziele-deutlich-verfehlt-679", stand: "09/2026" },
+    { titel: "energeiaplus (BFE) – Landwirtschaft trifft Solarstrom: Chancen und Grenzen von Agri-PV (28.05.2026)", url: "https://energeiaplus.com/2026/05/28/landwirtschaft-trifft-solarstrom-chancen-und-grenzen-von-agri-pv/", stand: "09/2026" },
+    { titel: "Appenzell Ausserrhoden – Erläuterungsbericht Richtplananpassung Teil Energie (17.10.2025)", url: "https://ar.ch/fileadmin/user_upload/Departement_Bau_Volkswirtschaft/Amt_fuer_Raum_Wald/Raumentwicklung/Planen/Dokumentation_Richtplananpasung_1.3.2026/Erlaeuterungsbericht_Richtplananpassung.pdf", stand: "09/2026" },
+    { titel: "Schweizer Bauer – Landwirtschaftliche Strukturerhebung 2025 (BFS)", url: "https://www.schweizerbauer.ch/artikel/politik-wirtschaft/agrarpolitik/805-betriebe-weniger-schweizer-landwirtschaft-weiter-im-umbruch", stand: "09/2026" },
+    { titel: "Schweizer Bauer – Wallis: 53,94 % wollen keinen Solarexpress (10.09.2023)", url: "https://www.schweizerbauer.ch/artikel/regionen/westschweiz/wallis-hat-abgestimmt-5394--wollen-keinen-solarexpress", stand: "09/2026" },
+  ],
+  unsicher: [
+    "Inkrafttreten Art. 24ter RPG: Das BFE-Faktenblatt (11/2024) nannte den 1. Juli 2025; der konsolidierte RPG-Text (Stand 01.01.2026) und das Luzerner Merkblatt nennen den 1. Januar 2026. Die Datei folgt dem Gesetzestext.",
+    "Direktzahlungen bei Agri-PV: Belegt ist nur die Darstellung im SBV-Positionspapier (Art. 16 Abs. 1 Bst. f und Abs. 5 LBV, Verweis auf Art. 32c RPV). Ob der Verweis nach der RPV-Revision 2026 angepasst wurde, ist nicht geprüft. Der Ratgeber freiflaechen-pv-schweiz.js sagt, Direktzahlungen seien „nicht vorgesehen“ – das widerspricht dem SBV-Papier und sollte dort geprüft werden.",
+    "Die Anforderungen an Agri-PV auf Fruchtfolgeflächen (voller Erhalt von Ertragspotenzial und Bewirtschaftbarkeit, rein finanzieller Vorteil genügt nicht) stammen aus Suchergebnissen zu den RPV-Erläuterungen; der erläuternde Bericht selbst wurde nicht vollständig gelesen.",
+    "Zürich und Aargau: keine kantonsspezifischen Belege zu Eignungsgebieten für Solaranlagen oder Agri-PV-Praxis gefunden (Zürcher Richtplan-Teilrevision 2026 in Auflage 14.09.–14.12.2026 betrifft nach Seiteninhalt Mobilität, Ver- und Entsorgung, öffentliche Bauten). Daher nicht als eigener Kanton aufgeführt.",
+    "Kanton Bern: Richtplan-Aussagen zu Eignungsgebieten Solar nicht verifiziert (Richtplan-PDF zu gross); nur Solarexpress-Stand (Morgeten Solar) und die Existenz eines Merkblatts zu alpinen PV-Grossanlagen (Link-Liste SBV) belegt.",
+    "Stand Solarexpress: Stromzeit (10/2025) und eine Projektübersicht von obeng.ch (Stand 09.04.2026: 54 Projekte, 27 aufgegeben) weichen voneinander ab. Verwendet wurden die Zahlen von 10/2025 mit Datum. Magriel rechtskräftig und Gondo/Hohsaas erstinstanzlich nach Stromzeit; aktueller Stand 09/2026 nicht geprüft.",
+    "Saint-Brais (JU) und Samedan (GR): nur als Initiativen für Grossanlagen auf landwirtschaftlicher Nutzfläche im SBV-Papier (01/2025) erwähnt; aktueller Projektstand unbekannt. Samedan ist in obeng.ch als rechtskräftig bewilligt geführt – nicht verwendet.",
+    "Liste der Verteilnetzbetreiber (BKW, CKW, EKZ, Groupe E, Repower) ist eine Auswahl grosser regionaler Netzbetreiber, keine belegte Rangfolge nach Grösse.",
+    "LEG-Abschläge (40 %/20 %), vZEV und Auktionsdetails aus dem Ratgeber bzw. Swissolar/Pronovo übernommen; Pronovo-Runde Q4/2026 direkt geprüft, Swissolar-Seite in dieser Recherche nicht erneut abgerufen.",
+    "Landesfläche 41.285 km² nach BFS-Arealstatistik (aus Suchergebnissen zu BFS-Publikationen); die in eckdaten.quelle verlinkte Quelle belegt nur die Nutzfläche. Ackeranteil (38–39 %) nur als „knapp 40 %“ verwendet.",
+    "Pachttendenz 'mitte' ist eine neutrale Einordnung ohne Schweizer Marktdaten; keine Aussage über tatsächliche Pachthöhen in CHF möglich.",
+    "PVGIS-Punkte: 47.05/7.45 (nördlich Bern) 1.227,7 kWh/kWp; 47.55/9.05 (Thurgau) 1.148,0; 46.23/7.36 (Sion) 1.419,0. Alpine Hochlagen nicht abgefragt.",
+  ],
+};
+
+export default region;
+// src/data/regionen/meta.js
+//
+// Stammdaten der Regionalseiten /regionen/[slug]: Name, Land, Kürzel, Lage in der
+// stilisierten Kachelkarte (Spalte/Zeile), Nachbarregionen, Hero-Bild und die
+// Ertragsregion aus src/lib/invest/markt.js (REGIONEN), über die Pacht- und
+// Leistungsrechnungen laufen. Die recherchierten Inhalte stehen je Region in
+// einer eigenen Datei (siehe index.js).
+
+export const LAENDER = [
+  { id: "DE", label: "Deutschland", kurz: "16 Bundesländer" },
+  { id: "AT", label: "Österreich", kurz: "9 Bundesländer" },
+  { id: "CH", label: "Schweiz", kurz: "Bund und Kantone" },
+];
+
+/**
+ * karte: { x, y, w? } – Kachel in einem 8 × 7-Raster (w = Breite in Kacheln).
+ * Die Anordnung ist bewusst schematisch (Nachbarschaften stimmen grob).
+ */
+export const META = [
+  // Deutschland
+  { slug: "schleswig-holstein", name: "Schleswig-Holstein", kurz: "SH", land: "DE", markt: "de-nord", bild: "/img/pv-wind-abend.jpg", karte: { x: 3, y: 0 }, nachbarn: ["hamburg", "mecklenburg-vorpommern", "niedersachsen"] },
+  { slug: "bremen", name: "Bremen", kurz: "HB", land: "DE", markt: "de-nord", bild: "/img/module-raster.jpg", karte: { x: 2, y: 1 }, nachbarn: ["niedersachsen", "hamburg"] },
+  { slug: "hamburg", name: "Hamburg", kurz: "HH", land: "DE", markt: "de-nord", bild: "/img/module-sonne.jpg", karte: { x: 3, y: 1 }, nachbarn: ["schleswig-holstein", "niedersachsen"] },
+  { slug: "mecklenburg-vorpommern", name: "Mecklenburg-Vorpommern", kurz: "MV", land: "DE", markt: "de-nord", bild: "/img/solarpark-himmel.jpg", karte: { x: 4, y: 1 }, nachbarn: ["schleswig-holstein", "brandenburg", "niedersachsen"] },
+  { slug: "nordrhein-westfalen", name: "Nordrhein-Westfalen", kurz: "NW", land: "DE", markt: "de-west", bild: "/img/solarpark-baeume.jpg", karte: { x: 1, y: 2 }, nachbarn: ["niedersachsen", "hessen", "rheinland-pfalz"] },
+  { slug: "niedersachsen", name: "Niedersachsen", kurz: "NI", land: "DE", markt: "de-nord", bild: "/img/freiflaeche-begehung.jpg", karte: { x: 2, y: 2 }, nachbarn: ["bremen", "hamburg", "schleswig-holstein", "mecklenburg-vorpommern", "sachsen-anhalt", "nordrhein-westfalen", "hessen", "thueringen", "brandenburg"] },
+  { slug: "sachsen-anhalt", name: "Sachsen-Anhalt", kurz: "ST", land: "DE", markt: "de-ost", bild: "/img/solarpark-reihen.jpg", karte: { x: 3, y: 2 }, nachbarn: ["niedersachsen", "brandenburg", "sachsen", "thueringen"] },
+  { slug: "brandenburg", name: "Brandenburg", kurz: "BB", land: "DE", markt: "de-ost", bild: "/img/montage-freiflaeche.jpg", karte: { x: 4, y: 2 }, nachbarn: ["berlin", "mecklenburg-vorpommern", "sachsen-anhalt", "sachsen", "niedersachsen"] },
+  { slug: "berlin", name: "Berlin", kurz: "BE", land: "DE", markt: "de-ost", bild: "/img/gewerbedach.jpg", karte: { x: 5, y: 2 }, nachbarn: ["brandenburg"] },
+  { slug: "rheinland-pfalz", name: "Rheinland-Pfalz", kurz: "RP", land: "DE", markt: "de-west", bild: "/img/solarpark-baeume.jpg", karte: { x: 1, y: 3 }, nachbarn: ["nordrhein-westfalen", "hessen", "baden-wuerttemberg", "saarland"] },
+  { slug: "hessen", name: "Hessen", kurz: "HE", land: "DE", markt: "de-west", bild: "/img/planer-tablet.jpg", karte: { x: 2, y: 3 }, nachbarn: ["nordrhein-westfalen", "niedersachsen", "thueringen", "bayern", "baden-wuerttemberg", "rheinland-pfalz"] },
+  { slug: "thueringen", name: "Thüringen", kurz: "TH", land: "DE", markt: "de-ost", bild: "/img/solarpark-reihen.jpg", karte: { x: 3, y: 3 }, nachbarn: ["sachsen-anhalt", "sachsen", "bayern", "hessen", "niedersachsen"] },
+  { slug: "sachsen", name: "Sachsen", kurz: "SN", land: "DE", markt: "de-ost", bild: "/img/floating-pv.jpg", karte: { x: 4, y: 3 }, nachbarn: ["brandenburg", "sachsen-anhalt", "thueringen", "bayern"] },
+  { slug: "saarland", name: "Saarland", kurz: "SL", land: "DE", markt: "de-west", bild: "/img/module-sonne.jpg", karte: { x: 1, y: 4 }, nachbarn: ["rheinland-pfalz"] },
+  { slug: "baden-wuerttemberg", name: "Baden-Württemberg", kurz: "BW", land: "DE", markt: "de-sued", bild: "/img/solarpark-himmel.jpg", karte: { x: 2, y: 4 }, nachbarn: ["bayern", "hessen", "rheinland-pfalz", "schweiz", "vorarlberg"] },
+  { slug: "bayern", name: "Bayern", kurz: "BY", land: "DE", markt: "de-sued", bild: "/img/freiflaeche-begehung.jpg", karte: { x: 3, y: 4, w: 2 }, nachbarn: ["baden-wuerttemberg", "hessen", "thueringen", "sachsen", "oberoesterreich", "salzburg", "tirol", "vorarlberg"] },
+  // Österreich
+  { slug: "vorarlberg", name: "Vorarlberg", kurz: "V", land: "AT", markt: "at", bild: "/img/module-raster.jpg", karte: { x: 2, y: 5 }, nachbarn: ["tirol", "schweiz", "bayern", "baden-wuerttemberg"] },
+  { slug: "tirol", name: "Tirol", kurz: "T", land: "AT", markt: "at", bild: "/img/techniker.jpg", karte: { x: 3, y: 5 }, nachbarn: ["vorarlberg", "salzburg", "kaernten", "bayern", "schweiz"] },
+  { slug: "salzburg", name: "Salzburg", kurz: "S", land: "AT", markt: "at", bild: "/img/montage-freiflaeche.jpg", karte: { x: 4, y: 5 }, nachbarn: ["oberoesterreich", "steiermark", "kaernten", "tirol", "bayern"] },
+  { slug: "oberoesterreich", name: "Oberösterreich", kurz: "OÖ", land: "AT", markt: "at", bild: "/img/investoren-vor-ort.jpg", karte: { x: 5, y: 5 }, nachbarn: ["niederoesterreich", "steiermark", "salzburg", "bayern"] },
+  { slug: "niederoesterreich", name: "Niederösterreich", kurz: "NÖ", land: "AT", markt: "at", bild: "/img/solarpark-reihen.jpg", karte: { x: 6, y: 5 }, nachbarn: ["wien", "burgenland", "steiermark", "oberoesterreich"] },
+  { slug: "wien", name: "Wien", kurz: "W", land: "AT", markt: "at", bild: "/img/gewerbedach.jpg", karte: { x: 7, y: 5 }, nachbarn: ["niederoesterreich", "burgenland"] },
+  { slug: "kaernten", name: "Kärnten", kurz: "K", land: "AT", markt: "at", bild: "/img/solarpark-baeume.jpg", karte: { x: 4, y: 6 }, nachbarn: ["steiermark", "salzburg", "tirol"] },
+  { slug: "steiermark", name: "Steiermark", kurz: "St", land: "AT", markt: "at", bild: "/img/freiflaeche-begehung.jpg", karte: { x: 5, y: 6 }, nachbarn: ["kaernten", "burgenland", "niederoesterreich", "oberoesterreich", "salzburg"] },
+  { slug: "burgenland", name: "Burgenland", kurz: "B", land: "AT", markt: "at", bild: "/img/pv-wind-abend.jpg", karte: { x: 6, y: 6 }, nachbarn: ["niederoesterreich", "steiermark", "wien"] },
+  // Schweiz
+  { slug: "schweiz", name: "Schweiz", kurz: "CH", land: "CH", markt: "ch", bild: "/img/solarpark-himmel.jpg", karte: { x: 0, y: 5, w: 2 }, nachbarn: ["baden-wuerttemberg", "vorarlberg", "tirol"] },
+];
+
+export const metaFuer = (slug) => META.find((m) => m.slug === slug);
+3:// Länderrahmen der Regionalseiten: was bundesweit (DE), österreichweit (AT) bzw.
+4:// schweizweit (CH) gleich ist. Bewusst kurz – die Regionalseiten tragen den
+5:// regionsspezifischen Inhalt aus src/data/regionen/<slug>.js.
+7:import { ClipboardCheck, FileSignature, Gavel, Hammer, Landmark, PlugZap, Scale, Sprout, Vote } from "lucide-react";
+9:import { fmt } from "@/lib/rechner/annahmen";
+13:    name: "Deutschland",
+16:      { href: "/ratgeber/solarpark-genehmigung-bebauungsplan", titel: "Ratgeber Genehmigung", text: "Bebauungsplan, Privilegierung und Verfahrensschritte in Deutschland." },
+17:      { href: "/ratgeber/eeg-ausschreibung-freiflaeche", titel: "Ratgeber EEG-Ausschreibung", text: "Flächenkulisse, benachteiligte Gebiete und Zuschlagswerte." },
+19:    schritte: [
+20:      { icon: ClipboardCheck, title: "Fläche & Netz prüfen", text: "Flächenkulisse, Schutzgebiete, Regionalplan und Netzverknüpfungspunkt klären; Netzanschlussanfrage beim Verteilnetzbetreiber." },
+21:      { icon: Vote, title: "Aufstellungsbeschluss", text: "Der Gemeinderat beschließt, einen Bebauungsplan aufzustellen – meist mit Änderung des Flächennutzungsplans im Parallelverfahren." },
+22:      { icon: Scale, title: "Beteiligung & Gutachten", text: "Frühzeitige und förmliche Beteiligung von Öffentlichkeit und Behörden, Umweltbericht, Artenschutz, Blendgutachten." },
+23:      { icon: Gavel, title: "Satzungsbeschluss", text: "Mit dem Satzungsbeschluss entsteht Baurecht; danach Bauantrag bzw. Genehmigungsfreistellung nach Landesbauordnung." },
+24:      { icon: PlugZap, title: "Zuschlag oder PPA, Bau", text: "Gebot in der EEG-Ausschreibung oder Stromliefervertrag, Rückbaubürgschaft, Bau und Netzanschluss." },
+26:    schritteHinweis: "Ausnahme: Anlagen im 200-m-Streifen an Autobahnen und zweigleisigen Schienenwegen sowie kleine Agri-PV-Anlagen mit Hofbezug sind im Außenbereich privilegiert (§ 35 Abs. 1 Nr. 8 und 9 BauGB) und brauchen keinen Bebauungsplan.",
+28:      { t: "GAP-Direktzahlungen", k: `${fmt(AGRI.gapFoerderfaehig * 100)} %`, x: "der Fläche bleiben bei Agri-PV nach DIN SPEC 91434 förderfähig." },
+29:      { t: "Privilegierung", k: `bis ${fmt(AGRI.privilegierungHa, 1)} ha`, x: "Grundfläche mit Hofbezug ohne Bebauungsplan (§ 35 Abs. 1 Nr. 9 BauGB)." },
+30:      { t: "EEG", k: "besondere Solaranlage", x: "Agri-PV darf auch außerhalb der Flächenkulisse an der Ausschreibung teilnehmen." },
+34:    name: "Österreich",
+37:      { href: "/ratgeber/freiflaechen-pv-oesterreich", titel: "Ratgeber Österreich", text: "Widmung je Bundesland, Bewilligungen, EAG-Marktprämie und Abschlag." },
+39:    schritte: [
+40:      { icon: ClipboardCheck, title: "Zonen & Netz prüfen", text: "Überörtliche PV-Zonen oder Kriterienkatalog des Landes, Bodengüte, Schutzgebiete; Netzzugangsanfrage beim Verteilernetzbetreiber." },
+41:      { icon: Vote, title: "Widmung durch die Gemeinde", text: "Der Gemeinderat ändert den Flächenwidmungsplan (Grünland-Photovoltaik bzw. Sonderwidmung); das Land prüft als Aufsichtsbehörde." },
+42:      { icon: Landmark, title: "Bewilligungen", text: "Naturschutzrechtliche und – ab der Landesschwelle – elektrizitätsrechtliche Bewilligung, dazu je nach Fall Wasser-, Forst- und Straßenrecht." },
+43:      { icon: FileSignature, title: "Förderung & Vermarktung", text: "EAG-Marktprämie per Ausschreibung (mit oder ohne Abschlag), Investitionszuschuss für kleinere Anlagen oder Stromliefervertrag." },
+44:      { icon: Hammer, title: "Bau & Netzanschluss", text: "Rückbausicherheit, Bau und Inbetriebnahme innerhalb der Frist ab Zuschlag." },
+46:    schritteHinweis: "Raumordnung, Naturschutz und Elektrizitätsrecht für Erzeugungsanlagen sind in Österreich Landessache – Schwellen und Zonen unterscheiden sich je Bundesland.",
+48:      { t: "EAG-Abschlag", k: `−${fmt(AGRI.eagAbschlagAt * 100)} %`, x: "auf den Zuschlagswert bei PV auf Agrar- und Grünland – qualifizierte Agri-PV kann davon ausgenommen sein (§ 33 EAG)." },
+49:      { t: "Doppelnutzung", k: "Hauptnutzung bleibt", x: "Die landwirtschaftliche Nutzung muss tatsächlich weiterlaufen; Details regelt die Marktprämienverordnung." },
+50:      { t: "Widmung", k: "Landesrecht", x: "Mehrere Länder bevorzugen Agri-PV oder schreiben sie auf guten Böden vor." },

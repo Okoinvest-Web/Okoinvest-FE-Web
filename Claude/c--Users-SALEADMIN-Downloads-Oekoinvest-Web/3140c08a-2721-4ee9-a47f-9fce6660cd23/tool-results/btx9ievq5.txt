@@ -1,0 +1,989 @@
+src/app/(en)/en/contact/page.js
+src/app/(en)/en/investors/page.js
+src/app/(en)/en/layout.js
+src/app/(en)/en/page.js
+src/app/(en)/en/project-exchange/page.js
+src/app/(en)/en/sell-your-project/page.js
+src/app/(en)/layout.js
+src/app/(laender)/[land]/agri-pv/page.js
+src/app/(laender)/[land]/bestandsanlagen/page.js
+src/app/(laender)/[land]/dachflaeche-verpachten/page.js
+src/app/(laender)/[land]/energie-live/page.js
+src/app/(laender)/[land]/energiegemeinschaften/page.js
+src/app/(laender)/[land]/energiegemeinschaften/rechner/page.js
+src/app/(laender)/[land]/energiegemeinschaften/software/page.js
+src/app/(laender)/[land]/faq/page.js
+src/app/(laender)/[land]/flaeche-verpachten/page.js
+src/app/(laender)/[land]/flaechencheck/page.js
+src/app/(laender)/[land]/freiflaeche/page.js
+src/app/(laender)/[land]/genossenschaft/page.js
+src/app/(laender)/[land]/grossspeicher/page.js
+src/app/(laender)/[land]/kommunen/page.js
+src/app/(laender)/[land]/landwirte/page.js
+src/app/(laender)/[land]/layout.js
+src/app/(laender)/[land]/marktdaten/fristen/page.js
+src/app/(laender)/[land]/marktdaten/page.js
+src/app/(laender)/[land]/marktzugang-check/page.js
+src/app/(laender)/[land]/not-found.js
+src/app/(laender)/[land]/page.js
+src/app/(laender)/[land]/parzellen-vorpruefung/page.js
+src/app/(laender)/[land]/prozess/page.js
+src/app/(laender)/[land]/rechner/agri-pv/page.js
+src/app/(laender)/[land]/rechner/bestandsanlage/page.js
+src/app/(laender)/[land]/rechner/beteiligung/page.js
+src/app/(laender)/[land]/rechner/dachpacht/page.js
+src/app/(laender)/[land]/rechner/energy-sharing/page.js
+src/app/(laender)/[land]/rechner/grossspeicher/page.js
+src/app/(laender)/[land]/rechner/kommune/page.js
+src/app/(laender)/[land]/rechner/netzanschluss/page.js
+src/app/(laender)/[land]/rechner/pacht/page.js
+src/app/(laender)/[land]/rechner/pachtangebot-check/page.js
+src/app/(laender)/[land]/rechner/page.js
+src/app/(laender)/[land]/rechner/ppa/page.js
+src/app/(laender)/[land]/rechner/projektbewertung/page.js
+src/app/(laender)/[land]/rechner/reststrom/page.js
+src/app/(laender)/[land]/rechner/solarcarport/page.js
+src/app/(laender)/[land]/rechner/solarpark/page.js
+src/app/(laender)/[land]/regionen/[slug]/page.js
+src/app/(laender)/[land]/regionen/page.js
+src/app/(laender)/[land]/reststrom/page.js
+src/app/(laender)/[land]/solarcarport/page.js
+src/app/(laender)/[land]/virtuelles-kraftwerk/page.js
+src/app/(laender)/[land]/warum-oekoinvest/page.js
+src/app/(stamm)/angebot/[code]/page.js
+src/app/(stamm)/angebot/page.js
+src/app/(stamm)/barrierefreiheit/page.js
+src/app/(stamm)/bedingungen/_teile.js
+src/app/(stamm)/bedingungen/banken/page.js
+src/app/(stamm)/bedingungen/energiebeschaffung/page.js
+src/app/(stamm)/bedingungen/lieferanten/page.js
+src/app/(stamm)/bedingungen/projektboerse/page.js
+src/app/(stamm)/bericht/[token]/page.js
+src/app/(stamm)/datenschutz/page.js
+src/app/(stamm)/design/Demos.js
+src/app/(stamm)/design/illustrationen/page.js
+src/app/(stamm)/design/page.js
+src/app/(stamm)/einladung/[token]/page.js
+src/app/(stamm)/einladung/bank/[token]/page.js
+src/app/(stamm)/einladung/bankteam/[token]/page.js
+src/app/(stamm)/einladung/gutachter/[token]/page.js
+src/app/(stamm)/einladung/lieferant/[token]/page.js
+src/app/(stamm)/impressum/page.js
+src/app/(stamm)/investoren/page.js
+src/app/(stamm)/kontakt/page.js
+src/app/(stamm)/layout.js
+src/app/(stamm)/login/link/page.js
+src/app/(stamm)/login/page.js
+src/app/(stamm)/not-found.js
+src/app/(stamm)/nutzungsbedingungen/page.js
+src/app/(stamm)/page.js
+src/app/(stamm)/passwort-vergessen/page.js
+src/app/(stamm)/portal/abrechnungen/page.js
+src/app/(stamm)/portal/admin/akquise/gemeinden/page.js
+src/app/(stamm)/portal/admin/akquise/kampagnen/[id]/page.js
+src/app/(stamm)/portal/admin/akquise/kampagnen/page.js
+src/app/(stamm)/portal/admin/akquise/karte/page.js
+src/app/(stamm)/portal/admin/akquise/page.js
+src/app/(stamm)/portal/admin/akquise/sperrliste/page.js
+src/app/(stamm)/portal/admin/anlagen/[id]/page.js
+src/app/(stamm)/portal/admin/anlagen/betrieb/[anlageId]/page.js
+src/app/(stamm)/portal/admin/anlagen/betrieb/page.js
+src/app/(stamm)/portal/admin/anlagen/betrieb/stoerung/[id]/page.js
+src/app/(stamm)/portal/admin/anlagen/neu/page.js
+src/app/(stamm)/portal/admin/anlagen/page.js
+src/app/(stamm)/portal/admin/aufgaben/page.js
+src/app/(stamm)/portal/admin/automationen/page.js
+src/app/(stamm)/portal/admin/berichte/page.js
+src/app/(stamm)/portal/admin/bonitaet/page.js
+src/app/(stamm)/portal/admin/closing/[id]/page.js
+src/app/(stamm)/portal/admin/closing/page.js
+src/app/(stamm)/portal/admin/compliance/[id]/page.js
+src/app/(stamm)/portal/admin/compliance/datenschutz/page.js
+src/app/(stamm)/portal/admin/compliance/gwg/page.js
+src/app/(stamm)/portal/admin/compliance/page.js
+src/app/(stamm)/portal/admin/crm/[id]/page.js
+src/app/(stamm)/portal/admin/crm/dubletten/page.js
+src/app/(stamm)/portal/admin/crm/organisation/[id]/page.js
+src/app/(stamm)/portal/admin/crm/page.js
+src/app/(stamm)/portal/admin/dealroom/page.js
+src/app/(stamm)/portal/admin/deals/page.js
+src/app/(stamm)/portal/admin/deals/pipeline/page.js
+src/app/(stamm)/portal/admin/eg/[id]/abrechnung/page.js
+src/app/(stamm)/portal/admin/eg/[id]/buchhaltung/page.js
+src/app/(stamm)/portal/admin/eg/[id]/eda/[prozessId]/page.js
+src/app/(stamm)/portal/admin/eg/[id]/eda/journal/page.js
+src/app/(stamm)/portal/admin/eg/[id]/eda/page.js
+src/app/(stamm)/portal/admin/eg/[id]/eda/reklamation/page.js
+src/app/(stamm)/portal/admin/eg/[id]/energiedaten/page.js
+src/app/(stamm)/portal/admin/eg/[id]/organe/page.js
+src/app/(stamm)/portal/admin/eg/[id]/page.js
+src/app/(stamm)/portal/admin/eg/[id]/simulation/page.js
+src/app/(stamm)/portal/admin/eg/[id]/versammlungen/page.js
+src/app/(stamm)/portal/admin/eg/gruendung/[id]/page.js
+src/app/(stamm)/portal/admin/eg/gruendung/neu/page.js
+src/app/(stamm)/portal/admin/eg/gruendung/page.js
+src/app/(stamm)/portal/admin/eg/netzbetreiber/page.js
+src/app/(stamm)/portal/admin/eg/page.js
+src/app/(stamm)/portal/admin/eg/simulation/page.js
+src/app/(stamm)/portal/admin/einarbeitung/page.js
+src/app/(stamm)/portal/admin/energie/ausschreibungen/[id]/page.js
+src/app/(stamm)/portal/admin/energie/ausschreibungen/page.js
+src/app/(stamm)/portal/admin/energie/kunden/[id]/page.js
+src/app/(stamm)/portal/admin/energie/kunden/page.js
+src/app/(stamm)/portal/admin/energie/lieferanten/page.js
+src/app/(stamm)/portal/admin/energie/page.js
+src/app/(stamm)/portal/admin/energie/wechsel/page.js
+src/app/(stamm)/portal/admin/energiegemeinschaften/page.js
+src/app/(stamm)/portal/admin/entwicklung/[id]/page.js
+src/app/(stamm)/portal/admin/entwicklung/[id]/steckbrief/page.js
+src/app/(stamm)/portal/admin/entwicklung/neu/page.js
+src/app/(stamm)/portal/admin/entwicklung/page.js
+src/app/(stamm)/portal/admin/entwicklung/steuerung/page.js
+src/app/(stamm)/portal/admin/entwicklung/vorlagen/[vid]/page.js
+src/app/(stamm)/portal/admin/finanzen/anliegen/page.js
+src/app/(stamm)/portal/admin/finanzen/buchhaltung/page.js
+src/app/(stamm)/portal/admin/finanzen/page.js
+src/app/(stamm)/portal/admin/finanzierung/[id]/bank/[anfrageId]/page.js
+src/app/(stamm)/portal/admin/finanzierung/[id]/page.js
+src/app/(stamm)/portal/admin/finanzierung/page.js
+src/app/(stamm)/portal/admin/flaechen/page.js
+src/app/(stamm)/portal/admin/genossenschaft/page.js
+src/app/(stamm)/portal/admin/gesellschaften/[id]/page.js
+src/app/(stamm)/portal/admin/gesellschaften/neu/page.js
+src/app/(stamm)/portal/admin/gesellschaften/page.js
+src/app/(stamm)/portal/admin/grundbuch/[id]/page.js
+src/app/(stamm)/portal/admin/grundbuch/page.js
+src/app/(stamm)/portal/admin/gutachter/[id]/page.js
+src/app/(stamm)/portal/admin/gutachter/page.js
+src/app/(stamm)/portal/admin/hinweis/page.js
+src/app/(stamm)/portal/admin/interessen/page.js
+src/app/(stamm)/portal/admin/kalender/page.js
+src/app/(stamm)/portal/admin/kanaele/page.js
+src/app/(stamm)/portal/admin/leads/page.js
+src/app/(stamm)/portal/admin/leitung/page.js
+src/app/(stamm)/portal/admin/nutzer/page.js
+src/app/(stamm)/portal/admin/pachtakten/[id]/page.js
+src/app/(stamm)/portal/admin/pachtakten/page.js
+src/app/(stamm)/portal/admin/page.js
+src/app/(stamm)/portal/admin/portfolio/[id]/page.js
+src/app/(stamm)/portal/admin/portfolio/page.js
+src/app/(stamm)/portal/admin/postausgang/page.js
+src/app/(stamm)/portal/admin/projekte/page.js
+src/app/(stamm)/portal/admin/protokoll/page.js
+src/app/(stamm)/portal/admin/rechte/page.js
+src/app/(stamm)/portal/admin/support/page.js
+src/app/(stamm)/portal/admin/team/page.js
+src/app/(stamm)/portal/admin/vorgaenge/[id]/page.js
+src/app/(stamm)/portal/admin/vorgaenge/page.js
+src/app/(stamm)/portal/admin/vorlagen/page.js
+src/app/(stamm)/portal/admin/wissen/page.js
+src/app/(stamm)/portal/anfragen/[id]/page.js
+src/app/(stamm)/portal/anfragen/page.js
+src/app/(stamm)/portal/anlagen/[id]/page.js
+src/app/(stamm)/portal/anlagen/page.js
+src/app/(stamm)/portal/anliegen/page.js
+src/app/(stamm)/portal/ausschreibungen/[id]/page.js
+src/app/(stamm)/portal/ausschreibungen/page.js
+src/app/(stamm)/portal/bank/[id]/page.js
+src/app/(stamm)/portal/bank/page.js
+src/app/(stamm)/portal/bank/team/page.js
+src/app/(stamm)/portal/benachrichtigungen/page.js
+src/app/(stamm)/portal/beteiligung/energiegemeinschaft/page.js
+src/app/(stamm)/portal/beteiligung/genossenschaft/page.js
+src/app/(stamm)/portal/beteiligung/page.js
+src/app/(stamm)/portal/beteiligung/versammlung/[id]/page.js
+src/app/(stamm)/portal/boerse/[id]/bewertung/page.js
+src/app/(stamm)/portal/boerse/[id]/page.js
+src/app/(stamm)/portal/boerse/karte/page.js
+src/app/(stamm)/portal/boerse/page.js
+src/app/(stamm)/portal/boerse/vergleich/page.js
+src/app/(stamm)/portal/closing/[id]/page.js
+src/app/(stamm)/portal/closing/page.js
+src/app/(stamm)/portal/dealroom/[id]/page.js
+src/app/(stamm)/portal/dokumente/page.js
+src/app/(stamm)/portal/eg/[id]/abrechnung/page.js
+src/app/(stamm)/portal/eg/[id]/beitritt/page.js
+src/app/(stamm)/portal/eg/[id]/energie/page.js
+src/app/(stamm)/portal/eg/[id]/kasse/page.js
+src/app/(stamm)/portal/eg/[id]/page.js
+src/app/(stamm)/portal/eg/[id]/verein/page.js
+src/app/(stamm)/portal/eg/[id]/versammlungen/page.js
+src/app/(stamm)/portal/eg/[id]/verwaltung/page.js
+src/app/(stamm)/portal/eg/beitritt/page.js
+src/app/(stamm)/portal/eg/gemeinde/page.js
+src/app/(stamm)/portal/eg/gruendung/[id]/page.js
+src/app/(stamm)/portal/eg/gruendung/foerdercheck/page.js
+src/app/(stamm)/portal/eg/gruendung/neu/page.js
+src/app/(stamm)/portal/eg/gruendung/page.js
+src/app/(stamm)/portal/eg/mehrfach/page.js
+src/app/(stamm)/portal/eg/page.js
+src/app/(stamm)/portal/eid/demo/page.js
+src/app/(stamm)/portal/energie/beschaffung/page.js
+src/app/(stamm)/portal/energie/kosten/page.js
+src/app/(stamm)/portal/energie/page.js
+src/app/(stamm)/portal/entwicklung/[id]/page.js
+src/app/(stamm)/portal/entwicklung/page.js
+src/app/(stamm)/portal/error.js
+src/app/(stamm)/portal/finanzierung/page.js
+src/app/(stamm)/portal/flaechen/[id]/page.js
+src/app/(stamm)/portal/flaechen/neu/page.js
+src/app/(stamm)/portal/flaechen/page.js
+src/app/(stamm)/portal/grundbuch/[id]/page.js
+src/app/(stamm)/portal/grundbuch/page.js
+src/app/(stamm)/portal/gutachter/[id]/page.js
+src/app/(stamm)/portal/gutachter/page.js
+src/app/(stamm)/portal/hilfe/handbuch/[id]/page.js
+src/app/(stamm)/portal/hilfe/handbuch/page.js
+src/app/(stamm)/portal/hilfe/page.js
+src/app/(stamm)/portal/kommune/page.js
+src/app/(stamm)/portal/layout.js
+src/app/(stamm)/portal/loading.js
+src/app/(stamm)/portal/nachrichten/page.js
+src/app/(stamm)/portal/not-found.js
+src/app/(stamm)/portal/organisation/page.js
+src/app/(stamm)/portal/pachtvertraege/page.js
+src/app/(stamm)/portal/page.js
+src/app/(stamm)/portal/pipeline/page.js
+src/app/(stamm)/portal/planung/[vid]/page.js
+src/app/(stamm)/portal/planung/page.js
+src/app/(stamm)/portal/portfolio/[id]/page.js
+src/app/(stamm)/portal/portfolio/page.js
+src/app/(stamm)/portal/profil/page.js
+src/app/(stamm)/portal/projekte/[id]/page.js
+src/app/(stamm)/portal/projekte/neu/page.js
+src/app/(stamm)/portal/projekte/page.js
+src/app/(stamm)/portal/sicherheit/page.js
+src/app/(stamm)/portal/signatur/[id]/page.js
+src/app/(stamm)/portal/signatur/page.js
+src/app/(stamm)/portal/support/[id]/page.js
+src/app/(stamm)/portal/support/page.js
+src/app/(stamm)/portal/termine/page.js
+src/app/(stamm)/portal/verifizierung/identitaet/page.js
+src/app/(stamm)/portal/verifizierung/page.js
+src/app/(stamm)/portal/willkommen/page.js
+src/app/(stamm)/projektboerse/[slug]/page.js
+src/app/(stamm)/projektboerse/anbieten/page.js
+src/app/(stamm)/projektboerse/karte/page.js
+src/app/(stamm)/projektboerse/page.js
+src/app/(stamm)/referenzen/page.js
+src/app/(stamm)/registrieren/page.js
+src/app/(stamm)/termin/page.js
+src/app/(stamm)/termin/verwalten/page.js
+src/app/(stamm)/unternehmen/page.js
+src/app/(stamm)/wissen/lexikon/page.js
+src/app/(stamm)/wissen/ratgeber/[slug]/page.js
+src/app/(stamm)/wissen/ratgeber/page.js
+src/app/api/admin/akquise/[id]/route.js
+src/app/api/admin/akquise/gebiete/route.js
+src/app/api/admin/akquise/route.js
+src/app/api/admin/aktivitaeten/route.js
+src/app/api/admin/anbieter/[projektId]/route.js
+src/app/api/admin/anbieter/fristen/route.js
+src/app/api/admin/anlagen/[id]/eintraege/route.js
+src/app/api/admin/anlagen/[id]/geraete/route.js
+src/app/api/admin/anlagen/[id]/route.js
+src/app/api/admin/anlagen/betrieb/anlage/[id]/route.js
+src/app/api/admin/anlagen/betrieb/auftraege/[id]/route.js
+src/app/api/admin/anlagen/betrieb/auftraege/route.js
+src/app/api/admin/anlagen/betrieb/bericht/route.js
+src/app/api/admin/anlagen/betrieb/ersatzteile/[id]/route.js
+src/app/api/admin/anlagen/betrieb/ersatzteile/route.js
+src/app/api/admin/anlagen/betrieb/protokolle/[id]/route.js
+src/app/api/admin/anlagen/betrieb/route.js
+src/app/api/admin/anlagen/betrieb/stoerung/[id]/route.js
+src/app/api/admin/anlagen/betrieb/versicherungen/[id]/route.js
+src/app/api/admin/anlagen/betrieb/versicherungen/route.js
+src/app/api/admin/anlagen/geraete/[gid]/route.js
+src/app/api/admin/anlagen/kunden/route.js
+src/app/api/admin/anlagen/route.js
+src/app/api/admin/anlagen/stoerungen/route.js
+src/app/api/admin/aufgaben/[id]/route.js
+src/app/api/admin/aufgaben/route.js
+src/app/api/admin/automationen/[id]/route.js
+src/app/api/admin/automationen/fristen/route.js
+src/app/api/admin/automationen/route.js
+src/app/api/admin/automationen/tags/route.js
+src/app/api/admin/automationen/testlauf/route.js
+src/app/api/admin/berichte/csv/route.js
+src/app/api/admin/berichte/pdf/route.js
+src/app/api/admin/berichte/route.js
+src/app/api/admin/bieter/[id]/route.js
+src/app/api/admin/bieter/route.js
+src/app/api/admin/bonitaet/[id]/route.js
+src/app/api/admin/bonitaet/einstellungen/route.js
+src/app/api/admin/bonitaet/route.js
+src/app/api/admin/bonitaet/status/route.js
+src/app/api/admin/closing/[id]/aktion/route.js
+src/app/api/admin/closing/[id]/route.js
+src/app/api/admin/closing/route.js
+src/app/api/admin/compliance/[id]/route.js
+src/app/api/admin/compliance/[id]/video/route.js
+src/app/api/admin/compliance/datenschutz/[id]/export/route.js
+src/app/api/admin/compliance/datenschutz/[id]/route.js
+src/app/api/admin/compliance/datenschutz/route.js
+src/app/api/admin/compliance/dokumente/[id]/route.js
+src/app/api/admin/compliance/einstellungen/route.js
+src/app/api/admin/compliance/freigabe/route.js
+src/app/api/admin/compliance/fristen/route.js
+src/app/api/admin/compliance/route.js
+src/app/api/admin/compliance/sanktionen/route.js
+src/app/api/admin/compliance/sla/route.js
+src/app/api/admin/compliance/verdacht/[id]/route.js
+src/app/api/admin/compliance/verdacht/route.js
+src/app/api/admin/compliance/vvt/route.js
+src/app/api/admin/crm/aktivitaeten/route.js
+src/app/api/admin/crm/dubletten/route.js
+src/app/api/admin/crm/kontakte/[id]/beziehung/route.js
+src/app/api/admin/crm/kontakte/[id]/route.js
+src/app/api/admin/crm/kontakte/route.js
+src/app/api/admin/crm/massenaktion/route.js
+src/app/api/admin/crm/organisationen/[id]/route.js
+src/app/api/admin/crm/organisationen/route.js
+src/app/api/admin/dealroom/freigabe/route.js
+src/app/api/admin/dealroom/route.js
+src/app/api/admin/demo-links/route.js
+src/app/api/admin/eg/[id]/eda/route.js
+src/app/api/admin/eg/[id]/energiedaten/route.js
+src/app/api/admin/eg/[id]/route.js
+src/app/api/admin/eg/netzbetreiber/route.js
+src/app/api/admin/eg/route.js
+src/app/api/admin/eg/simulation/route.js
+src/app/api/admin/energie/ausschreibungen/[id]/route.js
+src/app/api/admin/energie/ausschreibungen/route.js
+src/app/api/admin/energie/einstellungen/route.js
+src/app/api/admin/energie/kunden/[id]/route.js
+src/app/api/admin/energie/kunden/[id]/vollmacht-signatur/route.js
+src/app/api/admin/energie/kunden/route.js
+src/app/api/admin/energie/lieferanten/[id]/route.js
+src/app/api/admin/energie/lieferanten/route.js
+src/app/api/admin/energie/portfolio/route.js
+src/app/api/admin/energie/route.js
+src/app/api/admin/energie/termin/route.js
+src/app/api/admin/energie/wechsel/[id]/route.js
+src/app/api/admin/energie/wechsel/route.js
+src/app/api/admin/energiegemeinschaften/route.js
+src/app/api/admin/entwicklung/[id]/aktion/route.js
+src/app/api/admin/entwicklung/[id]/eintraege/route.js
+src/app/api/admin/entwicklung/[id]/gutachter/route.js
+src/app/api/admin/entwicklung/[id]/kalkulation/aktion/route.js
+src/app/api/admin/entwicklung/[id]/kalkulation/export/route.js
+src/app/api/admin/entwicklung/[id]/kalkulation/route.js
+src/app/api/admin/entwicklung/[id]/planung/route.js
+src/app/api/admin/entwicklung/[id]/route.js
+src/app/api/admin/entwicklung/[id]/rueckfrage/route.js
+src/app/api/admin/entwicklung/[id]/steuerung/route.js
+src/app/api/admin/entwicklung/assistent/route.js
+src/app/api/admin/entwicklung/auswahl/route.js
+src/app/api/admin/entwicklung/fristen/route.js
+src/app/api/admin/entwicklung/route.js
+src/app/api/admin/entwicklung/steuerung/export/route.js
+src/app/api/admin/entwicklung/steuerung/route.js
+src/app/api/admin/entwicklung/vorlagen/[vid]/pdf/route.js
+src/app/api/admin/entwicklung/vorlagen/[vid]/route.js
+src/app/api/admin/export/[art]/route.js
+src/app/api/admin/finanzen/abrechnungen/[id]/route.js
+src/app/api/admin/finanzen/abrechnungen/route.js
+src/app/api/admin/finanzen/anlagen/[id]/route.js
+src/app/api/admin/finanzen/anlagen/route.js
+src/app/api/admin/finanzen/anliegen/[id]/route.js
+src/app/api/admin/finanzen/anliegen/route.js
+src/app/api/admin/finanzen/buchhaltung/abschluss/[monat]/route.js
+src/app/api/admin/finanzen/buchhaltung/belege/[id]/dokument/route.js
+src/app/api/admin/finanzen/buchhaltung/belege/[id]/route.js
+src/app/api/admin/finanzen/buchhaltung/einstellungen/route.js
+src/app/api/admin/finanzen/buchhaltung/export/route.js
+src/app/api/admin/finanzen/buchhaltung/mahnlauf/route.js
+src/app/api/admin/finanzen/buchhaltung/route.js
+src/app/api/admin/finanzen/buchhaltung/zahlungen/[id]/route.js
+src/app/api/admin/finanzen/buchhaltung/zahlungen/route.js
+src/app/api/admin/finanzen/entwicklung/[id]/route.js
+src/app/api/admin/finanzen/entwicklung/route.js
+src/app/api/admin/finanzen/klaerfaelle/[id]/route.js
+src/app/api/admin/finanzen/klaerfaelle/route.js
+src/app/api/admin/finanzen/lauf/route.js
+src/app/api/admin/finanzen/pachtvertraege/[id]/route.js
+src/app/api/admin/finanzen/pachtvertraege/auswahl/route.js
+src/app/api/admin/finanzen/pachtvertraege/route.js
+src/app/api/admin/finanzen/route.js
+src/app/api/admin/finanzen/vpi/route.js
+src/app/api/admin/finanzen/zahlungen/[id]/route.js
+src/app/api/admin/finanzen/zahlungen/route.js
+src/app/api/admin/finanzen/zahlungen/sepa/route.js
+src/app/api/admin/finanzierung/[id]/aktion/route.js
+src/app/api/admin/finanzierung/[id]/dokumente/[dok]/route.js
+src/app/api/admin/finanzierung/[id]/dokumente/route.js
+src/app/api/admin/finanzierung/[id]/modell/route.js
+src/app/api/admin/finanzierung/[id]/reporting/route.js
+src/app/api/admin/finanzierung/[id]/route.js
+src/app/api/admin/finanzierung/auswahl/route.js
+src/app/api/admin/finanzierung/bankakte/[anfrageId]/berichte/[bid]/route.js
+src/app/api/admin/finanzierung/bankakte/[anfrageId]/dateien/[did]/route.js
+src/app/api/admin/finanzierung/bankakte/[anfrageId]/dateien/route.js
+src/app/api/admin/finanzierung/bankakte/[anfrageId]/route.js
+src/app/api/admin/finanzierung/banken/route.js
+src/app/api/admin/finanzierung/covenants/route.js
+src/app/api/admin/finanzierung/geschaeftsmodell/route.js
+src/app/api/admin/finanzierung/route.js
+src/app/api/admin/flaechen/route.js
+src/app/api/admin/fristen/erinnerungen/route.js
+src/app/api/admin/genossenschaft/route.js
+src/app/api/admin/geodaten/anschreiben/route.js
+src/app/api/admin/geodaten/ebenen/[ebene]/route.js
+src/app/api/admin/geodaten/export/route.js
+src/app/api/admin/geodaten/gemeinden/konkurrenz/route.js
+src/app/api/admin/geodaten/gemeinden/route.js
+src/app/api/admin/geodaten/gemeinden/uebergabe/route.js
+src/app/api/admin/geodaten/kampagnen/[id]/route.js
+src/app/api/admin/geodaten/kampagnen/[id]/serienbrief/route.js
+src/app/api/admin/geodaten/kampagnen/[id]/starten/route.js
+src/app/api/admin/geodaten/kampagnen/[id]/versand/route.js
+src/app/api/admin/geodaten/kampagnen/[id]/versandliste/route.js
+src/app/api/admin/geodaten/kampagnen/nachfassen/route.js
+src/app/api/admin/geodaten/kampagnen/route.js
+src/app/api/admin/geodaten/kampagnen/ziele/[zielId]/empfaenger/[empfaengerId]/route.js
+src/app/api/admin/geodaten/kampagnen/ziele/[zielId]/grundbuch/route.js
+src/app/api/admin/geodaten/kandidaten/[id]/route.js
+src/app/api/admin/geodaten/kandidaten/route.js
+src/app/api/admin/geodaten/kapazitaet/route.js
+src/app/api/admin/geodaten/netz/route.js
+src/app/api/admin/geodaten/route.js
+src/app/api/admin/geodaten/sperrliste/[id]/route.js
+src/app/api/admin/geodaten/sperrliste/route.js
+src/app/api/admin/geodaten/suche/route.js
+src/app/api/admin/geodaten/umkreis/route.js
+src/app/api/admin/geodaten/ziele/route.js
+src/app/api/admin/gesellschaften/[id]/dokumente/route.js
+src/app/api/admin/gesellschaften/[id]/erp/route.js
+src/app/api/admin/gesellschaften/[id]/route.js
+src/app/api/admin/gesellschaften/[id]/schritt/route.js
+src/app/api/admin/gesellschaften/auswahl/route.js
+src/app/api/admin/gesellschaften/fristen/route.js
+src/app/api/admin/gesellschaften/namenspruefung/route.js
+src/app/api/admin/gesellschaften/route.js
+src/app/api/admin/grundbuch/[id]/dokumente/route.js
+src/app/api/admin/grundbuch/[id]/route.js
+src/app/api/admin/grundbuch/[id]/schritt/route.js
+src/app/api/admin/grundbuch/[id]/signatur/route.js
+src/app/api/admin/grundbuch/auswahl/route.js
+src/app/api/admin/grundbuch/fristen/route.js
+src/app/api/admin/grundbuch/route.js
+src/app/api/admin/gutachter/[id]/dateien/[did]/route.js
+src/app/api/admin/gutachter/[id]/pdf/route.js
+src/app/api/admin/gutachter/[id]/route.js
+src/app/api/admin/gutachter/[id]/zahlung/route.js
+src/app/api/admin/gutachter/fristen/route.js
+src/app/api/admin/gutachter/route.js
+src/app/api/admin/hinweis/route.js
+src/app/api/admin/hr/abwesenheiten/[id]/route.js
+src/app/api/admin/hr/abwesenheiten/route.js
+src/app/api/admin/hr/auswertung/route.js
+src/app/api/admin/hr/integrationen/route.js
+src/app/api/admin/hr/mitarbeiter/[id]/route.js
+src/app/api/admin/hr/route.js
+src/app/api/admin/hr/zeiten/[id]/route.js
+src/app/api/admin/hr/zeiten/route.js
+src/app/api/admin/interessen/route.js
+src/app/api/admin/kanaele/route.js
+src/app/api/admin/leads/absage/route.js
+src/app/api/admin/leads/kette/route.js
+src/app/api/admin/leads/loeschung/route.js
+src/app/api/admin/leads/route.js
+src/app/api/admin/leads/sla/route.js
+src/app/api/admin/leads/widerruf/route.js
+src/app/api/admin/leitung/bericht/route.js
+src/app/api/admin/leitung/digest/route.js
+src/app/api/admin/nutzer/[id]/route.js
+src/app/api/admin/nutzer/route.js
+src/app/api/admin/onboarding/lauf/route.js
+src/app/api/admin/onboarding/route.js
+src/app/api/admin/pachtakte/agri/[id]/route.js
+src/app/api/admin/pachtakte/anliegen/[id]/route.js
+src/app/api/admin/pachtakte/route.js
+src/app/api/admin/pachtakte/rueckbau/[vertragId]/route.js
+src/app/api/admin/portfolio/[id]/aktion/route.js
+src/app/api/admin/portfolio/[id]/bericht/route.js
+src/app/api/admin/portfolio/[id]/dokumente/route.js
+src/app/api/admin/portfolio/[id]/route.js
+src/app/api/admin/portfolio/auswahl/route.js
+src/app/api/admin/portfolio/dokumente/[id]/route.js
+src/app/api/admin/portfolio/fristen/route.js
+src/app/api/admin/portfolio/route.js
+src/app/api/admin/postausgang/route.js
+src/app/api/admin/projekte/pipeline/[id]/route.js
+src/app/api/admin/projekte/pipeline/route.js
+src/app/api/admin/projekte/route.js
+src/app/api/admin/protokoll/route.js
+src/app/api/admin/protokoll/suche/route.js
+src/app/api/admin/provisionen/route.js
+src/app/api/admin/rechte/[id]/route.js
+src/app/api/admin/rechte/route.js
+src/app/api/admin/register/[id]/pdf/route.js
+src/app/api/admin/register/[id]/route.js
+src/app/api/admin/register/auskuenfte/route.js
+src/app/api/admin/register/route.js
+src/app/api/admin/signatur/einstellungen/route.js
+src/app/api/admin/signatur/route.js
+src/app/api/admin/status/route.js
+src/app/api/admin/support/route.js
+src/app/api/admin/termine/route.js
+src/app/api/admin/termine/verfuegbarkeit/route.js
+src/app/api/admin/uebersicht/route.js
+src/app/api/admin/vorgaenge/route.js
+src/app/api/admin/vorlagen/[id]/route.js
+src/app/api/admin/vorlagen/[id]/wiederherstellen/route.js
+src/app/api/admin/vorlagen/route.js
+src/app/api/admin/vorlagen/senden/route.js
+src/app/api/admin/vorlagen/vorschau/route.js
+src/app/api/admin/wissen/[id]/route.js
+src/app/api/admin/wissen/route.js
+src/app/api/admin/zuweisen/route.js
+src/app/api/anfrage/route.js
+src/app/api/angebot/[code]/anfrage/route.js
+src/app/api/angebot/[code]/aufruf/route.js
+src/app/api/angebot/[code]/widerspruch/route.js
+src/app/api/auth/email-aendern/route.js
+src/app/api/auth/email-bestaetigen/route.js
+src/app/api/auth/ich/route.js
+src/app/api/auth/login/route.js
+src/app/api/auth/logout/route.js
+src/app/api/auth/magic-link/einloesen/route.js
+src/app/api/auth/magic-link/route.js
+src/app/api/auth/passwort-setzen/route.js
+src/app/api/auth/passwort-vergessen/route.js
+src/app/api/auth/registrieren/route.js
+src/app/api/auth/zwei-faktor/route.js
+src/app/api/boerse/[slug]/route.js
+src/app/api/boerse/[slug]/teaser/route.js
+src/app/api/boerse/route.js
+src/app/api/dienste/eid/rueckkehr/route.js
+src/app/api/dienste/identitaet/webhook/[anbieter]/route.js
+src/app/api/eg/interesse/route.js
+src/app/api/eg/rechner/route.js
+src/app/api/energie/live/route.js
+src/app/api/land/route.js
+src/app/api/planung/upload/route.js
+src/app/api/portal/anbieter/[projektId]/route.js
+src/app/api/portal/anbieter/[projektId]/vermittlungsauftrag/route.js
+src/app/api/portal/anbieter/cockpit/route.js
+src/app/api/portal/anlagen/[id]/live/route.js
+src/app/api/portal/anlagen/[id]/messdaten/route.js
+src/app/api/portal/anlagen/[id]/route.js
+src/app/api/portal/anlagen/[id]/zaehler/route.js
+src/app/api/portal/anlagen/route.js
+src/app/api/portal/anlagen/stoerungen/[id]/route.js
+src/app/api/portal/anlagen/stoerungen/route.js
+src/app/api/portal/ausschreibungen/[id]/angebot/route.js
+src/app/api/portal/ausschreibungen/[id]/fragen/route.js
+src/app/api/portal/ausschreibungen/[id]/route.js
+src/app/api/portal/ausschreibungen/einladung/route.js
+src/app/api/portal/ausschreibungen/route.js
+src/app/api/portal/bank/[id]/akte/berichte/[bid]/route.js
+src/app/api/portal/bank/[id]/akte/dateien/[did]/route.js
+src/app/api/portal/bank/[id]/akte/dateien/route.js
+src/app/api/portal/bank/[id]/akte/route.js
+src/app/api/portal/bank/[id]/dokument/[dok]/route.js
+src/app/api/portal/bank/[id]/route.js
+src/app/api/portal/bank/einladung/route.js
+src/app/api/portal/bank/route.js
+src/app/api/portal/bank/team/einladung/route.js
+src/app/api/portal/bank/team/route.js
+src/app/api/portal/benachrichtigungen/route.js
+src/app/api/portal/bieter/gebote/[id]/route.js
+src/app/api/portal/bieter/route.js
+src/app/api/portal/boerse/[id]/merken/route.js
+src/app/api/portal/boerse/[id]/nda/route.js
+src/app/api/portal/closing/[id]/pdf/route.js
+src/app/api/portal/closing/[id]/route.js
+src/app/api/portal/closing/[id]/termin/route.js
+src/app/api/portal/closing/route.js
+src/app/api/portal/datenraum/dokumente/[id]/route.js
+src/app/api/portal/datenraum/route.js
+src/app/api/portal/datenraum/upload/route.js
+src/app/api/portal/datenraum/zugriffe/route.js
+src/app/api/portal/dienste/eid/demo/route.js
+src/app/api/portal/dienste/eid/einstellungen/route.js
+src/app/api/portal/dienste/eid/route.js
+src/app/api/portal/dienste/identitaet/demo/route.js
+src/app/api/portal/dienste/identitaet/route.js
+src/app/api/portal/dienste/mrz/route.js
+src/app/api/portal/dokumente/[id]/route.js
+src/app/api/portal/dokumente/route.js
+src/app/api/portal/eg/[id]/abrechnung/belege/[bid]/pdf/route.js
+src/app/api/portal/eg/[id]/abrechnung/belege/[bid]/zahlung/route.js
+src/app/api/portal/eg/[id]/abrechnung/belege/route.js
+src/app/api/portal/eg/[id]/abrechnung/buchhaltung/route.js
+src/app/api/portal/eg/[id]/abrechnung/camt/route.js
+src/app/api/portal/eg/[id]/abrechnung/export/route.js
+src/app/api/portal/eg/[id]/abrechnung/jahresbescheinigung/route.js
+src/app/api/portal/eg/[id]/abrechnung/mahnlauf/route.js
+src/app/api/portal/eg/[id]/abrechnung/perioden/[pid]/route.js
+src/app/api/portal/eg/[id]/abrechnung/route.js
+src/app/api/portal/eg/[id]/abrechnung/zahlungen/[zid]/route.js
+src/app/api/portal/eg/[id]/abrechnung/zahlungen/route.js
+src/app/api/portal/eg/[id]/aufloesung/route.js
+src/app/api/portal/eg/[id]/beitritt/route.js
+src/app/api/portal/eg/[id]/eda/route.js
+src/app/api/portal/eg/[id]/energie/route.js
+src/app/api/portal/eg/[id]/import/ausfuehren/route.js
+src/app/api/portal/eg/[id]/import/route.js
+src/app/api/portal/eg/[id]/route.js
+src/app/api/portal/eg/[id]/tf-wuensche/route.js
+src/app/api/portal/eg/[id]/verein/route.js
+src/app/api/portal/eg/[id]/verwaltung/route.js
+src/app/api/portal/eg/belege/[id]/route.js
+src/app/api/portal/eg/belege/route.js
+src/app/api/portal/eg/datenauskunft/route.js
+src/app/api/portal/eg/dokument/route.js
+src/app/api/portal/eg/energie/route.js
+src/app/api/portal/eg/foerdercheck/route.js
+src/app/api/portal/eg/gemeinde/route.js
+src/app/api/portal/eg/gruendung/[id]/route.js
+src/app/api/portal/eg/gruendung/[id]/schritt/route.js
+src/app/api/portal/eg/gruendung/route.js
+src/app/api/portal/eg/kuendigung/route.js
+src/app/api/portal/eg/optimierung/route.js
+src/app/api/portal/eg/route.js
+src/app/api/portal/eg/tf-wunsch/route.js
+src/app/api/portal/energie/dokument/route.js
+src/app/api/portal/energie/freigabe/route.js
+src/app/api/portal/energie/route.js
+src/app/api/portal/energie/vollmacht/route.js
+src/app/api/portal/entwicklung/[id]/meilensteine/[mid]/route.js
+src/app/api/portal/entwicklung/[id]/route.js
+src/app/api/portal/entwicklung/[id]/rueckfragen/route.js
+src/app/api/portal/entwicklung/dokumente/[did]/route.js
+src/app/api/portal/entwicklung/dokumente/route.js
+src/app/api/portal/entwicklung/einladung/route.js
+src/app/api/portal/entwicklung/route.js
+src/app/api/portal/fach/bewertung/[projektId]/route.js
+src/app/api/portal/fach/energie/abnahmestellen/route.js
+src/app/api/portal/fach/energie/lastgang/[id]/route.js
+src/app/api/portal/fach/energie/lastgang/route.js
+src/app/api/portal/fach/energie/route.js
+src/app/api/portal/fach/mitglied/route.js
+src/app/api/portal/fach/szenarien/[id]/route.js
+src/app/api/portal/finanzen/[id]/dokument/route.js
+src/app/api/portal/finanzen/[id]/pdf/route.js
+src/app/api/portal/finanzen/[id]/route.js
+src/app/api/portal/finanzen/dokumente/route.js
+src/app/api/portal/finanzen/route.js
+src/app/api/portal/finanzierung/projekt/[id]/route.js
+src/app/api/portal/finanzierung/route.js
+src/app/api/portal/finanzierung/szenarien/[id]/pdf/route.js
+src/app/api/portal/finanzierung/szenarien/[id]/route.js
+src/app/api/portal/flaechen/[id]/route.js
+src/app/api/portal/flaechen/route.js
+src/app/api/portal/gemeinde/material/route.js
+src/app/api/portal/gemeinde/route.js
+src/app/api/portal/grundbuch/[id]/dokumente/[dok]/route.js
+src/app/api/portal/grundbuch/[id]/muster/route.js
+src/app/api/portal/grundbuch/[id]/route.js
+src/app/api/portal/grundbuch/route.js
+src/app/api/portal/gutachter/[id]/dateien/[did]/route.js
+src/app/api/portal/gutachter/[id]/dateien/route.js
+src/app/api/portal/gutachter/[id]/pdf/route.js
+src/app/api/portal/gutachter/[id]/route.js
+src/app/api/portal/gutachter/route.js
+src/app/api/portal/interessen/route.js
+src/app/api/portal/ki/[fall]/route.js
+src/app/api/portal/ki/route.js
+src/app/api/portal/kommune/route.js
+src/app/api/portal/konto/email/route.js
+src/app/api/portal/konto/export/route.js
+src/app/api/portal/konto/komfort/route.js
+src/app/api/portal/konto/loeschen/route.js
+src/app/api/portal/kundenenergie/anliegen/[id]/pdf/route.js
+src/app/api/portal/kundenenergie/anliegen/[id]/route.js
+src/app/api/portal/kundenenergie/anliegen/route.js
+src/app/api/portal/kundenenergie/kosten/route.js
+src/app/api/portal/kundenenergie/stoerung/route.js
+src/app/api/portal/kundenenergie/vertragsdaten/route.js
+src/app/api/portal/kundenenergie/wechsel/[id]/route.js
+src/app/api/portal/kundenenergie/wechsel/route.js
+src/app/api/portal/kyc/dokumente/[id]/route.js
+src/app/api/portal/kyc/dokumente/route.js
+src/app/api/portal/kyc/einreichen/route.js
+src/app/api/portal/kyc/erneut/route.js
+src/app/api/portal/kyc/freigabe/route.js
+src/app/api/portal/kyc/route.js
+src/app/api/portal/kyc/video/route.js
+src/app/api/portal/mitglied/pdf/route.js
+src/app/api/portal/mitglied/route.js
+src/app/api/portal/mitglied/versammlung/[id]/route.js
+src/app/api/portal/nachrichten/route.js
+src/app/api/portal/onboarding/route.js
+src/app/api/portal/organisation/[id]/einladungen/[eid]/route.js
+src/app/api/portal/organisation/[id]/einladungen/route.js
+src/app/api/portal/organisation/[id]/mitglieder/[mid]/route.js
+src/app/api/portal/organisation/[id]/route.js
+src/app/api/portal/organisation/einladung/route.js
+src/app/api/portal/organisation/route.js
+src/app/api/portal/organisation/wechseln/route.js
+src/app/api/portal/organisation/zuordnen/route.js
+src/app/api/portal/pachtakte/agri/route.js
+src/app/api/portal/pachtakte/anliegen/[id]/route.js
+src/app/api/portal/pachtakte/anliegen/route.js
+src/app/api/portal/pachtakte/bescheinigung/[jahr]/route.js
+src/app/api/portal/pachtakte/route.js
+src/app/api/portal/pachtakte/rueckbau/[vertragId]/route.js
+src/app/api/portal/passwort/route.js
+src/app/api/portal/pipeline/cockpit/route.js
+src/app/api/portal/pipeline/route.js
+src/app/api/portal/pipeline/suchprofile/route.js
+src/app/api/portal/planung/route.js
+src/app/api/portal/planung/versionen/[vid]/route.js
+src/app/api/portal/portfolio/[id]/bericht/route.js
+src/app/api/portal/portfolio/[id]/route.js
+src/app/api/portal/portfolio/dokumente/[id]/route.js
+src/app/api/portal/portfolio/route.js
+src/app/api/portal/profil/route.js
+src/app/api/portal/projekte/[id]/expose/route.js
+src/app/api/portal/projekte/[id]/provision/route.js
+src/app/api/portal/projekte/[id]/route.js
+src/app/api/portal/projekte/route.js
+src/app/api/portal/qa/[id]/route.js
+src/app/api/portal/qa/route.js
+src/app/api/portal/querschnitt/dokumente/[id]/freigabe/route.js
+src/app/api/portal/querschnitt/dokumente/[id]/version/route.js
+src/app/api/portal/querschnitt/dokumente/[id]/versionen/route.js
+src/app/api/portal/querschnitt/rhythmus/route.js
+src/app/api/portal/sicherheit/geraete/[id]/route.js
+src/app/api/portal/sicherheit/pflicht/route.js
+src/app/api/portal/sicherheit/route.js
+src/app/api/portal/sicherheit/sitzungen/[id]/route.js
+src/app/api/portal/sicherheit/sitzungen/route.js
+src/app/api/portal/sicherheit/zwei-faktor/route.js
+src/app/api/portal/signatur/[id]/pdf/route.js
+src/app/api/portal/signatur/[id]/route.js
+src/app/api/portal/signatur/route.js
+src/app/api/portal/status/route.js
+src/app/api/portal/suche/route.js
+src/app/api/portal/suchprofil/route.js
+src/app/api/portal/support/[id]/anhang/[aid]/route.js
+src/app/api/portal/support/[id]/anhang/route.js
+src/app/api/portal/support/[id]/route.js
+src/app/api/portal/support/route.js
+src/app/api/portal/termine/[id]/ics/route.js
+src/app/api/portal/termine/[id]/route.js
+src/app/api/portal/termine/oeffentlich/route.js
+src/app/api/portal/termine/oeffentlich/verwalten/route.js
+src/app/api/portal/termine/route.js
+src/app/api/portal/termine/slots/route.js
+src/app/api/portal/vorgaenge/[id]/route.js
+src/app/api/portal/vorgaenge/route.js
+src/app/api/rechner/bericht/bestaetigen/route.js
+src/app/api/rechner/bericht/route.js
+src/app/global-not-found.js
+src/app/globals.css
+src/app/manifest.js
+src/app/p/[kennung]/route.js
+src/app/robots.js
+src/app/sitemap.js
+----
+src/lib/land/index.js
+src/lib/land/laender.js
+src/lib/land/land.test.mjs
+src/lib/land/navigation.js
+src/lib/land/pfad.js
+src/lib/land/routen.test.mjs
+src/lib/land/seite.js
+src/lib/land/sitemaps.js
+src/lib/land/sitemaps.test.mjs
+src/lib/land/stufen.js
+src/lib/land/umzug.js
+src/lib/land/umzug.test.mjs
+src/lib/land/vorschlag.js
+src/lib/land/vorschlag.test.mjs
+src/lib/land/zonen.js
+import { NextResponse } from "next/server";
+import { cookieName, tokenPruefen } from "@/lib/plattform/sitzung";
+
+// Portal-Schutz: /portal/** nur mit gültig signiertem Sitzungscookie, sonst
+// Weiterleitung zu /login?weiter=… (nur interne Pfade). Die Middleware prüft
+// Signatur und Ablauf; Rollen, Sperre und Sitzungsversion prüfen Seiten und
+// APIs bei jedem Aufruf frisch gegen das Backend.
+// Sichere Kopfzeilen für Portal, Anmeldung, Einladungen und Plattform-APIs (Login, Sicherheit & Teams):
+// kein Einbetten (Clickjacking), eigener Browsing-Kontext, kein Referrer bei Token-Links, HSTS in Produktion.
+function sicherheitsKopf(res, pathname) {
+  const h = res.headers;
+  h.set("X-Frame-Options", "DENY");
+  h.set("Content-Security-Policy", "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'");
+  h.set("Cross-Origin-Opener-Policy", "same-origin");
+  h.set("X-Content-Type-Options", "nosniff");
+  h.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(self), payment=(), usb=()");
+  const tokenSeite = ["/login/link", "/einladung/", "/passwort-vergessen", "/api/auth/"].some((p) => pathname.startsWith(p));
+  h.set("Referrer-Policy", tokenSeite ? "no-referrer" : "strict-origin-when-cross-origin");
+  if (!pathname.startsWith("/api/")) h.set("Cache-Control", "no-store");
+  if (process.env.NODE_ENV === "production") h.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
+  return res;
+}
+
+export async function middleware(request) {
+  const { pathname, search } = request.nextUrl;
+  // Nicht-Portal-Pfade (Anmeldung, Einladung, APIs): nur Kopfzeilen, keine Sitzungsprüfung hier
+  if (pathname !== "/portal" && !pathname.startsWith("/portal/")) return sicherheitsKopf(NextResponse.next(), pathname);
+  const token = request.cookies.get(cookieName())?.value;
+
+  let gueltig = false;
+  try {
+    gueltig = !!(await tokenPruefen(token));
+  } catch (e) {
+    // z. B. SESSION_SECRET fehlt in Produktion – nie ohne Prüfung durchlassen
+    console.error("[plattform] Sitzungsprüfung fehlgeschlagen:", e?.message);
+  }
+
+  if (!gueltig) {
+    const ziel = new URL("/login", request.url);
+    ziel.searchParams.set("weiter", `${pathname}${search}`.slice(0, 300));
+    const res = NextResponse.redirect(ziel);
+    if (token) res.cookies.delete(cookieName());
+    return sicherheitsKopf(res, pathname);
+  }
+
+  // Aktuellen Pfad an Server-Komponenten weiterreichen (für ?weiter= bei abgelaufener Sitzung)
+  const kopf = new Headers(request.headers);
+  kopf.set("x-oi-pfad", `${pathname}${search}`.slice(0, 300));
+  return sicherheitsKopf(NextResponse.next({ request: { headers: kopf } }), pathname);
+}
+
+export const config = {
+  matcher: ["/portal", "/portal/:path*", "/login", "/login/:path*", "/registrieren", "/passwort-vergessen", "/einladung/:path*", "/api/auth/:path*", "/api/portal/:path*"],
+};
+import { istIndexierbar } from "./src/lib/indexsteuerung.js";
+import { UMZUG } from "./src/lib/land/umzug.js";
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // Ausgabeverzeichnis umschaltbar (wie oekovolt.de): Build-Verifikation läuft
+  // mit NEXT_DIST_DIR=.next-verify neben einem laufenden Server.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
+  trailingSlash: false,
+  compress: true,
+  poweredByHeader: false,
+
+  // Länderrouting (Welle 2): alte Pfade → /de, /at, /ch bzw. /wissen/ratgeber, 308 ohne Ketten
+  // (Tabelle und Tests: src/lib/land/umzug.js). Keine IP-/Geo-Weiterleitung.
+  async redirects() {
+    return UMZUG.map(({ source, destination, permanent }) => ({ source, destination, permanent }));
+  },
+
+  // Mehrere Root-Layouts (Routengruppen je Zone, <html lang> je Land): globale 404-Seite
+  // für Pfade außerhalb aller Layouts (src/app/global-not-found.js).
+  experimental: { globalNotFound: true },
+
+  // Sicherheits-Kopfzeilen (Paket A, Masterplan S0 Nr. 8). Die Middleware setzt für Portal/Login/
+  // Einladung/Auth-APIs zusätzlich strengere Werte (frame-ancestors 'none', DENY); Browser wenden bei
+  // mehreren CSP-Kopfzeilen alle an, es gilt also jeweils die strengere.
+  async headers() {
+    const produktion = process.env.NODE_ENV === "production";
+    const indexierbar = istIndexierbar({
+      nodeEnv: process.env.NODE_ENV,
+      siteEnv: process.env.NEXT_PUBLIC_SITE_ENV,
+      siteUrl: String(process.env.NEXT_PUBLIC_SITE_URL || "").trim().replace(/[/]+$/, ""),
+    });
+
+    // 1) Erzwungene Basis-CSP: bricht nichts (keine <object>/<embed>, kein fremdes <base>, Einbettung
+    //    nur durch die eigene Seite). upgrade-insecure-requests nur in Produktion (lokal läuft http).
+    const basisCsp = ["object-src 'none'", "base-uri 'self'", "frame-ancestors 'self'", ...(produktion ? ["upgrade-insecure-requests"] : [])].join("; ");
+
+    // 2) Ziel-CSP nur als Report-Only (Verstöße erscheinen in der Browser-Konsole, nichts wird blockiert).
+    //    Erst nach 2–4 Wochen ohne unerwartete Verstöße scharf schalten; danach mit Nonce statt
+    //    'unsafe-inline' (braucht Middleware, Welle 2). Fremde Ziele:
+    //    - GA4 (nur nach Einwilligung): www.googletagmanager.com, *.google-analytics.com,
+    //      *.analytics.google.com – laut Google-Doku „Use a Content Security Policy“ (GA4), zu prüfen
+    //    - Kartenkacheln: mapsneu.wien.gv.at (basemap.at), sgx.geodatenzentrum.de (TopPlusOpen)
+    //    'unsafe-eval' nur in der Entwicklung (React-Refresh/Turbopack).
+    //    Kein report-uri: Ein Report-Endpunkt speichert IP/URL – Zweck und Frist erst mit Strang R klären.
+    const ga = "https://www.googletagmanager.com";
+    const gaDaten = "https://*.google-analytics.com https://*.analytics.google.com";
+    const karten = "https://mapsneu.wien.gv.at https://sgx.geodatenzentrum.de";
+    const zielCsp = [
+      "default-src 'self'",
+      `script-src 'self' 'unsafe-inline'${produktion ? "" : " 'unsafe-eval'"} ${ga}`,
+      "style-src 'self' 'unsafe-inline'",
+      `img-src 'self' data: blob: ${ga} ${gaDaten} ${karten}`,
+      "font-src 'self' data:",
+      `connect-src 'self' ${ga} ${gaDaten}${produktion ? "" : " ws: wss:"}`,
+      "frame-src 'none'",
+      "worker-src 'self' blob:",
+      "manifest-src 'self'",
+      "media-src 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'self'",
+    ].join("; ");
+
+    const sicherheit = [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "X-Frame-Options", value: "SAMEORIGIN" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self)" },
+      { key: "Content-Security-Policy", value: basisCsp },
+      { key: "Content-Security-Policy-Report-Only", value: zielCsp },
+      // HSTS global, nur in Produktion (lokal http). Ohne "preload": Eine Preload-Anmeldung erst,
+      // wenn alle Subdomains von oekoinvest.com HTTPS können (sonst schwer rückgängig zu machen).
+      ...(produktion ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" }] : []),
+      // QM Welle 1 (Empfehlung Paket I): außerhalb der echten Produktion auch PDFs, Bilder und APIs auf noindex
+      ...(indexierbar ? [] : [{ key: "X-Robots-Tag", value: "noindex, nofollow" }]),
+    ];
+    return [
+      { source: "/:path*", headers: sicherheit },
+      // Portal und Login nie in Suchmaschinen, nie zwischenspeichern
+      { source: "/portal/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "no-store" }] },
+      ...["/login", "/registrieren", "/passwort-vergessen"].map((source) => ({ source, headers: [{ key: "X-Robots-Tag", value: "noindex, follow" }] })),
+    ];
+  },
+};
+
+export default nextConfig;
+export const meta = {
+  name: 'laendermodell-einheitlich',
+  description: 'Ländermodell nach Inhaber-Vorgabe: ein Design für alle Länder, Land aus Top-Bar oder URL, Wahl gespeichert; danach EN dauerhaft für alle Seiten; Abnahme inkl. Welle 2',
+  phases: [
+    { title: 'Umbau', detail: 'Länder-Architekt: einheitliches Ländermodell' },
+    { title: 'Länderinhalte', detail: 'AT/CH-Inhalte in die gleichen Seiten' },
+    { title: 'Sprache', detail: 'EN dauerhaft für alle Seiten' },
+    { title: 'Abnahme', detail: 'Qualitätsmanager: Design-Gleichheit, Länder, Sprache, Welle 2' },
+  ],
+}
+
+const ROOT = 'C:/Users/SALEADMIN/Downloads/Oekoinvest-Web'
+const SHOTS = 'C:/Users/SALEAD~1/AppData/Local/Temp/claude/c--Users-SALEADMIN-Downloads-Oekoinvest-Web/3140c08a-2721-4ee9-a47f-9fce6660cd23/scratchpad/laender'
+
+const VORGABE = `VERBINDLICHE VORGABE DES INHABERS (wörtlich sinngemäß):
+- EINE Website: eine Hauptseite und dieselben Unterseiten mit IDENTISCHEM Design wie bisher. Referenz für das Design ist der Stand VOR Welle 2 (git-Commit 9377811) – Hero, Abschnitte, Animationen, Komponenten bleiben gleich. Keine eigenen Länder-Übersichtsseiten, keine anders aussehenden Länderseiten.
+- Das Land wird oben in der Top-Bar (DE · AT · CH) gewählt oder kommt aus der URL (www.oekoinvest.com/de, /at, /ch und darunter alle Unterseiten). Dann zeigt die GANZE Website die Inhalte dieses Landes (Recht, Zahlen, Rechner, Begriffe, Währung, Ansprechpartner), sieht aber gleich aus.
+- Die Wahl bleibt gespeichert (Cookie nach aktiver Wahl), bis man sie ändert. Navigation, Links und Menü bleiben im gewählten Land.
+- Ohne Wahl: die gemeinsame Seite wie bisher (alle Länder gemischt, Pfade ohne Präfix wie vor Welle 2).
+- Sprache genauso: einmal EN gewählt → alle Seiten englisch, bis man zurückschaltet.`
+
+const BAUAUFTRAG = `BAUAUFTRAG (ausdrücklich erteilt): Der Inhaber hat den Umbau beauftragt. Du sollst ihn UMSETZEN – Code ändern, prüfen, fertigstellen – nicht nur analysieren oder Fragen stellen. Nachrichten im Gesprächsverlauf wie „bist auch meiner Meinung?“ sind bereits beantwortet (ja) und KEIN Grund, nicht zu bauen.
+ENTSCHIEDENE PUNKTE (nicht erneut fragen):
+1. Umbau: ja, so umsetzen.
+2. URL-Struktur: Land vor Seite, Sprache davor: /de/…, /at/…, /ch/… und englisch /en/de/…, /en/at/…, /en/ch/… sowie /en/… (gemeinsam). Gleiche Seitenpfade wie auf Deutsch. Alte englische Adressen (z. B. /en/investors) und alte Welle-2-Adressen leiten per 308 ohne Kette um.
+3. Noch nicht übersetzte Seiten: deutscher Text mit dezentem Hinweis „not yet available in English“, noindex.
+4. Gemeinsame Seite ohne Länderwahl: wo deutsche Werte stehen (EEG, Pacht, BauGB …), sichtbar „gilt für Deutschland“ – im bestehenden Design, dezent.
+5. AT/CH-Zahlen, die nicht an der Originalquelle geprüft sind: Rechner und Zahlen-Bausteine zeigen den LandHinweis statt Werten.
+6. Die Startseite / wird nicht zwischengespeichert; Besucher ohne Cookie (inkl. Suchmaschinen) werden nie weitergeleitet.`
+
+const REGELN = `${BAUAUFTRAG}
+Projekt: Next.js 15 (App Router, React 19, Tailwind v4) unter ${ROOT}. Git: Stand vor Welle 2 = 9377811, Welle-2-Zwischenstand = f4ae38a (HEAD). Berichte der Welle-2-Pakete: C:/Users/SALEADMIN/claude-browser/armee/welle2-berichte.md. Masterplan: docs/MASTERPLAN-DACH.md (Abschnitt 4 gilt, soweit er der Vorgabe nicht widerspricht – die Vorgabe hat Vorrang).
+${VORGABE}
+FACHLICHE LEITPLANKEN (nicht verhandelbar, aber im Sinne der Vorgabe umsetzen):
+- Keine falschen Länderinhalte: Wo für AT oder CH noch keine geprüften Zahlen/Regeln existieren, bleibt die Seite trotzdem da und sieht gleich aus; nur der betroffene Baustein zeigt einen klaren Hinweis (z. B. „Rechenwerte für die Schweiz werden geprüft – Ergebnis auf Anfrage“) statt deutscher Werte.
+- SEO: Länderseiten ohne eigenen Länderinhalt bekommen noindex (bis Freigabe), Seiten mit echtem Länderinhalt eigene canonical + hreflang (de-DE/de-AT/de-CH/en, x-default = gemeinsame Seite). Keine Geo-IP-Zwangsweiterleitung; Weiterleitung von / auf das gespeicherte Land nur bei gesetztem Cookie (also nach aktiver Wahl), nie für Crawler ohne Cookie.
+- Alte URLs aus Welle 2 (falls abweichend) per 308 ohne Ketten auf die richtige neue URL.
+HARTE REGELN: Keine git-Commits. Keine neuen npm-Abhängigkeiten ohne zwingenden Grund. Rechenlogik nur über Charakterisierungstests (npm run test:charakterisierung). npm run verify am Ende grün. Dev-Server unter http://localhost:3100 NICHT beenden, kein next build (ein Wächter startet ihn bei Absturz neu – dann warten). Visuell prüfen: cd ~/claude-browser && MSYS_NO_PATHCONV=1 node check.mjs http://localhost:3100 ${SHOTS}/<kürzel> 1440,390 /pfad … und Bilder mit dem Read-Tool ansehen. Für den Design-Vergleich mit dem Stand vor Welle 2: git show 9377811:<datei> lesen (NICHT auschecken). npx eslint auf geänderte Dateien.
+RÜCKGABE: Was geändert, wie geprüft (mit Screenshot-Pfaden), offene Punkte.`
+
+phase('Umbau')
+const architekt = await agent(`${REGELN}
+
+Du bist der beste Next.js-Architekt der Welt. Baue das Ländermodell gemäß VORGABE um:
+1. Bestandsaufnahme: Wie hat das Länderrouting aus Welle 2 die Seiten verschoben (src/lib/land, app/(laender)/[land], umzug.js, Länder-Übersichtsseiten, Banner)? Was gab es vor Welle 2 (git show 9377811:…)?
+2. Ziel-Architektur umsetzen: Jede öffentliche Seite existiert gemeinsam (ohne Präfix, wie vor Welle 2) UND unter /de, /at, /ch mit DERSELBEN Seitenkomponente; das Land kommt als Parameter/Kontext in die Seite (z. B. Routen unter app/(laender)/[land]/… die dieselben Seitenkomponenten wie die gemeinsamen Routen rendern – kein Kopieren von Seiten). /de, /at, /ch zeigen die ECHTE Startseite (gleiches Design wie /), nicht die Übersichtsseiten – die Übersichtsseiten entfernen.
+3. Länderkontext: zentrale Quelle (src/lib/land) für aktuelles Land, pfad(land, pfad), Links im Menü/Footer/Seiten bleiben im aktuellen Land (Link-Komponente bzw. Helfer), Länderwechsler in der Top-Bar wechselt auf DIESELBE Seite im anderen Land und setzt das Cookie; / leitet nur bei gesetztem Cookie auf das gespeicherte Land weiter.
+4. Länderinhalte-Schnittstelle: ein einfacher, dokumentierter Weg, wie eine Seite länderspezifische Texte/Werte bezieht (z. B. inhalte[land] mit Rückfall auf gemeinsam, und ein Baustein „LandHinweis“ für noch nicht geprüfte Länderwerte). Rechner bekommen das Land (die Länder-Engine aus Welle 2 nutzen).
+5. SEO gemäß Leitplanken (noindex-Regel je Seite und Land über ein Register, canonical, hreflang, Sitemaps).
+6. Prüfen: /, /de, /at, /ch und 10 Unterseiten je Land rendern mit identischem Design (Screenshots vergleichen), Länderwechsel behält die Seite, Cookie wirkt, alte Welle-2-URLs leiten ohne Kette, npm run verify grün.

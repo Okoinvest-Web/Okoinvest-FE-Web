@@ -1,0 +1,601 @@
+=== src/app/(stamm)/kommunen/ratsvorlage/page.js
+// src/app/(stamm)/kommunen/ratsvorlage/page.js – Kommunal-Rechner 2.0 mit Ratsvorlage (Welle 3, Paket B8)
+//
+// Einnahmen der Gemeinde wie /rechner/kommune (Rechenlogik unverändert) plus Landesrecht des Bundeslands; für
+// Österreich die Widmungsschritte des Bundeslands ohne Geldwerte; für die Schweiz der Länderhinweis
+// (tools.js: laender ["DE", "AT"]). Lead: druckfertige Ratsvorlage (Muster) über den Bericht-Baustein
+// (/api/rechner/bericht, Rechner „ratsvorlage“, Vorgangstyp „kommune“ → Routing je Land).
+// noindex bis zur Fachprüfung (src/lib/land/seiten.js index: false; englisch src/lib/sprache/seiten.js index: false).
+//
+// Sprachmodell: deutsche Texte in DE, englische in EN (gleiche Struktur). Regionsdaten in der Sprache der Seite.
+
+import RechnerSeite, { rechnerMetadata, rechnerMetadataEn } from "@/components/Rechner/RechnerSeite";
+import RatsvorlageWerkzeug from "@/components/Kommune/Ratsvorlage/RatsvorlageWerkzeug";
+import { pfad as seitenPfad } from "@/lib/land";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { formate } from "@/lib/sprache/zahlformat";
+import { datumText } from "@/lib/sprache/format";
+import { KOMMUNE, STAND } from "@/lib/invest/markt";
+import { faktWert } from "@/lib/fakten";
+import { BUNDESLAENDER } from "@/lib/rechner/kommunePflichten";
+import { widmungskitAlle } from "@/lib/kommune/widmung";
+import { regionName } from "@/data/regionen";
+import { faqFuerLand } from "@/components/Land/Laenderteile";
+
+const PFAD = seitenPfad("/kommunen/ratsvorlage");
+
+const metadata = rechnerMetadata({
+  pfad: PFAD,
+  title: "Ratsvorlage Solarpark: Einnahmen und Landesrecht für den Gemeinderat | ÖkoInvest",
+  description:
+    "Kommunal-Rechner 2.0: Einnahmen der Gemeinde aus § 6 EEG, Gewerbesteuer und Pacht, dazu die Beteiligungsgesetze der Bundesländer – und eine druckfertige Ratsvorlage als Muster.",
+  keywords: ["Ratsvorlage Solarpark", "Beschlussvorlage Freiflächen-PV", "Gemeindebeteiligung Landesgesetz", "§ 6 EEG Gemeinderat", "Widmung Photovoltaik Gemeinde"],
+});
+// Fachprüfung offen (Register index: false): auch die gemeinsame Seite trägt noindex
+metadata.robots = { index: false, follow: true };
+
+const metadataEn = rechnerMetadataEn({
+  title: "Council paper for solar parks: income and state law for the municipal council | ÖkoInvest",
+  description:
+    "Municipal calculator 2.0: municipal income from § 6 EEG, trade tax and lease, plus the participation laws of the federal states – and a ready-to-print council paper template.",
+  keywords: ["council paper solar park", "municipal resolution ground-mounted PV", "municipal participation state law", "§ 6 EEG municipal council", "zoning photovoltaics municipality Austria"],
+});
+
+const z = formate("de");
+const e = formate("en");
+
+const FAQ = [
+  {
+    q: "Was steht in der Ratsvorlage?",
+    a: "Ein Beschlussvorschlag als Muster, der Sachverhalt mit Ihrer Gemeinde und Ihrem Bundesland, die finanziellen Auswirkungen aus der Rechnung, das Landesrecht mit Quelle, das weitere Verfahren und ein Annahmenbuch mit Quelle und Stand jeder Annahme. Felder wie Sitzungstermin und Vorlage-Nummer bleiben für Ihre Verwaltung frei.",
+  },
+  {
+    q: "Ist die Vorlage rechtlich geprüft?",
+    a: "Nein. Sie ist ein Muster ohne Rechtsberatung. Zuständigkeiten, Wortlaut und Verfahren richten sich nach der Gemeindeordnung Ihres Landes und der Geschäftsordnung Ihres Gemeinderats. Lassen Sie die Vorlage vor der Verwendung von Ihrer Verwaltung bzw. der Kommunalaufsicht prüfen.",
+  },
+  {
+    q: "Warum wird die Zahlung nach Landesrecht nicht zur Summe addiert?",
+    nurDE: "Regeln zur Gemeindebeteiligung",
+    a: "Weil jedes Landesgesetz selbst regelt, ob und wie die Landeszahlung mit der Zahlung nach § 6 EEG verrechnet wird – in Bayern etwa können die 0,2 ct über eine Vereinbarung nach § 6 EEG erbracht werden. Wir zeigen den Betrag deshalb getrennt, als Orientierung im ersten Betriebsjahr. Alle Landeswerte sind am Gesetzestext noch zu prüfen und entsprechend markiert.",
+  },
+  {
+    q: "Welche Bundesländer haben ein Beteiligungsgesetz für Solarparks?",
+    nurDE: "Regeln zur Gemeindebeteiligung",
+    a: "Nach der Länderübersicht der Fachagentur Wind und Solar Bayern (ab 5 MW), Brandenburg, Mecklenburg-Vorpommern, Niedersachsen, das Saarland, Sachsen und Sachsen-Anhalt. In den übrigen Ländern bleibt die freiwillige Zahlung nach § 6 EEG das zentrale Instrument. Für Sachsen nennen wir keinen Betrag, weil das Gesetz im September 2025 novelliert wurde und wir den geltenden Wert noch prüfen.",
+  },
+  {
+    q: "Gibt es die Ratsvorlage auch für Österreich und die Schweiz?",
+    a: "Für Österreich ja, ohne Geldwerte: Die Vorlage stellt Ablauf, Stellen und Prüfpunkte der Widmung in Ihrem Bundesland mit Quellen zusammen; Pacht- und Rechenwerte für Österreich werden geprüft. Für die Schweiz ist die Vorlage in Vorbereitung – wir besprechen Ihr Vorhaben gern persönlich.",
+  },
+  {
+    q: "Was passiert mit meinen Angaben?",
+    a: "Das Ergebnis sehen Sie ohne Angaben. Für die Ratsvorlage geben Sie Name und E-Mail an, Telefon ist freiwillig. Erst wenn Sie den Link in der Bestätigungs-E-Mail öffnen, erstellen wir die Vorlage und legen eine Anfrage bei unserem Kommunen-Team in Ihrem Land an.",
+  },
+];
+
+const FAQ_EN = [
+  {
+    q: "What does the council paper contain?",
+    a: "A draft resolution as a template, the facts with your municipality and federal state, the financial impact from the calculation, the state law with its source, the further procedure and a list of assumptions with source and date. Fields such as the meeting date and paper number are left blank for your administration. The council paper itself is in German.",
+  },
+  {
+    q: "Has the template been legally reviewed?",
+    a: "No. It is a template without legal advice. Responsibilities, wording and procedure follow your state’s municipal code and your council’s rules of procedure. Have the paper checked by your administration or the municipal supervisory authority before use.",
+  },
+  {
+    q: "Why is the payment under state law not added to the total?",
+    nurDE: "Rules on municipal participation",
+    a: "Because each state law itself governs whether and how the state payment is offset against the payment under § 6 EEG – in Bavaria, for example, the 0.2 ct can be provided through an agreement under § 6 EEG. We therefore show the amount separately, as a guide value for the first operating year. All state values still have to be checked against the legal text and are marked accordingly.",
+  },
+  {
+    q: "Which federal states have a participation law for solar parks?",
+    nurDE: "Rules on municipal participation",
+    a: "According to the overview of the Fachagentur Wind und Solar: Bavaria (from 5 MW), Brandenburg, Mecklenburg-Western Pomerania, Lower Saxony, Saarland, Saxony and Saxony-Anhalt. In the other states, the voluntary payment under § 6 EEG remains the key instrument. For Saxony we do not state an amount, because the act was amended in September 2025 and we are still checking the current rate.",
+  },
+  {
+    q: "Is the council paper also available for Austria and Switzerland?",
+    a: "For Austria, yes, without monetary values: the paper compiles the procedure, authorities and checkpoints for zoning in your federal state with sources; lease rates and figures for Austria are being reviewed. For Switzerland, the paper is in preparation – we are happy to discuss your project personally.",
+  },
+  {
+    q: "What happens to my details?",
+    a: "You see the result without entering any details. For the council paper you enter your name and email; phone is optional. Only when you open the link in the confirmation email do we create the paper and open an enquiry with our municipal team in your country.",
+  },
+];
+
+const ANNAHMEN = {
+  de: () => [
+    ["§ 6 EEG", `${z.fmt(KOMMUNE.beteiligungCt, 1)} ct/kWh`],
+    ["Zerlegung Solar (§ 29 GewStG)", `${z.fmt(KOMMUNE.gewerbesteuerStandort * 100)} % Standort`],
+    ["Hebesatz Ø Deutschland", `${z.fmt(KOMMUNE.hebesatz * 100)} %`],
+    ["Länder mit Beteiligungsgesetz", (faktWert("kommune.laenderMitBeteiligungsgesetz", "DE") || []).join(", ")],
+    ["Landeswerte", "Prüfung am Gesetzestext ausstehend"],
+    ["Landeszahlung", "getrennt, nicht in der Summe"],
+    ["Österreich", "ohne Geldwerte, Widmung aus Regionsdaten"],
+    ["Stand", STAND],
+  ],
+  en: () => [
+    ["§ 6 EEG", `${e.fmt(KOMMUNE.beteiligungCt, 1)} ct/kWh`],
+    ["Allocation for solar (§ 29 GewStG)", `${e.pct(KOMMUNE.gewerbesteuerStandort * 100)} to the site`],
+    ["Average multiplier, Germany", e.pct(KOMMUNE.hebesatz * 100)],
+    ["States with a participation law", (faktWert("kommune.laenderMitBeteiligungsgesetz", "DE") || []).join(", ")],
+    ["State values", "review against the legal text pending"],
+    ["State payment", "shown separately, not in the total"],
+    ["Austria", "no monetary values, zoning from regional data"],
+    ["As of", datumText(STAND, "en")],
+  ],
+};
+
+const DE = {
+  breadcrumb: "Ratsvorlage Solarpark",
+  eyebrow: "Für Kommunen · Kommunal-Rechner 2.0",
+  title: (
+    <>
+      Vom Solarpark <span className="ov-text-gradient-light">zur Ratsvorlage.</span>
+    </>
+  ),
+  lead: "Einnahmen der Gemeinde aus § 6 EEG, Gewerbesteuer und Pacht, dazu das Beteiligungsgesetz Ihres Bundeslands – und auf Wunsch eine druckfertige Ratsvorlage als Muster für Ihren Gemeinderat.",
+  chips: ["16 Bundesländer, Landesrecht mit Quelle", "Österreich: Widmung je Bundesland", "Ergebnis ohne Anmeldung", "Ratsvorlage als Muster"],
+  app: {
+    name: "Kommunal-Rechner 2.0 mit Ratsvorlage",
+    description: "Berechnet die Einnahmen einer Gemeinde aus einem Solarpark, zeigt die Beteiligungspflichten des Bundeslands und erstellt eine druckfertige Ratsvorlage als Muster.",
+    featureList: ["§ 6 EEG, Gewerbesteuer und Pacht", "Beteiligungsgesetze der Bundesländer mit Quelle", "Widmungsschritte je österreichischem Bundesland", "Ratsvorlage mit Beschlussvorschlag (Muster)", "Annahmenbuch mit Quelle und Stand"],
+  },
+  quellen: [
+    { name: "EEG 2023 § 6", url: "https://www.gesetze-im-internet.de/eeg_2014/__6.html" },
+    { name: "GewStG § 29", url: "https://www.gesetze-im-internet.de/gewstg/__29.html" },
+    { name: "Fachagentur Wind und Solar – Länderübersicht", url: "https://www.fachagentur-wind-solar.de/solar/finanzielle-teilhabe/regelungen-zur-finanziellen-teilhabe" },
+    { name: "Landesgesetze und Widmung: Regionsdaten ÖkoInvest (Quelle je Bundesland)" },
+  ],
+  faqTitel: "Ratsvorlage und Landesrecht",
+  querverweise: [
+    { href: seitenPfad("/kommunen/widmungskit"), titel: "Widmungskit Österreich", text: "Ablauf, Stellen und Prüfpunkte der Umwidmung je Bundesland – zum Abhaken und Drucken." },
+    { href: seitenPfad("/rechner/kommune"), titel: "Kommunal-Rechner", text: "§ 6 EEG, Gewerbesteuer und Pacht Jahr für Jahr – mit Bericht." },
+    { href: seitenPfad("/kommunen"), titel: "Für Kommunen & Stadtwerke", text: "Wertschöpfung, Bauleitplanung, Kriterienkataloge und Bürgerbeteiligung." },
+    { href: seitenPfad("/energiegemeinschaften"), titel: "Energiegemeinschaften", text: "Energy Sharing, EEG in Österreich und LEG in der Schweiz." },
+  ],
+  cta: {
+    eyebrow: "Für Kommunen",
+    title: "Wir stellen das Vorhaben im Gemeinderat vor.",
+    text: "Offen, mit Zahlen und ohne Verpflichtung – Projekt, Beteiligungsmodell und Verfahren aus einer Hand.",
+    primary: { label: "Gespräch anfragen", href: seitenPfad("/kommunen#anfrage") },
+    secondary: { label: "Für Kommunen", href: seitenPfad("/kommunen") },
+  },
+};
+
+const EN = {
+  breadcrumb: "Council paper for solar parks",
+  eyebrow: "For municipalities · municipal calculator 2.0",
+  title: (
+    <>
+      From solar park <span className="ov-text-gradient-light">to council paper.</span>
+    </>
+  ),
+  lead: "Municipal income from § 6 EEG, trade tax and lease, plus the participation law of your federal state – and, if you wish, a ready-to-print council paper template for your municipal council.",
+  chips: ["16 German states, state law with source", "Austria: zoning per federal state", "Result without sign-up", "Council paper as a template"],
+  app: {
+    name: "Municipal calculator 2.0 with council paper",
+    description: "Calculates a municipality’s income from a solar park, shows the participation obligations of the federal state and creates a ready-to-print council paper template.",
+    featureList: ["§ 6 EEG, trade tax and lease", "Participation laws of the German states with source", "Zoning steps per Austrian federal state", "Council paper with draft resolution (template)", "Assumptions with source and date"],
+  },
+  quellen: [
+    { name: "EEG 2023 § 6 (German Renewable Energy Sources Act)" },
+    { name: "GewStG § 29 (German Trade Tax Act)" },
+    { name: "Fachagentur Wind und Solar – overview of the states" },
+    { name: "State laws and zoning: ÖkoInvest regional data (source per federal state)" },
+  ],
+  faqTitel: "Council paper and state law",
+  querverweise: [
+    { titel: "Zoning kit Austria", text: "Procedure, authorities and checkpoints for rezoning per federal state – to tick off and print." },
+    { titel: "Municipal calculator", text: "§ 6 EEG, trade tax and lease year by year – with report." },
+    { titel: "For municipalities & public utilities", text: "Local value creation, land-use planning, criteria catalogues and citizen participation." },
+    { titel: "Energy communities", text: "Energy sharing, EEG in Austria and LEG in Switzerland." },
+  ],
+  cta: {
+    eyebrow: "For municipalities",
+    title: "We present the project to the municipal council.",
+    text: "Openly, with figures and without obligation – project, participation model and procedure from a single source.",
+    primary: { label: "Request a meeting" },
+    secondary: { label: "For municipalities" },
+  },
+};
+
+const ERKLAERUNG = {
+  de: (
+    <div className="ov-prose max-w-none">
+      <h2>So rechnet der Kommunal-Rechner 2.0</h2>
+      <p>
+        <strong>Einnahmen:</strong> genau wie der Kommunal-Rechner – § 6 EEG für geförderten Strom in der EEG-Förderphase, Gewerbesteuer aus dem Betriebsergebnis des Parks mit Abschreibung, Zinsen
+        und Verlustvortrag, Pacht nur auf Gemeindeflächen. Die Ertragsregion folgt aus dem Bundesland.
+      </p>
+      <p>
+        <strong>Landesrecht:</strong> Für die sieben Länder mit Beteiligungsgesetz rechnen wir einen Orientierungsbetrag für das erste Betriebsjahr nach der Formel des Gesetzes – je Kilowattstunde
+        Einspeisung oder je Megawatt Leistung. Er steht getrennt neben der Summe, weil das Landesgesetz regelt, wie er mit § 6 EEG zusammenspielt.
+      </p>
+      <p>
+        <strong>Österreich:</strong> Eine Gewerbesteuer wie in Deutschland gibt es nicht, und § 6 EEG ist deutsches Recht. Wir zeigen Ablauf, Stellen und Prüfpunkte der Widmung Ihres Bundeslands mit
+        Quellen – ohne Geldwerte, bis die Rechenwerte für Österreich geprüft sind.
+      </p>
+      <h3>Vereinfachungen</h3>
+      <ul>
+        <li>Keine Mindestbesteuerung beim Verlustvortrag, keine Sonderabschreibungen.</li>
+        <li>Ausnahmen der Landesgesetze (z. B. Agri-PV, Bürgerenergiegesellschaften) werden genannt, aber nicht gerechnet.</li>
+        <li>Umlagen im kommunalen Finanzausgleich sind nicht berücksichtigt.</li>
+      </ul>
+    </div>
+  ),
+  en: (
+    <div className="ov-prose max-w-none">
+      <h2>How the municipal calculator 2.0 works</h2>
+      <p>
+        <strong>Income:</strong> exactly like the municipal calculator – § 6 EEG for subsidised power during the EEG support phase, trade tax from the park’s operating result with depreciation,
+        interest and loss carry-forward, lease only on municipal land. The yield region follows from the federal state.
+      </p>
+      <p>
+        <strong>State law:</strong> for the seven states with a participation law, we calculate a guide value for the first operating year using the formula of the law – per kilowatt hour fed in or
+        per megawatt of capacity. It is shown separately next to the total, because the state law governs how it interacts with § 6 EEG.
+      </p>
+      <p>
+        <strong>Austria:</strong> there is no trade tax as in Germany, and § 6 EEG is German law. We show the procedure, authorities and checkpoints for zoning in your federal state with sources –
+        without monetary values until the figures for Austria have been reviewed.
+      </p>
+      <h3>Simplifications</h3>
+      <ul>
+        <li>No minimum taxation on loss carry-forwards, no special depreciation.</li>
+        <li>Exceptions in the state laws (e.g. agrivoltaics, community energy companies) are stated but not calculated.</li>
+        <li>Levies in the municipal fiscal equalisation scheme are not taken into account.</li>
+      </ul>
+    </div>
+  ),
+};
+
+// Erklärung je Land: Österreich ohne deutsche Rechenregeln, Schweiz nur der Stand (Werkzeug zeigt den Länderhinweis)
+const ERKLAERUNG_LAND = {
+  AT: {
+    de: (
+      <div className="ov-prose max-w-none">
+        <h2>So arbeitet das Werkzeug für Österreich</h2>
+        <p>
+          Eine Gewerbesteuer wie in Deutschland gibt es nicht, und die Zahlung nach § 6 EEG ist deutsches Recht. Für Ihr Bundesland zeigen wir deshalb, wie die <strong>Widmung</strong> läuft,
+          welche <strong>Stellen</strong> beteiligt sind und welche <strong>Prüfpunkte</strong> das Land setzt – jeweils mit Quelle aus unseren Regionsdaten.
+        </p>
+        <p>Pacht- und Rechenwerte für Österreich werden geprüft; die Ratsvorlage für Österreich nennt deshalb keine Beträge.</p>
+      </div>
+    ),
+    en: (
+      <div className="ov-prose max-w-none">
+        <h2>How the tool works for Austria</h2>
+        <p>
+          There is no trade tax as in Germany, and the payment under § 6 EEG is German law. For your federal state we therefore show how <strong>zoning</strong> works, which{" "}
+          <strong>authorities</strong> are involved and which <strong>checkpoints</strong> the state sets – each with a source from our regional data.
+        </p>
+        <p>Lease rates and figures for Austria are being reviewed; the council paper for Austria therefore states no amounts.</p>
+      </div>
+    ),
+  },
+  CH: {
+    de: (
+      <div className="ov-prose max-w-none">
+        <h2>Schweiz: in Vorbereitung</h2>
+        <p>Bewilligung und Beteiligung hängen in der Schweiz von Kanton und Gemeinde ab. Die Ratsvorlage und die Rechenwerte für die Schweiz bereiten wir vor; bis dahin besprechen wir Ihr Vorhaben persönlich.</p>
+      </div>
+    ),
+    en: (
+      <div className="ov-prose max-w-none">
+        <h2>Switzerland: in preparation</h2>
+        <p>In Switzerland, permits and participation depend on the canton and municipality. We are preparing the council paper and the figures for Switzerland; until then, we discuss your project personally.</p>
+      </div>
+    ),
+  },
+};
+
+/** Daten für das Werkzeug: Bundesland-Namen in der Sprache der Seite, Widmungskit der AT-Länder (Regionsdaten) */
+function werkzeugDaten(sprache) {
+  const namen = Object.fromEntries([...BUNDESLAENDER.DE, ...BUNDESLAENDER.AT].map((b) => [b.slug, regionName(b.slug, sprache)]));
+  const sortiert = (liste) => liste.map((b) => b.slug).sort((a, b) => namen[a].localeCompare(namen[b], sprache === "en" ? "en" : "de"));
+  const widmung = Object.fromEntries(
+    widmungskitAlle(sprache).map((k) => [k.slug, { name: k.name, ablauf: k.ablauf, stellen: k.stellen, pruefpunkte: k.pruefpunkte.map((p) => ({ titel: p.titel, quelle: p.quelle })), href: k.href }])
+  );
+  return { namen, bundeslaender: { DE: sortiert(BUNDESLAENDER.DE), AT: sortiert(BUNDESLAENDER.AT) }, widmung };
+}
+
+export default async function RatsvorlagePage({ params }) {
+  const land = await seitenLand(params);
+  const sprache = spracheDerAnfrage();
+  const en = sprache === "en";
+  const t = uebersetze({ de: DE, en: EN }, sprache);
+  const daten = werkzeugDaten(sprache);
+  return (
+    <RechnerSeite
+      pfad={PFAD}
+      toolId="ratsvorlage"
+      breadcrumb={t.breadcrumb}
+      eyebrow={t.eyebrow}
+      title={t.title}
+      lead={t.lead}
+      chips={t.chips}
+      app={t.app}
+      rechner={<RatsvorlageWerkzeug {...daten} />}
+      erklaerung={(ERKLAERUNG_LAND[land] || ERKLAERUNG)[en ? "en" : "de"]}
+      annahmen={en ? ANNAHMEN.en() : ANNAHMEN.de()}
+      quellen={t.quellen}
+      faq={faqFuerLand(en ? FAQ_EN : FAQ, land, { sprache })}
+      faqTitel={t.faqTitel}
+      querverweise={t.querverweise}
+      cta={t.cta}
+      landHinweise={{
+        CH: {
+          de: "Die Ratsvorlage für die Schweiz ist in Vorbereitung: Bewilligung und Beteiligung hängen von Kanton und Gemeinde ab, Rechenwerte für die Schweiz werden geprüft. Wir besprechen Ihr Vorhaben gern persönlich.",
+          en: "The council paper for Switzerland is in preparation: permits and participation depend on the canton and municipality, and figures for Switzerland are being reviewed. We are happy to discuss your project personally.",
+        },
+      }}
+    />
+  );
+}
+
+export const generateMetadata = seitenMetadata("/kommunen/ratsvorlage", metadata, { en: metadataEn });
+=== src/app/(stamm)/kommunen/widmungskit/page.js
+// src/app/(stamm)/kommunen/widmungskit/page.js – AT-Widmungskit (Welle 3, Paket B8)
+//
+// Ablauf, beteiligte Stellen und Prüfpunkte der Umwidmung für einen Solarpark je österreichischem Bundesland –
+// nur Aussagen aus den recherchierten Regionsdaten mit Quelle je Punkt (src/lib/kommune/widmung.js). Ohne Geldwerte.
+// Deutschland und Schweiz: Länderhinweis der Seite (tools.js: laender ["AT"]) mit Verweis auf das Verfahren im Land.
+// Lead: Ratsvorlage für Österreich über den Bericht-Baustein (Rechner „ratsvorlage“, Vorgangstyp „kommune“, Land AT).
+// noindex bis zur Fachprüfung (src/lib/land/seiten.js index: false; englisch src/lib/sprache/seiten.js index: false).
+//
+// Sprachmodell: deutsche Texte in DE, englische in EN; Regionsdaten in der Sprache der Seite.
+
+import RechnerSeite, { rechnerMetadata, rechnerMetadataEn } from "@/components/Rechner/RechnerSeite";
+import Widmungskit from "@/components/Kommune/Widmungskit/Widmungskit";
+import { pfad as seitenPfad } from "@/lib/land";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { GEMEINSAM, widmungskitAlle } from "@/lib/kommune/widmung";
+import { datumText } from "@/lib/sprache/format";
+
+const PFAD = seitenPfad("/kommunen/widmungskit");
+const STAND_KIT = "9. Oktober 2026"; // = WIDMUNGSKIT_VERSION (src/lib/kommune/widmung.js)
+
+const metadata = rechnerMetadata({
+  pfad: PFAD,
+  title: "Widmungskit Photovoltaik: Umwidmung je Bundesland in Österreich | ÖkoInvest",
+  description:
+    "Für Gemeinden in Österreich: Ablauf der Widmung für eine PV-Freiflächenanlage, beteiligte Stellen und Prüfpunkte je Bundesland – mit Quelle zu jedem Punkt, zum Abhaken und Drucken.",
+  keywords: ["Widmung Photovoltaik Gemeinde", "Grünland-Photovoltaik Widmung", "Umwidmung PV-Freiflächenanlage", "Flächenwidmungsplan Photovoltaik", "PV-Zonen Bundesland"],
+});
+// Fachprüfung offen (Register index: false): auch die gemeinsame Seite trägt noindex
+metadata.robots = { index: false, follow: true };
+
+const metadataEn = rechnerMetadataEn({
+  title: "Zoning kit for photovoltaics: rezoning per federal state in Austria | ÖkoInvest",
+  description:
+    "For municipalities in Austria: the zoning procedure for a ground-mounted PV plant, the authorities involved and the checkpoints per federal state – with a source for every point, to tick off and print.",
+  keywords: ["zoning photovoltaics municipality Austria", "Grünland-Photovoltaik zoning", "rezoning ground-mounted PV", "zoning plan photovoltaics", "PV zones Austria"],
+});
+
+const FAQ = [
+  {
+    q: "Wer entscheidet über die Widmung?",
+    a: "Die Gemeinde: Der Gemeinderat ändert den Flächenwidmungsplan bzw. das örtliche Raumordnungsprogramm, etwa zu Grünland-Photovoltaik. Das Land gibt dafür Zonen, Kriterien und Größengrenzen vor und prüft die Widmung als Aufsichtsbehörde.",
+  },
+  {
+    q: "Reicht die Widmung für den Bau?",
+    a: "Nein. Je nach Größe kommen die elektrizitätsrechtliche Bewilligung des Landes und eine naturschutzrechtliche Bewilligung, meist bei der Bezirkshauptmannschaft, hinzu – dazu der Netzzugang beim Netzbetreiber. Welche Schwellen in Ihrem Bundesland gelten, steht bei den Prüfpunkten.",
+  },
+  {
+    q: "Woher stammen die Prüfpunkte?",
+    a: "Aus unseren Regionsdaten: Für jedes Bundesland haben wir Raumordnungsrecht, Leitfäden und Verordnungen recherchiert. Jeder Punkt nennt seine Quelle. Was wir nicht belegen konnten, steht hier nicht. Maßgeblich bleibt die geltende Fassung der Landesvorschriften.",
+  },
+  {
+    q: "Gibt es auch Geldwerte für die Gemeinde?",
+    a: "Nicht in diesem Kit. Eine Gewerbesteuer wie in Deutschland gibt es in Österreich nicht; im Vordergrund stehen Pacht, Beteiligungsmodelle und Erneuerbare-Energie-Gemeinschaften. Pacht- und Rechenwerte für Österreich werden geprüft – Zahlen besprechen wir persönlich.",
+  },
+  {
+    q: "Was passiert, wenn ich die Ratsvorlage anfordere?",
+    a: "Sie geben Name und E-Mail an, Telefon ist freiwillig. Erst nach Ihrer Bestätigung per Link erstellen wir die Vorlage mit den Prüfpunkten Ihres Bundeslands und legen eine Anfrage bei unserem Team für Österreich an. Die abgehakten Punkte bleiben in Ihrem Browser.",
+  },
+];
+
+const FAQ_EN = [
+  {
+    q: "Who decides on the zoning?",
+    a: "The municipality: the municipal council amends the zoning plan (Flächenwidmungsplan) or the local spatial planning programme, for example to ‘Grünland-Photovoltaik’. The state sets zones, criteria and size limits for this and reviews the zoning as the supervisory authority.",
+  },
+  {
+    q: "Is zoning enough to build?",
+    a: "No. Depending on size, the state’s permit under electricity law and a permit under nature conservation law, usually from the district authority (Bezirkshauptmannschaft), are also required – plus grid access from the grid operator. The thresholds that apply in your federal state are listed in the checkpoints.",
+  },
+  {
+    q: "Where do the checkpoints come from?",
+    a: "From our regional data: for each federal state we researched spatial planning law, guidelines and ordinances. Every point states its source. What we could not substantiate is not included here. The current version of the state regulations remains authoritative.",
+  },
+  {
+    q: "Are there monetary values for the municipality?",
+    a: "Not in this kit. Austria has no trade tax as in Germany; the focus is on lease, participation models and renewable energy communities. Lease rates and figures for Austria are being reviewed – we discuss figures personally.",
+  },
+  {
+    q: "What happens when I request the council paper?",
+    a: "You enter your name and email; phone is optional. Only after you confirm via the link do we create the paper with the checkpoints of your federal state and open an enquiry with our team for Austria. The points you ticked stay in your browser.",
+  },
+];
+
+const DE = {
+  breadcrumb: "Widmungskit Österreich",
+  eyebrow: "Für Gemeinden in Österreich",
+  title: (
+    <>
+      Umwidmung für Photovoltaik, <span className="ov-text-gradient-light">Schritt für Schritt.</span>
+    </>
+  ),
+  lead: "Wie die Widmung für eine PV-Freiflächenanlage in Ihrem Bundesland läuft, wer beteiligt ist und was das Land vorab prüft – mit Quelle zu jedem Punkt, zum Abhaken und Drucken.",
+  chips: ["Alle neun Bundesländer", "Quelle zu jedem Punkt", "Zum Abhaken und Drucken", "Ratsvorlage auf Wunsch"],
+  app: {
+    name: "Widmungskit Photovoltaik Österreich",
+    description: "Checkliste für Gemeinden: Ablauf der Widmung, beteiligte Stellen und Prüfpunkte für PV-Freiflächenanlagen je österreichischem Bundesland, mit Quellen.",
+    featureList: ["Ablauf der Widmung je Bundesland", "Beteiligte Stellen und ihre Rolle", "Prüfpunkte mit Quelle", "Checkliste zum Abhaken und Drucken", "Ratsvorlage als Muster"],
+  },
+  annahmen: [
+    ["Grundlage", "Regionsdaten ÖkoInvest"],
+    ["Quellen", "je Prüfpunkt verlinkt"],
+    ["Geldwerte", "keine (werden geprüft)"],
+    ["Befristete Hinweise", "nicht enthalten"],
+    ["Stand", datumText(STAND_KIT, "de")],
+  ],
+  quellen: [{ name: "Raumordnungsrecht und Leitfäden der Länder (Quelle je Prüfpunkt)" }, { name: "Koordinationsstelle für Energiegemeinschaften – FAQs zum ElWG", url: "https://energiegemeinschaften.gv.at/faqs-zum-elwg/" }],
+  faqTitel: "Widmung für Photovoltaik",
+  querverweise: [
+    { href: seitenPfad("/kommunen/ratsvorlage"), titel: "Ratsvorlage Solarpark", text: "Kommunal-Rechner 2.0 mit druckfertiger Ratsvorlage als Muster." },
+    { href: seitenPfad("/regionen"), titel: "Regionen", text: "Widmung, Zonen und Behörden je Bundesland – mit Quellen." },
+    { href: seitenPfad("/energiegemeinschaften"), titel: "Energiegemeinschaften", text: "EEG, BEG und die neuen Modelle nach ElWG – mit Strom aus dem Park." },
+    { href: seitenPfad("/kommunen"), titel: "Für Kommunen", text: "Wertschöpfung, Verfahren und Beteiligung vor Ort." },
+  ],
+  cta: {
+    eyebrow: "Für Gemeinden",
+    title: "Wir begleiten die Widmung – mit offenen Zahlen.",
+    text: "Wir stellen das Vorhaben im Gemeinderat vor und bereiten die Unterlagen für das Land vor. Die Planungskosten trägt der Entwickler.",
+    primary: { label: "Gespräch anfragen", href: seitenPfad("/kommunen#anfrage") },
+    secondary: { label: "Ratsvorlage", href: seitenPfad("/kommunen/ratsvorlage") },
+  },
+};
+
+const EN = {
+  breadcrumb: "Zoning kit Austria",
+  eyebrow: "For municipalities in Austria",
+  title: (
+    <>
+      Rezoning for photovoltaics, <span className="ov-text-gradient-light">step by step.</span>
+    </>
+  ),
+  lead: "How zoning for a ground-mounted PV plant works in your federal state, who is involved and what the state checks in advance – with a source for every point, to tick off and print.",
+  chips: ["All nine federal states", "A source for every point", "To tick off and print", "Council paper on request"],
+  app: {
+    name: "Zoning kit for photovoltaics in Austria",
+    description: "Checklist for municipalities: zoning procedure, authorities involved and checkpoints for ground-mounted PV plants per Austrian federal state, with sources.",
+    featureList: ["Zoning procedure per federal state", "Authorities involved and their role", "Checkpoints with source", "Checklist to tick off and print", "Council paper as a template"],
+  },
+  annahmen: [
+    ["Basis", "ÖkoInvest regional data"],
+    ["Sources", "linked for each checkpoint"],
+    ["Monetary values", "none (being reviewed)"],
+    ["Time-limited notices", "not included"],
+    ["As of", datumText(STAND_KIT, "en")],
+  ],
+  quellen: [{ name: "Spatial planning law and guidelines of the states (source per checkpoint)" }, { name: "Coordination office for energy communities – FAQs on the ElWG" }],
+  faqTitel: "Zoning for photovoltaics",
+  querverweise: [
+    { titel: "Council paper for solar parks", text: "Municipal calculator 2.0 with a ready-to-print council paper template." },
+    { titel: "Regions", text: "Zoning, zones and authorities per federal state – with sources." },
+    { titel: "Energy communities", text: "EEG, BEG and the new models under the ElWG – with power from the park." },
+    { titel: "For municipalities", text: "Local value creation, procedure and participation." },
+  ],
+  cta: {
+    eyebrow: "For municipalities",
+    title: "We support the zoning – with open figures.",
+    text: "We present the project to the municipal council and prepare the documents for the state. The developer bears the planning costs.",
+    primary: { label: "Request a meeting" },
+    secondary: { label: "Council paper" },
+  },
+};
+
+const ERKLAERUNG = {
+  de: (
+    <div className="ov-prose max-w-none">
+      <h2>So ist das Widmungskit aufgebaut</h2>
+      <p>
+        <strong>Ablauf und Stellen:</strong> wie die Widmung im gewählten Bundesland läuft und welche Stellen beteiligt sind – von der Gemeinde über die Raumordnung des Landes bis zur
+        Bezirkshauptmannschaft und zum Netzbetreiber.
+      </p>
+      <p>
+        <strong>Prüfpunkte:</strong> Zonen, Größengrenzen, Kriterienkataloge und Bewilligungsschwellen des Landes, jeweils mit der Quelle, auf die sich die Aussage stützt. Befristete Hinweise wie
+        Fördercalls stehen auf den Regionsseiten.
+      </p>
+      <h3>Grenzen</h3>
+      <ul>
+        <li>Keine Rechtsberatung – maßgeblich sind die geltenden Landesvorschriften.</li>
+        <li>Keine Geldwerte: Pacht- und Rechenwerte für Österreich werden geprüft.</li>
+        <li>Ob eine konkrete Fläche widmungsfähig ist, klärt erst die Prüfung der Fläche.</li>
+      </ul>
+    </div>
+  ),
+  en: (
+    <div className="ov-prose max-w-none">
+      <h2>How the zoning kit is structured</h2>
+      <p>
+        <strong>Procedure and authorities:</strong> how zoning works in the selected federal state and which authorities are involved – from the municipality and the state’s spatial planning
+        department to the district authority and the grid operator.
+      </p>
+      <p>
+        <strong>Checkpoints:</strong> the state’s zones, size limits, criteria catalogues and permit thresholds, each with the source on which the statement is based. Time-limited notices such as
+        funding calls are on the region pages.
+      </p>
+      <h3>Limits</h3>
+      <ul>
+        <li>Not legal advice – the current state regulations are authoritative.</li>
+        <li>No monetary values: lease rates and figures for Austria are being reviewed.</li>
+        <li>Whether a specific plot can be zoned is only clarified by assessing the plot.</li>
+      </ul>
+    </div>
+  ),
+};
+
+export default async function WidmungskitPage({ params }) {
+  await seitenLand(params);
+  const sprache = spracheDerAnfrage();
+  const en = sprache === "en";
+  const t = uebersetze({ de: DE, en: EN }, sprache);
+  const kits = widmungskitAlle(sprache);
+  return (
+    <RechnerSeite
+      pfad={PFAD}
+      toolId="widmungskit"
+      breadcrumb={t.breadcrumb}
+      eyebrow={t.eyebrow}
+      title={t.title}
+      lead={t.lead}
+      chips={t.chips}
+      app={t.app}
+      rechner={<Widmungskit kits={kits} gemeinsam={GEMEINSAM[en ? "en" : "de"]} />}
+      erklaerung={en ? ERKLAERUNG.en : ERKLAERUNG.de}
+      annahmen={t.annahmen}
+      quellen={t.quellen}
+      faq={en ? FAQ_EN : FAQ}
+      faqTitel={t.faqTitel}
+      querverweise={t.querverweise}
+      cta={t.cta}
+      landHinweise={{
+        DE: {
+          de: "Das Widmungskit gilt für Österreich. In Deutschland plant die Gemeinde über die Bauleitplanung mit Bebauungsplan und Flächennutzungsplan – Ablauf und Landesrecht zeigt die Ratsvorlage.",
+          en: "The zoning kit applies to Austria. In Germany, the municipality plans through land-use planning with a development plan and land use plan – the council paper shows the procedure and state law.",
+        },
+        CH: {
+          de: "Das Widmungskit gilt für Österreich. In der Schweiz braucht eine Anlage ausserhalb der Bauzone ein Baugesuch bei der Gemeinde und eine kantonale Ausnahmebewilligung (Art. 24ter RPG). Eine Checkliste für die Schweiz bereiten wir vor.",
+          en: "The zoning kit applies to Austria. In Switzerland, an installation outside the building zone needs a building application to the municipality and a cantonal exemption permit (Art. 24ter RPG). We are preparing a checklist for Switzerland.",
+        },
+      }}
+    />
+  );
+}
+
+export const generateMetadata = seitenMetadata("/kommunen/widmungskit", metadata, { en: metadataEn });
+=== src/app/(laender)/[land]/kommunen/ratsvorlage/page.js
+// Länderfassung von /kommunen/ratsvorlage (/de, /at, /ch) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/kommunen/ratsvorlage/page.js; das Land kommt aus params.land.
+export { default, generateMetadata } from "@/app/(stamm)/kommunen/ratsvorlage/page";
+=== src/app/(en)/en/kommunen/ratsvorlage/page.js
+// Englische Fassung von /kommunen/ratsvorlage (/en) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/kommunen/ratsvorlage/page.js; Sprache "en" über params.sprache.
+import Seite, { generateMetadata as metadaten } from "@/app/(stamm)/kommunen/ratsvorlage/page";
+import { englisch, englischeMetadaten } from "@/lib/sprache/route";
+export default englisch(Seite);
+export const generateMetadata = englischeMetadaten(metadaten);
+=== src/app/(en)/en/[land]/kommunen/ratsvorlage/page.js
+// Englische Fassung von /kommunen/ratsvorlage (/en/de, /en/at, /en/ch) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/kommunen/ratsvorlage/page.js; Sprache "en" über params.sprache, das Land aus params.land.
+import Seite, { generateMetadata as metadaten } from "@/app/(stamm)/kommunen/ratsvorlage/page";
+import { englisch, englischeMetadaten } from "@/lib/sprache/route";
+export default englisch(Seite);
+export const generateMetadata = englischeMetadaten(metadaten);
+
+// Länderfassung von /kommunen (/de, /at, /ch) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/kommunen/page.js; das Land kommt aus params.land.
+export { default, generateMetadata } from "@/app/(stamm)/kommunen/page";

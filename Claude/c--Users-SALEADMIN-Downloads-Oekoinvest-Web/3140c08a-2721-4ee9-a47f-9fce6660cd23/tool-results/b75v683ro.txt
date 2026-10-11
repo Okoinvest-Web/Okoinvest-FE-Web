@@ -1,0 +1,332 @@
+     1	// /energiegemeinschaften/software – Plattform und Betriebsführung für Energiegemeinschaften in Österreich (WP6):
+     2	// Mitgliederportal, Ersparnis-Rechner, fairer Vergleich mit dem Markt (belegt aus docs/EG-MARKT.md, keine Herabsetzung),
+     3	// Pakete Software / Betriebsführung / Gründung (Preise auf Anfrage), Wechsel, ElWG-Neuerungen, Anfrage über POST /api/anfrage.
+     4	
+     5	import { BadgeCheck, BellRing, Building2, Check, ClipboardList, FileSignature, HandCoins, Landmark, LineChart, Repeat, ShieldCheck, SlidersHorizontal, Sun, Users } from "lucide-react";
+     6	import Breadcrumbs from "@/components/ui/Breadcrumbs";
+     7	import Button from "@/components/ui/Button";
+     8	import IllustrationRahmen from "@/components/ui/IllustrationRahmen";
+     9	import { Eyebrow } from "@/components/ui/SectionHeading";
+    10	import { EnergiegemeinschaftDorf } from "@/components/illustrationen";
+    11	import { HeroKomposition, MockAbschluss, MockEnergieHeute, MockKassier, MockZustimmung } from "@/components/Portal/EG/Produkt/Mockups";
+    12	import Section from "@/components/ui/Section";
+    13	import SectionHeading from "@/components/ui/SectionHeading";
+    14	import FeatureGrid from "@/components/ui/FeatureGrid";
+    15	import Steps from "@/components/ui/Steps";
+    16	import Faq from "@/components/ui/Faq";
+    17	import CtaBand from "@/components/ui/CtaBand";
+    18	import Reveal from "@/components/ui/Reveal";
+    19	import Querverweise from "@/components/Reusable/Querverweise";
+    20	import { rechnerMetadata } from "@/components/Rechner/RechnerSeite";
+    21	import AnfrageMitDaten from "@/components/Gemeinschaft/AnfrageMitDaten";
+    22	import ErsparnisRechner from "@/components/Portal/EG/Mitglied/ErsparnisRechner";
+    23	import { abs } from "@/data/site";
+    24	
+    25	const PFAD = "/energiegemeinschaften/software";
+    26	
+    27	export const metadata = rechnerMetadata({
+    28	  pfad: PFAD,
+    29	  title: "Software für Energiegemeinschaften (AT) | ÖkoInvest",
+    30	  description: "Plattform und Betriebsführung für EEG, BEG und GEA nach ElWG: geführte Zustimmung beim Netzbetreiber, Mehrfachteilnahme, Ersparnis-Rechner, Gründung und Wechsel.",
+    31	  keywords: ["Energiegemeinschaft Software", "EEG Abrechnung", "Bürgerenergiegemeinschaft", "ElWG Energiegemeinschaft", "Mehrfachteilnahme Teilnahmefaktor", "Energiegemeinschaft gründen Österreich"],
+    32	});
+    33	
+    34	const PORTAL = [
+    35	  { icon: BellRing, title: "Zustimmung mit Countdown", text: "Jedes Mitglied sieht, wo seine Anmeldung steht, wie viele Tage für die Zustimmung im Netzbetreiber-Portal bleiben – und eine Anleitung für genau seinen Netzbetreiber." },
+    36	  { icon: LineChart, title: "Ersparnis, die man versteht", text: "Anteil Gemeinschaftsstrom, Ersparnis aus Energiepreis, Netzentgelt und Abgabe – getrennt ausgewiesen und als Schätzung gekennzeichnet." },
+    37	  { icon: Sun, title: "Grüne Stunden", text: "Wann die Gemeinschaft am meisten erzeugt: aus Prognose und Messwerten, dazu Hinweise zu Mittagstarif, Speicher und Wallbox – ohne Fernsteuerung." },
+    38	  { icon: SlidersHorizontal, title: "Mehrfachteilnahme", text: "Ein Zählpunkt in bis zu fünf Gemeinschaften: Teilnahmefaktoren je Gemeinschaft, freier Anteil und ein Vorschlag des Optimierers." },
+    39	  { icon: FileSignature, title: "Beitritt in Minuten", text: "Eignungscheck des Zählpunkts, Verträge, SEPA-Mandat und elektronische Unterschrift – danach geht es geführt in die Zustimmung beim Netzbetreiber." },
+    40	  { icon: ShieldCheck, title: "Eigene Daten, klare Rechte", text: "Mitglieder sehen nur ihre Daten, Vorstände standardmäßig Summen. Datenauskunft nach Art. 15 DSGVO als Download." },
+    41	];
+    42	
+    43	/** Vergleich: Aussagen zum Markt aus der Marktanalyse (öffentliche Anbieterangaben, Stand 01.10.2026) */
+    44	const VERGLEICH = [
+    45	  { thema: "Online-Beitritt, EDA-Anbindung, Rechnungen und Gutschriften, Mitgliederportal", markt: "bei nahezu allen Anbietern Standard", wir: "Ebenso enthalten – mit geführter Zustimmung je Netzbetreiber und Fristanzeige" },
+    46	  { thema: "Hilfe bei der Zustimmung im Netzbetreiber-Portal", markt: "teils als Anleitung (PDF, Seiten je Netzbetreiber)", wir: "Status Schritt für Schritt im Portal, Countdown und Anleitung im Kontext des Zählpunkts" },
+    47	  { thema: "Mehrfachteilnahme mit Teilnahmefaktor", markt: "bei einzelnen Anbietern, teils als eigenes Paket", wir: "Übersicht je Zählpunkt, Regeln Σ ≤ 100 % und max. 5 geprüft, Vorschlag des Optimierers" },
+    48	  { thema: "Prognose „grüne Stunden“, Speicher- und Lastverschiebungs-Hinweise", markt: "in öffentlichen Quellen selten belegt", wir: "Prognose aus Messwerten und Wetter, Hinweise ohne Steuerung" },
+    49	  { thema: "Vereinsführung, Mahnwesen, Umsatzsteuer-Sonderfälle", markt: "in öffentlichen Quellen selten belegt", wir: "Organe, Versammlungen, Vier-Augen-Freigaben, USt-Fälle (Kleinunternehmer, Landwirt, Reverse Charge)" },
+    50	  { thema: "Gründung, Anlagen und Finanzierung aus einer Hand", markt: "Gründungsbegleitung verbreitet, eigene Anlagenprojekte selten", wir: "Gründung als Dienstleistung, PV und Speicher über die ÖKOVOLT-Gruppe, Bürgerbeteiligung" },
+    51	];
+    52	
+    53	const PAKETE = [
+    54	  { icon: ClipboardList, title: "Software", tag: "Selbstverwaltet", text: "Plattform für Vorstand, Kassa und Mitglieder: Stammdaten, EDA-Prozesse, Energiedaten, Abrechnung, Portal. Ihre Gemeinschaft arbeitet selbst, wir liefern Werkzeug und Support.", punkte: ["Mitgliederportal und Beitritt online", "Abrechnung mit Vier-Augen-Freigabe", "Export für die Steuerberatung"] },
+    55	  { icon: Users, title: "Betriebsführung", tag: "ÖkoInvest als Organisator", text: "Wir übernehmen als Organisator nach § 68 Abs. 2 ElWG Anmeldungen, Datenqualität, Abrechnung und Mitgliederfragen – auf Basis eines Dienstleistungs- und Auftragsverarbeitungsvertrags.", punkte: ["Kommunikation mit dem Netzbetreiber", "Lieferantenpflichten ab 100 kW (§ 69)", "Ansprechpartner für Mitglieder"] },
+    56	  { icon: Building2, title: "Gründung", tag: "Von der Idee bis zum ersten Strom", text: "Machbarkeit mit Simulation, Rechtsform und Statuten, Marktpartner, Vertrag mit dem Netzbetreiber, EDA-Zugang, erste Mitglieder – für Gemeinden, Vereine und Initiativen.", punkte: ["Netzgebiets- und Nahebereichs-Check", "Statuten und Verträge aus Mustern", "Startkampagne für Mitglieder"] },
+    57	];
+    58	
+    59	const WECHSEL = [
+    60	  { title: "Mandat", text: "Vorstandsbeschluss, Dienstleistungs- und Auftragsverarbeitungsvertrag; auf Wunsch Bestellung als Organisator." },
+    61	  { title: "EDA-Zugang übertragen", text: "Die Marktpartner-ID bleibt bei Ihrer Gemeinschaft. Zählpunkte müssen nicht ab- und neu angemeldet werden – die Zustimmungen bleiben bestehen." },
+    62	  { title: "Daten übernehmen", text: "Import von Mitgliedern, Zählpunkten und Tarifen, Abgleich mit der Zählpunktliste des Netzbetreibers." },
+    63	  { title: "Parallellauf und Stichtag", text: "Eigene Zuteilung gegen die Werte des Netzbetreibers prüfen, Abrechnung ab einem festen Monat." },
+    64	];
+    65	
+    66	const ELWG = [
+    67	  { icon: Repeat, title: "Bis zu fünf Gemeinschaften", text: "Ein Zählpunkt kann an bis zu fünf gemeinsamen Energienutzungen teilnehmen; Teilnahmefaktor ganzzahlig, zusammen höchstens 100 % (ElWG § 71 Abs. 5)." },
+    68	  { icon: HandCoins, title: "Netzentgelt nach Nahebereich", text: "Bis Ende 2026 gelten für EEG lokal −57 % bzw. regional −28 %/−64 % auf den Netznutzungs-Arbeitspreis. Ab 2027 soll eine neue Verordnung nach Nahebereich staffeln – die Höhe steht noch aus (zu bestätigen)." },
+    69	  { icon: BadgeCheck, title: "Pflichten ab 100 kW", text: "Gemeinschaften mit mehr als 100 kW Erzeugung (Haushalte über 30 kW) brauchen AGB, Informationsblatt und Rechnungen mit Pflichtinhalten – ein Organisator kann sie übernehmen (§ 69)." },
+    70	  { icon: Landmark, title: "Sozialquote für Gemeinden", text: "Nehmen Gebietskörperschaften mit eigener Erzeugung teil, sollen mindestens 10 % der Menge schutzbedürftigen Haushalten zugutekommen (§ 68 Abs. 6)." },
+    71	];
+    72	
+    73	/** Produktfakten – Regeln, die die Plattform abbildet (keine Unternehmenskennzahlen) */
+    74	const FAKTEN = [
+    75	  { wert: "5", einheit: "", text: "Gemeinschaften je Zählpunkt – Teilnahmefaktoren im Blick" },
+    76	  { wert: "10", einheit: "Werktage", text: "Zustimmungsfrist beim Netzbetreiber als Countdown" },
+    77	  { wert: "2", einheit: "Freigaben", text: "Vier-Augen-Prinzip für jede Abrechnung und Zahlung" },
+    78	  { wert: "0", einheit: "", text: "Neuanmeldungen beim Wechsel – Zustimmungen bleiben" },
+    79	];
+    80	
+    81	const TOUR = [
+    82	  {
+    83	    id: "mitglied",
+    84	    eyebrow: "Für Mitglieder",
+    85	    titel: "Energie heute – die Frage „Was spare ich?“ ist beantwortet, bevor sie gestellt wird",
+    86	    text: "Das Dashboard zeigt den Energiefluss von den Anlagen der Region bis nach Hause, die Ersparnis aus Energiepreis, Netzentgelt und Abgabe und die grünen Stunden des Tages – mit einem Hinweis, wann sich Waschmaschine oder Wallbox lohnen.",
+    87	    punkte: ["Ersparnis getrennt nach Energie, Netz und Abgabe, als Schätzung gekennzeichnet", "Grüne Stunden aus Prognose und Messwerten – Empfehlung, keine Steuerung", "Belege, Preisblatt und eigene Daten an einem Ort"],
+    88	  },
+    89	  {
+    90	    id: "zustimmung",
+    91	    eyebrow: "Der größte Ärger am Markt",
+    92	    titel: "Zustimmung beim Netzbetreiber: mit Countdown und Anleitung für genau dieses Netz",
+    93	    text: "Vergisst ein Mitglied die Zustimmung im Portal des Netzbetreibers, verfällt die Anmeldung nach zehn Werktagen. Unser Portal zählt die Tage herunter und erklärt jeden Klick für den jeweiligen Netzbetreiber – direkt nach dem Beitritt.",
+    94	    punkte: ["Status jeder Anmeldung Schritt für Schritt", "Fristring mit Datum, dringend ab sieben Tagen", "Anleitung je Netzbetreiber im Kontext des Zählpunkts"],
+    95	  },
+    96	  {
+    97	    id: "kassier",
+    98	    eyebrow: "Für Kassa und Vorstand",
+    99	    titel: "Die Abrechnung als geführte Routine – ruhig, präzise, nachvollziehbar",
+   100	    text: "Vorschau berechnen, Veränderungen zum Vormonat sehen, als Kassier und Vorstand freigeben, versenden: Jeder Schritt hat einen klaren Status, jede Zahl einen Prüfpfad bis zum Viertelstundenwert.",
+   101	    punkte: ["Status-Pipeline je Periode, Vier-Augen-Freigabe mit Bestätigung", "Vergleich zum Vorzeitraum mit auffälligen Mitgliedern", "SEPA-Lastschrift und -Überweisung, Mahnwesen, Exporte für die Steuerberatung"],
+   102	  },
+   103	];
+   104	
+   105	const FAQ = [
+   106	  { q: "Für welche Gemeinschaften ist die Plattform gedacht?", a: "Für Erneuerbare-Energie-Gemeinschaften (lokal und regional), Bürgerenergiegemeinschaften und gemeinschaftliche Erzeugungsanlagen in Österreich nach den §§ 65–72 ElWG. Das neue Modell Peer-to-Peer ist im Datenmodell bereits vorgesehen." },
+   107	  { q: "Müssen wir bei einem Wechsel alle Zählpunkte neu anmelden?", a: "Nein. Die Marktpartner-ID gehört der Gemeinschaft; wir erhalten einen Zugang im EDA-Anwenderportal bzw. eine Bevollmächtigung. Die bestehenden Zustimmungen der Mitglieder bleiben gültig. Für einen Monat rechnen wir parallel und gleichen mit den Werten des Netzbetreibers ab." },
+   108	  { q: "Wie hoch ist die Ersparnis für ein Mitglied?", a: "Das hängt vom Modell, vom Verbrauchsprofil und vom Preis in der Gemeinschaft ab. Öffentlich genannte Beispiele liegen bei rund 50 bis 200 € im Jahr je Haushalt. Der Rechner oben zeigt Ihre Größenordnung – die Netzentgelt-Reduktion zieht der Netzbetreiber direkt auf der Netzrechnung ab." },
+   109	  { q: "Was passiert bei den Netzentgelten ab 2027?", a: "Mit dem ElWG sollen reduzierte Netzentgelte künftig nach dem Nahebereich (Zonelevel) statt nach der Form der Gemeinschaft berechnet werden. Die neue Verordnung lag zum 1. Oktober 2026 noch nicht endgültig vor; wir rechnen bis dahin mit einer gekennzeichneten Arbeitshypothese und passen die Werte an, sobald sie feststehen." },
+   110	  { q: "Was kostet die Plattform?", a: "Wir kalkulieren je Gemeinschaft nach Paket und Größe und legen das Angebot offen dar. Fragen Sie unverbindlich an – mit wenigen Angaben zu Mitgliedern und Anlagen erhalten Sie ein konkretes Angebot." },
+   111	  { q: "Wer sieht die Viertelstundenwerte der Mitglieder?", a: "Mitglieder sehen ihre eigenen Werte. Vorstand und Kassa sehen standardmäßig Summen; eine Einzeleinsicht ist nur mit Zweck möglich und wird protokolliert. Die Betriebsführung arbeitet im Auftrag der Gemeinschaft (Auftragsverarbeitung nach Art. 28 DSGVO)." },
+   112	];
+   113	
+   114	const QUERVERWEISE = [
+   115	  { href: "/energiegemeinschaften", titel: "Energiegemeinschaften im Überblick", text: "Regeln in Deutschland, Österreich und der Schweiz im Vergleich." },
+   116	  { href: "/energiegemeinschaften/rechner", titel: "Ersparnis-Rechner", text: "Was eine Gemeinschaft für Ihren Verbrauch oder Ihre PV-Anlage bringt." },
+   117	  { href: "/kommunen", titel: "Für Gemeinden", text: "Wertschöpfung, Beteiligung und eigene Anlagen vor Ort." },
+   118	];
+   119	
+   120	const schema = {
+   121	  "@context": "https://schema.org",
+   122	  "@type": "Service",
+   123	  "@id": `${abs(PFAD)}/#service`,
+   124	  name: "Plattform und Betriebsführung für Energiegemeinschaften",
+   125	  serviceType: "Software und Dienstleistung für Energiegemeinschaften",
+   126	  description: "Mitgliederportal, EDA-Prozesse, Abrechnung, Gründung und Betriebsführung für Energiegemeinschaften in Österreich nach ElWG.",
+   127	  provider: { "@id": `${abs("/")}/#organization` },
+   128	  areaServed: { "@type": "Country", name: "Österreich" },
+   129	  url: abs(PFAD),
+   130	};
+   131	
+   132	export default function SoftwarePage() {
+   133	  return (
+   134	    <div>
+   135	      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+   136	      <section className="ov-verlauf-nacht relative isolate overflow-hidden text-white">
+   137	        <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10 opacity-60" />
+   138	        <div className="ov-container pb-24 pt-8 md:pb-32 md:pt-12">
+   139	          <Breadcrumbs items={[{ name: "Energiegemeinschaften", href: "/energiegemeinschaften" }, { name: "Plattform & Betrieb" }]} dark className="ov-hero-in mb-10" />
+   140	          <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10">
+   141	            <div className="max-w-2xl">
+   142	              <div className="ov-hero-in" style={{ "--ov-delay": "60ms" }}><Eyebrow dark className="mb-5">Für Energiegemeinschaften in Österreich · ElWG</Eyebrow></div>
+   143	              <h1 className="ov-h1 ov-hero-in" style={{ "--ov-delay": "120ms" }}>Die Gemeinschaft führen – <span className="ov-text-gradient-light">nicht nur abrechnen.</span></h1>
+   144	              <p className="ov-lead ov-hero-in mt-6 text-white/75" style={{ "--ov-delay": "200ms" }}>Eine Plattform, die Mitglieder gern öffnen, und ein Arbeitsplatz, auf den sich Kassa und Vorstand verlassen – auf Wunsch mit einem Team, das den Betrieb übernimmt. Von der Gründung über die Zustimmung beim Netzbetreiber bis zur eigenen Anlage.</p>
+   145	              <ul className="ov-hero-in mt-7 flex flex-wrap gap-2" style={{ "--ov-delay": "260ms" }}>
+   146	                {["Geführte Zustimmung beim Netzbetreiber", "Mehrfachteilnahme bis fünf Gemeinschaften", "Gründung, Wechsel und Betrieb", "EDA-Rolle bleibt bei der Gemeinschaft"].map((x) => (
+   147	                  <li key={x} className="ov-glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[13.5px] text-white/90"><Check aria-hidden="true" className="h-3.5 w-3.5 text-ov-300" strokeWidth={3} />{x}</li>
+   148	                ))}
+   149	              </ul>
+   150	              <div className="ov-hero-in mt-9 flex flex-wrap gap-3" style={{ "--ov-delay": "320ms" }}>
+   151	                <Button href="#rechner" size="lg" pfeil>Ersparnis rechnen</Button>
+   152	                <Button href="#anfrage" size="lg" variant="outlineLight">Angebot anfragen</Button>
+   153	              </div>
+   154	            </div>
+   155	            <HeroKomposition />
+   156	          </div>
+   157	        </div>
+   158	      </section>
+   159	
+   160	      <section aria-label="Was die Plattform abbildet" className="relative z-10 -mt-12 md:-mt-16">
+   161	        <div className="ov-container">
+   162	          <ul className="grid grid-cols-2 gap-3 rounded-[2rem] bg-white p-3 shadow-e3 ring-1 ring-ink-200/70 md:grid-cols-4 md:gap-0 md:p-2">
+   163	            {FAKTEN.map((f, i) => (
+   164	              <li key={f.text} className={i > 0 ? "rounded-3xl p-4 md:border-l md:border-ink-100 md:p-6" : "rounded-3xl p-4 md:p-6"}>
+   165	                <p className="ov-kpi-l text-ink-900">{f.wert}{f.einheit && <span className="ov-einheit"> {f.einheit}</span>}</p>
+   166	                <p className="mt-1 text-[13.5px] leading-snug text-ink-600">{f.text}</p>
+   167	              </li>
+   168	            ))}
+   169	          </ul>
+   170	        </div>
+   171	      </section>
+   172	
+   173	      <Section tone="white" space="lg" id="rechner" className="scroll-mt-24">
+   174	        <SectionHeading eyebrow="Ersparnis-Rechner" title={<>Was bringt eine Gemeinschaft <span className="ov-text-gradient">Ihren Mitgliedern?</span></>} lead="Verbrauch oder PV-Anlage eingeben – der Rechner nutzt die Netzentgelt-Regeln 2026 und kennzeichnet die Arbeitshypothese für 2027." className="mb-8 md:mb-10" />
+   175	        <Reveal className="rounded-[2rem] bg-sand-50 p-3 ring-1 ring-sand-200 md:p-5">
+   176	          <ErsparnisRechner />
+   177	        </Reveal>
+   178	      </Section>
+   179	
+   180	      <Section tone="sand" space="lg">
+   181	        <SectionHeading eyebrow="Das Produkt" title="Drei Ansichten, ein Gedanke: niemand muss nachfragen" lead="So sieht die Plattform für Mitglieder, für die Zustimmung beim Netzbetreiber und für die Kassa aus. Alle Werte in den Ansichten sind Beispiele." className="mb-12 md:mb-16" />
+   182	        <div className="space-y-20 md:space-y-28">
+   183	          {TOUR.map((t, i) => (
+   184	            <div key={t.id} className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+   185	              <Reveal dir={i % 2 ? "left" : "right"} className={i % 2 ? "lg:order-2" : ""}>
+   186	                <Eyebrow className="mb-4">{t.eyebrow}</Eyebrow>
+   187	                <h3 className="ov-h3 text-ink-900 md:text-[28px]">{t.titel}</h3>
+   188	                <p className="ov-text mt-4 text-ink-600">{t.text}</p>
+   189	                <ul className="mt-6 space-y-2.5">
+   190	                  {t.punkte.map((x) => <li key={x} className="flex gap-2.5 text-[15px] text-ink-700"><BadgeCheck aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-ov-600" />{x}</li>)}
+   191	                </ul>
+   192	              </Reveal>
+   193	              <Reveal dir="scale" className={i % 2 ? "lg:order-1" : ""}>
+   194	                {t.id === "mitglied" && (
+   195	                  <div role="img" aria-label="Beispielansicht Energie heute auf dem Handy: Energiefluss, 71,40 € Ersparnis, 38 % aus der Gemeinschaft" className="relative mx-auto max-w-[300px]">
+   196	                    <div aria-hidden="true"><MockEnergieHeute /></div>
+   197	                  </div>
+   198	                )}
+   199	                {t.id === "zustimmung" && (
+   200	                  <div role="img" aria-label="Beispielansicht Zustimmung beim Netzbetreiber: Ring mit noch 6 Tagen und Anleitung in fünf Schritten" className="relative mx-auto max-w-[460px]">
+   201	                    <div aria-hidden="true"><MockZustimmung /></div>
+   202	                  </div>
+   203	                )}
+   204	                {t.id === "kassier" && (
+   205	                  <div role="img" aria-label="Beispielansicht der Abrechnung: Status-Pipeline, Vergleich zum September, Vier-Augen-Freigabe und Abschlussmeldung" className="relative mx-auto max-w-[560px] pb-8">
+   206	                    <div aria-hidden="true">
+   207	                      <MockKassier />
+   208	                      <MockAbschluss className="absolute -bottom-2 right-4 w-[70%] max-w-[300px] sm:-right-4" />
+   209	                    </div>
+   210	                  </div>
+   211	                )}
+   212	              </Reveal>
+   213	            </div>
+   214	          ))}
+   215	        </div>
+   216	      </Section>
+   217	
+   218	      <Section tone="white" space="lg">
+   219	        <SectionHeading eyebrow="Was Mitglieder bekommen" title="Klar, ehrlich, ohne Rückfragen" lead="Alles an einem Ort – auch auf dem Handy." className="mb-10 md:mb-12" />
+   220	        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 md:gap-5">
+   221	          <Reveal className="overflow-hidden rounded-[2rem] bg-sand-50 ring-1 ring-sand-200 md:col-span-2 lg:row-span-2">
+   222	            <IllustrationRahmen ton="sand" format="16/10" label="Energiegemeinschaft im Dorf: Sonnenstrom fließt von den Dächern zu den Nachbarn">
+   223	              <EnergiegemeinschaftDorf animiert />
+   224	            </IllustrationRahmen>
+   225	            <div className="p-6 md:p-8">
+   226	              <p className="ov-overline text-ov-700">Gemeinschaftsstrom</p>
+   227	              <h3 className="ov-h3 mt-1 text-ink-900">Strom aus der Nachbarschaft – sichtbar gemacht</h3>
+   228	              <p className="ov-text mt-2 text-ink-600">Wer sieht, woher sein Strom kommt, bleibt dabei. Das Portal macht Erzeugung, Anteil und Ersparnis jeden Tag greifbar.</p>
+   229	            </div>
+   230	          </Reveal>
+   231	          {PORTAL.map((f, i) => (
+   232	            <Reveal key={f.title} delay={i * 60} className="flex">
+   233	              <div className="ov-lift flex w-full flex-col rounded-[2rem] bg-white p-6 shadow-e1 ring-1 ring-ink-200/70">
+   234	                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-ov-50 text-ov-600"><f.icon aria-hidden="true" className="h-5 w-5" strokeWidth={1.8} /></span>
+   235	                <h3 className="mt-4 font-display text-[17px] font-bold text-ink-900">{f.title}</h3>
+   236	                <p className="mt-1.5 text-[14px] leading-relaxed text-ink-600">{f.text}</p>
+   237	              </div>
+   238	            </Reveal>
+   239	          ))}
+   240	        </div>
+   241	      </Section>
+   242	
+   243	      <Section tone="sand" space="lg">
+   244	        <SectionHeading eyebrow="Warum ÖkoInvest" title="Was es am Markt gibt – und was wir anders machen" lead="Rund ein Dutzend Plattformen decken den Grundumfang solide ab. Den Unterschied machen die Aufgaben rund um die Abrechnung, die in Vorständen die meiste Zeit kosten." className="mb-8 md:mb-10" />
+   245	        <Reveal className="overflow-hidden rounded-[2rem] bg-white shadow-e1 ring-1 ring-ink-200/70">
+   246	          <div className="overflow-x-auto">
+   247	            <table className="w-full min-w-[720px] text-left text-[14.5px]">
+   248	              <caption className="sr-only">Vergleich der Funktionen am Markt und bei ÖkoInvest</caption>
+   249	              <thead>
+   250	                <tr className="border-b border-ink-100 bg-sand-50 text-[12px] font-semibold uppercase tracking-wider text-ink-500">
+   251	                  <th scope="col" className="px-5 py-3.5 md:px-6">Aufgabe</th>
+   252	                  <th scope="col" className="px-5 py-3.5 md:px-6">Am Markt (öffentlich belegt)</th>
+   253	                  <th scope="col" className="px-5 py-3.5 text-ov-800 md:px-6">ÖkoInvest-Plattform</th>
+   254	                </tr>
+   255	              </thead>
+   256	              <tbody className="divide-y divide-ink-100">
+   257	                {VERGLEICH.map((v) => (
+   258	                  <tr key={v.thema}>
+   259	                    <th scope="row" className="px-5 py-4 align-top font-semibold text-ink-900 md:px-6">{v.thema}</th>
+   260	                    <td className="px-5 py-4 align-top text-ink-600 md:px-6">{v.markt}</td>
+   261	                    <td className="px-5 py-4 align-top text-ink-800 md:px-6"><span className="flex gap-2"><BadgeCheck aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" />{v.wir}</span></td>
+   262	                  </tr>
+   263	                ))}
+   264	              </tbody>
+   265	            </table>
+   266	          </div>
+   267	          <p className="border-t border-ink-100 px-5 py-4 text-[12.5px] leading-relaxed text-ink-500 md:px-6">Grundlage: eigene Auswertung öffentlicher Anbieterangaben (Websites, Preisblätter, Dokumentationen), Stand 01.10.2026. „Selten belegt“ heißt: in öffentlichen Quellen nicht gefunden – nicht, dass es eine Funktion nicht gibt. Der Funktionsumfang der ÖkoInvest-Plattform geht schrittweise in Betrieb.</p>
+   268	        </Reveal>
+   269	      </Section>
+   270	
+   271	      <Section tone="white" space="lg">
+   272	        <SectionHeading eyebrow="Pakete" title="So viel Unterstützung, wie Ihre Gemeinschaft braucht" lead="Preise auf Anfrage – wir kalkulieren je Gemeinschaft nach Größe und Leistungsumfang und legen das Angebot transparent dar." className="mb-10 md:mb-12" />
+   273	        <div className="grid gap-5 lg:grid-cols-3">
+   274	          {PAKETE.map((p, i) => (
+   275	            <Reveal key={p.title} delay={i * 80} className="flex">
+   276	            <div className={i === 1 ? "ov-verlauf-nacht flex w-full flex-col rounded-[2rem] p-6 text-white shadow-e3 md:p-8" : "ov-lift flex w-full flex-col rounded-[2rem] bg-white p-6 shadow-e1 ring-1 ring-ink-200/70 md:p-8"}>
+   277	              <span className={i === 1 ? "flex h-12 w-12 items-center justify-center rounded-2xl bg-ov-500 text-white" : "flex h-12 w-12 items-center justify-center rounded-2xl bg-ov-50 text-ov-600"}><p.icon aria-hidden="true" className="h-6 w-6" /></span>
+   278	              <p className={i === 1 ? "mt-5 text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-300" : "mt-5 text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-700"}>{p.tag}</p>
+   279	              <h3 className="ov-h3 mt-1">{p.title}</h3>
+   280	              <p className={i === 1 ? "mt-3 text-[15px] leading-relaxed text-white/75" : "mt-3 text-[15px] leading-relaxed text-ink-600"}>{p.text}</p>
+   281	              <ul className="mt-5 space-y-2">
+   282	                {p.punkte.map((x) => <li key={x} className={i === 1 ? "flex gap-2 text-[14.5px] text-white/85" : "flex gap-2 text-[14.5px] text-ink-700"}><BadgeCheck aria-hidden="true" className={i === 1 ? "mt-0.5 h-4 w-4 shrink-0 text-ov-300" : "mt-0.5 h-4 w-4 shrink-0 text-ov-600"} />{x}</li>)}
+   283	              </ul>
+   284	              <p className={i === 1 ? "mt-auto pt-6 font-display text-[18px] font-bold text-white" : "mt-auto pt-6 font-display text-[18px] font-bold text-ink-900"}>Preis auf Anfrage</p>
+   285	            </div>
+   286	            </Reveal>
+   287	          ))}
+   288	        </div>
+   289	      </Section>
+   290	
+   291	      <Section tone="green" space="lg">
+   292	        <SectionHeading eyebrow="Wechsel" title="Wechseln, ohne dass der Strom stockt" lead="Bestehende Gemeinschaften wechseln zu uns, ohne ihre Zählpunkte neu anzumelden." className="mb-10 md:mb-12" />
+   293	        <Steps items={WECHSEL} cols={4} />
+   294	      </Section>
+   295	
+   296	      <Section tone="white" space="lg">
+   297	        <SectionHeading eyebrow="Seit 1. Oktober 2026" title="Was das ElWG für Gemeinschaften ändert" lead="Bestehende Gemeinschaften werden übergeführt; Verträge und Statuten sollten angepasst werden. Die Plattform bildet die neuen Regeln ab." className="mb-10 md:mb-12" />
+   298	        <FeatureGrid items={ELWG} cols={4} />
+   299	        <p className="mt-6 text-[13px] leading-relaxed text-ink-500">Quellen: ElWG BGBl. I Nr. 91/2025 (§§ 65–72), SNE-V 2018 § 5 Abs. 1a, Koordinationsstelle für Energiegemeinschaften (FAQ zum ElWG). Keine Rechts- oder Steuerberatung; Details der neuen Netzentgelt-Verordnung zu bestätigen.</p>
+   300	      </Section>
+   301	
+   302	      <Section tone="sand" space="lg" id="anfrage" className="scroll-mt-24">
+   303	        <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+   304	          <SectionHeading eyebrow="Anfrage" title="Gründen, wechseln oder betreiben lassen" lead="Erzählen Sie uns kurz, wo Ihre Gemeinschaft steht. Wir melden uns mit einem konkreten Vorschlag und Angebot." />
+   305	          <Reveal className="rounded-[2rem] bg-white p-6 shadow-e3 ring-1 ring-ink-200/70 sm:p-8 md:p-10">
+   306	            <AnfrageMitDaten
+   307	              legende="Ihre Gemeinschaft"
+   308	              festeDaten={{ quelle: "energiegemeinschaften-software", land: "AT" }}
+   309	              zusatz={[
+   310	                { name: "anliegen", label: "Worum geht es?", art: "chips", optionen: [{ id: "software", label: "Software" }, { id: "betrieb", label: "Betriebsführung" }, { id: "gruendung", label: "Gründung" }, { id: "wechsel", label: "Wechsel" }] },
+   311	                { name: "modell", label: "Modell", art: "select", optionen: [{ id: "eeg_lokal", label: "EEG lokal" }, { id: "eeg_regional", label: "EEG regional" }, { id: "beg", label: "BEG" }, { id: "gea", label: "GEA" }, { id: "offen", label: "Noch offen" }] },
+   312	                { name: "zaehlpunkte", label: "Zählpunkte (ungefähr)", art: "zahl", platzhalter: "z. B. 60" },
+   313	                { name: "erzeugungKw", label: "Erzeugungsleistung kW (ungefähr)", art: "zahl", platzhalter: "z. B. 120" },
+   314	              ]}
+   315	              formular={{ typ: "energiegemeinschaft", felder: ["firma", "telefon", "plz", "nachricht"], button: "Anfrage senden" }}
+   316	            />
+   317	          </Reveal>
+   318	        </div>
+   319	      </Section>
+   320	
+   321	      <Section tone="white" space="lg">
+   322	        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+   323	          <SectionHeading eyebrow="Häufige Fragen" title="Plattform und Betrieb" lead="Was Vorstände und Gemeinden vor dem Start wissen möchten." />
+   324	          <Faq items={FAQ} />
+   325	        </div>
+   326	      </Section>
+   327	
+   328	      <Querverweise items={QUERVERWEISE} />
+   329	      <CtaBand eyebrow="Gemeinschaft stärken" title="Weniger Verwaltung, mehr Gemeinschaftsstrom." text="Ob neue Gemeinschaft oder Wechsel: Wir zeigen Ihnen die Plattform an Ihren eigenen Zahlen." primary={{ label: "Angebot anfragen", href: "#anfrage" }} secondary={{ label: "Zum Rechner", href: "/energiegemeinschaften/rechner" }} />
+   330	    </div>
+   331	  );
+   332	}

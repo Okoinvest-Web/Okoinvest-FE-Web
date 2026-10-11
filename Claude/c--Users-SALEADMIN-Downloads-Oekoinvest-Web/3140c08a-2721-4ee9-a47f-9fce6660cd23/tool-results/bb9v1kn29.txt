@@ -1,0 +1,275 @@
+src/app/agri-pv/page.js:23:const TITEL = "Agri-PV nach DIN SPEC 91434: Systeme & Recht | ÖkoInvest";
+src/app/agri-pv/page.js:24:const BESCHREIBUNG =
+src/app/agri-pv/page.js-25-  "Agri-PV fachlich erklärt: Kategorien der DIN SPEC 91434, vertikale, hoch aufgeständerte und nachgeführte Systeme, Kulturen, GAP, Baurecht, EEG-Förderung, Kosten.";
+src/app/agri-pv/page.js:29:  description: BESCHREIBUNG,
+src/app/agri-pv/page.js-30-  alternates: { canonical: abs(PFAD) },
+src/app/barrierefreiheit/page.js:16:const TITEL = "Erklärung zur Barrierefreiheit | ÖkoInvest";
+src/app/barrierefreiheit/page.js:17:const BESCHREIBUNG =
+src/app/barrierefreiheit/page.js-18-  "Erklärung zur Barrierefreiheit der ÖkoInvest-Website nach Barrierefreiheitsgesetz (AT) und BFSG (DE): Standards, Stand der Vereinbarkeit, Einschränkungen, Kontakt.";
+src/app/barrierefreiheit/page.js:25:  description: BESCHREIBUNG,
+src/app/barrierefreiheit/page.js-26-  alternates: { canonical: PAGE_URL },
+src/app/bestandsanlagen/page.js:21:const TITEL = "PV-Bestandsanlagen kaufen und verkaufen | ÖkoInvest";
+src/app/bestandsanlagen/page.js:22:const BESCHREIBUNG =
+src/app/bestandsanlagen/page.js-23-  "Zweitmarkt für laufende PV-Anlagen auf Dach und Freifläche: Bewertung nach Ertragswert, Due Diligence, vertraulicher Verkauf, offene Provision.";
+src/app/bestandsanlagen/page.js:27:  description: BESCHREIBUNG,
+src/app/bestandsanlagen/page.js:28:  keywords: ["PV Bestandsanlage verkaufen", "Solarpark kaufen Bestand", "Photovoltaik Zweitmarkt", "Bestandsanlage Bewertung", "PV-Anlage gebraucht kaufen"],
+src/app/bestandsanlagen/page.js-29-  alternates: { canonical: abs(PFAD) },
+src/app/dachflaeche-verpachten/page.js:23:const TITEL = "Dachfläche für Photovoltaik verpachten | ÖkoInvest";
+src/app/dachflaeche-verpachten/page.js:24:const BESCHREIBUNG =
+src/app/dachflaeche-verpachten/page.js-25-  "Gewerbe-, Hallen-, Agrar- oder Logistikdach ab 1.000 m² für PV verpachten: Pachtmodelle, Dachstrom, Sanierung, Vertrag, Steuern DACH und Ablauf – kostenfrei.";
+src/app/dachflaeche-verpachten/page.js:29:  description: BESCHREIBUNG,
+src/app/dachflaeche-verpachten/page.js:30:  keywords: ["Dachfläche verpachten", "Dach verpachten Photovoltaik", "Dachpacht Gewerbedach", "Hallendach vermieten Solar", "Dachpacht pro m²"],
+src/app/dachflaeche-verpachten/page.js-31-  alternates: { canonical: abs(PFAD) },
+src/app/datenschutz/page.js:38:const TITEL = "Datenschutzerklärung | ÖkoInvest";
+src/app/datenschutz/page.js:39:const BESCHREIBUNG =
+src/app/datenschutz/page.js-40-  "Wie die ÖkoInvest GmbH personenbezogene Daten verarbeitet: Anfragen, Portal, Projektbörse, Signatur, Akquise, Energiebeschaffung, Finanzierung und Ihre Rechte.";
+src/app/datenschutz/page.js:47:  description: BESCHREIBUNG,
+src/app/datenschutz/page.js-48-  alternates: { canonical: PAGE_URL },
+src/app/en/contact/page.js:16:  description:
+src/app/en/contact/page.js-17-    "Contact ÖkoInvest in Ostermiething, Austria: buying or selling solar projects, co-development and general enquiries in English – reply within two working days.",
+src/app/en/contact/page.js:18:  keywords: ["ÖkoInvest contact", "solar project developer Austria contact", "solar investment enquiry"],
+src/app/en/contact/page.js-19-});
+src/app/en/investors/page.js:20:const BESCHREIBUNG =
+src/app/en/investors/page.js-21-  "Buy solar project rights, RTB solar parks and operating assets in Germany, Austria and Switzerland: phase model with prices, due diligence, data room – free.";
+src/app/en/investors/page.js:26:  description: BESCHREIBUNG,
+src/app/en/investors/page.js:27:  keywords: ["buy solar park Germany", "solar project rights", "RTB solar project", "PV projects Austria investor", "co-development solar", "operating solar assets DACH"],
+src/app/en/investors/page.js-28-  bild: { src: "/img/investoren-vor-ort.jpg", alt: "Investors visiting a solar park" },
+src/app/en/page.js:21:  description:
+src/app/en/page.js-22-    "ÖkoInvest develops ground-mounted PV, agri-PV and storage in Germany, Austria and Switzerland – with a project exchange and co-development for investors.",
+src/app/en/page.js:23:  keywords: ["solar project developer Germany", "buy solar projects DACH", "PV project rights Austria", "co-development solar", "RTB solar Germany"],
+src/app/en/page.js-24-});
+src/app/en/project-exchange/page.js:19:const BESCHREIBUNG =
+src/app/en/project-exchange/page.js-20-  "Solar parks, agri-PV, car park PV and battery storage in DACH: vetted projects at every stage, one-click NDA, digital data room – free for investors.";
+src/app/en/project-exchange/page.js:25:  description: BESCHREIBUNG,
+src/app/en/project-exchange/page.js:26:  keywords: ["solar project marketplace", "buy solar projects Germany", "sell PV project rights", "solar M&A DACH", "battery storage projects Germany"],
+src/app/en/project-exchange/page.js-27-  bild: { src: "/img/solarpark-reihen.jpg", alt: "Rows of modules in a solar park" },
+src/app/en/sell-your-project/page.js:19:const BESCHREIBUNG = `Sell your solar park or project rights in DACH: anonymous teaser, one-click NDA, digital data room. Success fee of ${SPANNE} only on closing – no listing fees.`;
+src/app/en/sell-your-project/page.js-20-
+src/app/en/sell-your-project/page.js:24:  description: BESCHREIBUNG,
+src/app/en/sell-your-project/page.js:25:  keywords: ["sell solar project", "sell PV project rights Germany", "solar project buyer Austria", "RTB solar project sale", "solar developer exit"],
+src/app/en/sell-your-project/page.js-26-  bild: { src: "/img/planer-tablet.jpg", alt: "Project developer reviewing plans on a tablet" },
+src/app/energie-live/page.js:42:    keywords: [
+src/app/energie-live/page.js-43-      "Strompreis Börse aktuell",
+src/app/energie-live/page.js:142:    keywords: ["Day-Ahead", "Börsenstrompreis", "Strommix", "Erneuerbare Energien", "Deutschland"],
+src/app/energie-live/page.js-143-    isAccessibleForFree: true,
+src/app/energiegemeinschaften/page.js:24:  description:
+src/app/energiegemeinschaften/page.js-25-    "Energy Sharing nach § 42c EnWG, EEG und BEG in Österreich, LEG in der Schweiz: Regeln im Vergleich – und wie ÖkoInvest Gemeinschaften mit Parkstrom versorgt.",
+src/app/energiegemeinschaften/page.js:26:  keywords: ["Energiegemeinschaft", "Energy Sharing", "§ 42c EnWG", "Erneuerbare-Energie-Gemeinschaft", "Bürgerenergiegemeinschaft", "LEG Schweiz", "vZEV"],
+src/app/energiegemeinschaften/page.js-27-});
+src/app/energiegemeinschaften/page.js:48:  description: "Versorgung von Energiegemeinschaften mit Strom aus Solarparks sowie Begleitung bei Gründung und Betrieb in Deutschland, Österreich und der Schweiz.",
+src/app/energiegemeinschaften/page.js-49-  provider: { "@id": `${abs("/")}/#organization` },
+src/app/energiegemeinschaften/rechner/page.js:18:  description: "Was bringt eine Energiegemeinschaft? Ersparnis aus Energiepreis, reduziertem Netzentgelt und Abgabe für EEG, BEG und GEA – mit den Regeln 2026 und ab 2027.",
+src/app/energiegemeinschaften/rechner/page.js:19:  keywords: ["Energiegemeinschaft Rechner", "EEG Ersparnis", "Netzentgelt Energiegemeinschaft", "Bürgerenergiegemeinschaft Rechner", "ElWG"],
+src/app/energiegemeinschaften/rechner/page.js-20-});
+src/app/energiegemeinschaften/software/page.js:34:  description: "Plattform und Betriebsführung für EEG, BEG und GEA nach ElWG: geführte Zustimmung beim Netzbetreiber, Mehrfachteilnahme, Ersparnis-Rechner, Gründung und Wechsel.",
+src/app/energiegemeinschaften/software/page.js:35:  keywords: ["Energiegemeinschaft Software", "EEG Abrechnung", "Bürgerenergiegemeinschaft", "ElWG Energiegemeinschaft", "Mehrfachteilnahme Teilnahmefaktor", "Energiegemeinschaft gründen Österreich"],
+src/app/energiegemeinschaften/software/page.js-36-});
+src/app/energiegemeinschaften/software/page.js-45-  provider: { "@id": `${abs("/")}/#organization` },
+src/app/faq/page.js:19:  description:
+src/app/faq/page.js-20-    "Antworten für Flächeneigentümer, Landwirte, Investoren, Projektanbieter und Unternehmen: Pacht, Agri-PV, Projektbörse, Reststrom-Pool, Portal und Datenschutz.",
+src/app/faq/page.js:21:  keywords: ["FAQ Solarpark", "Pacht Solarpark Fragen", "Agri-PV FAQ", "Projektbörse Photovoltaik", "Reststrom-Pool"],
+src/app/faq/page.js-22-});
+src/app/flaeche-verpachten/page.js:20:const TITEL = "Fläche für Solarpark verpachten | ÖkoInvest";
+src/app/flaeche-verpachten/page.js:21:const BESCHREIBUNG =
+src/app/flaeche-verpachten/page.js-22-  "Acker oder Grünland für einen Solarpark verpachten: Pachtmodelle, Vertragsinhalte, Rückbausicherheit, Steuern und der Weg bis zur ersten Pacht – kostenfrei.";
+src/app/flaeche-verpachten/page.js:26:  description: BESCHREIBUNG,
+src/app/flaeche-verpachten/page.js-27-  alternates: { canonical: abs(PFAD) },
+src/app/flaechencheck/page.js:17:const TITEL = "Flächencheck: Eignet sich Ihre Fläche? | ÖkoInvest";
+src/app/flaechencheck/page.js:18:const BESCHREIBUNG =
+src/app/flaechencheck/page.js-19-  "Flächencheck für Solarpark und Agri-PV: Lage, Größe, Nutzung und Netzentfernung angeben – Ampel, mögliche Leistung, Stromertrag und Pachtspanne in zwei Minuten.";
+src/app/flaechencheck/page.js:23:  description: BESCHREIBUNG,
+src/app/flaechencheck/page.js-24-  alternates: { canonical: abs(PFAD) },
+src/app/freiflaeche/page.js:25:const TITEL = "Freiflächen-PV & Solarparks entwickeln | ÖkoInvest";
+src/app/freiflaeche/page.js:26:const BESCHREIBUNG =
+src/app/freiflaeche/page.js-27-  "Solarparks ab rund 3 Hektar in DE, AT und CH: Flächenkriterien, EEG-Flächenkulisse, Genehmigung, Ökologie, Rückbau und ein ehrlicher Zeitplan bis zum Betrieb.";
+src/app/freiflaeche/page.js:31:  description: BESCHREIBUNG,
+src/app/freiflaeche/page.js-32-  alternates: { canonical: abs(PFAD) },
+src/app/genossenschaft/page.js:22:  description:
+src/app/genossenschaft/page.js-23-    "Bürger, Landwirte und Gemeinden als Miteigentümer von Solarparks: So funktioniert die geplante Energiegenossenschaft – mit Mitbestimmung, Risiken und Ablauf.",
+src/app/genossenschaft/page.js:24:  keywords: ["Energiegenossenschaft", "Bürgerbeteiligung Solarpark", "Genossenschaft Photovoltaik", "Agri-PV Landwirt Beteiligung", "eG Mitgliedschaft"],
+src/app/genossenschaft/page.js-25-});
+src/app/genossenschaft/page.js:40:  description: "Informationen zur geplanten Energiegenossenschaft der ÖkoInvest GmbH für Bürger, Landwirte, Gemeinden und Unternehmen.",
+src/app/genossenschaft/page.js-41-  isPartOf: { "@id": `${abs("/")}/#website` },
+src/app/grossspeicher/page.js:24:const TITEL = "Batteriegroßspeicher: Co-Location & Stand-alone | ÖkoInvest";
+src/app/grossspeicher/page.js:25:const BESCHREIBUNG =
+src/app/grossspeicher/page.js-26-  "Großspeicher am Solarpark oder am Netzknoten: Erlöse aus Arbitrage und Regelenergie, Netzanschluss, Baukostenzuschuss, Netzentgelte, LFP-Technik und Sicherheit.";
+src/app/grossspeicher/page.js:30:  description: BESCHREIBUNG,
+src/app/grossspeicher/page.js:31:  keywords: ["Batteriegroßspeicher", "Großspeicher Solarpark", "Co-Location Speicher", "BESS Erlöse", "Baukostenzuschuss Speicher", "Stand-alone Batteriespeicher", "Speicher Netzanschluss"],
+src/app/grossspeicher/page.js-32-  alternates: { canonical: abs(PFAD) },
+src/app/impressum/page.js:30:const TITEL = "Impressum | ÖkoInvest";
+src/app/impressum/page.js:31:const BESCHREIBUNG =
+src/app/impressum/page.js-32-  "Impressum und Offenlegung der ÖkoInvest GmbH, Ostermiething (Österreich): Firmenbuch, Geschäftsführung, Unternehmensgegenstand und Angaben nach ECG, UGB und MedienG.";
+src/app/impressum/page.js:36:  description: BESCHREIBUNG,
+src/app/impressum/page.js-37-  alternates: { canonical: PAGE_URL },
+src/app/investoren/page.js:25:const TITEL = "Solarprojekte kaufen: Projektrechte & RTB | ÖkoInvest";
+src/app/investoren/page.js:26:const BESCHREIBUNG =
+src/app/investoren/page.js-27-  "Projektrechte, baureife Solarparks und Bestandsanlagen im DACH-Raum: Phasenmodell mit Preisen, Due-Diligence-Checkliste, Datenraum – für Investoren kostenfrei.";
+src/app/investoren/page.js:31:  description: BESCHREIBUNG,
+src/app/investoren/page.js:32:  keywords: ["Solarpark kaufen", "Projektrechte Photovoltaik", "RTB Solarpark", "Solarprojekte Investor", "Bestandsanlage PV kaufen", "Co-Development Solar"],
+src/app/investoren/page.js-33-  alternates: sprachAlternates("/investoren", "/en/investors"),
+src/app/kommunen/page.js:19:const TITEL = "Solarparks für Kommunen & Stadtwerke | ÖkoInvest";
+src/app/kommunen/page.js:20:const BESCHREIBUNG =
+src/app/kommunen/page.js-21-  "Was Solarparks Gemeinden bringen: Gewerbesteuer zu 90 % am Standort, § 6 EEG mit 0,2 ct/kWh, Pacht, Bürgerbeteiligung – dazu Bauleitplanung und Kriterien.";
+src/app/kommunen/page.js:25:  description: BESCHREIBUNG,
+src/app/kommunen/page.js:26:  keywords: ["Solarpark Gemeinde", "Kommunalbeteiligung § 6 EEG", "Gewerbesteuer Solarpark", "Bauleitplanung Freiflächen-PV", "Kriterienkatalog Freiflächen-Photovoltaik", "Stadtwerke Solarpark", "Bürgerbeteiligung Solarpark"],
+src/app/kommunen/page.js-27-  alternates: { canonical: abs(PFAD) },
+src/app/kontakt/page.js:25:  description:
+src/app/kontakt/page.js-26-    "Fläche, Agri-PV, Investment, Projekt, Reststrom oder Genossenschaft: Wählen Sie Ihr Anliegen und schreiben Sie dem ÖkoInvest-Projektteam in Ostermiething.",
+src/app/kontakt/page.js:27:  keywords: ["ÖkoInvest Kontakt", "Solarpark Anfrage", "Fläche verpachten Anfrage", "Projektentwickler Kontakt", "Ostermiething"],
+src/app/kontakt/page.js-28-  }),
+src/app/landwirte/page.js:25:const TITEL = "Agri-PV für Landwirte: vier Wege zum Solarstrom | ÖkoInvest";
+src/app/landwirte/page.js:26:const BESCHREIBUNG =
+src/app/landwirte/page.js-27-  "Fläche verpachten, selbst investieren, Investor baut oder Genossenschaft: die vier Wege zu Agri-PV für Landwirte im Vergleich – mit Entscheidungshilfe.";
+src/app/landwirte/page.js:31:  description: BESCHREIBUNG,
+src/app/landwirte/page.js-32-  alternates: { canonical: abs(PFAD) },
+src/app/marktdaten/page.js:48:  description:
+src/app/marktdaten/page.js-49-    "Marktdaten Freiflächen-PV: EEG-Zuschlagswerte Solar seit 2017, Höchstwerte, Gebotsmengen, Marktwert Solar, Capture Rate, Zubau DACH und Pachtniveau – mit Quellen.",
+src/app/marktdaten/page.js:50:  keywords: [
+src/app/marktdaten/page.js-51-    "EEG Ausschreibung Solar Ergebnisse",
+src/app/marktdaten/page.js:146:  description:
+src/app/marktdaten/page.js-147-    "Ergebnisse aller Gebotstermine der EEG-Ausschreibungen für Solaranlagen des ersten Segments seit 2017 (Volumen, Gebotsmenge, Zuschlagsmenge, mengengewichteter Zuschlagswert, Spanne, Höchstwert), Jahresmarktwerte Spot und Solar mit Capture Rate seit 2020, Stunden mit negativen Strompreisen so
+src/app/marktdaten/page.js:149:  keywords: ["EEG-Ausschreibung", "Photovoltaik", "Freiflächenanlagen", "Zuschlagswert", "Marktwert Solar", "Capture Rate", "negative Strompreise", "DACH"],
+src/app/marktdaten/page.js-150-  isAccessibleForFree: true,
+src/app/marktdaten/page.js:178:  description: ANTWORT,
+src/app/marktdaten/page.js-179-  isPartOf: { "@id": `${abs("/")}/#website` },
+src/app/page.js:37:  description:
+src/app/page.js-38-    "Fläche verpachten, Agri-PV umsetzen, PV-Projekte kaufen oder verkaufen, Reststrom im Pool günstiger beziehen: ÖkoInvest entwickelt Solarkraftwerke in DE, AT und CH.",
+src/app/page.js:43:  description: META.description,
+src/app/page.js-44-  alternates: sprachAlternates("/", "/en"),
+src/app/projektboerse/anbieten/page.js:17:const TITEL = "Solarprojekt verkaufen: Projektbörse | ÖkoInvest";
+src/app/projektboerse/anbieten/page.js-18-const SPANNE = `${fmt(PROVISION.verkaeufer.min * 100, 1)}–${fmt(PROVISION.verkaeufer.max * 100, 0)} %`;
+src/app/projektboerse/anbieten/page.js:19:const BESCHREIBUNG = `Solarpark oder Projektrechte verkaufen: anonymes Exposé, NDA per Klick, digitaler Datenraum. Provision ${SPANNE} nur bei Abschluss – keine Listungsgebühren.`;
+src/app/projektboerse/anbieten/page.js-20-
+src/app/projektboerse/anbieten/page.js:23:  description: BESCHREIBUNG,
+src/app/projektboerse/anbieten/page.js-24-  alternates: sprachAlternates("/projektboerse/anbieten", "/en/sell-your-project"),
+src/app/projektboerse/karte/page.js:17:const TITEL = "Projektbörse auf der Karte: PV-Projekte DACH | ÖkoInvest";
+src/app/projektboerse/karte/page.js:18:const BESCHREIBUNG =
+src/app/projektboerse/karte/page.js-19-  "Solarparks, Agri-PV und Großspeicher nach Bundesland und Kanton: Projekte der ÖkoInvest-Projektbörse auf der Karte – bewusst grob, ohne genaue Lage, mit Filtern.";
+src/app/projektboerse/karte/page.js:23:  description: BESCHREIBUNG,
+src/app/projektboerse/karte/page.js-24-  alternates: { canonical: abs(PFAD) },
+src/app/projektboerse/page.js:22:const TITEL = "Projektbörse: Solarprojekte kaufen & anbieten | ÖkoInvest";
+src/app/projektboerse/page.js:23:const BESCHREIBUNG =
+src/app/projektboerse/page.js-24-  "Solarparks, Agri-PV, Parkplatz-PV und Großspeicher im DACH-Raum: geprüfte Projekte in allen Phasen, NDA per Klick, digitaler Datenraum – für Investoren kostenfrei.";
+src/app/projektboerse/page.js:28:  description: BESCHREIBUNG,
+src/app/projektboerse/page.js-29-  alternates: sprachAlternates("/projektboerse", "/en/project-exchange"),
+src/app/prozess/page.js:23:  description:
+src/app/prozess/page.js-24-    "Schritte, Dauer, Dokumente und Portal-Status: So läuft die Zusammenarbeit für Flächeneigentümer, Landwirte, Investoren, Projektanbieter und Unternehmen.",
+src/app/prozess/page.js:25:  keywords: ["Solarpark Ablauf", "Projektentwicklung Photovoltaik", "B-Plan Solarpark Dauer", "Projektbörse Ablauf", "Agri-PV Ablauf"],
+src/app/prozess/page.js-26-});
+src/app/prozess/page.js:46:  description: ZIELGRUPPEN[0].intro,
+src/app/prozess/page.js-47-  totalTime: "P4Y",
+src/app/ratgeber/page.js:17:const TITEL = "Ratgeber Solarpark, Agri-PV & Pacht 2026 | ÖkoInvest";
+src/app/ratgeber/page.js-18-const DESCRIPTION =
+src/app/ratgeber/page.js:23:  description: DESCRIPTION,
+src/app/ratgeber/page.js:24:  keywords: ["Solarpark Ratgeber", "Solarpark Pacht", "Agri-PV", "Freiflächen-PV Genehmigung", "Projektrechte kaufen", "PPA Unternehmen", "Energiegemeinschaft"],
+src/app/ratgeber/page.js-25-  alternates: { canonical: PAGE_URL },
+src/app/ratgeber/page.js:134:          artikel={artikel.map(({ slug, title, excerpt, kategorie, bild, bildAlt, lesezeit, keywords }) => ({ slug, title, excerpt, kategorie, bild, bildAlt, lesezeit, keywords: keywords || [] }))}
+src/app/ratgeber/page.js-135-        />
+src/app/ratgeber/[slug]/page.js:32:    keywords: a.keywords,
+src/app/ratgeber/[slug]/page.js-33-    alternates: { canonical: url },
+src/app/ratgeber/[slug]/page.js:78:      keywords: (a.keywords || []).join(", "),
+src/app/ratgeber/[slug]/page.js-79-      wordCount: a.woerter,
+src/app/rechner/agri-pv/page.js:15:  description:
+src/app/rechner/agri-pv/page.js-16-    "Agri-PV-Rechner für Landwirte: Verpachten, selbst investieren oder über die Genossenschaft beteiligen – mit IRR, Amortisation, GAP-Zahlung und Deckungsbeitrag.",
+src/app/rechner/agri-pv/page.js:17:  keywords: ["Agri-PV Rechner", "Agri-PV Wirtschaftlichkeit", "Agri-PV Pacht", "Agri-PV Investition", "Agri-PV Genossenschaft", "Agri-PV GAP"],
+src/app/rechner/agri-pv/page.js-18-});
+src/app/rechner/bestandsanlage/page.js:16:  description:
+src/app/rechner/bestandsanlage/page.js-17-    "Was ist Ihre PV-Anlage wert? Ertragswert nach DCF mit EEG-Restlaufzeit, Ertragshistorie, Wechselrichtertausch, Pacht und Marktpreis nach Förderende.",
+src/app/rechner/bestandsanlage/page.js:18:  keywords: ["PV Bestandsanlage bewerten", "Solarpark Wert berechnen", "Photovoltaik Anlage verkaufen Wert", "Ertragswert PV-Anlage", "Bestandsanlage kaufen Preis pro kWp"],
+src/app/rechner/bestandsanlage/page.js-19-});
+src/app/rechner/beteiligung/page.js:15:  description:
+src/app/rechner/beteiligung/page.js-16-    "Wie entsteht die Ausschüttung einer Energiegenossenschaft? Illustration aus dem Park-Cashflow in drei Szenarien – Risiken offen, keine Anlageberatung.",
+src/app/rechner/beteiligung/page.js:17:  keywords: ["Bürgerbeteiligung Solarpark", "Energiegenossenschaft Rendite", "Genossenschaftsanteil Photovoltaik", "Solarpark beteiligen", "Bürgerenergie Rechner"],
+src/app/rechner/beteiligung/page.js-18-});
+src/app/rechner/dachpacht/page.js:16:  description:
+src/app/rechner/dachpacht/page.js-17-    "Dachfläche für PV verpachten: Leistung, Ertrag und Pachtspanne Ihres Gewerbedachs – dazu Dachpacht, Dachstrom-PPA und Eigeninvestition im Vergleich. Kostenlos.",
+src/app/rechner/dachpacht/page.js:18:  keywords: ["Dachpacht Rechner", "Dachfläche verpachten Photovoltaik", "Dachpacht pro m²", "Gewerbedach PV Pacht", "Dach vermieten Solar"],
+src/app/rechner/dachpacht/page.js-19-});
+src/app/rechner/energy-sharing/page.js:16:  description:
+src/app/rechner/energy-sharing/page.js-17-    "Energiegemeinschaft rechnen: geteilter Strom, Netzentgelt-Abschlag (EEG lokal/regional, LEG), Vorteil je Teilnehmer und Erlös des Erzeugers – DE, AT, CH.",
+src/app/rechner/energy-sharing/page.js:18:  keywords: ["Energy Sharing Rechner", "Energiegemeinschaft Rechner", "EEG Österreich Netzentgelt", "LEG Schweiz Rechner", "§ 42c EnWG", "Bürgerenergiegemeinschaft"],
+src/app/rechner/energy-sharing/page.js-19-});
+src/app/rechner/grossspeicher/page.js:15:  description:
+src/app/rechner/grossspeicher/page.js-16-    "Rendite eines Batteriegroßspeichers berechnen: Arbitrage, aFRR und FCR, Co-Location oder Stand-alone, Baukostenzuschuss, Netzentgelte – IRR und Cashflow.",
+src/app/rechner/grossspeicher/page.js:17:  keywords: ["Großspeicher Rendite", "BESS Rechner", "Batteriespeicher Wirtschaftlichkeit", "Co-Location Speicher", "Baukostenzuschuss Speicher", "aFRR Erlöse Batteriespeicher"],
+src/app/rechner/grossspeicher/page.js-18-});
+src/app/rechner/kommune/page.js:11:  description:
+src/app/rechner/kommune/page.js-12-    "Was bringt ein Solarpark der Gemeinde? § 6 EEG-Beteiligung, Gewerbesteuer (90 % Standort) und Pacht auf Gemeindeflächen – pro Jahr, über 20 und 30 Jahre.",
+src/app/rechner/kommune/page.js:13:  keywords: ["Solarpark Gemeinde Einnahmen", "§ 6 EEG Kommune", "Gewerbesteuer Solarpark", "Kommunalbeteiligung Photovoltaik", "Solarpark Kommune Rechner"],
+src/app/rechner/kommune/page.js-14-});
+src/app/rechner/netzanschluss/page.js:16:  description:
+src/app/rechner/netzanschluss/page.js-17-    "Netzanschluss für Solarpark prüfen: grobe Kosten für Kabeltrasse, Übergabestation und Umspannwerk, Zeitrahmen, Risiken und Tipps – mit Überbauung und Speicher.",
+src/app/rechner/netzanschluss/page.js:18:  keywords: ["Netzanschluss Solarpark Kosten", "Netzanschlussbegehren § 8 EEG", "Umspannwerk Solarpark", "Überbauung Netzanschluss", "Kabeltrasse Mittelspannung Kosten", "Netzverknüpfungspunkt"],
+src/app/rechner/netzanschluss/page.js-19-});
+src/app/rechner/pacht/page.js:18:  description:
+src/app/rechner/pacht/page.js-19-    "Solarpark-Pacht berechnen: Festpacht, indexiert oder Umsatzbeteiligung über 30 Jahre – im Vergleich zu Ackerpacht und Deckungsbeitrag. Kostenlos.",
+src/app/rechner/pacht/page.js:20:  keywords: ["Pachtrechner Solarpark", "Pacht Photovoltaik Hektar", "Solarpark Pacht pro Hektar", "Freiflächen PV Pacht", "Fläche verpachten Solar"],
+src/app/rechner/pacht/page.js-21-});
+src/app/rechner/page.js:30:  description:
+src/app/rechner/page.js-31-    "Kostenlose Profi-Rechner für den DACH-Raum: Flächencheck, Pacht, Agri-PV, Solarpark-Rendite, Projektbewertung, Reststrom, Solarcarport und Kommunal-Einnahmen.",
+src/app/rechner/page.js:32:  keywords: ["Solarpark Rechner", "Pachtrechner Photovoltaik", "Agri-PV Rechner", "Projektbewertung Solar", "Solarcarport Rechner", "Solarpark Gemeinde Einnahmen"],
+src/app/rechner/page.js-33-});
+src/app/rechner/ppa/page.js:16:  description:
+src/app/rechner/ppa/page.js-17-    "PPA-Rechner für den Mittelstand: Ersparnis und Risiko eines Solar-PPA bei fallenden, stabilen oder steigenden Preisen – pay-as-produced oder Baseload, mit CO₂.",
+src/app/rechner/ppa/page.js:18:  keywords: ["PPA Rechner", "Power Purchase Agreement Unternehmen", "Solar PPA Mittelstand", "PPA pay as produced", "Baseload PPA", "Stromliefervertrag Solarpark"],
+src/app/rechner/ppa/page.js-19-});
+src/app/rechner/projektbewertung/page.js:12:  description:
+src/app/rechner/projektbewertung/page.js-13-    "Was sind PV-Projektrechte wert? Kaufpreisspanne je kWp nach Phase, Netzanschluss, Größe und Vermarktung – mit Werttreibern, Risiko und Weg in die Projektbörse.",
+src/app/rechner/projektbewertung/page.js:14:  keywords: ["Projektrechte Solarpark Preis", "Solarpark Projekt verkaufen", "RTB Solarpark Preis", "Projektbewertung Photovoltaik", "Entwicklungsprämie Solar"],
+src/app/rechner/projektbewertung/page.js-15-});
+src/app/rechner/reststrom/page.js:12:  description:
+src/app/rechner/reststrom/page.js-13-    "Jahresverbrauch, Arbeitspreis und Lastprofil eingeben: Der Rechner zeigt, was Bündelung, Solar-PPA und Flexibilität im Reststrom-Pool pro Jahr sparen können.",
+src/app/rechner/reststrom/page.js:14:  keywords: ["Reststrom", "Strompool Mittelstand", "Gewerbestrom Ersparnis", "Strombeschaffung Rechner", "Solar-PPA", "Stromsteuer 2026"],
+src/app/rechner/reststrom/page.js-15-});
+src/app/rechner/solarcarport/page.js:12:  description:
+src/app/rechner/solarcarport/page.js-13-    "Solarcarport für Unternehmen und Kommunen berechnen: Leistung je Stellplatz, Ertrag, Investition, Ersparnis, Amortisation – Kauf und Contracting im Vergleich.",
+src/app/rechner/solarcarport/page.js:14:  keywords: ["Solarcarport Rechner", "Solarcarport Kosten", "Parkplatz PV Rechner", "Solarcarport Amortisation", "Solarcarport Contracting", "PV Parkplatz Unternehmen"],
+src/app/rechner/solarcarport/page.js-15-});
+src/app/rechner/solarpark/page.js:11:  description:
+src/app/rechner/solarpark/page.js-12-    "Profi-Rechner für Solarparks: Projekt- und EK-IRR, LCOE, Kapitalwert, DSCR und Cashflow über 30 Jahre – mit EEG, PPA oder Merchant und Sensitivitätsmatrix.",
+src/app/rechner/solarpark/page.js:13:  keywords: ["Solarpark Rendite", "Solarpark Rechner", "IRR Photovoltaik", "LCOE Solarpark", "DSCR Solarpark", "PPA Solarpark", "Freiflächenanlage Wirtschaftlichkeit"],
+src/app/rechner/solarpark/page.js-14-});
+src/app/referenzen/page.js:22:  description:
+src/app/referenzen/page.js-23-    "Belegt statt behauptet: Die ÖKOVOLT Gruppe betreibt eigene Solarparks in Irsingen, Artern und Tilleda seit 2012 – mit eigener Rammtechnik, Bau und Betrieb.",
+src/app/referenzen/page.js:24:  keywords: ["ÖKOVOLT Referenzen", "Solarpark Betreiber", "Solarpark Tilleda", "Solarpark Artern", "Solarpark Irsingen", "Rammtechnik Photovoltaik"],
+src/app/referenzen/page.js-25-});
+src/app/regionen/page.js:23:const TITEL = "Solarpark & Agri-PV nach Region (DACH) | ÖkoInvest";
+src/app/regionen/page.js:24:const BESCHREIBUNG =
+src/app/regionen/page.js-25-  "Solarpark und Agri-PV in allen 16 Bundesländern, 9 österreichischen Ländern und der Schweiz: Recht, Flächenkulisse, Ertrag und Pacht je Region – recherchiert.";
+src/app/regionen/page.js:29:  description: BESCHREIBUNG,
+src/app/regionen/page.js-30-  alternates: { canonical: abs(PFAD) },
+src/app/registrieren/page.js:14:  description: "Kostenloses Konto für Flächeneigentümer, Landwirte, Investoren, Projektentwickler, Unternehmen und Mitglieder – Status, Dokumente und Nachrichten im Portal.",
+src/app/registrieren/page.js-15-  alternates: { canonical: abs("/registrieren") },
+src/app/reststrom/page.js:26:  description:
+src/app/reststrom/page.js-27-    "Was PV und Speicher nicht decken, kaufen wir gebündelt: strukturierte Beschaffung, Solarstrom aus eigenen Parks und Flexibilität für günstigeren Reststrom.",
+src/app/reststrom/page.js:28:  keywords: ["Reststrom", "Strompool Mittelstand", "Gewerbestrom", "Strombeschaffung", "Solar-PPA", "Bündelung Strom", "Stromsteuer produzierendes Gewerbe"],
+src/app/reststrom/page.js-29-});
+src/app/reststrom/page.js:74:  description:
+src/app/reststrom/page.js-75-    "Gebündelte, strukturierte Beschaffung des Reststroms mittelständischer Unternehmen mit Solar-PPA aus Parks der ÖKOVOLT Gruppe und Flexibilität im virtuellen Kraftwerk. Belieferung über einen lizenzierten Energielieferanten.",
+src/app/solarcarport/page.js:26:const TITEL = "Solarcarport & Parkplatz-PV für Unternehmen | ÖkoInvest";
+src/app/solarcarport/page.js:27:const BESCHREIBUNG =
+src/app/solarcarport/page.js-28-  "Solarcarports für Unternehmen, Handel und Kommunen: Solarpflicht je Bundesland, Bauarten, Ladepunkte nach GEIG, Contracting – wir bauen, Sie nutzen den Strom.";
+src/app/solarcarport/page.js:32:  description: BESCHREIBUNG,
+src/app/solarcarport/page.js:33:  keywords: ["Solarcarport Unternehmen", "Parkplatz Photovoltaik", "Solarpflicht Parkplatz", "Solarcarport Contracting", "PV Parkplatz Ladeinfrastruktur", "GEIG Ladepunkte"],
+src/app/solarcarport/page.js-34-  alternates: { canonical: abs(PFAD) },
+src/app/termin/page.js:16:  description: "Freien Termin direkt online buchen: Flächenbesichtigung, Beratung am Telefon oder per Video, Gemeindetermin – mit Bestätigung und Kalenderdatei per E-Mail.",
+src/app/termin/page.js:17:  keywords: ["Termin ÖkoInvest", "Flächenbesichtigung Solarpark", "Beratung Freiflächen-PV", "Gemeinde Solarpark Termin"],
+src/app/termin/page.js-18-});
+src/app/unternehmen/page.js:26:  description:
+src/app/unternehmen/page.js-27-    "ÖkoInvest GmbH aus Ostermiething: Projektentwicklung für Freiflächen-PV, Agri-PV und Speicher in der ÖKOVOLT Gruppe, die seit 2012 eigene Solarparks betreibt.",
+src/app/unternehmen/page.js:28:  keywords: ["ÖkoInvest GmbH", "ÖKOVOLT Gruppe", "Projektentwickler Photovoltaik", "Ostermiething", "Solarpark Entwickler Österreich Deutschland"],
+src/app/unternehmen/page.js-29-});
+src/app/virtuelles-kraftwerk/page.js:23:  description:
+src/app/virtuelles-kraftwerk/page.js-24-    "Solarparks, Agri-PV, Speicher und Unternehmen im Verbund: Wie das virtuelle Kraftwerk von ÖkoInvest Strom vermarktet, Flexibilität nutzt und Preise senkt.",
+src/app/virtuelles-kraftwerk/page.js:25:  keywords: ["virtuelles Kraftwerk", "VPP", "Direktvermarktung", "Flexibilitätsvermarktung", "Redispatch 2.0", "Stromspeicher", "Solar-PPA"],
+src/app/virtuelles-kraftwerk/page.js-26-});
+src/app/virtuelles-kraftwerk/page.js:99:  description:
+src/app/virtuelles-kraftwerk/page.js-100-    "Verbund aus Solarparks, Agri-PV, Solarcarports, Speichern und mittelständischen Verbrauchern mit gemeinsamer Vermarktung und Beschaffung.",
+src/app/warum-oekoinvest/page.js:24:const TITEL = "Warum ÖkoInvest: Plattform-Modelle im Vergleich | ÖkoInvest";
+src/app/warum-oekoinvest/page.js:25:const BESCHREIBUNG =
+src/app/warum-oekoinvest/page.js-26-  "Marktplatz, Makler oder Entwickler-Plattform? Offener Vergleich der Modelle im PV-Projekthandel – was ÖkoInvest anders macht und wo unsere Grenzen liegen.";
+src/app/warum-oekoinvest/page.js:30:  description: BESCHREIBUNG,
+src/app/warum-oekoinvest/page.js-31-  alternates: { canonical: abs(PFAD) },
+src/app/wissen/lexikon/page.js:23:  description: DESCRIPTION,
+src/app/wissen/lexikon/page.js:24:  keywords: ["Solarpark Lexikon", "Agri-PV Begriffe", "Photovoltaik Glossar Freifläche", "Projektrechte", "Ready-to-Build", "PPA Definition", "Energy Sharing"],
+src/app/wissen/lexikon/page.js-25-  alternates: { canonical: PAGE_URL },

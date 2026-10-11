@@ -65,6 +65,3 @@ __pycache__/
 
 # Rohes Sitzungsprotokoll (groß, reist nur per Ordnerkopie mit)
 uebergabe/chatverlauf/*.jsonl
-
-# Versehentlich im Projekt angelegter Werkzeug-Ordner
-/Claude/

@@ -1,0 +1,122 @@
+src\lib\invest\markt.js:35:  { id: "ch", land: "CH", label: "Schweiz", sub: "Mittelland", ertrag: 1050 },
+src\lib\invest\markt.js:185:   *  dscrP50/dscrP90  Sizing-DSCR, auf den die Bank das Darlehen bemisst (EEG/Marktprämie; PPA/Merchant höher)
+src\lib\invest\markt.js:304:   * Österreich, § 33 EAG: Abschlag auf den Zuschlagswert der Marktprämie für PV auf
+src\lib\invest\markt.js:408:   * und Forstwirtschaft seit 2026 auf EU-Mindestsatz 0,05 ct/kWh entlastet.
+src\lib\invest\markt.js:511:    titel: "ZEV, vZEV und lokale Elektrizitätsgemeinschaft (LEG)",
+src\lib\invest\markt.js:512:    text: "Seit 2026 können Verbraucher innerhalb einer Gemeinde über das Verteilnetz Strom teilen (LEG) – mit reduziertem Netznutzungsentgelt.",
+src\lib\invest\markt.js:521:   *                 AT: lokal 57 %, regional 28 % (SNE-VO; Stromliste.at, Regeln ab 1.10.2026)
+src\lib\invest\markt.js:522:   *                 CH: LEG 40 % gleiche Netzebene, 20 % über mehrere Ebenen (StromVV Art. 19h)
+src\lib\invest\markt.js:524:   *  abgabenCt      Entfall von Abgaben auf geteilten Strom – AT: Elektrizitätsabgabe 2026 0,82 ct/kWh (ab 2027 1,5 ct)
+src\lib\invest\markt.js:552:        { id: "leg40", label: "LEG, eine Ebene", sub: "−40 % Netznutzung", anteil: 0.4 },
+src\lib\invest\markt.js:553:        { id: "leg20", label: "LEG, mehrere Ebenen", sub: "−20 % Netznutzung", anteil: 0.2 },
+src\lib\plattform\anbieter\bestand.js:34:  marktpraemie: "Direktvermarktung mit Marktprämie (DE EEG / AT EAG)",
+src\lib\plattform\anbieter\bestand.js:44:  CH: "Projekt- bzw. Anlagennummer (Pronovo / Herkunftsnachweis)",
+src\lib\plattform\anbieter\bestand.js:340:  if (!f.vermarktung) foerderHinweise.push({ stufe: "warnung", text: "Vermarktungsform (Marktprämie, Einspeisevergütung, PPA …) fehlt." });
+src\lib\rechner\energySharing.js:27:  { id: "ch", label: "Schweiz", sub: "LEG" },
+src\lib\rechner\energySharing.js:142:  pruefe(Math.abs(ch.teile.find((t) => t.id === "netz").ct - 4) < 1e-9, "CH LEG: 40 % von 10 Rp.");
+src\lib\rechner\bestandsanlage.js:13://    Marktprämie (anzulegender Wert wirkt als Untergrenze)
+src\lib\rechner\bestandsanlage.js:204:  pruefe(Math.abs(mp.jahre[0].preisCt - 6) < 1e-9, "Marktprämie: höherer Marktwert bleibt");
+src\lib\rechner\solarpark.js:12://    Marktprämienmodell als Untergrenze: Liegt der Marktwert darüber, bleibt
+src\lib\rechner\projektbewertung.js:121:      hinweise.push("EEG-Zuschlag gibt es nur in Deutschland – in Österreich entspricht dem die EAG-Marktprämie aus der Ausschreibung.");
+src\lib\rechner\projektbewertung.js:126:      treiber.push("Zuschlag gesichert: 20 Jahre Marktprämie als Erlösboden – bankfähig.");
+src\lib\rechner\projektbewertung.js:140:    hinweise.push("Österreich: Flächenwidmung (z. B. Grünland-Photovoltaik) und Förderung nach EAG (Marktprämie bzw. Investitionszuschuss) prägen den Wert; ab bestimmten Größen ist eine UVP-Prüfung nötig.");
+src\lib\plattform\closing\closing.js:59:    CP("foerderung", "Übertragung der Förderung / Einspeisevergütung geklärt", "verkaeufer", "DE: Betreiberwechsel im Marktstammdatenregister; AT: EAG-Förderabwicklung (OeMAG) bzw. Förderstelle; CH: Pronovo – Voraussetzungen vorab prüfen.", 45),
+src\lib\plattform\closing\closing.js:83:  { schluessel: "behoerden", label: "Anzeigen an Behörden und Register", text: "DE: Marktstammdatenregister (Betreiberwechsel), Finanzamt; AT: Förderstelle/OeMAG, Firmenbuch; CH: Pronovo, Handelsregister; Transparenzregister/WiEReG bei Share Deal." },
+src\lib\plattform\dienste\gesellschaft\dokumente.js:218:    CH: [["Steuerverwaltung", "Anmeldung bei der kantonalen Steuerverwaltung erfolgt in der Regel über das Handelsregister"], ["MWST", "Registrierung ab CHF 100.000 Jahresumsatz (ESTV)"], ["Sozialversicherung", "AHV-Anmeldung bei Anstellung von Personal"], ["Förderung", "Einmalvergütung/Herkunftsnachweise über Pronovo"]],
+src\lib\plattform\fach\energie.js:207:  if (s.land === "DE" && s.stromsteuerEntlastung === null) h.push({ stufe: "info", text: "Produzierendes Gewerbe sowie Land- und Forstwirtschaft können seit 2026 eine Stromsteuer-Entlastung auf 0,05 ct/kWh beantragen (§ 9b StromStG, Antrag beim Hauptzollamt)." });
+src\lib\plattform\fach\energie.js:219:  CH: { leg: "Lokale Elektrizitätsgemeinschaft (LEG)", zev: "Zusammenschluss zum Eigenverbrauch (ZEV)", vzev: "Virtueller ZEV (vZEV)" },
+src\lib\plattform\fach\energie.js:226: * CH: Messpunkt, Gemeinde (LEG nur innerhalb einer Gemeinde).
+src\lib\plattform\fach\energie.js:278:  if (t.land === "CH" && t.form === "leg") h.push({ stufe: "info", text: "Eine LEG ist auf das Gebiet einer Gemeinde und auf dieselbe Netzebene bzw. denselben Verteilnetzbetreiber beschränkt; die Netznutzung wird reduziert abgerechnet." });
+src\lib\plattform\fach\datenblatt-schema.js:871:              "EEG-Zuschlag / Marktprämie"
+src\lib\plattform\fach\datenblatt-schema.js:875:              "EAG-Marktprämie (AT)"
+src\lib\plattform\fach\datenblatt-schema.js:1319:          "hilfe": "z. B. 30 % bei Signing, 40 % bei Satzungsbeschluss, 30 % bei RTB."
+src\lib\rechner\pachtangebot.js:192:        : `Üblich sind ${fmtDe(PACHT.umsatzbeteiligung.min * 100)}–${fmtDe(PACHT.umsatzbeteiligung.max * 100)} % der Erlöse. Wichtig: Worauf genau bezieht sich der Prozentsatz (Netto-Stromerlös, inkl. Marktprämie, nach Direktvermarktungskosten?) und welches Einsichtsrecht haben Sie?`,
+src\lib\plattform\entwicklung.js:36:  eeg: { label: "Förderung (Ausschreibung/Marktprämie)", land: { DE: "EEG-Ausschreibung / Marktprämie", AT: "EAG-Marktprämie / Investitionszuschuss", CH: "Einmalvergütung (Pronovo)" } },
+src\lib\plattform\entwicklung.js:195:    { s: "vermarktung", t: "EEG-Marktprämie / Mieterstrom oder PPA", k: "vermarktung", m: 3, nach: ["baugenehmigung"], dok: ["PPA-Vertrag oder Nachweis Förderweg"], nur: GEBAEUDE },
+src\lib\plattform\entwicklung.js:222:    { s: "vermarktung", t: "EAG-Förderung (Marktprämie/Investitionszuschuss) oder PPA", k: "vermarktung", m: 4, nach: ["elektrizitaetsrecht"], dok: ["Förderzusage (EAG-Abwicklungsstelle) oder PPA-Vertrag"], ohne: ["speicher"] },
+src\lib\plattform\entwicklung.js:248:    { s: "vermarktung", t: "Pronovo-Anmeldung (Einmalvergütung) oder PPA", k: "vermarktung", m: 3, nach: ["baubewilligung"], dok: ["Anmeldebestätigung Pronovo oder PPA-Vertrag"], ohne: ["speicher"] },
+src\lib\plattform\mitglied\genossenschaft.js:86:  { id: "prospekt", titel: "Prospekt- und Informationspflichten", text: "DE: Genossenschaftsanteile sind nach § 2 Abs. 1 Nr. 1 VermAnlG nur dann von der Prospektpflicht ausgenommen, wenn für den Vertrieb keine erfolgsabhängige Vergütung gezahlt wird – Plattform-Vergütung prüfen. AT: KMG 2019 bzw. AltFG (Schwellenwerte, Informationsblatt). CH: FIDLEG (Prospektpflicht und Ausnahmen). Bis zur Klärung: keine öffentliche Werbung für die Zeichnung, nur Information der Interessenten." },
+src\lib\plattform\mitglied\gemeinschaft.js:3:// Energiegemeinschaften: AT Erneuerbare-Energie-Gemeinschaft (lokal/regional) und Bürgerenergiegemeinschaft (ElWG/EAG),
+src\lib\plattform\mitglied\gemeinschaft.js:4:// DE Energy Sharing (§ 42c EnWG), CH lokale Elektrizitätsgemeinschaft LEG (StromVG/StromVV) bzw. (v)ZEV.
+src\lib\plattform\mitglied\gemeinschaft.js:127:  const ertrag = stamm?.land === "AT" ? 1120 : stamm?.land === "CH" ? 1050 : 1000; // kWh/kWp (markt.js REGIONEN, gerundet)
+src\lib\plattform\eg\ersparnis.js:7:// Quellen: SNE-V 2018 § 5 Abs. 1a (Regeltabelle eg/netzentgelt.js, Rundung auf 2 Kommastellen), EAG § 75 Abs. 5
+src\lib\plattform\eg\ersparnis.js:8:// (Erneuerbaren-Förderbeitrag, arbeitsbezogener Teil), Elektrizitätsabgabegesetz (Satz 2026 (zu bestätigen)),
+src\lib\plattform\eg\ersparnis.js:9:// Elektrizitätsabgabe-Eigenstrombefreiungsverordnung; Befreiungsreichweite unter dem ElWG (zu bestätigen).
+src\lib\plattform\eg\ersparnis.js:18:/** Elektrizitätsabgabe in ct/kWh – Werte (zu bestätigen), Fachkonzept 4.6 */
+src\lib\plattform\eg\ersparnis.js:20:  { gueltigAb: "2026-01-01", gueltigBis: "2026-12-31", haushaltCt: 0.1, sonstCt: 0.82, status: "zu_bestaetigen", quelle: "Senkung der Elektrizitätsabgabe 2026 (EY Steuernachrichten) (zu bestätigen)" },
+src\lib\plattform\eg\ersparnis.js:87:    : "100 % erneuerbare Energie aus Anlagen der Gemeinschaft (ElWG § 68: gemeinsame Nutzung nur erneuerbarer Energie).";
+src\lib\plattform\eg\ersparnis.js:88:  return { anteile, summeKwh: Math.round(summe * 1000) / 1000, text, quelle: "ElWG §§ 66–68 (nur erneuerbare Energie); Stromkennzeichnung im Sinn der Lieferantenpflichten (zu bestätigen)" };
+src\lib\plattform\eg\eda\daten.js:8:// Ersatz binnen 60 bzw. 15 Tagen), HA II 5.5 (EC_PODLIST), ElWG § 70 Abs. 6 (Auskunft Nahebereich binnen 14 Tagen),
+src\lib\plattform\eg\eda\daten.js:165:export function reklamationVorlage({ gemeinschaft, netzbetreiber, befunde = [], heute, absender = "ÖkoInvest GmbH als Organisator (ElWG § 68 Abs. 2)" }) {
+src\lib\plattform\eg\eda\daten.js:181:    `Wir bitten um Behebung bzw. Nachlieferung über EDA und um eine kurze Rückmeldung bis ${datumDe(antwortBis)}. Für die Abrechnung der Gemeinschaft sind ausschließlich die von Ihnen gelieferten Werte maßgeblich (ElWG § 71 Abs. 1 und 4); fehlende oder nicht belastbare Werte verzögern die Abrechnung aller Mitglieder.`,
+src\lib\plattform\eg\eda\codes.js:34:  EC_PRTFACT_CHG: { label: "Änderung des Teilnahmefaktors", kurz: "TF-Änderung", richtung: "aus", start: "ANFORDERUNG_CPF", antworten: ["ANTWORT_CPF", "ABLEHNUNG_CPF", "EDASendError"], schema: "CPRequest", version: "01.12", teilnahme: true, quelle: "HA II 5.6; ElWG § 71 Abs. 5 (1 Änderung je Tag bis 01.04.2028)" },
+src\lib\plattform\eg\eda\codes.js:130:  "158": { text: "Zählpunkt für diese Gemeinschaft nicht teilnahmeberechtigt (Nahebereich)", kategorie: "stammdaten", erneut: false, loesung: "Nahebereich (Trafostation bzw. Umspannwerk) beim Netzbetreiber erfragen (ElWG § 70 Abs. 6, Auskunft binnen 14 Tagen); ggf. BEG statt EEG." },
+src\lib\plattform\eg\eda\codes.js:139:  "183": { text: "Summe der Teilnahmefaktoren über 100 %", kategorie: "konflikt", erneut: true, loesung: "Mitglied nach Teilnahmen in anderen Gemeinschaften fragen; Teilnahmefaktor senken (Σ ≤ 100 %, ElWG § 71 Abs. 5) und erneut anmelden." },
+src\lib\plattform\eg\eda\codes.js:140:  "185": { text: "Höchstzahl gleichzeitiger Teilnahmen erreicht (5)", kategorie: "konflikt", erneut: false, loesung: "Der Zählpunkt nimmt bereits an 5 Gemeinschaften teil (ElWG § 71 Abs. 5); Mitglied muss zuerst eine Teilnahme beenden." },
+src\lib\plattform\eg\eda\automat.js:9:// 3.14 (Prozess/Nachricht); ElWG § 71 Abs. 5 (max. 5 Teilnahmen, Σ TF ≤ 100, ganzzahlig ≥ 1).
+src\lib\plattform\eg\eda\automat.js:55:  if (!Number.isInteger(tf) || tf < 1 || tf > 100) fehler.push("Teilnahmefaktor ganzzahlig 1–100 (ElWG § 71 Abs. 5).");
+src\lib\plattform\eg\eda\automat.js:59:  if (andere.length >= MAX_TEILNAHMEN) fehler.push(`Der Zählpunkt nimmt bereits an ${andere.length} Gemeinschaften teil (höchstens ${MAX_TEILNAHMEN}, ElWG § 71 Abs. 5).`);
+src\lib\plattform\eg\eda\automat.js:61:  if (summe > 100) fehler.push(`Summe der bekannten Teilnahmefaktoren ${summe} % > 100 % (ElWG § 71 Abs. 5).`);
+src\lib\plattform\eg\eda\automat.js:76:  if (!Number.isInteger(tf) || tf < 1 || tf > 100) fehler.push("Teilnahmefaktor ganzzahlig 1–100 (ElWG § 71 Abs. 5).");
+src\lib\plattform\eg\zahlung.js:18:import { belegOffen, BELEG_OFFEN } from "./belege.js";
+src\lib\plattform\eg\zahlung.js:157:  const offen = belege.filter((b) => BELEG_OFFEN.includes(b.status) && b.nummer && belegOffen(b) > 0 && !b.zahlungslaufId);
+src\lib\plattform\eg\zahlung.js:217:  const kandidaten = belege.filter((b) => BELEG_OFFEN.includes(b.status) && b.nummer).map(fuerZuordnung);
+src\lib\plattform\eg\zahlung.js:238: * Mahnvorschlag für einen EG-Beleg (Adapter auf buchhaltung/mahnwesen.js). Schutzbedürftige Haushalte (§ 68 Abs. 6
+src\lib\plattform\eg\zahlung.js:239: * ElWG) erhalten keine Mahngebühren; ab der Eskalationsstufe Hinweis auf Vorstandsbeschluss statt Automatik.
+src\lib\plattform\eg\zahlung.js:242:  if (b.typ !== "rechnung" || !BELEG_OFFEN.includes(b.status)) return null;
+src\lib\plattform\eg\wechsel.js:6:// Umstellungsplan mit Stichtag, Kontrollabrechnung (Vergleich mit der letzten Altabrechnung) und ElWG-Anpassungspaket.
+src\lib\plattform\eg\wechsel.js:263:    if (modell === "eeg" && m.art === "grossunternehmen") F(z, "art", "Großunternehmen sind in einer EEG nicht zulässig (ElWG § 6 Abs. 1 Z 61) – möglich ist eine BEG.");
+src\lib\plattform\eg\wechsel.js:303:    else if (!Number.isInteger(tf) || tf < TF_MIN || tf > TF_MAX) F(z, "teilnahmefaktor", `Teilnahmefaktor ${tf} – erlaubt sind ganze Prozent ${TF_MIN}–${TF_MAX} (ElWG § 71 Abs. 5).`);
+src\lib\plattform\eg\wechsel.js:320:  if (kwpSumme > LIEFERANTENPFLICHT_KW.allgemein) hinweise.push({ text: `Erzeugungsleistung laut Import ${Math.round(kwpSumme * 10) / 10} kWp – Lieferantenpflichten nach § 69 ElWG prüfen.`, quelle: "ElWG § 69" });
+src\lib\plattform\eg\wechsel.js:473:// ---------------------------------------------------------------- ElWG-Anpassungspaket (Bestand)
+src\lib\plattform\eg\wechsel.js:476: * Checkliste der ElWG-Anpassung für eine bestehende Gemeinschaft (Fachkonzept 2.6 Punkt 6; Koordinationsstelle
+src\lib\plattform\eg\wechsel.js:485:    { id: "statuten", text: "Statuten auf §§ 65–72 ElWG umstellen (Verweise, Mehrfachteilnahme, Organisator, ggf. Online-Versammlung)", pflicht: EG_MODELLE[g.modell]?.rechtsperson === true, erfuellt: hat("statuten_verein") || hat("statuten_egen") || /elwg/i.test(String(g.statutenVersion || "")), vorlage: g.rechtsform === "egen" ? "statuten_egen" : "statuten_verein", quelle: "ElWG § 188, § 189 Abs. 17; Mustervorlagen Erneuerbare Energie Wien" },
+src\lib\plattform\eg\wechsel.js:487:    { id: "lieferantenpflichten", text: `Lieferantenpflichten (§ 69 ElWG): AGB und Informationsblatt${lp ? "" : " – derzeit unter der Schwelle"}`, pflicht: lp, erfuellt: !lp || (hat("agb") && hat("informationsblatt")), vorlage: "agb", quelle: "ElWG § 69" },
+src\lib\plattform\eg\wechsel.js:488:    { id: "rhythmus", text: "Wahl zwischen Monats- und Jahresrechnung je Mitglied erfassen", pflicht: lp, erfuellt: !lp || mitglieder.every((m) => !["aktiv", "aufgenommen"].includes(m.status) || !!m.abrechnungsrhythmus), quelle: "ElWG § 69 Abs. 3" },
+src\lib\plattform\eg\wechsel.js:489:    { id: "organisator", text: "Organisator bestellen und dem Netzbetreiber anzeigen", pflicht: !!g.dienstleistung?.aktiv, erfuellt: !g.dienstleistung?.aktiv || !!g.organisatorAngezeigtAm, vorlage: "organisator_anzeige", quelle: "ElWG § 68 Abs. 2" },
+src\lib\plattform\eg\wechsel.js:492:    { id: "kontrolle", text: "BEG: Kontrollklausel in den Statuten prüfen", pflicht: g.modell === "beg", erfuellt: g.modell !== "beg" || hat("statuten_verein") || hat("statuten_egen"), quelle: "ElWG § 67 Abs. 3" },
+src\lib\plattform\eg\wechsel.js:493:    { id: "grossunternehmen", text: "EEG: keine Großunternehmen unter den Mitgliedern", pflicht: g.modell === "eeg", erfuellt: g.modell !== "eeg" || !mitglieder.some((m) => m.art === "grossunternehmen" && ["aktiv", "aufgenommen", "gekuendigt"].includes(m.status)), quelle: "ElWG § 6 Abs. 1 Z 61; EAG § 79 Abs. 2" },
+src\lib\plattform\eg\vorlagen\verein.js:4:// Dienstleisters (Fachkonzept 2.6) und Information/Nachtrag zur Anpassung an das ElWG (Fachkonzept 2.6 Punkt 6;
+src\lib\plattform\eg\vorlagen\verein.js:29:    { titel: "Bestellung des Organisators", absaetze: ["Der Vorstand wird ermächtigt, die {{organisatorName}} als Organisator nach § 68 Abs. 2 ElWG zu bestellen und den Dienstleistungs- sowie den Auftragsverarbeitungsvertrag abzuschließen."], wenn: "organisator" },
+src\lib\plattform\eg\vorlagen\verein.js:62:  kurz: "ElWG-Anpassung (Information und Nachtrag)",
+src\lib\plattform\eg\vorlagen\verein.js:64:  titel: "Anpassung an das Elektrizitätswirtschaftsgesetz (ElWG)",
+src\lib\plattform\eg\vorlagen\verein.js:67:  quelle: "ElWG §§ 65–72, 188 Abs. 1 und 3, 189 Abs. 17; Koordinationsstelle „Änderungen für bestehende Energiegemeinschaften“; Mustervorlagen Beratungsservice Erneuerbare Energie Wien",
+src\lib\plattform\eg\vorlagen\verein.js:74:    { titel: "Was ist passiert?", absaetze: ["Seit 01.10.2026 gelten für Energiegemeinschaften die §§ 65–72 ElWG; die bisherigen §§ 16a–16e ElWOG 2010 sind außer Kraft getreten (§ 188 ElWG). Unsere Gemeinschaft wurde ohne Ihr Zutun übergeführt (§ 189 Abs. 17 ElWG). Die bisherigen Vertragsmuster sollen an die neue Rechtslage angepasst werden."] },
+src\lib\plattform\eg\vorlagen\verein.js:80:            "Verweise auf das ElWOG 2010 werden durch die entsprechenden Bestimmungen des ElWG ersetzt.",
+src\lib\plattform\eg\vorlagen\verein.js:81:            "Ihr Zählpunkt kann an bis zu fünf gemeinsamen Energienutzungen teilnehmen; die Teilnahmefaktoren betragen zusammen höchstens 100 % (§ 71 Abs. 5 ElWG).",
+src\lib\plattform\eg\vorlagen\verein.js:82:            { text: "Die Gemeinschaft hat einen Organisator bestellt ({{organisatorName}}), der die Kommunikation mit dem Netzbetreiber und die Abrechnung übernimmt (§ 68 Abs. 2 ElWG).", wenn: "organisator" },
+src\lib\plattform\eg\vorlagen\verein.js:83:            { text: "Da die Erzeugungsleistung der Gemeinschaft über der Schwelle des § 69 ElWG liegt ({{erzeugungsleistungKw}} kW), gelten künftig Allgemeine Lieferbedingungen und ein Informationsblatt; Sie können zwischen Monats- und Jahresrechnung wählen.", wenn: "lieferantenpflicht" },
+src\lib\plattform\geodaten\scoring.js:88:  _AT: 1120, _DE: 1020, _CH: 1050,
+src\lib\plattform\geodaten\scoring.js:90:  "Baden-Württemberg": 1130, Bayern: 1130, Berlin: 1050, Brandenburg: 1070, Bremen: 1000, Hamburg: 1010, Hessen: 1090, "Mecklenburg-Vorpommern": 1040,
+src\lib\plattform\eg\vorlagen\statuten.js:5:// ElWG §§ 66–68, 70; GenG, GenRevG 1997; Vorschlag für Vereinsstatuten EEG und Leitfaden der Koordinationsstelle
+src\lib\plattform\eg\vorlagen\statuten.js:14:  untertitel: "{{modellLabel}} – Muster nach VerG 2002, Stand ElWG 01.10.2026",
+src\lib\plattform\eg\vorlagen\statuten.js:18:  quelle: "VerG 2002 § 3 Abs. 2, §§ 5, 8, 21, 22, 28; EAG § 79 Abs. 2; ElWG §§ 66–68, 70; Musterstatuten der Koordinationsstelle",
+src\lib\plattform\eg\vorlagen\statuten.js:40:        "Der Verein ist eine {{modellLabel}} im Sinne des {{rechtsgrundlage}}. Er nimmt an der gemeinsamen Energienutzung nach § 68 ElWG teil.",
+src\lib\plattform\eg\vorlagen\statuten.js:50:        { text: "Der Verein wird ausschließlich von natürlichen Personen, Gebietskörperschaften und kleinen Unternehmen kontrolliert, die nicht als Elektrizitätsunternehmen tätig sind. Diese Mitglieder halten gemeinsam jedenfalls die für eine Statutenänderung erforderliche Mehrheit der Stimmen (§ 67 Abs. 3 ElWG).", wenn: "modell=beg" },
+src\lib\plattform\eg\vorlagen\statuten.js:176:            "Bestellung eines Organisators im Sinne des § 68 Abs. 2 ElWG und Abschluss der Dienstleistungs- und Auftragsverarbeitungsverträge; die Bestellung ist dem Netzbetreiber anzuzeigen,",
+src\lib\plattform\eg\vorlagen\statuten.js:232:  untertitel: "{{modellLabel}} als eingetragene Genossenschaft – Muster nach GenG, Stand ElWG 01.10.2026",
+src\lib\plattform\eg\vorlagen\statuten.js:236:  quelle: "GenG §§ 1, 2, 5, 15 ff., 24, 27 ff., 77; GenRevG 1997; EAG § 79 Abs. 2; ElWG §§ 66–68 (Details mit dem Revisionsverband abstimmen, zu bestätigen)",
+src\lib\plattform\eg\vorlagen\statuten.js:257:        "Gegenstand des Unternehmens sind insbesondere die Organisation der gemeinsamen Energienutzung nach § 68 ElWG, die Errichtung, der Erwerb, die Pacht und der Betrieb von Erzeugungs- und Speicheranlagen sowie die Abrechnung mit den Mitgliedern.",
+src\lib\plattform\eg\vorlagen\statuten.js:258:        { text: "Die Genossenschaft wird ausschließlich von natürlichen Personen, Gebietskörperschaften und kleinen Unternehmen kontrolliert, die nicht als Elektrizitätsunternehmen tätig sind; diese halten jedenfalls die für eine Satzungsänderung erforderliche Mehrheit (§ 67 Abs. 3 ElWG).", wenn: "modell=beg" },
+src\lib\plattform\eg\vorlagen\statuten.js:291:        "Der Vorstand kann einen Organisator im Sinne des § 68 Abs. 2 ElWG bestellen; die Bestellung ist dem Netzbetreiber anzuzeigen.",
+src\lib\plattform\eg\vorlagen\organisator.js:4:// Signatur-Modul), Bestellung und Vollmacht des Organisators (§ 68 Abs. 2 ElWG), Anzeige an den Netzbetreiber,
+src\lib\plattform\eg\vorlagen\organisator.js:50:  untertitel: "nach § 68 Abs. 2 ElWG – {{name}}",
+src\lib\plattform\eg\vorlagen\organisator.js:52:  quelle: "ElWG § 68 Abs. 2, § 69 Abs. 4, § 70 Abs. 2; Fachkonzept 1.1, 2.3, 2.6",
+src\lib\plattform\eg\vorlagen\organisator.js:61:    { titel: "Bestellung", absaetze: ["Die {{modellLabel}} „{{name}}“ (Marktpartner-ID {{marktpartnerId}}) bestellt die {{organisatorName}}, {{organisatorAnschrift}}, {{organisatorFirmenbuch}}, ab {{abDe}} als Organisator im Sinne des § 68 Abs. 2 ElWG."] },
+src\lib\plattform\eg\vorlagen\organisator.js:70:            { text: "die Pflichten nach § 69 ElWG (Allgemeine Lieferbedingungen, Informationsblatt, Rechnungen, Änderungsinformationen) für die Gemeinschaft zu erfüllen (§ 69 Abs. 4 ElWG),", wenn: "lieferantenpflicht" },
+src\lib\plattform\eg\vorlagen\organisator.js:77:    { titel: "Anzeige", absaetze: ["Die Bestellung wird dem Netzbetreiber angezeigt. Ab der Anzeige informiert der Netzbetreiber nur noch den Organisator (§ 70 Abs. 2 ElWG)."] },
+src\lib\plattform\eg\vorlagen\organisator.js:88:  untertitel: "an {{netzbetreiberName}} – nach § 68 Abs. 2 ElWG",
+src\lib\plattform\eg\vorlagen\organisator.js:90:  quelle: "ElWG § 68 Abs. 2 letzter Satz, § 70 Abs. 2; Fachkonzept 2.3",
+src\lib\plattform\eg\vorlagen\organisator.js:99:[Omitted long matching line]
+src\lib\plattform\eg\vorlagen\mitglied.js:5:// Grundlagen: Fachkonzept 2.4 (Verträge der Koordinationsstelle), 2.5 (Betrieb), 4.3/4.5 (Steuerstatus), ElWG §§ 68–71,
+src\lib\plattform\eg\vorlagen\mitglied.js:8:const LIEFERANT_HINWEIS = "Die Gemeinschaft liefert nur die ihr zugeordnete Energie (Eigendeckung je Viertelstunde). Den restlichen Strombedarf deckt weiterhin der Stromlieferant des Mitglieds; überschüssige Erzeugung nimmt weiterhin der Energieabnehmer des Erzeugers ab (§ 71 Abs. 3 ElWG).";
+src\lib\plattform\eg\vorlagen\mitglied.js:17:  quelle: "Statuten der Gemeinschaft; ElWG §§ 66–68, 70; Fachkonzept 2.4",
+src\lib\plattform\eg\vorlagen\mitglied.js:31:        { text: "Ich bestätige, dass ich zum Mitgliederkreis einer Erneuerbare-Energie-Gemeinschaft gehöre (natürliche Person, Gemeinde, sonstige juristische Person des öffentlichen Rechts oder kleines bzw. mittleres Unternehmen, bei dem die Teilnahme nicht die Haupttätigkeit ist). Großunternehmen sind ausgeschlossen (ElWG § 6 Abs. 1 Z 61).", wenn: "modell=eeg" },
+src\lib\plattform\eg\vorlagen\mitglied.js:33:        "Ein Zählpunkt kann an bis zu fünf gemeinsamen Energienutzungen teilnehmen; die Teilnahmefaktoren aller Teilnahmen eines Zählpunkts betragen zusammen höchstens 100 % (§ 71 Abs. 5 ElWG). Weitere Teilnahmen gebe ich bekannt.",
+src\lib\plattform\eg\vorlagen\mitglied.js:48:  quelle: "ElWG §§ 68–71 (bei über 100 kW zusätzlich § 69 mit §§ 20, 21, 42); Fachkonzept 2.4, 2.5; Muster der Koordinationsstelle",
+src\lib\plattform\eg\vorlagen\mitglied.js:78:        { text: "Das Mitglied kann zwischen einer monatlichen und einer jährlichen Rechnung wählen. Die Rechnung ist mindestens einmal jährlich kostenlos, enthält die Zählpunktbezeichnung und wird auf Verlangen erläutert (§ 69 ElWG).", wenn: "lieferantenpflicht" },
+src\lib\plattform\eg\vorlagen\mitglied.js:92:        { text: "Änderungen des Preises teilt die Gemeinschaft mindestens einen Monat vor Wirksamkeit in verständlicher Form mit; das Mitglied kann den Vertrag bis zum Inkrafttreten kostenlos kündigen (§§ 21, 69 ElWG).", wenn: "lieferantenpflicht" },
+src\lib\plattform\eg\vorlagen\mitglied.js:112:        { text: "Weiters gelten die Allgemeinen Lieferbedingungen; das Informationsblatt hat das Mitglied vor Vertragsabschluss erhalten (§ 69 Abs. 1 ElWG).", wenn: "lieferantenpflicht" },
+src\lib\plattform\eg\vorlagen\mitglied.js:127:  quelle: "ElWG §§ 68, 71 Abs. 3 und 5; EAG § 80; UStG 1994 §§ 6 Abs. 1 Z 27, 19, 22 (laut Fachkonzept 4.5, zu bestätigen); Fachkonzept 2.4",
+
+[Showing results with pagination = limit: 120]

@@ -1,0 +1,501 @@
+==> src/components/Portal/EG/Mitglied/EnergieFluss.js <==
+"use client";
+
+// „Energie heute“ – Energiefluss Sonne → Gemeinschaft → Zuhause (T6, Design-System 2.0).
+
+==> src/components/ui/FortschrittsRing.js <==
+import { cn } from "./cn";
+
+/**
+
+==> src/components/ui/Reveal.js <==
+import { cn } from "./cn";
+
+/**
+
+==> src/components/Gemeinschaft/AnfrageMitDaten.js <==
+"use client";
+
+import { useId, useState } from "react";
+/** Mitglieder-Nutzen, der nicht schon in der Tour steht (Countdown, Ersparnis, grüne Stunden zeigt die Tour) */
+const PORTAL = [
+  { icon: SlidersHorizontal, title: "Mehrfachteilnahme", text: "Ein Zählpunkt in bis zu fünf Gemeinschaften: Teilnahmefaktoren je Gemeinschaft, freier Anteil und ein Vorschlag des Optimierers." },
+  { icon: FileSignature, title: "Beitritt in Minuten", text: "Eignungscheck des Zählpunkts, Verträge, SEPA-Mandat und elektronische Unterschrift – danach geht es geführt in die Zustimmung beim Netzbetreiber." },
+  { icon: ShieldCheck, title: "Eigene Daten, klare Rechte", text: "Mitglieder sehen nur ihre Daten, Vorstände standardmäßig Summen. Datenauskunft nach Art. 15 DSGVO als Download." },
+];
+
+/** Arbeitswerkzeuge für Kassa und Vorstand – nur Aussagen, die auch in Tour, Vergleich und FAQ stehen */
+const VORSTAND = [
+  { icon: Users, title: "Organe und Versammlungen", text: "Vereinsführung direkt in der Plattform: Organe, Versammlungen und Beschlüsse der Gemeinschaft an einem Ort." },
+  { icon: BadgeCheck, title: "Vier-Augen-Freigabe", text: "Jede Abrechnung und Zahlung mit zwei Freigaben – Status je Periode und Vergleich zum Vorzeitraum." },
+  { icon: HandCoins, title: "SEPA und Mahnwesen", text: "SEPA-Lastschrift und -Überweisung aus der Abrechnung heraus, Mahnwesen inklusive." },
+  { icon: ClipboardList, title: "Umsatzsteuer-Sonderfälle", text: "Kleinunternehmer, Landwirt, Reverse Charge – die Fälle, die in Vereinen sonst von Hand laufen." },
+  { icon: FileSignature, title: "Export für die Steuerberatung", text: "Exporte für die Steuerberatung, jede Zahl mit Prüfpfad bis zum Viertelstundenwert." },
+  { icon: ShieldCheck, title: "Einzeleinsicht nur mit Zweck", text: "Vorstand und Kassa sehen standardmäßig Summen; eine Einzeleinsicht ist nur mit Zweck möglich und wird protokolliert." },
+];
+
+/** Vergleich: Aussagen zum Markt aus der Marktanalyse (öffentliche Anbieterangaben, Stand 01.10.2026) */
+const VERGLEICH = [
+  { thema: "Online-Beitritt, EDA-Anbindung, Rechnungen und Gutschriften, Mitgliederportal", markt: "bei nahezu allen Anbietern Standard", wir: "Ebenso enthalten – mit geführter Zustimmung je Netzbetreiber und Fristanzeige" },
+  { thema: "Hilfe bei der Zustimmung im Netzbetreiber-Portal", markt: "teils als Anleitung (PDF, Seiten je Netzbetreiber)", wir: "Status Schritt für Schritt im Portal, Countdown und Anleitung im Kontext des Zählpunkts" },
+  { thema: "Mehrfachteilnahme mit Teilnahmefaktor", markt: "bei einzelnen Anbietern, teils als eigenes Paket", wir: "Übersicht je Zählpunkt, Regeln Σ ≤ 100 % und max. 5 geprüft, Vorschlag des Optimierers" },
+  { thema: "Prognose „grüne Stunden“, Speicher- und Lastverschiebungs-Hinweise", markt: "in öffentlichen Quellen selten belegt", wir: "Prognose aus Messwerten und Wetter, Hinweise ohne Steuerung" },
+  { thema: "Vereinsführung, Mahnwesen, Umsatzsteuer-Sonderfälle", markt: "in öffentlichen Quellen selten belegt", wir: "Organe, Versammlungen, Vier-Augen-Freigaben, USt-Fälle (Kleinunternehmer, Landwirt, Reverse Charge)" },
+  { thema: "Gründung, Anlagen und Finanzierung aus einer Hand", markt: "Gründungsbegleitung verbreitet, eigene Anlagenprojekte selten", wir: "Gründung als Dienstleistung, PV und Speicher über die ÖKOVOLT-Gruppe, Bürgerbeteiligung" },
+];
+const MARKT_KOPF = "Am Markt (laut öffentlichen Angaben)";
+
+const PAKETE = [
+  { icon: ClipboardList, title: "Software", tag: "Selbstverwaltet", fuer: "Für Vorstände, die selbst abrechnen möchten", text: "Plattform für Vorstand, Kassa und Mitglieder: Stammdaten, EDA-Prozesse, Energiedaten, Abrechnung, Portal. Ihre Gemeinschaft arbeitet selbst, wir liefern Werkzeug und Support.", punkte: ["Mitgliederportal und Beitritt online", "Abrechnung mit Vier-Augen-Freigabe", "Export für die Steuerberatung"] },
+  { icon: Users, title: "Betriebsführung", tag: "ÖkoInvest als Organisator", fuer: "Für Gemeinschaften, deren Ehrenamt entlastet werden soll", text: "Wir übernehmen als Organisator nach § 68 Abs. 2 ElWG Anmeldungen, Datenqualität, Abrechnung und Mitgliederfragen – auf Basis eines Dienstleistungs- und Auftragsverarbeitungsvertrags.", punkte: ["Kommunikation mit dem Netzbetreiber", "Lieferantenpflichten ab 100 kW (§ 69)", "Ansprechpartner für Mitglieder"] },
+  { icon: Building2, title: "Gründung", tag: "Von der Idee bis zum ersten Strom", fuer: "Für Gemeinden, Vereine und Initiativen am Anfang", text: "Machbarkeit mit Simulation, Rechtsform und Statuten, Marktpartner, Vertrag mit dem Netzbetreiber, EDA-Zugang, erste Mitglieder – für Gemeinden, Vereine und Initiativen.", punkte: ["Netzgebiets- und Nahebereichs-Check", "Statuten und Verträge aus Mustern", "Startkampagne für Mitglieder"] },
+];
+
+const WECHSEL = [
+  { title: "Mandat", text: "Vorstandsbeschluss, Dienstleistungs- und Auftragsverarbeitungsvertrag; auf Wunsch Bestellung als Organisator." },
+  { title: "EDA-Zugang übertragen", text: "Die Marktpartner-ID bleibt bei Ihrer Gemeinschaft. Zählpunkte müssen nicht ab- und neu angemeldet werden – die Zustimmungen bleiben bestehen." },
+  { title: "Daten übernehmen", text: "Import von Mitgliedern, Zählpunkten und Tarifen, Abgleich mit der Zählpunktliste des Netzbetreibers." },
+  { title: "Parallellauf und Stichtag", text: "Eigene Zuteilung gegen die Werte des Netzbetreibers prüfen, Abrechnung ab einem festen Monat." },
+];
+
+const ELWG = [
+  { icon: Repeat, title: "Bis zu fünf Gemeinschaften", text: "Ein Zählpunkt kann an bis zu fünf gemeinsamen Energienutzungen teilnehmen; Teilnahmefaktor ganzzahlig, zusammen höchstens 100 % (ElWG § 71 Abs. 5)." },
+  { icon: HandCoins, title: "Netzentgelt nach Nahebereich", text: "Bis Ende 2026 gelten für EEG lokal −57 % bzw. regional −28 %/−64 % auf den Netznutzungs-Arbeitspreis. Ab 2027 soll eine neue Verordnung nach Nahebereich staffeln – die Höhe steht noch aus (zu bestätigen)." },
+  { icon: BadgeCheck, title: "Pflichten ab 100 kW", text: "Gemeinschaften mit mehr als 100 kW Erzeugung (Haushalte über 30 kW) brauchen AGB, Informationsblatt und Rechnungen mit Pflichtinhalten – ein Organisator kann sie übernehmen (§ 69)." },
+  { icon: Landmark, title: "Sozialquote für Gemeinden", text: "Nehmen Gebietskörperschaften mit eigener Erzeugung teil, sollen mindestens 10 % der Menge schutzbedürftigen Haushalten zugutekommen (§ 68 Abs. 6)." },
+];
+
+/** Produktfakten – Regeln, die die Plattform abbildet (keine Unternehmenskennzahlen) */
+const FAKTEN = [
+  { icon: Repeat, wert: "5", einheit: "Gemeinschaften", text: "je Zählpunkt – Teilnahmefaktoren im Blick" },
+  { icon: BellRing, wert: "10", einheit: "Werktage", text: "Zustimmungsfrist – das Portal zählt für jedes Mitglied mit" },
+  { icon: BadgeCheck, wert: "2", einheit: "Freigaben", text: "Vier-Augen-Prinzip für jede Abrechnung und Zahlung" },
+  { icon: Check, wert: "0", einheit: "Neuanmeldungen", text: "beim Wechsel – die Zustimmungen der Mitglieder bleiben gültig" },
+];
+
+/** Wegweiser nach Zielgruppe – Texte fassen nur Inhalte dieser Seite zusammen */
+const WEGE = [
+  { icon: Users, titel: "Vorstand", text: "Überblick, Freigaben, Pflichten nach ElWG", href: "#kassa" },
+  { icon: HandCoins, titel: "Kassa", text: "Abrechnung mit Vier-Augen-Freigabe", href: "#produkt-kassier" },
+  { icon: Landmark, titel: "Gemeinde & Initiative", text: "Gründung, Sozialquote, eigene Anlagen", href: "#pakete" },
+  { icon: Sun, titel: "Mitglied", text: "Was spare ich, wie trete ich bei?", href: "#rechner" },
+];
+
+const TOUR = [
+  {
+    id: "mitglied",
+    eyebrow: "Für Mitglieder",
+    titel: "Energie heute: Mitglieder sehen ihre Ersparnis, bevor sie fragen",
+    text: "Das Dashboard zeigt den Energiefluss von den Anlagen der Region bis nach Hause, die Ersparnis aus Energiepreis, Netzentgelt und Abgabe und die grünen Stunden des Tages – mit einem Hinweis, wann sich Waschmaschine oder Wallbox lohnen.",
+    punkte: ["Ersparnis getrennt nach Energie, Netz und Abgabe, als Schätzung gekennzeichnet", "Grüne Stunden aus Prognose und Messwerten – Empfehlung, keine Steuerung", "Belege, Preisblatt und eigene Daten an einem Ort"],
+    bildText: "Beispielansicht Energie heute auf dem Handy, fiktive Werte: viel Gemeinschaftsstrom laut Prognose, Energiefluss von der Region über die Gemeinschaft Sonnenland nach Hause, 71,40 € Ersparnis in diesem Jahr, 38 % aus der Gemeinschaft und die grünen Stunden des Tages.",
+    buehne: "from-sand-50 to-ov-50",
+  },
+  {
+    id: "zustimmung",
+    eyebrow: "Für neue Mitglieder",
+    titel: "Damit keine Anmeldung verfällt: Countdown und Anleitung je Netzbetreiber",
+    text: "Vergisst ein Mitglied die Zustimmung im Portal des Netzbetreibers, verfällt die Anmeldung nach zehn Werktagen. Unser Portal zählt die Tage herunter und erklärt jeden Klick für den jeweiligen Netzbetreiber – direkt nach dem Beitritt.",
+    punkte: ["Status jeder Anmeldung Schritt für Schritt", "Fristring mit Datum, dringend ab sieben Tagen", "Anleitung je Netzbetreiber im Kontext des Zählpunkts"],
+    bildText: "Beispielansicht Zustimmung beim Netzbetreiber, fiktive Werte: Fristring mit noch 6 Tagen, Frist bis 14.10.; Anleitung in fünf Schritten, die ersten zwei erledigt (Kundenportal öffnen, Bereich Energiegemeinschaften wählen), offen: Anfrage finden, Teilnahmefaktor prüfen, zustimmen.",
+    buehne: "from-sand-50 to-ov-50",
+  },
+  {
+    id: "kassier",
+    eyebrow: "Für Kassa und Vorstand",
+    titel: "Abrechnung als geführte Routine – mit Vier-Augen-Freigabe",
+    text: "Vorschau berechnen, Veränderungen zum Vormonat sehen, als Kassier und Vorstand freigeben, versenden: Jeder Schritt hat einen klaren Status, jede Zahl einen Prüfpfad bis zum Viertelstundenwert.",
+    punkte: ["Status-Pipeline je Periode, Vier-Augen-Freigabe mit Bestätigung", "Vergleich zum Vorzeitraum mit auffälligen Mitgliedern", "SEPA-Lastschrift und -Überweisung, Mahnwesen, Exporte für die Steuerberatung"],
+    bildText: "Beispielansicht der Abrechnung Oktober, fiktive Werte: Status-Pipeline bei der zweiten Freigabe, Rechnungen und Gutschriften, auffällige Veränderungen zum September, Freigabe durch Kassier und Vorstand; Abschlussmeldung: 72 Belege versendet, Lastschrift am 05.11.",
+    buehne: "from-sand-50 to-navy-50",
+  },
+];
+
+const ABLAUF = [
+  ["Sie schildern kurz Ihre Lage", "Modell, ungefähre Zählpunkte und Leistung genügen."],
+  ["Wir melden uns mit einem Vorschlag", "Passendes Paket und ein konkretes Angebot, offen kalkuliert."],
+  ["Sie entscheiden", "Auf Wunsch zeigen wir die Plattform an Ihren eigenen Zahlen."],
+];
+const ZUSAGEN = ["Unverbindlich anfragen", "Die Marktpartner-ID bleibt bei Ihrer Gemeinschaft", "Auftragsverarbeitung nach Art. 28 DSGVO"];
+
+const FAQ = [
+  { q: "Für welche Gemeinschaften ist die Plattform gedacht?", a: "Für Erneuerbare-Energie-Gemeinschaften (lokal und regional), Bürgerenergiegemeinschaften und gemeinschaftliche Erzeugungsanlagen in Österreich nach den §§ 65–72 ElWG. Das neue Modell Peer-to-Peer ist im Datenmodell bereits vorgesehen." },
+  { q: "Müssen wir bei einem Wechsel alle Zählpunkte neu anmelden?", a: "Nein. Die Marktpartner-ID gehört der Gemeinschaft; wir erhalten einen Zugang im EDA-Anwenderportal bzw. eine Bevollmächtigung. Die bestehenden Zustimmungen der Mitglieder bleiben gültig. Für einen Monat rechnen wir parallel und gleichen mit den Werten des Netzbetreibers ab." },
+  { q: "Wie hoch ist die Ersparnis für ein Mitglied?", a: "Das hängt vom Modell, vom Verbrauchsprofil und vom Preis in der Gemeinschaft ab. Öffentlich genannte Beispiele liegen bei rund 50 bis 200 € im Jahr je Haushalt. Der Rechner oben zeigt Ihre Größenordnung – die Netzentgelt-Reduktion zieht der Netzbetreiber direkt auf der Netzrechnung ab." },
+  { q: "Was passiert bei den Netzentgelten ab 2027?", a: "Mit dem ElWG sollen reduzierte Netzentgelte künftig nach dem Nahebereich (Zonelevel) statt nach der Form der Gemeinschaft berechnet werden. Die neue Verordnung lag zum 1. Oktober 2026 noch nicht endgültig vor; wir rechnen bis dahin mit einer gekennzeichneten Arbeitshypothese und passen die Werte an, sobald sie feststehen." },
+  { q: "Was kostet die Plattform?", a: "Wir kalkulieren je Gemeinschaft nach Paket und Größe und legen das Angebot offen dar. Fragen Sie unverbindlich an – mit wenigen Angaben zu Mitgliedern und Anlagen erhalten Sie ein konkretes Angebot." },
+  { q: "Wer sieht die Viertelstundenwerte der Mitglieder?", a: "Mitglieder sehen ihre eigenen Werte. Vorstand und Kassa sehen standardmäßig Summen; eine Einzeleinsicht ist nur mit Zweck möglich und wird protokolliert. Die Betriebsführung arbeitet im Auftrag der Gemeinschaft (Auftragsverarbeitung nach Art. 28 DSGVO)." },
+];
+
+const QUERVERWEISE = [
+  { href: "/energiegemeinschaften", titel: "Energiegemeinschaften im Überblick", text: "Regeln in Deutschland, Österreich und der Schweiz im Vergleich." },
+  { href: "/energiegemeinschaften/rechner", titel: "Ersparnis-Rechner", text: "Was eine Gemeinschaft für Ihren Verbrauch oder Ihre PV-Anlage bringt." },
+  { href: "/kommunen", titel: "Für Gemeinden", text: "Wertschöpfung, Beteiligung und eigene Anlagen vor Ort." },
+];
+
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "@id": `${abs(PFAD)}/#service`,
+  name: "Plattform und Betriebsführung für Energiegemeinschaften",
+  serviceType: "Software und Dienstleistung für Energiegemeinschaften",
+  description: "Mitgliederportal, EDA-Prozesse, Abrechnung, Gründung und Betriebsführung für Energiegemeinschaften in Österreich nach ElWG.",
+  provider: { "@id": `${abs("/")}/#organization` },
+  areaServed: { "@type": "Country", name: "Österreich" },
+  url: abs(PFAD),
+};
+
+/** Häkchen-Chip als Aufzählungszeichen (BadgeCheck bleibt der Vergleichstabelle vorbehalten) */
+function Haken({ dunkel = false }) {
+  return (
+    <span aria-hidden="true" className={cn("mt-[3px] flex h-4 w-4 shrink-0 items-center justify-center rounded-full", dunkel ? "bg-white/10 text-ov-300" : "bg-ov-100 text-ov-700")}>
+      <Check className="h-2.5 w-2.5" strokeWidth={3} />
+    </span>
+  );
+}
+
+/** Tour-Mockup je Ansicht – als Abbildung mit sichtbarer Kennzeichnung „fiktive Werte“ */
+function TourBild({ t }) {
+  if (t.id === "mitglied") {
+    return (
+      <div role="img" aria-label={t.bildText} className="relative mx-auto w-full max-w-[300px]">
+        <div aria-hidden="true"><MockEnergieHeute /></div>
+      </div>
+    );
+  }
+  if (t.id === "zustimmung") {
+    return (
+      <div role="img" aria-label={t.bildText} className="relative mx-auto w-full max-w-[460px]">
+        <div aria-hidden="true"><MockZustimmung /></div>
+      </div>
+    );
+  }
+  return (
+    <div role="img" aria-label={t.bildText} className="relative mx-auto w-full max-w-[560px] sm:pb-8">
+      <div aria-hidden="true">
+        <MockKassier />
+        {/* Mobil im Fluss, damit die Freigabe-Chips sichtbar bleiben; ab sm schwebend. Landet kurz nach dem Fenster. */}
+        <Reveal dir="up" delay={450} className="relative z-10 -mt-3 ml-auto w-[88%] max-w-[300px] sm:absolute sm:-bottom-2 sm:-right-4 sm:mt-0 sm:w-[70%]">
+          <MockAbschluss />
+        </Reveal>
+      </div>
+    </div>
+  );
+}
+
+export default function SoftwarePage() {
+  return (
+    <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+
+      {/* ---------- Hero ---------- */}
+      <section className="ov-verlauf-nacht ov-noise relative isolate overflow-hidden text-white">
+        <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10 opacity-60" />
+        <div className="ov-container pb-24 pt-8 md:pb-28 md:pt-12">
+          <Breadcrumbs items={[{ name: "Energiegemeinschaften", href: "/energiegemeinschaften" }, { name: "Plattform & Betrieb" }]} dark className="ov-hero-in mb-10" />
+          <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10">
+            <div className="max-w-2xl">
+              <div className="ov-hero-in" style={{ "--ov-delay": "60ms" }}><Eyebrow dark className="mb-5">Für Energiegemeinschaften in Österreich · ElWG</Eyebrow></div>
+              <h1 className="ov-h1 ov-hero-in" style={{ "--ov-delay": "120ms" }}>Die Gemeinschaft führen – <span className="ov-text-gradient-light">nicht nur abrechnen.</span></h1>
+              <p className="ov-lead ov-hero-in mt-6 text-white/75" style={{ "--ov-delay": "200ms" }}>Mitgliederportal, Abrechnung mit Vier-Augen-Freigabe und geführte Zustimmung beim Netzbetreiber – als Software für Ihren Vorstand oder mit uns als Organisator im Betrieb.</p>
+              <ul className="ov-hero-in mt-7 flex flex-wrap gap-2" style={{ "--ov-delay": "260ms" }}>
+                {HERO_CHIPS.map((x, i) => (
+                  <li key={x} className={cn("ov-glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[13.5px] text-white/90", i > 1 && "hidden sm:inline-flex")}><Check aria-hidden="true" className="h-3.5 w-3.5 text-ov-300" strokeWidth={3} />{x}</li>
+                ))}
+              </ul>
+              <div className="ov-hero-in mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap" style={{ "--ov-delay": "320ms" }}>
+                <Button href="#anfrage" size="lg" pfeil className="w-full sm:w-auto">Angebot anfragen</Button>
+                <Button href="#produkt" size="lg" variant="outlineLight" className="w-full sm:w-auto">Plattform ansehen</Button>
+              </div>
+              <p className="ov-hero-in mt-4 text-[13px] text-white/75" style={{ "--ov-delay": "360ms" }}>Unverbindlich · Angebot nach Größe und Paket · auch für bestehende Gemeinschaften</p>
+              <div className="ov-hero-in mt-6 flex flex-col items-start gap-3" style={{ "--ov-delay": "400ms" }}>
+                <a href="#elwg" className="ov-glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[13.5px] text-white/90 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">
+                  <BadgeCheck aria-hidden="true" className="h-4 w-4 shrink-0 text-ov-300" />Seit 1. Oktober 2026: neue ElWG-Regeln – was sich ändert
+                </a>
+                <p className="text-[14px] text-white/75">Mitglied oder Interessent? <a href="#rechner" className="rounded font-semibold text-white underline decoration-ov-300 underline-offset-4 hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">Ersparnis rechnen</a></p>
+              </div>
+            </div>
+            <div className="relative lg:mt-6 lg:self-start">
+              {/* Bühne: Lichtkegel hinter dem Produkt und Bodenschatten unter der Komposition */}
+              <div aria-hidden="true" className="pointer-events-none absolute -inset-x-10 -inset-y-16 -z-10 rounded-full bg-[radial-gradient(closest-side,rgba(140,186,88,0.28),transparent_70%)] blur-2xl" />
+              <div aria-hidden="true" className="pointer-events-none absolute inset-x-[12%] bottom-6 -z-10 h-16 rounded-[50%] bg-navy-950/60 blur-2xl" />
+              <HeroKomposition />
+              <p className="mt-16 text-center text-[12.5px] text-white/70 sm:mt-24">Beispielansicht mit fiktiven Werten</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- Faktenleiste ---------- */}
+      <section aria-labelledby="fakten-titel" className="relative z-10 -mt-12 md:-mt-16">
+        <h2 id="fakten-titel" className="sr-only">Regeln, die die Plattform abbildet</h2>
+        <div className="ov-container">
+          <dl className="relative grid grid-cols-2 rounded-[2rem] bg-white p-2 shadow-e4 ring-1 ring-ink-200/70 before:absolute before:inset-x-10 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-ov-300 before:to-transparent md:grid-cols-4">
+            {FAKTEN.map((f, i) => (
+              <div key={f.text} className={cn("flex flex-col p-4 md:p-6", i % 2 === 1 && "border-l border-ink-100", i >= 2 && "border-t border-ink-100 md:border-t-0", i === 2 && "md:border-l")}>
+                <dt className="order-last mt-1 text-[13.5px] leading-snug text-ink-600">{f.text}</dt>
+                <dd>
+                  <span aria-hidden="true" className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-ov-50 text-ov-600 ring-1 ring-ov-200"><f.icon className="h-4 w-4" /></span>
+                  <span className="ov-kpi-l block text-ink-900">{f.wert}<span className="ov-einheit text-ov-700"> {f.einheit}</span></span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      {/* ---------- Wegweiser ---------- */}
+      <nav aria-labelledby="wege-titel" className="bg-white pb-4 pt-14 md:pt-20">
+        <div className="ov-container">
+          <p id="wege-titel" className="ov-overline mb-4 text-ink-500">Direkt zu Ihrem Thema</p>
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {WEGE.map((w) => (
+              <li key={w.titel} className="flex">
+                <a href={w.href} className="ov-lift group flex w-full items-start gap-4 rounded-3xl bg-white p-5 shadow-e1 ring-1 ring-ink-200/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
+                  <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-ov-50 text-ov-600 transition-colors duration-200 group-hover:bg-ov-500 group-hover:text-white"><w.icon className="h-5 w-5" strokeWidth={1.8} /></span>
+                  <span className="min-w-0">
+                    <span className="block font-display text-[16px] font-bold text-ink-900">{w.titel}</span>
+                    <span className="mt-0.5 block text-[14px] leading-snug text-ink-600">{w.text}</span>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </nav>
+
+      {/* ---------- Produkt-Tour ---------- */}
+      <Section tone="white" space="lg" id="produkt" className="scroll-mt-24">
+        <SectionHeading eyebrow="Das Produkt" title="Drei Ansichten, ein Gedanke: niemand muss nachfragen" lead="So sieht die Plattform für Mitglieder, für die Zustimmung beim Netzbetreiber und für die Kassa aus. Alle Werte in den Ansichten sind Beispiele." className="mb-12 md:mb-16" />
+        <div className="space-y-20 md:space-y-28">
+          {TOUR.map((t, i) => (
+            <div key={t.id} id={`produkt-${t.id}`} className="grid scroll-mt-24 items-center gap-10 lg:grid-cols-2 lg:gap-16">
+              <Reveal dir={i % 2 ? "left" : "right"} className={cn("max-w-xl", i % 2 && "lg:order-2")}>
+                <p className="ov-overline text-ink-500"><span className="text-ov-700">0{i + 1}</span> / 03 · {t.eyebrow}</p>
+                <h3 className="ov-h3 mt-3 text-ink-900">{t.titel}</h3>
+                <p className="ov-text mt-4 text-ink-600">{t.text}</p>
+                <ul className="mt-6 space-y-2.5">
+                  {t.punkte.map((x) => <li key={x} className="ov-klein flex gap-2.5 text-ink-700"><Haken />{x}</li>)}
+                </ul>
+              </Reveal>
+              <Reveal dir="scale" className={cn(i % 2 && "lg:order-1")}>
+                <figure>
+                  <div className={cn("relative isolate flex min-h-[380px] items-center justify-center overflow-hidden rounded-[2.5rem] bg-gradient-to-br p-6 ring-1 ring-sand-200 md:min-h-[500px] md:p-10", t.buehne)}>
+                    <div aria-hidden="true" className="ov-grid-bg-light absolute inset-0 -z-10" />
+                    <div aria-hidden="true" className="absolute left-1/2 top-1/2 -z-10 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ov-200/50 blur-3xl" />
+                    <TourBild t={t} />
+                  </div>
+                  <figcaption className="mt-3 text-center text-[12.5px] text-ink-500">Beispielansicht mit fiktiven Werten</figcaption>
+                </figure>
+              </Reveal>
+            </div>
+          ))}
+        </div>
+        <Reveal className="mt-16 flex flex-col items-center justify-center gap-4 text-center sm:flex-row sm:text-left md:mt-20">
+          <p className="ov-text text-ink-700">Möchten Sie die Ansichten mit Ihren eigenen Zahlen sehen?</p>
+          <Button href="#anfrage" pfeil>Vorführung anfragen</Button>
+        </Reveal>
+      </Section>
+
+      {/* ---------- Für Kassa und Vorstand ---------- */}
+      <Section tone="sand" space="lg" id="kassa" className="scroll-mt-24">
+        <SectionHeading eyebrow="Für Kassa und Vorstand" title="Der Verein läuft mit – nicht nebenher" lead="Die Arbeit, die in Vorständen die meiste Zeit kostet, an einem Ort: Vereinsführung, Freigaben, Zahlungsverkehr und Exporte." className="mb-10 md:mb-12" />
+        <FeatureGrid items={VORSTAND} cols={3} />
+      </Section>
+
+      {/* ---------- Was Mitglieder bekommen + Rechner ---------- */}
+      <Section tone="white" space="lg">
+        <SectionHeading eyebrow="Was Mitglieder bekommen" title="Klar, ehrlich, ohne Rückfragen" lead={<>Alles an einem Ort – auch auf dem Handy. Countdown, Ersparnis und grüne Stunden sehen Sie oben in der <a href="#produkt" className="font-semibold text-ov-700 underline-offset-4 hover:underline">Produkt-Tour</a>.</>} className="mb-10 md:mb-12" />
+        <div className="grid gap-4 md:grid-cols-3 md:gap-5">
+          <Reveal className="flex flex-col overflow-hidden rounded-[2rem] bg-sand-50 ring-1 ring-sand-200 md:col-span-3 lg:col-span-2 lg:row-span-3">
+            <div className="min-h-0 flex-1">
+              <IllustrationRahmen ton="sand" format="16/10" label="Energiegemeinschaft im Dorf: Sonnenstrom fließt von den Dächern zu den Nachbarn">
+                <EnergiegemeinschaftDorf animiert />
+              </IllustrationRahmen>
+            </div>
+            <div className="mt-auto p-6 md:p-8">
+              <p className="ov-overline text-ov-700">Gemeinschaftsstrom</p>
+              <h3 className="ov-h3 mt-1 text-ink-900">Strom aus der Nachbarschaft – sichtbar gemacht</h3>
+              <p className="ov-text mt-2 text-ink-600">Wer sieht, woher sein Strom kommt, bleibt dabei. Das Portal macht Erzeugung, Anteil und Ersparnis jeden Tag greifbar.</p>
+            </div>
+          </Reveal>
+          {PORTAL.map((f, i) => (
+            <Reveal key={f.title} className="flex lg:[--ov-delay:var(--d)]" style={{ "--d": `${i * 70}ms` }}>
+              <div className="ov-lift flex w-full flex-col rounded-[2rem] bg-white p-6 shadow-e1 ring-1 ring-ink-200/70">
+                <span aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-xl bg-ov-50 text-ov-600"><f.icon className="h-5 w-5" strokeWidth={1.8} /></span>
+                <h3 className="mt-4 font-display text-[17px] font-bold text-ink-900">{f.title}</h3>
+                <p className="mt-1.5 text-[14px] leading-relaxed text-ink-600">{f.text}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </Section>
+
+      <Section tone="sand" space="lg" id="rechner" className="scroll-mt-24">
+        <SectionHeading eyebrow="Ersparnis-Rechner" title={<>Was bringt eine Gemeinschaft <span className="ov-text-gradient">Ihren Mitgliedern?</span></>} lead="Verbrauch oder PV-Anlage eingeben – der Rechner nutzt die Netzentgelt-Regeln 2026 und kennzeichnet die Arbeitshypothese für 2027." className="mb-8 md:mb-10" />
+        {/* Kein zusätzlicher Rahmen: RechnerRahmen bringt seine weiße Karte selbst mit. dir="ohne": nach dem Ankersprung sofort sichtbar. */}
+        <Reveal dir="ohne">
+          <ErsparnisRechner />
+        </Reveal>
+      </Section>
+
+      {/* ---------- ElWG (dunkler Anker) ---------- */}
+      <Section tone="navy" space="lg" id="elwg" bare className="ov-noise scroll-mt-24 overflow-hidden">
+        <div aria-hidden="true" className="ov-grid-bg absolute inset-0 opacity-50" />
+        <div className="ov-container relative">
+          <SectionHeading dark eyebrow="Seit 1. Oktober 2026" title="Was das ElWG für Gemeinschaften ändert" lead="Bestehende Gemeinschaften werden übergeführt; Verträge und Statuten sollten angepasst werden. Die Plattform bildet die neuen Regeln ab." className="mb-10 md:mb-12" />
+          <FeatureGrid items={ELWG} cols={4} tone="dark" />
+          <p className="mt-6 text-[13px] leading-relaxed text-white/70">Quellen: ElWG BGBl. I Nr. 91/2025 (§§ 65–72), SNE-V 2018 § 5 Abs. 1a, Koordinationsstelle für Energiegemeinschaften (FAQ zum ElWG). Keine Rechts- oder Steuerberatung; Details der neuen Netzentgelt-Verordnung zu bestätigen.</p>
+          <div className="mt-8">
+            <Button href="#pakete" variant="outlineLight" pfeil>Welches Paket passt?</Button>
+          </div>
+        </div>
+      </Section>
+
+      {/* ---------- Vergleich ---------- */}
+      <Section tone="white" space="lg">
+        <SectionHeading eyebrow="Warum ÖkoInvest" title="Was es am Markt gibt – und was wir anders machen" lead="Rund ein Dutzend Plattformen decken den Grundumfang solide ab. Den Unterschied machen die Aufgaben rund um die Abrechnung, die in Vorständen die meiste Zeit kosten. Die Plattform geht schrittweise in Betrieb – wir sagen Ihnen im Angebot genau, was ab wann verfügbar ist." className="mb-8 md:mb-10" />
+        <Reveal className="overflow-hidden rounded-[2rem] bg-white shadow-e2 ring-1 ring-ink-200/70">
+          {/* Ab md: Tabelle */}
+          <div className="hidden md:block">
+            <table aria-describedby="vergleich-hinweis" className="w-full table-fixed text-left text-[14.5px]">
+              <caption className="sr-only">Vergleich der Funktionen: am Markt laut öffentlichen Angaben und bei der ÖkoInvest-Plattform</caption>
+              <colgroup><col className="w-[30%]" /><col className="w-[30%]" /><col /></colgroup>
+              <thead>
+                <tr className="border-b border-ink-100 text-[12px] font-semibold uppercase tracking-wider text-ink-500">
+                  <th scope="col" className="bg-sand-50 px-6 py-3.5">Aufgabe</th>
+                  <th scope="col" className="bg-sand-50 px-6 py-3.5">{MARKT_KOPF}</th>
+                  <th scope="col" className="bg-ov-50 px-6 py-3.5 text-ov-800"><span className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-ov-500" />ÖkoInvest-Plattform</span></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ink-100">
+                {VERGLEICH.map((v) => (
+                  <tr key={v.thema}>
+                    <th scope="row" className="px-6 py-4 align-top font-semibold text-ink-900">{v.thema}</th>
+                    <td className="px-6 py-4 align-top text-ink-600">{v.markt}</td>
+                    <td className="bg-ov-50/50 px-6 py-4 align-top text-ink-800"><span className="flex gap-2"><BadgeCheck aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" />{v.wir}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Unter md: gestapelte Karten aus denselben Daten (ohne Querscrollen) */}
+          <ul aria-label="Vergleich der Funktionen am Markt und bei der ÖkoInvest-Plattform" className="divide-y divide-ink-100 md:hidden">
+            {VERGLEICH.map((v) => (
+              <li key={v.thema} className="px-5 py-5">
+                <h3 className="font-display text-[15.5px] font-bold leading-snug text-ink-900">{v.thema}</h3>
+                <dl className="mt-3 space-y-2.5 text-[14px]">
+                  <div className="rounded-xl bg-sand-50 px-3.5 py-2.5 ring-1 ring-sand-200">
+                    <dt className="ov-overline text-ink-500">{MARKT_KOPF}</dt>
+                    <dd className="mt-0.5 text-ink-600">{v.markt}</dd>
+                  </div>
+                  <div className="rounded-xl bg-ov-50 px-3.5 py-2.5 ring-1 ring-ov-200">
+                    <dt className="ov-overline text-ov-800">ÖkoInvest-Plattform</dt>
+                    <dd className="mt-0.5 flex gap-2 text-ink-800"><BadgeCheck aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" />{v.wir}</dd>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+          <div className="flex flex-col gap-3 border-t border-ink-100 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
+            <p id="vergleich-hinweis" className="text-[12.5px] leading-relaxed text-ink-500">Grundlage: eigene Auswertung öffentlicher Anbieterangaben (Websites, Preisblätter, Dokumentationen), Stand 01.10.2026. „Selten belegt“ heißt: in öffentlichen Quellen nicht gefunden – nicht, dass es eine Funktion nicht gibt.</p>
+            <Button href="#anfrage" variant="link" pfeil className="shrink-0">Aktuellen Funktionsstand erfragen</Button>
+          </div>
+        </Reveal>
+      </Section>
+
+      {/* ---------- Pakete ---------- */}
+      <Section tone="sand" space="lg" id="pakete" className="scroll-mt-24">
+        <SectionHeading eyebrow="Pakete" title="So viel Unterstützung, wie Ihre Gemeinschaft braucht" lead="Preise auf Anfrage – wir kalkulieren je Gemeinschaft nach Größe und Leistungsumfang und legen das Angebot transparent dar." className="mb-10 md:mb-12" />
+        <ul role="list" className="grid gap-5 lg:grid-cols-3">
+          {PAKETE.map((p, i) => {
+            const dunkel = i === 1;
+            return (
+              <Reveal as="li" key={p.title} className="flex lg:[--ov-delay:var(--d)]" style={{ "--d": `${i * 80}ms` }}>
+                <div className={cn("ov-lift flex w-full flex-col rounded-[2rem] p-6 md:p-8", dunkel ? "ov-verlauf-nacht text-white shadow-e3 lg:-my-3 lg:py-11" : "bg-white shadow-e1 ring-1 ring-ink-200/70")}>
+                  <span aria-hidden="true" className={cn("order-1 flex h-12 w-12 items-center justify-center rounded-2xl", dunkel ? "bg-ov-500 text-white" : "bg-ov-50 text-ov-600")}><p.icon className="h-6 w-6" /></span>
+                  <h3 className="ov-h3 order-3 mt-2">{p.title}</h3>
+                  <p className="order-2 mt-5">
+                    {dunkel
+                      ? <span className="inline-flex rounded-full bg-white/10 px-2.5 py-1 text-[11.5px] font-semibold uppercase tracking-wider text-ov-300 ring-1 ring-white/15">{p.tag}</span>
+                      : <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-700">{p.tag}</span>}
+                  </p>
+                  <p className={cn("order-4 mt-2 text-[14px] font-medium", dunkel ? "text-white/85" : "text-ink-700")}>{p.fuer}</p>
+                  <p className={cn("order-5 mt-3 text-[15px] leading-relaxed lg:min-h-[7.5rem]", dunkel ? "text-white/75" : "text-ink-600")}>{p.text}</p>
+                  <ul className="order-6 mb-6 mt-5 space-y-2">
+                    {p.punkte.map((x) => <li key={x} className={cn("ov-klein flex gap-2.5", dunkel ? "text-white/85" : "text-ink-700")}><Haken dunkel={dunkel} />{x}</li>)}
+                  </ul>
+                  <div className={cn("order-7 mt-auto border-t pt-5", dunkel ? "border-white/10" : "border-ink-100")}>
+                    <p className={cn("ov-klein font-semibold", dunkel ? "text-white/75" : "text-ink-600")}>Preis nach Größe – auf Anfrage</p>
+                    <Button href="#anfrage" variant={dunkel ? "primary" : "secondary"} block pfeil className="mt-3">{p.title} anfragen</Button>
+                  </div>
+                </div>
+              </Reveal>
+            );
+          })}
+        </ul>
+      </Section>
+
+      {/* ---------- Wechsel ---------- */}
+      <Section tone="green" space="lg">
+        <SectionHeading eyebrow="Wechsel" title="Wechseln, ohne dass der Strom stockt" lead="Bestehende Gemeinschaften wechseln zu uns, ohne ihre Zählpunkte neu anzumelden." className="mb-10 md:mb-12" />
+        <Steps items={WECHSEL} cols={4} />
+      </Section>
+
+      {/* ---------- FAQ (Einwände vor dem Formular) ---------- */}
+      <Section tone="white" space="lg">
+        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+          <div className="lg:sticky lg:top-28 lg:self-start">
+            <SectionHeading eyebrow="Häufige Fragen" title="Plattform und Betrieb" lead="Was Vorstände und Gemeinden vor dem Start wissen möchten." />
+            <Button href="#anfrage" variant="link" pfeil className="mt-6">Frage nicht dabei? Schreiben Sie uns</Button>
+          </div>
+          <Faq items={FAQ} />
+        </div>
+      </Section>
+
+      {/* ---------- Anfrage ---------- */}
+      <Section tone="sand" space="lg" id="anfrage" className="scroll-mt-24">
+        <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+          <div className="lg:sticky lg:top-28 lg:self-start">
+            <SectionHeading eyebrow="Anfrage" title="Gründen, wechseln oder betreiben lassen" lead="Erzählen Sie uns kurz, wo Ihre Gemeinschaft steht. Wir melden uns mit einem konkreten Vorschlag und Angebot." />
+            <Reveal>
+              <h3 className="ov-overline mt-10 text-ink-500">So geht es weiter</h3>
+              <ol className="mt-4 space-y-4">
+                {ABLAUF.map(([titel, text], i) => (
+                  <li key={titel} className="flex gap-3">
+                    <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-navy-950 text-[12px] font-bold text-white">{i + 1}</span>
+                    <div>
+                      <p className="font-semibold text-ink-900">{titel}</p>
+                      <p className="ov-klein text-ink-600">{text}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <ul className="mt-8 space-y-2 border-t border-sand-200 pt-6">
+                {ZUSAGEN.map((z) => (
+                  <li key={z} className="ov-klein flex items-start gap-2.5 text-ink-700"><ShieldCheck aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" />{z}</li>
+                ))}
+              </ul>
+            </Reveal>
+          </div>
+          <Reveal className="rounded-[2rem] bg-white p-6 shadow-e3 ring-1 ring-ink-200/70 sm:p-8 md:p-10">
+            <AnfrageMitDaten
+              legende="Ihre Gemeinschaft oder Ihr Vorhaben"
+              festeDaten={{ quelle: "energiegemeinschaften-software", land: "AT" }}
+              zusatz={[
+                { name: "anliegen", label: "Worum geht es?", art: "chips", optionen: [{ id: "software", label: "Software nutzen" }, { id: "betrieb", label: "Betrieb abgeben" }, { id: "gruendung", label: "Gemeinschaft gründen" }, { id: "wechsel", label: "Anbieter wechseln" }] },
+                { name: "modell", label: "Modell", art: "select", optionen: [{ id: "offen", label: "Noch offen" }, { id: "eeg_lokal", label: "EEG lokal" }, { id: "eeg_regional", label: "EEG regional" }, { id: "beg", label: "BEG" }, { id: "gea", label: "GEA" }] },
+                { name: "zaehlpunkte", label: "Wie viele Zählpunkte? (Schätzung genügt)", art: "zahl", platzhalter: "z. B. 60" },
+                { name: "erzeugungKw", label: "Erzeugungsleistung in kW (Schätzung genügt)", art: "zahl", platzhalter: "z. B. 120" },
+              ]}
+              formular={{ typ: "energiegemeinschaft", felder: ["firma", "telefon", "plz", "nachricht"], button: "Unverbindlich anfragen" }}
+            />
+          </Reveal>
+        </div>
+      </Section>
+
+      <Querverweise items={QUERVERWEISE} />
+      <CtaBand eyebrow="Gemeinschaft stärken" title="Weniger Verwaltung, mehr Gemeinschaftsstrom." text="Ob neue Gemeinschaft oder Wechsel: Wir zeigen Ihnen die Plattform an Ihren eigenen Zahlen." primary={{ label: "Angebot anfragen", href: "#anfrage" }} secondary={{ label: "Zum Rechner", href: "/energiegemeinschaften/rechner" }} />
+    </div>
+  );
+}

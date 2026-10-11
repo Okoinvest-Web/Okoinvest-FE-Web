@@ -158,6 +158,7 @@ function navigation(rollen, nutzer = { rollen }) {
         { href: "/portal/admin/vorlagen", label: "Vorlagen", icon: LayoutTemplate },
         { href: "/portal/admin/berichte", label: "Berichte", icon: BarChart3 },
         { href: "/portal/admin/kanaele", label: "Kanäle Gruppe & Partner", icon: Share2 }, // Welle 2, Paket GRP
+        { href: "/portal/admin/newsletter", label: "Newsletter", icon: Mail }, // Plattform-Armee, MARKETING: Empfänger, Einwilligungen, Newsroom-Entwürfe
         { href: "/portal/admin/protokoll", label: "Revisionsprotokoll", icon: Link2 },
         { href: "/portal/admin/rechte", label: "Rechte", icon: KeyRound },
         { href: "/portal/admin/team", label: "Team & Zeiten", icon: Timer }, // HR
@@ -213,7 +214,7 @@ const LABELS = {
   kommune: "Gemeinde", einarbeitung: "Einarbeitung", // Onboarding B1
   genossenschaft: "Genossenschaft", energiegemeinschaft: "Energiegemeinschaft", energiegemeinschaften: "Energiegemeinschaften", versammlung: "Generalversammlung", // Team 5
   leitung: "Leitungs-Cockpit", handbuch: "Handbuch", // Querschnitt
-  leads: "Lead-Desk", kanaele: "Kanäle", // Welle 2
+  leads: "Lead-Desk", kanaele: "Kanäle", newsletter: "Newsletter", // Welle 2 + Plattform-Armee MARKETING
   crm: "CRM", akquise: "Akquise", automationen: "Automationen", vorlagen: "Vorlagen", berichte: "Berichte", protokoll: "Revisionsprotokoll", rechte: "Rechte", dubletten: "Dubletten", organisation: "Organisation", // Backoffice-Ausbau
   ausschreibungen: "Ausschreibungen", beschaffung: "Beschaffung", kunden: "Kunden", lieferanten: "Lieferanten", // Energiebeschaffung
 };

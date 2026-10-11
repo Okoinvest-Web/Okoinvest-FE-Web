@@ -59,6 +59,7 @@ const SCHRITTE = [
     const fl = (await lesen()).nutzer.find((u) => u.email === "flaeche@example.com" && u.demo !== false);
     if (fl) await (await import("./pachtakte")).meinePachtakte({ ...fl, passwortHash: undefined });
   }],
+  ["newsletter", async () => (await import("./newsletter-seed")).newsletterSeedBereit()], // Plattform-Armee, MARKETING: Demo-Abos fürs Backoffice
 ];
 
 // Erwartete Fehler einzelner Lesewege nach erfolgtem Seed (kein Problem)

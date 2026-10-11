@@ -19,6 +19,7 @@
 // („vorgemerkt“, mit dem Zeitpunkt der Anmeldung) – so kann eine fremde Anmeldung ein bestehendes Abo nicht sperren.
 
 import { aendern, lesen } from "./speicher";
+import { PlattformFehler } from "../../fehler";
 import { jetzt, neueId } from "./hilfen";
 import { anhaengen, kanalAmpel, pseudonym as pseudonymBerechnen } from "@/lib/anfrage/protokoll";
 import { GRABSTEIN_TAGE, aboZustand } from "@/lib/newsletter/zustand";
@@ -207,4 +208,114 @@ export async function newsletterEmpfaenger({ land, thema } = {}) {
 /** Aufräumen (Tests, später Zeitplan) */
 export async function newsletterAufraeumen({ jetztMs = Date.now() } = {}) {
   return aendern((db) => ({ geaendert: aufraeumenDb(db, jetztMs) }));
+}
+
+// ── Backoffice (Plattform-Armee, Paket MARKETING) ────────────────────────────────────────────────────────────
+// Rechte prüft die Route (/api/admin/newsletter, Bereich „crm“) bzw. die Seite /portal/admin/newsletter.
+
+const MAX_ABOS = 500;
+const MAX_GRABSTEINE = 100;
+
+const einwilligungenVon = (kette, ps) =>
+  kette
+    .filter((e) => e.pseudonym === ps && e.zweck === "newsletter")
+    .map((e) => ({ art: e.art, kanal: e.kanal, textId: e.textId || "", textVersion: e.textVersion || "", land: e.land || "", zeit: e.zeit }));
+
+/**
+ * Übersicht für das Backoffice: Kennzahlen, aktive Abos je Land/Thema, Empfängerliste (aktiv + offen, mit E-Mail
+ * und Einwilligungsverlauf), Abmeldungen/Grabsteine (ohne Personendaten). NUR Demo, nur serverseitig.
+ */
+export async function newsletterUebersicht({ jetztMs = Date.now() } = {}) {
+  const db = await lesen();
+  const alle = Array.isArray(db.newsletterAbos) ? db.newsletterAbos : [];
+  const personen = Array.isArray(db.leadPersonen) ? db.leadPersonen : [];
+  const kette = Array.isArray(db.leadKette) ? db.leadKette : [];
+  const tag30 = jetztMs - 30 * 864e5;
+
+  const lebend = alle.map((a) => ({ a, zustand: aboZustand(a, jetztMs) })).filter(({ zustand }) => zustand === "aktiv" || zustand === "offen");
+  const grabsteine = alle.filter((a) => a.am).map((a) => ({ id: a.id, status: a.status, am: a.am }));
+
+  const matrix = {}; // { land: { thema: anzahl } } – nur bestätigte Abos
+  for (const { a, zustand } of lebend) {
+    if (zustand !== "aktiv") continue;
+    matrix[a.land] = matrix[a.land] || {};
+    for (const t of a.themen || []) matrix[a.land][t] = (matrix[a.land][t] || 0) + 1;
+  }
+
+  const abos = lebend
+    .sort((x, y) => String(y.a.erstelltAm).localeCompare(String(x.a.erstelltAm)))
+    .slice(0, MAX_ABOS)
+    .map(({ a, zustand }) => {
+      const p = personen.find((x) => x.id === a.personId);
+      return {
+        id: a.id,
+        zustand,
+        land: a.land,
+        sprache: a.sprache,
+        themen: a.themen || [],
+        quelle: a.quelle || "",
+        kanal: a.kanal || "",
+        erstelltAm: a.erstelltAm,
+        bestaetigtAm: a.bestaetigtAm,
+        email: p?.email || "",
+        ampel: kanalAmpel(kette, a.pseudonym, "newsletter").stand,
+        einwilligungen: einwilligungenVon(kette, a.pseudonym),
+      };
+    });
+
+  return {
+    kennzahlen: {
+      aktiv: lebend.filter((x) => x.zustand === "aktiv").length,
+      offen: lebend.filter((x) => x.zustand === "offen").length,
+      abmeldungen30: grabsteine.filter((g) => g.status === "abgemeldet" && Date.parse(g.am) >= tag30).length,
+      abgelaufen30: grabsteine.filter((g) => g.status === "abgelaufen" && Date.parse(g.am) >= tag30).length,
+    },
+    matrix,
+    abos,
+    abmeldungen: grabsteine.sort((x, y) => String(y.am).localeCompare(String(x.am))).slice(0, MAX_GRABSTEINE),
+  };
+}
+
+/** Datenexport eines Empfängers (Art. 15/20): Abo, E-Mail und Einwilligungsverlauf. 404, wenn unbekannt oder schon Grabstein. */
+export async function newsletterExport({ aboId, jetztMs = Date.now() } = {}) {
+  const db = await lesen();
+  const abos = Array.isArray(db.newsletterAbos) ? db.newsletterAbos : [];
+  const a = abos.find((x) => x.id === aboId);
+  const zustand = aboZustand(a, jetztMs);
+  if (!a || (zustand !== "aktiv" && zustand !== "offen")) {
+    throw new PlattformFehler(404, "Zu dieser Abo-Nummer gibt es keine gespeicherten Empfängerdaten (mehr).", "nicht_gefunden");
+  }
+  const p = (Array.isArray(db.leadPersonen) ? db.leadPersonen : []).find((x) => x.id === a.personId);
+  return {
+    exportiertAm: new Date(jetztMs).toISOString(),
+    abo: { id: a.id, zustand, land: a.land, sprache: a.sprache, themen: a.themen || [], quelle: a.quelle || "", kanal: a.kanal || "", erstelltAm: a.erstelltAm, bestaetigtAm: a.bestaetigtAm },
+    email: p?.email || null,
+    einwilligungen: einwilligungenVon(Array.isArray(db.leadKette) ? db.leadKette : [], a.pseudonym),
+  };
+}
+
+/**
+ * Löschung eines Empfängers aus dem Backoffice (Art. 17): Protokoll „widerruf“ (Kanal art17_loeschung),
+ * Personenzeilen löschen, alle Abos der Adresse zu Grabsteinen. → { geloescht: true, bereits }
+ */
+export async function newsletterLoeschen({ aboId, jetztMs = Date.now() } = {}) {
+  return aendern((db) => {
+    sicher(db);
+    aufraeumenDb(db, jetztMs);
+    const a = db.newsletterAbos.find((x) => x.id === aboId);
+    if (!a) throw new PlattformFehler(404, "Unbekannte Abo-Nummer.", "nicht_gefunden");
+    const z = aboZustand(a, jetztMs);
+    if (z !== "aktiv" && z !== "offen") return { geloescht: true, bereits: true };
+    const ps = a.pseudonym;
+    const am = new Date(jetztMs).toISOString();
+    const stand = kanalAmpel(db.leadKette, ps, "newsletter").stand;
+    if (stand === "erteilt" || stand === "doi_ausstehend") {
+      anhaengen(db.leadKette, { pseudonym: ps, art: "widerruf", zweck: "newsletter", textId: "newsletter_art17", textVersion: "BACKOFFICE-1", textHash: "", kanal: "art17_loeschung", land: a.land, zeit: am });
+    }
+    for (const x of db.newsletterAbos.filter((x) => x.pseudonym === ps && ["aktiv", "offen"].includes(x.status))) {
+      personWeg(db, x.personId);
+      grabstein(x, "abgemeldet", am);
+    }
+    return { geloescht: true, bereits: false };
+  });
 }

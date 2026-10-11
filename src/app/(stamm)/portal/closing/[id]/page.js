@@ -58,7 +58,11 @@ export default async function ClosingPortalSeite({ params }) {
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-ink-900">{x.label}</p>
                       <p className="text-[12.5px] leading-snug text-ink-500">{x.text}</p>
-                      <p className="mt-1 text-[12.5px] text-ink-700">{x.verantwortlichLabel}{x.frist ? ` · Frist ${datumText(x.frist)}` : ""}{x.nachweis ? ` · ${x.nachweis}` : ""}</p>
+                      <p className="mt-1 text-[12.5px] text-ink-700">
+                        {x.verantwortlichLabel}
+                        {x.frist ? <span className={x.ueberfaellig ? "font-semibold text-danger-700" : undefined}>{` · Frist ${datumText(x.frist)}${x.ueberfaellig ? " – überfällig" : ""}`}</span> : ""}
+                        {x.nachweis ? ` · ${x.nachweis}` : ""}
+                      </p>
                     </div>
                     <Badge ton={CP_STATUS[x.status]?.ton}>{x.statusLabel}</Badge>
                   </div>

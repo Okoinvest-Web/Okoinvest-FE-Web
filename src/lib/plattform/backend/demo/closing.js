@@ -26,7 +26,7 @@ import {
 } from "../../closing/grundbuch";
 import {
   CL_HINWEIS, CL_OFFEN, CL_STATUS, CL_STRUKTUREN, CL_VERANTWORTLICH, CP_STATUS, SIGNING_PUNKTE, TREUHAND_HINWEIS, UEBERGABE_PUNKTE,
-  closingPruefen, cpsAnlegen, formHinweise, kaufpreisAbleiten, meilensteineBereinigen, signingAnlegen, signingPruefen, signingStand, uebergabeAnlegen,
+  closingPruefen, cpsAnlegen, cpsUeberfaellig, formHinweise, kaufpreisAbleiten, meilensteineBereinigen, signingAnlegen, signingPruefen, signingStand, uebergabeAnlegen,
 } from "../../closing/closing";
 import { gebotGesamt } from "../../dealroom";
 import { intern, statusWechsel } from "../demo";
@@ -553,11 +553,12 @@ function closingAusgabe(db, n, c, { detail = false } = {}) {
   const kaeufer = parteiAnzeige(db, c.kaeuferId, { sichtbar: bo || rolle === "kaeufer" || kyc.kontaktFrei, rolleText: "Käufer" });
   const verkaeufer = parteiAnzeige(db, c.verkaeuferId, { sichtbar: bo || rolle === "verkaeufer" || kyc.kontaktFrei, rolleText: "Verkäufer" });
   const cpsOffen = (c.cps || []).filter((x) => !["erfuellt", "verzichtet"].includes(x.status)).length;
+  const faelligSet = new Set(cpsUeberfaellig(c, heute()).map((x) => x.schluessel));
   const basis = {
     id: c.id, projekt: p ? { id: p.id, titel: p.titel, mwp: p.mwp, land: p.land, typ: p.typ, status: p.status } : null, struktur: c.struktur, strukturLabel: CL_STRUKTUREN[c.struktur]?.label,
     status: c.status, statusLabel: CL_STATUS[c.status]?.label, land: c.land, kaufpreis: c.kaufpreis, kaufpreisQuelle: c.kaufpreisQuelle, herkunft: c.herkunft,
     kaeufer: bo ? { ...kaeufer, id: c.kaeuferId } : kaeufer, verkaeufer: bo ? { ...verkaeufer, id: c.verkaeuferId } : verkaeufer,
-    cpsOffen, cpsGesamt: (c.cps || []).length, notarTermin: c.notar?.termin || "", signingAm: c.signingAm || "", vollzogenAm: c.vollzogenAm || "",
+    cpsOffen, cpsGesamt: (c.cps || []).length, cpsUeberfaellig: faelligSet.size, notarTermin: c.notar?.termin || "", signingAm: c.signingAm || "", vollzogenAm: c.vollzogenAm || "",
     meineRolle: rolle, kontaktFrei: kyc.kontaktFrei, erstelltAm: c.erstelltAm, geaendertAm: c.geaendertAm,
   };
   if (!detail) return basis;
@@ -573,7 +574,7 @@ function closingAusgabe(db, n, c, { detail = false } = {}) {
     signingStand: signingStand(c, kyc).map((x) => ({ ...x, notiz: bo ? x.notiz : undefined })),
     kyc: { kaeufer: kyc.kycKaeufer, verkaeufer: kyc.kycVerkaeufer, kaeuferStatus: bo || rolle === "kaeufer" ? kyc.kaeuferStatus : undefined, verkaeuferStatus: bo || rolle === "verkaeufer" ? kyc.verkaeuferStatus : undefined },
     signingPruefung: bo ? sig : { ok: sig.ok, gruende: [] }, closingPruefung: bo ? cl : { ok: cl.ok, gruende: [] },
-    cps: (c.cps || []).map((x) => ({ ...x, verantwortlichLabel: CL_VERANTWORTLICH[x.verantwortlich], statusLabel: CP_STATUS[x.status]?.label, darfMelden: !!verantwortlichIch && x.verantwortlich === verantwortlichIch && x.status === "offen", vonId: bo ? x.vonId : undefined, gemeldetVonId: bo ? x.gemeldetVonId : undefined })),
+    cps: (c.cps || []).map((x) => ({ ...x, verantwortlichLabel: CL_VERANTWORTLICH[x.verantwortlich], statusLabel: CP_STATUS[x.status]?.label, ueberfaellig: faelligSet.has(x.schluessel), darfMelden: !!verantwortlichIch && x.verantwortlich === verantwortlichIch && x.status === "offen", vonId: bo ? x.vonId : undefined, gemeldetVonId: bo ? x.gemeldetVonId : undefined })),
     notar: c.notar || {}, zahlung: { ...(c.zahlung || {}), hinweis: TREUHAND_HINWEIS[c.land] || TREUHAND_HINWEIS.DE },
     uebergabe: UEBERGABE_PUNKTE.map((u) => ({ ...u, ...((c.uebergabe || []).find((x) => x.schluessel === u.schluessel) || {}) })),
     formHinweise: formHinweise(c.struktur, c.land), hinweis: CL_HINWEIS,
@@ -622,7 +623,7 @@ export async function clListe(n, { status = "" } = {}) {
   return {
     closings: alle.filter((c) => !status || (status === "offen" ? CL_OFFEN.includes(c.status) : c.status === status)).sort((a, b) => String(b.geaendertAm).localeCompare(String(a.geaendertAm))),
     kandidaten: kandidaten(db),
-    kennzahlen: { offen: alle.filter((c) => CL_OFFEN.includes(c.status)).length, signing: alle.filter((c) => c.status === "signing").length, vollzogen: alle.filter((c) => c.status === "vollzogen").length, volumen: alle.filter((c) => c.status === "vollzogen").reduce((s, c) => s + (c.kaufpreis || 0), 0) },
+    kennzahlen: { offen: alle.filter((c) => CL_OFFEN.includes(c.status)).length, signing: alle.filter((c) => c.status === "signing").length, vollzogen: alle.filter((c) => c.status === "vollzogen").length, ueberfaellig: alle.filter((c) => c.cpsUeberfaellig > 0).length, volumen: alle.filter((c) => c.status === "vollzogen").reduce((s, c) => s + (c.kaufpreis || 0), 0) },
     schreiben: schreibenDarf(n, "closing"),
   };
 }
@@ -896,6 +897,20 @@ export async function clTermin(n, id) {
   if (!c.notar?.termin) throw nichtGefunden("Kein Notartermin eingetragen.");
   const p = db.projekte.find((x) => x.id === c.projektId);
   return { id: c.id, titel: `Notartermin ${CL_STRUKTUREN[c.struktur]?.label || ""}: ${p?.titel || c.id}`, start: c.notar.termin, dauerMinuten: 120, ort: c.notar.ort || "", beschreibung: [c.notar.name, c.notar.kanzlei].filter(Boolean).join(", ") };
+}
+
+/** Frist-Erinnerungen Closing (Frappe: Scheduler täglich) – überfällige Closing Conditions offener Deals an das Backoffice */
+export async function clFristenLauf(n) {
+  if (n) leseNoetig(n, "closing");
+  const db = await lesenBereit();
+  const faellig = [];
+  for (const c of C(db).closings.filter((x) => CL_OFFEN.includes(x.status))) {
+    const p = db.projekte.find((x) => x.id === c.projektId);
+    for (const x of cpsUeberfaellig(c, heute())) {
+      faellig.push({ closingId: c.id, projekt: p?.titel || c.projektId, cp: x.schluessel, label: x.label, verantwortlich: x.verantwortlich, verantwortlichLabel: CL_VERANTWORTLICH[x.verantwortlich] || x.verantwortlich, frist: x.frist, status: x.status });
+    }
+  }
+  return { faellig, anzahl: faellig.length };
 }
 
 // ================================================================ Demo-Daten (fiktiv)

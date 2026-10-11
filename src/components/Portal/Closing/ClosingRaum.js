@@ -134,7 +134,9 @@ function CpZeile({ c, x, setC }) {
           <p className="text-[12.5px] leading-snug text-ink-500">{x.text}</p>
           <p className="mt-1 text-[12.5px] text-ink-700">
             {x.verantwortlichLabel}
-            {x.frist && ` · Frist ${datumText(x.frist)}`}
+            {x.frist && (
+              <span className={cn(x.ueberfaellig && "font-semibold text-danger-700")}>{` · Frist ${datumText(x.frist)}${x.ueberfaellig ? " – überfällig" : ""}`}</span>
+            )}
             {x.nachweis && ` · Nachweis: ${x.nachweis}`}
             {x.erfuelltAm && ` · ${datumText(x.erfuelltAm)}`}
           </p>

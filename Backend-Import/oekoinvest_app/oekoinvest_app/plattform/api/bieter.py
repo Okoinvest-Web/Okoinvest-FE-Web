@@ -339,6 +339,8 @@ def aktion(id=None, daten=None, als_benutzer=None):  # noqa: A002, C901
 		gid = v.kennung(d.get("gebotId"))
 		g = frappe.get_doc("Plattform Gebot", gid) if gid and frappe.db.exists("Plattform Gebot", gid) else None
 		v.pflicht(g and g.verfahren_id == vf.name and cint(g.runde) == cint(r.nr) and g.status == "abgegeben", "Bitte wählen Sie ein gültiges Gebot.")  # nur Gebote der letzten Runde
+		if g.gueltig_bis and str(g.gueltig_bis)[:10] < frappe.utils.today():
+			konflikt(f"Die Bindefrist des Gebots ist am {'.'.join(reversed(str(g.gueltig_bis)[:10].split('-')))} abgelaufen – bitte eine Verlängerung des Bieters einholen oder ein anderes Gebot wählen.")
 		from oekoinvest_app.plattform.api.anbieter import zuschlag_pruefen  # Anbieter: kein Zuschlag auf ein vom Verkäufer abgelehntes Gebot (409 „votum“)
 
 		zuschlag_pruefen(g)

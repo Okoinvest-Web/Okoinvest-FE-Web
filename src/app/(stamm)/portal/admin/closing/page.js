@@ -26,7 +26,7 @@ export default async function ClosingListeSeite({ searchParams }) {
       <SeitenKopf eyebrow="Backoffice · Transaktion" titel="Deal-Abschluss (Closing)" text="Nach Zuschlag oder angenommener LOI: Struktur, Kaufvertrag (Muster), Signing-Checkliste mit KYC beider Seiten, Closing Conditions, Notartermin, Kaufpreiszahlung, Übergabe – und automatisch die Provisionsrechnung beim Closing." />
       <Hinweis ton="neutral" className="mb-5">{CL_HINWEIS}</Hinweis>
       <section aria-label="Kennzahlen" className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kennzahl ton="dunkel" icon={Stamp} label="Offene Closings" wert={String(k.offen)} />
+        <Kennzahl ton="dunkel" icon={Stamp} label="Offene Closings" wert={String(k.offen)} hinweis={k.ueberfaellig ? `${k.ueberfaellig} mit überfälligen CPs` : undefined} />
         <Kennzahl icon={FileSignature} label="Signed, CPs offen" wert={String(k.signing)} />
         <Kennzahl icon={Timer} label="Kandidaten" wert={String(d.kandidaten.length)} hinweis="Zuschlag bzw. LOI ohne Closing-Raum" />
         <Kennzahl icon={Coins} label="Volumen vollzogen" wert={eur(k.volumen)} href="/portal/admin/closing?status=vollzogen" />
@@ -60,7 +60,7 @@ export default async function ClosingListeSeite({ searchParams }) {
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 md:px-6">
                 <div className="min-w-0">
                   <Link href={`/portal/admin/closing/${c.id}`} className="font-semibold text-ink-900 hover:text-ov-700">{c.projekt?.titel || c.id}</Link>
-                  <p className="text-[12.5px] text-ink-500">{c.id} · {c.strukturLabel} · {eur(c.kaufpreis)} · {c.verkaeufer?.anzeige} → {c.kaeufer?.anzeige} · CPs {c.cpsGesamt - c.cpsOffen}/{c.cpsGesamt}{c.notarTermin ? ` · Notar ${datumText(c.notarTermin)}` : ""}</p>
+                  <p className="text-[12.5px] text-ink-500">{c.id} · {c.strukturLabel} · {eur(c.kaufpreis)} · {c.verkaeufer?.anzeige} → {c.kaeufer?.anzeige} · CPs {c.cpsGesamt - c.cpsOffen}/{c.cpsGesamt}{c.cpsUeberfaellig ? <span className="font-semibold text-danger-700">{` · ${c.cpsUeberfaellig} überfällig`}</span> : ""}{c.notarTermin ? ` · Notar ${datumText(c.notarTermin)}` : ""}</p>
                 </div>
                 <Badge ton={CL_STATUS[c.status]?.ton}>{c.statusLabel}</Badge>
               </li>

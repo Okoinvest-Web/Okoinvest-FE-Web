@@ -560,7 +560,7 @@ def _fristen():
 
 
 def fristen_taeglich():
-	"""Scheduler (täglich): überfällige Schritte offener Akten an das Backoffice mit Bereich „grundbuch“ melden (je Akte einmal täglich)."""
+	"""Scheduler (täglich): überfällige Grundbuch-Schritte und Closing Conditions an das Backoffice melden (je Akte/Deal einmal täglich)."""
 	f = _fristen()
 	je_akte = {}
 	for x in f["faellig"]:
@@ -569,7 +569,15 @@ def fristen_taeglich():
 	for akte_id, liste in list(je_akte.items())[:200]:
 		for k in empfaenger:
 			_melden(k, "Grundbuch: Frist überschritten", f"{liste[0]['titel']} – {len(liste)} Schritt(e) überfällig", f"/portal/admin/grundbuch/{akte_id}", "grundbuch", akte_id, mail=False)
-	return f["anzahl"]
+	cf = _cl_fristen()
+	je_closing = {}
+	for x in cf["faellig"]:
+		je_closing.setdefault(x["closingId"], []).append(x)
+	empfaenger_cl = _admins("closing")
+	for closing_id, liste in list(je_closing.items())[:200]:
+		for k in empfaenger_cl:
+			_melden(k, "Closing: Bedingung überfällig", f"{liste[0]['projekt']} – {len(liste)} Closing Condition(s) über der Frist", f"/portal/admin/closing/{closing_id}", "closing", closing_id, mail=False)
+	return f["anzahl"] + cf["anzahl"]
 
 
 # ================================================================ Closing – Abbildung
@@ -659,11 +667,12 @@ def _cl_ausgabe(n, doc, detail=False):
 	if bo:
 		kaeufer["id"], verkaeufer["id"] = doc.kaeufer_id, doc.verkaeufer_id
 	offen = len([x for x in c["cps"] if x["status"] not in ("erfuellt", "verzichtet")])
+	faellig = {x["schluessel"] for x in K.cps_ueberfaellig(c, _heute())}
 	basis = {
 		"id": doc.name, "projekt": {"id": p.name, "titel": p.titel, "mwp": p.mwp, "land": p.land, "typ": p.typ, "status": p.status} if p else None,
 		"struktur": doc.struktur, "strukturLabel": K.CL_STRUKTUREN.get(doc.struktur, {}).get("label"), "status": doc.status, "statusLabel": K.CL_STATUS.get(doc.status, {}).get("label"),
 		"land": doc.land, "kaufpreis": flt(doc.kaufpreis), "kaufpreisQuelle": doc.kaufpreis_quelle or "", "herkunft": doc.herkunft, "kaeufer": kaeufer, "verkaeufer": verkaeufer,
-		"cpsOffen": offen, "cpsGesamt": len(c["cps"]), "notarTermin": iso(doc.notar_termin) if doc.notar_termin else "", "signingAm": str(doc.signing_am or ""), "vollzogenAm": str(doc.vollzogen_am or ""),
+		"cpsOffen": offen, "cpsGesamt": len(c["cps"]), "cpsUeberfaellig": len(faellig), "notarTermin": iso(doc.notar_termin) if doc.notar_termin else "", "signingAm": str(doc.signing_am or ""), "vollzogenAm": str(doc.vollzogen_am or ""),
 		"meineRolle": rolle, "kontaktFrei": kyc["kontaktFrei"], "erstelltAm": iso(doc.creation), "geaendertAm": iso(doc.modified),
 	}
 	if not detail:
@@ -680,7 +689,7 @@ def _cl_ausgabe(n, doc, detail=False):
 		"signingStand": [{**x, "notiz": x["notiz"] if bo else None} for x in K.signing_stand(c, kyc["kaeufer"], kyc["verkaeufer"])],
 		"kyc": {"kaeufer": kyc["kaeufer"], "verkaeufer": kyc["verkaeufer"], "kaeuferStatus": kyc["kaeuferStatus"] if bo or rolle == "kaeufer" else None, "verkaeuferStatus": kyc["verkaeuferStatus"] if bo or rolle == "verkaeufer" else None},
 		"signingPruefung": sig if bo else {"ok": sig["ok"], "gruende": []}, "closingPruefung": cl if bo else {"ok": cl["ok"], "gruende": []},
-		"cps": [{**x, "verantwortlichLabel": K.CL_VERANTWORTLICH.get(x["verantwortlich"]), "statusLabel": K.CP_STATUS.get(x["status"], {}).get("label"), "darfMelden": bool(ich) and x["verantwortlich"] == ich and x["status"] == "offen",
+		"cps": [{**x, "verantwortlichLabel": K.CL_VERANTWORTLICH.get(x["verantwortlich"]), "statusLabel": K.CP_STATUS.get(x["status"], {}).get("label"), "ueberfaellig": x["schluessel"] in faellig, "darfMelden": bool(ich) and x["verantwortlich"] == ich and x["status"] == "offen",
 			"vonId": x["vonId"] if bo else None, "gemeldetVonId": x["gemeldetVonId"] if bo else None} for x in c["cps"]],
 		"notar": c["notar"], "zahlung": {**c["zahlung"], "hinweis": K.TREUHAND_HINWEIS.get(doc.land) or K.TREUHAND_HINWEIS["DE"]},
 		"uebergabe": [{**u, **next((x for x in c["uebergabe"] if x.get("schluessel") == u["schluessel"]), {})} for u in K.UEBERGABE_PUNKTE],
@@ -728,7 +737,7 @@ def cl_liste(status=None, als_benutzer=None):
 	return {
 		"closings": [c for c in alle if not status or (c["status"] in K.CL_OFFEN if status == "offen" else c["status"] == status)],
 		"kandidaten": kandidaten,
-		"kennzahlen": {"offen": len([c for c in alle if c["status"] in K.CL_OFFEN]), "signing": len([c for c in alle if c["status"] == "signing"]), "vollzogen": len([c for c in alle if c["status"] == "vollzogen"]), "volumen": sum(c["kaufpreis"] for c in alle if c["status"] == "vollzogen")},
+		"kennzahlen": {"offen": len([c for c in alle if c["status"] in K.CL_OFFEN]), "signing": len([c for c in alle if c["status"] == "signing"]), "vollzogen": len([c for c in alle if c["status"] == "vollzogen"]), "ueberfaellig": len([c for c in alle if c.get("cpsUeberfaellig")]), "volumen": sum(c["kaufpreis"] for c in alle if c["status"] == "vollzogen")},
 		"schreiben": _schreiben(n, "closing"),
 	}
 
@@ -1048,6 +1057,24 @@ def cl_termin(id=None, als_benutzer=None):  # noqa: A002
 		nicht_gefunden("Kein Notartermin eingetragen.")
 	titel = frappe.db.get_value("Plattform Projekt", doc.projekt_id, "titel") or doc.name
 	return {"id": doc.name, "titel": f"Notartermin {K.CL_STRUKTUREN.get(doc.struktur, {}).get('label', '')}: {titel}", "start": notar.get("termin") or iso(doc.notar_termin), "dauerMinuten": 120, "ort": notar.get("ort") or "", "beschreibung": ", ".join(x for x in (notar.get("name"), notar.get("kanzlei")) if x)}
+
+
+@frappe.whitelist(methods=["POST"])
+def cl_fristen_lauf(als_benutzer=None):
+	n = nutzer(als_benutzer)
+	_lese_noetig(n, "closing")
+	return _cl_fristen()
+
+
+def _cl_fristen():
+	faellig = []
+	for name in frappe.get_all(DT_CL, filters={"status": ["in", list(K.CL_OFFEN)]}, pluck="name", limit_page_length=2000):
+		doc = frappe.get_doc(DT_CL, name)
+		c = _cl_dict(doc)
+		titel = frappe.db.get_value("Plattform Projekt", doc.projekt_id, "titel") or doc.projekt_id
+		for x in K.cps_ueberfaellig(c, _heute()):
+			faellig.append({"closingId": doc.name, "projekt": titel, "cp": x["schluessel"], "label": x["label"], "verantwortlich": x["verantwortlich"], "verantwortlichLabel": K.CL_VERANTWORTLICH.get(x["verantwortlich"], x["verantwortlich"]), "frist": str(x["frist"])[:10], "status": x["status"]})
+	return {"faellig": faellig, "anzahl": len(faellig)}
 
 
 # ================================================================ Jinja (Druckformate)

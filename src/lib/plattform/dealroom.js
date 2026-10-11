@@ -182,6 +182,11 @@ export function gebotGesamt(g, mwp) {
   if (g.preisModus === "proKwp") return g.preisProKwp && mwp ? Math.round(g.preisProKwp * mwp * 1000) : null;
   return g.preis || null;
 }
+/** Bindefrist eines Gebots abgelaufen? Kein Zuschlag auf ein nicht mehr bindendes Angebot (rechtlich angreifbar). */
+export function gebotBindefristAbgelaufen(g, heute = new Date().toISOString().slice(0, 10)) {
+  return !!(g?.gueltigBis && String(g.gueltigBis).slice(0, 10) < heute);
+}
+
 export function gebotProKwp(g, mwp) {
   if (!g) return null;
   if (g.preisModus === "proKwp") return g.preisProKwp || null;

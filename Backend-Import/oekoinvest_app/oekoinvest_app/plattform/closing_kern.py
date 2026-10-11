@@ -317,6 +317,17 @@ def closing_pruefen(c, kyc_kaeufer=False, kyc_verkaeufer=False):
 	return {"ok": not g, "gruende": g}
 
 
+CP_UNERLEDIGT = ("offen", "gemeldet")
+
+
+def cps_ueberfaellig(c, heute=None):
+	"""Unerledigte Closing Conditions mit abgelaufener Frist – nur in offenen Räumen (Spiegel von closing.js cpsUeberfaellig)."""
+	heute = heute or _heute()
+	if (c or {}).get("status") not in CL_OFFEN:
+		return []
+	return [x for x in (c or {}).get("cps") or [] if (x.get("status") or "offen") in CP_UNERLEDIGT and x.get("frist") and str(x["frist"])[:10] < heute]
+
+
 def kaufpreis_ableiten(gebot_gesamt=None, loi=None, mwp=0):
 	loi = loi or {}
 	if float(gebot_gesamt or 0) > 0:

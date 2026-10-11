@@ -28,6 +28,7 @@ Object.assign(METHODEN, {
   clPortalAktion: "closing.cl_portal_aktion",
   clDokumentDaten: "closing.cl_dokument_daten",
   clTermin: "closing.cl_termin",
+  clFristenLauf: "closing.cl_fristen_lauf",
 });
 
 export const gbListe = (n, filter = {}) => aufruf("gbListe", filter, n);
@@ -56,3 +57,4 @@ export const clAktion = (n, id, daten = {}) => aufruf("clAktion", { id, daten },
 export const clPortalAktion = (n, id, daten = {}) => aufruf("clPortalAktion", { id, daten }, n);
 export const clDokumentDaten = (n, id, { art = "spa", ip = "" } = {}) => aufruf("clDokumentDaten", { id, art, ip }, n);
 export const clTermin = (n, id) => aufruf("clTermin", { id }, n);
+export const clFristenLauf = (n) => aufruf("clFristenLauf", {}, n);

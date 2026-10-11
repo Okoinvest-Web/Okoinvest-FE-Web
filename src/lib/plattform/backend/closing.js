@@ -11,7 +11,7 @@
 //               gbMusterDaten(n,id,{vorlage,ip}) · gbFristenLauf(n|null)
 //   Closing:    clListe(n,{status}) · clMeine(n) · clAkte(n,id) · clAnlegen(n,daten) · clAendern(n,id,daten)
 //               clAktion(n,id,{aktion,…}) · clPortalAktion(n,id,{aktion:"cp_melden",schluessel,nachweis})
-//               clDokumentDaten(n,id,{art:"spa"|"bericht",ip}) · clTermin(n,id)
+//               clDokumentDaten(n,id,{art:"spa"|"bericht",ip}) · clTermin(n,id) · clFristenLauf(n|null)
 //
 // Nur serverseitig verwenden.
 
@@ -22,7 +22,7 @@ import { PlattformFehler } from "../fehler";
 
 export const CLOSING_OPERATIONEN = [
   "gbListe", "gbMeine", "gbZuBezug", "gbAkte", "gbAuswahl", "gbAnlegen", "gbAendern", "gbSchritt", "gbSignatur", "gbDokumentSpeichern", "gbDokumentLesen",
-  "gbMusterDaten", "gbFristenLauf", "clListe", "clMeine", "clAkte", "clAnlegen", "clAendern", "clAktion", "clPortalAktion", "clDokumentDaten", "clTermin",
+  "gbMusterDaten", "gbFristenLauf", "clListe", "clMeine", "clAkte", "clAnlegen", "clAendern", "clAktion", "clPortalAktion", "clDokumentDaten", "clTermin", "clFristenLauf",
 ];
 
 if (process.env.NODE_ENV !== "production") {

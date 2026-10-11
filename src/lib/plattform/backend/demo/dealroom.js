@@ -26,7 +26,7 @@ import { matching } from "../../matching";
 import { PHASEN } from "@/lib/invest/markt";
 import {
   AKTIVE_SPALTEN, DATENRAUM_ORDNER, DATENRAUM_ORDNER_IDS, ERINNERUNG_STUNDEN, FRAGE_STATUS, GEBOT_PFLICHT, NOTIZ_TAGS_MAX,
-  PIPELINE_SPALTEN_IDS, QA_FRIST_TAGE, QA_KATEGORIEN, RUNDEN_ARTEN, SUCHPROFILE_MAX, anonymisieren, gebotGesamt, gebotProKwp,
+  PIPELINE_SPALTEN_IDS, QA_FRIST_TAGE, QA_KATEGORIEN, RUNDEN_ARTEN, SUCHPROFILE_MAX, anonymisieren, gebotBindefristAbgelaufen, gebotGesamt, gebotProKwp,
   investorStufe, ordnerVorschlag, pipelineSpalte, pseudonymBuchstabe, qaOeffentlicherStatus, wasserzeichenName,
 } from "../../dealroom";
 import { intern } from "../demo";
@@ -640,6 +640,7 @@ export async function bieterAktion(n, id, daten = {}) {
       if (rundeOffen(r)) throw konflikt("Ein Zuschlag ist erst nach Ablauf bzw. Ende der Runde möglich (Gleichbehandlung).");
       const g = db.dealroom.gebote.find((x) => x.id === v.kennung(daten.gebotId) && x.verfahrenId === vf.id && x.runde === r.nr && x.status === "abgegeben"); // nur Gebote der letzten Runde
       v.pflicht(g, "Bitte wählen Sie ein gültiges Gebot.");
+      if (gebotBindefristAbgelaufen(g, tagHeute())) throw konflikt(`Die Bindefrist des Gebots ist am ${g.gueltigBis.split("-").reverse().join(".")} abgelaufen – bitte eine Verlängerung des Bieters einholen oder ein anderes Gebot wählen.`);
       anbieterZuschlagPruefen(db, g); // Stellungnahme des Verkäufers: Ablehnung sperrt den Zuschlag (409 „votum“)
       const i = db.interessen.find((x) => x.id === g.interesseId);
       v.pflicht(i && ["nda_freigegeben", "loi_abgegeben", "loi_angenommen"].includes(i.status), "Der Bieter hat keinen gültigen Datenraum-Status mehr.");

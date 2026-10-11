@@ -198,7 +198,7 @@ scheduler_events = {
 		"oekoinvest_app.plattform.finanzen.abrechnung.lauf_taeglich",
 		"oekoinvest_app.plattform.api.dienste.gesellschaft_fristen_taeglich",  # Dienste: Fristen der Projektgesellschaften (Meldungen, Jahresabschluss, WiEReG)
 		# ↓ weitere tägliche Jobs
-		"oekoinvest_app.plattform.api.closing.fristen_taeglich",  # Grundbuch & Closing: überfällige Grundbuch-Schritte an das Backoffice
+		"oekoinvest_app.plattform.api.closing.fristen_taeglich",  # Grundbuch & Closing: überfällige Grundbuch-Schritte und Closing Conditions an das Backoffice
 		"oekoinvest_app.plattform.api.anbieter.frist_lauf_taeglich",  # Anbieter / Verkäufer: Erinnerung an überfällige Rückfragen des Backoffice
 		"oekoinvest_app.plattform.api.finanzierung.covenants_taeglich",  # Finanzierung: Covenant-Prüfung (DSCR/LLCR), Reporting-Fristen
 		"oekoinvest_app.plattform.api.gutachterauftrag.fristen_taeglich",  # Gutachteraufträge: Angebotsfristen, Liefertermine, Termine, Zahlungsziele

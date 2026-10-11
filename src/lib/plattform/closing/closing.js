@@ -135,6 +135,15 @@ export function closingPruefen(c, kyc = {}) {
   return { ok: gruende.length === 0, gruende };
 }
 
+/** Unerledigte CP-Status (offen bzw. als erfüllt gemeldet, aber noch nicht geprüft) */
+export const CP_UNERLEDIGT = ["offen", "gemeldet"];
+
+/** Unerledigte Closing Conditions mit abgelaufener Frist (Erinnerungen, Kennzahlen) – nur in offenen Räumen */
+export function cpsUeberfaellig(c, heute = new Date().toISOString().slice(0, 10)) {
+  if (!CL_OFFEN.includes(c?.status)) return [];
+  return (c?.cps || []).filter((x) => CP_UNERLEDIGT.includes(x?.status || "offen") && x?.frist && String(x.frist).slice(0, 10) < heute);
+}
+
 /** Kaufpreis aus Zuschlag (Gebot) bzw. LOI ableiten */
 export function kaufpreisAbleiten({ gebotGesamt = null, loi = null, mwp = 0 } = {}) {
   if (Number(gebotGesamt) > 0) return { betrag: Math.round(Number(gebotGesamt)), quelle: "zuschlag" };

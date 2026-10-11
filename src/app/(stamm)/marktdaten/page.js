@@ -388,7 +388,8 @@ export default async function MarktdatenPage({ params }) {
   const standText = en ? STAND_EN : MARKTDATEN_STAND_TEXT;
   let live = null;
   try {
-    const s = await getEnergySnapshot();
+    // Ausdrücklich DE: Die Vergleichswerte der Seite (EEG, Marktwert) sind deutsche Daten.
+    const s = await getEnergySnapshot("DE");
     live = { preis: { aktuell: s.preis.aktuell, heute: s.preis.heute } };
   } catch {
     // Live-Wert lädt dann im Browser nach

@@ -55,7 +55,9 @@ export default function LiveEinordnung({ zuschlagCt, zuschlagText, solarCt, sola
   const t = useTexte(TEXTE);
   const f = useFormate();
   const { fmt } = f;
-  const d = useEnergyLive() || initial;
+  // Vergleichswerte (EEG-Zuschlag, Marktwert Solar) sind deutsche Daten – der Live-Preis
+  // bleibt deshalb auch auf /at und /ch die Gebotszone DE-LU („Börsenstrompreis Deutschland“).
+  const d = useEnergyLive({ land: "DE" }) || initial;
   const jetzt = d?.preis?.aktuell;
   const heute = d?.preis?.heute;
   const jetztCt = jetzt ? jetzt.eurMwh / 10 : null;

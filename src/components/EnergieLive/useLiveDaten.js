@@ -2,24 +2,29 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ladeEnergie } from "@/components/ui/useEnergyLive";
+import { useSeitenLand } from "@/components/Land/LandKontext";
 
 // Alle Dashboard-Bausteine einer Seite teilen sich einen Abruf der vollen
 // Zeitreihen (`/api/energie/live?voll=1`) statt ihn je Baustein zu wiederholen.
-let zwischenspeicher = null;
-let laufend = null;
+// Je Land getrennt (Seite /at/energie-live zeigt die österreichischen Daten).
+const zwischenspeicher = new Map(); // land -> { zeit, daten }
+const laufend = new Map(); // land -> Promise
 
-function ladeVoll() {
-  if (zwischenspeicher && Date.now() - zwischenspeicher.zeit < 60000) return Promise.resolve(zwischenspeicher.daten);
-  if (laufend) return laufend;
-  laufend = ladeEnergie(true)
+function ladeVoll(land) {
+  const key = land === "AT" || land === "CH" ? land : "DE";
+  const alt = zwischenspeicher.get(key);
+  if (alt && Date.now() - alt.zeit < 60000) return Promise.resolve(alt.daten);
+  if (laufend.has(key)) return laufend.get(key);
+  const p = ladeEnergie(true, key)
     .then((d) => {
-      if (d) zwischenspeicher = { zeit: Date.now(), daten: d };
+      if (d) zwischenspeicher.set(key, { zeit: Date.now(), daten: d });
       return d;
     })
     .finally(() => {
-      laufend = null;
+      laufend.delete(key);
     });
-  return laufend;
+  laufend.set(key, p);
+  return p;
 }
 
 /**
@@ -32,10 +37,11 @@ function ladeVoll() {
 export default function useLiveDaten(initial, { intervall = 5 * 60000 } = {}) {
   const [live, setLive] = useState(null);
   const [jetzt, setJetzt] = useState(null);
+  const land = useSeitenLand();
 
   useEffect(() => {
     let aktiv = true;
-    const holen = () => ladeVoll().then((d) => aktiv && d && setLive(d));
+    const holen = () => ladeVoll(land).then((d) => aktiv && d && setLive(d));
     holen();
     setJetzt(Date.now());
     const t1 = setInterval(holen, intervall);
@@ -45,7 +51,7 @@ export default function useLiveDaten(initial, { intervall = 5 * 60000 } = {}) {
       clearInterval(t1);
       clearInterval(t2);
     };
-  }, [intervall]);
+  }, [intervall, land]);
 
   const preisOk = live?.preis?.punkte?.length > 0;
   const erzeugungOk = live?.erzeugung?.zeitpunkt != null;

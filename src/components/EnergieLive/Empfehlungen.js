@@ -21,7 +21,8 @@ const TEXTE = {
     uEyebrow: "Unternehmen · Reststrom-Pool",
     uTitel: (v) => `Günstigste 3 h heute: ${v} ct/kWh netto`, uTitelLeer: "Börsenpreis gezielt nutzen",
     uMittel: (v) => `Das Tagesmittel liegt bei ${v} ct/kWh. `,
-    uText: "Ein Festpreisvertrag gibt Ihnen davon nichts weiter. Im Reststrom-Pool wird gebündelt und in Tranchen beschafft, Solarstrom aus den Parks deckt Tagesstunden – und wer Last verschieben kann, profitiert zusätzlich von günstigen Viertelstunden.",
+    // CH handelt stündlich, DE/AT viertelstündlich – Wortwahl folgt der Auflösung
+    uText: (stuendlich) => `Ein Festpreisvertrag gibt Ihnen davon nichts weiter. Im Reststrom-Pool wird gebündelt und in Tranchen beschafft, Solarstrom aus den Parks deckt Tagesstunden – und wer Last verschieben kann, profitiert zusätzlich von günstigen ${stuendlich ? "Börsenstunden" : "Viertelstunden"}.`,
     uLinks: ["Ersparnis berechnen", "Zum Reststrom-Pool"],
     iEyebrow: "Investoren · Speicher & Solarparks",
     iTitel: (v) => `Preisspanne heute: ${v} ct/kWh`, iTitelLeer: "Flexibilität wird zum Erlös",
@@ -39,7 +40,7 @@ const TEXTE = {
     uEyebrow: "Businesses · residual power pool",
     uTitel: (v) => `Cheapest 3 h today: ${v} ct/kWh net`, uTitelLeer: "Using the exchange price in a targeted way",
     uMittel: (v) => `The daily average is ${v} ct/kWh. `,
-    uText: "A fixed-price contract passes none of this on to you. In the residual power pool, power is procured as a pool and in tranches, solar power from the parks covers daytime hours – and those who can shift load also benefit from low-cost quarter-hours.",
+    uText: (stuendlich) => `A fixed-price contract passes none of this on to you. In the residual power pool, power is procured as a pool and in tranches, solar power from the parks covers daytime hours – and those who can shift load also benefit from low-cost ${stuendlich ? "exchange hours" : "quarter-hours"}.`,
     uLinks: ["Calculate savings", "To the residual power pool"],
     iEyebrow: "Investors · storage & solar parks",
     iTitel: (v) => `Price spread today: ${v} ct/kWh`, iTitelLeer: "Flexibility becomes revenue",
@@ -105,7 +106,7 @@ export default function Empfehlungen({ initial }) {
         icon={Factory}
         eyebrow={w.uEyebrow}
         titel={guenstig3h ? w.uTitel(ct(guenstig3h.guenstig.avg)) : w.uTitelLeer}
-        text={`${heute ? w.uMittel(ct(heute.avg)) : ""}${w.uText}`}
+        text={`${heute ? w.uMittel(ct(heute.avg)) : ""}${w.uText((daten.preis?.aufloesungMin || 15) >= 60)}`}
         links={[
           { href: pfad("/rechner/reststrom"), label: w.uLinks[0], primaer: true },
           { href: pfad("/reststrom"), label: w.uLinks[1] },

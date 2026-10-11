@@ -4,13 +4,14 @@ import { useMemo } from "react";
 import { ArrowDown, ArrowDownRight, ArrowUpRight, Leaf, Sun, Wind, Gauge, RefreshCw } from "lucide-react";
 import { LiveDot } from "@/components/ui/LiveTicker";
 import useLiveDaten from "./useLiveDaten";
-import { preisTage, zeitfenster, formate } from "./berechnung";
+import { preisTage, zeitfenster, formate, markt } from "./berechnung";
 import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { useSeitenLand } from "@/components/Land/LandKontext";
 
 /* Sprachmodell: feste Texte je Sprache */
 const TEXTE = {
-  de: { guenstig: "eher günstig", teuer: "eher teuer", mittel: "mittleres Niveau", stand: "Stand", alle5: "aktualisiert alle 5 Min.", jetzt: "Börsenstrompreis jetzt", dayAhead: "Day-Ahead, netto", fuerHeute: "für heute", nichtAbrufbar: "Der aktuelle Börsenpreis ist gerade nicht abrufbar. Die Anzeige aktualisiert sich automatisch.", tief: "Tagestief", hoch: "Tageshoch", um: (u) => `um ${u} Uhr`, avg: "Ø heute", negativ: (h) => `${h} h negativ`, jeKwh: "je kWh netto", ee: "Erneuerbare", ueber: "über 100 %: Überschuss", anteil: "Anteil am Verbrauch", nachts: "nachts keine Erzeugung", desVerbrauchs: (p) => `${p} % des Verbrauchs`, einspeisung: "Einspeisung jetzt", windSub: "an Land und auf See", verbrauch: "Verbrauch", netzlast: "Netzlast Deutschland", erzeugungStand: "Erzeugung: Stand", zumVerlauf: "Zum Tagesverlauf", null: "0 Uhr", vierundzwanzig: "24 Uhr", guenstigste: "Günstigste 3 h:", aktuellerPreis: "Aktueller Preis" },
-  en: { guenstig: "relatively cheap", teuer: "relatively expensive", mittel: "mid-range", stand: "As of", alle5: "updated every 5 min", jetzt: "Exchange power price now", dayAhead: "day-ahead, net", fuerHeute: "for today", nichtAbrufbar: "The current exchange price cannot be retrieved right now. The display updates automatically.", tief: "Daily low", hoch: "Daily high", um: (u) => `at ${u}`, avg: "Ø today", negativ: (h) => `${h} h negative`, jeKwh: "per kWh, net", ee: "Renewables", ueber: "above 100 %: surplus", anteil: "share of consumption", nachts: "no generation at night", desVerbrauchs: (p) => `${p} % of consumption`, einspeisung: "feed-in now", windSub: "onshore and offshore", verbrauch: "Consumption", netzlast: "Grid load in Germany", erzeugungStand: "Generation: as of", zumVerlauf: "To the daily profile", null: "00:00", vierundzwanzig: "24:00", guenstigste: "Cheapest 3 h:", aktuellerPreis: "Current price" },
+  de: { guenstig: "eher günstig", teuer: "eher teuer", mittel: "mittleres Niveau", stand: "Stand", alle5: "aktualisiert alle 5 Min.", jetzt: "Börsenstrompreis jetzt", dayAhead: "Day-Ahead, netto", fuerHeute: "für heute", nichtAbrufbar: "Der aktuelle Börsenpreis ist gerade nicht abrufbar. Die Anzeige aktualisiert sich automatisch.", tief: "Tagestief", hoch: "Tageshoch", um: (u) => `um ${u} Uhr`, avg: "Ø heute", negativ: (h) => `${h} h negativ`, jeKwh: "je kWh netto", ee: "Erneuerbare", ueber: "über 100 %: Überschuss", anteil: "Anteil am Verbrauch", nachts: "nachts keine Erzeugung", desVerbrauchs: (p) => `${p} % des Verbrauchs`, einspeisung: "Einspeisung jetzt", windSub: "an Land und auf See", windSubLand: "an Land", verbrauch: "Verbrauch", netzlast: (n) => `Netzlast ${n}`, erzeugungStand: "Erzeugung: Stand", zumVerlauf: "Zum Tagesverlauf", null: "0 Uhr", vierundzwanzig: "24 Uhr", guenstigste: "Günstigste 3 h:", aktuellerPreis: "Aktueller Preis" },
+  en: { guenstig: "relatively cheap", teuer: "relatively expensive", mittel: "mid-range", stand: "As of", alle5: "updated every 5 min", jetzt: "Exchange power price now", dayAhead: "day-ahead, net", fuerHeute: "for today", nichtAbrufbar: "The current exchange price cannot be retrieved right now. The display updates automatically.", tief: "Daily low", hoch: "Daily high", um: (u) => `at ${u}`, avg: "Ø today", negativ: (h) => `${h} h negative`, jeKwh: "per kWh, net", ee: "Renewables", ueber: "above 100 %: surplus", anteil: "share of consumption", nachts: "no generation at night", desVerbrauchs: (p) => `${p} % of consumption`, einspeisung: "feed-in now", windSub: "onshore and offshore", windSubLand: "onshore", verbrauch: "Consumption", netzlast: (n) => `Grid load in ${n}`, erzeugungStand: "Generation: as of", zumVerlauf: "To the daily profile", null: "00:00", vierundzwanzig: "24:00", guenstigste: "Cheapest 3 h:", aktuellerPreis: "Current price" },
 };
 
 /**
@@ -22,6 +23,8 @@ export default function LiveKennzahlen({ initial }) {
   const sprache = useSprache();
   const { ct, gw, uhr, spanne, zahl } = formate(sprache);
   const w = TEXTE[sprache === "en" ? "en" : "de"];
+  const land = useSeitenLand();
+  const landName = markt(land)[sprache === "en" ? "nameEn" : "name"];
   const tage = useMemo(() => preisTage(daten.preis, jetzt), [daten.preis, jetzt]);
   const e = daten.erzeugung || {};
   const heute = tage.heute;
@@ -129,8 +132,8 @@ export default function LiveKennzahlen({ initial }) {
           wert={e.solarMw != null ? `${gw(e.solarMw)} GW` : "–"}
           sub={nachts ? w.nachts : e.solarAnteil != null ? w.desVerbrauchs(Math.round(e.solarAnteil)) : w.einspeisung}
         />
-        <Kachel icon={Wind} farbe="text-navy-200" label="Wind" wert={e.windMw != null ? `${gw(e.windMw)} GW` : "–"} sub={w.windSub} />
-        <Kachel icon={Gauge} farbe="text-white/80" label={w.verbrauch} wert={e.lastMw != null ? `${gw(e.lastMw)} GW` : "–"} sub={w.netzlast} />
+        <Kachel icon={Wind} farbe="text-navy-200" label="Wind" wert={e.windMw != null ? `${gw(e.windMw)} GW` : "–"} sub={land === "AT" || land === "CH" ? w.windSubLand : w.windSub} />
+        <Kachel icon={Gauge} farbe="text-white/80" label={w.verbrauch} wert={e.lastMw != null ? `${gw(e.lastMw)} GW` : "–"} sub={w.netzlast(landName)} />
         <p className="col-span-2 flex flex-wrap items-center justify-between gap-2 px-1 text-[12.5px] text-white/50">
           <span>{w.erzeugungStand} {e.zeitpunkt ? `${uhr(e.zeitpunkt)}${sprache === "en" ? "" : " Uhr"}` : "–"}</span>
           <a href="#preisverlauf" className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-white/80 hover:text-white">

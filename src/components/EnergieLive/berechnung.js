@@ -4,6 +4,14 @@
 export const TZ = "Europe/Berlin";
 export const STUNDE = 3600000;
 
+/** Gebotszone und Landesname je Länderwahl (null/unbekannt = DE). */
+export const MARKT = {
+  DE: { zone: "DE-LU", name: "Deutschland", nameEn: "Germany" },
+  AT: { zone: "AT", name: "Österreich", nameEn: "Austria" },
+  CH: { zone: "CH", name: "Schweiz", nameEn: "Switzerland" },
+};
+export const markt = (land) => MARKT[land] || MARKT.DE;
+
 const datumFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: TZ });
 const uhrFmt = new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
 const tagFmt = new Intl.DateTimeFormat("de-DE", { weekday: "long", day: "numeric", month: "long", timeZone: TZ });
@@ -149,6 +157,7 @@ export function achse(lo, hi, ziel = 5) {
 export const QUELLEN = [
   { key: "braunkohle", name: "Braunkohle", farbe: "#a0561c", ee: false },
   { key: "steinkohle", name: "Steinkohle", farbe: "#4a3aa7", ee: false },
+  { key: "kernkraft", name: "Kernkraft", farbe: "#9c4a9e", ee: false }, // nur CH (DE/AT liefern keine Reihe)
   { key: "gas", name: "Erdgas", farbe: "#f29a4a", ee: false },
   { key: "sonstige", name: "Sonstige", farbe: "#c4cad5", ee: false, text: "#151a24" },
   { key: "biomasse", name: "Biomasse", farbe: "#2d7a1f", ee: true },
@@ -217,6 +226,7 @@ const zahlEn = (n, stellen = 1) =>
 export const QUELLEN_EN = {
   braunkohle: "Lignite",
   steinkohle: "Hard coal",
+  kernkraft: "Nuclear",
   gas: "Natural gas",
   sonstige: "Other",
   biomasse: "Biomass",

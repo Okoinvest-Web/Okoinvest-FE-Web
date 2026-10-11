@@ -3,9 +3,10 @@
 import { useMemo, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, Sigma, TrendingDown } from "lucide-react";
 import useLiveDaten, { useBreite } from "./useLiveDaten";
-import { preisTage, zeitfenster, achse, stundenmittel, formate } from "./berechnung";
+import { preisTage, zeitfenster, achse, stundenmittel, formate, markt } from "./berechnung";
 import KeineDaten from "./KeineDaten";
 import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { useSeitenLand } from "@/components/Land/LandKontext";
 
 /* Sprachmodell: feste Texte je Sprache */
 const TEXTE = {
@@ -19,7 +20,7 @@ const TEXTE = {
     aria: (heute, avg, tief, tiefU, hoch, hochU, f) => `Börsenstrompreis ${heute ? "heute" : "morgen"}: Durchschnitt ${avg} Cent je kWh, Tief ${tief} Cent um ${tiefU} Uhr, Hoch ${hoch} Cent um ${hochU} Uhr${f ? `, günstigstes 3-Stunden-Fenster ${f}` : ""}. Mit Pfeiltasten durch die Werte blättern.`,
     g3: "Günstigste 3 h", hochK: "Hoch", tiefK: "Tief", jetzt: "Jetzt",
     boerse: "ct/kWh Börse", dayAhead: "Day-Ahead, netto", negativ: "Negativer Börsenpreis",
-    lPreis: "Day-Ahead-Preis", lFenster: "Günstigstes 3-Stunden-Fenster", lNegativ: "Negativer Preis", keiner: " (heute keiner)", lJetzt: "Aktuelle Viertelstunde",
+    lPreis: "Day-Ahead-Preis", lFenster: "Günstigstes 3-Stunden-Fenster", lNegativ: "Negativer Preis", keiner: " (heute keiner)", lJetzt: "Aktuelle Viertelstunde", lJetztStunde: "Aktuelle Stunde",
     tabelle: "Stundenwerte als Tabelle", caption: "Börsenstrompreis je Stunde in Cent pro Kilowattstunde", stunde: "Stunde",
     fussA: "Börsenpreise netto ohne Netzentgelte, Umlagen, Steuern und Beschaffungsaufschläge (1 €/MWh = 0,1 ct/kWh). Quelle:",
   },
@@ -33,7 +34,7 @@ const TEXTE = {
     aria: (heute, avg, tief, tiefU, hoch, hochU, f) => `Exchange power price ${heute ? "today" : "tomorrow"}: average ${avg} cents per kWh, low ${tief} cents at ${tiefU}, high ${hoch} cents at ${hochU}${f ? `, cheapest 3-hour window ${f}` : ""}. Use the arrow keys to browse the values.`,
     g3: "Cheapest 3 h", hochK: "High", tiefK: "Low", jetzt: "Now",
     boerse: "ct/kWh exchange", dayAhead: "day-ahead, net", negativ: "Negative exchange price",
-    lPreis: "Day-ahead price", lFenster: "Cheapest 3-hour window", lNegativ: "Negative price", keiner: " (none today)", lJetzt: "Current quarter-hour",
+    lPreis: "Day-ahead price", lFenster: "Cheapest 3-hour window", lNegativ: "Negative price", keiner: " (none today)", lJetzt: "Current quarter-hour", lJetztStunde: "Current hour",
     tabelle: "Hourly values as a table", caption: "Exchange power price per hour in cents per kilowatt hour", stunde: "Hour",
     fussA: "Exchange prices net, excluding grid fees, levies, taxes and procurement mark-ups (€1/MWh = 0.1 ct/kWh). Source:",
   },
@@ -67,6 +68,7 @@ export default function PreisChart({ initial }) {
   const [wahl, setWahl] = useState("heute");
   const [hover, setHover] = useState(null);
   const [ref, breite] = useBreite(1000);
+  const zone = markt(useSeitenLand()).zone;
 
   const tag = (wahl === "morgen" && tage.morgen) || tage.heute || tage.morgen;
   const istHeute = tag && tag === tage.heute;
@@ -156,7 +158,7 @@ export default function PreisChart({ initial }) {
       <div className="flex flex-col gap-5 border-b border-ink-100 p-5 sm:p-6 md:flex-row md:items-center md:justify-between md:p-8">
         <div>
           <p className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ov-600">
-            Day-Ahead · DE-LU · {tage.aufloesungMin === 15 ? w.min15 : w.stuendlich}
+            Day-Ahead · {zone} · {tage.aufloesungMin === 15 ? w.min15 : w.stuendlich}
           </p>
           <h3 className="ov-h3 mt-2 text-ink-900">{w.titel(istHeute, tagLang(tag.start))}</h3>
         </div>
@@ -364,7 +366,7 @@ export default function PreisChart({ initial }) {
           {jetztX != null && (
             <li className="flex items-center gap-2">
               <span aria-hidden="true" className="h-3.5 w-px bg-ink-900" />
-              {w.lJetzt}
+              {tage.aufloesungMin === 15 ? w.lJetzt : w.lJetztStunde}
             </li>
           )}
         </ul>

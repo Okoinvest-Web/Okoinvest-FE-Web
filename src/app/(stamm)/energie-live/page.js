@@ -1,4 +1,4 @@
-// energie-live/page.js – Strommarkt Deutschland live
+// energie-live/page.js – Strommarkt live (Land der Seite: DE-LU, AT oder CH; gemeinsame Seite = DE-LU)
 
 import { Activity, AlertTriangle, BatteryCharging, Clock, Database, ExternalLink, Scale, Sun } from "lucide-react";
 import Hero from "@/components/EnergieLive/Seite/Hero";
@@ -16,7 +16,7 @@ import MeritOrder from "@/components/EnergieLive/MeritOrder";
 import CaptureRate from "@/components/EnergieLive/CaptureRate";
 import { abs } from "@/data/site";
 import { getEnergySnapshot } from "@/lib/energy";
-import { preisTage, zeitfenster, ct, formate } from "@/components/EnergieLive/berechnung";
+import { preisTage, zeitfenster, ct, formate, markt } from "@/components/EnergieLive/berechnung";
 import JsonLd from "@/components/JsonLd";
 import { pfad } from "@/lib/land";
 import { seitenLand, seitenMetadata, spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
@@ -30,26 +30,29 @@ const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
 // Geprüft am 04.10.2026 an der Quelle: Seit 1. Oktober 2018 sind Deutschland(-Luxemburg) und Österreich getrennte
 // Gebotszonen (E-Control, Presseaussendung „Trennung der deutsch-österreichischen Strompreiszone“, 2018); die Schweiz
 // ist nicht Teil der europäischen Day-Ahead-Marktkopplung (SDAC) und hat eine eigene lokale Day-Ahead-Auktion bei
-// EPEX SPOT (epexspot.com, „Trading at EPEX SPOT“). Die Seite zeigt Daten der Gebotszone DE-LU.
+// EPEX SPOT (epexspot.com, „Trading at EPEX SPOT“). Ergänzt 11.10.2026 per Probeabruf an der Datenquelle
+// (api.energy-charts.info): /price?bzn=AT liefert 96 Viertelstundenwerte je Tag, /price?bzn=CH 24 Stundenwerte,
+// beide in EUR/MWh – die Schweizer Auktion notiert in Euro. Seit der Länderwahl zeigt die Seite die Daten des
+// gewählten Landes; die gemeinsame Seite (ohne Wahl) weiterhin DE-LU.
 const FAQ_LAND = {
   AT: {
-    q: "Gilt dieser Börsenpreis auch in Österreich?",
-    a: "Nein. Seit dem 1. Oktober 2018 bilden Deutschland-Luxemburg und Österreich getrennte Gebotszonen; Österreich hat einen eigenen Day-Ahead-Preis. Die Werte auf dieser Seite gelten für die Gebotszone Deutschland-Luxemburg.",
+    q: "Gilt der Börsenpreis auf dieser Seite für Österreich?",
+    a: "Ja. Seit dem 1. Oktober 2018 bilden Deutschland-Luxemburg und Österreich getrennte Gebotszonen; Österreich hat einen eigenen Day-Ahead-Preis. Diese Seite zeigt die Preise der österreichischen Gebotszone (AT) – nicht die deutschen Werte.",
   },
   CH: {
-    q: "Gilt dieser Börsenpreis auch in der Schweiz?",
-    a: "Nein. Die Schweiz ist nicht Teil der europäischen Day-Ahead-Marktkopplung und hat eine eigene Day-Ahead-Auktion mit eigenem Preis. Die Werte auf dieser Seite gelten für die Gebotszone Deutschland-Luxemburg.",
+    q: "Gilt der Börsenpreis auf dieser Seite für die Schweiz?",
+    a: "Ja. Die Schweiz ist nicht Teil der europäischen Day-Ahead-Marktkopplung und hat eine eigene Day-Ahead-Auktion bei EPEX SPOT. Diese Seite zeigt die Schweizer Day-Ahead-Preise; die Auktion wird stündlich gehandelt und notiert in Euro – nicht in Franken.",
   },
 };
 
 const FAQ_LAND_EN = {
   AT: {
-    q: "Does this exchange price also apply in Austria?",
-    a: "No. Since 1 October 2018, Germany-Luxembourg and Austria have formed separate bidding zones; Austria has its own day-ahead price. The figures on this page apply to the Germany-Luxembourg bidding zone.",
+    q: "Does the exchange price on this page apply to Austria?",
+    a: "Yes. Since 1 October 2018, Germany-Luxembourg and Austria have formed separate bidding zones; Austria has its own day-ahead price. This page shows the prices of the Austrian bidding zone (AT) – not the German figures.",
   },
   CH: {
-    q: "Does this exchange price also apply in Switzerland?",
-    a: "No. Switzerland is not part of European day-ahead market coupling and has its own day-ahead auction with its own price. The figures on this page apply to the Germany-Luxembourg bidding zone.",
+    q: "Does the exchange price on this page apply to Switzerland?",
+    a: "Yes. Switzerland is not part of European day-ahead market coupling and has its own day-ahead auction at EPEX SPOT. This page shows the Swiss day-ahead prices; the auction is traded hourly and is denominated in euros – not in Swiss francs.",
   },
 };
 
@@ -60,15 +63,23 @@ const OG_BILD = abs("/img/solarpark-himmel.jpg");
 
 async function basisMetadata(land, p) {
   const en = p?.sprache === "en";
-  if (en) return metadataEn();
-  const title = "Strompreis Börse live: Day-Ahead & Capture-Rate | ÖkoInvest";
-  let description =
-    "Börsenstrompreis live: Day-Ahead-Preis in 15-Minuten-Werten, Solar-Capture-Rate, negative Preise und Strommix – eingeordnet für Unternehmen und Investoren.";
+  if (en) return metadataEn(land);
+  const m = markt(land);
+  const anders = land === "AT" || land === "CH";
+  const aufl = land === "CH" ? "Stundenwerten" : "15-Minuten-Werten";
+  const title = anders
+    ? `Strompreis Börse ${m.name} live: Day-Ahead & Capture-Rate | ÖkoInvest`
+    : "Strompreis Börse live: Day-Ahead & Capture-Rate | ÖkoInvest";
+  let description = anders
+    ? `Börsenstrompreis ${m.name} live: Day-Ahead-Preis (Gebotszone ${m.zone}) in ${aufl}, Solar-Capture-Rate, negative Preise und Strommix – eingeordnet für Unternehmen und Investoren.`
+    : "Börsenstrompreis live: Day-Ahead-Preis in 15-Minuten-Werten, Solar-Capture-Rate, negative Preise und Strommix – eingeordnet für Unternehmen und Investoren.";
   try {
-    const s = await getEnergySnapshot();
+    const s = await getEnergySnapshot(land || "DE");
     const a = s.preis.aktuell;
     if (a) {
-      description = `Börsenstrompreis jetzt ${ct(a.eurMwh)} ct/kWh. Day-Ahead in 15-Minuten-Werten, Solar-Capture-Rate, negative Preise und Strommix für Unternehmen und Investoren.`;
+      description = anders
+        ? `Börsenstrompreis ${m.name} jetzt ${ct(a.eurMwh)} ct/kWh. Day-Ahead in ${aufl}, Solar-Capture-Rate, negative Preise und Strommix für Unternehmen und Investoren.`
+        : `Börsenstrompreis jetzt ${ct(a.eurMwh)} ct/kWh. Day-Ahead in 15-Minuten-Werten, Solar-Capture-Rate, negative Preise und Strommix für Unternehmen und Investoren.`;
     }
   } catch {
     // statische Beschreibung genügt
@@ -94,7 +105,7 @@ async function basisMetadata(land, p) {
       locale: "de_DE",
       url: PAGE_URL,
       siteName: "ÖkoInvest",
-      title: "Strommarkt Deutschland live – Börsenstrompreis & Strommix",
+      title: `Strommarkt ${m.name} live – Börsenstrompreis & Strommix`,
       description,
       images: [{ url: OG_BILD, width: 1280, height: 852, alt: "ÖkoInvest – Strommarkt live" }],
     },
@@ -103,16 +114,24 @@ async function basisMetadata(land, p) {
 }
 
 /** Englische Metadaten (Sprachmodell) */
-async function metadataEn() {
+async function metadataEn(land = null) {
   const { ct: ctEn } = formate("en");
-  const title = "Live power exchange price: day-ahead & capture rate | ÖkoInvest";
-  let description =
-    "Live power exchange price: day-ahead price in 15-minute values, solar capture rate, negative prices and power mix – put into context for companies and investors.";
+  const m = markt(land);
+  const anders = land === "AT" || land === "CH";
+  const auflEn = land === "CH" ? "hourly values" : "15-minute values";
+  const title = anders
+    ? `Live power exchange price ${m.nameEn}: day-ahead & capture rate | ÖkoInvest`
+    : "Live power exchange price: day-ahead & capture rate | ÖkoInvest";
+  let description = anders
+    ? `Live power exchange price for ${m.nameEn} (bidding zone ${m.zone}): day-ahead price in ${auflEn}, solar capture rate, negative prices and power mix – put into context for companies and investors.`
+    : "Live power exchange price: day-ahead price in 15-minute values, solar capture rate, negative prices and power mix – put into context for companies and investors.";
   try {
-    const s = await getEnergySnapshot();
+    const s = await getEnergySnapshot(land || "DE");
     const a = s.preis.aktuell;
     if (a) {
-      description = `Power exchange price now ${ctEn(a.eurMwh)} ct/kWh. Day-ahead in 15-minute values, solar capture rate, negative prices and power mix for companies and investors.`;
+      description = anders
+        ? `Power exchange price in ${m.nameEn} now ${ctEn(a.eurMwh)} ct/kWh. Day-ahead in ${auflEn}, solar capture rate, negative prices and power mix for companies and investors.`
+        : `Power exchange price now ${ctEn(a.eurMwh)} ct/kWh. Day-ahead in 15-minute values, solar capture rate, negative prices and power mix for companies and investors.`;
     }
   } catch {
     // statische Beschreibung genügt
@@ -128,7 +147,7 @@ async function metadataEn() {
       locale: "en_GB",
       url: PAGE_URL,
       siteName: "ÖkoInvest",
-      title: "German power market live – exchange price & power mix",
+      title: `${land === "AT" ? "Austrian" : land === "CH" ? "Swiss" : "German"} power market live – exchange price & power mix`,
       description,
       images: [{ url: OG_BILD, width: 1280, height: 852, alt: "ÖkoInvest – power market live" }],
     },
@@ -140,6 +159,12 @@ const FAQ = [
   {
     q: "Was ist der Day-Ahead-Preis?",
     a: "Der Day-Ahead-Preis ist der Großhandelspreis für Strom, der am Vortag in einer Auktion an der Strombörse (EPEX Spot) für jede Viertelstunde des Folgetages ermittelt wird. Die Ergebnisse für Deutschland und Luxemburg (Gebotszone DE-LU) werden gegen 13 Uhr veröffentlicht. Seit Oktober 2025 wird der Day-Ahead-Markt in 15-Minuten-Produkten gehandelt.",
+    AT: {
+      a: "Der Day-Ahead-Preis ist der Großhandelspreis für Strom, der am Vortag in einer Auktion an der Strombörse (EPEX Spot) für jede Viertelstunde des Folgetages ermittelt wird. Österreich ist seit dem 1. Oktober 2018 eine eigene Gebotszone (AT); die Ergebnisse werden gegen 13 Uhr veröffentlicht. Seit Oktober 2025 wird der Day-Ahead-Markt in 15-Minuten-Produkten gehandelt.",
+    },
+    CH: {
+      a: "Der Day-Ahead-Preis ist der Großhandelspreis für Strom, der am Vortag in einer Auktion an der Strombörse ermittelt wird. Die Schweiz hat eine eigene Day-Ahead-Auktion bei EPEX SPOT: Sie wird stündlich gehandelt, notiert in Euro, und die Ergebnisse werden gegen Mittag veröffentlicht.",
+    },
   },
   {
     q: "Was zahlt ein Unternehmen im Vergleich zum Börsenpreis?",
@@ -149,6 +174,9 @@ const FAQ = [
   {
     q: "Was ist die Solar-Capture-Rate?",
     a: "Die Capture-Rate setzt den durchschnittlichen Börsenerlös von Solarstrom (Capture-Preis, gewichtet mit der Einspeisung) ins Verhältnis zum Tagesdurchschnitt aller Viertelstunden (Base). Weil viele Solaranlagen gleichzeitig einspeisen, liegt der Capture-Preis im Sommer oft deutlich unter dem Base-Preis. Für ungeförderte Solarparks ist sie eine der wichtigsten Kennzahlen.",
+    CH: {
+      a: "Die Capture-Rate setzt den durchschnittlichen Börsenerlös von Solarstrom (Capture-Preis, gewichtet mit der Einspeisung) ins Verhältnis zum Tagesdurchschnitt aller Handelsstunden (Base). Weil viele Solaranlagen gleichzeitig einspeisen, liegt der Capture-Preis im Sommer oft deutlich unter dem Base-Preis. Für ungeförderte Solarparks ist sie eine der wichtigsten Kennzahlen.",
+    },
   },
   {
     q: "Warum gibt es negative Strompreise?",
@@ -166,6 +194,9 @@ const FAQ = [
   {
     q: "Woher stammen die Daten und wie aktuell sind sie?",
     a: "Börsenpreise und Stromerzeugung stammen von Energy-Charts des Fraunhofer-Instituts für Solare Energiesysteme ISE (Lizenz CC BY 4.0). Fällt diese Quelle aus, nutzen wir für die Preise ersatzweise die stündlichen Day-Ahead-Werte von aWATTar. Die Seite aktualisiert sich alle fünf Minuten; Erzeugungsdaten laufen mit etwas Verzögerung ein. Alle Angaben ohne Gewähr.",
+    CH: {
+      a: "Börsenpreise und Stromerzeugung stammen von Energy-Charts des Fraunhofer-Instituts für Solare Energiesysteme ISE (Lizenz CC BY 4.0). Für die Schweiz gibt es keine schlüsselfreie Ersatzquelle – fällt die Quelle aus, zeigt die Seite das offen an. Die Seite aktualisiert sich alle fünf Minuten; Erzeugungsdaten laufen mit etwas Verzögerung ein. Alle Angaben ohne Gewähr.",
+    },
   },
 ];
 
@@ -173,6 +204,12 @@ const FAQ_EN = [
   {
     q: "What is the day-ahead price?",
     a: "The day-ahead price is the wholesale price for electricity determined the day before in an auction on the power exchange (EPEX Spot) for every quarter-hour of the following day. The results for Germany and Luxembourg (DE-LU bidding zone) are published at around 13:00. Since October 2025, the day-ahead market has been traded in 15-minute products.",
+    AT: {
+      a: "The day-ahead price is the wholesale price for electricity determined the day before in an auction on the power exchange (EPEX Spot) for every quarter-hour of the following day. Austria has been its own bidding zone (AT) since 1 October 2018; the results are published at around 13:00. Since October 2025, the day-ahead market has been traded in 15-minute products.",
+    },
+    CH: {
+      a: "The day-ahead price is the wholesale price for electricity determined the day before in an auction on the power exchange. Switzerland has its own day-ahead auction at EPEX SPOT: it is traded hourly, is denominated in euros, and the results are published around midday.",
+    },
   },
   {
     q: "What does a business pay compared with the exchange price?",
@@ -182,6 +219,9 @@ const FAQ_EN = [
   {
     q: "What is the solar capture rate?",
     a: "The capture rate puts the average exchange revenue of solar power (capture price, weighted by feed-in) in relation to the daily average of all quarter-hours (base). Because many solar installations feed in at the same time, the capture price in summer is often well below the base price. For unsubsidised solar parks, it is one of the most important key figures.",
+    CH: {
+      a: "The capture rate puts the average exchange revenue of solar power (capture price, weighted by feed-in) in relation to the daily average of all trading hours (base). Because many solar installations feed in at the same time, the capture price in summer is often well below the base price. For unsubsidised solar parks, it is one of the most important key figures.",
+    },
   },
   {
     q: "Why are there negative electricity prices?",
@@ -199,6 +239,9 @@ const FAQ_EN = [
   {
     q: "Where does the data come from and how up to date is it?",
     a: "Exchange prices and power generation come from Energy-Charts by the Fraunhofer Institute for Solar Energy Systems ISE (licence CC BY 4.0). If this source fails, we use the hourly day-ahead values from aWATTar as a fallback for prices. The page refreshes every five minutes; generation data comes in with a slight delay. All information without guarantee.",
+    CH: {
+      a: "Exchange prices and power generation come from Energy-Charts by the Fraunhofer Institute for Solar Energy Systems ISE (licence CC BY 4.0). For Switzerland there is no key-free fallback source – if the source fails, the page says so openly. The page refreshes every five minutes; generation data comes in with a slight delay. All information without guarantee.",
+    },
   },
 ];
 
@@ -228,19 +271,25 @@ const QUERVERWEISE = [
 ];
 
 export default async function EnergieLivePage({ params }) {
-  // Live-Daten der Gebotszone DE-LU: außerhalb von /de als „Deutschland“ gekennzeichnet; in AT/CH eine geprüfte
-  // Frage zur eigenen Gebotszone, deutsche Förder- und Preisregeln mit LandHinweis.
+  // Länderwahl: Die Seite zeigt die Live-Daten DES GEWÄHLTEN LANDES (AT und CH mit eigener
+  // Gebotszone), die gemeinsame Seite (ohne Wahl) weiter DE-LU mit Vermerk. Deutsche Förder-
+  // und Preisregeln (nurDE-Einträge) zeigen in AT/CH den LandHinweis statt deutscher Aussagen.
   const land = await seitenLand(params);
   const sprache = spracheDerAnfrage();
   const en = sprache === "en";
   const { ct, gw, uhr, spanne, tagLang } = formate(sprache);
-  const markiert = land !== "DE";
+  const m = markt(land);
+  const landName = en ? m.nameEn : m.name;
+  // Zusatz in den Eyebrows: gemeinsame Seite kennzeichnet DE-LU, /de braucht keinen, AT/CH ihr Land
+  const zonenZusatz =
+    land === "DE" ? "" : land === "AT" || land === "CH" ? ` · ${landName}` : en ? " · Germany-Luxembourg" : " · Deutschland-Luxemburg";
+  const landZusatz = land === "DE" ? "" : ` · ${landName}`;
   const faqBasis = en ? uebersetze({ de: FAQ, en: FAQ_EN }, "en") : FAQ;
   const faqLand = (en ? FAQ_LAND_EN : FAQ_LAND)[land];
   const faq = faqFuerLand(faqLand ? [faqBasis[0], faqLand, ...faqBasis.slice(1)] : faqBasis, land, { sprache });
   const querverweise = en ? uebersetze({ de: QUERVERWEISE, en: QUERVERWEISE_EN }, "en") : QUERVERWEISE;
   const hintergrund = en ? HINTERGRUND_EN : HINTERGRUND;
-  const s = await getEnergySnapshot();
+  const s = await getEnergySnapshot(land || "DE");
   const jetzt = Date.parse(s.stand);
   const tage = preisTage(s.preis, jetzt);
   const fenster = tage.heute ? zeitfenster(tage.heute.punkte, 180, tage.schrittMs).guenstig : null;
@@ -271,44 +320,49 @@ export default async function EnergieLivePage({ params }) {
     ? `Am ${tagLang(tage.heute.start)} kostet Strom an der Börse im Schnitt ${ct(tage.heute.avg)} ct/kWh (netto). Am günstigsten ist er um ${uhr(tage.heute.min.t)} Uhr mit ${ct(tage.heute.min.eurMwh)} ct/kWh, am teuersten um ${uhr(tage.heute.max.t)} Uhr mit ${ct(tage.heute.max.eurMwh)} ct/kWh${fenster ? `; das günstigste 3-Stunden-Fenster liegt zwischen ${spanne(fenster.start, fenster.ende)}` : ""}.`
     : "Der Day-Ahead-Preis wird für jede Viertelstunde des Folgetages an der Strombörse ermittelt und gegen 13 Uhr veröffentlicht.";
 
+  // Zone und Auflösung je Land (CH handelt stündlich, DE-LU/AT viertelstündlich)
+  const zonenNameDe = land === "AT" ? "Österreich" : land === "CH" ? "Schweiz" : "Deutschland-Luxemburg";
+  const zonenNameEn = land === "AT" ? "Austria" : land === "CH" ? "Switzerland" : "Germany-Luxembourg";
+  const auflDe = land === "CH" ? "stündlicher Auflösung" : "15-Minuten-Auflösung";
+  const auflEn = land === "CH" ? "hourly resolution" : "15-minute resolution";
+  const apiUrl = abs(`/api/energie/live?land=${(land || "DE").toLowerCase()}&voll=1`);
+
   const datasetSchemaDe = {
     "@context": "https://schema.org",
     "@type": "Dataset",
     "@id": `${PAGE_URL}/#dataset`,
-    name: "Strommarkt Deutschland live: Day-Ahead-Börsenstrompreis und Stromerzeugung nach Quelle",
-    description:
-      "Day-Ahead-Großhandelspreis für Strom in der Gebotszone Deutschland-Luxemburg in 15-Minuten-Auflösung sowie öffentliche Nettostromerzeugung nach Energieträger und Netzlast für Deutschland, fortlaufend aktualisiert.",
+    name: `Strommarkt ${m.name} live: Day-Ahead-Börsenstrompreis und Stromerzeugung nach Quelle`,
+    description: `Day-Ahead-Großhandelspreis für Strom in der Gebotszone ${zonenNameDe} (${m.zone}) in ${auflDe} sowie öffentliche Nettostromerzeugung nach Energieträger und Netzlast für ${m.name === "Schweiz" ? "die Schweiz" : m.name}, fortlaufend aktualisiert.`,
     url: PAGE_URL,
-    keywords: ["Day-Ahead", "Börsenstrompreis", "Strommix", "Erneuerbare Energien", "Deutschland"],
+    keywords: ["Day-Ahead", "Börsenstrompreis", "Strommix", "Erneuerbare Energien", m.name],
     isAccessibleForFree: true,
     license: "https://creativecommons.org/licenses/by/4.0/",
     creator: { "@type": "Organization", name: "Fraunhofer-Institut für Solare Energiesysteme ISE – Energy-Charts", url: "https://www.energy-charts.info" },
     publisher: { "@id": `${abs("/")}/#organization` },
-    spatialCoverage: { "@type": "Place", name: "Deutschland" },
+    spatialCoverage: { "@type": "Place", name: m.name },
     temporalCoverage: tage.heute ? new Date(tage.heute.start).toISOString().slice(0, 10) : undefined,
     dateModified: s.stand,
     variableMeasured: [
-      { "@type": "PropertyValue", name: "Day-Ahead-Preis DE-LU", unitText: "EUR/MWh" },
+      { "@type": "PropertyValue", name: `Day-Ahead-Preis ${m.zone}`, unitText: "EUR/MWh" },
       { "@type": "PropertyValue", name: "Nettostromerzeugung je Energieträger", unitText: "MW" },
       { "@type": "PropertyValue", name: "Netzlast", unitText: "MW" },
       { "@type": "PropertyValue", name: "Anteil erneuerbarer Energien an der Last", unitText: "Prozent" },
     ],
     distribution: [
-      { "@type": "DataDownload", encodingFormat: "application/json", contentUrl: abs("/api/energie/live?voll=1") },
+      { "@type": "DataDownload", encodingFormat: "application/json", contentUrl: apiUrl },
     ],
   };
 
   const datasetSchema = en
     ? {
         ...datasetSchemaDe,
-        name: "German power market live: day-ahead exchange power price and power generation by source",
-        description:
-          "Day-ahead wholesale electricity price in the Germany-Luxembourg bidding zone in 15-minute resolution, plus public net power generation by energy source and grid load for Germany, continuously updated.",
-        keywords: ["day-ahead", "power exchange price", "power mix", "renewable energy", "Germany"],
+        name: `Power market ${m.nameEn} live: day-ahead exchange power price and power generation by source`,
+        description: `Day-ahead wholesale electricity price in the ${zonenNameEn} bidding zone (${m.zone}) in ${auflEn}, plus public net power generation by energy source and grid load for ${m.nameEn}, continuously updated.`,
+        keywords: ["day-ahead", "power exchange price", "power mix", "renewable energy", m.nameEn],
         creator: { ...datasetSchemaDe.creator, name: "Fraunhofer Institute for Solar Energy Systems ISE – Energy-Charts" },
-        spatialCoverage: { "@type": "Place", name: "Germany" },
+        spatialCoverage: { "@type": "Place", name: m.nameEn },
         variableMeasured: [
-          { "@type": "PropertyValue", name: "Day-ahead price DE-LU", unitText: "EUR/MWh" },
+          { "@type": "PropertyValue", name: `Day-ahead price ${m.zone}`, unitText: "EUR/MWh" },
           { "@type": "PropertyValue", name: "Net power generation per energy source", unitText: "MW" },
           { "@type": "PropertyValue", name: "Grid load", unitText: "MW" },
           { "@type": "PropertyValue", name: "Share of renewable energy in load", unitText: "percent" },
@@ -321,7 +375,9 @@ export default async function EnergieLivePage({ params }) {
     "@type": "WebPage",
     "@id": `${PAGE_URL}/#webpage`,
     url: PAGE_URL,
-    name: en ? "German power market live – current exchange price & day-ahead price today" : "Strommarkt Deutschland live – Börsenstrompreis aktuell & Day-Ahead-Preis heute",
+    name: en
+      ? `${land === "AT" ? "Austrian" : land === "CH" ? "Swiss" : "German"} power market live – current exchange price & day-ahead price today`
+      : `Strommarkt ${m.name} live – Börsenstrompreis aktuell & Day-Ahead-Preis heute`,
     description: antwort,
     isPartOf: { "@id": `${abs("/")}/#website` },
     about: { "@id": `${PAGE_URL}/#dataset` },
@@ -340,7 +396,7 @@ export default async function EnergieLivePage({ params }) {
       {/* Preisverlauf */}
       <Section tone="white" space="lg" id="preisverlauf" className="scroll-mt-24">
         <SectionHeading
-          eyebrow={en ? (markiert ? "Day-ahead price today · Germany-Luxembourg" : "Day-ahead price today") : markiert ? "Day-Ahead-Preis heute · Deutschland-Luxemburg" : "Day-Ahead-Preis heute"}
+          eyebrow={(en ? "Day-ahead price today" : "Day-Ahead-Preis heute") + zonenZusatz}
           title={
             en ? (
               <>
@@ -383,7 +439,7 @@ export default async function EnergieLivePage({ params }) {
       {/* Strommix */}
       <Section tone="white" space="lg" id="strommix" className="scroll-mt-24">
         <SectionHeading
-          eyebrow={en ? (markiert ? "Power generation by source · Germany" : "Power generation by source") : markiert ? "Stromerzeugung nach Quelle · Deutschland" : "Stromerzeugung nach Quelle"}
+          eyebrow={(en ? "Power generation by source" : "Stromerzeugung nach Quelle") + landZusatz}
           title={
             en ? (
               <>
@@ -398,10 +454,10 @@ export default async function EnergieLivePage({ params }) {
           lead={
             en
               ? s.erzeugung.eeAnteil != null
-                ? `Most recently (${uhr(s.erzeugung.zeitpunkt)}), renewable energy covered ${Math.round(s.erzeugung.eeAnteil)} % of electricity consumption in Germany: ${gw(s.erzeugung.solarMw)} GW solar and ${gw(s.erzeugung.windMw)} GW wind at a grid load of ${gw(s.erzeugung.lastMw)} GW.`
+                ? `Most recently (${uhr(s.erzeugung.zeitpunkt)}), renewable energy covered ${Math.round(s.erzeugung.eeAnteil)} % of electricity consumption in ${m.nameEn}: ${gw(s.erzeugung.solarMw)} GW solar and ${gw(s.erzeugung.windMw)} GW wind at a grid load of ${gw(s.erzeugung.lastMw)} GW.`
                 : "How much power comes from sun, wind, biomass, water, coal and gas – and how this shifts over the day."
               : s.erzeugung.eeAnteil != null
-              ? `Zuletzt (${uhr(s.erzeugung.zeitpunkt)} Uhr) deckten erneuerbare Energien ${Math.round(s.erzeugung.eeAnteil)} % des Stromverbrauchs in Deutschland: ${gw(s.erzeugung.solarMw)} GW Solar und ${gw(s.erzeugung.windMw)} GW Wind bei einer Netzlast von ${gw(s.erzeugung.lastMw)} GW.`
+              ? `Zuletzt (${uhr(s.erzeugung.zeitpunkt)} Uhr) deckten erneuerbare Energien ${Math.round(s.erzeugung.eeAnteil)} % des Stromverbrauchs in ${m.name === "Schweiz" ? "der Schweiz" : m.name}: ${gw(s.erzeugung.solarMw)} GW Solar und ${gw(s.erzeugung.windMw)} GW Wind bei einer Netzlast von ${gw(s.erzeugung.lastMw)} GW.`
               : "Wie viel Strom aus Sonne, Wind, Biomasse, Wasser, Kohle und Gas stammt – und wie sich das über den Tag verschiebt."
           }
           className="mb-10 md:mb-12"
@@ -490,8 +546,8 @@ export default async function EnergieLivePage({ params }) {
                 <li className="flex gap-2.5">
                   <Activity aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-ink-400" />
                   <span>
-                    {en ? "Exchange prices and generation:" : "Börsenpreise und Erzeugung:"}{" "}
-                    <a href={en ? "https://www.energy-charts.info/?l=en&c=DE" : "https://www.energy-charts.info/?l=de&c=DE"} target="_blank" rel="noopener noreferrer" className="font-medium text-ov-700 underline decoration-ov-300 underline-offset-2 hover:decoration-current">
+                    {en ? `Exchange prices (bidding zone ${m.zone}) and generation:` : `Börsenpreise (Gebotszone ${m.zone}) und Erzeugung:`}{" "}
+                    <a href={`https://www.energy-charts.info/?l=${en ? "en" : "de"}&c=${land || "DE"}`} target="_blank" rel="noopener noreferrer" className="font-medium text-ov-700 underline decoration-ov-300 underline-offset-2 hover:decoration-current">
                       Fraunhofer ISE – Energy-Charts
                       <ExternalLink aria-hidden="true" className="ml-1 inline h-3.5 w-3.5" />
                     </a>
@@ -503,7 +559,19 @@ export default async function EnergieLivePage({ params }) {
                 </li>
                 <li className="flex gap-2.5">
                   <BatteryCharging aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-ink-400" />
-                  <span>{en ? "Fallback source for prices: aWATTar (hourly day-ahead values)" : "Ersatzquelle für Preise: aWATTar (stündliche Day-Ahead-Werte)"}</span>
+                  <span>
+                    {land === "CH"
+                      ? en
+                        ? "No fallback source for Swiss prices – if Energy-Charts is unavailable, the page says so openly. The Swiss day-ahead auction is denominated in euros (EPEX SPOT); no CHF conversion is shown."
+                        : "Keine Ersatzquelle für Schweizer Preise – fällt Energy-Charts aus, zeigt die Seite das offen an. Die Schweizer Day-Ahead-Auktion notiert in Euro (EPEX SPOT); eine CHF-Umrechnung zeigen wir nicht."
+                      : land === "AT"
+                        ? en
+                          ? "Fallback source for prices: aWATTar Austria (hourly day-ahead values)"
+                          : "Ersatzquelle für Preise: aWATTar Österreich (stündliche Day-Ahead-Werte)"
+                        : en
+                          ? "Fallback source for prices: aWATTar (hourly day-ahead values)"
+                          : "Ersatzquelle für Preise: aWATTar (stündliche Day-Ahead-Werte)"}
+                  </span>
                 </li>
                 <li className="flex gap-2.5">
                   <Clock aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-ink-400" />

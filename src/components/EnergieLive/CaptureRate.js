@@ -8,6 +8,7 @@ import { preisTage, formate } from "./berechnung";
 import { ERLOESE } from "@/lib/invest/markt";
 import { fmtZahl } from "@/lib/sprache/format";
 import { useSprache } from "@/components/Sprache/SpracheKontext";
+import { useSeitenLand } from "@/components/Land/LandKontext";
 
 /* Sprachmodell: feste Texte je Sprache */
 const TEXTE = {
@@ -16,24 +17,29 @@ const TEXTE = {
     satzA: (bis) => `Solarstrom erzielte heute${bis} im Schnitt `, satzB: (base) => ` an der Börse – bei einem Tagesmittel (Base) von ${base} ct/kWh.`,
     base: "Base (Tagesmittel)", capture: "Solar-Capture-Preis",
     zuWenig: (v) => `Heute ist noch zu wenig Solarstrom eingespeist, um eine belastbare Capture-Rate zu berechnen. Sie erscheint im Laufe des Vormittags. Zur Einordnung: Für ungeförderte Anlagen rechnen wir langfristig konservativ mit einem Solar-Marktwert von etwa ${v} ct/kWh.`,
-    berechnung: "Berechnung: Day-Ahead-Preis je Viertelstunde, gewichtet mit der öffentlichen Solareinspeisung (Energy-Charts). Orientierung, keine Erlösprognose.",
+    berechnung: (viertel) => `Berechnung: Day-Ahead-Preis je ${viertel ? "Viertelstunde" : "Handelsstunde"}, gewichtet mit der öffentlichen Solareinspeisung (Energy-Charts). Orientierung, keine Erlösprognose.`,
     negKopf: "Negative Preise heute",
-    negText: (n, anteil) => `${n} Viertelstunden unter null${anteil ? ` – ${anteil} % des bisherigen Solarstroms fielen in diese Zeiten` : ""}.`,
-    negKeine: "Heute bisher keine Viertelstunde mit negativem Preis.",
+    negText: (n, anteil, viertel) => `${n} ${viertel ? "Viertelstunden" : "Stunden"} unter null${anteil ? ` – ${anteil} % des bisherigen Solarstroms fielen in diese Zeiten` : ""}.`,
+    negKeine: (viertel) => `Heute bisher keine ${viertel ? "Viertelstunde" : "Stunde"} mit negativem Preis.`,
     invKopf: "Warum das für Investoren zählt",
     invText: (a, b) => `Je mehr Solar im Netz, desto stärker drückt es mittags den Preis – die Capture-Rate sinkt. Ungeförderte Parks brauchen deshalb PPAs (zuletzt etwa ${a}–${b} ct/kWh), Speicher oder flexible Abnehmer, die Mittagsstrom gezielt nutzen.`,
+    // AT/CH: ohne deutsche Richtwerte (PPA-Spanne und Solar-Marktwert sind deutsche Orientierungswerte)
+    invTextNeutral: "Je mehr Solar im Netz, desto stärker drückt es mittags den Preis – die Capture-Rate sinkt. Ungeförderte Parks brauchen deshalb PPAs, Speicher oder flexible Abnehmer, die Mittagsstrom gezielt nutzen.",
+    zuWenigNeutral: "Heute ist noch zu wenig Solarstrom eingespeist, um eine belastbare Capture-Rate zu berechnen. Sie erscheint im Laufe des Vormittags.",
   },
   en: {
     kopf: "Solar capture rate today", desAvg: "of the daily average", bis: (u) => ` up to ${u}`,
     satzA: (bis) => `Today${bis}, solar power earned an average of `, satzB: (base) => ` on the exchange – against a daily average (base) of ${base} ct/kWh.`,
     base: "Base (daily average)", capture: "Solar capture price",
     zuWenig: (v) => `Not enough solar power has been fed in yet today to calculate a reliable capture rate. It will appear during the morning. For context: for unsubsidised installations, we conservatively assume a long-term solar market value of around ${v} ct/kWh.`,
-    berechnung: "Calculation: day-ahead price per quarter-hour, weighted by public solar feed-in (Energy-Charts). For orientation, not a revenue forecast.",
+    berechnung: (viertel) => `Calculation: day-ahead price per ${viertel ? "quarter-hour" : "trading hour"}, weighted by public solar feed-in (Energy-Charts). For orientation, not a revenue forecast.`,
     negKopf: "Negative prices today",
-    negText: (n, anteil) => `${n} quarter-hours below zero${anteil ? ` – ${anteil} % of today’s solar power so far fell into these periods` : ""}.`,
-    negKeine: "So far today, no quarter-hour with a negative price.",
+    negText: (n, anteil, viertel) => `${n} ${viertel ? "quarter-hours" : "hours"} below zero${anteil ? ` – ${anteil} % of today’s solar power so far fell into these periods` : ""}.`,
+    negKeine: (viertel) => `So far today, no ${viertel ? "quarter-hour" : "hour"} with a negative price.`,
     invKopf: "Why this matters for investors",
     invText: (a, b) => `The more solar there is in the grid, the more it pushes down the price at midday – the capture rate falls. Unsubsidised parks therefore need PPAs (recently around ${a}–${b} ct/kWh), storage or flexible buyers that make targeted use of midday power.`,
+    invTextNeutral: "The more solar there is in the grid, the more it pushes down the price at midday – the capture rate falls. Unsubsidised parks therefore need PPAs, storage or flexible buyers that make targeted use of midday power.",
+    zuWenigNeutral: "Not enough solar power has been fed in yet today to calculate a reliable capture rate. It will appear during the morning.",
   },
 };
 
@@ -51,6 +57,8 @@ export default function CaptureRate({ initial, initialSolar }) {
   const { ct, zahl, uhr } = formate(sprache);
   const fmt = (n, s = 0) => fmtZahl(n, s, sprache);
   const w = TEXTE[sprache === "en" ? "en" : "de"];
+  const land = useSeitenLand();
+  const deWerte = land !== "AT" && land !== "CH"; // deutsche Richtwerte nur auf DE/gemeinsamer Seite
   const tage = useMemo(() => preisTage(daten.preis, jetzt), [daten.preis, jetzt]);
 
   const solar = useMemo(() => {
@@ -97,6 +105,7 @@ export default function CaptureRate({ initial, initialSolar }) {
     };
   }, [tage, solar]);
 
+  const viertel = tage.schrittMs === 900000; // CH handelt stündlich
   const breiteBase = 100;
   const breiteCapture = k?.rate != null ? Math.max(4, Math.min(140, k.rate * 100)) : 0;
 
@@ -124,11 +133,11 @@ export default function CaptureRate({ initial, initialSolar }) {
           </>
         ) : (
           <p className="mt-4 text-[15.5px] leading-relaxed text-ink-600">
-            {w.zuWenig(fmt(ERLOESE.merchantCt, 1))}
+            {deWerte ? w.zuWenig(fmt(ERLOESE.merchantCt, 1)) : w.zuWenigNeutral}
           </p>
         )}
         <p className="mt-6 text-[12.5px] leading-relaxed text-ink-500">
-          {w.berechnung}
+          {w.berechnung(viertel)}
         </p>
       </div>
 
@@ -143,8 +152,8 @@ export default function CaptureRate({ initial, initialSolar }) {
           </p>
           <p className="mt-2 text-[14px] leading-relaxed text-white/65">
             {k && k.negativ > 0
-              ? w.negText(k.negativ, k.solarNegAnteil > 0 ? zahl(k.solarNegAnteil * 100, 0) : null)
-              : w.negKeine}
+              ? w.negText(k.negativ, k.solarNegAnteil > 0 ? zahl(k.solarNegAnteil * 100, 0) : null, viertel)
+              : w.negKeine(viertel)}
           </p>
         </div>
         <div className="rounded-3xl bg-ov-50 p-6 ring-1 ring-ov-200 md:p-7">
@@ -153,7 +162,7 @@ export default function CaptureRate({ initial, initialSolar }) {
             {w.invKopf}
           </p>
           <p className="mt-2 text-[14.5px] leading-relaxed text-ink-700">
-            {w.invText(fmt(ERLOESE.ppaCt.min, 1), fmt(ERLOESE.ppaCt.max, 1))}
+            {deWerte ? w.invText(fmt(ERLOESE.ppaCt.min, 1), fmt(ERLOESE.ppaCt.max, 1)) : w.invTextNeutral}
           </p>
         </div>
       </div>

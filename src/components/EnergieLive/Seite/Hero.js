@@ -1,7 +1,10 @@
-// Hero der Seite /energie-live – kompakte Kopfzeile, darunter das Live-Cockpit (children) und die Kapitelnavigation
+// Hero der Seite /energie-live – kompakte Kopfzeile, darunter das Live-Cockpit (children) und die Kapitelnavigation.
+// Länderwahl: /at und /ch zeigen den Strommarkt des Landes (eigene Gebotszone), Überschrift und
+// Pill wechseln mit; gemeinsame Seite und /de wie bisher Deutschland.
 import { Activity } from "lucide-react";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
-import { spracheDerAnfrage } from "@/lib/land/seite";
+import { landDerAnfrage, spracheDerAnfrage } from "@/lib/land/seite";
+import { markt } from "@/components/EnergieLive/berechnung";
 
 const KAPITEL = [
   { href: "#preisverlauf", label: "Preis heute" },
@@ -14,8 +17,23 @@ const KAPITEL = [
 /* Sprachmodell: englische Fassung (gleiche Anker) */
 const KAPITEL_EN = ["Price today", "What it means", "Power mix 24 h", "Capture rate", "Merit order"];
 
+/* Einleitung je Land: CH handelt stündlich, DE/AT viertelstündlich (Energy-Charts/EPEX) */
+const LEAD = {
+  de: (land) =>
+    land === "CH"
+      ? "Börsenstrompreis, Strommix und Solar-Capture-Rate – stündlich aus offenen Daten des Fraunhofer ISE. Eingeordnet für Unternehmen, die Strom beschaffen, und Investoren, die Solarparks und Speicher bewerten."
+      : "Börsenstrompreis, Strommix und Solar-Capture-Rate – viertelstündlich aus offenen Daten des Fraunhofer ISE. Eingeordnet für Unternehmen, die Strom beschaffen, und Investoren, die Solarparks und Speicher bewerten.",
+  en: (land) =>
+    land === "CH"
+      ? "Exchange power price, power mix and solar capture rate – hourly from open data by Fraunhofer ISE. Put into context for companies that buy electricity and investors who assess solar parks and storage."
+      : "Exchange power price, power mix and solar capture rate – every quarter-hour from open data by Fraunhofer ISE. Put into context for companies that buy electricity and investors who assess solar parks and storage.",
+};
+
 export default function Hero({ children }) {
   const en = spracheDerAnfrage() === "en";
+  const land = landDerAnfrage();
+  const m = markt(land);
+  const name = en ? m.nameEn : m.name;
   const kapitel = en ? KAPITEL.map((k, i) => ({ ...k, label: KAPITEL_EN[i] })) : KAPITEL;
   return (
     <section data-abschnitt="hero" aria-labelledby="hero-titel" className="ov-verlauf-nacht ov-noise relative isolate overflow-hidden text-white">
@@ -31,16 +49,22 @@ export default function Hero({ children }) {
           <div>
             <p className="ov-hero-in inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-3.5 py-1.5 text-[12.5px] font-semibold uppercase tracking-[0.14em] text-ov-300 ring-1 ring-inset ring-white/15" style={{ "--ov-delay": "40ms" }}>
               <Activity aria-hidden="true" className="h-3.5 w-3.5" />
-              {en ? "Energy live · Germany" : "Energie live · Deutschland"}
+              {en ? `Energy live · ${name}` : `Energie live · ${name}`}
             </p>
             <h1 id="hero-titel" className="ov-h1 ov-hero-in mt-6 text-balance" style={{ "--ov-delay": "100ms" }}>
-              {en ? "German power market" : "Strommarkt Deutschland"} <span className="ov-text-gradient-light">live</span>
+              {en ? (
+                <>
+                  {land === "AT" ? "Austrian power market" : land === "CH" ? "Swiss power market" : "German power market"} <span className="ov-text-gradient-light">live</span>
+                </>
+              ) : (
+                <>
+                  Strommarkt {name} <span className="ov-text-gradient-light">live</span>
+                </>
+              )}
             </h1>
           </div>
           <p className="ov-lead ov-hero-in text-pretty text-white/75" style={{ "--ov-delay": "180ms" }}>
-            {en
-              ? "Exchange power price, power mix and solar capture rate\u00a0– every quarter-hour from open data by Fraunhofer ISE. Put into context for companies that buy electricity and investors who assess solar parks and storage."
-              : "Börsenstrompreis, Strommix und Solar-Capture-Rate\u00a0– viertelstündlich aus offenen Daten des Fraunhofer ISE. Eingeordnet für Unternehmen, die Strom beschaffen, und Investoren, die Solarparks und Speicher bewerten."}
+            {LEAD[en ? "en" : "de"](land)}
           </p>
         </div>
 

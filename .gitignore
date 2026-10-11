@@ -50,6 +50,8 @@ next-env.d.ts
 
 # Demo-Datenbank des Portals (lokal)
 /.data/
+# Lokale Sicherungen der Demo-Datenbank (scripts/demo-sicherung.mjs)
+/.data-sicherungen/
 .next-verify/
 
 # Python

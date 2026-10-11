@@ -35,7 +35,8 @@ Website und Plattform der **ÖkoInvest GmbH** (ÖKOVOLT Gruppe): Projektentwickl
 11. [Grundsätze](#grundsätze)
 12. [Dokumentation](#dokumentation)
 13. [Vor dem Livegang](#vor-dem-livegang)
-14. [Lizenz](#lizenz)
+14. [Team](#team)
+15. [Lizenz](#lizenz)
 
 ---
 
@@ -296,6 +297,16 @@ Die technische Checkliste (Details in `uebergabe/UEBERGABE.md`, Abschnitt „Off
 
 ---
 
+## Team
+
+| | |
+|---|---|
+| **Denis Barani** | Konzeption und Entwicklung |
+| **Benjamin Hoefler** | Konzeption und Entwicklung |
+| **Solensa Hub LLC** | Entwicklung und Umsetzung |
+
+---
+
 ## Lizenz
 
 **Proprietär.** © ÖkoInvest GmbH, Gewerbegebiet 10, 5121 Ostermiething, Österreich. Alle Rechte vorbehalten – Nutzung, Vervielfältigung und Weitergabe nur mit ausdrücklicher Zustimmung.
@@ -308,6 +319,6 @@ Eingebundene offene Datenquellen werden lizenzkonform genannt (Energy-Charts/Fra
 
 **Aus Flächen werden Kraftwerke.** ☀️
 
-*Gebaut mit Next.js 15, React 19, Tailwind v4 – und einer Armee von KI-Agenten unter menschlicher Aufsicht.*
+*Gebaut mit Next.js 15, React 19 und Tailwind v4 – von Denis Barani, Benjamin Hoefler und Solensa Hub LLC.*
 
 </div>

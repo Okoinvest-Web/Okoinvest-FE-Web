@@ -22,7 +22,7 @@ import { newsletterLand, newsletterSprache, themenNormal } from "./themen";
 import { ABMELDUNG_TEXT_ID, ANMELDUNG_TEXT_ID, ANTWORT, DOI, DOI_STUNDEN, NEWSLETTER_TEXT_VERSION, bestaetigungsMail, einwilligungsText, willkommensMail } from "./texte";
 
 /** Erlaubte Quellen (wo der Baustein steht) – nur für die Auswertung, nie Personendaten */
-export const QUELLEN = Object.freeze(["newsletter", "marktdaten", "footer", "ratgeber", "newsroom", "sonstige"]);
+export const QUELLEN = Object.freeze(["newsletter", "marktdaten", "footer", "ratgeber", "newsroom", "gewerbestrom-at", "sonstige"]);
 
 const objekt = (x) => (x && typeof x === "object" && !Array.isArray(x) ? x : {});
 const basis = (url) => String(url || "").replace(/\/$/, "");

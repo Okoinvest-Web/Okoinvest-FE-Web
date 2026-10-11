@@ -1,8 +1,11 @@
 // src/app/(stamm)/rechner/gewerbestrom-check/page.js – Rechnungs-Check Gewerbestrom (Welle 3, Paket B5, Preisradar Schritt 1)
 //
-// Nur Deutschland (TOOLS: laender ["DE"]): Auf /at und /ch zeigt RechnerSeite den eigenen Länderhinweis
-// (AT: ab 2027 nach SNE-VO in Vorbereitung, CH: in Vorbereitung). Werte aus dem Faktenregister
-// (src/lib/fakten/daten/gewerbestrom-de.js), Rechenlogik src/lib/rechner/gewerbestrom.js.
+// Deutschland rechnet (Werte aus src/lib/fakten/daten/gewerbestrom-de.js, Logik src/lib/rechner/gewerbestrom.js).
+// Österreich (Welle 4, Paket ATSNE): Vorbereitungs-Maske für die SNE-VO 2027 – Netzebene, Jahresverbrauch,
+// Leistung werden erfasst, das Ergebnis bleibt ein Länderhinweis mit Zeitplan („erwartet Q1 2027“),
+// keine geschätzten Werte (GewerbestromCheckAT, Fakten src/lib/fakten/daten/gewerbestrom-at.js,
+// Logik src/lib/rechner/gewerbestromAt.js, Nachtrag scripts/at-sne-nachtrag.md).
+// Schweiz: Länderhinweis (in Vorbereitung).
 // noindex bis zur Fachprüfung (src/lib/land/seiten.js index: false; englisch src/lib/sprache/seiten.js).
 //
 // Sprachmodell: deutsche Texte in DE, englische in EN (gleiche Struktur; Regeln: src/lib/sprache/woerterbuch.js).
@@ -10,6 +13,7 @@
 import Link from "@/components/Land/Link";
 import RechnerSeite, { rechnerMetadata, rechnerMetadataEn } from "@/components/Rechner/RechnerSeite";
 import GewerbestromCheck from "@/components/Rechner/GewerbestromCheck";
+import GewerbestromCheckAT from "@/components/Rechner/GewerbestromCheckAT";
 import { pfad as seitenPfad } from "@/lib/land";
 import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
 import { faqFuerLand, NurDEBlock } from "@/components/Land/Laenderteile";
@@ -37,11 +41,8 @@ const metadataEn = rechnerMetadataEn({
   keywords: ["check commercial electricity bill Germany", "business electricity price breakdown", "German electricity levies 2026", "concession fee special contract", "electricity tax relief § 9b", "load profile analysis"],
 });
 
+// AT zeigt seit Welle 4 (Paket ATSNE) die Vorbereitungs-Maske statt eines Hinweises; nur CH bleibt gesperrt.
 const LAND_HINWEISE = {
-  AT: {
-    de: "Den Rechnungs-Check gibt es bisher nur für Deutschland. Für Österreich bauen wir ihn ab 2027 nach der neuen Systemnutzungsentgelte-Verordnung (SNE-VO) – er ist in Vorbereitung.",
-    en: "The bill check is currently available for Germany only. For Austria, we are building it from 2027 based on the new system usage charges ordinance (SNE-VO) – it is in preparation.",
-  },
   CH: {
     de: "Den Rechnungs-Check gibt es bisher nur für Deutschland. Eine Fassung für die Schweiz ist in Vorbereitung.",
     en: "The bill check is currently available for Germany only. A version for Switzerland is in preparation.",
@@ -120,7 +121,7 @@ const FAQ = [
   },
   {
     q: "Gibt es den Check auch für Österreich und die Schweiz?",
-    a: "Noch nicht. Für Österreich bauen wir ihn nach der neuen Systemnutzungsentgelte-Verordnung ab 2027, für die Schweiz ist er in Vorbereitung. Zahlen, Recht und Rechner bleiben dabei je Land getrennt.",
+    a: "Für Österreich können Sie Netzebene, Jahresverbrauch und Leistung bereits erfassen – gerechnet wird erst, wenn die neuen Systemnutzungsentgelte (SNE-VO 2027) im RIS veröffentlicht und geprüft sind, erwartet im ersten Quartal 2027. Für die Schweiz ist der Check in Vorbereitung. Zahlen, Recht und Rechner bleiben dabei je Land getrennt.",
   },
 ];
 
@@ -160,7 +161,7 @@ const FAQ_EN = [
   },
   {
     q: "Is the check also available for Austria and Switzerland?",
-    a: "Not yet. For Austria, we are building it based on the new system usage charges ordinance from 2027; for Switzerland it is in preparation. Figures, law and calculators remain separate for each country.",
+    a: "For Austria you can already record your grid level, annual consumption and peak demand – calculations will start once the new system usage charges (SNE-VO 2027) have been published in the RIS and verified, expected in the first quarter of 2027. For Switzerland the check is in preparation. Figures, law and calculators remain separate for each country.",
   },
 ];
 
@@ -252,11 +253,112 @@ const EN = {
   },
 };
 
+// Österreich (Paket ATSNE): Quellen und Methodik-Text der Vorbereitungs-Schiene – nur belegte Aussagen (RIS)
+const QUELLEN_AT = {
+  de: [
+    { name: "RIS – Systemnutzungsentgelte-Verordnung 2018 (SNE-V 2018)", url: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20010107" },
+    { name: "RIS – ElWOG 2010, § 63 Netzebenen", url: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20007045" },
+    { name: "RIS – Elektrizitätsabgabegesetz, § 4", url: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10005027" },
+    { name: "RIS – Erneuerbaren-Ausbau-Gesetz, § 75 Erneuerbaren-Förderbeitrag", url: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20011619" },
+    { name: "E-Control – Marktkonsultation SNE-GV (Zeitplan neue Entgelte 2027)", url: "https://www.e-control.at/documents/1785851/0/Marktkonsultation+SNE-GV+Teil+1_20260219_1v0.pdf/c37b0eeb-080d-fd5c-9c4a-86b75b5f2051?t=1771832185841" },
+  ],
+  en: [
+    { name: "RIS – System usage charges ordinance 2018 (SNE-V 2018)", url: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20010107" },
+    { name: "RIS – ElWOG 2010, § 63 grid levels", url: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20007045" },
+    { name: "RIS – Austrian Electricity Levy Act, § 4", url: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10005027" },
+    { name: "RIS – Renewables Expansion Act (EAG), § 75 renewables support contribution", url: "https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=20011619" },
+    { name: "E-Control – market consultation SNE-GV (timeline for the new 2027 charges)", url: "https://www.e-control.at/documents/1785851/0/Marktkonsultation+SNE-GV+Teil+1_20260219_1v0.pdf/c37b0eeb-080d-fd5c-9c4a-86b75b5f2051?t=1771832185841" },
+  ],
+};
+
+// Auf /at beschreibt der Seitenkopf die AT-Vorbereitungs-Schiene statt des DE-Rechners
+// (DE-Begriffe wie Stromsteuer, Konzessionsabgabe oder SMARD gehören nicht auf die Österreich-Seite).
+const AT_KOPF = {
+  de: {
+    lead: "Österreich bereitet sich auf die neuen Systemnutzungsentgelte 2027 vor: Erfassen Sie Netzebene, Jahresverbrauch und Leistung schon jetzt – gerechnet wird, sobald die neuen Entgelte im RIS kundgemacht und geprüft sind. Bis dahin zeigen wir bewusst keine geschätzten Werte.",
+    chips: ["Nur belegte Angaben (RIS)", "Netzebene und Benutzungsstunden", "Keine geschätzten Entgelte", "Erinnerung zur Kundmachung"],
+    app: {
+      name: "Rechnungs-Check Gewerbestrom (Österreich: Vorbereitung)",
+      description: "Erfasst Netzebene, Jahresverbrauch und Leistung für den österreichischen Rechnungs-Check und dokumentiert die Struktur der Systemnutzungsentgelte nach der geltenden SNE-V 2018 – Werte folgen nach Kundmachung der neuen Entgelte 2027 im RIS.",
+      featureList: [
+        "Netzebene nach § 63 ElWOG 2010 wählen",
+        "Benutzungsstunden aus Jahresverbrauch und Leistung (Plausibilität)",
+        "Entgeltstruktur der geltenden SNE-V 2018, am RIS geprüft",
+        "Abgaben-Rechtsgrundlagen: ElAbgG und § 75 EAG",
+        "Erinnerung, sobald die Werte 2027 eingepflegt sind",
+      ],
+    },
+  },
+  en: {
+    lead: "Austria is preparing for the new 2027 system usage charges: record your grid level, annual consumption and peak demand now – calculations start once the new charges are published and verified in the RIS. Until then we deliberately show no estimated values.",
+    chips: ["Only substantiated statements (RIS)", "Grid level and utilisation hours", "No estimated charges", "Reminder on publication"],
+    app: {
+      name: "Commercial electricity bill check (Austria: in preparation)",
+      description: "Records grid level, annual consumption and peak demand for the Austrian bill check and documents the structure of system usage charges under the current SNE-V 2018 – values follow once the new 2027 charges are published in the RIS.",
+      featureList: [
+        "Choose your grid level under § 63 ElWOG 2010",
+        "Utilisation hours from annual consumption and peak demand (plausibility)",
+        "Charge structure of the current SNE-V 2018, verified in the RIS",
+        "Legal basis of levies: ElAbgG and § 75 EAG",
+        "Reminder once the 2027 values are in",
+      ],
+    },
+  },
+};
+
+function ErklaerungAt({ en }) {
+  return en ? (
+    <div className="ov-prose">
+      <h2>Austria: preparing for the SNE-VO 2027</h2>
+      <p>
+        From 1 January 2027, new system usage charges under the Austrian Electricity Industry Act (ElWG) apply: E-Control first issues a framework ordinance (SNE-GV) and, building on it, the tariff ordinance (SNE-TV). Until the new ordinance is published in the official legal information system (RIS) and verified at the source, this check deliberately shows <strong>no estimated Austrian charges</strong> – values follow after publication in the RIS, expected in Q1 2027.
+      </p>
+      <p>
+        What is documented already, verified in the RIS: today’s charges follow the SNE-V 2018 and are set per grid area and grid level (levels 1–7 under § 63 ElWOG 2010). The grid bill contains the grid usage charge (energy and, with metered demand, demand rate), the grid loss charge, one-off grid provision charges and metering charges. On top of that, end consumers pay the electricity levy (standard rate under § 4 ElAbgG) and the renewables support contribution under § 75 EAG, whose annual rate is set by ordinance.
+      </p>
+      <p>You can record your grid level, annual consumption and peak demand now – and have us remind you when the 2027 values are in.</p>
+      <h3>Sources (checked at the original)</h3>
+      <ul>
+        {QUELLEN_AT.en.map((q) => (
+          <li key={q.url + q.name}>
+            <a href={q.url} target="_blank" rel="noreferrer">
+              {q.name}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : (
+    <div className="ov-prose">
+      <h2>Österreich: Vorbereitung auf die SNE-VO 2027</h2>
+      <p>
+        Ab dem 1. Jänner 2027 gelten in Österreich neue Systemnutzungsentgelte nach dem Elektrizitätswirtschaftsgesetz (ElWG): Die E-Control erlässt zuerst eine Grundsatzverordnung (SNE-GV) und darauf aufbauend die Tarifverordnung (SNE-TV). Bis die neue Verordnung im Rechtsinformationssystem des Bundes (RIS) kundgemacht und am Original geprüft ist, zeigt dieser Check bewusst <strong>keine geschätzten österreichischen Entgelte</strong> – die Werte folgen nach Veröffentlichung im RIS, erwartet im ersten Quartal 2027.
+      </p>
+      <p>
+        Was heute schon dokumentiert ist, am RIS geprüft: Die geltenden Entgelte folgen der SNE-V 2018 und sind je Netzbereich und Netzebene festgelegt (Ebenen 1–7 nach § 63 ElWOG 2010). Auf der Netzrechnung stehen das Netznutzungsentgelt (Arbeitspreis und – bei Leistungsmessung – Leistungspreis), das Netzverlustentgelt, einmalige Netzbereitstellungsentgelte und Entgelte für Messleistungen. Dazu kommen die Elektrizitätsabgabe (Regelsatz nach § 4 ElAbgG) und der Erneuerbaren-Förderbeitrag nach § 75 EAG, dessen Jahressatz per Verordnung festgelegt wird.
+      </p>
+      <p>Netzebene, Jahresverbrauch und Leistung können Sie jetzt schon erfassen – und sich erinnern lassen, sobald die Werte 2027 eingepflegt sind.</p>
+      <h3>Quellen (am Original geprüft)</h3>
+      <ul>
+        {QUELLEN_AT.de.map((q) => (
+          <li key={q.url + q.name}>
+            <a href={q.url} target="_blank" rel="noreferrer">
+              {q.name}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default async function GewerbestromCheckPage({ params }) {
   const land = await seitenLand(params);
   const sprache = spracheDerAnfrage();
   const en = sprache === "en";
   const t = uebersetze({ de: DE, en: EN }, sprache);
+  const at = land === "AT";
+  const kopf = at ? (en ? AT_KOPF.en : AT_KOPF.de) : t;
   return (
     <RechnerSeite
       pfad={PFAD}
@@ -264,12 +366,13 @@ export default async function GewerbestromCheckPage({ params }) {
       breadcrumb={t.breadcrumb}
       eyebrow={t.eyebrow}
       title={t.title}
-      lead={t.lead}
-      chips={t.chips}
-      app={t.app}
-      rechner={<GewerbestromCheck />}
+      lead={kopf.lead}
+      chips={kopf.chips}
+      app={kopf.app}
+      rechner={at ? <GewerbestromCheckAT /> : <GewerbestromCheck />}
       landHinweise={LAND_HINWEISE}
       erklaerung={
+        at ? <ErklaerungAt en={en} /> : (
         <NurDEBlock land={land} thema="Rechenwerte und Annahmen" themaEn="Figures and assumptions">
           {en ? (
             <div className="ov-prose">
@@ -315,6 +418,7 @@ export default async function GewerbestromCheckPage({ params }) {
             </div>
           )}
         </NurDEBlock>
+        )
       }
       annahmen={annahmenZeilen(sprache)}
       quellen={t.quellen}

@@ -127,7 +127,8 @@
   {
    "fieldname": "email",
    "fieldtype": "Data",
-   "label": "E-Mail"
+   "label": "E-Mail",
+   "search_index": 1
   },
   {
    "fieldname": "telefon",
@@ -297,7 +298,8 @@
    "options": "interesse\nmachbarkeit\nin_gruendung\nrechtsperson\nmarktpartner\nvertrag_nb\neda_bereit\naktiv\naufnahmestopp\nin_aufloesung\naufgeloest\numgewandelt",
    "default": "interesse",
    "in_list_view": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "search_index": 1
   },
   {
    "fieldname": "migriert_aus",
@@ -320,7 +322,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-01 03:20:23.735155",
+ "modified": "2026-10-10 23:59:00.000000",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Plattform EG Gemeinschaft",

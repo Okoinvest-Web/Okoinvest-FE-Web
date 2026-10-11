@@ -32,7 +32,8 @@
    "label": "E-Mail",
    "reqd": 1,
    "in_list_view": 1,
-   "options": "Email"
+   "options": "Email",
+   "search_index": 1
   },
   {
    "fieldname": "token_hash",
@@ -52,7 +53,9 @@
    "label": "Status",
    "options": "offen\nangenommen\nersetzt\nwiderrufen",
    "default": "offen",
-   "in_list_view": 1
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
   },
   {
    "fieldname": "ausschreibung_id",
@@ -80,7 +83,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-30 09:00:00.000000",
+ "modified": "2026-10-10 23:59:00.000000",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Plattform Lieferant Einladung",

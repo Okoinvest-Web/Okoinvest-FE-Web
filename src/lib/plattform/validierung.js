@@ -64,6 +64,15 @@ export function plz(v) {
   return /^[0-9A-Za-z -]{3,10}$/.test(s) ? s : "";
 }
 
+/** PLZ je Land: DE 5 Ziffern, AT/CH 4 Ziffern (ohne führende 0 in AT/CH); unbekanntes Land → generische Prüfung */
+const PLZ_MUSTER = { DE: /^\d{5}$/, AT: /^[1-9]\d{3}$/, CH: /^[1-9]\d{3}$/ };
+export function plzLand(v, land) {
+  const s = plz(v);
+  const muster = PLZ_MUSTER[land];
+  if (!s || !muster) return s;
+  return muster.test(s) ? s : "";
+}
+
 /** Passwortregeln – liefert Fehlermeldung oder "" */
 export function passwortFehler(pw) {
   const p = typeof pw === "string" ? pw : "";

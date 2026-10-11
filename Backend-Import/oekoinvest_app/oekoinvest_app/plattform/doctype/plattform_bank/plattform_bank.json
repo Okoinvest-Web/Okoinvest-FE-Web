@@ -48,7 +48,9 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "aktiv\ninaktiv"
+   "options": "aktiv\ninaktiv",
+   "in_standard_filter": 1,
+   "search_index": 1
   },
   {
    "fieldname": "cb1",
@@ -65,7 +67,8 @@
    "fieldtype": "Data",
    "label": "E-Mail",
    "options": "Email",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "telefon",
@@ -96,7 +99,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-30 06:29:55.082776",
+ "modified": "2026-10-10 23:59:00.000000",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Plattform Bank",

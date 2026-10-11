@@ -58,7 +58,9 @@
    "label": "Status",
    "options": "aktiv\ngekuendigt\nbeendet",
    "default": "aktiv",
-   "in_list_view": 1
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
   },
   {
    "fieldname": "cb_1",
@@ -124,7 +126,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-30 04:31:35.758225",
+ "modified": "2026-10-10 23:59:00.000000",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Plattform Contracting Vertrag",

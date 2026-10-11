@@ -63,7 +63,9 @@
    "label": "Status",
    "options": "erteilt\nwiderrufen",
    "default": "erteilt",
-   "in_list_view": 1
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
   },
   {
    "fieldname": "widerrufen_am",
@@ -78,7 +80,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-30 09:00:00.000000",
+ "modified": "2026-10-10 23:59:00.000000",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Plattform Beschaffungsvollmacht",

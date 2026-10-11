@@ -52,7 +52,11 @@ def _loeschen(doctype, filters):
 
 
 def vorgaenge_anonymisieren(tage):
-	"""Anfragen ohne Konto (nutzer_id leer) im Endstatus, seit `tage` unverändert: personenbezogene Felder leeren."""
+	"""Anfragen ohne Konto (nutzer_id leer) im Endstatus, seit `tage` unverändert: personenbezogene Felder leeren.
+
+	Die getrennten Personendaten (Plattform Lead Person, Welle 2 Paket B3) werden mitgelöscht –
+	das Pseudonym im Einwilligungsprotokoll bleibt als Nachweis erhalten (wie person_loeschen in api/einwilligung.py).
+	"""
 	namen = frappe.get_all(
 		"Plattform Vorgang",
 		filters={"nutzer_id": ("is", "not set"), "status": ("in", VORGANG_ENDSTATUS), "modified": ("<", _grenze(tage)), "email": ("is", "set")},
@@ -60,6 +64,8 @@ def vorgaenge_anonymisieren(tage):
 		limit_page_length=500,
 	)
 	for name in namen:
+		if frappe.db.exists("DocType", "Plattform Lead Person"):
+			frappe.db.delete("Plattform Lead Person", {"vorgang_id": name})
 		frappe.db.set_value(
 			"Plattform Vorgang",
 			name,
@@ -67,6 +73,22 @@ def vorgaenge_anonymisieren(tage):
 			update_modified=False,
 		)
 	return len(namen)
+
+
+def lead_personen_verwaiste(tage):
+	"""Nachzügler: Lead-Personendaten, deren Vorgang bereits anonymisiert wurde (E-Mail leer, Endstatus)
+	oder nicht mehr existiert, seit `tage` unverändert. Das Pseudonym im Protokoll bleibt."""
+	if not frappe.db.exists("DocType", "Plattform Lead Person"):
+		return 0
+	zeilen = frappe.db.sql(
+		"""select p.name from `tabPlattform Lead Person` p
+		left join `tabPlattform Vorgang` v on v.name = p.vorgang_id
+		where p.modified < %s and (v.name is null or (ifnull(v.email, '') = '' and v.status in %s))""",
+		(_grenze(tage), VORGANG_ENDSTATUS),
+	)
+	for (name,) in zeilen:
+		frappe.db.delete("Plattform Lead Person", {"name": name})
+	return len(zeilen)
 
 
 def taeglich():
@@ -84,6 +106,7 @@ def taeglich():
 		ergebnis["projektaufruf"] = _loeschen("Plattform Projektaufruf", {"creation": ("<", _grenze(f["projektaufruf"]))})
 	if f["vorgang_ohne_konto"]:
 		ergebnis["vorgang_ohne_konto"] = vorgaenge_anonymisieren(f["vorgang_ohne_konto"])
+		ergebnis["lead_person_verwaist"] = lead_personen_verwaiste(f["vorgang_ohne_konto"])
 	if f["geloeschte_dokumente"]:
 		ergebnis["geloeschte_dokumente"] = _loeschen(
 			"Deleted Document", {"deleted_doctype": ("like", "Plattform %"), "creation": ("<", _grenze(f["geloeschte_dokumente"]))}

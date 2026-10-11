@@ -332,7 +332,7 @@ export default async function VirtuellesKraftwerkPage({ params }) {
   const w = uebersetze(TEXTE, sprache);
   const de = !land || land === "DE";
   const leistungen = w.leistungen.map(({ textLand, ...l }) => (textLand && !de ? { ...l, text: textLand } : l));
-  const live = await liveStart();
+  const live = await liveStart(land);
   const schemaS = { ...schema, ...w.schema };
   return (
     <div>

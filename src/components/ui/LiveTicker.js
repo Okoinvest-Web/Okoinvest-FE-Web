@@ -6,6 +6,7 @@ import useEnergyLive, { fmtCt, fmtGw } from "./useEnergyLive";
 import { cn } from "./cn";
 import { pfad } from "@/lib/land";
 import { useSprache, useTexte } from "@/components/Sprache/SpracheKontext";
+import { useSeitenLand } from "@/components/Land/LandKontext";
 
 const TEXTE = {
   de: { sr: "Zum Live-Dashboard: ", boerse: "Börsenstrom", ee: "Erneuerbare", dashboard: "Zum Dashboard →" },
@@ -28,6 +29,10 @@ export default function LiveTicker({ className }) {
   const solarAktiv = e?.solarMw > 500;
   const t = useTexte(TEXTE);
   const sprache = useSprache();
+  // Länderwahl: Ticker zeigt die Börse des gewählten Landes (Daten über useEnergyLive
+  // bereits je Land), dezent beschriftet („Börsenstrom AT/CH“); DE/gemeinsam wie bisher.
+  const land = useSeitenLand();
+  const boerse = land === "AT" || land === "CH" ? `${t.boerse} ${land}` : t.boerse;
 
   return (
     <Link
@@ -46,7 +51,7 @@ export default function LiveTicker({ className }) {
           {p && (
             <span className="flex items-center gap-1.5">
               <Zap aria-hidden="true" className="h-3.5 w-3.5 text-sun-400" />
-              {t.boerse} <strong className="ov-num font-semibold text-white">{fmtCt(p.eurMwh, 1, sprache)} ct/kWh</strong>
+              {boerse} <strong className="ov-num font-semibold text-white">{fmtCt(p.eurMwh, 1, sprache)} ct/kWh</strong>
             </span>
           )}
           {e?.eeAnteil != null && (

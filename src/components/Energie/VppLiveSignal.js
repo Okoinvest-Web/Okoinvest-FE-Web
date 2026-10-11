@@ -7,6 +7,7 @@ import { LiveDot } from "@/components/ui/LiveTicker";
 import { cn } from "@/components/ui/cn";
 import { pfad } from "@/lib/land";
 import { useTexte } from "@/components/Sprache/SpracheKontext";
+import { useSeitenLand } from "@/components/Land/LandKontext";
 
 /** Sprachmodell: Texte (Zahlen über fmtCt/fmtGw mit Sprache). */
 const TEXTE = {
@@ -16,7 +17,7 @@ const TEXTE = {
     guenstig: { titel: "Speicher laden, Last vorziehen", text: "Strom ist gerade deutlich günstiger als im Tagesmittel." },
     teuer: { titel: "Speicher entladen, Last verschieben", text: "Strom ist gerade deutlich teurer als im Tagesmittel." },
     normal: { titel: "Normalbetrieb nach Fahrplan", text: "Der Preis liegt nahe am Tagesmittel." },
-    live: "Live · Strommarkt DE",
+    live: (l) => `Live · Strommarkt ${l}`,
     stand: (u) => `Stand ${u} Uhr`,
     laedt: "wird geladen …",
     jetzt: "Börsenpreis jetzt",
@@ -34,7 +35,7 @@ const TEXTE = {
     guenstig: { titel: "Charge storage, bring load forward", text: "Power is currently much cheaper than the daily average." },
     teuer: { titel: "Discharge storage, shift load", text: "Power is currently much more expensive than the daily average." },
     normal: { titel: "Normal operation according to schedule", text: "The price is close to the daily average." },
-    live: "Live · power market DE",
+    live: (l) => `Live · power market ${l}`,
     stand: (u) => `As of ${u}`,
     laedt: "loading …",
     jetzt: "Exchange price now",
@@ -57,6 +58,8 @@ const TEXTE = {
  */
 export default function VppLiveSignal({ initial = null, dunkel = true, className }) {
   const w = useTexte(TEXTE);
+  const land = useSeitenLand();
+  const landKuerzel = land === "AT" || land === "CH" ? land : "DE";
   const d = useEnergyLive() || initial;
   const p = d?.preis?.aktuell;
   const avg = d?.preis?.heute?.avg;
@@ -80,7 +83,7 @@ export default function VppLiveSignal({ initial = null, dunkel = true, className
       <div className="flex flex-wrap items-center justify-between gap-2 text-[12.5px]">
         <p className={cn("flex items-center gap-2 font-semibold uppercase tracking-[0.14em]", dunkel ? "text-ov-300" : "text-ov-700")}>
           <LiveDot />
-          {w.live}
+          {w.live(landKuerzel)}
         </p>
         <p className={sub}>{d?.stand ? w.stand(fmtUhr(d.stand)) : w.laedt}</p>
       </div>

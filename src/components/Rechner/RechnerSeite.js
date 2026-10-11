@@ -21,7 +21,7 @@ import { uebersetze } from "@/lib/sprache/woerterbuch";
 // Sprachmodell: feste Texte des Rahmens (die Seiten geben ihre eigenen Texte schon übersetzt mit)
 const TEXTE = {
   de: {
-    druck: (url, stand) => `${url} · Stand der Annahmen ${stand} · Orientierung, kein Angebot`,
+    druck: (url, stand) => `${url} · Stand der Annahmen ${stand} · Orientierung, kein Angebot und keine Anlage-, Rechts- oder Steuerberatung`,
     rechner: "Rechner",
     methodik: "Methodik",
     themaRechenwerte: "Rechenwerte",
@@ -32,7 +32,7 @@ const TEXTE = {
     nurLand: (fuerLand, rest) => `Dieser Rechner rechnet mit Recht und Werten ${fuerLand}. ${rest}.`,
   },
   en: {
-    druck: (url, stand) => `${url} · Assumptions as of ${stand} · For guidance only, not an offer`,
+    druck: (url, stand) => `${url} · Assumptions as of ${stand} · For guidance only, not an offer and no investment, legal or tax advice`,
     rechner: "Calculator",
     methodik: "Methodology",
     themaRechenwerte: "Figures",
@@ -45,8 +45,8 @@ const TEXTE = {
 };
 
 const BOX = {
-  de: { titel: "Annahmen & Grenzen", stand: "Stand", orientierung: "Orientierung, kein Angebot", alle: (n) => `Alle ${n} Annahmen anzeigen`, weniger: "Weniger anzeigen", quellen: "Quellen:" },
-  en: { titel: "Assumptions & limits", stand: "As of", orientierung: "for guidance only, not an offer", alle: (n) => `Show all ${n} assumptions`, weniger: "Show less", quellen: "Sources:" },
+  de: { titel: "Annahmen & Grenzen", stand: "Stand", orientierung: "Orientierung, kein Angebot und keine Anlage-, Rechts- oder Steuerberatung", alle: (n) => `Alle ${n} Annahmen anzeigen`, weniger: "Weniger anzeigen", quellen: "Quellen:" },
+  en: { titel: "Assumptions & limits", stand: "As of", orientierung: "for guidance only – not an offer and no investment, legal or tax advice", alle: (n) => `Show all ${n} assumptions`, weniger: "Show less", quellen: "Sources:" },
 };
 
 const WEITER = {

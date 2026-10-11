@@ -76,10 +76,11 @@ export default async function BarrierefreiheitPage({ params }) {
       </p>
       <ul className="space-y-1.5">
         <li>Enquiry forms (including land check, agrivoltaics, offer a project, investor search profile, residual power, energy community)</li>
-        <li>Calculators and tools (lease, agrivoltaics, solar park, project valuation, residual power, solar carport and municipal calculators)</li>
+        <li>Calculators and tools (including lease, agrivoltaics, solar park, project valuation, residual power, solar carport, municipal and building power calculators, commercial power check, land passport with map, grid connection companion)</li>
         <li>Portal with registration, sign-in, messages and documents</li>
         <li>Project exchange with exposés, non-disclosure agreement (NDA) and data room</li>
-        <li>Live power market data, guides and glossary</li>
+        <li>Live power market data, market data pages, facts and sources register, guides and glossary</li>
+        <li>Newsletter sign-up and newsroom</li>
       </ul>
 
       <h2>Legal framework and standards applied</h2>
@@ -253,10 +254,11 @@ export default async function BarrierefreiheitPage({ params }) {
       </p>
       <ul className="space-y-1.5">
         <li>Anfrageformulare (u. a. Flächencheck, Agri-PV, Projekt anbieten, Investoren-Suchprofil, Reststrom, Energiegemeinschaft)</li>
-        <li>Rechner und Werkzeuge (Pacht-, Agri-PV-, Solarpark-, Projektbewertungs-, Reststrom-, Solarcarport- und Kommunal-Rechner)</li>
+        <li>Rechner und Werkzeuge (u. a. Pacht-, Agri-PV-, Solarpark-, Projektbewertungs-, Reststrom-, Solarcarport-, Kommunal- und Gebäudestrom-Rechner, Gewerbestrom-Check, Flächenpass mit Karte, Netzanschluss-Begleiter)</li>
         <li>Portal mit Registrierung, Anmeldung, Nachrichten und Dokumenten</li>
         <li>Projektbörse mit Exposés, Vertraulichkeitsvereinbarung (NDA) und Datenraum</li>
-        <li>Live-Strommarktdaten, Ratgeber und Lexikon</li>
+        <li>Live-Strommarktdaten, Marktdaten-Seiten, Fakten- und Quellenregister, Ratgeber und Lexikon</li>
+        <li>Newsletter-Anmeldung und Newsroom</li>
       </ul>
 
       <h2>Rechtlicher Rahmen und angewandte Standards</h2>

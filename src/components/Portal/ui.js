@@ -300,10 +300,10 @@ export function PfeilLink({ href, children, className }) {
   );
 }
 
-/** Tabelle mit horizontalem Scroll auf kleinen Bildschirmen */
+/** Tabelle mit horizontalem Scroll auf kleinen Bildschirmen (per Tastatur erreichbar, WCAG 2.1.1 / axe scrollable-region-focusable) */
 export function Tabelle({ kopf = [], children, className }) {
   return (
-    <div className={cn("-mx-5 overflow-x-auto md:-mx-6", className)}>
+    <div tabIndex={0} role="region" aria-label="Tabelle, horizontal scrollbar" className={cn("-mx-5 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ov-500 md:-mx-6", className)}>
       <table className="w-full min-w-[640px] text-left text-[14px]">
         <thead>
           <tr className="border-b border-ink-100 bg-ink-50/60 text-[12px] font-semibold uppercase tracking-wider text-ink-500">

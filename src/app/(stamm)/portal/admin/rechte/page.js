@@ -38,7 +38,7 @@ export default async function AdminRechte() {
       </Karte>
 
       <Karte className="overflow-hidden" titel="Rechte-Matrix" untertitel="Welche Unterrolle darf was?" aktion={<KeyRound aria-hidden="true" className="h-5 w-5 text-ov-600" />}>
-        <div className="relative -mx-5 overflow-x-auto md:-mx-6"><div className="w-0 min-w-full">
+        <div tabIndex={0} role="region" aria-label="Rechte-Matrix, horizontal scrollbar" className="relative -mx-5 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ov-500 md:-mx-6"><div className="w-0 min-w-full">
           <table className="w-full min-w-[720px] text-left text-[13.5px]">
             <thead>
               <tr className="border-b border-ink-100 text-[12px] font-semibold uppercase tracking-wider text-ink-500">

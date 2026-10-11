@@ -14,6 +14,7 @@ import { ENTWICKLUNG_STATUS, ENTWICKLUNG_TYPEN, phaseLabel } from "@/lib/plattfo
 import { LAENDER } from "@/lib/plattform/konstanten";
 import { PHASEN } from "@/lib/invest/markt";
 import { Fortschritt, PhaseBadge, ProjektStatusBadge, eurKurz, monatText, mwpText } from "./teile";
+import { tabTasten } from "@/components/Portal/Bedienung/tabTasten"; // UIUX: Pfeiltasten in Tablisten (WAI-ARIA)
 
 const ANSICHTEN = [
   { id: "liste", label: "Liste", icon: List },
@@ -161,7 +162,7 @@ export default function Portfolio({ projekte = [], ansicht: start = "liste" }) {
 
   return (
     <div className="min-w-0">
-      <div role="tablist" aria-label="Ansicht (Taste v)" className="mb-4 inline-flex rounded-full bg-white p-1 ring-1 ring-ink-200/70">
+      <div role="tablist" aria-label="Ansicht (Taste v)" onKeyDown={tabTasten} className="mb-4 inline-flex rounded-full bg-white p-1 ring-1 ring-ink-200/70">
         {ANSICHTEN.map((a) => (
           <button key={a.id} type="button" role="tab" aria-selected={ansicht === a.id} onClick={() => wechseln(a.id)} className={cn("inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-semibold transition-colors", ansicht === a.id ? "bg-navy-900 text-white" : "text-ink-700 hover:bg-ink-50")}>
             <a.icon aria-hidden="true" className="h-4 w-4" />

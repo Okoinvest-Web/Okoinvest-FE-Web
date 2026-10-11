@@ -76,7 +76,7 @@ export function Hinweis({ children, ton = "info" }) {
 export function Tabelle({ kopf = [], zeilen = [], rechts = [], leer = "Keine Einträge." }) {
   if (!zeilen.length) return <p className="text-[14px] text-ink-500">{leer}</p>;
   return (
-    <div className="-mx-5 overflow-x-auto md:mx-0">
+    <div tabIndex={0} role="region" aria-label="Tabelle, horizontal scrollbar" className="-mx-5 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ov-500 md:mx-0">
       <table className="w-full min-w-[560px] border-collapse text-[13.5px]">
         <thead>
           <tr className="border-b border-ink-100 text-left text-[12px] uppercase tracking-wide text-ink-500">

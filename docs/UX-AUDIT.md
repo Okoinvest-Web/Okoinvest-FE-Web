@@ -248,3 +248,19 @@ Teams: T1 Website/Landingpages · T2 Rechner · T3 Portal-Rahmen/Navigation/Dash
 | `/portal/eg/EGG-26-K4MD9U/abrechnung` | 1440 | 200 | 1.424 | 5 | 0 | |
 
 Kontrastwerte (WCAG-Formel, gerechnet): ink-400/Weiß 2,63 · ink-500/Weiß 4,70 · Weiß/ov-500 3,40 · Weiß/ov-600 4,56 · ov-700/ov-50 6,21 · ink-200-Rahmen/Weiß 1,29 · ink-500 auf ink-200 (deaktivierter Knopf) 3,65.
+
+---
+
+## Nachtrag 11.10.2026 – Plattform-Armee, Paket UIUX
+
+Viele Befunde dieses Audits sind inzwischen behoben (Kontrast-Token ink-400/500 in `globals.css`, `Feld` verknüpft Hinweis/Fehler per `aria-describedby`/`aria-invalid`, keine `confirm()`/`prompt()`-Dialoge mehr im Portal, Entwicklungshinweis der Verifizierung nur noch fürs Backoffice, Glocke mit ruhigem Zähler, Rollen-Dashboards mit „Als Nächstes“-Karte, zentrales `loading.js` und Leerzustände).
+
+**Neu: Portal-Barrierefreiheits-Gate** `npm run qa:axe-portal` (`qa/axe-portal.mjs`): axe (WCAG 2.0/2.1/2.2 A+AA) auf den Kernseiten **aller 10 Rollen mit Demo-Login**, 1440 px und 390 px, plus Strukturprüfung (genau eine h1, `main`-Landmark, kein horizontaler Überlauf). Ratsche gegen `qa/axe-portal-baseline.json`, Screenshots je Prüfung per `--shots`.
+
+Im Erstlauf gefunden und behoben (alle übrigen 70+ Prüfungen waren ohne Verstoß):
+- Terminbuchung `SlotAuswahl.js`: Lade-Dimmung `opacity-50` drückte Tagesbeschriftungen auf ~2,5:1 → Dimmung entfernt (Spinner + `aria-busy` + Klicksperre zeigen den Ladezustand). Die Baseline `qa/axe-portal-baseline.json` ist damit **leer** (0 Altlasten über alle 75 Prüfungen).
+- Lead-Desk `Leads/Anzeige.js` und Deal-Room `Dealroom/Countdown.js`: Deckkraft-Abstufungen (`opacity-80`/`opacity-70`) unter 4,5:1 → entfernt.
+- Scrollbare Tabellen ohne Tastaturzugriff (axe `scrollable-region-focusable`): `Portal/ui.js` (`Tabelle`), `Energie/teile.js`, Dealroom-Bietertabelle, Zugriffsprotokoll, EDA-Aktionen, Anlagen-Detail, Rechte-Matrix → `tabIndex` + `role="region"` + sichtbarer Fokusring.
+- Vier Tablisten ohne Pfeiltasten-Bedienung (WAI-ARIA-Tabs) → gemeinsamer Helfer `Portal/Bedienung/tabTasten.js`, verdrahtet in Buchhaltung-Werkzeuge, EG-Verein, Entwicklungs-Portfolio, Akquise-Karte.
+
+Prüfer-Nachtrag (gleicher Tag): Gate um drei gefixte, aber bisher ungeprüfte Admin-Seiten erweitert (`/portal/admin/rechte`, `/portal/admin/finanzen/buchhaltung`, `/portal/admin/akquise/karte`, jetzt 78 Baseline-Schlüssel). Dabei gefunden und behoben: Karten-Attributionslinks (basemap.at/BKG/OSM) waren nur farblich vom Text unterscheidbar (axe `link-in-text-block`, WCAG 1.4.1) → unterstrichen (`Geodaten/AkquiseKarte.js`). Danach 0 Verstöße.

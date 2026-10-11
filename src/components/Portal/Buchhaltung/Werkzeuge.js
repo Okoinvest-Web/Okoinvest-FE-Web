@@ -14,6 +14,7 @@ import { cn } from "@/components/ui/cn";
 import { senden } from "@/lib/plattform/client";
 import { eingabe, auswahlfeld, labelKlasse, FehlerBox, ErfolgBox } from "@/components/Portal/felder";
 import { euro, tag } from "@/components/Portal/Finanzen/teile";
+import { tabTasten } from "@/components/Portal/Bedienung/tabTasten"; // UIUX: Pfeiltasten in Tablisten (WAI-ARIA)
 
 const knopf = "inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition-colors disabled:opacity-50";
 const primaer = cn(knopf, "bg-ov-600 text-white hover:bg-ov-700");
@@ -315,7 +316,7 @@ export function KontenFormular({ konten }) {
   const [sys, setSys] = useState("datev");
   return (
     <form onSubmit={(e) => { e.preventDefault(); ausfuehren(() => senden("/api/admin/finanzen/buchhaltung/einstellungen", { body: { konten: k } }), "Kontenzuordnung gespeichert."); }} className="space-y-3">
-      <div className="flex gap-1.5" role="tablist" aria-label="System">
+      <div className="flex gap-1.5" role="tablist" aria-label="System" onKeyDown={tabTasten}>
         {["datev", "bmd"].map((s) => <button key={s} type="button" role="tab" aria-selected={sys === s} className={cn(klein, sys === s ? "bg-navy-900 text-white ring-navy-900" : "bg-white text-ink-700 ring-ink-200")} onClick={() => setSys(s)}>{s === "datev" ? "DATEV (DE, SKR-Beispiel)" : "BMD (AT, EKR-Beispiel)"}</button>)}
       </div>
       {sys === "datev" && (

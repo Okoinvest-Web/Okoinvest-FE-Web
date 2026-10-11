@@ -17,6 +17,7 @@ import { GV_ARTEN, GV_FORMEN, MEHRHEITEN, STIMMEN } from "@/lib/plattform/mitgli
 import { DokumentGenerator } from "./Dokumente";
 import { Befunde, datumDe, eurDe } from "./teile";
 import { abfragen } from "@/components/ui/Rueckfrage";
+import { tabTasten } from "@/components/Portal/Bedienung/tabTasten"; // UIUX: Pfeiltasten in Tablisten (WAI-ARIA)
 
 const dz = (s) => (s ? `${datumDe(s)}, ${String(s).slice(11, 16)} Uhr` : "–");
 
@@ -318,7 +319,7 @@ export default function VereinAnsicht({ verein: v, start = "versammlungen", vorl
   const sichtbar = REITER.filter((r) => (!r.recht || v.rechte[r.recht] >= 1) && (!r.organ || v.rechte.organ));
   return (
     <div className="space-y-5">
-      <div className="-mx-1 overflow-x-auto" role="tablist" aria-label="Vereinsorganisation">
+      <div className="-mx-1 overflow-x-auto" role="tablist" aria-label="Vereinsorganisation" onKeyDown={tabTasten}>
         <div className="flex min-w-max gap-1 px-1">
           {sichtbar.map((r) => <button key={r.id} type="button" role="tab" aria-selected={reiter === r.id} onClick={() => setReiter(r.id)} className={cn("rounded-full px-3.5 py-2 text-[13.5px] font-semibold transition", reiter === r.id ? "bg-navy-800 text-white" : "bg-white text-ink-700 ring-1 ring-ink-200 hover:bg-ink-50")}>{r.label}</button>)}
         </div>

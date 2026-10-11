@@ -204,7 +204,7 @@ function Matrix({ vf, rolle, mwp }) {
   if (!zeilen.length) return <p className="text-[14px] text-ink-500">Noch keine Gebote eingegangen.</p>;
   return (
     <>
-      <div className="-mx-5 overflow-x-auto md:-mx-6">
+      <div tabIndex={0} role="region" aria-label="Tabelle, horizontal scrollbar" className="-mx-5 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ov-500 md:-mx-6">
         <table className="w-full min-w-[760px] text-left text-[13.5px]">
           <thead>
             <tr className="border-b border-ink-100 text-[11.5px] font-semibold uppercase tracking-wider text-ink-500">

@@ -236,7 +236,7 @@ export default async function AnlageSeite({ params, searchParams }) {
               Beim Speicher-Contracting zahlen Sie eine feste Monatsrate von {eur0(c.grundgebuehrMonat)}. Die Ersparnis entsteht über den geringeren Leistungspreis (gekappte Lastspitzen) und wird mit Ihrer Netzabrechnung ausgewiesen – sie lässt sich aus den Monitoring-Werten nicht verlässlich berechnen.
             </p>
           ) : (
-            <div className="-mx-5 overflow-x-auto md:-mx-6">
+            <div tabIndex={0} role="region" aria-label="Tabelle, horizontal scrollbar" className="-mx-5 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ov-500 md:-mx-6">
               <table className="w-full min-w-[420px] text-[14px]">
                 <thead>
                   <tr className="border-b border-ink-100 text-[12px] font-semibold uppercase tracking-wider text-ink-500">

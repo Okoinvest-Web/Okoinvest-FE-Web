@@ -113,7 +113,7 @@ export function EdaTeilnahmen({ teilnahmen = [], url, darf, vierAugenAb = 3 }) {
         </div>
         <input className={cn(eingabe, "h-10 md:max-w-xs")} placeholder="Mitglied oder Zählpunkt suchen" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Suche" />
       </div>
-      <div className="-mx-5 overflow-x-auto md:-mx-6">
+      <div tabIndex={0} role="region" aria-label="Tabelle, horizontal scrollbar" className="-mx-5 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ov-500 md:-mx-6">
         <table className="w-full min-w-[760px] text-left text-[14px]">
           <thead>
             <tr className="border-b border-ink-100 text-[12px] font-semibold uppercase tracking-wider text-ink-500">

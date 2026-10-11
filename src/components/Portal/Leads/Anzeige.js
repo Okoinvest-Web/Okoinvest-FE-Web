@@ -53,7 +53,8 @@ export function ScoreBadge({ score }) {
     <span title={score.begruendung} className="inline-flex">
       <Badge ton={SCORE_TON[score.klasse]}>
         Score {score.klasse}
-        <span className="font-normal opacity-80">· {score.punkte}</span>
+        {/* Keine Deckkraft-Abstufung: Weiß auf ov-600 liegt bei 4,6:1, mit opacity-80 fiele es unter 4,5:1 (axe-portal) */}
+        <span className="font-normal">· {score.punkte}</span>
       </Badge>
     </span>
   );

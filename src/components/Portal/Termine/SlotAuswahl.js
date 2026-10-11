@@ -59,7 +59,9 @@ export default function SlotAuswahl({ art, gewaehlt, onWahl, mitarbeiterId = "",
         </button>
       </div>
       {daten.fehler && <p role="alert" className="mb-3 rounded-xl bg-danger-50 px-4 py-3 text-[14px] text-danger-800 ring-1 ring-danger-200">{daten.fehler}</p>}
-      <div className={cn("relative grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7", daten.laden && "opacity-50")} aria-busy={daten.laden}>
+      {/* Laden: nicht per Deckkraft dimmen – das drückte die Tagesbeschriftungen unter 4,5:1 Kontrast
+          (axe-portal, WCAG 1.4.3). Spinner + aria-busy zeigen den Zustand, Klicks sind gesperrt. */}
+      <div className={cn("relative grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7", daten.laden && "pointer-events-none select-none")} aria-busy={daten.laden}>
         {daten.laden && <Loader2 aria-hidden="true" className="absolute left-1/2 top-6 h-6 w-6 -translate-x-1/2 animate-spin text-ov-600" />}
         {jeTag.map(([tag, liste]) => (
           <div key={tag} className={cn("min-w-0 rounded-2xl p-2.5 ring-1 ring-inset", dunkel ? "bg-white/5 ring-white/10" : "bg-ink-50/60 ring-ink-100")}>

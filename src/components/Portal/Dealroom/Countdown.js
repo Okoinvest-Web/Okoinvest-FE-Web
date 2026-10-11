@@ -33,7 +33,8 @@ export default function Countdown({ frist, label = "Frist", className, gross = f
     >
       <Hourglass aria-hidden="true" className={cn("shrink-0", gross ? "h-5 w-5" : "h-4 w-4")} />
       <span className="min-w-0">
-        <span className="block text-[11.5px] font-semibold uppercase tracking-wider opacity-70">{label} · {datumZeit(frist)}</span>
+        {/* Ohne opacity-70: die kleine Fristzeile fiel damit unter 4,5:1 Kontrast (axe-portal, WCAG 1.4.3) */}
+        <span className="block text-[11.5px] font-semibold uppercase tracking-wider">{label} · {datumZeit(frist)}</span>
         <span className={cn("ov-num block font-display font-extrabold leading-tight", gross ? "text-[22px]" : "text-[16px]")} suppressHydrationWarning>
           {ab ? "Frist abgelaufen" : `noch ${restzeit(frist, jetzt ?? Date.now())}${sek}`}
         </span>

@@ -29,6 +29,7 @@
     "test:snapshots:aktualisieren": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON test/charakterisierung/aktualisieren.mjs",
     "lint:claims": "node qa/claim-lint.mjs",
     "qa:axe": "node qa/axe.mjs",
+    "qa:axe-portal": "node qa/axe-portal.mjs",
     "qa:e2e": "node --test --test-concurrency=1 qa/e2e/funnel.e2e.mjs",
     "verify": "node qa/verify.mjs"
   },

@@ -23,6 +23,7 @@ import { fmt, fmtEur } from "@/lib/rechner/annahmen";
 import { distanzM } from "@/lib/plattform/geodaten/geo";
 import { KNOTEN_ARTEN } from "@/lib/plattform/geodaten/scoring";
 import { auswahlfeld, eingabe, FehlerBox, ErfolgBox } from "@/components/Portal/felder";
+import { tabTasten } from "@/components/Portal/Bedienung/tabTasten"; // UIUX: Pfeiltasten in Tablisten (WAI-ARIA)
 
 const FARBE = { gruen: "#669933", gelb: "#f5a70f", rot: "#dc2626" };
 const KNOTEN_STIL = {
@@ -33,12 +34,12 @@ const KNOTEN_STIL = {
 };
 const SCHUTZ_FARBE = { nationalpark: "#436621", natura2000: "#436621", naturschutz: "#558227", landschaftsschutz: "#8cba58", wasserschutz: "#1f5aa1", sonstig: "#97a0b0" };
 const BASEMAP = "https://mapsneu.wien.gv.at/basemap";
-const ATTRIBUTION =
-  'Grundkarte: <a href="https://basemap.at" target="_blank" rel="noopener">basemap.at</a> · Netz/Schutzgebiete: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap-Mitwirkende</a> (ODbL) · Kataster: BEV · Schläge: AMA';
+// Links in der Attribution unterstrichen: nur Farbe reicht nicht als Abgrenzung (axe link-in-text-block, WCAG 1.4.1)
+const A = 'target="_blank" rel="noopener" style="text-decoration:underline"';
+const ATTRIBUTION = `Grundkarte: <a href="https://basemap.at" ${A}>basemap.at</a> · Netz/Schutzgebiete: © <a href="https://www.openstreetmap.org/copyright" ${A}>OpenStreetMap-Mitwirkende</a> (ODbL) · Kataster: BEV · Schläge: AMA`;
 // Deutschland: TopPlusOpen (BKG, dl-de/by-2-0, Web Mercator) – basemap.at deckt nur Österreich ab
 const TOPPLUS = "https://sgx.geodatenzentrum.de/wmts_topplus_open/tile/1.0.0/web_grau/default/WEBMERCATOR/{z}/{y}/{x}.png";
-const ATTRIBUTION_DE =
-  'Grundkarte: © <a href="https://gdz.bkg.bund.de" target="_blank" rel="noopener">BKG</a> (2026) <a href="https://www.govdata.de/dl-de/by-2-0" target="_blank" rel="noopener">dl-de/by-2-0</a> (TopPlusOpen) · Netz/Verkehr/Schutzgebiete: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap-Mitwirkende</a> (ODbL) · Flurstücke: DEMO';
+const ATTRIBUTION_DE = `Grundkarte: © <a href="https://gdz.bkg.bund.de" ${A}>BKG</a> (2026) <a href="https://www.govdata.de/dl-de/by-2-0" ${A}>dl-de/by-2-0</a> (TopPlusOpen) · Netz/Verkehr/Schutzgebiete: © <a href="https://www.openstreetmap.org/copyright" ${A}>OpenStreetMap-Mitwirkende</a> (ODbL) · Flurstücke: DEMO`;
 const AMPEL_TEXT = { gruen: "gut geeignet", gelb: "prüfen", rot: "kritisch" };
 const WIDMUNG_TEXT = { zone: "in Zone / Priorität 1", angrenzend: "angrenzend / Priorität 2", ausserhalb: "außerhalb", unklar: "Einzelfall" };
 const WIDMUNG_TEXT_DE = { zone: "privilegiert (§ 35 BauGB)", angrenzend: "teilweise privilegiert", ausserhalb: "außerhalb", unklar: "Bebauungsplan nötig" };
@@ -731,7 +732,7 @@ export default function AkquiseKarte({ darfSchreiben = false }) {
 
   const seitenPanel = (
     <div className="flex h-full flex-col">
-      <div className="flex border-b border-ink-100" role="tablist" aria-label="Bereiche">
+      <div className="flex border-b border-ink-100" role="tablist" aria-label="Bereiche" onKeyDown={tabTasten}>
         {[["filter", "Filter", Filter], ["liste", `Liste (${umkreis ? umkreis.anzahl : anzahl})`, List], ["ebenen", "Ebenen", Layers]].map(([id, label, Icon]) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={cn("flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-2 py-3 text-[13px] font-semibold", tab === id ? "border-b-2 border-ov-600 text-ov-700" : "text-ink-500 hover:text-ink-800")}>
             <Icon className="h-4 w-4" aria-hidden="true" /> {label}

@@ -8,6 +8,7 @@ Ein Befehl vor jeder Übergabe: `npm run verify`. Er läuft seriell und braucht 
 | 2 `selbsttest()` aller Rechner | `npm run test:selbsttest` | Gate |
 | 3 Claim-Lint | `npm run lint:claims` | Bericht, mit `--streng` Gate |
 | 4 axe auf 10 Kernseiten | `npm run qa:axe` | Gate (Ratsche gegen `qa/axe-baseline.json`) |
+| 4b axe auf Portalseiten mit Demo-Login (alle Rollen, 1440 + 390 px, plus h1/main/Überlauf-Strukturprüfung) | `npm run qa:axe-portal` | Ratsche gegen `qa/axe-portal-baseline.json`; noch nicht in `verify` (Vorschlag ans QM, Laufzeit ~15 min) |
 | 5 Funnel-E2E, POSTs abgefangen | `npm run qa:e2e` | Gate; Tests mit `todo` gehören zu anderen Paketen |
 
 Optionen: `npm run verify -- --ohne-browser` (nur 1–3, Ergebnis „unvollständig“), `-- --streng`, `-- --nur 1,2`.
